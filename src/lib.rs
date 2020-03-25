@@ -11,6 +11,7 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 
 mod component;
+mod shader;
 
 #[wasm_bindgen(start)]
 pub fn main() {
