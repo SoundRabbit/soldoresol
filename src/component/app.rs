@@ -22,7 +22,10 @@ fn render(_: &State) -> Html<Msg> {
     Html::div(
         Attributes::new().id("app"),
         Events::new(),
-        vec![Html::component(super::table::new()), render_side_menu()],
+        vec![
+            Html::canvas(Attributes::new().id("table"), Events::new(), vec![]),
+            render_side_menu(),
+        ],
     )
 }
 

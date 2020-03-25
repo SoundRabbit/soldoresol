@@ -12,6 +12,7 @@ use wasm_bindgen::JsCast;
 
 mod component;
 mod shader;
+mod table;
 
 #[wasm_bindgen(start)]
 pub fn main() {
