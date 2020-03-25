@@ -76,19 +76,14 @@
     box-shadow: 0 0 0.2rem 0 black;
     &:hover {
         cursor: pointer;
-        animation: 0.1s linear 1 app-side-menu-item-frame-rotate;
         width: 5.3rem;
         height: 5.3rem;
         box-shadow: 0 0 0.3rem 0 black;
+        transition: all 0.05s ease-in-out;
     }
     &:active {
         width: 4.9rem;
         height: 4.9rem;
-        box-shadow: 0 0 0.2rem 0 black;
+        box-shadow: 0 0 0.05rem 0 black;
     }
-}
-
-@keyframes app-side-menu-item-frame-rotate {
-    0%{ transform:rotate(45);}
-    100%{ transform:rotate(405deg); }
 }
