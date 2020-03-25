@@ -3,7 +3,13 @@ use super::ShaderSource;
 const VERTEX_SHADER: &str = r#"
     attribute vec4 position;
     void main() {
-        gl_Position = position;
+        mat4 perspective = mat4(
+            1.0, 0.0, 0.0, 0.0,
+            0.0, 1.0, 0.0, 0.0,
+            0.0, 0.0, 1.0, 0.0,
+            0.0, 0.0, 0.0, 1.0 + position.z
+        );
+        gl_Position = perspective * position;
     }
 "#;
 
