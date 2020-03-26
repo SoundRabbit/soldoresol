@@ -50,7 +50,7 @@ fn init() -> (State, Cmd<Msg, Sub>) {
         table: Table::new(),
         table_height: 100,
         table_width: 100,
-        table_rotation: (0.0, 0.0),
+        table_rotation: (-0.25 * std::f32::consts::PI, 0.0625 * std::f32::consts::PI),
         table_movement: (0.0, 0.0),
         table_distance: 40.0,
         table_grabbed: (false, false),
