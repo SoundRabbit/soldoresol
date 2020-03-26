@@ -195,6 +195,15 @@ fn render_side_menu_item(text: impl Into<String>) -> Html<Msg> {
                 Attributes::new().class("app-side-menu-item-content-wrapper"),
                 Events::new(),
                 vec![Html::div(
+                    Attributes::new().class("app-side-menu-item-bg"),
+                    Events::new(),
+                    vec![],
+                )],
+            ),
+            Html::div(
+                Attributes::new().class("app-side-menu-item-content-wrapper"),
+                Events::new(),
+                vec![Html::div(
                     Attributes::new().class("app-side-menu-item-text"),
                     Events::new(),
                     vec![Html::text(text)],
