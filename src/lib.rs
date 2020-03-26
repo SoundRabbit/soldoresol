@@ -4,6 +4,7 @@ extern crate wasm_bindgen;
 extern crate web_sys;
 #[macro_use]
 extern crate serde_derive;
+extern crate ndarray;
 extern crate serde_json;
 
 use kagura::prelude::*;

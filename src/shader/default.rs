@@ -2,14 +2,9 @@ use super::ShaderSource;
 
 const VERTEX_SHADER: &str = r#"
     attribute vec4 position;
+    uniform mat4 u_translate;
     void main() {
-        mat4 perspective = mat4(
-            1.0, 0.0, 0.0, 0.0,
-            0.0, 1.0, 0.0, 0.0,
-            0.0, 0.0, 1.0, 0.0,
-            0.0, 0.0, 0.0, 1.0 + position.z
-        );
-        gl_Position = perspective * position;
+        gl_Position = u_translate * position;
     }
 "#;
 
