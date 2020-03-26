@@ -76,6 +76,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
         Msg::SetTableContext(context) => {
             state.table.set_context(context);
+            state.table.resize();
             render_table(
                 &mut state.table,
                 state.table_movement,

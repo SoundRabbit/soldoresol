@@ -1,6 +1,8 @@
 use crate::shader;
 use ndarray::{arr1, arr2, Array2};
 use std::ops::Mul;
+use wasm_bindgen::prelude::*;
+use wasm_bindgen::JsCast;
 
 struct Context {
     gl: web_sys::WebGlRenderingContext,
@@ -155,6 +157,21 @@ impl Table {
                 web_sys::WebGlRenderingContext::UNSIGNED_SHORT,
                 0,
             );
+        }
+    }
+
+    pub fn resize(&self) {
+        if let Some(context) = &self.context {
+            let gl = &context.gl;
+            let canvas = gl
+                .canvas()
+                .unwrap()
+                .dyn_into::<web_sys::HtmlCanvasElement>()
+                .unwrap();
+            let height = canvas.client_height();
+            let width = canvas.client_width();
+
+            gl.viewport(0, 0, width, height);
         }
     }
 }
