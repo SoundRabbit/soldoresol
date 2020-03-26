@@ -16,8 +16,8 @@ pub struct State {
 
 pub enum Msg {
     NoOp,
-    SetTableSize(web_sys::HtmlCanvasElement),
-    SetTableContext(web_sys::WebGlRenderingContext),
+    SetTableContext(web_sys::HtmlCanvasElement),
+    ResizeTable,
     MoveTableCamera(i32, i32),
     SetTableGrabbed(bool, bool),
 }
@@ -27,7 +27,7 @@ pub struct Sub;
 pub fn new() -> Component<Msg, State, Sub> {
     Component::new(init, update, render).batch(|mut handler| {
         let a = Closure::wrap(Box::new(move || {
-            handler(Msg::SetTableSize(
+            handler(Msg::SetTableContext(
                 web_sys::window()
                     .unwrap()
                     .document()
@@ -61,21 +61,19 @@ fn init() -> (State, Cmd<Msg, Sub>) {
 fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
     match (msg) {
         Msg::NoOp => Cmd::none(),
-        Msg::SetTableSize(canvas) => {
+        Msg::SetTableContext(canvas) => {
             state.table_height = canvas.client_height();
             state.table_width = canvas.client_width();
-            Cmd::task(move |resolve| {
-                let context = canvas
-                    .get_context("webgl")
-                    .unwrap()
-                    .unwrap()
-                    .dyn_into::<web_sys::WebGlRenderingContext>()
-                    .unwrap();
-                resolve(Msg::SetTableContext(context));
-            })
-        }
-        Msg::SetTableContext(context) => {
+            let context = canvas
+                .get_context("webgl")
+                .unwrap()
+                .unwrap()
+                .dyn_into::<web_sys::WebGlRenderingContext>()
+                .unwrap();
             state.table.set_context(context);
+            update(state, Msg::ResizeTable)
+        }
+        Msg::ResizeTable => {
             state.table.resize();
             render_table(
                 &mut state.table,
