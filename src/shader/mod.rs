@@ -14,7 +14,7 @@ pub fn compile_shader(
     context: &web_sys::WebGlRenderingContext,
     shader: &ShaderSource,
 ) -> Result<Shader, String> {
-    let (shader_source, shader_type) = match (shader) {
+    let (shader_source, shader_type) = match shader {
         ShaderSource::VertexShader(src) => (src, web_sys::WebGlRenderingContext::VERTEX_SHADER),
         ShaderSource::FragmentShader(src) => (src, web_sys::WebGlRenderingContext::FRAGMENT_SHADER),
     };
