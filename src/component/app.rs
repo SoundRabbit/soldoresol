@@ -59,7 +59,7 @@ fn init() -> (State, Cmd<Msg, Sub>) {
 }
 
 fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
-    match (msg) {
+    match msg {
         Msg::NoOp => Cmd::none(),
         Msg::SetTableContext(canvas) => {
             state.table_height = canvas.client_height();

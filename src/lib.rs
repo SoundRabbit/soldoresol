@@ -7,9 +7,7 @@ extern crate serde_derive;
 extern crate ndarray;
 extern crate serde_json;
 
-use kagura::prelude::*;
 use wasm_bindgen::prelude::*;
-use wasm_bindgen::JsCast;
 
 mod component;
 mod shader;

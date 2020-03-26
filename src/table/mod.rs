@@ -13,6 +13,8 @@ struct Context {
 pub struct Table {
     translate: Array2<f32>,
     context: Option<Context>,
+    row_num: u32,
+    column_num: u32,
 }
 
 impl Table {
@@ -25,6 +27,8 @@ impl Table {
                 [0.0, 0.0, 0.0, 1.0],
             ]),
             context: None,
+            row_num: 20,
+            column_num: 20,
         }
     }
 
@@ -38,13 +42,21 @@ impl Table {
         let program = shader::link_program(&gl, &vertex_shader, &fragment_shader).unwrap();
         gl.use_program(Some(&program));
 
+        let table_height = self.row_num as f32;
+        let table_width = self.column_num as f32;
+
         let v_position = create_vbo(
             &gl,
             &create_squre(
                 &[0.0, 0.0, 0.0],
                 &[1.0, 0.0, 0.0],
                 &[0.0, 1.0, 0.0],
-                &[[20.0, 20.0], [-20.0, 20.0], [20.0, -20.0], [-20.0, -20.0]],
+                &[
+                    [table_width / 2.0, table_height / 2.0],
+                    [-table_width / 2.0, table_height / 2.0],
+                    [table_width / 2.0, -table_height / 2.0],
+                    [-table_width / 2.0, -table_height / 2.0],
+                ],
             ),
         );
         let v_color = create_vbo(
@@ -102,7 +114,8 @@ impl Table {
                 ]
                 .concat(),
             ),
-        );
+        )
+        .expect("");
 
         gl.tex_parameteri(
             web_sys::WebGlRenderingContext::TEXTURE_2D,
