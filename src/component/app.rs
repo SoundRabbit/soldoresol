@@ -177,8 +177,7 @@ fn render_side_menu() -> Html<Msg> {
         Events::new(),
         vec![
             render_side_menu_item("テーブル"),
-            render_side_menu_item("画像"),
-            render_side_menu_item("音楽"),
+            render_side_menu_item("リソース"),
             render_side_menu_item("キャラクター"),
             render_side_menu_item("オブジェクト"),
             render_side_menu_item("資料"),
