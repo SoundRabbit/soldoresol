@@ -7,6 +7,7 @@ use wasm_bindgen::JsCast;
 struct Context {
     gl: web_sys::WebGlRenderingContext,
     u_translate_location: web_sys::WebGlUniformLocation,
+    u_texture_location: web_sys::WebGlUniformLocation,
 }
 
 pub struct Table {
@@ -127,6 +128,7 @@ impl Table {
         self.context = Some(Context {
             gl,
             u_translate_location,
+            u_texture_location,
         });
     }
 
