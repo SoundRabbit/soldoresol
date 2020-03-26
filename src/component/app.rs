@@ -19,6 +19,7 @@ pub enum Msg {
     SetTableContext(web_sys::HtmlCanvasElement),
     ResizeTable,
     MoveTableCamera(i32, i32),
+    ZoomTableCamera(f64),
     SetTableGrabbed(bool, bool),
 }
 
@@ -52,7 +53,7 @@ fn init() -> (State, Cmd<Msg, Sub>) {
         table_width: 100,
         table_rotation: (-0.25 * std::f32::consts::PI, 0.0625 * std::f32::consts::PI),
         table_movement: (0.0, 0.0),
-        table_distance: 40.0,
+        table_distance: 20.0,
         table_grabbed: (false, false),
     };
     (state, Cmd::none())
@@ -121,6 +122,16 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             );
             Cmd::none()
         }
+        Msg::ZoomTableCamera(wheel) => {
+            state.table_distance = (state.table_distance + (wheel / 20.0) as f32).max(0.0);
+            render_table(
+                &mut state.table,
+                state.table_movement,
+                state.table_rotation,
+                state.table_distance,
+            );
+            Cmd::none()
+        }
         Msg::SetTableGrabbed(grabbed_l, grabbed_r) => {
             state.table_grabbed = (grabbed_l, grabbed_r);
             Cmd::none()
@@ -160,6 +171,9 @@ fn render(state: &State) -> Html<Msg> {
                     })
                     .on_mouseleave(|_| Msg::SetTableGrabbed(false, false))
                     .on_mousemove(|e| Msg::MoveTableCamera(e.movement_x(), e.movement_y()))
+                    .on("wheel", |e| {
+                        Msg::ZoomTableCamera(e.dyn_into::<web_sys::WheelEvent>().unwrap().delta_y())
+                    })
                     .on_contextmenu(|e| {
                         e.prevent_default();
                         Msg::NoOp

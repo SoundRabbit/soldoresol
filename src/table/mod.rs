@@ -187,7 +187,7 @@ impl Table {
             let w = gl.drawing_buffer_width() as f32;
             let aspect = w / h;
             let field_of_view = 30.0;
-            let near = 1.0;
+            let near = 0.0;
             let far = 200.0;
             let f = (std::f32::consts::PI * 0.5 - field_of_view * 0.5).tan();
             let range_inv = 1.0 / (near - far);
@@ -267,6 +267,7 @@ impl Table {
                 web_sys::WebGlRenderingContext::UNSIGNED_SHORT,
                 0,
             );
+            gl.flush();
         }
     }
 
