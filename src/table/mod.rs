@@ -6,7 +6,7 @@ use wasm_bindgen::JsCast;
 
 struct Context {
     gl: web_sys::WebGlRenderingContext,
-    uniform_translate_location: web_sys::WebGlUniformLocation,
+    u_translate_location: web_sys::WebGlUniformLocation,
 }
 
 pub struct Table {
@@ -28,45 +28,105 @@ impl Table {
     }
 
     pub fn set_context(&mut self, gl: web_sys::WebGlRenderingContext) {
+        web_sys::console::log_1(&JsValue::from("shader::compile_shader"));
         let vertex_shader = shader::compile_shader(&gl, &shader::default::vertex_shader()).unwrap();
+        web_sys::console::log_1(&JsValue::from("shader::compile_shader"));
         let fragment_shader =
             shader::compile_shader(&gl, &shader::default::fragment_shader()).unwrap();
+        web_sys::console::log_1(&JsValue::from("shader::link_program"));
         let program = shader::link_program(&gl, &vertex_shader, &fragment_shader).unwrap();
         gl.use_program(Some(&program));
 
-        let vbo = create_vbo(
+        let v_position = create_vbo(
             &gl,
             &create_squre(
                 &[0.0, 0.0, 0.0],
                 &[1.0, 0.0, 0.0],
                 &[0.0, 1.0, 0.0],
-                &[[20.0, 20.0], [-20.0, 20.0], [-20.0, -20.0], [20.0, -20.0]],
+                &[[20.0, 20.0], [-20.0, 20.0], [20.0, -20.0], [-20.0, -20.0]],
             ),
         );
-        let ibo = create_ibo(&gl, &[0, 1, 2, 2, 3, 0]);
-
-        let attrib_location = gl.get_attrib_location(&program, "position") as u32;
-        let uniform_translate_location = gl.get_uniform_location(&program, "u_translate").unwrap();
-
-        gl.bind_buffer(web_sys::WebGlRenderingContext::ARRAY_BUFFER, Some(&vbo));
-        gl.enable_vertex_attrib_array(attrib_location);
-        gl.vertex_attrib_pointer_with_i32(
-            attrib_location,
-            3,
-            web_sys::WebGlRenderingContext::FLOAT,
-            false,
-            0,
-            0,
+        let v_color = create_vbo(
+            &gl,
+            &[
+                [1.0, 1.0, 1.0, 1.0],
+                [1.0, 1.0, 1.0, 1.0],
+                [1.0, 1.0, 1.0, 1.0],
+                [1.0, 1.0, 1.0, 1.0],
+            ]
+            .concat(),
         );
+        let v_texture_coord = create_vbo(
+            &gl,
+            &[[1.0, 1.0], [0.0, 1.0], [1.0, 0.0], [0.0, 0.0]].concat(),
+        );
+        let i_index = create_ibo(&gl, &[0, 1, 2, 1, 2, 3]);
+
+        let a_position_location = gl.get_attrib_location(&program, "a_position") as u32;
+        let a_color_location = gl.get_attrib_location(&program, "a_color") as u32;
+        let a_texture_coord_location = gl.get_attrib_location(&program, "a_textureCoord") as u32;
+
+        web_sys::console::log_1(&JsValue::from("get_uniform_location"));
+        let u_translate_location = gl.get_uniform_location(&program, "u_translate").unwrap();
+        web_sys::console::log_1(&JsValue::from("get_uniform_location"));
+        let u_texture_location = gl.get_uniform_location(&program, "u_texture").unwrap();
+
+        set_attribute(&gl, &v_position, a_position_location, 3, 0);
+        set_attribute(&gl, &v_color, a_color_location, 4, 0);
+        set_attribute(&gl, &v_texture_coord, a_texture_coord_location, 2, 0);
 
         gl.bind_buffer(
             web_sys::WebGlRenderingContext::ELEMENT_ARRAY_BUFFER,
-            Some(&ibo),
+            Some(&i_index),
+        );
+
+        let texture = gl.create_texture().unwrap();
+        gl.bind_texture(web_sys::WebGlRenderingContext::TEXTURE_2D, Some(&texture));
+        gl.pixel_storei(web_sys::WebGlRenderingContext::UNPACK_ALIGNMENT, 1);
+        gl.tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
+            web_sys::WebGlRenderingContext::TEXTURE_2D,
+            0,
+            web_sys::WebGlRenderingContext::LUMINANCE as i32,
+            4,
+            4,
+            0,
+            web_sys::WebGlRenderingContext::LUMINANCE,
+            web_sys::WebGlRenderingContext::UNSIGNED_BYTE,
+            Some(
+                &[
+                    [0, 0, 0, 0],
+                    [0, 255, 255, 0],
+                    [0, 255, 255, 0],
+                    [0, 0, 0, 0],
+                ]
+                .concat(),
+            ),
+        );
+
+        gl.tex_parameteri(
+            web_sys::WebGlRenderingContext::TEXTURE_2D,
+            web_sys::WebGlRenderingContext::TEXTURE_MIN_FILTER,
+            web_sys::WebGlRenderingContext::NEAREST as i32,
+        );
+        gl.tex_parameteri(
+            web_sys::WebGlRenderingContext::TEXTURE_2D,
+            web_sys::WebGlRenderingContext::TEXTURE_MAG_FILTER,
+            web_sys::WebGlRenderingContext::NEAREST as i32,
+        );
+        gl.tex_parameteri(
+            web_sys::WebGlRenderingContext::TEXTURE_2D,
+            web_sys::WebGlRenderingContext::TEXTURE_WRAP_S,
+            web_sys::WebGlRenderingContext::CLAMP_TO_EDGE as i32,
+        );
+        gl.tex_parameteri(
+            web_sys::WebGlRenderingContext::TEXTURE_2D,
+            web_sys::WebGlRenderingContext::TEXTURE_WRAP_T,
+            web_sys::WebGlRenderingContext::CLAMP_TO_EDGE as i32,
         );
 
         self.context = Some(Context {
             gl,
-            uniform_translate_location,
+            u_translate_location,
         });
     }
 
@@ -139,7 +199,7 @@ impl Table {
             let gl = &context.gl;
             let t = &self.translate;
             gl.uniform_matrix4fv_with_f32_array(
-                Some(&context.uniform_translate_location),
+                Some(&context.u_translate_location),
                 false,
                 &[
                     t.row(0).to_vec(),
@@ -149,7 +209,7 @@ impl Table {
                 ]
                 .concat(),
             );
-            gl.clear_color(0.0, 0.0, 0.0, 1.0);
+            gl.clear_color(1.0, 1.0, 1.0, 1.0);
             gl.clear(web_sys::WebGlRenderingContext::COLOR_BUFFER_BIT);
             gl.draw_elements_with_i32(
                 web_sys::WebGlRenderingContext::TRIANGLES,
@@ -209,6 +269,25 @@ fn create_ibo(context: &web_sys::WebGlRenderingContext, vertices: &[i16]) -> web
     }
     context.bind_buffer(web_sys::WebGlRenderingContext::ELEMENT_ARRAY_BUFFER, None);
     buffer
+}
+
+fn set_attribute(
+    gl: &web_sys::WebGlRenderingContext,
+    buffer: &web_sys::WebGlBuffer,
+    position: u32,
+    size: i32,
+    stride: i32,
+) {
+    gl.bind_buffer(web_sys::WebGlRenderingContext::ARRAY_BUFFER, Some(&buffer));
+    gl.enable_vertex_attrib_array(position);
+    gl.vertex_attrib_pointer_with_i32(
+        position,
+        size,
+        web_sys::WebGlRenderingContext::FLOAT,
+        false,
+        stride,
+        0,
+    );
 }
 
 fn create_squre(
