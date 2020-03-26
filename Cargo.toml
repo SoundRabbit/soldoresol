@@ -27,6 +27,7 @@ version = "0.8.4"
 [dependencies.web-sys]
 version = "0.3.32"
 features = [
+    "CanvasRenderingContext2d",
     "Event",
     "HtmlCanvasElement",
     "HtmlImageElement",

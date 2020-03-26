@@ -15,6 +15,7 @@ pub struct Table {
     context: Option<Context>,
     row_num: u32,
     column_num: u32,
+    canvas: web_sys::HtmlCanvasElement,
 }
 
 impl Table {
@@ -29,6 +30,14 @@ impl Table {
             context: None,
             row_num: 20,
             column_num: 20,
+            canvas: web_sys::window()
+                .unwrap()
+                .document()
+                .unwrap()
+                .create_element("canvas")
+                .unwrap()
+                .dyn_into::<web_sys::HtmlCanvasElement>()
+                .unwrap(),
         }
     }
 
@@ -96,24 +105,50 @@ impl Table {
         let texture = gl.create_texture().unwrap();
         gl.bind_texture(web_sys::WebGlRenderingContext::TEXTURE_2D, Some(&texture));
         gl.pixel_storei(web_sys::WebGlRenderingContext::UNPACK_ALIGNMENT, 1);
-        gl.tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
+        {
+            let grid_size = 32;
+            self.canvas.set_height(grid_size * self.row_num);
+            self.canvas.set_width(grid_size * self.column_num);
+            let texture = self
+                .canvas
+                .get_context("2d")
+                .unwrap()
+                .unwrap()
+                .dyn_into::<web_sys::CanvasRenderingContext2d>()
+                .unwrap();
+            texture.set_fill_style(&JsValue::from("#fff"));
+            texture.fill_rect(
+                0.0,
+                0.0,
+                self.canvas.width() as f64,
+                self.canvas.height() as f64,
+            );
+            texture.set_line_width(8.0);
+            texture.set_stroke_style(&JsValue::from("#000"));
+            texture.stroke_rect(
+                0.0,
+                0.0,
+                self.canvas.width() as f64,
+                self.canvas.height() as f64,
+            );
+            texture.set_line_width(1.0);
+            for x in 1..self.column_num {
+                texture.move_to((x * grid_size) as f64, 0.0);
+                texture.line_to((x * grid_size) as f64, self.canvas.height() as f64)
+            }
+            for y in 1..self.row_num {
+                texture.move_to(0.0, (y * grid_size) as f64);
+                texture.line_to(self.canvas.width() as f64, (y * grid_size) as f64)
+            }
+            texture.stroke();
+        }
+        gl.tex_image_2d_with_u32_and_u32_and_canvas(
             web_sys::WebGlRenderingContext::TEXTURE_2D,
             0,
             web_sys::WebGlRenderingContext::LUMINANCE as i32,
-            4,
-            4,
-            0,
             web_sys::WebGlRenderingContext::LUMINANCE,
             web_sys::WebGlRenderingContext::UNSIGNED_BYTE,
-            Some(
-                &[
-                    [0, 0, 0, 0],
-                    [0, 255, 255, 0],
-                    [0, 255, 255, 0],
-                    [0, 0, 0, 0],
-                ]
-                .concat(),
-            ),
+            &self.canvas,
         )
         .expect("");
 
