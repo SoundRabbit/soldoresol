@@ -1,0 +1,26 @@
+@import "color";
+
+.radio {
+    &>input[type="radio"] {
+        display: none;
+        &:checked + label {
+            background-color: $green;
+        }
+    }
+    &>label {
+        border: none;
+        outline: none;
+        padding-top: 0.1em;
+        padding-bottom: 0.4em;
+        padding-left: 1.2ch;
+        padding-right: 1.2ch;
+        text-align: center;
+        font-family: "Kan415Typos Std";
+        border-radius: 0.3em;
+        color: white;
+        background-color: $gray;
+        &:hover {
+            cursor: pointer;
+        }
+    }
+}

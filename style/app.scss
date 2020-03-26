@@ -22,66 +22,52 @@
     display: grid;
     grid-template-columns: max-content;
     grid-auto-rows: max-content;
-    align-content: end;
+    align-content: center;
     position: absolute;
     top: 0;
     left: 0;
+    row-gap: 1ch;
+    padding-left: 1.2rem;
+    padding-right: 1.2rem;
+    & > .btn {
+        padding-top: 1.1em;
+        padding-bottom: 1.4em;
+    }
 }
 
-.app-side-menu-item {
-    width: 8rem;
-    height: 8rem;
-    display: grid;
-    grid-template-columns: 1fr;
-    grid-template-rows: 1fr;
-    align-items: center;
-    justify-items: center;
-    position: relative;
-}
-
-.app-side-menu-item-content-wrapper {
+#app-header {
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
-    height: 100%;
-    display: grid;
-    grid-template-columns: 1fr;
-    grid-template-rows: 1fr;
-    align-items: center;
-    justify-items: center;
-    position: absolute;
-    top: 0;
-    left: 0;
-}
-
-.app-side-menu-item-text {
-    font-family: "Kan415Typos Std";
-}
-
-.app-side-menu-item-frame,.app-side-menu-item-bg {
-    width: 5rem;
-    height: 5rem;
-    transform: rotate(45deg);
-    &:hover {
-        cursor: pointer;
-        width: 5.3rem;
-        height: 5.3rem;
-        transition: all 0.05s ease-in-out;
-    }
-    &:active {
-        width: 4.9rem;
-        height: 4.9rem;
-    }
-}
-
-.app-side-menu-item-bg {
     background-color: white;
-}
-
-.app-side-menu-item-frame {
-    border: 0.1rem solid $blue-600;
-    &:hover {
-        border: 0.1rem solid $blue-400;
+    &>div{
+        border-bottom: 0.1rem solid $gray-200;
     }
-    &:active {
-        border: 0.12rem solid $blue-400;
+    &>div:first-child {
+        height: 3.6rem;
+        padding-left: 1.2rem;
+        padding-right: 1.2rem;
+        display: grid;
+        grid-template-columns: 1fr max-content max-content;
+        column-gap: 1ch;
+        align-items: center;
+        & > input {
+            border: none;
+            font-size: 1.2rem;
+            line-height: 2;
+            &:focus {
+                padding-left: 1ch;
+            }
+        }
+    }
+    &>div:last-child {
+        height: 3.2rem;
+        padding-left: 1.2rem;
+        padding-right: 1.2rem;
+        display: grid;
+        grid-template-columns: max-content max-content max-content max-content;
+        column-gap: 1ch;
+        align-items: center;
     }
 }

@@ -2,9 +2,12 @@ use kagura::prelude::*;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 
+use super::btn;
+use super::radio::radio;
 use crate::table::Table;
 
 pub struct State {
+    room_name: String,
     table: Table,
     table_height: i32,
     table_width: i32,
@@ -48,6 +51,7 @@ pub fn new() -> Component<Msg, State, Sub> {
 
 fn init() -> (State, Cmd<Msg, Sub>) {
     let state = State {
+        room_name: String::from("無名の部屋@") + &crate::ramdom_id::hex(16),
         table: Table::new(),
         table_height: 100,
         table_width: 100,
@@ -181,6 +185,7 @@ fn render(state: &State) -> Html<Msg> {
                 vec![],
             ),
             render_side_menu(),
+            render_header(&state.room_name),
         ],
     )
 }
@@ -190,47 +195,67 @@ fn render_side_menu() -> Html<Msg> {
         Attributes::new().id("app-side-menu"),
         Events::new(),
         vec![
-            render_side_menu_item("テーブル"),
-            render_side_menu_item("リソース"),
-            render_side_menu_item("キャラクター"),
-            render_side_menu_item("オブジェクト"),
-            render_side_menu_item("資料"),
-            render_side_menu_item("チャット"),
+            btn::primary(
+                Attributes::new(),
+                Events::new(),
+                vec![Html::text("テーブル")],
+            ),
+            btn::primary(
+                Attributes::new(),
+                Events::new(),
+                vec![Html::text("リソース")],
+            ),
+            btn::primary(
+                Attributes::new(),
+                Events::new(),
+                vec![Html::text("キャラクター")],
+            ),
+            btn::primary(
+                Attributes::new(),
+                Events::new(),
+                vec![Html::text("オブジェクト")],
+            ),
+            btn::primary(Attributes::new(), Events::new(), vec![Html::text("資料")]),
+            btn::primary(
+                Attributes::new(),
+                Events::new(),
+                vec![Html::text("チャット")],
+            ),
         ],
     )
 }
 
-fn render_side_menu_item(text: impl Into<String>) -> Html<Msg> {
+fn render_header(room_name: impl Into<String>) -> Html<Msg> {
     Html::div(
-        Attributes::new().class("app-side-menu-item"),
+        Attributes::new().id("app-header"),
         Events::new(),
         vec![
             Html::div(
-                Attributes::new().class("app-side-menu-item-content-wrapper"),
+                Attributes::new(),
                 Events::new(),
-                vec![Html::div(
-                    Attributes::new().class("app-side-menu-item-bg"),
-                    Events::new(),
-                    vec![],
-                )],
+                vec![
+                    Html::input(Attributes::new().value(room_name), Events::new(), vec![]),
+                    btn::primary(
+                        Attributes::new(),
+                        Events::new(),
+                        vec![Html::text("ユーザー設定")],
+                    ),
+                    btn::info(
+                        Attributes::new(),
+                        Events::new(),
+                        vec![Html::text("ルーム情報")],
+                    ),
+                ],
             ),
             Html::div(
-                Attributes::new().class("app-side-menu-item-content-wrapper"),
+                Attributes::new(),
                 Events::new(),
-                vec![Html::div(
-                    Attributes::new().class("app-side-menu-item-text"),
-                    Events::new(),
-                    vec![Html::text(text)],
-                )],
-            ),
-            Html::div(
-                Attributes::new().class("app-side-menu-item-content-wrapper"),
-                Events::new(),
-                vec![Html::div(
-                    Attributes::new().class("app-side-menu-item-frame"),
-                    Events::new(),
-                    vec![],
-                )],
+                vec![
+                    radio(Attributes::new(), Events::new(), "toolbox", "選択"),
+                    radio(Attributes::new(), Events::new(), "toolbox", "ペン"),
+                    radio(Attributes::new(), Events::new(), "toolbox", "消しゴム"),
+                    radio(Attributes::new(), Events::new(), "toolbox", "ポインター"),
+                ],
             ),
         ],
     )
