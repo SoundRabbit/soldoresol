@@ -103,48 +103,45 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             let dy = dy as f32;
             let x = x as f32;
             let y = y as f32;
-            match state.table_tool {
-                TableTool::Selecter => {
-                    let inner_height = web_sys::window()
-                        .unwrap()
-                        .inner_height()
-                        .unwrap()
-                        .as_f64()
-                        .unwrap();
-                    let inner_width = web_sys::window()
-                        .unwrap()
-                        .inner_width()
-                        .unwrap()
-                        .as_f64()
-                        .unwrap();
-                    let rotate_factor = inner_height.min(inner_width) as f32 / 3.0;
-                    let movement_factor = inner_height.min(inner_width) as f32 / 30.0;
+            let inner_height = web_sys::window()
+                .unwrap()
+                .inner_height()
+                .unwrap()
+                .as_f64()
+                .unwrap();
+            let inner_width = web_sys::window()
+                .unwrap()
+                .inner_width()
+                .unwrap()
+                .as_f64()
+                .unwrap();
+            if state.table_grabbed.0 {
+                match state.table_tool {
+                    TableTool::Selecter => {
+                        let movement_factor = inner_height.min(inner_width) as f32 / 30.0;
 
-                    if state.table_grabbed.0 {
                         state.table_movement.0 += dx as f32 / movement_factor;
                         state.table_movement.1 -= dy as f32 / movement_factor;
                     }
-
-                    if state.table_grabbed.1 {
-                        state.table_rotation.0 = (state.table_rotation.0
-                            + (dy as f32) / rotate_factor)
-                            .max(-0.49 * std::f32::consts::PI)
-                            .min(0.0);
-                        state.table_rotation.1 =
-                            state.table_rotation.1 - (dx as f32) / rotate_factor;
+                    TableTool::Pen => {
+                        if state.table_grabbed.0 {
+                            state.table.draw_line(&[x - dx, y - dy], &[x, y]);
+                        }
                     }
-                }
-                TableTool::Pen => {
-                    if state.table_grabbed.0 {
-                        state.table.draw_line(&[x - dx, y - dy], &[x, y]);
+                    TableTool::Eracer => {
+                        if state.table_grabbed.0 {
+                            state.table.erace_line(&[x - dx, y - dy], &[x, y]);
+                        }
                     }
+                    _ => {}
                 }
-                TableTool::Eracer => {
-                    if state.table_grabbed.0 {
-                        state.table.erace_line(&[x - dx, y - dy], &[x, y]);
-                    }
-                }
-                _ => {}
+            }
+            if state.table_grabbed.1 {
+                let rotate_factor = inner_height.min(inner_width) as f32 / 3.0;
+                state.table_rotation.0 = (state.table_rotation.0 + (dy as f32) / rotate_factor)
+                    .max(-0.49 * std::f32::consts::PI)
+                    .min(0.0);
+                state.table_rotation.1 = state.table_rotation.1 - (dx as f32) / rotate_factor;
             }
 
             render_table(
