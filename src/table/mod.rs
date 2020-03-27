@@ -17,8 +17,10 @@ pub struct Table {
     column_num: u32,
     grid_layer: web_sys::HtmlCanvasElement,
     pen_layer: web_sys::HtmlCanvasElement,
+    pointer_layer: web_sys::HtmlCanvasElement,
     grid_layer_context: Option<web_sys::CanvasRenderingContext2d>,
     pen_layer_context: Option<web_sys::CanvasRenderingContext2d>,
+    pointer_layer_context: Option<web_sys::CanvasRenderingContext2d>,
     grid_size: f64,
 }
 
@@ -36,8 +38,10 @@ impl Table {
             column_num: 20,
             grid_layer: create_canvas(),
             pen_layer: create_canvas(),
+            pointer_layer: create_canvas(),
             grid_layer_context: None,
             pen_layer_context: None,
+            pointer_layer_context: None,
             grid_size: 64.0,
         }
     }
@@ -115,6 +119,10 @@ impl Table {
                 .set_height(self.grid_size as u32 * self.row_num);
             self.pen_layer
                 .set_width(self.grid_size as u32 * self.column_num);
+            self.pointer_layer
+                .set_height(self.grid_size as u32 * self.row_num);
+            self.pointer_layer
+                .set_width(self.grid_size as u32 * self.column_num);
             let texture = canvas_rendering_context_2d(&self.grid_layer);
             texture.set_fill_style(&JsValue::from("#fff"));
             texture.set_line_width(8.0);
@@ -138,6 +146,7 @@ impl Table {
 
             self.grid_layer_context = Some(texture);
             self.pen_layer_context = Some(canvas_rendering_context_2d(&self.pen_layer));
+            self.pointer_layer_context = Some(canvas_rendering_context_2d(&self.pointer_layer));
         }
 
         gl.tex_parameteri(
@@ -414,6 +423,9 @@ impl Table {
             texture
                 .draw_image_with_html_canvas_element(&self.grid_layer, 0.0, 0.0)
                 .expect("");
+            texture
+                .draw_image_with_html_canvas_element(&self.pointer_layer, 0.0, 0.0)
+                .expect("");
             gl.tex_image_2d_with_u32_and_u32_and_canvas(
                 web_sys::WebGlRenderingContext::TEXTURE_2D,
                 0,
@@ -423,14 +435,21 @@ impl Table {
                 &integrated_canvas,
             )
             .expect("");
-            gl.clear_color(0.0, 0.0, 0.0, 0.0);
-            gl.clear(web_sys::WebGlRenderingContext::COLOR_BUFFER_BIT);
-            gl.draw_elements_with_i32(
-                web_sys::WebGlRenderingContext::TRIANGLES,
-                6,
-                web_sys::WebGlRenderingContext::UNSIGNED_SHORT,
-                0,
-            );
+            let gl = gl.clone();
+            let a = Closure::once(Box::new(move || {
+                gl.clear_color(0.0, 0.0, 0.0, 0.0);
+                gl.clear(web_sys::WebGlRenderingContext::COLOR_BUFFER_BIT);
+                gl.draw_elements_with_i32(
+                    web_sys::WebGlRenderingContext::TRIANGLES,
+                    6,
+                    web_sys::WebGlRenderingContext::UNSIGNED_SHORT,
+                    0,
+                );
+            }) as Box<FnOnce()>);
+            web_sys::window()
+                .unwrap()
+                .request_animation_frame(a.as_ref().unchecked_ref());
+            a.forget();
         }
     }
 

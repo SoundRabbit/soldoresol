@@ -79,6 +79,8 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         Msg::SetTableContext(canvas) => {
             state.table_height = canvas.client_height();
             state.table_width = canvas.client_width();
+            canvas.set_height(canvas.client_height() as u32);
+            canvas.set_width(canvas.client_width() as u32);
             let context = canvas
                 .get_context("webgl")
                 .unwrap()
