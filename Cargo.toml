@@ -34,6 +34,7 @@ features = [
     "HtmlCanvasElement",
     "HtmlImageElement",
     "HtmlElement",
+    "ImageData",
     "MouseEvent",
     "Node",
     "WebGlBuffer",

@@ -139,6 +139,11 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                         state.table.draw_line(&[x - dx, y - dy], &[x, y]);
                     }
                 }
+                TableTool::Eracer => {
+                    if state.table_grabbed.0 {
+                        state.table.erace_line(&[x - dx, y - dy], &[x, y]);
+                    }
+                }
                 _ => {}
             }
 

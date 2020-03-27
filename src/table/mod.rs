@@ -17,7 +17,8 @@ pub struct Table {
     column_num: u32,
     grid_layer: web_sys::HtmlCanvasElement,
     pen_layer: web_sys::HtmlCanvasElement,
-    integrated_canvas: web_sys::HtmlCanvasElement,
+    grid_layer_context: Option<web_sys::CanvasRenderingContext2d>,
+    pen_layer_context: Option<web_sys::CanvasRenderingContext2d>,
     grid_size: f64,
 }
 
@@ -35,7 +36,8 @@ impl Table {
             column_num: 20,
             grid_layer: create_canvas(),
             pen_layer: create_canvas(),
-            integrated_canvas: create_canvas(),
+            grid_layer_context: None,
+            pen_layer_context: None,
             grid_size: 64.0,
         }
     }
@@ -103,7 +105,7 @@ impl Table {
 
         let texture = gl.create_texture().unwrap();
         gl.bind_texture(web_sys::WebGlRenderingContext::TEXTURE_2D, Some(&texture));
-        gl.pixel_storei(web_sys::WebGlRenderingContext::UNPACK_ALIGNMENT, 1);
+        gl.pixel_storei(web_sys::WebGlRenderingContext::PACK_ALIGNMENT, 1);
         {
             self.grid_layer
                 .set_height(self.grid_size as u32 * self.row_num);
@@ -112,10 +114,6 @@ impl Table {
             self.pen_layer
                 .set_height(self.grid_size as u32 * self.row_num);
             self.pen_layer
-                .set_width(self.grid_size as u32 * self.column_num);
-            self.integrated_canvas
-                .set_height(self.grid_size as u32 * self.row_num);
-            self.integrated_canvas
                 .set_width(self.grid_size as u32 * self.column_num);
             let texture = canvas_rendering_context_2d(&self.grid_layer);
             texture.set_fill_style(&JsValue::from("#fff"));
@@ -137,6 +135,9 @@ impl Table {
                 texture.line_to(self.grid_layer.width() as f64, y as f64 * self.grid_size)
             }
             texture.stroke();
+
+            self.grid_layer_context = Some(texture);
+            self.pen_layer_context = Some(canvas_rendering_context_2d(&self.pen_layer));
         }
 
         gl.tex_parameteri(
@@ -306,20 +307,74 @@ impl Table {
                 1.0 - 2.0 * e[1] / height,
             ]);
 
-            let texture = canvas_rendering_context_2d(&self.pen_layer);
+            if let Some(texture) = &self.pen_layer_context {
+                let (bx, by) = (
+                    (b[0] + 10.0) as f64 * self.grid_size,
+                    (b[1] + 10.0) as f64 * self.grid_size,
+                );
+                let (ex, ey) = (
+                    (e[0] + 10.0) as f64 * self.grid_size,
+                    (e[1] + 10.0) as f64 * self.grid_size,
+                );
+                texture.set_line_width(16.0);
+                texture.set_line_cap("round");
+                texture.set_stroke_style(&JsValue::from("#0366d6"));
+                texture.set_fill_style(&JsValue::from("#0366d6"));
+                texture
+                    .set_global_composite_operation("source-over")
+                    .expect("");
+                texture.begin_path();
+                texture.move_to(bx, by);
+                texture.line_to(ex, ey);
+                texture.fill();
+                texture.stroke();
+            }
+        }
+    }
 
-            texture.begin_path();
-            texture.set_line_width(16.0);
-            texture.set_stroke_style(&JsValue::from("#0366d6"));
-            texture.move_to(
-                (b[0] + 10.0) as f64 * self.grid_size,
-                (b[1] + 10.0) as f64 * self.grid_size,
-            );
-            texture.line_to(
-                (e[0] + 10.0) as f64 * self.grid_size,
-                (e[1] + 10.0) as f64 * self.grid_size,
-            );
-            texture.stroke();
+    pub fn erace_line(&self, b: &[f32; 2], e: &[f32; 2]) {
+        if let Some(context) = &self.context {
+            let gl = &context.gl;
+            let canvas = gl
+                .canvas()
+                .unwrap()
+                .dyn_into::<web_sys::HtmlCanvasElement>()
+                .unwrap();
+            let height = canvas.client_height() as f32;
+            let width = canvas.client_width() as f32;
+
+            let b = self.get_table_location_from_screen(&[
+                b[0] / width * 2.0 - 1.0,
+                1.0 - 2.0 * b[1] / height,
+            ]);
+
+            let e = self.get_table_location_from_screen(&[
+                e[0] / width * 2.0 - 1.0,
+                1.0 - 2.0 * e[1] / height,
+            ]);
+            if let Some(texture) = &self.pen_layer_context {
+                let (bx, by) = (
+                    (b[0] + 10.0) as f64 * self.grid_size,
+                    (b[1] + 10.0) as f64 * self.grid_size,
+                );
+                let (ex, ey) = (
+                    (e[0] + 10.0) as f64 * self.grid_size,
+                    (e[1] + 10.0) as f64 * self.grid_size,
+                );
+                texture
+                    .set_global_composite_operation("destination-out")
+                    .expect("");
+                texture.set_line_width(64.0);
+                texture.set_line_cap("round");
+                texture.begin_path();
+                texture.move_to(bx, by);
+                texture.line_to(ex, ey);
+                texture.fill();
+                texture.stroke();
+                texture
+                    .set_global_composite_operation("source-over")
+                    .expect("");
+            }
         }
     }
 
@@ -339,26 +394,36 @@ impl Table {
                 ]
                 .concat(),
             );
-            let texture = canvas_rendering_context_2d(&self.integrated_canvas);
-            texture.clear_rect(
-                0.0,
-                0.0,
-                self.integrated_canvas.client_width() as f64,
-                self.integrated_canvas.client_width() as f64,
-            );
-            texture.draw_image_with_html_canvas_element(&self.pen_layer, 0.0, 0.0);
-            texture.draw_image_with_html_canvas_element(&self.grid_layer, 0.0, 0.0);
-
+            let integrated_canvas = create_canvas();
+            let height = self.grid_size * self.row_num as f64;
+            let width = self.grid_size * self.column_num as f64;
+            integrated_canvas.set_height(width as u32);
+            integrated_canvas.set_width(height as u32);
+            let texture = canvas_rendering_context_2d(&integrated_canvas);
+            texture
+                .set_global_composite_operation("source-over")
+                .expect("");
+            texture.begin_path();
+            texture.set_fill_style(&JsValue::from("#fff"));
+            texture.fill_rect(0.0, 0.0, width, height);
+            texture.fill();
+            texture.stroke();
+            texture
+                .draw_image_with_html_canvas_element(&self.pen_layer, 0.0, 0.0)
+                .expect("");
+            texture
+                .draw_image_with_html_canvas_element(&self.grid_layer, 0.0, 0.0)
+                .expect("");
             gl.tex_image_2d_with_u32_and_u32_and_canvas(
                 web_sys::WebGlRenderingContext::TEXTURE_2D,
                 0,
                 web_sys::WebGlRenderingContext::RGBA as i32,
                 web_sys::WebGlRenderingContext::RGBA,
                 web_sys::WebGlRenderingContext::UNSIGNED_BYTE,
-                &self.integrated_canvas,
+                &integrated_canvas,
             )
             .expect("");
-            gl.clear_color(1.0, 1.0, 1.0, 1.0);
+            gl.clear_color(0.0, 0.0, 0.0, 0.0);
             gl.clear(web_sys::WebGlRenderingContext::COLOR_BUFFER_BIT);
             gl.draw_elements_with_i32(
                 web_sys::WebGlRenderingContext::TRIANGLES,
