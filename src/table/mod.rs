@@ -15,7 +15,9 @@ pub struct Table {
     context: Option<Context>,
     row_num: u32,
     column_num: u32,
-    canvas: web_sys::HtmlCanvasElement,
+    grid_layer: web_sys::HtmlCanvasElement,
+    pen_layer: web_sys::HtmlCanvasElement,
+    integrated_canvas: web_sys::HtmlCanvasElement,
     grid_size: f64,
 }
 
@@ -31,14 +33,9 @@ impl Table {
             context: None,
             row_num: 20,
             column_num: 20,
-            canvas: web_sys::window()
-                .unwrap()
-                .document()
-                .unwrap()
-                .create_element("canvas")
-                .unwrap()
-                .dyn_into::<web_sys::HtmlCanvasElement>()
-                .unwrap(),
+            grid_layer: create_canvas(),
+            pen_layer: create_canvas(),
+            integrated_canvas: create_canvas(),
             grid_size: 64.0,
         }
     }
@@ -108,39 +105,36 @@ impl Table {
         gl.bind_texture(web_sys::WebGlRenderingContext::TEXTURE_2D, Some(&texture));
         gl.pixel_storei(web_sys::WebGlRenderingContext::UNPACK_ALIGNMENT, 1);
         {
-            self.canvas.set_height(self.grid_size as u32 * self.row_num);
-            self.canvas
+            self.grid_layer
+                .set_height(self.grid_size as u32 * self.row_num);
+            self.grid_layer
                 .set_width(self.grid_size as u32 * self.column_num);
-            let texture = self
-                .canvas
-                .get_context("2d")
-                .unwrap()
-                .unwrap()
-                .dyn_into::<web_sys::CanvasRenderingContext2d>()
-                .unwrap();
+            self.pen_layer
+                .set_height(self.grid_size as u32 * self.row_num);
+            self.pen_layer
+                .set_width(self.grid_size as u32 * self.column_num);
+            self.integrated_canvas
+                .set_height(self.grid_size as u32 * self.row_num);
+            self.integrated_canvas
+                .set_width(self.grid_size as u32 * self.column_num);
+            let texture = canvas_rendering_context_2d(&self.grid_layer);
             texture.set_fill_style(&JsValue::from("#fff"));
-            texture.fill_rect(
-                0.0,
-                0.0,
-                self.canvas.width() as f64,
-                self.canvas.height() as f64,
-            );
             texture.set_line_width(8.0);
             texture.set_stroke_style(&JsValue::from("#000"));
             texture.stroke_rect(
                 0.0,
                 0.0,
-                self.canvas.width() as f64,
-                self.canvas.height() as f64,
+                self.grid_layer.width() as f64,
+                self.grid_layer.height() as f64,
             );
             texture.set_line_width(1.0);
             for x in 1..self.column_num {
                 texture.move_to(x as f64 * self.grid_size, 0.0);
-                texture.line_to(x as f64 * self.grid_size, self.canvas.height() as f64)
+                texture.line_to(x as f64 * self.grid_size, self.grid_layer.height() as f64)
             }
             for y in 1..self.row_num {
                 texture.move_to(0.0, y as f64 * self.grid_size);
-                texture.line_to(self.canvas.width() as f64, y as f64 * self.grid_size)
+                texture.line_to(self.grid_layer.width() as f64, y as f64 * self.grid_size)
             }
             texture.stroke();
         }
@@ -312,16 +306,10 @@ impl Table {
                 1.0 - 2.0 * e[1] / height,
             ]);
 
-            let texture = self
-                .canvas
-                .get_context("2d")
-                .unwrap()
-                .unwrap()
-                .dyn_into::<web_sys::CanvasRenderingContext2d>()
-                .unwrap();
+            let texture = canvas_rendering_context_2d(&self.pen_layer);
 
             texture.begin_path();
-            texture.set_line_width(8.0);
+            texture.set_line_width(16.0);
             texture.set_stroke_style(&JsValue::from("#0366d6"));
             texture.move_to(
                 (b[0] + 10.0) as f64 * self.grid_size,
@@ -351,13 +339,23 @@ impl Table {
                 ]
                 .concat(),
             );
+            let texture = canvas_rendering_context_2d(&self.integrated_canvas);
+            texture.clear_rect(
+                0.0,
+                0.0,
+                self.integrated_canvas.client_width() as f64,
+                self.integrated_canvas.client_width() as f64,
+            );
+            texture.draw_image_with_html_canvas_element(&self.pen_layer, 0.0, 0.0);
+            texture.draw_image_with_html_canvas_element(&self.grid_layer, 0.0, 0.0);
+
             gl.tex_image_2d_with_u32_and_u32_and_canvas(
                 web_sys::WebGlRenderingContext::TEXTURE_2D,
                 0,
                 web_sys::WebGlRenderingContext::RGBA as i32,
                 web_sys::WebGlRenderingContext::RGBA,
                 web_sys::WebGlRenderingContext::UNSIGNED_BYTE,
-                &self.canvas,
+                &self.integrated_canvas,
             )
             .expect("");
             gl.clear_color(1.0, 1.0, 1.0, 1.0);
@@ -460,4 +458,26 @@ fn create_squre(
         .collect::<Vec<Vec<f32>>>()
         .concat();
     verteices
+}
+
+fn create_canvas() -> web_sys::HtmlCanvasElement {
+    web_sys::window()
+        .unwrap()
+        .document()
+        .unwrap()
+        .create_element("canvas")
+        .unwrap()
+        .dyn_into::<web_sys::HtmlCanvasElement>()
+        .unwrap()
+}
+
+fn canvas_rendering_context_2d(
+    canvas: &web_sys::HtmlCanvasElement,
+) -> web_sys::CanvasRenderingContext2d {
+    canvas
+        .get_context("2d")
+        .unwrap()
+        .unwrap()
+        .dyn_into::<web_sys::CanvasRenderingContext2d>()
+        .unwrap()
 }
