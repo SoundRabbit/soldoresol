@@ -26,7 +26,7 @@ pub fn radio<Msg>(
                     Attributes::new()
                         .type_("radio")
                         .id(&radio_id)
-                        .string("name", "app-toolbox")
+                        .string("name", name)
                         .checked(),
                     events,
                     vec![],
@@ -47,7 +47,7 @@ pub fn radio<Msg>(
                     Attributes::new()
                         .type_("radio")
                         .id(&radio_id)
-                        .string("name", "app-toolbox"),
+                        .string("name", name),
                     events,
                     vec![],
                 ),

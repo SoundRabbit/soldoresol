@@ -17,9 +17,11 @@ pub struct Table {
     column_num: u32,
     grid_layer: web_sys::HtmlCanvasElement,
     pen_layer: web_sys::HtmlCanvasElement,
+    measure_layer: web_sys::HtmlCanvasElement,
     pointer_layer: web_sys::HtmlCanvasElement,
     grid_layer_context: Option<web_sys::CanvasRenderingContext2d>,
     pen_layer_context: Option<web_sys::CanvasRenderingContext2d>,
+    measure_layer_context: Option<web_sys::CanvasRenderingContext2d>,
     pointer_layer_context: Option<web_sys::CanvasRenderingContext2d>,
     grid_size: f64,
 }
@@ -38,11 +40,13 @@ impl Table {
             column_num: 20,
             grid_layer: create_canvas(),
             pen_layer: create_canvas(),
+            measure_layer: create_canvas(),
             pointer_layer: create_canvas(),
             grid_layer_context: None,
             pen_layer_context: None,
+            measure_layer_context: None,
             pointer_layer_context: None,
-            grid_size: 64.0,
+            grid_size: 128.0,
         }
     }
 
@@ -111,21 +115,19 @@ impl Table {
         gl.bind_texture(web_sys::WebGlRenderingContext::TEXTURE_2D, Some(&texture));
         gl.pixel_storei(web_sys::WebGlRenderingContext::PACK_ALIGNMENT, 1);
         {
-            self.grid_layer
-                .set_height(self.grid_size as u32 * self.row_num);
-            self.grid_layer
-                .set_width(self.grid_size as u32 * self.column_num);
-            self.pen_layer
-                .set_height(self.grid_size as u32 * self.row_num);
-            self.pen_layer
-                .set_width(self.grid_size as u32 * self.column_num);
-            self.pointer_layer
-                .set_height(self.grid_size as u32 * self.row_num);
-            self.pointer_layer
-                .set_width(self.grid_size as u32 * self.column_num);
+            let height = self.grid_size as u32 * self.row_num;
+            let width = self.grid_size as u32 * self.column_num;
+            self.grid_layer.set_height(height);
+            self.grid_layer.set_width(width);
+            self.pen_layer.set_height(height);
+            self.pen_layer.set_width(width);
+            self.measure_layer.set_height(height);
+            self.measure_layer.set_width(width);
+            self.pointer_layer.set_height(height);
+            self.pointer_layer.set_width(width);
             let texture = canvas_rendering_context_2d(&self.grid_layer);
             texture.set_fill_style(&JsValue::from("#fff"));
-            texture.set_line_width(8.0);
+            texture.set_line_width(16.0);
             texture.set_stroke_style(&JsValue::from("#000"));
             texture.stroke_rect(
                 0.0,
@@ -133,7 +135,7 @@ impl Table {
                 self.grid_layer.width() as f64,
                 self.grid_layer.height() as f64,
             );
-            texture.set_line_width(1.0);
+            texture.set_line_width(2.0);
             for x in 1..self.column_num {
                 texture.move_to(x as f64 * self.grid_size, 0.0);
                 texture.line_to(x as f64 * self.grid_size, self.grid_layer.height() as f64)
@@ -146,6 +148,7 @@ impl Table {
 
             self.grid_layer_context = Some(texture);
             self.pen_layer_context = Some(canvas_rendering_context_2d(&self.pen_layer));
+            self.measure_layer_context = Some(canvas_rendering_context_2d(&self.measure_layer));
             self.pointer_layer_context = Some(canvas_rendering_context_2d(&self.pointer_layer));
         }
 
@@ -325,7 +328,7 @@ impl Table {
                     (e[0] + 10.0) as f64 * self.grid_size,
                     (e[1] + 10.0) as f64 * self.grid_size,
                 );
-                texture.set_line_width(16.0);
+                texture.set_line_width(32.0);
                 texture.set_line_cap("round");
                 texture.set_stroke_style(&JsValue::from("#0366d6"));
                 texture
@@ -372,7 +375,7 @@ impl Table {
                 texture
                     .set_global_composite_operation("destination-out")
                     .expect("");
-                texture.set_line_width(64.0);
+                texture.set_line_width(128.0);
                 texture.set_line_cap("round");
                 texture.begin_path();
                 texture.move_to(bx, by);
@@ -386,7 +389,71 @@ impl Table {
         }
     }
 
-    pub fn draw_pointer(&self, p: &[f32; 2], radious: f64, stroke_color: &str, fill_color: &str) {
+    pub fn draw_measure_and_get_length(&self, b: &[f32; 2], e: &[f32; 2], bind_to_grid: bool) {
+        if let Some(context) = &self.context {
+            let gl = &context.gl;
+            let canvas = gl
+                .canvas()
+                .unwrap()
+                .dyn_into::<web_sys::HtmlCanvasElement>()
+                .unwrap();
+            let height = canvas.client_height() as f32;
+            let width = canvas.client_width() as f32;
+
+            let b = self.get_table_location_from_screen(&[
+                b[0] / width * 2.0 - 1.0,
+                1.0 - 2.0 * b[1] / height,
+            ]);
+
+            let b = if bind_to_grid {
+                [b[0].round(), b[1].round()]
+            } else {
+                [b[0], b[1]]
+            };
+
+            let e = self.get_table_location_from_screen(&[
+                e[0] / width * 2.0 - 1.0,
+                1.0 - 2.0 * e[1] / height,
+            ]);
+
+            let e = if bind_to_grid {
+                [e[0].round(), e[1].round()]
+            } else {
+                [e[0], e[1]]
+            };
+
+            if let Some(texture) = &self.measure_layer_context {
+                let (bx, by) = (
+                    (b[0] + 10.0) as f64 * self.grid_size,
+                    (b[1] + 10.0) as f64 * self.grid_size,
+                );
+                let (ex, ey) = (
+                    (e[0] + 10.0) as f64 * self.grid_size,
+                    (e[1] + 10.0) as f64 * self.grid_size,
+                );
+                texture.set_line_width(8.0);
+                texture.set_line_cap("round");
+                texture.set_stroke_style(&JsValue::from("#d73a49"));
+                texture
+                    .set_global_composite_operation("source-over")
+                    .expect("");
+                texture.begin_path();
+                texture.move_to(bx, by);
+                texture.line_to(ex, ey);
+                texture.fill();
+                texture.stroke();
+            }
+        }
+    }
+
+    pub fn draw_pointer(
+        &self,
+        p: &[f32; 2],
+        radious: f64,
+        stroke_color: &str,
+        fill_color: &str,
+        bind_to_grid: bool,
+    ) {
         if let Some(context) = &self.context {
             let gl = &context.gl;
             let canvas = gl
@@ -401,6 +468,12 @@ impl Table {
                 p[0] / width * 2.0 - 1.0,
                 1.0 - 2.0 * p[1] / height,
             ]);
+
+            let p = if bind_to_grid {
+                [p[0].round(), p[1].round()]
+            } else {
+                [p[0], p[1]]
+            };
 
             if let Some(texture) = &self.pointer_layer_context {
                 let (px, py) = (
@@ -456,6 +529,9 @@ impl Table {
                 .draw_image_with_html_canvas_element(&self.grid_layer, 0.0, 0.0)
                 .expect("");
             texture
+                .draw_image_with_html_canvas_element(&self.measure_layer, 0.0, 0.0)
+                .expect("");
+            texture
                 .draw_image_with_html_canvas_element(&self.pointer_layer, 0.0, 0.0)
                 .expect("");
             gl.tex_image_2d_with_u32_and_u32_and_canvas(
@@ -483,12 +559,14 @@ impl Table {
                 .request_animation_frame(a.as_ref().unchecked_ref());
             a.forget();
             if let Some(texture) = &self.pointer_layer_context {
-                texture.clear_rect(
-                    0.0,
-                    0.0,
-                    self.pointer_layer.width() as f64,
-                    self.pointer_layer.height() as f64,
-                );
+                let height = self.pointer_layer.width() as f64;
+                let width = self.pointer_layer.height() as f64;
+                texture.clear_rect(0.0, 0.0, height, width);
+            }
+            if let Some(texture) = &self.measure_layer_context {
+                let height = self.measure_layer.width() as f64;
+                let width = self.measure_layer.height() as f64;
+                texture.clear_rect(0.0, 0.0, height, width);
             }
         }
     }

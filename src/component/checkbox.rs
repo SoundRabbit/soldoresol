@@ -2,7 +2,7 @@ use kagura::prelude::*;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 
-pub fn render<Msg>(
+pub fn checkbox<Msg>(
     attributes: Attributes,
     events: Events<Msg>,
     text: impl Into<String>,

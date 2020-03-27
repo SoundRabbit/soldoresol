@@ -3,6 +3,7 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 
 use super::btn;
+use super::measure_tool::measure_tool;
 use super::radio::radio;
 use crate::table::Table;
 
@@ -10,7 +11,7 @@ enum TableTool {
     Selecter,
     Pen,
     Eracer,
-    Pointer,
+    Measure,
 }
 
 pub struct State {
@@ -23,6 +24,7 @@ pub struct State {
     table_distance: f32,
     table_grabbed: (bool, bool),
     table_tool: TableTool,
+    table_measure_start: Option<[f32; 2]>,
 }
 
 pub enum Msg {
@@ -31,7 +33,7 @@ pub enum Msg {
     ResizeTable,
     MoveTableCamera((i32, i32), (i32, i32)),
     ZoomTableCamera(f64),
-    SetTableGrabbed(bool, bool),
+    SetTableGrabbed((bool, bool), (i32, i32)),
     SetTableTool(TableTool),
 }
 
@@ -69,6 +71,7 @@ fn init() -> (State, Cmd<Msg, Sub>) {
         table_distance: 20.0,
         table_grabbed: (false, false),
         table_tool: TableTool::Selecter,
+        table_measure_start: None,
     };
     (state, Cmd::none())
 }
@@ -130,15 +133,26 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     if state.table_grabbed.0 {
                         state.table.draw_line(&[x - dx, y - dy], &[x, y]);
                     }
-                    state.table.draw_pointer(&[x, y], 8.0, "#0366d6", "#0366d6");
+                    state
+                        .table
+                        .draw_pointer(&[x, y], 8.0, "#0366d6", "#0366d6", false);
                 }
                 TableTool::Eracer => {
                     if state.table_grabbed.0 {
                         state.table.erace_line(&[x - dx, y - dy], &[x, y]);
                     }
-                    state.table.draw_pointer(&[x, y], 32.0, "#6f42c1", "#fff");
+                    state
+                        .table
+                        .draw_pointer(&[x, y], 32.0, "#6f42c1", "#fff", false);
                 }
-                _ => {}
+                TableTool::Measure => {
+                    if let Some(p) = &state.table_measure_start {
+                        state.table.draw_measure_and_get_length(p, &[x, y], true);
+                    }
+                    state
+                        .table
+                        .draw_pointer(&[x, y], 8.0, "#d73a49", "#d73a49", true);
+                }
             }
             if state.table_grabbed.1 {
                 let rotate_factor = inner_height.min(inner_width) as f32 / 3.0;
@@ -166,8 +180,18 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             );
             Cmd::none()
         }
-        Msg::SetTableGrabbed(grabbed_l, grabbed_r) => {
+        Msg::SetTableGrabbed((grabbed_l, grabbed_r), (x, y)) => {
             state.table_grabbed = (grabbed_l, grabbed_r);
+            match &state.table_tool {
+                TableTool::Measure => {
+                    if grabbed_l {
+                        state.table_measure_start = Some([x as f32, y as f32]);
+                    } else {
+                        state.table_measure_start = None;
+                    }
+                }
+                _ => {}
+            }
             Cmd::none()
         }
         Msg::SetTableTool(table_tool) => {
@@ -200,14 +224,14 @@ fn render(state: &State) -> Html<Msg> {
                     .on_mousedown(move |e| {
                         let l = e.buttons() & 1 != 0 || table_grabbed_r;
                         let r = e.buttons() & 2 != 0 || table_grabbed_l;
-                        Msg::SetTableGrabbed(l, r)
+                        Msg::SetTableGrabbed((l, r), (e.client_x(), e.client_y()))
                     })
                     .on_mouseup(move |e| {
                         let l = e.buttons() & 1 != 0 && table_grabbed_r;
                         let r = e.buttons() & 2 != 0 && table_grabbed_l;
-                        Msg::SetTableGrabbed(l, r)
+                        Msg::SetTableGrabbed((l, r), (e.client_x(), e.client_y()))
                     })
-                    .on_mouseleave(|_| Msg::SetTableGrabbed(false, false))
+                    .on_mouseleave(|_| Msg::SetTableGrabbed((false, false), (0, 0)))
                     .on_mousemove(|e| {
                         Msg::MoveTableCamera(
                             (e.movement_x(), e.movement_y()),
@@ -225,6 +249,14 @@ fn render(state: &State) -> Html<Msg> {
             ),
             render_side_menu(),
             render_header(&state.room_name),
+            match state.table_tool {
+                TableTool::Measure => measure_tool(),
+                _ => Html::div(
+                    Attributes::new().style("display", "none"),
+                    Events::new(),
+                    vec![],
+                ),
+            },
         ],
     )
 }
@@ -313,9 +345,9 @@ fn render_header(room_name: impl Into<String>) -> Html<Msg> {
                     ),
                     radio(
                         Attributes::new(),
-                        Events::new().on_click(|_| Msg::SetTableTool(TableTool::Pointer)),
+                        Events::new().on_click(|_| Msg::SetTableTool(TableTool::Measure)),
                         "toolbox",
-                        "ポインター",
+                        "計測",
                         false,
                     ),
                 ],
