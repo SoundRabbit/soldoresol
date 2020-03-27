@@ -1,5 +1,5 @@
 use crate::shader;
-use ndarray::{arr1, arr2, Array2};
+use ndarray::{arr1, arr2, Array1, Array2};
 use std::ops::Mul;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
@@ -11,7 +11,7 @@ struct Context {
 }
 
 pub struct Table {
-    translate: Array2<f32>,
+    camera: Array2<f32>,
     context: Option<Context>,
     row_num: u32,
     column_num: u32,
@@ -21,7 +21,7 @@ pub struct Table {
 impl Table {
     pub fn new() -> Self {
         Table {
-            translate: arr2(&[
+            camera: arr2(&[
                 [1.0, 0.0, 0.0, 0.0],
                 [0.0, 1.0, 0.0, 0.0],
                 [0.0, 0.0, 1.0, 0.0],
@@ -142,15 +142,6 @@ impl Table {
             }
             texture.stroke();
         }
-        gl.tex_image_2d_with_u32_and_u32_and_canvas(
-            web_sys::WebGlRenderingContext::TEXTURE_2D,
-            0,
-            web_sys::WebGlRenderingContext::LUMINANCE as i32,
-            web_sys::WebGlRenderingContext::LUMINANCE,
-            web_sys::WebGlRenderingContext::UNSIGNED_BYTE,
-            &self.canvas,
-        )
-        .expect("");
 
         gl.tex_parameteri(
             web_sys::WebGlRenderingContext::TEXTURE_2D,
@@ -180,14 +171,14 @@ impl Table {
         });
     }
 
-    fn perspective(&self) -> Array2<f32> {
+    fn get_perspective(&self) -> Array2<f32> {
         if let Some(context) = &self.context {
             let gl = &context.gl;
             let h = gl.drawing_buffer_height() as f32;
             let w = gl.drawing_buffer_width() as f32;
             let aspect = w / h;
             let field_of_view = 30.0;
-            let near = 0.0;
+            let near = 1.0;
             let far = 200.0;
             let f = (std::f32::consts::PI * 0.5 - field_of_view * 0.5).tan();
             let range_inv = 1.0 / (near - far);
@@ -209,7 +200,12 @@ impl Table {
     }
 
     pub fn reset_translate(&mut self) {
-        self.translate = self.perspective();
+        self.camera = arr2(&[
+            [1.0, 0.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0],
+            [0.0, 0.0, 0.0, 1.0],
+        ]);
     }
 
     pub fn set_x_axis_rotation(&mut self, r: f32) {
@@ -220,7 +216,7 @@ impl Table {
             [0.0, -s, c, 0.0],
             [0.0, 0.0, 0.0, 1.0],
         ]);
-        self.translate = t.dot(&self.translate);
+        self.camera = t.dot(&self.camera);
     }
 
     pub fn set_z_axis_rotation(&mut self, r: f32) {
@@ -231,7 +227,7 @@ impl Table {
             [0.0, 0.0, 1.0, 0.0],
             [0.0, 0.0, 0.0, 1.0],
         ]);
-        self.translate = t.dot(&self.translate);
+        self.camera = t.dot(&self.camera);
     }
 
     pub fn set_movement(&mut self, m: &[f32; 3]) {
@@ -241,13 +237,87 @@ impl Table {
             [0.0, 0.0, 1.0, 0.0],
             [m[0], m[1], m[2], 1.0],
         ]);
-        self.translate = t.dot(&self.translate);
+        self.camera = t.dot(&self.camera);
+    }
+
+    fn get_inv_perspective(&self) -> Array2<f32> {
+        let p = self.get_perspective();
+        arr2(&[
+            [1.0 / p.row(0)[0], 0.0, 0.0, 0.0],
+            [0.0, 1.0 / p.row(1)[1], 0.0, 0.0],
+            [0.0, 0.0, 0.0, 1.0 / p.row(3)[2]],
+            [0.0, 0.0, -1.0, p.row(2)[2] / p.row(3)[2]],
+        ])
+    }
+
+    fn get_inv_camera(&self) -> Array2<f32> {
+        let t = &self.camera;
+        arr2(&[
+            [t.row(0)[0], t.row(1)[0], t.row(2)[0], 0.0],
+            [t.row(0)[1], t.row(1)[1], t.row(2)[1], 0.0],
+            [t.row(0)[2], t.row(1)[2], t.row(2)[2], 0.0],
+            [
+                -t.row(0).dot(&t.row(3)),
+                -t.row(1).dot(&t.row(3)),
+                -t.row(2).dot(&t.row(3)),
+                1.0,
+            ],
+        ])
+    }
+
+    fn get_table_location_from_screen(&self, p: &[f32; 2]) -> Array1<f32> {
+        let inv_c = self.get_inv_camera();
+        let inv_p = self.get_inv_perspective();
+        let inv = inv_p.dot(&inv_c);
+        let inv = inv.t();
+
+        // inv * [p[0] * w, p[1] * w, z, w] = [x, y, 0, 1] を解く
+        //
+        // inv[2][2] * z + ( inv[2][3] + inv[2][0] * p[0] + inv[2][1] * p[1] ) * w = 0
+        // inv[3][2] * z + ( inv[3][3] + inv[3][0] * p[0] + inv[3][1] * p[1] ) * w = 1
+
+        let a = inv.row(2)[2];
+        let b = inv.row(2)[3] + inv.row(2)[0] * p[0] + inv.row(2)[1] * p[1];
+        let c = inv.row(3)[2];
+        let d = inv.row(3)[3] + inv.row(3)[0] * p[0] + inv.row(3)[1] * p[1];
+        let aa = 0.0;
+        let bb = 1.0;
+
+        let z = (d * aa - b * bb) / (a * d - b * c);
+        let w = (a * bb - c * aa) / (a * d - b * c);
+
+        inv.dot(&arr1(&[p[0] * w, p[1] * w, z, w]))
+    }
+
+    pub fn draw_line(&self, b: &[f32; 2]) {
+        if let Some(context) = &self.context {
+            let gl = &context.gl;
+            let canvas = gl
+                .canvas()
+                .unwrap()
+                .dyn_into::<web_sys::HtmlCanvasElement>()
+                .unwrap();
+            let height = canvas.client_height() as f32;
+            let width = canvas.client_width() as f32;
+
+            let b = self.get_table_location_from_screen(&[
+                b[0] / width * 2.0 - 1.0,
+                1.0 - 2.0 * b[1] / height,
+            ]);
+
+            web_sys::console::log_3(
+                &JsValue::from(b[0]),
+                &JsValue::from(b[1]),
+                &JsValue::from(b[2]),
+            );
+        }
     }
 
     pub fn render(&self) {
         if let Some(context) = &self.context {
             let gl = &context.gl;
-            let t = &self.translate;
+            let t = (&self.camera).dot(&self.get_perspective());
+            gl.uniform1i(Some(&context.u_texture_location), 0);
             gl.uniform_matrix4fv_with_f32_array(
                 Some(&context.u_translate_location),
                 false,
@@ -259,6 +329,15 @@ impl Table {
                 ]
                 .concat(),
             );
+            gl.tex_image_2d_with_u32_and_u32_and_canvas(
+                web_sys::WebGlRenderingContext::TEXTURE_2D,
+                0,
+                web_sys::WebGlRenderingContext::LUMINANCE as i32,
+                web_sys::WebGlRenderingContext::LUMINANCE,
+                web_sys::WebGlRenderingContext::UNSIGNED_BYTE,
+                &self.canvas,
+            )
+            .expect("");
             gl.clear_color(1.0, 1.0, 1.0, 1.0);
             gl.clear(web_sys::WebGlRenderingContext::COLOR_BUFFER_BIT);
             gl.draw_elements_with_i32(
@@ -267,7 +346,6 @@ impl Table {
                 web_sys::WebGlRenderingContext::UNSIGNED_SHORT,
                 0,
             );
-            gl.flush();
         }
     }
 
