@@ -127,6 +127,8 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
                         state.table_movement.0 += dx as f32 / movement_factor;
                         state.table_movement.1 -= dy as f32 / movement_factor;
+
+                        state.table_movement.1 = state.table_movement.1.min(0.0);
                     }
                 }
                 TableTool::Pen => {
