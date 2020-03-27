@@ -135,7 +135,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     }
                     state
                         .table
-                        .draw_pointer(&[x, y], 8.0, "#0366d6", "#0366d6", false);
+                        .draw_pointer(&[x, y], 16.0, "#0366d6", "#0366d6", false);
                 }
                 TableTool::Eracer => {
                     if state.table_grabbed.0 {
@@ -143,7 +143,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     }
                     state
                         .table
-                        .draw_pointer(&[x, y], 32.0, "#6f42c1", "#fff", false);
+                        .draw_pointer(&[x, y], 64.0, "#6f42c1", "#fff", false);
                 }
                 TableTool::Measure => {
                     if let Some(p) = &state.table_measure_start {
@@ -151,7 +151,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     }
                     state
                         .table
-                        .draw_pointer(&[x, y], 8.0, "#d73a49", "#d73a49", true);
+                        .draw_pointer(&[x, y], 16.0, "#d73a49", "#fff", true);
                 }
             }
             if state.table_grabbed.1 {

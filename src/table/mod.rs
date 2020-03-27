@@ -91,7 +91,7 @@ impl Table {
             &gl,
             &[[1.0, 1.0], [0.0, 1.0], [1.0, 0.0], [0.0, 0.0]].concat(),
         );
-        let i_index = create_ibo(&gl, &[0, 1, 2, 1, 2, 3]);
+        let i_index = create_ibo(&gl, &[0, 1, 2, 3, 2, 1]);
 
         let a_position_location = gl.get_attrib_location(&program, "a_position") as u32;
         let a_color_location = gl.get_attrib_location(&program, "a_color") as u32;
@@ -155,12 +155,12 @@ impl Table {
         gl.tex_parameteri(
             web_sys::WebGlRenderingContext::TEXTURE_2D,
             web_sys::WebGlRenderingContext::TEXTURE_MIN_FILTER,
-            web_sys::WebGlRenderingContext::NEAREST as i32,
+            web_sys::WebGlRenderingContext::LINEAR as i32,
         );
         gl.tex_parameteri(
             web_sys::WebGlRenderingContext::TEXTURE_2D,
             web_sys::WebGlRenderingContext::TEXTURE_MAG_FILTER,
-            web_sys::WebGlRenderingContext::NEAREST as i32,
+            web_sys::WebGlRenderingContext::LINEAR as i32,
         );
         gl.tex_parameteri(
             web_sys::WebGlRenderingContext::TEXTURE_2D,
@@ -172,6 +172,8 @@ impl Table {
             web_sys::WebGlRenderingContext::TEXTURE_WRAP_T,
             web_sys::WebGlRenderingContext::CLAMP_TO_EDGE as i32,
         );
+
+        gl.enable(web_sys::WebGlRenderingContext::CULL_FACE);
 
         self.context = Some(Context {
             gl,
@@ -482,7 +484,7 @@ impl Table {
                 );
                 texture.set_stroke_style(&JsValue::from(stroke_color));
                 texture.set_fill_style(&JsValue::from(fill_color));
-                texture.set_line_width(2.0);
+                texture.set_line_width(8.0);
                 texture.set_line_cap("round");
                 texture.begin_path();
                 texture.arc(px, py, radious, 0.0, 2.0 * std::f64::consts::PI);
@@ -509,8 +511,8 @@ impl Table {
                 .concat(),
             );
             let integrated_canvas = create_canvas();
-            let height = self.grid_size * self.row_num as f64;
-            let width = self.grid_size * self.column_num as f64;
+            let height = 2048.0;
+            let width = 2048.0;
             integrated_canvas.set_height(width as u32);
             integrated_canvas.set_width(height as u32);
             let texture = canvas_rendering_context_2d(&integrated_canvas);
@@ -523,16 +525,40 @@ impl Table {
             texture.fill();
             texture.stroke();
             texture
-                .draw_image_with_html_canvas_element(&self.pen_layer, 0.0, 0.0)
+                .draw_image_with_html_canvas_element_and_dw_and_dh(
+                    &self.pen_layer,
+                    0.0,
+                    0.0,
+                    height,
+                    width,
+                )
                 .expect("");
             texture
-                .draw_image_with_html_canvas_element(&self.grid_layer, 0.0, 0.0)
+                .draw_image_with_html_canvas_element_and_dw_and_dh(
+                    &self.grid_layer,
+                    0.0,
+                    0.0,
+                    height,
+                    width,
+                )
                 .expect("");
             texture
-                .draw_image_with_html_canvas_element(&self.measure_layer, 0.0, 0.0)
+                .draw_image_with_html_canvas_element_and_dw_and_dh(
+                    &self.measure_layer,
+                    0.0,
+                    0.0,
+                    height,
+                    width,
+                )
                 .expect("");
             texture
-                .draw_image_with_html_canvas_element(&self.pointer_layer, 0.0, 0.0)
+                .draw_image_with_html_canvas_element_and_dw_and_dh(
+                    &self.pointer_layer,
+                    0.0,
+                    0.0,
+                    height,
+                    width,
+                )
                 .expect("");
             gl.tex_image_2d_with_u32_and_u32_and_canvas(
                 web_sys::WebGlRenderingContext::TEXTURE_2D,
