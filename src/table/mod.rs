@@ -16,6 +16,7 @@ pub struct Table {
     row_num: u32,
     column_num: u32,
     canvas: web_sys::HtmlCanvasElement,
+    grid_size: f64,
 }
 
 impl Table {
@@ -38,6 +39,7 @@ impl Table {
                 .unwrap()
                 .dyn_into::<web_sys::HtmlCanvasElement>()
                 .unwrap(),
+            grid_size: 64.0,
         }
     }
 
@@ -106,9 +108,9 @@ impl Table {
         gl.bind_texture(web_sys::WebGlRenderingContext::TEXTURE_2D, Some(&texture));
         gl.pixel_storei(web_sys::WebGlRenderingContext::UNPACK_ALIGNMENT, 1);
         {
-            let grid_size = 32;
-            self.canvas.set_height(grid_size * self.row_num);
-            self.canvas.set_width(grid_size * self.column_num);
+            self.canvas.set_height(self.grid_size as u32 * self.row_num);
+            self.canvas
+                .set_width(self.grid_size as u32 * self.column_num);
             let texture = self
                 .canvas
                 .get_context("2d")
@@ -133,12 +135,12 @@ impl Table {
             );
             texture.set_line_width(1.0);
             for x in 1..self.column_num {
-                texture.move_to((x * grid_size) as f64, 0.0);
-                texture.line_to((x * grid_size) as f64, self.canvas.height() as f64)
+                texture.move_to(x as f64 * self.grid_size, 0.0);
+                texture.line_to(x as f64 * self.grid_size, self.canvas.height() as f64)
             }
             for y in 1..self.row_num {
-                texture.move_to(0.0, (y * grid_size) as f64);
-                texture.line_to(self.canvas.width() as f64, (y * grid_size) as f64)
+                texture.move_to(0.0, y as f64 * self.grid_size);
+                texture.line_to(self.canvas.width() as f64, y as f64 * self.grid_size)
             }
             texture.stroke();
         }
@@ -289,7 +291,7 @@ impl Table {
         inv.dot(&arr1(&[p[0] * w, p[1] * w, z, w]))
     }
 
-    pub fn draw_line(&self, b: &[f32; 2]) {
+    pub fn draw_line(&self, b: &[f32; 2], e: &[f32; 2]) {
         if let Some(context) = &self.context {
             let gl = &context.gl;
             let canvas = gl
@@ -305,11 +307,31 @@ impl Table {
                 1.0 - 2.0 * b[1] / height,
             ]);
 
-            web_sys::console::log_3(
-                &JsValue::from(b[0]),
-                &JsValue::from(b[1]),
-                &JsValue::from(b[2]),
+            let e = self.get_table_location_from_screen(&[
+                e[0] / width * 2.0 - 1.0,
+                1.0 - 2.0 * e[1] / height,
+            ]);
+
+            let texture = self
+                .canvas
+                .get_context("2d")
+                .unwrap()
+                .unwrap()
+                .dyn_into::<web_sys::CanvasRenderingContext2d>()
+                .unwrap();
+
+            texture.begin_path();
+            texture.set_line_width(8.0);
+            texture.set_stroke_style(&JsValue::from("#0366d6"));
+            texture.move_to(
+                (b[0] + 10.0) as f64 * self.grid_size,
+                (b[1] + 10.0) as f64 * self.grid_size,
             );
+            texture.line_to(
+                (e[0] + 10.0) as f64 * self.grid_size,
+                (e[1] + 10.0) as f64 * self.grid_size,
+            );
+            texture.stroke();
         }
     }
 
@@ -332,8 +354,8 @@ impl Table {
             gl.tex_image_2d_with_u32_and_u32_and_canvas(
                 web_sys::WebGlRenderingContext::TEXTURE_2D,
                 0,
-                web_sys::WebGlRenderingContext::LUMINANCE as i32,
-                web_sys::WebGlRenderingContext::LUMINANCE,
+                web_sys::WebGlRenderingContext::RGBA as i32,
+                web_sys::WebGlRenderingContext::RGBA,
                 web_sys::WebGlRenderingContext::UNSIGNED_BYTE,
                 &self.canvas,
             )

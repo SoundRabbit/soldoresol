@@ -7,6 +7,7 @@ pub fn radio<Msg>(
     events: Events<Msg>,
     name: impl Into<String>,
     text: impl Into<String>,
+    checked: bool,
 ) -> Html<Msg> {
     let mut radio_id = [0, 0, 0, 0, 0, 0];
     web_sys::window()
@@ -16,23 +17,46 @@ pub fn radio<Msg>(
         .get_random_values_with_u8_array(&mut radio_id);
     let radio_id = hex::encode(&radio_id);
     let radio_id = String::from("radio") + &radio_id;
-    Html::div(
-        attributes.class("radio"),
-        Events::new(),
-        vec![
-            Html::input(
-                Attributes::new()
-                    .type_("radio")
-                    .id(&radio_id)
-                    .string("name", "app-toolbox"),
-                events,
-                vec![],
-            ),
-            Html::label(
-                Attributes::new().string("for", &radio_id),
-                Events::new(),
-                vec![Html::text(text)],
-            ),
-        ],
-    )
+    if checked {
+        Html::div(
+            attributes.class("radio"),
+            Events::new(),
+            vec![
+                Html::input(
+                    Attributes::new()
+                        .type_("radio")
+                        .id(&radio_id)
+                        .string("name", "app-toolbox")
+                        .checked(),
+                    events,
+                    vec![],
+                ),
+                Html::label(
+                    Attributes::new().string("for", &radio_id),
+                    Events::new(),
+                    vec![Html::text(text)],
+                ),
+            ],
+        )
+    } else {
+        Html::div(
+            attributes.class("radio"),
+            Events::new(),
+            vec![
+                Html::input(
+                    Attributes::new()
+                        .type_("radio")
+                        .id(&radio_id)
+                        .string("name", "app-toolbox"),
+                    events,
+                    vec![],
+                ),
+                Html::label(
+                    Attributes::new().string("for", &radio_id),
+                    Events::new(),
+                    vec![Html::text(text)],
+                ),
+            ],
+        )
+    }
 }

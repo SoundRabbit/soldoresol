@@ -6,6 +6,13 @@ use super::btn;
 use super::radio::radio;
 use crate::table::Table;
 
+enum TableTool {
+    Selecter,
+    Pen,
+    Eracer,
+    Pointer,
+}
+
 pub struct State {
     room_name: String,
     table: Table,
@@ -15,15 +22,17 @@ pub struct State {
     table_movement: (f32, f32),
     table_distance: f32,
     table_grabbed: (bool, bool),
+    table_tool: TableTool,
 }
 
 pub enum Msg {
     NoOp,
     SetTableContext(web_sys::HtmlCanvasElement),
     ResizeTable,
-    MoveTableCamera(i32, i32),
+    MoveTableCamera((i32, i32), (i32, i32)),
     ZoomTableCamera(f64),
     SetTableGrabbed(bool, bool),
+    SetTableTool(TableTool),
 }
 
 pub struct Sub;
@@ -59,6 +68,7 @@ fn init() -> (State, Cmd<Msg, Sub>) {
         table_movement: (0.0, 0.0),
         table_distance: 20.0,
         table_grabbed: (false, false),
+        table_tool: TableTool::Selecter,
     };
     (state, Cmd::none())
 }
@@ -88,34 +98,48 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             );
             Cmd::none()
         }
-        Msg::MoveTableCamera(dx, dy) => {
+        Msg::MoveTableCamera((dx, dy), (x, y)) => {
             let dx = dx as f32;
             let dy = dy as f32;
-            let inner_height = web_sys::window()
-                .unwrap()
-                .inner_height()
-                .unwrap()
-                .as_f64()
-                .unwrap();
-            let inner_width = web_sys::window()
-                .unwrap()
-                .inner_width()
-                .unwrap()
-                .as_f64()
-                .unwrap();
-            let rotate_factor = inner_height.min(inner_width) as f32 / 3.0;
-            let movement_factor = inner_height.min(inner_width) as f32 / 30.0;
+            let x = x as f32;
+            let y = y as f32;
+            match state.table_tool {
+                TableTool::Selecter => {
+                    let inner_height = web_sys::window()
+                        .unwrap()
+                        .inner_height()
+                        .unwrap()
+                        .as_f64()
+                        .unwrap();
+                    let inner_width = web_sys::window()
+                        .unwrap()
+                        .inner_width()
+                        .unwrap()
+                        .as_f64()
+                        .unwrap();
+                    let rotate_factor = inner_height.min(inner_width) as f32 / 3.0;
+                    let movement_factor = inner_height.min(inner_width) as f32 / 30.0;
 
-            if state.table_grabbed.0 {
-                state.table_movement.0 += dx as f32 / movement_factor;
-                state.table_movement.1 -= dy as f32 / movement_factor;
-            }
+                    if state.table_grabbed.0 {
+                        state.table_movement.0 += dx as f32 / movement_factor;
+                        state.table_movement.1 -= dy as f32 / movement_factor;
+                    }
 
-            if state.table_grabbed.1 {
-                state.table_rotation.0 = (state.table_rotation.0 + (dy as f32) / rotate_factor)
-                    .max(-0.49 * std::f32::consts::PI)
-                    .min(0.0);
-                state.table_rotation.1 = state.table_rotation.1 - (dx as f32) / rotate_factor;
+                    if state.table_grabbed.1 {
+                        state.table_rotation.0 = (state.table_rotation.0
+                            + (dy as f32) / rotate_factor)
+                            .max(-0.49 * std::f32::consts::PI)
+                            .min(0.0);
+                        state.table_rotation.1 =
+                            state.table_rotation.1 - (dx as f32) / rotate_factor;
+                    }
+                }
+                TableTool::Pen => {
+                    if state.table_grabbed.0 {
+                        state.table.draw_line(&[x - dx, y - dy], &[x, y]);
+                    }
+                }
+                _ => {}
             }
 
             render_table(
@@ -138,6 +162,10 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
         Msg::SetTableGrabbed(grabbed_l, grabbed_r) => {
             state.table_grabbed = (grabbed_l, grabbed_r);
+            Cmd::none()
+        }
+        Msg::SetTableTool(table_tool) => {
+            state.table_tool = table_tool;
             Cmd::none()
         }
     }
@@ -174,7 +202,12 @@ fn render(state: &State) -> Html<Msg> {
                         Msg::SetTableGrabbed(l, r)
                     })
                     .on_mouseleave(|_| Msg::SetTableGrabbed(false, false))
-                    .on_mousemove(|e| Msg::MoveTableCamera(e.movement_x(), e.movement_y()))
+                    .on_mousemove(|e| {
+                        Msg::MoveTableCamera(
+                            (e.movement_x(), e.movement_y()),
+                            (e.client_x(), e.client_y()),
+                        )
+                    })
                     .on("wheel", |e| {
                         Msg::ZoomTableCamera(e.dyn_into::<web_sys::WheelEvent>().unwrap().delta_y())
                     })
@@ -251,10 +284,34 @@ fn render_header(room_name: impl Into<String>) -> Html<Msg> {
                 Attributes::new(),
                 Events::new(),
                 vec![
-                    radio(Attributes::new(), Events::new(), "toolbox", "選択"),
-                    radio(Attributes::new(), Events::new(), "toolbox", "ペン"),
-                    radio(Attributes::new(), Events::new(), "toolbox", "消しゴム"),
-                    radio(Attributes::new(), Events::new(), "toolbox", "ポインター"),
+                    radio(
+                        Attributes::new(),
+                        Events::new().on_click(|_| Msg::SetTableTool(TableTool::Selecter)),
+                        "toolbox",
+                        "選択",
+                        true,
+                    ),
+                    radio(
+                        Attributes::new(),
+                        Events::new().on_click(|_| Msg::SetTableTool(TableTool::Pen)),
+                        "toolbox",
+                        "ペン",
+                        false,
+                    ),
+                    radio(
+                        Attributes::new(),
+                        Events::new().on_click(|_| Msg::SetTableTool(TableTool::Eracer)),
+                        "toolbox",
+                        "消しゴム",
+                        false,
+                    ),
+                    radio(
+                        Attributes::new(),
+                        Events::new().on_click(|_| Msg::SetTableTool(TableTool::Pointer)),
+                        "toolbox",
+                        "ポインター",
+                        false,
+                    ),
                 ],
             ),
         ],
