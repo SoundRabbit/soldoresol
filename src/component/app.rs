@@ -117,26 +117,28 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 .unwrap()
                 .as_f64()
                 .unwrap();
-            if state.table_grabbed.0 {
-                match state.table_tool {
-                    TableTool::Selecter => {
+            match state.table_tool {
+                TableTool::Selecter => {
+                    if state.table_grabbed.0 {
                         let movement_factor = inner_height.min(inner_width) as f32 / 30.0;
 
                         state.table_movement.0 += dx as f32 / movement_factor;
                         state.table_movement.1 -= dy as f32 / movement_factor;
                     }
-                    TableTool::Pen => {
-                        if state.table_grabbed.0 {
-                            state.table.draw_line(&[x - dx, y - dy], &[x, y]);
-                        }
-                    }
-                    TableTool::Eracer => {
-                        if state.table_grabbed.0 {
-                            state.table.erace_line(&[x - dx, y - dy], &[x, y]);
-                        }
-                    }
-                    _ => {}
                 }
+                TableTool::Pen => {
+                    if state.table_grabbed.0 {
+                        state.table.draw_line(&[x - dx, y - dy], &[x, y]);
+                    }
+                    state.table.draw_pointer(&[x, y], 8.0, "#0366d6", "#0366d6");
+                }
+                TableTool::Eracer => {
+                    if state.table_grabbed.0 {
+                        state.table.erace_line(&[x - dx, y - dy], &[x, y]);
+                    }
+                    state.table.draw_pointer(&[x, y], 32.0, "#6f42c1", "#fff");
+                }
+                _ => {}
             }
             if state.table_grabbed.1 {
                 let rotate_factor = inner_height.min(inner_width) as f32 / 3.0;

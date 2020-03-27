@@ -328,7 +328,6 @@ impl Table {
                 texture.set_line_width(16.0);
                 texture.set_line_cap("round");
                 texture.set_stroke_style(&JsValue::from("#0366d6"));
-                texture.set_fill_style(&JsValue::from("#0366d6"));
                 texture
                     .set_global_composite_operation("source-over")
                     .expect("");
@@ -383,6 +382,39 @@ impl Table {
                 texture
                     .set_global_composite_operation("source-over")
                     .expect("");
+            }
+        }
+    }
+
+    pub fn draw_pointer(&self, p: &[f32; 2], radious: f64, stroke_color: &str, fill_color: &str) {
+        if let Some(context) = &self.context {
+            let gl = &context.gl;
+            let canvas = gl
+                .canvas()
+                .unwrap()
+                .dyn_into::<web_sys::HtmlCanvasElement>()
+                .unwrap();
+            let height = canvas.client_height() as f32;
+            let width = canvas.client_width() as f32;
+
+            let p = self.get_table_location_from_screen(&[
+                p[0] / width * 2.0 - 1.0,
+                1.0 - 2.0 * p[1] / height,
+            ]);
+
+            if let Some(texture) = &self.pointer_layer_context {
+                let (px, py) = (
+                    (p[0] + 10.0) as f64 * self.grid_size,
+                    (p[1] + 10.0) as f64 * self.grid_size,
+                );
+                texture.set_stroke_style(&JsValue::from(stroke_color));
+                texture.set_fill_style(&JsValue::from(fill_color));
+                texture.set_line_width(2.0);
+                texture.set_line_cap("round");
+                texture.begin_path();
+                texture.arc(px, py, radious, 0.0, 2.0 * std::f64::consts::PI);
+                texture.stroke();
+                texture.fill();
             }
         }
     }
@@ -450,6 +482,14 @@ impl Table {
                 .unwrap()
                 .request_animation_frame(a.as_ref().unchecked_ref());
             a.forget();
+            if let Some(texture) = &self.pointer_layer_context {
+                texture.clear_rect(
+                    0.0,
+                    0.0,
+                    self.pointer_layer.width() as f64,
+                    self.pointer_layer.height() as f64,
+                );
+            }
         }
     }
 
