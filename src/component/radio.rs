@@ -2,6 +2,8 @@ use kagura::prelude::*;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 
+use crate::ramdom_id;
+
 pub fn radio<Msg>(
     attributes: Attributes,
     events: Events<Msg>,
@@ -9,13 +11,7 @@ pub fn radio<Msg>(
     text: impl Into<String>,
     checked: bool,
 ) -> Html<Msg> {
-    let mut radio_id = [0, 0, 0, 0, 0, 0];
-    web_sys::window()
-        .unwrap()
-        .crypto()
-        .unwrap()
-        .get_random_values_with_u8_array(&mut radio_id);
-    let radio_id = hex::encode(&radio_id);
+    let radio_id = ramdom_id::hex(5);
     let radio_id = String::from("radio") + &radio_id;
     if checked {
         Html::div(
