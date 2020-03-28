@@ -42,6 +42,8 @@ pub fn render<M: 'static>(
     let m_1 = messenger();
     let m_2 = messenger();
     form::render(
+        false,
+        false,
         &state.form_state,
         move || {
             let messenger = messenger();
@@ -49,42 +51,27 @@ pub fn render<M: 'static>(
         },
         Attributes::new().id("measure_tool"),
         Events::new(),
+        "測定オプション",
         vec![
-            Html::div(
-                Attributes::new().class("form-header"),
-                Events::new(),
-                vec![Html::text("計測オプション")],
+            checkbox(
+                Attributes::new(),
+                Events::new().on_click({
+                    let f = state.show_circle_on_table;
+                    move |_| m_1(Msg::SetShowCircleOnTableFlag(!f))
+                }),
+                "テーブルに円を表示",
+                state.show_circle_on_table,
             ),
-            Html::div(
-                Attributes::new().class("form-body"),
-                Events::new(),
-                vec![
-                    checkbox(
-                        Attributes::new(),
-                        Events::new().on_click({
-                            let f = state.show_circle_on_table;
-                            move |_| m_1(Msg::SetShowCircleOnTableFlag(!f))
-                        }),
-                        "テーブルに円を表示",
-                        state.show_circle_on_table,
-                    ),
-                    checkbox(
-                        Attributes::new(),
-                        Events::new().on_click({
-                            let f = state.bind_to_grid;
-                            move |_| m_2(Msg::SetBindToGridFlag(!f))
-                        }),
-                        "グリッドにスナップ",
-                        state.bind_to_grid,
-                    ),
-                    checkbox(Attributes::new(), Events::new(), "測定内容を共有", true),
-                ],
+            checkbox(
+                Attributes::new(),
+                Events::new().on_click({
+                    let f = state.bind_to_grid;
+                    move |_| m_2(Msg::SetBindToGridFlag(!f))
+                }),
+                "グリッドにスナップ",
+                state.bind_to_grid,
             ),
-            Html::div(
-                Attributes::new().class("form-footer"),
-                Events::new(),
-                vec![],
-            ),
+            checkbox(Attributes::new(), Events::new(), "測定内容を共有", true),
         ],
     )
 }

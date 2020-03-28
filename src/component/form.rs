@@ -1,3 +1,4 @@
+use super::btn;
 use kagura::prelude::*;
 
 pub struct State {
@@ -44,10 +45,13 @@ pub fn update(state: &mut State, msg: Msg) {
 }
 
 pub fn render<M: 'static>(
+    closable: bool,
+    resizable: bool,
     state: &State,
     messenger: impl Fn() -> Box<dyn FnOnce(Msg) -> M + 'static> + 'static,
     attributes: Attributes,
     events: Events<M>,
+    title: impl Into<String>,
     children: Vec<Html<M>>,
 ) -> Html<M> {
     Html::div(
@@ -56,33 +60,61 @@ pub fn render<M: 'static>(
             .style("left", state.loc[0].to_string() + "px")
             .style("top", state.loc[1].to_string() + "px")
             .string("data-form-moving", state.moving.to_string()),
-        events
-            .on_mousedown({
-                let m = messenger();
-                |e| {
-                    m(Msg::SetDragged(
-                        true,
-                        [e.client_x() as f32, e.client_y() as f32],
-                    ))
-                }
-            })
-            .on_mouseup({
-                let m = messenger();
-                |e| {
-                    m(Msg::SetDragged(
-                        false,
-                        [e.client_x() as f32, e.client_y() as f32],
-                    ))
-                }
-            })
-            .on_mouseleave({
-                let m = messenger();
-                |e| m(Msg::MoveForm([e.client_x() as f32, e.client_y() as f32]))
-            })
-            .on_mousemove({
-                let m = messenger();
-                |e| m(Msg::MoveForm([e.client_x() as f32, e.client_y() as f32]))
-            }),
-        children,
+        events,
+        vec![
+            Html::div(
+                Attributes::new().class("form-header"),
+                Events::new()
+                    .on_mousedown({
+                        let m = messenger();
+                        |e| {
+                            m(Msg::SetDragged(
+                                true,
+                                [e.client_x() as f32, e.client_y() as f32],
+                            ))
+                        }
+                    })
+                    .on_mouseup({
+                        let m = messenger();
+                        |e| {
+                            m(Msg::SetDragged(
+                                false,
+                                [e.client_x() as f32, e.client_y() as f32],
+                            ))
+                        }
+                    })
+                    .on_mouseleave({
+                        let m = messenger();
+                        |e| m(Msg::MoveForm([e.client_x() as f32, e.client_y() as f32]))
+                    })
+                    .on_mousemove({
+                        let m = messenger();
+                        |e| m(Msg::MoveForm([e.client_x() as f32, e.client_y() as f32]))
+                    }),
+                vec![
+                    Html::text(title),
+                    if resizable {
+                        Html::none()
+                    } else {
+                        Html::none()
+                    },
+                    if closable {
+                        btn::close(Attributes::new(), Events::new())
+                    } else {
+                        Html::none()
+                    },
+                ],
+            ),
+            Html::div(
+                Attributes::new().class("form-body"),
+                Events::new(),
+                children,
+            ),
+            Html::div(
+                Attributes::new().class("form-footer"),
+                Events::new(),
+                vec![],
+            ),
+        ],
     )
 }

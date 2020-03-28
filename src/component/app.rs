@@ -3,6 +3,7 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 
 use super::btn;
+use super::handout;
 use super::measure_length::measure_length;
 use super::measure_tool;
 use super::radio::radio;
@@ -28,6 +29,8 @@ pub struct State {
     table_measure_start: Option<[f32; 2]>,
     table_measure: Option<([f32; 2], [f32; 2], f32)>,
     measure_tool_state: measure_tool::State,
+    handout_state: handout::State,
+    show_handout: bool,
 }
 
 pub enum Msg {
@@ -39,6 +42,8 @@ pub enum Msg {
     SetTableGrabbed((bool, bool), (i32, i32)),
     SetTableTool(TableTool),
     MeasureToolMsg(measure_tool::Msg),
+    HandoutMsg(handout::Msg),
+    SetShowHandoutFlag(bool),
 }
 
 pub struct Sub;
@@ -78,6 +83,8 @@ fn init() -> (State, Cmd<Msg, Sub>) {
         table_measure_start: None,
         table_measure: None,
         measure_tool_state: measure_tool::init(),
+        handout_state: handout::init(),
+        show_handout: false,
     };
     (state, Cmd::none())
 }
@@ -87,6 +94,14 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         Msg::NoOp => Cmd::none(),
         Msg::MeasureToolMsg(m) => {
             measure_tool::update(&mut state.measure_tool_state, m);
+            Cmd::none()
+        }
+        Msg::HandoutMsg(m) => {
+            handout::update(&mut state.handout_state, m);
+            Cmd::none()
+        }
+        Msg::SetShowHandoutFlag(s) => {
+            state.show_handout = s;
             Cmd::none()
         }
         Msg::SetTableContext(canvas) => {
@@ -289,6 +304,13 @@ fn render(state: &State) -> Html<Msg> {
                 Some((s, p, len)) => measure_length(&s, &p, len.clone()),
                 _ => Html::none(),
             },
+            if state.show_handout {
+                handout::render(&state.handout_state, || {
+                    Box::new(|msg| Msg::HandoutMsg(msg))
+                })
+            } else {
+                Html::none()
+            },
         ],
     )
 }
@@ -318,7 +340,11 @@ fn render_side_menu() -> Html<Msg> {
                 Events::new(),
                 vec![Html::text("オブジェクト")],
             ),
-            btn::primary(Attributes::new(), Events::new(), vec![Html::text("資料")]),
+            btn::primary(
+                Attributes::new(),
+                Events::new().on_click(|_| Msg::SetShowHandoutFlag(true)),
+                vec![Html::text("資料")],
+            ),
             btn::primary(
                 Attributes::new(),
                 Events::new(),

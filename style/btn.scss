@@ -14,17 +14,40 @@
         cursor: pointer;
     }
     &[data-btn-variant="primary"] {
-        background-color: $blue;
+        background-color: $blue-500;
         color: white;
         &:hover {
             background-color: $blue-400;
         }
     }
     &[data-btn-variant="info"] {
-        background-color: $purple;
+        background-color: $purple-500;
         color: white;
         &:hover {
             background-color: $purple-400;
         }
+    }
+    &[data-btn-variant="danger"] {
+        background-color: $red-500;
+        color: white;
+        &:hover {
+            background-color: $red-400;
+        }
+    }
+}
+
+.btn-close {
+    border: none;
+    outline: none;
+    line-height: 1;
+    height: 1.6em;
+    width: 1.6em;
+    text-align: center;
+    border-radius: 50%;
+    background-color: $red-500;
+    color: white;
+    &:hover {
+        cursor: pointer;
+        background-color: $red-400;
     }
 }

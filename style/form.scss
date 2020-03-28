@@ -16,6 +16,12 @@
     background-color: $gray;
     color: white;
     padding-left: 2ch;
+    padding-right: 1ch;
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-auto-columns: max-content;
+    grid-auto-flow: column;
+    align-items: center;
 }
 
 .form-body {
