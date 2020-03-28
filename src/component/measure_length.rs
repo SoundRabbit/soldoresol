@@ -1,9 +1,4 @@
 use kagura::prelude::*;
-use wasm_bindgen::prelude::*;
-use wasm_bindgen::JsCast;
-
-use super::checkbox::checkbox;
-use super::form::form;
 
 pub fn measure_length<Msg>(s: &[f32; 2], p: &[f32; 2], len: f32) -> Html<Msg> {
     let quadrant = if s[0] <= p[0] && p[1] <= s[1] {

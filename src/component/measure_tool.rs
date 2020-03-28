@@ -1,16 +1,39 @@
 use kagura::prelude::*;
-use wasm_bindgen::prelude::*;
-use wasm_bindgen::JsCast;
 
 use super::checkbox::checkbox;
-use super::form::form;
+use super::form;
 
-pub fn measure_tool<Msg>() -> Html<Msg> {
-    form(
-        Attributes::new()
-            .id("measure_tool")
-            .style("top", "20vw;")
-            .style("left", "20vh;"),
+pub struct State {
+    form_state: form::State,
+}
+
+pub enum Msg {
+    FormMsg(form::Msg),
+}
+
+pub fn init() -> State {
+    State {
+        form_state: form::init(),
+    }
+}
+
+pub fn update(state: &mut State, msg: Msg) {
+    match msg {
+        Msg::FormMsg(m) => form::update(&mut state.form_state, m),
+    }
+}
+
+pub fn render<M: 'static>(
+    state: &State,
+    messenger: impl Fn() -> Box<dyn FnOnce(Msg) -> M + 'static> + 'static,
+) -> Html<M> {
+    form::render(
+        &state.form_state,
+        move || {
+            let messenger = messenger();
+            Box::new(|msg| messenger(Msg::FormMsg(msg)))
+        },
+        Attributes::new().id("measure_tool"),
         Events::new(),
         vec![
             Html::div(
@@ -22,9 +45,9 @@ pub fn measure_tool<Msg>() -> Html<Msg> {
                 Attributes::new().class("form-body"),
                 Events::new(),
                 vec![
-                    checkbox(Attributes::new(), Events::new(), "テーブルに円を表示"),
-                    checkbox(Attributes::new(), Events::new(), "折れ線経路を測定"),
-                    checkbox(Attributes::new(), Events::new(), "測定内容を共有"),
+                    checkbox(Attributes::new(), Events::new(), "テーブルに円を表示", true),
+                    checkbox(Attributes::new(), Events::new(), "グリッドにスナップ", true),
+                    checkbox(Attributes::new(), Events::new(), "測定内容を共有", true),
                 ],
             ),
             Html::div(

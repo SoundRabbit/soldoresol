@@ -6,6 +6,9 @@
     border: 1px solid $gray;
     padding: 0;
     border-radius: 0.3rem;
+    &[data-form-moving="true"] {
+        user-select: none;
+    }
 }
 
 .form-header {

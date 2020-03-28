@@ -6,6 +6,7 @@ pub fn checkbox<Msg>(
     attributes: Attributes,
     events: Events<Msg>,
     text: impl Into<String>,
+    checked: bool,
 ) -> Html<Msg> {
     let mut checkbox_id = [0, 0, 0, 0, 0, 0];
     web_sys::window()
@@ -20,7 +21,14 @@ pub fn checkbox<Msg>(
         Events::new(),
         vec![
             Html::input(
-                Attributes::new().type_("checkbox").id(&checkbox_id),
+                if checked {
+                    Attributes::new()
+                        .type_("checkbox")
+                        .id(&checkbox_id)
+                        .checked()
+                } else {
+                    Attributes::new().type_("checkbox").id(&checkbox_id)
+                },
                 events,
                 vec![],
             ),

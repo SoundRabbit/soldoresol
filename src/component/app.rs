@@ -4,7 +4,7 @@ use wasm_bindgen::JsCast;
 
 use super::btn;
 use super::measure_length::measure_length;
-use super::measure_tool::measure_tool;
+use super::measure_tool;
 use super::radio::radio;
 use crate::table::Table;
 
@@ -27,6 +27,7 @@ pub struct State {
     table_tool: TableTool,
     table_measure_start: Option<[f32; 2]>,
     table_measure: Option<([f32; 2], [f32; 2], f32)>,
+    measure_tool_state: measure_tool::State,
 }
 
 pub enum Msg {
@@ -37,6 +38,7 @@ pub enum Msg {
     ZoomTableCamera(f64),
     SetTableGrabbed((bool, bool), (i32, i32)),
     SetTableTool(TableTool),
+    MeasureToolMsg(measure_tool::Msg),
 }
 
 pub struct Sub;
@@ -75,6 +77,7 @@ fn init() -> (State, Cmd<Msg, Sub>) {
         table_tool: TableTool::Selecter,
         table_measure_start: None,
         table_measure: None,
+        measure_tool_state: measure_tool::init(),
     };
     (state, Cmd::none())
 }
@@ -82,6 +85,10 @@ fn init() -> (State, Cmd<Msg, Sub>) {
 fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
     match msg {
         Msg::NoOp => Cmd::none(),
+        Msg::MeasureToolMsg(m) => {
+            measure_tool::update(&mut state.measure_tool_state, m);
+            Cmd::none()
+        }
         Msg::SetTableContext(canvas) => {
             state.table_height = canvas.client_height();
             state.table_width = canvas.client_width();
@@ -199,6 +206,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                         state.table_measure_start = Some([x as f32, y as f32]);
                     } else {
                         state.table_measure_start = None;
+                        state.table_measure = None;
                     }
                 }
                 _ => {}
@@ -261,7 +269,9 @@ fn render(state: &State) -> Html<Msg> {
             render_side_menu(),
             render_header(&state.room_name),
             match state.table_tool {
-                TableTool::Measure => measure_tool(),
+                TableTool::Measure => measure_tool::render(&state.measure_tool_state, || {
+                    Box::new(|msg| Msg::MeasureToolMsg(msg))
+                }),
                 _ => Html::none(),
             },
             match &state.table_measure {
