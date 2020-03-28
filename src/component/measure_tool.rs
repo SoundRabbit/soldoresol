@@ -7,7 +7,10 @@ use super::form::form;
 
 pub fn measure_tool<Msg>() -> Html<Msg> {
     form(
-        Attributes::new().id("measure_tool"),
+        Attributes::new()
+            .id("measure_tool")
+            .style("top", "20vw;")
+            .style("left", "20vh;"),
         Events::new(),
         vec![
             Html::div(

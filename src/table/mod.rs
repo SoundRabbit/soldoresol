@@ -189,7 +189,7 @@ impl Table {
             let w = gl.drawing_buffer_width() as f32;
             let aspect = w / h;
             let field_of_view = 30.0;
-            let near = 1.0;
+            let near = 0.01;
             let far = 200.0;
             let f = (std::f32::consts::PI * 0.5 - field_of_view * 0.5).tan();
             let range_inv = 1.0 / (near - far);
@@ -391,7 +391,13 @@ impl Table {
         }
     }
 
-    pub fn draw_measure_and_get_length(&self, b: &[f32; 2], e: &[f32; 2], bind_to_grid: bool) {
+    pub fn draw_measure_and_get_length(
+        &self,
+        b: &[f32; 2],
+        e: &[f32; 2],
+        draw_with_cirle: bool,
+        bind_to_grid: bool,
+    ) -> f64 {
         if let Some(context) = &self.context {
             let gl = &context.gl;
             let canvas = gl
@@ -424,6 +430,8 @@ impl Table {
                 [e[0], e[1]]
             };
 
+            let r = ((e[0] - b[0]).powi(2) + (e[1] - b[1]).powi(2)).sqrt() as f64;
+
             if let Some(texture) = &self.measure_layer_context {
                 let (bx, by) = (
                     (b[0] + 10.0) as f64 * self.grid_size,
@@ -433,18 +441,28 @@ impl Table {
                     (e[0] + 10.0) as f64 * self.grid_size,
                     (e[1] + 10.0) as f64 * self.grid_size,
                 );
+                let r = r * self.grid_size;
                 texture.set_line_width(8.0);
                 texture.set_line_cap("round");
                 texture.set_stroke_style(&JsValue::from("#d73a49"));
+                texture.set_fill_style(&JsValue::from("transparent"));
                 texture
                     .set_global_composite_operation("source-over")
                     .expect("");
                 texture.begin_path();
                 texture.move_to(bx, by);
                 texture.line_to(ex, ey);
+                texture.move_to(bx + r, by);
+                if draw_with_cirle {
+                    texture.arc(bx, by, r, 0.0, 2.0 * std::f64::consts::PI);
+                }
                 texture.fill();
                 texture.stroke();
             }
+
+            r
+        } else {
+            -1.0
         }
     }
 

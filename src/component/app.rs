@@ -3,6 +3,7 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 
 use super::btn;
+use super::measure_length::measure_length;
 use super::measure_tool::measure_tool;
 use super::radio::radio;
 use crate::table::Table;
@@ -25,6 +26,7 @@ pub struct State {
     table_grabbed: (bool, bool),
     table_tool: TableTool,
     table_measure_start: Option<[f32; 2]>,
+    table_measure: Option<([f32; 2], [f32; 2], f32)>,
 }
 
 pub enum Msg {
@@ -72,6 +74,7 @@ fn init() -> (State, Cmd<Msg, Sub>) {
         table_grabbed: (false, false),
         table_tool: TableTool::Selecter,
         table_measure_start: None,
+        table_measure: None,
     };
     (state, Cmd::none())
 }
@@ -149,7 +152,13 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 }
                 TableTool::Measure => {
                     if let Some(p) = &state.table_measure_start {
-                        state.table.draw_measure_and_get_length(p, &[x, y], true);
+                        let r = state
+                            .table
+                            .draw_measure_and_get_length(p, &[x, y], true, true);
+                        state.table_measure = Some(([p[0], p[1]], [x, y], r as f32));
+                        state
+                            .table
+                            .draw_pointer(&[p[0], p[1]], 16.0, "#d73a49", "#fff", true);
                     }
                     state
                         .table
@@ -253,11 +262,11 @@ fn render(state: &State) -> Html<Msg> {
             render_header(&state.room_name),
             match state.table_tool {
                 TableTool::Measure => measure_tool(),
-                _ => Html::div(
-                    Attributes::new().style("display", "none"),
-                    Events::new(),
-                    vec![],
-                ),
+                _ => Html::none(),
+            },
+            match &state.table_measure {
+                Some((s, p, len)) => measure_length(&s, &p, len.clone()),
+                _ => Html::none(),
             },
         ],
     )
