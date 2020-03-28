@@ -159,17 +159,28 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 }
                 TableTool::Measure => {
                     if let Some(p) = &state.table_measure_start {
-                        let r = state
-                            .table
-                            .draw_measure_and_get_length(p, &[x, y], true, true);
+                        let r = state.table.draw_measure_and_get_length(
+                            p,
+                            &[x, y],
+                            state.measure_tool_state.show_circle_on_table,
+                            state.measure_tool_state.bind_to_grid,
+                        );
                         state.table_measure = Some(([p[0], p[1]], [x, y], r as f32));
-                        state
-                            .table
-                            .draw_pointer(&[p[0], p[1]], 16.0, "#d73a49", "#fff", true);
+                        state.table.draw_pointer(
+                            &[p[0], p[1]],
+                            16.0,
+                            "#d73a49",
+                            "#fff",
+                            state.measure_tool_state.bind_to_grid,
+                        );
                     }
-                    state
-                        .table
-                        .draw_pointer(&[x, y], 16.0, "#d73a49", "#fff", true);
+                    state.table.draw_pointer(
+                        &[x, y],
+                        16.0,
+                        "#d73a49",
+                        "#fff",
+                        state.measure_tool_state.bind_to_grid,
+                    );
                 }
             }
             if state.table_grabbed.1 {
