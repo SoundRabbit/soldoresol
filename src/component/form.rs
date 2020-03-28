@@ -1,6 +1,4 @@
 use kagura::prelude::*;
-use wasm_bindgen::prelude::*;
-use wasm_bindgen::JsCast;
 
 pub struct State {
     loc: [f32; 2],
