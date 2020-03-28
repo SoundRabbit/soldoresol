@@ -79,12 +79,7 @@ pub fn render<M: 'static>(
             })
             .on_mouseleave({
                 let m = messenger();
-                |e| {
-                    m(Msg::SetDragged(
-                        false,
-                        [e.client_x() as f32, e.client_y() as f32],
-                    ))
-                }
+                |e| m(Msg::MoveForm([e.client_x() as f32, e.client_y() as f32]))
             })
             .on_mousemove({
                 let m = messenger();
