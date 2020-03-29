@@ -419,7 +419,7 @@ impl Table {
             ]);
 
             let b = if bind_to_grid {
-                [b[0].round(), b[1].round()]
+                [(b[0] * 2.0).round() / 2.0, (b[1] * 2.0).round() / 2.0]
             } else {
                 [b[0], b[1]]
             };
@@ -430,7 +430,7 @@ impl Table {
             ]);
 
             let e = if bind_to_grid {
-                [e[0].round(), e[1].round()]
+                [(e[0] * 2.0).round() / 2.0, (e[1] * 2.0).round() / 2.0]
             } else {
                 [e[0], e[1]]
             };
@@ -495,7 +495,7 @@ impl Table {
             ]);
 
             let p = if bind_to_grid {
-                [p[0].round(), p[1].round()]
+                [(p[0] * 2.0).round() / 2.0, (p[1] * 2.0).round() / 2.0]
             } else {
                 [p[0], p[1]]
             };
