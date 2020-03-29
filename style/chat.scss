@@ -1,0 +1,81 @@
+@import "color";
+
+.chat .form-body {
+    display: grid;
+    grid-template-columns: max-content 0.5ch 1fr;
+    grid-template-rows: 1fr;
+    grid-template-areas: "ctr gap tbs";
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.chat-controller {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr;
+    grid-auto-rows: max-content;
+    grid-area: ctr;
+    row-gap: 0.5ch;
+    padding-bottom: 0.5ch;
+    width: 23rem;
+    overflow-x: hidden;
+}
+
+.chat-controller-chat_pallet {
+    overflow-y: scroll;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-controller-sender_option {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    & > *:not(:last-child) {
+        margin-right: 1ch;
+    }
+}
+
+.chat-controller-sending_option {
+    display: grid;
+    grid-template-columns: min-content 1fr;
+    grid-template-rows: max-content max-content;
+    column-gap: 0.5ch;
+    align-items: center;
+    line-height: 1;
+    row-gap: 0.5ch;
+}
+
+.chat-controller-sending_option-list {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.chat-controller-content {
+    display: grid;
+    grid-template-columns: 1fr min-content;
+    & > textarea {
+        resize: none;
+    }
+    & > button {
+        line-height: 1;
+    }
+}
+
+.chat-tabs {
+    grid-area: tbs;
+    display: grid;
+    grid-template-rows: max-content 1fr;
+}
+
+.chat-tabs-list {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.chat-tabs-log {
+    border-top: 0.5ch solid $gray-900;
+    overflow-y: scroll;
+    overflow-x: hidden;
+}

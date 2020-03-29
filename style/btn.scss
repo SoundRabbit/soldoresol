@@ -3,12 +3,11 @@
 .btn {
     border: none;
     outline: none;
-    padding-top: 0.1em;
-    padding-bottom: 0.4em;
+    padding-top: 0.2em;
+    padding-bottom: 0.2em;
     padding-left: 1.2ch;
     padding-right: 1.2ch;
     text-align: center;
-    font-family: "Kan415Typos Std";
     border-radius: 0.3em;
     &:hover {
         cursor: pointer;
@@ -18,6 +17,13 @@
         color: white;
         &:hover {
             background-color: $blue-400;
+        }
+    }
+    &[data-btn-variant="secondary"] {
+        background-color: $gray-500;
+        color: white;
+        &:hover {
+            background-color: $gray-400;
         }
     }
     &[data-btn-variant="info"] {
@@ -34,9 +40,16 @@
             background-color: $red-400;
         }
     }
+    &[data-btn-variant="success"] {
+        background-color: $green-500;
+        color: white;
+        &:hover {
+            background-color: $green-400;
+        }
+    }
 }
 
-.btn-close {
+.btn_close {
     border: none;
     outline: none;
     line-height: 1;
@@ -49,5 +62,39 @@
     &:hover {
         cursor: pointer;
         background-color: $red-400;
+    }
+}
+
+.btn_tab {
+    border: none;
+    outline: none;
+    border-radius: 0.3em 0.3em 0 0;
+    background-color: $gray-900;
+    color: white;
+    &:hover {
+        cursor: pointer;
+        background-color: $gray-600;
+    }
+    & > .btn_tab-close {
+        border: none;
+        outline: none;
+        line-height: 1;
+        height: 1.6em;
+        width: 1.6em;
+        text-align: center;
+        border-radius: 50%;
+        margin-left: 1ch;
+        background-color: $gray-900;
+        color: white;
+        &:hover {
+            cursor: pointer;
+            background-color: $gray-500;
+        }
+    }
+    &[data-btn_tab-selected="true"] {
+        background-color: $blue-500;
+        & > .btn_tab-close {
+            background-color: $blue-400
+        }
     }
 }

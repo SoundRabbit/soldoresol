@@ -28,7 +28,7 @@ pub fn init() -> State {
     let h = window.inner_height().unwrap().as_f64().unwrap() as f32;
     State {
         loc: [0.0, 0.0],
-        size: [w * 0.3, h * 0.5],
+        size: [w * 0.6, h * 0.7],
         drag_position: [0.0, 0.0],
         dragged: false,
         moving: false,

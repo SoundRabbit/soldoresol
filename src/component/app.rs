@@ -3,13 +3,14 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 
 use super::btn;
+use super::chat;
 use super::handout;
 use super::measure_length::measure_length;
 use super::measure_tool;
 use super::radio::radio;
 use crate::table::Table;
 
-enum TableTool {
+pub enum TableTool {
     Selecter,
     Pen,
     Eracer,
@@ -30,6 +31,7 @@ pub struct State {
     table_measure: Option<([f32; 2], [f32; 2], f32)>,
     measure_tool_state: measure_tool::State,
     handout_state: handout::State,
+    chat_state: chat::State,
 }
 
 pub enum Msg {
@@ -43,6 +45,8 @@ pub enum Msg {
     OpenHandoutForm,
     MeasureToolMsg(measure_tool::Msg),
     HandoutMsg(handout::Msg),
+    ChatMsg(chat::Msg),
+    OpenChatForm,
 }
 
 pub struct Sub;
@@ -74,6 +78,7 @@ fn init() -> (State, Cmd<Msg, Sub>) {
         table_measure: None,
         measure_tool_state: measure_tool::init(),
         handout_state: handout::init(),
+        chat_state: chat::init(),
     };
     let task = Cmd::task(|handler| {
         handler(Msg::SetTableContext(
@@ -101,8 +106,16 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             handout::update(&mut state.handout_state, m);
             Cmd::none()
         }
+        Msg::ChatMsg(m) => {
+            chat::update(&mut state.chat_state, m);
+            Cmd::none()
+        }
         Msg::OpenHandoutForm => {
             handout::open(&mut state.handout_state);
+            Cmd::none()
+        }
+        Msg::OpenChatForm => {
+            chat::open(&mut state.chat_state);
             Cmd::none()
         }
         Msg::SetTableContext(canvas) => {
@@ -267,7 +280,8 @@ fn render_table(table: &mut Table, m: (f32, f32), r: (f32, f32), d: f32) {
 
 fn render(state: &State) -> Html<Msg> {
     let (table_grabbed_r, table_grabbed_l) = state.table_grabbed;
-    let some_form_is_moving = handout::is_moving(&state.handout_state)
+    let some_form_is_moving = chat::is_moving(&state.chat_state)
+        || handout::is_moving(&state.handout_state)
         || measure_tool::is_moving(&state.measure_tool_state);
     Html::div(
         Attributes::new().id("app").string(
@@ -307,16 +321,17 @@ fn render(state: &State) -> Html<Msg> {
             ),
             render_side_menu(),
             render_header(&state.room_name),
-            measure_tool::render(&state.measure_tool_state, || {
-                Box::new(|msg| Msg::MeasureToolMsg(msg))
-            }),
             match &state.table_measure {
                 Some((s, p, len)) => measure_length(&s, &p, len.clone()),
                 _ => Html::none(),
             },
+            measure_tool::render(&state.measure_tool_state, || {
+                Box::new(|msg| Msg::MeasureToolMsg(msg))
+            }),
             handout::render(&state.handout_state, || {
                 Box::new(|msg| Msg::HandoutMsg(msg))
             }),
+            chat::render(&state.chat_state, || Box::new(|msg| Msg::ChatMsg(msg))),
         ],
     )
 }
@@ -353,7 +368,7 @@ fn render_side_menu() -> Html<Msg> {
             ),
             btn::primary(
                 Attributes::new(),
-                Events::new(),
+                Events::new().on_click(|_| Msg::OpenChatForm),
                 vec![Html::text("チャット")],
             ),
         ],
