@@ -17,6 +17,14 @@ pub fn init() -> State {
     }
 }
 
+pub fn open(state: &mut State) {
+    form::open(&mut state.form_state);
+}
+
+pub fn close(state: &mut State) {
+    form::close(&mut state.form_state);
+}
+
 pub fn update(state: &mut State, msg: Msg) {
     match msg {
         Msg::FormMsg(m) => form::update(&mut state.form_state, m),

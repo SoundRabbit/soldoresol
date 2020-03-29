@@ -30,7 +30,6 @@ pub struct State {
     table_measure: Option<([f32; 2], [f32; 2], f32)>,
     measure_tool_state: measure_tool::State,
     handout_state: handout::State,
-    show_handout: bool,
 }
 
 pub enum Msg {
@@ -41,9 +40,9 @@ pub enum Msg {
     ZoomTableCamera(f64),
     SetTableGrabbed((bool, bool), (i32, i32)),
     SetTableTool(TableTool),
+    OpenHandoutForm,
     MeasureToolMsg(measure_tool::Msg),
     HandoutMsg(handout::Msg),
-    SetShowHandoutFlag(bool),
 }
 
 pub struct Sub;
@@ -75,7 +74,6 @@ fn init() -> (State, Cmd<Msg, Sub>) {
         table_measure: None,
         measure_tool_state: measure_tool::init(),
         handout_state: handout::init(),
-        show_handout: false,
     };
     let task = Cmd::task(|handler| {
         handler(Msg::SetTableContext(
@@ -103,8 +101,8 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             handout::update(&mut state.handout_state, m);
             Cmd::none()
         }
-        Msg::SetShowHandoutFlag(s) => {
-            state.show_handout = s;
+        Msg::OpenHandoutForm => {
+            handout::open(&mut state.handout_state);
             Cmd::none()
         }
         Msg::SetTableContext(canvas) => {
@@ -246,6 +244,14 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
         Msg::SetTableTool(table_tool) => {
             state.table_tool = table_tool;
+            match &state.table_tool {
+                TableTool::Measure => {
+                    measure_tool::open(&mut state.measure_tool_state);
+                }
+                _ => {
+                    measure_tool::close(&mut state.measure_tool_state);
+                }
+            }
             Cmd::none()
         }
     }
@@ -296,23 +302,16 @@ fn render(state: &State) -> Html<Msg> {
             ),
             render_side_menu(),
             render_header(&state.room_name),
-            match state.table_tool {
-                TableTool::Measure => measure_tool::render(&state.measure_tool_state, || {
-                    Box::new(|msg| Msg::MeasureToolMsg(msg))
-                }),
-                _ => Html::none(),
-            },
+            measure_tool::render(&state.measure_tool_state, || {
+                Box::new(|msg| Msg::MeasureToolMsg(msg))
+            }),
             match &state.table_measure {
                 Some((s, p, len)) => measure_length(&s, &p, len.clone()),
                 _ => Html::none(),
             },
-            if state.show_handout {
-                handout::render(&state.handout_state, || {
-                    Box::new(|msg| Msg::HandoutMsg(msg))
-                })
-            } else {
-                Html::none()
-            },
+            handout::render(&state.handout_state, || {
+                Box::new(|msg| Msg::HandoutMsg(msg))
+            }),
         ],
     )
 }
@@ -344,7 +343,7 @@ fn render_side_menu() -> Html<Msg> {
             ),
             btn::primary(
                 Attributes::new(),
-                Events::new().on_click(|_| Msg::SetShowHandoutFlag(true)),
+                Events::new().on_click(|_| Msg::OpenHandoutForm),
                 vec![Html::text("資料")],
             ),
             btn::primary(

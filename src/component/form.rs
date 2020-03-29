@@ -6,11 +6,13 @@ pub struct State {
     drag_position: [f32; 2],
     dragged: bool,
     moving: bool,
+    showing: bool,
 }
 
 pub enum Msg {
     MoveForm([f32; 2]),
     SetDragged(bool, [f32; 2]),
+    SetShowingState(bool),
 }
 
 pub fn init() -> State {
@@ -19,7 +21,16 @@ pub fn init() -> State {
         drag_position: [0.0, 0.0],
         dragged: false,
         moving: false,
+        showing: false,
     }
+}
+
+pub fn open(state: &mut State) {
+    update(state, Msg::SetShowingState(true));
+}
+
+pub fn close(state: &mut State) {
+    update(state, Msg::SetShowingState(false));
 }
 
 pub fn update(state: &mut State, msg: Msg) {
@@ -41,6 +52,9 @@ pub fn update(state: &mut State, msg: Msg) {
                 state.moving = false;
             }
         }
+        Msg::SetShowingState(s) => {
+            state.showing = s;
+        }
     }
 }
 
@@ -54,6 +68,9 @@ pub fn render<M: 'static>(
     title: impl Into<String>,
     children: Vec<Html<M>>,
 ) -> Html<M> {
+    if !state.showing {
+        return Html::none();
+    }
     Html::div(
         attributes
             .class("form")
@@ -99,7 +116,13 @@ pub fn render<M: 'static>(
                         Html::none()
                     },
                     if closable {
-                        btn::close(Attributes::new(), Events::new())
+                        btn::close(
+                            Attributes::new(),
+                            Events::new().on_click({
+                                let m = messenger();
+                                |e| m(Msg::SetShowingState(false))
+                            }),
+                        )
                     } else {
                         Html::none()
                     },
