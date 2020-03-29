@@ -318,7 +318,7 @@ fn render(state: &State) -> Html<Msg> {
 
 fn render_side_menu() -> Html<Msg> {
     Html::div(
-        Attributes::new().id("app-side-menu"),
+        Attributes::new().id("app-sidemenu"),
         Events::new(),
         vec![
             btn::primary(

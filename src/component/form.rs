@@ -26,6 +26,10 @@ pub fn init() -> State {
 }
 
 pub fn open(state: &mut State) {
+    let document = web_sys::window().unwrap().document().unwrap();
+    let header = document.get_element_by_id("app-header").unwrap();
+    let sidemenu = document.get_element_by_id("app-sidemenu").unwrap();
+    state.loc = [sidemenu.client_width() as f32, header.client_height() as f32];
     update(state, Msg::SetShowingState(true));
 }
 
