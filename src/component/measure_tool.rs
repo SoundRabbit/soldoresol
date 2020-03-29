@@ -31,6 +31,10 @@ pub fn close(state: &mut State) {
     form::close(&mut state.form_state);
 }
 
+pub fn is_moving(state: &State) -> bool {
+    form::is_moving(&state.form_state)
+}
+
 pub fn update(state: &mut State, msg: Msg) {
     match msg {
         Msg::FormMsg(m) => form::update(&mut state.form_state, m),

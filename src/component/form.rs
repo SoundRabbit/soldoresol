@@ -29,12 +29,19 @@ pub fn open(state: &mut State) {
     let document = web_sys::window().unwrap().document().unwrap();
     let header = document.get_element_by_id("app-header").unwrap();
     let sidemenu = document.get_element_by_id("app-sidemenu").unwrap();
-    state.loc = [sidemenu.client_width() as f32, header.client_height() as f32];
+    state.loc = [
+        sidemenu.client_width() as f32,
+        header.client_height() as f32,
+    ];
     update(state, Msg::SetShowingState(true));
 }
 
 pub fn close(state: &mut State) {
     update(state, Msg::SetShowingState(false));
+}
+
+pub fn is_moving(state: &State) -> bool {
+    state.moving
 }
 
 pub fn update(state: &mut State, msg: Msg) {
@@ -79,8 +86,7 @@ pub fn render<M: 'static>(
         attributes
             .class("form")
             .style("left", state.loc[0].to_string() + "px")
-            .style("top", state.loc[1].to_string() + "px")
-            .string("data-form-moving", state.moving.to_string()),
+            .style("top", state.loc[1].to_string() + "px"),
         events,
         vec![
             Html::div(

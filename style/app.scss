@@ -6,6 +6,9 @@
     height: 100%;
     overflow: hidden;
     position: relative;
+    &[data-app-some_form_is_moving="true"] {
+        user-select: none;
+    }
 }
 
 #table {

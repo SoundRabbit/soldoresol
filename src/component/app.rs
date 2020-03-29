@@ -267,8 +267,13 @@ fn render_table(table: &mut Table, m: (f32, f32), r: (f32, f32), d: f32) {
 
 fn render(state: &State) -> Html<Msg> {
     let (table_grabbed_r, table_grabbed_l) = state.table_grabbed;
+    let some_form_is_moving = handout::is_moving(&state.handout_state)
+        || measure_tool::is_moving(&state.measure_tool_state);
     Html::div(
-        Attributes::new().id("app"),
+        Attributes::new().id("app").string(
+            "data-app-some_form_is_moving",
+            some_form_is_moving.to_string(),
+        ),
         Events::new(),
         vec![
             Html::canvas(
