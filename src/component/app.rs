@@ -51,20 +51,11 @@ pub struct Sub;
 pub fn new() -> Component<Msg, State, Sub> {
     Component::new(init, update, render).batch(|mut handler| {
         let a = Closure::wrap(Box::new(move || {
-            handler(Msg::SetTableContext(
-                web_sys::window()
-                    .unwrap()
-                    .document()
-                    .unwrap()
-                    .get_element_by_id("table")
-                    .unwrap()
-                    .dyn_into::<web_sys::HtmlCanvasElement>()
-                    .unwrap(),
-            ));
+            handler(Msg::ResizeTable);
         }) as Box<dyn FnMut()>);
         web_sys::window()
             .unwrap()
-            .set_onload(Some(a.as_ref().unchecked_ref()));
+            .set_onresize(Some(a.as_ref().unchecked_ref()));
         a.forget();
     })
 }
@@ -86,7 +77,19 @@ fn init() -> (State, Cmd<Msg, Sub>) {
         handout_state: handout::init(),
         show_handout: false,
     };
-    (state, Cmd::none())
+    let task = Cmd::task(|handler| {
+        handler(Msg::SetTableContext(
+            web_sys::window()
+                .unwrap()
+                .document()
+                .unwrap()
+                .get_element_by_id("table")
+                .unwrap()
+                .dyn_into::<web_sys::HtmlCanvasElement>()
+                .unwrap(),
+        ));
+    });
+    (state, task)
 }
 
 fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
@@ -215,7 +218,9 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             Cmd::none()
         }
         Msg::ZoomTableCamera(wheel) => {
-            state.table_distance = (state.table_distance + (wheel / 20.0) as f32).max(0.0);
+            state.table_distance = (state.table_distance + (wheel / 20.0) as f32)
+                .max(1.0)
+                .min(100.0);
             render_table(
                 &mut state.table,
                 state.table_movement,
@@ -261,10 +266,7 @@ fn render(state: &State) -> Html<Msg> {
         Events::new(),
         vec![
             Html::canvas(
-                Attributes::new()
-                    .id("table")
-                    .int("height", state.table_height as i64)
-                    .int("width", state.table_width as i64),
+                Attributes::new().id("table"),
                 Events::new()
                     .on_mousedown(move |e| {
                         let l = e.buttons() & 1 != 0 || table_grabbed_r;

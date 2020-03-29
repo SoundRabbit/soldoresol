@@ -185,8 +185,13 @@ impl Table {
     fn get_perspective(&self) -> Array2<f32> {
         if let Some(context) = &self.context {
             let gl = &context.gl;
-            let h = gl.drawing_buffer_height() as f32;
-            let w = gl.drawing_buffer_width() as f32;
+            let canvas = gl
+                .canvas()
+                .unwrap()
+                .dyn_into::<web_sys::HtmlCanvasElement>()
+                .unwrap();
+            let h = canvas.height() as f32;
+            let w = canvas.width() as f32;
             let aspect = w / h;
             let field_of_view = 30.0;
             let near = 0.01;
@@ -597,10 +602,11 @@ impl Table {
                     web_sys::WebGlRenderingContext::UNSIGNED_SHORT,
                     0,
                 );
-            }) as Box<FnOnce()>);
+            }) as Box<dyn FnOnce()>);
             web_sys::window()
                 .unwrap()
-                .request_animation_frame(a.as_ref().unchecked_ref());
+                .request_animation_frame(a.as_ref().unchecked_ref())
+                .expect("");
             a.forget();
             if let Some(texture) = &self.pointer_layer_context {
                 let height = self.pointer_layer.width() as f64;
@@ -623,10 +629,14 @@ impl Table {
                 .unwrap()
                 .dyn_into::<web_sys::HtmlCanvasElement>()
                 .unwrap();
-            let height = canvas.client_height();
-            let width = canvas.client_width();
+            let device_pixel_ratio = web_sys::window().unwrap().device_pixel_ratio();
+            let height = (canvas.client_height() as f64 * device_pixel_ratio).floor();
+            let width = (canvas.client_width() as f64 * device_pixel_ratio).floor();
 
-            gl.viewport(0, 0, width, height);
+            canvas.set_width(width as u32);
+            canvas.set_height(height as u32);
+
+            gl.viewport(0, 0, canvas.width() as i32, canvas.height() as i32);
         }
     }
 }
