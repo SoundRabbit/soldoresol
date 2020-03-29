@@ -2,10 +2,14 @@
 
 .form {
     position: absolute;
-    min-width: 10vw;
-    border: 1px solid $gray;
     padding: 0;
     border-radius: 0.3rem;
+    display: grid;
+    grid-template-columns: max-content 1fr max-content;
+    grid-template-rows: max-content 1fr max-content max-content;
+    border: 1px solid $gray;
+    grid-template-areas: "hdr hdr hdr" "l bdy r" "lb b rb";
+    background-color: white;
 }
 
 .form-header {
@@ -19,15 +23,62 @@
     grid-auto-columns: max-content;
     grid-auto-flow: column;
     align-items: center;
+    grid-area: hdr;
 }
 
 .form-body {
     padding-left: 1ch;
     padding-right: 1ch;
-    background-color: white;
+    grid-area: bdy;
 }
 
-.form-footer {
+.form-lefter, .form-righter, .form-l_bottomer, .form-r_bottomer {
+    width: 0.5ch;
+}
+
+.form-lefter {
+    grid-area: l;
+}
+
+.form-righter {
+    grid-area: r;
+}
+
+.form-bottomer {
+    height: 1ch;
     background-color: $gray;
-    min-height: 0.5rem;
+    grid-area: b;
+}
+
+.form-l_bottomer {
+    background-color: $gray;
+    grid-area: lb;
+}
+
+.form-r_bottomer {
+    background-color: $gray;
+    grid-area: rb;
+}
+
+.form[data-form-resizable="true"] {
+    & > .form-lefter, & > .form-righter {
+        &:hover {
+            cursor: ew-resize;
+        }
+    }
+    & > .form-bottomer {
+        &:hover {
+            cursor: ns-resize;
+        }
+    }
+    & > .form-l_bottomer {
+        &:hover {
+            cursor: nesw-resize
+        }
+    }
+    & > .form-r_bottomer {
+        &:hover {
+            cursor: nwse-resize;
+        }
+    }
 }
