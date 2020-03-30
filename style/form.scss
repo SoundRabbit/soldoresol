@@ -6,9 +6,9 @@
     border-radius: 0.3rem;
     display: grid;
     grid-template-columns: max-content 1fr max-content;
-    grid-template-rows: max-content 1fr max-content;
+    grid-template-rows: max-content max-content 1fr max-content;
     border: 1px solid $gray;
-    grid-template-areas: "hdr hdr hdr" "l bdy r" "lb b rb";
+    grid-template-areas: "lt t rt" "lt hdr rt" "l bdy r" "lb b rb";
     background-color: white;
 }
 
@@ -18,13 +18,13 @@
     color: white;
     padding-left: 2ch;
     padding-right: 1ch;
+    padding-bottom: 1ch;
     display: grid;
     grid-template-columns: 1fr;
     grid-auto-columns: max-content;
     grid-auto-flow: column;
     align-items: center;
     grid-area: hdr;
-    line-height: 2;
 }
 
 .form-body {
@@ -33,51 +33,74 @@
     grid-area: bdy;
 }
 
-.form-lefter, .form-righter, .form-l_bottomer, .form-r_bottomer {
-    width: 0.5ch;
-}
-
-.form-lefter {
-    grid-area: l;
-}
-
-.form-righter {
-    grid-area: r;
-}
-
-.form-bottomer {
-    height: 1ch;
-    background-color: $gray;
-    grid-area: b;
-}
-
-.form-l_bottomer {
-    background-color: $gray;
-    grid-area: lb;
-}
-
-.form-r_bottomer {
-    background-color: $gray;
-    grid-area: rb;
+.form[data-form-resizable="false"] {
+    border-bottom-width: 1ch;
+    & > .form-header {
+        padding-top: 1ch;
+    }
 }
 
 .form[data-form-resizable="true"] {
+    & .form-lefter, & > .form-righter,  & > .form-l_topper, & > .form-r_topper, & > .form-l_bottomer, & > .form-r_bottomer {
+        width: 0.5ch;
+    }
+
+    & > .form-topper, & > .form-bottomer, & > .form-l_topper, & > .form-r_topper, & > .form-l_bottomer, & > .form-r_bottomer {
+        background-color: $gray;
+    }
+
+    & > .form-topper, & > .form-bottomer {
+        height: 1ch;
+    }
+
+    & > .form-lefter {
+        grid-area: l;
+    }
+
+    & > .form-righter {
+        grid-area: r;
+    }
+
+    & > .form-topper {
+        grid-area: t;
+    }
+
+    & > .form-bottomer {
+        grid-area: b;
+    }
+
+    & > .form-l_topper {
+        grid-area: lt;
+    }
+
+    & > .form-r_topper {
+        grid-area: rt;
+    }
+
+    & > .form-l_bottomer {
+        grid-area: lb;
+    }
+
+    & > .form-r_bottomer {
+        grid-area: rb;
+    }
+
     & > .form-lefter, & > .form-righter {
         &:hover {
             cursor: ew-resize;
         }
     }
-    & > .form-bottomer {
+    & > .form-topper , & > .form-bottomer {
         &:hover {
             cursor: ns-resize;
         }
     }
-    & > .form-l_bottomer {
+    & > .form-r_topper, & > .form-l_bottomer {
         &:hover {
             cursor: nesw-resize
         }
     }
-    & > .form-r_bottomer {
+    & > .form-l_topper, & > .form-r_bottomer {
         &:hover {
             cursor: nwse-resize;
         }

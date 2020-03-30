@@ -53,7 +53,7 @@ pub fn render<M: 'static>(
 ) -> Html<M> {
     form::render(
         false,
-        true,
+        false,
         &state.form_state,
         || {
             let messenger = messenger_gen();

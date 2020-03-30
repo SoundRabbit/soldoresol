@@ -19,7 +19,10 @@ pub enum Msg {
     SetShowingState(bool),
     ResizeL(f32),
     ResizeR(f32),
+    ResizeT(f32),
     ResizeB(f32),
+    ResizeLT([f32; 2]),
+    ResizeRT([f32; 2]),
     ResizeLB([f32; 2]),
     ResizeRB([f32; 2]),
 }
@@ -98,6 +101,16 @@ pub fn update(state: &mut State, msg: Msg) {
                 state.resizing = false;
             }
         }
+        Msg::ResizeT(y) => {
+            if state.dragged && !state.moving {
+                let y = y + state.drag_position[1];
+                state.size[1] += state.loc[1] - y;
+                state.loc[1] = y;
+                state.resizing = true;
+            } else {
+                state.resizing = false;
+            }
+        }
         Msg::ResizeB(y) => {
             if state.dragged && !state.moving {
                 state.size[1] = y - state.loc[1];
@@ -105,6 +118,14 @@ pub fn update(state: &mut State, msg: Msg) {
             } else {
                 state.resizing = false;
             }
+        }
+        Msg::ResizeLT(p) => {
+            update(state, Msg::ResizeL(p[0]));
+            update(state, Msg::ResizeT(p[1]));
+        }
+        Msg::ResizeRT(p) => {
+            update(state, Msg::ResizeR(p[0]));
+            update(state, Msg::ResizeT(p[1]));
         }
         Msg::ResizeLB(p) => {
             update(state, Msg::ResizeL(p[0]));
@@ -220,11 +241,32 @@ pub fn render<M: 'static>(
                     Box::new(|e| m(Msg::ResizeR(e.client_x() as f32)))
                 }
             }),
+            render_resizer("form-topper", {
+                let messenger = messenger_gen();
+                move || {
+                    let m = messenger();
+                    Box::new(|e| m(Msg::ResizeT(e.client_y() as f32)))
+                }
+            }),
             render_resizer("form-bottomer", {
                 let messenger = messenger_gen();
                 move || {
                     let m = messenger();
                     Box::new(|e| m(Msg::ResizeB(e.client_y() as f32)))
+                }
+            }),
+            render_resizer("form-l_topper", {
+                let messenger = messenger_gen();
+                move || {
+                    let m = messenger();
+                    Box::new(|e| m(Msg::ResizeLT([e.client_x() as f32, e.client_y() as f32])))
+                }
+            }),
+            render_resizer("form-r_topper", {
+                let messenger = messenger_gen();
+                move || {
+                    let m = messenger();
+                    Box::new(|e| m(Msg::ResizeRT([e.client_x() as f32, e.client_y() as f32])))
                 }
             }),
             render_resizer("form-l_bottomer", {
