@@ -2,8 +2,10 @@
 @import "btn";
 @import "chat";
 @import "checkbox";
+@import "color";
 @import "form";
 @import "handout";
+@import "icon";
 @import "measure_length";
 @import "radio";
 
@@ -12,4 +14,20 @@ html, body {
     margin: 0;
     width: 100%;
     height: 100%;
+    line-height: 1;
+}
+
+::-webkit-scrollbar {
+    width: 1.2ch;
+    height: 1.2ch;
+}
+
+::-webkit-scrollbar-track {
+    border-radius: 0.5ch;
+    background-color: $gray-100;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: $gray-300;
+    border-radius: 0.5ch;
 }

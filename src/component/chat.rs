@@ -2,7 +2,7 @@ use kagura::prelude::*;
 
 use super::btn;
 use super::form;
-use super::radio;
+use super::icon;
 
 pub struct State {
     form_state: form::State,
@@ -90,24 +90,32 @@ fn render_controller<M>() -> Html<M> {
                 Attributes::new().class("chat-controller-sending_option"),
                 Events::new(),
                 vec![
-                    Html::div(Attributes::new(), Events::new(), vec![Html::text("from:")]),
+                    Html::div(
+                        Attributes::new(),
+                        Events::new(),
+                        vec![Html::text("送り主:")],
+                    ),
                     Html::div(
                         Attributes::new().class("chat-controller-sending_option-list"),
                         Events::new(),
                         vec![btn::success(
                             Attributes::new(),
                             Events::new(),
-                            vec![Html::text("追加")],
+                            vec![Html::text("＋")],
                         )],
                     ),
-                    Html::div(Attributes::new(), Events::new(), vec![Html::text("to:")]),
+                    Html::div(
+                        Attributes::new(),
+                        Events::new(),
+                        vec![Html::text("送り先:")],
+                    ),
                     Html::div(
                         Attributes::new().class("chat-controller-sending_option-list"),
                         Events::new(),
                         vec![btn::success(
                             Attributes::new(),
                             Events::new(),
-                            vec![Html::text("追加")],
+                            vec![Html::text("＋")],
                         )],
                     ),
                 ],
@@ -136,18 +144,74 @@ fn render_tabs<M>() -> Html<M> {
             Html::div(
                 Attributes::new().class("chat-tabs-list"),
                 Events::new(),
-                vec![btn::tab(
-                    false,
-                    false,
-                    Attributes::new(),
-                    Events::new(),
-                    "追加",
-                )],
+                vec![
+                    btn::tab(false, true, Attributes::new(), Events::new(), "●●●"),
+                    btn::tab(false, true, Attributes::new(), Events::new(), "●●●"),
+                    btn::tab(false, true, Attributes::new(), Events::new(), "●●●"),
+                    btn::tab(false, true, Attributes::new(), Events::new(), "●●●"),
+                    btn::tab(false, false, Attributes::new(), Events::new(), "＋"),
+                ],
             ),
             Html::div(
                 Attributes::new().class("chat-tabs-log"),
                 Events::new(),
-                vec![],
+                vec![
+                    render_tabs_log_column(),
+                    render_tabs_log_column(),
+                    render_tabs_log_column(),
+                    render_tabs_log_column(),
+                    render_tabs_log_column(),
+                ],
+            ),
+        ],
+    )
+}
+
+fn render_tabs_log_column<M>() -> Html<M> {
+    Html::div(
+        Attributes::new().class("chat-tabs-log-column"),
+        Events::new(),
+        vec![
+            Html::div(
+                Attributes::new().class("chat-tabs-log-column-heading"),
+                Events::new(),
+                vec![Html::text("●●●")],
+            ),
+            Html::div(
+                Attributes::new().class("chat-tabs-log-column-content"),
+                Events::new(),
+                vec![
+                    render_tabs_log_column_content_message(),
+                    render_tabs_log_column_content_message(),
+                    render_tabs_log_column_content_message(),
+                    render_tabs_log_column_content_message(),
+                    render_tabs_log_column_content_message(),
+                ],
+            ),
+        ],
+    )
+}
+
+fn render_tabs_log_column_content_message<M>() -> Html<M> {
+    Html::div(
+        Attributes::new().class("chat-tabs-log-column-content-message"),
+        Events::new(),
+        vec![
+            icon::medium(Attributes::new().class("chat-tabs-log-column-content-message-icon"), Events::new()),
+            Html::div(
+                Attributes::new().class("chat-tabs-log-column-content-message-sender"),
+                Events::new(),
+                vec![Html::text("●●●●")],
+            ),
+            Html::div(
+                Attributes::new().class("chat-tabs-log-column-content-message-timestamp"),
+                Events::new(),
+                vec![Html::text("YYYY/MM/DD hh:mm:ss")],
+            ),
+            Html::div(
+                Attributes::new().class("chat-tabs-log-column-content-message-text"),
+                Events::new(),
+                vec![Html::text("あらゆる現実をすべて自分の方に捻じ曲げたのだ。一週間ばかりニューヨークを取材した。テレビゲームやパソコンでゲームをして遊ぶ。物価の変動を考慮して給付水準を決める必要がある。")],
             ),
         ],
     )

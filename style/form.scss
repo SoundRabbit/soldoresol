@@ -6,7 +6,7 @@
     border-radius: 0.3rem;
     display: grid;
     grid-template-columns: max-content 1fr max-content;
-    grid-template-rows: max-content 1fr max-content max-content;
+    grid-template-rows: max-content 1fr max-content;
     border: 1px solid $gray;
     grid-template-areas: "hdr hdr hdr" "l bdy r" "lb b rb";
     background-color: white;
@@ -24,6 +24,7 @@
     grid-auto-flow: column;
     align-items: center;
     grid-area: hdr;
+    line-height: 2;
 }
 
 .form-body {

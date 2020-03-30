@@ -7,6 +7,11 @@
     grid-template-areas: "ctr gap tbs";
     padding-left: 0;
     padding-right: 0;
+    overflow-y: hidden;
+}
+
+.chat-gap {
+    grid-area: gap;
 }
 
 .chat-controller {
@@ -17,8 +22,7 @@
     grid-area: ctr;
     row-gap: 0.5ch;
     padding-bottom: 0.5ch;
-    width: 23rem;
-    overflow-x: hidden;
+    width: 19rem;
 }
 
 .chat-controller-chat_pallet {
@@ -32,14 +36,18 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    & > *:not(:last-child) {
-        margin-right: 1ch;
+    & > * {
+        margin-top: 0.25ch;
+        margin-bottom: 0.25ch;
+        &:not(:last-child) {
+            margin-right: 1ch;
+        }
     }
 }
 
 .chat-controller-sending_option {
     display: grid;
-    grid-template-columns: min-content 1fr;
+    grid-template-columns: max-content 1fr;
     grid-template-rows: max-content max-content;
     column-gap: 0.5ch;
     align-items: center;
@@ -66,16 +74,90 @@
 .chat-tabs {
     grid-area: tbs;
     display: grid;
-    grid-template-rows: max-content 1fr;
+    grid-template-columns: max-content 1fr;
+    overflow-y: hidden;
 }
 
 .chat-tabs-list {
     display: flex;
     flex-wrap: wrap;
+    flex-direction: column;
+    border-right: 0.5ch solid $gray-900;
+    background-color: $gray-500;
+    padding-left: 1ch;
+    justify-content: flex-end;
+    & > .btn_tab {
+        margin-top: 0.25ch;
+        margin-bottom: 0.25ch;
+        &:last-child {
+            border-radius: 0.3em;
+            align-self: center;
+        }
+    }
 }
 
 .chat-tabs-log {
-    border-top: 0.5ch solid $gray-900;
+    overflow-x: scroll;
+    overflow-y: hidden;
+    display: grid;
+    grid-auto-columns: 23rem;
+    grid-template-rows: 1fr;
+    column-gap: 0.5ch;
+    background-color: $gray-200;
+    grid-auto-flow: column;
+}
+
+.chat-tabs-log-column {
+    background-color: white;
+    display: grid;
+    grid-template-rows: max-content 1fr;
+    overflow-y: hidden;
+}
+
+.chat-tabs-log-column-heading {
+    font-size: 1.2rem;
+    background-color: $gray-200;
+    padding-left: 1ch;
+    padding-right: 1ch;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipse;
+    line-height: 2;
+}
+
+.chat-tabs-log-column-content {
     overflow-y: scroll;
     overflow-x: hidden;
+}
+
+.chat-tabs-log-column-content-message {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    grid-template-rows: max-content max-content max-content;
+    grid-template-areas: "icon sender" "icon timestamp" "icon text";
+    column-gap: 1ch;
+    row-gap: 0.5ch;
+    padding: 1ch;
+}
+
+.chat-tabs-log-column-content-message-icon {
+    grid-area: icon;
+}
+
+.chat-tabs-log-column-content-message-sender {
+    grid-area: sender;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipse;
+}
+
+.chat-tabs-log-column-content-message-timestamp {
+    grid-area: timestamp;
+    color: $gray-500;
+}
+
+.chat-tabs-log-column-content-message-text {
+    grid-area: text;
+    white-space: normal;
+    overflow-wrap: anywhere;
 }

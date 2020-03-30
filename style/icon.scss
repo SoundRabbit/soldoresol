@@ -1,0 +1,18 @@
+@import "color";
+
+.icon {
+    border-radius: 50%;
+    background-color: $blue-700;
+    &[data-icon-variant="small"] {
+        width: 1rem;
+        height: 1rem;
+    }
+    &[data-icon-variant="medium"] {
+        width: 3.6rem;
+        height: 3.6rem;
+    }
+    &[data-icon-variant="large"] {
+        width: 5.2rem;
+        height: 5.2rem;
+    }
+}

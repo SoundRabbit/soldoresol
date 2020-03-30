@@ -55,7 +55,7 @@ pub fn render<M: 'static>(
     let m_2 = messenger();
     form::render(
         false,
-        false,
+        true,
         &state.form_state,
         move || {
             let messenger = messenger();

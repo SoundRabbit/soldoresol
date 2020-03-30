@@ -28,7 +28,7 @@ pub fn init() -> State {
     let h = window.inner_height().unwrap().as_f64().unwrap() as f32;
     State {
         loc: [0.0, 0.0],
-        size: [w * 0.6, h * 0.7],
+        size: [w * 0.6, h * 0.6],
         drag_position: [0.0, 0.0],
         dragged: false,
         moving: false,
@@ -135,8 +135,10 @@ pub fn render<M: 'static>(
         .string("data-form-resizable", resizable.to_string());
     let attributes = if resizable {
         attributes
-            .style("width", state.size[0].to_string() + "px")
-            .style("height", state.size[1].to_string() + "px")
+            .style("min-width", state.size[0].to_string() + "px")
+            .style("min-height", state.size[1].to_string() + "px")
+            .style("max-width", state.size[0].to_string() + "px")
+            .style("max-height", state.size[1].to_string() + "px")
     } else {
         attributes
     };
@@ -162,6 +164,10 @@ pub fn render<M: 'static>(
                 }
             })
             .on_mouseleave({
+                let m = messenger();
+                |e| m(Msg::MoveForm([e.client_x() as f32, e.client_y() as f32]))
+            })
+            .on_mouseenter({
                 let m = messenger();
                 |e| m(Msg::MoveForm([e.client_x() as f32, e.client_y() as f32]))
             })
@@ -208,6 +214,13 @@ pub fn render<M: 'static>(
                             m(Msg::ResizeL(e.client_x() as f32))
                         }
                     })
+                    .on_mouseenter({
+                        let m = messenger();
+                        |e| {
+                            e.stop_propagation();
+                            m(Msg::ResizeL(e.client_x() as f32))
+                        }
+                    })
                     .on_mousemove({
                         let m = messenger();
                         |e| {
@@ -221,6 +234,13 @@ pub fn render<M: 'static>(
                 Attributes::new().class("form-righter"),
                 Events::new()
                     .on_mouseleave({
+                        let m = messenger();
+                        |e| {
+                            e.stop_propagation();
+                            m(Msg::ResizeR(e.client_x() as f32))
+                        }
+                    })
+                    .on_mouseenter({
                         let m = messenger();
                         |e| {
                             e.stop_propagation();
@@ -246,6 +266,13 @@ pub fn render<M: 'static>(
                             m(Msg::ResizeB(e.client_y() as f32))
                         }
                     })
+                    .on_mouseenter({
+                        let m = messenger();
+                        |e| {
+                            e.stop_propagation();
+                            m(Msg::ResizeB(e.client_y() as f32))
+                        }
+                    })
                     .on_mousemove({
                         let m = messenger();
                         |e| {
@@ -265,6 +292,13 @@ pub fn render<M: 'static>(
                             m(Msg::ResizeLB([e.client_x() as f32, e.client_y() as f32]))
                         }
                     })
+                    .on_mouseenter({
+                        let m = messenger();
+                        |e| {
+                            e.stop_propagation();
+                            m(Msg::ResizeLB([e.client_x() as f32, e.client_y() as f32]))
+                        }
+                    })
                     .on_mousemove({
                         let m = messenger();
                         |e| {
@@ -278,6 +312,13 @@ pub fn render<M: 'static>(
                 Attributes::new().class("form-r_bottomer"),
                 Events::new()
                     .on_mouseleave({
+                        let m = messenger();
+                        |e| {
+                            e.stop_propagation();
+                            m(Msg::ResizeRB([e.client_x() as f32, e.client_y() as f32]))
+                        }
+                    })
+                    .on_mouseenter({
                         let m = messenger();
                         |e| {
                             e.stop_propagation();
