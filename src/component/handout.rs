@@ -46,6 +46,8 @@ pub fn update(state: &mut State, msg: Msg) {
 pub fn render<M: 'static>(
     state: &State,
     messenger_gen: impl Fn() -> MessengerGen<Msg, M>,
+    attributes: Attributes,
+    events: Events<M>,
 ) -> Html<M> {
     form::render(
         true,
@@ -58,8 +60,8 @@ pub fn render<M: 'static>(
                 Box::new(|msg| m(Msg::FormMsg(msg)))
             })
         },
-        Attributes::new().class("handout"),
-        Events::new(),
+        attributes.class("handout"),
+        events,
         "資料",
         vec![],
     )

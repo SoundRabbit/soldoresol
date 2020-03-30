@@ -48,6 +48,8 @@ pub fn update(state: &mut State, msg: Msg) {
 pub fn render<M: 'static>(
     state: &State,
     messenger_gen: impl Fn() -> MessengerGen<Msg, M>,
+    attributes: Attributes,
+    events: Events<M>,
 ) -> Html<M> {
     form::render(
         true,
@@ -60,8 +62,8 @@ pub fn render<M: 'static>(
                 Box::new(|msg| m(Msg::FormMsg(msg)))
             })
         },
-        Attributes::new().class("chat"),
-        Events::new(),
+        attributes.class("chat"),
+        events,
         "チャット",
         vec![render_controller(), render_gap(), render_tabs()],
     )

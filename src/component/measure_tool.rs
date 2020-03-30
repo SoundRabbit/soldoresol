@@ -50,6 +50,8 @@ pub fn update(state: &mut State, msg: Msg) {
 pub fn render<M: 'static>(
     state: &State,
     messenger_gen: impl Fn() -> MessengerGen<Msg, M>,
+    attributes: Attributes,
+    events: Events<M>,
 ) -> Html<M> {
     form::render(
         false,
@@ -62,8 +64,8 @@ pub fn render<M: 'static>(
                 Box::new(|msg| m(Msg::FormMsg(msg)))
             })
         },
-        Attributes::new().id("measure_tool"),
-        Events::new(),
+        attributes.id("measure_tool"),
+        events,
         "測定オプション",
         vec![
             checkbox(

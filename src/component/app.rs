@@ -1,7 +1,3 @@
-use kagura::prelude::*;
-use wasm_bindgen::prelude::*;
-use wasm_bindgen::JsCast;
-
 use super::btn;
 use super::chat;
 use super::handout;
@@ -9,6 +5,16 @@ use super::measure_length::measure_length;
 use super::measure_tool;
 use super::radio::radio;
 use crate::table::Table;
+use kagura::prelude::*;
+use wasm_bindgen::prelude::*;
+use wasm_bindgen::JsCast;
+
+#[derive(Clone)]
+pub enum FormKind {
+    Chat,
+    Handout,
+    MeasureTool,
+}
 
 pub enum TableTool {
     Selecter,
@@ -32,6 +38,7 @@ pub struct State {
     measure_tool_state: measure_tool::State,
     handout_state: handout::State,
     chat_state: chat::State,
+    form_priority: [FormKind; 3],
 }
 
 pub enum Msg {
@@ -47,6 +54,7 @@ pub enum Msg {
     HandoutMsg(handout::Msg),
     ChatMsg(chat::Msg),
     OpenChatForm,
+    SetTopForm(usize),
 }
 
 pub struct Sub;
@@ -79,6 +87,7 @@ fn init() -> (State, Cmd<Msg, Sub>) {
         measure_tool_state: measure_tool::init(),
         handout_state: handout::init(),
         chat_state: chat::init(),
+        form_priority: [FormKind::Chat, FormKind::Handout, FormKind::MeasureTool],
     };
     let task = Cmd::task(|handler| {
         handler(Msg::SetTableContext(
@@ -116,6 +125,21 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
         Msg::OpenChatForm => {
             chat::toggle_open_close(&mut state.chat_state);
+            Cmd::none()
+        }
+        Msg::SetTopForm(idx) => {
+            let mut d = 0;
+            let len = state.form_priority.len();
+            let mut fp = [FormKind::Chat, FormKind::Chat, FormKind::Chat];
+            for i in 0..len {
+                if i == idx {
+                    fp[len - 1] = state.form_priority[i].clone();
+                    d = 1;
+                } else {
+                    fp[i - d] = state.form_priority[i].clone();
+                }
+            }
+            state.form_priority = fp;
             Cmd::none()
         }
         Msg::SetTableContext(canvas) => {
@@ -285,58 +309,73 @@ fn render(state: &State) -> Html<Msg> {
     let some_form_is_moving = chat::is_moving(&state.chat_state)
         || handout::is_moving(&state.handout_state)
         || measure_tool::is_moving(&state.measure_tool_state);
+    let mut children = vec![
+        render_table_canvas(table_grabbed_r, table_grabbed_l),
+        render_side_menu(),
+        render_header(&state.room_name),
+    ];
+    for i in 0..state.form_priority.len() {
+        let ii = i;
+        children.push(match &state.form_priority[i] {
+            FormKind::Chat => chat::render(
+                &state.chat_state,
+                || Box::new(|| Box::new(|msg| Msg::ChatMsg(msg))),
+                Attributes::new(),
+                Events::new().on_click(move |_| Msg::SetTopForm(ii)),
+            ),
+            FormKind::Handout => handout::render(
+                &state.handout_state,
+                || Box::new(|| Box::new(|msg| Msg::HandoutMsg(msg))),
+                Attributes::new(),
+                Events::new().on_click(move |_| Msg::SetTopForm(ii)),
+            ),
+            FormKind::MeasureTool => measure_tool::render(
+                &state.measure_tool_state,
+                || Box::new(|| Box::new(|msg| Msg::MeasureToolMsg(msg))),
+                Attributes::new(),
+                Events::new().on_click(move |_| Msg::SetTopForm(ii)),
+            ),
+        })
+    }
     Html::div(
         Attributes::new().id("app").string(
             "data-app-some_form_is_moving",
             some_form_is_moving.to_string(),
         ),
         Events::new(),
-        vec![
-            Html::canvas(
-                Attributes::new().id("table"),
-                Events::new()
-                    .on_mousedown(move |e| {
-                        let l = e.buttons() & 1 != 0 || table_grabbed_r;
-                        let r = e.buttons() & 2 != 0 || table_grabbed_l;
-                        Msg::SetTableGrabbed((l, r), (e.client_x(), e.client_y()))
-                    })
-                    .on_mouseup(move |e| {
-                        let l = e.buttons() & 1 != 0 && table_grabbed_r;
-                        let r = e.buttons() & 2 != 0 && table_grabbed_l;
-                        Msg::SetTableGrabbed((l, r), (e.client_x(), e.client_y()))
-                    })
-                    .on_mouseleave(|_| Msg::SetTableGrabbed((false, false), (0, 0)))
-                    .on_mousemove(|e| {
-                        Msg::MoveTableCamera(
-                            (e.movement_x(), e.movement_y()),
-                            (e.client_x(), e.client_y()),
-                        )
-                    })
-                    .on("wheel", |e| {
-                        Msg::ZoomTableCamera(e.dyn_into::<web_sys::WheelEvent>().unwrap().delta_y())
-                    })
-                    .on_contextmenu(|e| {
-                        e.prevent_default();
-                        Msg::NoOp
-                    }),
-                vec![],
-            ),
-            render_side_menu(),
-            render_header(&state.room_name),
-            match &state.table_measure {
-                Some((s, p, len)) => measure_length(&s, &p, len.clone()),
-                _ => Html::none(),
-            },
-            measure_tool::render(&state.measure_tool_state, || {
-                Box::new(|| Box::new(|msg| Msg::MeasureToolMsg(msg)))
+        children,
+    )
+}
+
+fn render_table_canvas(table_grabbed_l: bool, table_grabbed_r: bool) -> Html<Msg> {
+    Html::canvas(
+        Attributes::new().id("table"),
+        Events::new()
+            .on_mousedown(move |e| {
+                let l = e.buttons() & 1 != 0 || table_grabbed_r;
+                let r = e.buttons() & 2 != 0 || table_grabbed_l;
+                Msg::SetTableGrabbed((l, r), (e.client_x(), e.client_y()))
+            })
+            .on_mouseup(move |e| {
+                let l = e.buttons() & 1 != 0 && table_grabbed_r;
+                let r = e.buttons() & 2 != 0 && table_grabbed_l;
+                Msg::SetTableGrabbed((l, r), (e.client_x(), e.client_y()))
+            })
+            .on_mouseleave(|_| Msg::SetTableGrabbed((false, false), (0, 0)))
+            .on_mousemove(|e| {
+                Msg::MoveTableCamera(
+                    (e.movement_x(), e.movement_y()),
+                    (e.client_x(), e.client_y()),
+                )
+            })
+            .on("wheel", |e| {
+                Msg::ZoomTableCamera(e.dyn_into::<web_sys::WheelEvent>().unwrap().delta_y())
+            })
+            .on_contextmenu(|e| {
+                e.prevent_default();
+                Msg::NoOp
             }),
-            handout::render(&state.handout_state, || {
-                Box::new(|| Box::new(|msg| Msg::HandoutMsg(msg)))
-            }),
-            chat::render(&state.chat_state, || {
-                Box::new(|| Box::new(|msg| Msg::ChatMsg(msg)))
-            }),
-        ],
+        vec![],
     )
 }
 
