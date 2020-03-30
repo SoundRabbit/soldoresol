@@ -8,3 +8,6 @@ mod icon;
 mod measure_length;
 mod measure_tool;
 mod radio;
+
+type Messenger<From: 'static, To: 'static> = Box<dyn FnOnce(From) -> To + 'static>;
+type MessengerGen<From: 'static, To: 'static> = Box<dyn Fn() -> Messenger<From, To>>;

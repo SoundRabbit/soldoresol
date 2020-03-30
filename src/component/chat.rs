@@ -3,6 +3,7 @@ use kagura::prelude::*;
 use super::btn;
 use super::form;
 use super::icon;
+use super::MessengerGen;
 
 pub struct State {
     form_state: form::State,
@@ -38,15 +39,18 @@ pub fn update(state: &mut State, msg: Msg) {
 
 pub fn render<M: 'static>(
     state: &State,
-    messenger: impl Fn() -> Box<dyn FnOnce(Msg) -> M + 'static> + 'static,
+    messenger_gen: impl Fn() -> MessengerGen<Msg, M>,
 ) -> Html<M> {
     form::render(
         true,
         true,
         &state.form_state,
-        move || {
-            let messenger = messenger();
-            Box::new(|msg| messenger(Msg::FormMsg(msg)))
+        || {
+            let messenger = messenger_gen();
+            Box::new(move || {
+                let m = messenger();
+                Box::new(|msg| m(Msg::FormMsg(msg)))
+            })
         },
         Attributes::new().class("chat"),
         Events::new(),

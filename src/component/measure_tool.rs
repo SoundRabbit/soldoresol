@@ -1,7 +1,7 @@
-use kagura::prelude::*;
-
 use super::checkbox::checkbox;
 use super::form;
+use super::MessengerGen;
+use kagura::prelude::*;
 
 pub struct State {
     form_state: form::State,
@@ -49,17 +49,18 @@ pub fn update(state: &mut State, msg: Msg) {
 
 pub fn render<M: 'static>(
     state: &State,
-    messenger: impl Fn() -> Box<dyn FnOnce(Msg) -> M + 'static> + 'static,
+    messenger_gen: impl Fn() -> MessengerGen<Msg, M>,
 ) -> Html<M> {
-    let m_1 = messenger();
-    let m_2 = messenger();
     form::render(
         false,
         true,
         &state.form_state,
-        move || {
-            let messenger = messenger();
-            Box::new(|msg| messenger(Msg::FormMsg(msg)))
+        || {
+            let messenger = messenger_gen();
+            Box::new(move || {
+                let m = messenger();
+                Box::new(|msg| m(Msg::FormMsg(msg)))
+            })
         },
         Attributes::new().id("measure_tool"),
         Events::new(),
@@ -69,7 +70,8 @@ pub fn render<M: 'static>(
                 Attributes::new(),
                 Events::new().on_click({
                     let f = state.show_circle_on_table;
-                    move |_| m_1(Msg::SetShowCircleOnTableFlag(!f))
+                    let m = messenger_gen()();
+                    move |_| m(Msg::SetShowCircleOnTableFlag(!f))
                 }),
                 "テーブルに円を表示",
                 state.show_circle_on_table,
@@ -78,7 +80,8 @@ pub fn render<M: 'static>(
                 Attributes::new(),
                 Events::new().on_click({
                     let f = state.bind_to_grid;
-                    move |_| m_2(Msg::SetBindToGridFlag(!f))
+                    let m = messenger_gen()();
+                    move |_| m(Msg::SetBindToGridFlag(!f))
                 }),
                 "グリッドにスナップ",
                 state.bind_to_grid,

@@ -1,5 +1,7 @@
 use super::btn;
+use super::MessengerGen;
 use kagura::prelude::*;
+use wasm_bindgen::JsCast;
 
 pub struct State {
     loc: [f32; 2],
@@ -119,7 +121,7 @@ pub fn render<M: 'static>(
     closable: bool,
     resizable: bool,
     state: &State,
-    messenger: impl Fn() -> Box<dyn FnOnce(Msg) -> M + 'static> + 'static,
+    messenger_gen: impl Fn() -> MessengerGen<Msg, M>,
     attributes: Attributes,
     events: Events<M>,
     title: impl Into<String>,
@@ -146,7 +148,7 @@ pub fn render<M: 'static>(
         attributes,
         events
             .on_mousedown({
-                let m = messenger();
+                let m = messenger_gen()();
                 |e| {
                     m(Msg::SetDragged(
                         true,
@@ -155,7 +157,7 @@ pub fn render<M: 'static>(
                 }
             })
             .on_mouseup({
-                let m = messenger();
+                let m = messenger_gen()();
                 |e| {
                     m(Msg::SetDragged(
                         false,
@@ -164,15 +166,15 @@ pub fn render<M: 'static>(
                 }
             })
             .on_mouseleave({
-                let m = messenger();
+                let m = messenger_gen()();
                 |e| m(Msg::MoveForm([e.client_x() as f32, e.client_y() as f32]))
             })
             .on_mouseenter({
-                let m = messenger();
+                let m = messenger_gen()();
                 |e| m(Msg::MoveForm([e.client_x() as f32, e.client_y() as f32]))
             })
             .on_mousemove({
-                let m = messenger();
+                let m = messenger_gen()();
                 |e| m(Msg::MoveForm([e.client_x() as f32, e.client_y() as f32]))
             }),
         vec![
@@ -190,7 +192,7 @@ pub fn render<M: 'static>(
                         btn::close(
                             Attributes::new(),
                             Events::new().on_click({
-                                let m = messenger();
+                                let m = messenger_gen()();
                                 |e| m(Msg::SetShowingState(false))
                             }),
                         )
@@ -204,136 +206,73 @@ pub fn render<M: 'static>(
                 Events::new(),
                 children,
             ),
-            Html::div(
-                Attributes::new().class("form-lefter"),
-                Events::new()
-                    .on_mouseleave({
-                        let m = messenger();
-                        |e| {
-                            e.stop_propagation();
-                            m(Msg::ResizeL(e.client_x() as f32))
-                        }
-                    })
-                    .on_mouseenter({
-                        let m = messenger();
-                        |e| {
-                            e.stop_propagation();
-                            m(Msg::ResizeL(e.client_x() as f32))
-                        }
-                    })
-                    .on_mousemove({
-                        let m = messenger();
-                        |e| {
-                            e.stop_propagation();
-                            m(Msg::ResizeL(e.client_x() as f32))
-                        }
-                    }),
-                vec![],
-            ),
-            Html::div(
-                Attributes::new().class("form-righter"),
-                Events::new()
-                    .on_mouseleave({
-                        let m = messenger();
-                        |e| {
-                            e.stop_propagation();
-                            m(Msg::ResizeR(e.client_x() as f32))
-                        }
-                    })
-                    .on_mouseenter({
-                        let m = messenger();
-                        |e| {
-                            e.stop_propagation();
-                            m(Msg::ResizeR(e.client_x() as f32))
-                        }
-                    })
-                    .on_mousemove({
-                        let m = messenger();
-                        |e| {
-                            e.stop_propagation();
-                            m(Msg::ResizeR(e.client_x() as f32))
-                        }
-                    }),
-                vec![],
-            ),
-            Html::div(
-                Attributes::new().class("form-bottomer"),
-                Events::new()
-                    .on_mouseleave({
-                        let m = messenger();
-                        |e| {
-                            e.stop_propagation();
-                            m(Msg::ResizeB(e.client_y() as f32))
-                        }
-                    })
-                    .on_mouseenter({
-                        let m = messenger();
-                        |e| {
-                            e.stop_propagation();
-                            m(Msg::ResizeB(e.client_y() as f32))
-                        }
-                    })
-                    .on_mousemove({
-                        let m = messenger();
-                        |e| {
-                            e.stop_propagation();
-                            m(Msg::ResizeB(e.client_y() as f32))
-                        }
-                    }),
-                vec![],
-            ),
-            Html::div(
-                Attributes::new().class("form-l_bottomer"),
-                Events::new()
-                    .on_mouseleave({
-                        let m = messenger();
-                        |e| {
-                            e.stop_propagation();
-                            m(Msg::ResizeLB([e.client_x() as f32, e.client_y() as f32]))
-                        }
-                    })
-                    .on_mouseenter({
-                        let m = messenger();
-                        |e| {
-                            e.stop_propagation();
-                            m(Msg::ResizeLB([e.client_x() as f32, e.client_y() as f32]))
-                        }
-                    })
-                    .on_mousemove({
-                        let m = messenger();
-                        |e| {
-                            e.stop_propagation();
-                            m(Msg::ResizeLB([e.client_x() as f32, e.client_y() as f32]))
-                        }
-                    }),
-                vec![],
-            ),
-            Html::div(
-                Attributes::new().class("form-r_bottomer"),
-                Events::new()
-                    .on_mouseleave({
-                        let m = messenger();
-                        |e| {
-                            e.stop_propagation();
-                            m(Msg::ResizeRB([e.client_x() as f32, e.client_y() as f32]))
-                        }
-                    })
-                    .on_mouseenter({
-                        let m = messenger();
-                        |e| {
-                            e.stop_propagation();
-                            m(Msg::ResizeRB([e.client_x() as f32, e.client_y() as f32]))
-                        }
-                    })
-                    .on_mousemove({
-                        let m = messenger();
-                        |e| {
-                            e.stop_propagation();
-                            m(Msg::ResizeRB([e.client_x() as f32, e.client_y() as f32]))
-                        }
-                    }),
-                vec![],
-            ),
+            render_resizer("form-lefter", {
+                let messenger = messenger_gen();
+                move || {
+                    let m = messenger();
+                    Box::new(|e| m(Msg::ResizeL(e.client_x() as f32)))
+                }
+            }),
+            render_resizer("form-righter", {
+                let messenger = messenger_gen();
+                move || {
+                    let m = messenger();
+                    Box::new(|e| m(Msg::ResizeR(e.client_x() as f32)))
+                }
+            }),
+            render_resizer("form-bottomer", {
+                let messenger = messenger_gen();
+                move || {
+                    let m = messenger();
+                    Box::new(|e| m(Msg::ResizeB(e.client_y() as f32)))
+                }
+            }),
+            render_resizer("form-l_bottomer", {
+                let messenger = messenger_gen();
+                move || {
+                    let m = messenger();
+                    Box::new(|e| m(Msg::ResizeLB([e.client_x() as f32, e.client_y() as f32])))
+                }
+            }),
+            render_resizer("form-r_bottomer", {
+                let messenger = messenger_gen();
+                move || {
+                    let m = messenger();
+                    Box::new(|e| m(Msg::ResizeRB([e.client_x() as f32, e.client_y() as f32])))
+                }
+            }),
         ],
+    )
+}
+
+fn render_resizer<M: 'static>(
+    class_name: impl Into<String>,
+    messenger: impl Fn() -> Box<dyn FnOnce(web_sys::MouseEvent) -> M + 'static>,
+) -> Html<M> {
+    Html::div(
+        Attributes::new().class(class_name),
+        Events::new()
+            .on("mouseleave", {
+                let m = messenger();
+                |e| {
+                    e.stop_propagation();
+                    m(e.dyn_into::<web_sys::MouseEvent>().unwrap())
+                }
+            })
+            .on("mouseenter", {
+                let m = messenger();
+                |e| {
+                    e.stop_propagation();
+                    m(e.dyn_into::<web_sys::MouseEvent>().unwrap())
+                }
+            })
+            .on("mousemove", {
+                let m = messenger();
+                |e| {
+                    e.stop_propagation();
+                    m(e.dyn_into::<web_sys::MouseEvent>().unwrap())
+                }
+            }),
+        vec![],
     )
 }

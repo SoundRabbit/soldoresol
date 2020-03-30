@@ -326,12 +326,14 @@ fn render(state: &State) -> Html<Msg> {
                 _ => Html::none(),
             },
             measure_tool::render(&state.measure_tool_state, || {
-                Box::new(|msg| Msg::MeasureToolMsg(msg))
+                Box::new(|| Box::new(|msg| Msg::MeasureToolMsg(msg)))
             }),
             handout::render(&state.handout_state, || {
-                Box::new(|msg| Msg::HandoutMsg(msg))
+                Box::new(|| Box::new(|msg| Msg::HandoutMsg(msg)))
             }),
-            chat::render(&state.chat_state, || Box::new(|msg| Msg::ChatMsg(msg))),
+            chat::render(&state.chat_state, || {
+                Box::new(|| Box::new(|msg| Msg::ChatMsg(msg)))
+            }),
         ],
     )
 }
