@@ -27,6 +27,10 @@ pub fn close(state: &mut State) {
     form::close(&mut state.form_state);
 }
 
+pub fn toggle_open_close(state: &mut State) {
+    form::toggle_open_close(&mut state.form_state);
+}
+
 pub fn is_moving(state: &State) -> bool {
     form::is_moving(&state.form_state)
 }

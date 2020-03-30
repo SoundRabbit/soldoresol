@@ -111,11 +111,11 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             Cmd::none()
         }
         Msg::OpenHandoutForm => {
-            handout::open(&mut state.handout_state);
+            handout::toggle_open_close(&mut state.handout_state);
             Cmd::none()
         }
         Msg::OpenChatForm => {
-            chat::open(&mut state.chat_state);
+            chat::toggle_open_close(&mut state.chat_state);
             Cmd::none()
         }
         Msg::SetTableContext(canvas) => {

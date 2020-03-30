@@ -74,6 +74,14 @@ pub fn close(state: &mut State) {
     update(state, Msg::SetShowingState(false));
 }
 
+pub fn toggle_open_close(state: &mut State) {
+    if state.showing {
+        close(state);
+    } else {
+        open(state);
+    }
+}
+
 pub fn window_resized(state: &mut State) {
     update(state, Msg::SetBindTop(state.bind_top));
     update(state, Msg::SetBindLeft(state.bind_left));
