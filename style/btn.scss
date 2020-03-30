@@ -89,7 +89,7 @@
         color: white;
         &:hover {
             cursor: pointer;
-            background-color: $gray-500;
+            background-color: $red-900;
         }
     }
     &[data-btn_tab-selected="true"] {
