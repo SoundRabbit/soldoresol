@@ -313,6 +313,10 @@ fn render(state: &State) -> Html<Msg> {
         render_table_canvas(table_grabbed_r, table_grabbed_l),
         render_side_menu(),
         render_header(&state.room_name),
+        match state.table_measure {
+            Some((b, e, l)) => measure_length(&b, &e, l),
+            _ => Html::none(),
+        },
     ];
     for i in 0..state.form_priority.len() {
         let ii = i;
