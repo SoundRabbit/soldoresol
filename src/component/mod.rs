@@ -2,6 +2,7 @@ pub mod app;
 mod btn;
 mod chat;
 mod checkbox;
+mod context_menu;
 mod form;
 mod handout;
 mod icon;

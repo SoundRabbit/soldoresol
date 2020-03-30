@@ -96,3 +96,15 @@ pub fn tab<Msg>(
         ],
     )
 }
+
+pub fn context_menu<Msg>(
+    attributes: Attributes,
+    events: Events<Msg>,
+    text: impl Into<String>,
+) -> Html<Msg> {
+    Html::button(
+        attributes.class("btn_contextmenu"),
+        events,
+        vec![Html::text(text)],
+    )
+}

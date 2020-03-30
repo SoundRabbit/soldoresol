@@ -10,6 +10,9 @@
     border: 1px solid $gray;
     grid-template-areas: "lt t rt" "lt hdr rt" "l bdy r" "lb b rb";
     background-color: white;
+    &:hover {
+        cursor: default;
+    }
 }
 
 .form-header {
@@ -33,6 +36,29 @@
     grid-area: bdy;
 }
 
+.form-header-context_menu {
+    display: grid;
+    grid-template-columns: max-content max-content max-content;
+    grid-template-rows: max-content max-content max-content;
+    grid-template-areas: ". t ." "l . r" ". b .";
+    & > *:nth-child(1) {
+        grid-area: t;
+    }
+    & > *:nth-child(2) {
+        grid-area: l;
+    }
+    & > *:nth-child(3) {
+        grid-area: r;
+    }
+    & > *:nth-child(4) {
+        grid-area: b;
+    }
+}
+
+.form-edge[data-form-binded="true"] {
+    background-color: $blue-900 !important;
+}
+
 .form[data-form-resizable="false"] {
     border-bottom-width: 1ch;
     & > .form-header {
@@ -41,7 +67,7 @@
 }
 
 .form[data-form-resizable="true"] {
-    & .form-lefter, & > .form-righter,  & > .form-l_topper, & > .form-r_topper, & > .form-l_bottomer, & > .form-r_bottomer {
+    & > .form-lefter, & > .form-righter,  & > .form-l_topper, & > .form-r_topper, & > .form-l_bottomer, & > .form-r_bottomer {
         width: 0.5ch;
     }
 

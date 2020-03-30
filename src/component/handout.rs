@@ -29,6 +29,10 @@ pub fn is_moving(state: &State) -> bool {
     form::is_moving(&state.form_state)
 }
 
+pub fn window_resized(state: &mut State) {
+    form::window_resized(&mut state.form_state);
+}
+
 pub fn update(state: &mut State, msg: Msg) {
     match msg {
         Msg::FormMsg(m) => form::update(&mut state.form_state, m),

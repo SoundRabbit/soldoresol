@@ -133,6 +133,8 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             update(state, Msg::ResizeTable)
         }
         Msg::ResizeTable => {
+            chat::window_resized(&mut state.chat_state);
+            handout::window_resized(&mut state.handout_state);
             state.table.resize();
             render_table(
                 &mut state.table,
