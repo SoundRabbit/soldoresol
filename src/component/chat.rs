@@ -165,7 +165,7 @@ fn render_controller<M: 'static>(
     inputing_chat_text: &String,
     senders: &Vec<User>,
     destinations: &Vec<User>,
-    messange_gen: impl Fn() -> MessengerGen<Msg, M>,
+    messanger_gen: impl Fn() -> MessengerGen<Msg, M>,
 ) -> Html<M> {
     let mut sender_list = senders
         .iter()
@@ -252,7 +252,7 @@ fn render_controller<M: 'static>(
                             .string("rows", "3")
                             .value(inputing_chat_text),
                         Events::new().on_input({
-                            let m = messange_gen()();
+                            let m = messanger_gen()();
                             |text| m(Msg::InputChatText(text))
                         }),
                         vec![],
@@ -260,7 +260,7 @@ fn render_controller<M: 'static>(
                     btn::primary(
                         Attributes::new(),
                         Events::new().on_click({
-                            let m = messange_gen()();
+                            let m = messanger_gen()();
                             |_| m(Msg::SendInputingMessage())
                         }),
                         vec![Html::text("送信")],
