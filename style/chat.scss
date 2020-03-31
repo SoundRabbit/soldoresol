@@ -22,7 +22,6 @@
     grid-area: ctr;
     row-gap: 0.5ch;
     padding-bottom: 0.5ch;
-    width: 19rem;
 }
 
 .chat-controller-chat_pallet {
@@ -33,12 +32,15 @@
 }
 
 .chat-controller-sender_option {
+    
+}
+
+.chat-controller-sender_option-row {
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
+    margin-top: 0.25ch;
+    margin-bottom: 0.25ch;
     & > * {
-        margin-top: 0.25ch;
-        margin-bottom: 0.25ch;
         &:not(:last-child) {
             margin-right: 1ch;
         }

@@ -140,20 +140,30 @@ fn render_controller<M: 'static>(
                 Attributes::new().class("chat-controller-sender_option"),
                 Events::new(),
                 vec![
-                    btn::primary(
-                        Attributes::new(),
+                    Html::div(
+                        Attributes::new().class("chat-controller-sender_option-row"),
                         Events::new(),
-                        vec![Html::text("文字色を変更")],
+                        vec![
+                            btn::primary(
+                                Attributes::new(),
+                                Events::new(),
+                                vec![Html::text("ダイスボットを選択")],
+                            ),
+                            btn::primary(
+                                Attributes::new(),
+                                Events::new(),
+                                vec![Html::text("チャットパレットを編集")],
+                            ),
+                        ],
                     ),
-                    btn::primary(
-                        Attributes::new(),
+                    Html::div(
+                        Attributes::new().class("chat-controller-sender_option-row"),
                         Events::new(),
-                        vec![Html::text("チャットパレットを編集")],
-                    ),
-                    btn::primary(
-                        Attributes::new(),
-                        Events::new(),
-                        vec![Html::text("ダイスボットを選択")],
+                        vec![btn::primary(
+                            Attributes::new(),
+                            Events::new(),
+                            vec![Html::text("文字色を変更")],
+                        )],
                     ),
                 ],
             ),
