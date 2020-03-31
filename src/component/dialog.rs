@@ -7,6 +7,7 @@ pub struct State {
 }
 
 pub enum Msg {
+    NoOp,
     SetShowingState(bool),
 }
 
@@ -24,6 +25,7 @@ pub fn close(state: &mut State) {
 
 pub fn update(state: &mut State, msg: Msg) {
     match msg {
+        Msg::NoOp => {}
         Msg::SetShowingState(s) => {
             state.showing = s;
         }
@@ -37,14 +39,21 @@ pub fn render<M: 'static>(
     messenger_gen: impl Fn() -> MessengerGen<Msg, M>,
     attributes: Attributes,
     events: Events<M>,
-    children: Vec<Html<M>>,
+    body: Vec<Html<M>>,
+    footer: Vec<Html<M>>,
 ) -> Html<M> {
     if !state.showing {
         return Html::none();
     }
     Html::div(
         Attributes::new().class("dialog-bg"),
-        Events::new(),
+        Events::new().on_mousedown({
+            let m = messenger_gen()();
+            |e| {
+                e.stop_propagation();
+                m(Msg::NoOp)
+            }
+        }),
         vec![Html::div(
             attributes.class("dialog"),
             events,
@@ -67,10 +76,11 @@ pub fn render<M: 'static>(
                         },
                     ],
                 ),
+                Html::div(Attributes::new().class("dialog-body"), Events::new(), body),
                 Html::div(
-                    Attributes::new().class("dialog-body"),
+                    Attributes::new().class("dialog-footer"),
                     Events::new(),
-                    children,
+                    footer,
                 ),
             ],
         )],

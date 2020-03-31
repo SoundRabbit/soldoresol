@@ -95,7 +95,11 @@ pub fn tab<Msg>(
             .string("data-btn_tab-selected", selected.to_string()),
         events,
         vec![
-            Html::text(name),
+            Html::span(
+                Attributes::new().class("btn_tab-text"),
+                Events::new(),
+                vec![Html::text(name)],
+            ),
             if deletable {
                 Html::button(
                     Attributes::new()

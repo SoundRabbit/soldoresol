@@ -4,7 +4,7 @@
     border: none;
     outline: none;
     padding-top: 0.2em;
-    padding-bottom: 0.2em;
+    padding-bottom: 0.21em;
     padding-left: 1.2ch;
     padding-right: 1.2ch;
     text-align: center;
@@ -95,12 +95,19 @@
     border-radius: 0.3em 0 0 0.3em;
     background-color: $gray-900;
     color: white;
-    text-align: right;
     display: flex;
     align-items: center;
+    max-width: 7rem;
     &:hover {
         cursor: pointer;
         background-color: $gray-600;
+    }
+    & > .btn_tab-text {
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        text-align: right;
+        flex-grow: 1;
     }
     & > .btn_tab-close {
         border: none;

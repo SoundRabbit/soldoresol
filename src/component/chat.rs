@@ -1,4 +1,5 @@
 use super::btn;
+use super::control;
 use super::dialog;
 use super::form;
 use super::icon;
@@ -29,21 +30,25 @@ struct User {
 
 pub struct State {
     form_state: form::State,
-    create_chat_dialog_state: dialog::State,
+    create_tab_dialog_state: dialog::State,
     tabs: HashMap<TabId, Tab>,
     tab_index: Vec<TabId>,
     selected_tab_id: TabId,
     inputing_chat_text: String,
     senders: Vec<User>,
     destinations: Vec<User>,
+    inputing_tag_name: String,
 }
 
 pub enum Msg {
     FormMsg(form::Msg),
+    CreateChatDialogMsg(dialog::Msg),
     InputChatText(String),
+    InputTagName(String),
     SendInputingMessage(),
     SendMessage(String),
     AddTab(),
+    ShowCreateTabDialog(),
 }
 
 pub fn init() -> State {
@@ -58,7 +63,7 @@ pub fn init() -> State {
     );
     State {
         form_state: form::init(),
-        create_chat_dialog_state: dialog::init(),
+        create_tab_dialog_state: dialog::init(),
         tabs: tabs,
         tab_index: vec![initial_tab_id],
         selected_tab_id: initial_tab_id,
@@ -73,6 +78,7 @@ pub fn init() -> State {
             icon: None,
             selected: true,
         }],
+        inputing_tag_name: String::new(),
     }
 }
 
@@ -99,7 +105,10 @@ pub fn window_resized(state: &mut State) {
 pub fn update(state: &mut State, msg: Msg) {
     match msg {
         Msg::FormMsg(m) => form::update(&mut state.form_state, m),
+        Msg::CreateChatDialogMsg(m) => dialog::update(&mut state.create_tab_dialog_state, m),
         Msg::InputChatText(text) => state.inputing_chat_text = text,
+        Msg::InputTagName(name) => state.inputing_tag_name = name,
+        Msg::ShowCreateTabDialog() => dialog::open(&mut state.create_tab_dialog_state),
         Msg::SendInputingMessage() => {
             let mut text = String::new();
             std::mem::swap(&mut state.inputing_chat_text, &mut text);
@@ -116,14 +125,17 @@ pub fn update(state: &mut State, msg: Msg) {
         }
         Msg::AddTab() => {
             let tab_id = random_id::u128val();
+            let mut name = String::new();
+            std::mem::swap(&mut state.inputing_tag_name, &mut name);
             state.tabs.insert(
                 tab_id,
                 Tab {
-                    name: String::from("新規タブ"),
+                    name: name,
                     messages: vec![],
                 },
             );
             state.tab_index.push(tab_id);
+            dialog::close(&mut state.create_tab_dialog_state);
         }
     }
 }
@@ -168,6 +180,35 @@ pub fn render<M: 'static>(
                     Box::new(move || messenger())
                 },
             ),
+            dialog::render(
+                true,
+                "チャットタブを追加",
+                &state.create_tab_dialog_state,
+                || {
+                    let messenger = messenger_gen();
+                    Box::new(move || {
+                        let m = messenger();
+                        Box::new(|msg| m(Msg::CreateChatDialogMsg(msg)))
+                    })
+                },
+                Attributes::new().class("chat-create_tab_dialog"),
+                Events::new(),
+                vec![control::input(
+                    Attributes::new().placeholder("新規タブ名"),
+                    Events::new().on_input({
+                        let m = messenger_gen()();
+                        |v| m(Msg::InputTagName(v))
+                    }),
+                )],
+                vec![btn::success(
+                    Attributes::new(),
+                    Events::new().on_click({
+                        let m = messenger_gen()();
+                        |_| m(Msg::AddTab())
+                    }),
+                    vec![Html::text("追加")],
+                )],
+            ),
         ],
     )
 }
@@ -176,7 +217,7 @@ fn render_controller<M: 'static>(
     inputing_chat_text: &String,
     senders: &Vec<User>,
     destinations: &Vec<User>,
-    messanger_gen: impl Fn() -> MessengerGen<Msg, M>,
+    messenger_gen: impl Fn() -> MessengerGen<Msg, M>,
 ) -> Html<M> {
     let mut sender_list = senders
         .iter()
@@ -263,7 +304,7 @@ fn render_controller<M: 'static>(
                             .string("rows", "3")
                             .value(inputing_chat_text),
                         Events::new().on_input({
-                            let m = messanger_gen()();
+                            let m = messenger_gen()();
                             |text| m(Msg::InputChatText(text))
                         }),
                         vec![],
@@ -271,7 +312,7 @@ fn render_controller<M: 'static>(
                     btn::primary(
                         Attributes::new(),
                         Events::new().on_click({
-                            let m = messanger_gen()();
+                            let m = messenger_gen()();
                             |_| m(Msg::SendInputingMessage())
                         }),
                         vec![Html::text("送信")],
@@ -314,7 +355,7 @@ fn render_tabs<M: 'static>(
     tabs: &HashMap<TabId, Tab>,
     tab_index: &Vec<TabId>,
     selected_tab_id: &TabId,
-    messanger_gen: impl Fn() -> MessengerGen<Msg, M>,
+    messenger_gen: impl Fn() -> MessengerGen<Msg, M>,
 ) -> Html<M> {
     let mut chat_tabs_list = tab_index
         .iter()
@@ -332,8 +373,8 @@ fn render_tabs<M: 'static>(
     chat_tabs_list.push(btn::add(
         Attributes::new().string("data-btn_add-tab", "true"),
         Events::new().on_click({
-            let m = messanger_gen()();
-            |_| m(Msg::AddTab())
+            let m = messenger_gen()();
+            |_| m(Msg::ShowCreateTabDialog())
         }),
     ));
     Html::div(

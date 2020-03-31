@@ -1,0 +1,16 @@
+@import "color";
+
+.control-input {
+    background-color: white;
+    border-radius: 0.3em;
+    padding-top: 0.4em;
+    padding-bottom: 0.42em;
+    padding-left: 1.2ch;
+    padding-right: 1.2ch;
+    outline: none;
+    box-shadow: none;
+    border: 0.1em solid $gray;
+    &:focus {
+        box-shadow: 0 0 0 0.13em $blue-300;
+    }
+}
