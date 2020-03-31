@@ -89,10 +89,11 @@
     & > .btn_tab {
         margin-top: 0.25ch;
         margin-bottom: 0.25ch;
-        &:last-child {
-            border-radius: 0.3em;
-            align-self: center;
-        }
+    }
+    & > .btn_add {
+        margin-top: 0.25ch;
+        margin-bottom: 0.25ch;
+        align-self: center;
     }
 }
 
@@ -112,6 +113,11 @@
     display: grid;
     grid-template-rows: max-content 1fr;
     overflow-y: hidden;
+    &[data-chat-selected="true"] {
+        & > .chat-tabs-log-column-heading {
+            background-color: $blue-300;
+        }
+    }
 }
 
 .chat-tabs-log-column-heading {

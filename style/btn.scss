@@ -66,6 +66,29 @@
     }
 }
 
+.btn_add {
+    border: none;
+    outline: none;
+    line-height: 1;
+    height: 1.6em;
+    width: 1.6em;
+    text-align: center;
+    border-radius: 0.3em;
+    background-color: $green-500;
+    color: white;
+    font-size: 1.1rem;
+    &:hover {
+        cursor: pointer;
+        background-color: $green-400;
+    }
+    &[data-btn_add-tab="true"] {
+        background-color: $gray-900;
+        &:hover {
+            background-color: $gray-600;
+        }
+    }
+}
+
 .btn_tab {
     border: none;
     outline: none;
@@ -73,6 +96,8 @@
     background-color: $gray-900;
     color: white;
     text-align: right;
+    display: flex;
+    align-items: center;
     &:hover {
         cursor: pointer;
         background-color: $gray-600;
@@ -96,8 +121,15 @@
     }
     &[data-btn_tab-selected="true"] {
         background-color: $blue-500;
+        &:hover {
+            background-color: $blue-400;
+        }
         & > .btn_tab-close {
-            background-color: $blue-400
+            background-color: $blue-500;
+            &:hover {
+                cursor: pointer;
+                background-color: $red-900;
+            }
         }
     }
 }

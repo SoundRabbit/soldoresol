@@ -74,6 +74,14 @@ pub fn close<Msg>(attributes: Attributes, events: Events<Msg>) -> Html<Msg> {
     )
 }
 
+pub fn add<Msg>(attributes: Attributes, events: Events<Msg>) -> Html<Msg> {
+    Html::button(
+        attributes.class("btn_add").class("material-icons"),
+        events,
+        vec![Html::text("add")],
+    )
+}
+
 pub fn tab<Msg>(
     selected: bool,
     deletable: bool,
