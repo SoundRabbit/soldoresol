@@ -336,36 +336,36 @@ pub fn render<M: 'static>(
                             Events::new(),
                             vec![
                                 btn::context_menu(
-                                    Attributes::new(),
+                                    Attributes::new().class("material-icons"),
                                     Events::new().on_click({
                                         let m = messenger_gen()();
                                         |e| m(Msg::SetBindTop(true))
                                     }),
-                                    "上にバインド",
+                                    "vertical_align_top",
                                 ),
                                 btn::context_menu(
-                                    Attributes::new(),
+                                    Attributes::new().class("material-icons"),
                                     Events::new().on_click({
                                         let m = messenger_gen()();
                                         |e| m(Msg::SetBindLeft(true))
                                     }),
-                                    "左にバインド",
+                                    "vertical_align_top",
                                 ),
                                 btn::context_menu(
-                                    Attributes::new(),
+                                    Attributes::new().class("material-icons"),
                                     Events::new().on_click({
                                         let m = messenger_gen()();
                                         |e| m(Msg::SetBindRight(true))
                                     }),
-                                    "右にバインド",
+                                    "vertical_align_top",
                                 ),
                                 btn::context_menu(
-                                    Attributes::new(),
+                                    Attributes::new().class("material-icons"),
                                     Events::new().on_click({
                                         let m = messenger_gen()();
                                         |e| m(Msg::SetBindBottom(true))
                                     }),
-                                    "下にバインド",
+                                    "vertical_align_top",
                                 ),
                             ],
                         )
