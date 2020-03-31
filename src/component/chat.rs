@@ -1,4 +1,5 @@
 use super::btn;
+use super::dialog;
 use super::form;
 use super::icon;
 use super::icon::Icon;
@@ -28,6 +29,7 @@ struct User {
 
 pub struct State {
     form_state: form::State,
+    create_chat_dialog_state: dialog::State,
     tabs: HashMap<TabId, Tab>,
     tab_index: Vec<TabId>,
     selected_tab_id: TabId,
@@ -56,6 +58,7 @@ pub fn init() -> State {
     );
     State {
         form_state: form::init(),
+        create_chat_dialog_state: dialog::init(),
         tabs: tabs,
         tab_index: vec![initial_tab_id],
         selected_tab_id: initial_tab_id,

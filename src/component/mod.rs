@@ -3,6 +3,7 @@ mod btn;
 mod chat;
 mod checkbox;
 mod context_menu;
+mod dialog;
 mod form;
 mod handout;
 mod icon;
