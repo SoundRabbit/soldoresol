@@ -5,6 +5,18 @@ use super::form;
 use super::icon;
 use super::MessengerGen;
 
+struct Message {
+    sender: String,
+    timestamp: String,
+    text: String,
+}
+
+struct tab {
+    id: String,
+    name: String,
+    messages: Vec<Message>,
+}
+
 pub struct State {
     form_state: form::State,
 }

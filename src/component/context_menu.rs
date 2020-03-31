@@ -36,6 +36,7 @@ pub fn update(state: &mut State, msg: Msg) {
 }
 
 pub fn render<M: 'static>(
+    centering: bool,
     state: &State,
     messenger_gen: impl Fn() -> MessengerGen<Msg, M>,
     attributes: Attributes,
@@ -46,7 +47,7 @@ pub fn render<M: 'static>(
         return Html::none();
     }
     Html::div(
-        Attributes::new().class("context_menu-wrapper"),
+        Attributes::new().class("context_menu-bg"),
         Events::new().on_click({
             let m = messenger_gen()();
             |_| m(Msg::SetShowingState(false))
@@ -55,6 +56,7 @@ pub fn render<M: 'static>(
             attributes
                 .style("left", state.loc[0].to_string() + "px")
                 .style("top", state.loc[1].to_string() + "px")
+                .string("data-context_menu-centering", centering.to_string())
                 .class("context_menu"),
             events,
             children,

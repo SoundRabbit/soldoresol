@@ -323,6 +323,7 @@ pub fn render<M: 'static>(
                     Html::text(title),
                     if resizable {
                         context_menu::render(
+                            true,
                             &state.context_menu_state,
                             || {
                                 let messenger = messenger_gen();

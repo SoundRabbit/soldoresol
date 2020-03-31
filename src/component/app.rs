@@ -4,6 +4,7 @@ use super::handout;
 use super::measure_length::measure_length;
 use super::measure_tool;
 use super::radio::radio;
+use crate::random_id;
 use crate::table::Table;
 use kagura::prelude::*;
 use wasm_bindgen::prelude::*;
@@ -73,7 +74,7 @@ pub fn new() -> Component<Msg, State, Sub> {
 
 fn init() -> (State, Cmd<Msg, Sub>) {
     let state = State {
-        room_name: String::from("無名の部屋@") + &crate::ramdom_id::hex(16),
+        room_name: String::from("無名の部屋@") + &random_id::hex(16),
         table: Table::new(),
         table_height: 100,
         table_width: 100,
