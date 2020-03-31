@@ -6,6 +6,7 @@ use wasm_bindgen::JsCast;
 
 struct Context {
     gl: web_sys::WebGlRenderingContext,
+    texture: web_sys::WebGlTexture,
     u_translate_location: web_sys::WebGlUniformLocation,
     u_texture_location: web_sys::WebGlUniformLocation,
 }
@@ -19,6 +20,7 @@ pub struct Table {
     pen_layer: web_sys::HtmlCanvasElement,
     measure_layer: web_sys::HtmlCanvasElement,
     pointer_layer: web_sys::HtmlCanvasElement,
+    integrated_layer: web_sys::HtmlCanvasElement,
     grid_layer_context: Option<web_sys::CanvasRenderingContext2d>,
     pen_layer_context: Option<web_sys::CanvasRenderingContext2d>,
     measure_layer_context: Option<web_sys::CanvasRenderingContext2d>,
@@ -42,6 +44,7 @@ impl Table {
             pen_layer: create_canvas(),
             measure_layer: create_canvas(),
             pointer_layer: create_canvas(),
+            integrated_layer: create_canvas(),
             grid_layer_context: None,
             pen_layer_context: None,
             measure_layer_context: None,
@@ -177,6 +180,7 @@ impl Table {
 
         self.context = Some(Context {
             gl,
+            texture,
             u_translate_location,
             u_texture_location,
         });
@@ -533,7 +537,7 @@ impl Table {
                 ]
                 .concat(),
             );
-            let integrated_canvas = create_canvas();
+            let integrated_canvas = &self.integrated_layer;
             let height = 2048.0;
             let width = 2048.0;
             integrated_canvas.set_height(width as u32);
@@ -545,8 +549,6 @@ impl Table {
             texture.begin_path();
             texture.set_fill_style(&JsValue::from("#fff"));
             texture.fill_rect(0.0, 0.0, width, height);
-            texture.fill();
-            texture.stroke();
             texture
                 .draw_image_with_html_canvas_element_and_dw_and_dh(
                     &self.pen_layer,
@@ -583,6 +585,8 @@ impl Table {
                     width,
                 )
                 .expect("");
+            texture.fill();
+            texture.stroke();
             gl.tex_image_2d_with_u32_and_u32_and_canvas(
                 web_sys::WebGlRenderingContext::TEXTURE_2D,
                 0,
@@ -602,6 +606,7 @@ impl Table {
                     web_sys::WebGlRenderingContext::UNSIGNED_SHORT,
                     0,
                 );
+                gl.flush();
             }) as Box<dyn FnOnce()>);
             web_sys::window()
                 .unwrap()
