@@ -112,7 +112,15 @@ pub fn update(state: &mut State, msg: Msg) {
             }
         }
         Msg::AddTab => {
-            let tab_id = random_id::hex(6);
+            let tab_id = random_id::u128val();
+            state.tabs.insert(
+                tab_id,
+                Tab {
+                    name: String::from("新規タブ"),
+                    messages: vec![],
+                },
+            );
+            state.tab_index.push(tab_id);
         }
     }
 }
