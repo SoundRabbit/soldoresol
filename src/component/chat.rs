@@ -1,6 +1,7 @@
 use super::btn;
 use super::form;
 use super::icon;
+use super::icon::Icon;
 use super::MessengerGen;
 use crate::random_id;
 use kagura::prelude::*;
@@ -17,12 +18,20 @@ struct Tab {
     messages: Vec<Message>,
 }
 
+struct User {
+    name: String,
+    icon: Option<String>,
+    selected: bool,
+}
+
 pub struct State {
     form_state: form::State,
     tabs: HashMap<String, Tab>,
     tab_index: Vec<String>,
     selected_tab_id: String,
     inputing_chat_text: String,
+    senders: Vec<User>,
+    destinations: Vec<User>,
 }
 
 pub enum Msg {
@@ -48,6 +57,16 @@ pub fn init() -> State {
         tab_index: vec![initial_tab_id.clone()],
         selected_tab_id: initial_tab_id,
         inputing_chat_text: String::new(),
+        senders: vec![User {
+            name: String::from("自分"),
+            icon: None,
+            selected: true,
+        }],
+        destinations: vec![User {
+            name: String::from("全体"),
+            icon: None,
+            selected: true,
+        }],
     }
 }
 
@@ -113,10 +132,15 @@ pub fn render<M: 'static>(
         events,
         "チャット",
         vec![
-            render_controller(&state.inputing_chat_text, || {
-                let messenger = messenger_gen();
-                Box::new(move || messenger())
-            }),
+            render_controller(
+                &state.inputing_chat_text,
+                &state.senders,
+                &state.destinations,
+                || {
+                    let messenger = messenger_gen();
+                    Box::new(move || messenger())
+                },
+            ),
             render_gap(),
             render_tabs(&state.tabs, &state.tab_index, &state.selected_tab_id),
         ],
@@ -125,8 +149,20 @@ pub fn render<M: 'static>(
 
 fn render_controller<M: 'static>(
     inputing_chat_text: &String,
+    senders: &Vec<User>,
+    destinations: &Vec<User>,
     messange_gen: impl Fn() -> MessengerGen<Msg, M>,
 ) -> Html<M> {
+    let mut sender_list = senders
+        .iter()
+        .map(|user| render_controller_select_user_btn(&user.name, &user.icon, user.selected))
+        .collect::<Vec<Html<M>>>();
+    sender_list.push(btn::add(Attributes::new(), Events::new()));
+    let mut destination_list = destinations
+        .iter()
+        .map(|user| render_controller_select_user_btn(&user.name, &user.icon, user.selected))
+        .collect::<Vec<Html<M>>>();
+    destination_list.push(btn::add(Attributes::new(), Events::new()));
     Html::div(
         Attributes::new().class("chat-controller"),
         Events::new(),
@@ -179,7 +215,7 @@ fn render_controller<M: 'static>(
                     Html::div(
                         Attributes::new().class("chat-controller-sending_option-list"),
                         Events::new(),
-                        vec![btn::add(Attributes::new(), Events::new())],
+                        sender_list,
                     ),
                     Html::div(
                         Attributes::new(),
@@ -189,7 +225,7 @@ fn render_controller<M: 'static>(
                     Html::div(
                         Attributes::new().class("chat-controller-sending_option-list"),
                         Events::new(),
-                        vec![btn::add(Attributes::new(), Events::new())],
+                        destination_list,
                     ),
                 ],
             ),
@@ -217,6 +253,30 @@ fn render_controller<M: 'static>(
                     ),
                 ],
             ),
+        ],
+    )
+}
+
+fn render_controller_select_user_btn<M: 'static>(
+    name: &String,
+    icon: &Option<String>,
+    selected: bool,
+) -> Html<M> {
+    Html::div(
+        Attributes::new()
+            .class("chat-controller-select_user_btn")
+            .string(
+                "data-chat-controller-select_user_btn-selected",
+                selected.to_string(),
+            ),
+        Events::new(),
+        vec![
+            icon::small(
+                Attributes::new().class("chat-tabs-log-column-content-message-icon"),
+                Events::new(),
+                Icon::MaterialIcon("person"),
+            ),
+            Html::span(Attributes::new(), Events::new(), vec![Html::text(name)]),
         ],
     )
 }
@@ -304,6 +364,13 @@ fn render_tabs_log_column_content_message<M>(message: &Message) -> Html<M> {
             icon::medium(
                 Attributes::new().class("chat-tabs-log-column-content-message-icon"),
                 Events::new(),
+                Icon::Character(
+                    if let Some(initial) = message.sender.as_str().chars().next() {
+                        initial
+                    } else {
+                        'あ'
+                    },
+                ),
             ),
             Html::div(
                 Attributes::new().class("chat-tabs-log-column-content-message-sender"),

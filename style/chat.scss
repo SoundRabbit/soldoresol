@@ -31,10 +31,6 @@
     flex-direction: column;
 }
 
-.chat-controller-sender_option {
-    
-}
-
 .chat-controller-sender_option-row {
     display: flex;
     align-items: center;
@@ -60,6 +56,28 @@
 .chat-controller-sending_option-list {
     display: flex;
     flex-wrap: wrap;
+}
+
+
+.chat-controller-select_user_btn {
+    border: none;
+    outline: none;
+    padding-top: 0.2em;
+    padding-bottom: 0.2em;
+    padding-left: 1.2ch;
+    padding-right: 1.2ch;
+    display: flex;
+    align-items: center;
+    border-radius: 0.3em;
+    background-color: $blue-100;
+    margin-right: 0.25ch;
+    &[data-chat-controller-select_user_btn-selected="true"] {
+        background-color: $blue-500;
+        color: white;
+    }
+    & > * {
+        margin-right: 0.25ch;
+    }
 }
 
 .chat-controller-content {
