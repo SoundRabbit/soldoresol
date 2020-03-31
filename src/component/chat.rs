@@ -41,7 +41,7 @@ pub enum Msg {
     InputChatText(String),
     SendInputingMessage(),
     SendMessage(String),
-    AddTab,
+    AddTab(),
 }
 
 pub fn init() -> State {
@@ -111,7 +111,7 @@ pub fn update(state: &mut State, msg: Msg) {
                 });
             }
         }
-        Msg::AddTab => {
+        Msg::AddTab() => {
             let tab_id = random_id::u128val();
             state.tabs.insert(
                 tab_id,
@@ -156,7 +156,15 @@ pub fn render<M: 'static>(
                 },
             ),
             render_gap(),
-            render_tabs(&state.tabs, &state.tab_index, &state.selected_tab_id),
+            render_tabs(
+                &state.tabs,
+                &state.tab_index,
+                &state.selected_tab_id,
+                || {
+                    let messenger = messenger_gen();
+                    Box::new(move || messenger())
+                },
+            ),
         ],
     )
 }
@@ -299,10 +307,11 @@ fn render_gap<M>() -> Html<M> {
     Html::div(Attributes::new().class("chat-gap"), Events::new(), vec![])
 }
 
-fn render_tabs<M>(
+fn render_tabs<M: 'static>(
     tabs: &HashMap<TabId, Tab>,
     tab_index: &Vec<TabId>,
     selected_tab_id: &TabId,
+    messanger_gen: impl Fn() -> MessengerGen<Msg, M>,
 ) -> Html<M> {
     let mut chat_tabs_list = tab_index
         .iter()
@@ -319,7 +328,10 @@ fn render_tabs<M>(
         .collect::<Vec<Html<M>>>();
     chat_tabs_list.push(btn::add(
         Attributes::new().string("data-btn_add-tab", "true"),
-        Events::new(),
+        Events::new().on_click({
+            let m = messanger_gen()();
+            |_| m(Msg::AddTab())
+        }),
     ));
     Html::div(
         Attributes::new().class("chat-tabs"),
