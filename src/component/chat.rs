@@ -7,6 +7,8 @@ use crate::random_id;
 use kagura::prelude::*;
 use std::collections::HashMap;
 
+type TabId = u128;
+
 struct Message {
     sender: String,
     timestamp: js_sys::Date,
@@ -26,9 +28,9 @@ struct User {
 
 pub struct State {
     form_state: form::State,
-    tabs: HashMap<String, Tab>,
-    tab_index: Vec<String>,
-    selected_tab_id: String,
+    tabs: HashMap<TabId, Tab>,
+    tab_index: Vec<TabId>,
+    selected_tab_id: TabId,
     inputing_chat_text: String,
     senders: Vec<User>,
     destinations: Vec<User>,
@@ -39,13 +41,14 @@ pub enum Msg {
     InputChatText(String),
     SendInputingMessage(),
     SendMessage(String),
+    AddTab,
 }
 
 pub fn init() -> State {
-    let initial_tab_id = random_id::hex(6);
+    let initial_tab_id = random_id::u128val();
     let mut tabs = HashMap::new();
     tabs.insert(
-        initial_tab_id.clone(),
+        initial_tab_id,
         Tab {
             name: String::from("メイン"),
             messages: vec![],
@@ -54,7 +57,7 @@ pub fn init() -> State {
     State {
         form_state: form::init(),
         tabs: tabs,
-        tab_index: vec![initial_tab_id.clone()],
+        tab_index: vec![initial_tab_id],
         selected_tab_id: initial_tab_id,
         inputing_chat_text: String::new(),
         senders: vec![User {
@@ -107,6 +110,9 @@ pub fn update(state: &mut State, msg: Msg) {
                     text: text,
                 });
             }
+        }
+        Msg::AddTab => {
+            let tab_id = random_id::hex(6);
         }
     }
 }
@@ -286,9 +292,9 @@ fn render_gap<M>() -> Html<M> {
 }
 
 fn render_tabs<M>(
-    tabs: &HashMap<String, Tab>,
-    tab_index: &Vec<String>,
-    selected_tab_id: &String,
+    tabs: &HashMap<TabId, Tab>,
+    tab_index: &Vec<TabId>,
+    selected_tab_id: &TabId,
 ) -> Html<M> {
     let mut chat_tabs_list = tab_index
         .iter()
@@ -331,7 +337,7 @@ fn render_tabs<M>(
     )
 }
 
-fn render_tabs_log_column<M>(tab: &Tab, tab_id: &String, selected_tab_id: &String) -> Html<M> {
+fn render_tabs_log_column<M>(tab: &Tab, tab_id: &TabId, selected_tab_id: &TabId) -> Html<M> {
     Html::div(
         Attributes::new().class("chat-tabs-log-column").string(
             "data-chat-selected",
