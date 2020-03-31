@@ -67,7 +67,11 @@ pub fn success<Msg>(
 }
 
 pub fn close<Msg>(attributes: Attributes, events: Events<Msg>) -> Html<Msg> {
-    Html::button(attributes.class("btn_close"), events, vec![Html::text("×")])
+    Html::button(
+        attributes.class("btn_close").class("material-icons"),
+        events,
+        vec![Html::text("clear")],
+    )
 }
 
 pub fn tab<Msg>(
@@ -86,9 +90,11 @@ pub fn tab<Msg>(
             Html::text(name),
             if deletable {
                 Html::button(
-                    Attributes::new().class("btn_tab-close"),
+                    Attributes::new()
+                        .class("btn_tab-close")
+                        .class("material-icons"),
                     Events::new(),
-                    vec![Html::text("×")],
+                    vec![Html::text("clear")],
                 )
             } else {
                 Html::none()
