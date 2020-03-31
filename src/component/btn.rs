@@ -97,7 +97,7 @@ pub fn tab<Msg>(
     )
 }
 
-pub fn context_menu<Msg>(
+pub fn context_menu_text<Msg>(
     attributes: Attributes,
     events: Events<Msg>,
     text: impl Into<String>,

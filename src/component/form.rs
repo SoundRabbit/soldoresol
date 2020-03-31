@@ -335,7 +335,7 @@ pub fn render<M: 'static>(
                             Attributes::new().class("form-header-context_menu"),
                             Events::new(),
                             vec![
-                                btn::context_menu(
+                                btn::context_menu_text(
                                     Attributes::new().class("material-icons"),
                                     Events::new().on_click({
                                         let m = messenger_gen()();
@@ -343,7 +343,7 @@ pub fn render<M: 'static>(
                                     }),
                                     "vertical_align_top",
                                 ),
-                                btn::context_menu(
+                                btn::context_menu_text(
                                     Attributes::new().class("material-icons"),
                                     Events::new().on_click({
                                         let m = messenger_gen()();
@@ -351,7 +351,7 @@ pub fn render<M: 'static>(
                                     }),
                                     "vertical_align_top",
                                 ),
-                                btn::context_menu(
+                                btn::context_menu_text(
                                     Attributes::new().class("material-icons"),
                                     Events::new().on_click({
                                         let m = messenger_gen()();
@@ -359,7 +359,7 @@ pub fn render<M: 'static>(
                                     }),
                                     "vertical_align_top",
                                 ),
-                                btn::context_menu(
+                                btn::context_menu_text(
                                     Attributes::new().class("material-icons"),
                                     Events::new().on_click({
                                         let m = messenger_gen()();
