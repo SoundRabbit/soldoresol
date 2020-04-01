@@ -66,6 +66,18 @@ pub fn success<Msg>(
     )
 }
 
+pub fn dark<Msg>(
+    attributes: Attributes,
+    events: Events<Msg>,
+    children: Vec<Html<Msg>>,
+) -> Html<Msg> {
+    Html::button(
+        attributes.string("data-btn-variant", "dark").class("btn"),
+        events,
+        children,
+    )
+}
+
 pub fn close<Msg>(attributes: Attributes, events: Events<Msg>) -> Html<Msg> {
     Html::button(
         attributes.class("btn_close").class("material-icons"),

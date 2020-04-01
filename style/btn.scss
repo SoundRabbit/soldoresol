@@ -47,6 +47,13 @@
             background-color: $green-400;
         }
     }
+    &[data-btn-variant="dark"] {
+        background-color: $gray-900;
+        color: white;
+        &:hover {
+            background-color: $gray-600;
+        }
+    }
 }
 
 .btn_close {

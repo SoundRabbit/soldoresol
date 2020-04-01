@@ -8,6 +8,7 @@ use super::MessengerGen;
 use crate::random_id;
 use kagura::prelude::*;
 use std::collections::HashMap;
+use std::collections::HashSet;
 
 type TabId = u128;
 
@@ -26,6 +27,7 @@ struct User {
     name: String,
     icon: Option<String>,
     selected: bool,
+    chatpallet: Vec<String>,
 }
 
 pub struct State {
@@ -34,6 +36,8 @@ pub struct State {
     tabs: HashMap<TabId, Tab>,
     tab_index: Vec<TabId>,
     selected_tab_id: TabId,
+    selected_sender_idx: usize,
+    selected_destination_idx: HashSet<usize>,
     inputing_chat_text: String,
     senders: Vec<User>,
     destinations: Vec<User>,
@@ -61,22 +65,36 @@ pub fn init() -> State {
             messages: vec![],
         },
     );
+    let mut selected_destination_idx = HashSet::new();
+    selected_destination_idx.insert(0);
     State {
         form_state: form::init(),
         create_tab_dialog_state: dialog::init(),
         tabs: tabs,
         tab_index: vec![initial_tab_id],
         selected_tab_id: initial_tab_id,
+        selected_sender_idx: 0,
+        selected_destination_idx,
         inputing_chat_text: String::new(),
         senders: vec![User {
             name: String::from("自分"),
             icon: None,
             selected: true,
+            chatpallet: vec![
+                String::from(r#"#チャットパレット入力例："#),
+                String::from("2d6+1 ダイスロール"),
+                String::from("1d20+敏捷+格闘 {name}の格闘！"),
+                String::from("敏捷=10+{敏捷A}"),
+                String::from("敏捷A=10"),
+                String::from("格闘=0"),
+                String::from("器用度=20"),
+            ],
         }],
         destinations: vec![User {
             name: String::from("全体"),
             icon: None,
             selected: true,
+            chatpallet: vec![],
         }],
         inputing_tag_name: String::new(),
     }
@@ -163,6 +181,7 @@ pub fn render<M: 'static>(
         vec![
             render_controller(
                 &state.inputing_chat_text,
+                state.selected_sender_idx,
                 &state.senders,
                 &state.destinations,
                 || {
@@ -215,6 +234,7 @@ pub fn render<M: 'static>(
 
 fn render_controller<M: 'static>(
     inputing_chat_text: &String,
+    selected_sender_idx: usize,
     senders: &Vec<User>,
     destinations: &Vec<User>,
     messenger_gen: impl Fn() -> MessengerGen<Msg, M>,
@@ -229,6 +249,7 @@ fn render_controller<M: 'static>(
         .map(|user| render_controller_select_user_btn(&user.name, &user.icon, user.selected))
         .collect::<Vec<Html<M>>>();
     destination_list.push(btn::add(Attributes::new(), Events::new()));
+    let selected_sender = &senders[selected_sender_idx];
     Html::div(
         Attributes::new().class("chat-controller"),
         Events::new(),
@@ -236,7 +257,14 @@ fn render_controller<M: 'static>(
             Html::div(
                 Attributes::new().class("chat-controller-chat_pallet"),
                 Events::new(),
-                vec![],
+                selected_sender
+                    .chatpallet
+                    .iter()
+                    .enumerate()
+                    .map(|(idx, row)| {
+                        btn::dark(Attributes::new(), Events::new(), vec![Html::text(row)])
+                    })
+                    .collect(),
             ),
             Html::div(
                 Attributes::new().class("chat-controller-sender_option"),
