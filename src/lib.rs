@@ -11,6 +11,7 @@ extern crate serde_json;
 use wasm_bindgen::prelude::*;
 
 mod component;
+mod dicebot;
 mod random_id;
 mod shader;
 mod table;
