@@ -6,6 +6,7 @@ extern crate web_sys;
 extern crate serde_derive;
 extern crate hex;
 extern crate ndarray;
+extern crate regex;
 extern crate serde_json;
 
 use wasm_bindgen::prelude::*;
