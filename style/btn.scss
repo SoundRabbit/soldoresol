@@ -9,6 +9,7 @@
     padding-right: 1.2ch;
     text-align: center;
     border-radius: 0.3em;
+    font-size: 0.83em;
     &:hover {
         cursor: pointer;
     }
@@ -105,6 +106,8 @@
     display: flex;
     align-items: center;
     max-width: 7rem;
+    text-decoration: none;
+    font-size: 0.83em;
     &:hover {
         cursor: pointer;
         background-color: $gray-600;
@@ -158,6 +161,7 @@
     padding-left: 1.2ch;
     padding-right: 1.2ch;
     text-align: center;
+    font-size: 0.83em;
     &:hover {
         cursor: pointer;
         background-color: $gray-600;
