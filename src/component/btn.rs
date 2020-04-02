@@ -101,7 +101,7 @@ pub fn tab<Msg>(
     events: Events<Msg>,
     name: impl Into<String>,
 ) -> Html<Msg> {
-    Html::button(
+    Html::a(
         attributes
             .class("btn_tab")
             .string("data-btn_tab-selected", selected.to_string()),
