@@ -53,6 +53,7 @@ pub enum Msg {
     SendMessage(String),
     AddTab(),
     ShowCreateTabDialog(),
+    SetSelectedTab(TabId),
 }
 
 pub fn init() -> State {
@@ -154,6 +155,9 @@ pub fn update(state: &mut State, msg: Msg) {
             );
             state.tab_index.push(tab_id);
             dialog::close(&mut state.create_tab_dialog_state);
+        }
+        Msg::SetSelectedTab(tab_id) => {
+            state.selected_tab_id = tab_id;
         }
     }
 }
@@ -406,8 +410,12 @@ fn render_tabs<M: 'static>(
             Some(tab) => btn::tab(
                 tab_id == selected_tab_id,
                 true,
-                Attributes::new(),
-                Events::new(),
+                Attributes::new().href(String::from("#chat-tabs-") + &tab_id.to_string()),
+                Events::new().on_click({
+                    let m = messenger_gen()();
+                    let tab_id = tab_id.clone();
+                    move |_| m(Msg::SetSelectedTab(tab_id))
+                }),
                 &tab.name,
             ),
         })
@@ -445,10 +453,13 @@ fn render_tabs<M: 'static>(
 
 fn render_tabs_log_column<M>(tab: &Tab, tab_id: &TabId, selected_tab_id: &TabId) -> Html<M> {
     Html::div(
-        Attributes::new().class("chat-tabs-log-column").string(
-            "data-chat-selected",
-            (tab_id == selected_tab_id).to_string(),
-        ),
+        Attributes::new()
+            .class("chat-tabs-log-column")
+            .string(
+                "data-chat-selected",
+                (tab_id == selected_tab_id).to_string(),
+            )
+            .id(String::from("chat-tabs-") + &tab_id.to_string()),
         Events::new(),
         vec![
             Html::div(

@@ -108,6 +108,11 @@
     max-width: 7rem;
     text-decoration: none;
     font-size: 0.83em;
+    padding-top: 0.2em;
+    padding-bottom: 0.21em;
+    padding-left: 1.2ch;
+    padding-right: 1.2ch;
+    text-decoration: none;
     &:hover {
         cursor: pointer;
         background-color: $gray-600;
