@@ -262,7 +262,21 @@ fn render_controller<M: 'static>(
                     .iter()
                     .enumerate()
                     .map(|(idx, row)| {
-                        btn::dark(Attributes::new(), Events::new(), vec![Html::text(row)])
+                        btn::dark(
+                            Attributes::new(),
+                            Events::new()
+                                .on_click({
+                                    let m = messenger_gen()();
+                                    let text = row.clone();
+                                    |_| m(Msg::InputChatText(text))
+                                })
+                                .on_dblclick({
+                                    let m = messenger_gen()();
+                                    let text = row.clone();
+                                    |_| m(Msg::SendInputingMessage())
+                                }),
+                            vec![Html::text(row)],
+                        )
                     })
                     .collect(),
             ),
