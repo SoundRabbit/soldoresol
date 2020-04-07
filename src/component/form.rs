@@ -418,28 +418,28 @@ pub fn render<M: 'static>(
                     Box::new(|e| m(Msg::ResizeB(e.client_y() as f32)))
                 }
             }),
-            render_resizer("form-l_topper", state.bind_left || state.bind_top, {
+            render_resizer("form-l_topper", state.bind_left, {
                 let messenger = messenger_gen();
                 move || {
                     let m = messenger();
                     Box::new(|e| m(Msg::ResizeLT([e.client_x() as f32, e.client_y() as f32])))
                 }
             }),
-            render_resizer("form-r_topper", state.bind_right || state.bind_top, {
+            render_resizer("form-r_topper", state.bind_right, {
                 let messenger = messenger_gen();
                 move || {
                     let m = messenger();
                     Box::new(|e| m(Msg::ResizeRT([e.client_x() as f32, e.client_y() as f32])))
                 }
             }),
-            render_resizer("form-l_bottomer", state.bind_left || state.bind_bottom, {
+            render_resizer("form-l_bottomer", state.bind_left, {
                 let messenger = messenger_gen();
                 move || {
                     let m = messenger();
                     Box::new(|e| m(Msg::ResizeLB([e.client_x() as f32, e.client_y() as f32])))
                 }
             }),
-            render_resizer("form-r_bottomer", state.bind_right || state.bind_bottom, {
+            render_resizer("form-r_bottomer", state.bind_right, {
                 let messenger = messenger_gen();
                 move || {
                     let m = messenger();
