@@ -8,6 +8,7 @@ pub struct State {
 }
 
 pub enum Msg {
+    NoOp,
     SetShowingState(bool),
 }
 
@@ -29,6 +30,7 @@ pub fn close(state: &mut State) {
 
 pub fn update(state: &mut State, msg: Msg) {
     match msg {
+        Msg::NoOp => {}
         Msg::SetShowingState(s) => {
             state.showing = s;
         }
@@ -48,10 +50,18 @@ pub fn render<M: 'static>(
     }
     Html::div(
         Attributes::new().class("context_menu-bg"),
-        Events::new().on_click({
-            let m = messenger_gen()();
-            |_| m(Msg::SetShowingState(false))
-        }),
+        Events::new()
+            .on_click({
+                let m = messenger_gen()();
+                |_| m(Msg::SetShowingState(false))
+            })
+            .on_contextmenu({
+                let m = messenger_gen()();
+                |e| {
+                    e.prevent_default();
+                    m(Msg::SetShowingState(false))
+                }
+            }),
         vec![Html::div(
             attributes
                 .style("left", state.loc[0].to_string() + "px")
