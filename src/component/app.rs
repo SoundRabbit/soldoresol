@@ -1,5 +1,6 @@
 use super::btn;
 use super::chat;
+use super::context_menu;
 use super::handout;
 use super::measure_length::measure_length;
 use super::measure_tool;
@@ -33,12 +34,14 @@ pub struct State {
     table_movement: (f32, f32),
     table_distance: f32,
     table_grabbed: (bool, bool),
+    table_rotating: bool,
     table_tool: TableTool,
     table_measure_start: Option<[f32; 2]>,
     table_measure: Option<([f32; 2], [f32; 2], f32)>,
     measure_tool_state: measure_tool::State,
     handout_state: handout::State,
     chat_state: chat::State,
+    table_context_menu_state: context_menu::State,
     form_priority: [FormKind; 3],
 }
 
@@ -56,6 +59,8 @@ pub enum Msg {
     ChatMsg(chat::Msg),
     OpenChatForm,
     SetTopForm(usize),
+    ShowTableContextMenu([f32; 2]),
+    TableContextMenuMsg(context_menu::Msg),
 }
 
 pub struct Sub;
@@ -82,9 +87,11 @@ fn init() -> (State, Cmd<Msg, Sub>) {
         table_movement: (0.0, 0.0),
         table_distance: 20.0,
         table_grabbed: (false, false),
+        table_rotating: false,
         table_tool: TableTool::Selecter,
         table_measure_start: None,
         table_measure: None,
+        table_context_menu_state: context_menu::init(),
         measure_tool_state: measure_tool::init(),
         handout_state: handout::init(),
         chat_state: chat::init(),
@@ -245,6 +252,9 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     .max(-0.49 * std::f32::consts::PI)
                     .min(0.0);
                 state.table_rotation.1 = state.table_rotation.1 - (dx as f32) / rotate_factor;
+                state.table_rotating = true;
+            } else {
+                state.table_rotating = false;
             }
 
             render_table(
@@ -294,6 +304,16 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             }
             Cmd::none()
         }
+        Msg::ShowTableContextMenu(p) => {
+            if !state.table_rotating {
+                context_menu::open(&mut state.table_context_menu_state, p);
+            }
+            Cmd::none()
+        }
+        Msg::TableContextMenuMsg(m) => {
+            context_menu::update(&mut state.table_context_menu_state, m);
+            Cmd::none()
+        }
     }
 }
 
@@ -314,6 +334,7 @@ fn render(state: &State) -> Html<Msg> {
         render_table_canvas(table_grabbed_r, table_grabbed_l),
         render_side_menu(),
         render_header(&state.room_name),
+        render_table_context_menu(&state.table_context_menu_state),
         match state.table_measure {
             Some((b, e, l)) => measure_length(&b, &e, l),
             _ => Html::none(),
@@ -378,9 +399,24 @@ fn render_table_canvas(table_grabbed_l: bool, table_grabbed_r: bool) -> Html<Msg
             })
             .on_contextmenu(|e| {
                 e.prevent_default();
-                Msg::NoOp
+                Msg::ShowTableContextMenu([e.client_x() as f32, e.client_y() as f32])
             }),
         vec![],
+    )
+}
+
+fn render_table_context_menu(state: &context_menu::State) -> Html<Msg> {
+    context_menu::render(
+        false,
+        state,
+        || Box::new(|| Box::new(|msg| Msg::TableContextMenuMsg(msg))),
+        Attributes::new(),
+        Events::new(),
+        vec![btn::context_menu_text(
+            Attributes::new(),
+            Events::new(),
+            "キャラクターを作成",
+        )],
     )
 }
 
