@@ -1,6 +1,5 @@
 use super::MessengerGen;
 use kagura::prelude::*;
-use wasm_bindgen::prelude::*;
 
 pub struct State {
     showing: bool,
@@ -19,11 +18,13 @@ pub fn init() -> State {
     }
 }
 
+#[allow(dead_code)]
 pub fn open(state: &mut State, loc: [f32; 2]) {
     state.loc = loc;
     update(state, Msg::SetShowingState(true));
 }
 
+#[allow(dead_code)]
 pub fn close(state: &mut State) {
     update(state, Msg::SetShowingState(false));
 }

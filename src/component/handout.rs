@@ -17,22 +17,27 @@ pub fn init() -> State {
     }
 }
 
+#[allow(dead_code)]
 pub fn open(state: &mut State) {
     form::open(&mut state.form_state);
 }
 
+#[allow(dead_code)]
 pub fn close(state: &mut State) {
     form::close(&mut state.form_state);
 }
 
+#[allow(dead_code)]
 pub fn toggle_open_close(state: &mut State) {
     form::toggle_open_close(&mut state.form_state);
 }
 
+#[allow(dead_code)]
 pub fn is_moving(state: &State) -> bool {
     form::is_moving(&state.form_state)
 }
 
+#[allow(dead_code)]
 pub fn window_resized(state: &mut State) {
     form::window_resized(&mut state.form_state);
 }

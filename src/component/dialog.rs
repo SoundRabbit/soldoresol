@@ -15,10 +15,12 @@ pub fn init() -> State {
     State { showing: false }
 }
 
+#[allow(dead_code)]
 pub fn open(state: &mut State) {
     update(state, Msg::SetShowingState(true));
 }
 
+#[allow(dead_code)]
 pub fn close(state: &mut State) {
     update(state, Msg::SetShowingState(false));
 }
@@ -68,7 +70,7 @@ pub fn render<M: 'static>(
                                 Attributes::new(),
                                 Events::new().on_click({
                                     let m = messenger_gen()();
-                                    |e| m(Msg::SetShowingState(false))
+                                    |_| m(Msg::SetShowingState(false))
                                 }),
                             )
                         } else {

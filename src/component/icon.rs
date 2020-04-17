@@ -5,6 +5,7 @@ pub enum Icon<'a> {
     MaterialIcon(&'a str),
 }
 
+#[allow(dead_code)]
 pub fn small<Msg>(attributes: Attributes, events: Events<Msg>, icon: Icon) -> Html<Msg> {
     match icon {
         Icon::Character(c) => Html::span(
@@ -26,6 +27,7 @@ pub fn small<Msg>(attributes: Attributes, events: Events<Msg>, icon: Icon) -> Ht
     }
 }
 
+#[allow(dead_code)]
 pub fn medium<Msg>(attributes: Attributes, events: Events<Msg>, icon: Icon) -> Html<Msg> {
     match icon {
         Icon::Character(c) => Html::span(
@@ -47,6 +49,7 @@ pub fn medium<Msg>(attributes: Attributes, events: Events<Msg>, icon: Icon) -> H
     }
 }
 
+#[allow(dead_code)]
 pub fn large<Msg>(attributes: Attributes, events: Events<Msg>, icon: Icon) -> Html<Msg> {
     match icon {
         Icon::Character(c) => Html::span(

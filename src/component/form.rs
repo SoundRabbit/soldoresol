@@ -59,6 +59,7 @@ pub fn init() -> State {
     }
 }
 
+#[allow(dead_code)]
 pub fn open(state: &mut State) {
     let document = web_sys::window().unwrap().document().unwrap();
     let header = document.get_element_by_id("app-header").unwrap();
@@ -70,10 +71,12 @@ pub fn open(state: &mut State) {
     update(state, Msg::SetShowingState(true));
 }
 
+#[allow(dead_code)]
 pub fn close(state: &mut State) {
     update(state, Msg::SetShowingState(false));
 }
 
+#[allow(dead_code)]
 pub fn toggle_open_close(state: &mut State) {
     if state.showing {
         close(state);
@@ -339,7 +342,7 @@ pub fn render<M: 'static>(
                                     Attributes::new().class("material-icons"),
                                     Events::new().on_click({
                                         let m = messenger_gen()();
-                                        |e| m(Msg::SetBindTop(true))
+                                        |_| m(Msg::SetBindTop(true))
                                     }),
                                     "vertical_align_top",
                                 ),
@@ -347,7 +350,7 @@ pub fn render<M: 'static>(
                                     Attributes::new().class("material-icons"),
                                     Events::new().on_click({
                                         let m = messenger_gen()();
-                                        |e| m(Msg::SetBindLeft(true))
+                                        |_| m(Msg::SetBindLeft(true))
                                     }),
                                     "vertical_align_top",
                                 ),
@@ -355,7 +358,7 @@ pub fn render<M: 'static>(
                                     Attributes::new().class("material-icons"),
                                     Events::new().on_click({
                                         let m = messenger_gen()();
-                                        |e| m(Msg::SetBindRight(true))
+                                        |_| m(Msg::SetBindRight(true))
                                     }),
                                     "vertical_align_top",
                                 ),
@@ -363,7 +366,7 @@ pub fn render<M: 'static>(
                                     Attributes::new().class("material-icons"),
                                     Events::new().on_click({
                                         let m = messenger_gen()();
-                                        |e| m(Msg::SetBindBottom(true))
+                                        |_| m(Msg::SetBindBottom(true))
                                     }),
                                     "vertical_align_top",
                                 ),
@@ -377,7 +380,7 @@ pub fn render<M: 'static>(
                             Attributes::new(),
                             Events::new().on_click({
                                 let m = messenger_gen()();
-                                |e| m(Msg::SetShowingState(false))
+                                |_| m(Msg::SetShowingState(false))
                             }),
                         )
                     } else {
