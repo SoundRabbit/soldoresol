@@ -4,6 +4,9 @@ use std::ops::Mul;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 
+mod camera;
+mod renderer;
+
 struct Context {
     gl: web_sys::WebGlRenderingContext,
     texture: web_sys::WebGlTexture,

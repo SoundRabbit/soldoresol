@@ -1,5 +1,6 @@
 use kagura::prelude::*;
 
+#[allow(dead_code)]
 pub fn primary<Msg>(
     attributes: Attributes,
     events: Events<Msg>,
@@ -14,6 +15,7 @@ pub fn primary<Msg>(
     )
 }
 
+#[allow(dead_code)]
 pub fn secondary<Msg>(
     attributes: Attributes,
     events: Events<Msg>,
@@ -28,6 +30,7 @@ pub fn secondary<Msg>(
     )
 }
 
+#[allow(dead_code)]
 pub fn info<Msg>(
     attributes: Attributes,
     events: Events<Msg>,
@@ -40,6 +43,7 @@ pub fn info<Msg>(
     )
 }
 
+#[allow(dead_code)]
 pub fn danger<Msg>(
     attributes: Attributes,
     events: Events<Msg>,
@@ -52,6 +56,7 @@ pub fn danger<Msg>(
     )
 }
 
+#[allow(dead_code)]
 pub fn success<Msg>(
     attributes: Attributes,
     events: Events<Msg>,
@@ -66,6 +71,7 @@ pub fn success<Msg>(
     )
 }
 
+#[allow(dead_code)]
 pub fn dark<Msg>(
     attributes: Attributes,
     events: Events<Msg>,
@@ -78,6 +84,7 @@ pub fn dark<Msg>(
     )
 }
 
+#[allow(dead_code)]
 pub fn close<Msg>(attributes: Attributes, events: Events<Msg>) -> Html<Msg> {
     Html::button(
         attributes.class("btn_close").class("material-icons"),
@@ -86,6 +93,7 @@ pub fn close<Msg>(attributes: Attributes, events: Events<Msg>) -> Html<Msg> {
     )
 }
 
+#[allow(dead_code)]
 pub fn add<Msg>(attributes: Attributes, events: Events<Msg>) -> Html<Msg> {
     Html::button(
         attributes.class("btn_add").class("material-icons"),
@@ -94,6 +102,7 @@ pub fn add<Msg>(attributes: Attributes, events: Events<Msg>) -> Html<Msg> {
     )
 }
 
+#[allow(dead_code)]
 pub fn tab<Msg>(
     selected: bool,
     deletable: bool,
@@ -127,6 +136,7 @@ pub fn tab<Msg>(
     )
 }
 
+#[allow(dead_code)]
 pub fn context_menu_text<Msg>(
     attributes: Attributes,
     events: Events<Msg>,
