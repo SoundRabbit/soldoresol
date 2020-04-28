@@ -1,7 +1,7 @@
 use super::ShaderSource;
 
 const VERTEX_SHADER: &str = r#"
-    attribute vec4 a_position;
+    attribute vec4 a_vertex;
     attribute vec4 a_color;
     attribute vec2 a_textureCoord;
     uniform mat4 u_translate;
@@ -10,7 +10,7 @@ const VERTEX_SHADER: &str = r#"
     void main() {
         v_color = a_color;
         v_textureCoord = a_textureCoord;
-        gl_Position = u_translate * a_position;
+        gl_Position = u_translate * a_vertex;
     }
 "#;
 

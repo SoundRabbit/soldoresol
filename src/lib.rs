@@ -12,7 +12,9 @@ extern crate serde_json;
 use wasm_bindgen::prelude::*;
 
 mod component;
+mod model;
 mod random_id;
+mod renderer;
 mod shader;
 mod table;
 
