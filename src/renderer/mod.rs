@@ -150,7 +150,6 @@ impl Renderer {
         );
         let gl = (*gl).clone();
         let a = Closure::once(Box::new(move || {
-            web_sys::console::log_1(&JsValue::from("rendered"));
             gl.flush();
         }) as Box<dyn FnOnce()>);
         web_sys::window()
