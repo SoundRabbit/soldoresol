@@ -62,7 +62,7 @@ pub struct State {
 
 pub enum Msg {
     NoOp,
-    SetTableContext(web_sys::HtmlCanvasElement),
+    SetTableContext,
     WindowResized,
 
     // メッセージの伝搬
@@ -119,7 +119,7 @@ fn init() -> (State, Cmd<Msg, Sub>) {
         // },
     };
     let task = Cmd::task(|handler| {
-        handler(Msg::SetTableContext(get_table_canvas_element()));
+        handler(Msg::SetTableContext);
     });
     (state, task)
 }
@@ -135,10 +135,15 @@ fn get_table_canvas_element() -> web_sys::HtmlCanvasElement {
         .unwrap()
 }
 
+fn get_device_pixel_ratio() -> f64 {
+    web_sys::window().unwrap().device_pixel_ratio()
+}
+
 fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
     match msg {
         Msg::NoOp => Cmd::none(),
-        Msg::SetTableContext(canvas) => {
+        Msg::SetTableContext => {
+            let canvas = get_table_canvas_element();
             let canvas_size = [canvas.client_width() as f64, canvas.client_height() as f64];
             canvas.set_height(canvas.client_height() as u32);
             canvas.set_width(canvas.client_width() as u32);
@@ -149,7 +154,10 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 .unwrap()
                 .dyn_into::<web_sys::WebGlRenderingContext>()
                 .unwrap();
+            web_sys::console::log_1(&JsValue::from("Renderer::new"));
             let renderer = Renderer::new(gl);
+            web_sys::console::log_1(&JsValue::from("renderer.render"));
+
             renderer.render(&mut state.world, &state.camera);
             state.renderer = Some(renderer);
             Cmd::none()
@@ -229,6 +237,11 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.table_state.last_mouse_coord = mouse_coord;
             if let Some(renderer) = &state.renderer {
                 renderer.render(&mut state.world, &camera);
+                let focused_id = renderer
+                    .table_object_id(&[mouse_coord[0], state.canvas_size[1] - mouse_coord[1]]);
+                if let Some(character) = state.world.character_mut(focused_id) {
+                    character.set_is_focused(true);
+                }
             }
             Cmd::none()
         }
@@ -342,7 +355,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
 fn render(state: &State) -> Html<Msg> {
     Html::div(
-        Attributes::new().class("app"),
+        Attributes::new().class("app").id("app"),
         Events::new(),
         vec![
             render_canvas(&state.table_state),

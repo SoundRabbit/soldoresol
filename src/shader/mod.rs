@@ -1,4 +1,5 @@
 pub mod default;
+pub mod mask;
 
 pub enum ShaderSource {
     VertexShader(String),

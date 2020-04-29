@@ -54,7 +54,7 @@ impl BasicRenderer for CharacterRenderer {
         let s = character.size();
         let p = character.position();
         ModelMatrix::new()
-            .with_scale(&[s[0], 1.0, s[1]])
+            .with_scale(&[s[0], s[1], 1.0])
             .with_x_axis_rotation(camera.x_axis_rotation())
             .with_z_axis_rotation(camera.z_axis_rotation())
             .with_movement(&p)
