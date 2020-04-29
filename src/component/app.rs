@@ -269,7 +269,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             let movement = [
                 movement[0],
                 movement[1],
-                movement[2] + movement_factor * delta_y,
+                movement[2] - movement_factor * delta_y,
             ];
             camera.set_movement(movement);
             if let Some(renderer) = &state.renderer {
