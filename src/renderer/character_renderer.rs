@@ -4,33 +4,33 @@ use super::webgl::WebGlF32Vbo;
 use super::webgl::WebGlI16Ibo;
 use super::webgl::WebGlRenderingContext;
 use crate::model::Camera;
-use crate::model::Table;
+use crate::model::Character;
 use ndarray::Array2;
 
-pub struct TableRenderer {
+pub struct CharacterRenderer {
     vertexis_buffer: WebGlF32Vbo,
     color_buffer: WebGlF32Vbo,
     texture_coord_buffer: WebGlF32Vbo,
     index_buffer: WebGlI16Ibo,
 }
 
-impl TableRenderer {
+impl CharacterRenderer {
     pub fn new(gl: &WebGlRenderingContext) -> Self {
         let vertexis_buffer = gl.create_vbo_with_f32array(
             &[
-                [1.0, 1.0, 0.0],
-                [-1.0, 1.0, 0.0],
-                [1.0, -1.0, 0.0],
-                [-1.0, -1.0, 0.0],
+                [0.5, 0.0, 1.0],
+                [-0.5, 0.0, 1.0],
+                [0.5, 0.0, 0.0],
+                [-0.5, 0.0, 0.0],
             ]
             .concat(),
         );
         let color_buffer = gl.create_vbo_with_f32array(
             &[
-                [1.0, 1.0, 1.0, 1.0],
-                [1.0, 1.0, 1.0, 1.0],
-                [1.0, 1.0, 1.0, 1.0],
-                [1.0, 1.0, 1.0, 1.0],
+                [0.0, 1.0, 1.0, 1.0],
+                [0.0, 1.0, 1.0, 1.0],
+                [0.0, 1.0, 1.0, 1.0],
+                [0.0, 1.0, 1.0, 1.0],
             ]
             .concat(),
         );
@@ -46,8 +46,8 @@ impl TableRenderer {
     }
 }
 
-impl BasicRenderer for TableRenderer {
-    type Model = Table;
+impl BasicRenderer for CharacterRenderer {
+    type Model = Character;
 
     fn vertexis(&self) -> &WebGlF32Vbo {
         &self.vertexis_buffer
@@ -65,10 +65,8 @@ impl BasicRenderer for TableRenderer {
         &self.index_buffer
     }
 
-    fn model_matrix(&self, _: &Camera, table: &Table) -> Array2<f64> {
-        let s = table.size();
-        ModelMatrix::new()
-            .with_scale(&[s[0] / 2.0, s[1] / 2.0, 1.0])
-            .into()
+    fn model_matrix(&self, _: &Camera, character: &Character) -> Array2<f64> {
+        let s = character.size();
+        ModelMatrix::new().with_scale(&[s[0], 1.0, s[1]]).into()
     }
 }

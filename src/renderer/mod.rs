@@ -1,3 +1,5 @@
+mod basic_renderer;
+mod character_renderer;
 mod model_matrix;
 mod table_renderer;
 mod webgl;
@@ -5,6 +7,9 @@ mod webgl;
 use crate::model::Camera;
 use crate::model::World;
 use crate::shader;
+use basic_renderer::BasicRenderer;
+use character_renderer::CharacterRenderer;
+use ndarray::Array2;
 use table_renderer::TableRenderer;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
@@ -16,6 +21,7 @@ pub struct Renderer {
     program: web_sys::WebGlProgram,
     texture: web_sys::WebGlTexture,
     table_renderer: TableRenderer,
+    character_renderer: CharacterRenderer,
     a_vertex_location: WebGlAttributeLocation,
     a_color_location: WebGlAttributeLocation,
     a_texture_coord_location: WebGlAttributeLocation,
@@ -48,6 +54,7 @@ impl Renderer {
         gl.pixel_storei(web_sys::WebGlRenderingContext::PACK_ALIGNMENT, 1);
 
         let table_renderer = TableRenderer::new(&gl);
+        let character_renderer = CharacterRenderer::new(&gl);
 
         gl.tex_parameteri(
             web_sys::WebGlRenderingContext::TEXTURE_2D,
@@ -77,6 +84,7 @@ impl Renderer {
             program,
             texture,
             table_renderer,
+            character_renderer,
             a_vertex_location,
             a_color_location,
             a_texture_coord_location,
@@ -101,16 +109,44 @@ impl Renderer {
         gl.clear(web_sys::WebGlRenderingContext::COLOR_BUFFER_BIT);
 
         // render table
+        self.alloc_memory(&self.table_renderer);
         let table = world.table_mut();
-        let vertexis = self.table_renderer.vertexis();
-        let color = self.table_renderer.color();
-        let texture_coord = self.table_renderer.texture_coord();
-        let index = self.table_renderer.index();
-        let mvp_matrix = self
-            .table_renderer
-            .model_matrix(&camera, &table)
-            .dot(&vp_matrix);
         let texture = table.texture_element();
+        gl.tex_image_2d_with_u32_and_u32_and_canvas(
+            web_sys::WebGlRenderingContext::TEXTURE_2D,
+            0,
+            web_sys::WebGlRenderingContext::RGBA as i32,
+            web_sys::WebGlRenderingContext::RGBA,
+            web_sys::WebGlRenderingContext::UNSIGNED_BYTE,
+            &texture,
+        )
+        .unwrap();
+        self.draw_with_model(&camera, &vp_matrix, table, &self.table_renderer);
+        table.flip();
+
+        // render character
+        self.alloc_memory(&self.character_renderer);
+        for (_, character) in world.characters() {
+            self.draw_with_model(&camera, &vp_matrix, character, &self.character_renderer);
+        }
+
+        let gl = (*gl).clone();
+        let a = Closure::once(Box::new(move || {
+            gl.flush();
+        }) as Box<dyn FnOnce()>);
+        web_sys::window()
+            .unwrap()
+            .request_animation_frame(a.as_ref().unchecked_ref())
+            .unwrap();
+        a.forget();
+    }
+
+    fn alloc_memory(&self, renderer: &impl BasicRenderer) {
+        let gl = &self.gl;
+        let vertexis = renderer.vertexis();
+        let color = renderer.color();
+        let texture_coord = renderer.texture_coord();
+        let index = renderer.index();
         gl.set_attribute(&vertexis, &self.a_vertex_location, 3, 0);
         gl.set_attribute(&color, &self.a_color_location, 4, 0);
         gl.set_attribute(&texture_coord, &self.a_texture_coord_location, 2, 0);
@@ -119,6 +155,17 @@ impl Renderer {
             Some(index),
         );
         gl.uniform1i(Some(&self.u_texture_location), 0);
+    }
+
+    fn draw_with_model<M>(
+        &self,
+        camera: &Camera,
+        vp_matrix: &Array2<f64>,
+        model: &M,
+        renderer: &impl BasicRenderer<Model = M>,
+    ) {
+        let gl = &self.gl;
+        let mvp_matrix = renderer.model_matrix(&camera, &model).dot(vp_matrix);
         gl.uniform_matrix4fv_with_f32_array(
             Some(&self.u_translate_location),
             false,
@@ -133,30 +180,11 @@ impl Renderer {
             .map(|a| a as f32)
             .collect::<Vec<f32>>(),
         );
-        gl.tex_image_2d_with_u32_and_u32_and_canvas(
-            web_sys::WebGlRenderingContext::TEXTURE_2D,
-            0,
-            web_sys::WebGlRenderingContext::RGBA as i32,
-            web_sys::WebGlRenderingContext::RGBA,
-            web_sys::WebGlRenderingContext::UNSIGNED_BYTE,
-            &texture,
-        )
-        .unwrap();
         gl.draw_elements_with_i32(
             web_sys::WebGlRenderingContext::TRIANGLES,
             6,
             web_sys::WebGlRenderingContext::UNSIGNED_SHORT,
             0,
         );
-        table.flip();
-        let gl = (*gl).clone();
-        let a = Closure::once(Box::new(move || {
-            gl.flush();
-        }) as Box<dyn FnOnce()>);
-        web_sys::window()
-            .unwrap()
-            .request_animation_frame(a.as_ref().unchecked_ref())
-            .unwrap();
-        a.forget();
     }
 }

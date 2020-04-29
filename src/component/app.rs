@@ -6,6 +6,7 @@ use super::contextmenu;
 // use super::radio::radio;
 use super::checkbox::checkbox;
 use crate::model::Camera;
+use crate::model::Character;
 use crate::model::ColorSystem;
 use crate::model::Table;
 use crate::model::World;
@@ -38,6 +39,11 @@ struct TableState {
     last_mouse_coord: [f64; 2],
 }
 
+struct Contextmenu {
+    state: contextmenu::State,
+    position: [f64; 2],
+}
+
 pub struct State {
     room_name: String,
     world: World,
@@ -45,7 +51,7 @@ pub struct State {
     renderer: Option<Renderer>,
     canvas_size: [f64; 2],
     table_state: TableState,
-    context_menu_state: contextmenu::State,
+    contextmenu: Contextmenu,
     // form_state: FormState,
 }
 
@@ -64,6 +70,7 @@ pub enum Msg {
 
     //コンテキストメニューの制御
     OpenContextMenu([f64; 2]),
+    AddChracaterToTable([f64; 2]),
 
     // テーブル操作の制御
     SetCameraRotationWithMouseCoord([f64; 2]),
@@ -102,7 +109,10 @@ fn init() -> (State, Cmd<Msg, Sub>) {
             selecting_tool: TableTool::Pen,
             last_mouse_coord: [0.0, 0.0],
         },
-        context_menu_state: contextmenu::init(),
+        contextmenu: Contextmenu {
+            state: contextmenu::init(),
+            position: [0.0, 0.0],
+        },
         // form_state: FormState {
         //     chat: chat::init(),
         //     handout: handout::init(),
@@ -160,13 +170,23 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
         //メッセージの伝搬
         Msg::TransportContextMenuMsg(msg) => {
-            contextmenu::update(&mut state.context_menu_state, msg);
+            contextmenu::update(&mut state.contextmenu.state, msg);
             Cmd::none()
         }
 
         //コンテキストメニューの制御
         Msg::OpenContextMenu(mouse_coord) => {
-            contextmenu::open(&mut state.context_menu_state, mouse_coord);
+            contextmenu::open(&mut state.contextmenu.state, mouse_coord);
+            Cmd::none()
+        }
+        Msg::AddChracaterToTable(mouse_coord) => {
+            let table_coord = state
+                .camera
+                .collision_point_on_xy_plane(&state.canvas_size, &mouse_coord);
+            let table_coord = [table_coord[0], table_coord[1], 0.0];
+            let mut character = Character::new();
+            character.set_position(table_coord);
+            state.world.add_character(character);
             Cmd::none()
         }
 
@@ -324,7 +344,7 @@ fn render(state: &State) -> Html<Msg> {
         vec![
             render_canvas(&state.table_state),
             render_debug_modeless(&state),
-            render_context_menu(&state.context_menu_state),
+            render_context_menu(&state.contextmenu),
         ],
     )
 }
@@ -393,16 +413,19 @@ fn render_canvas(table_state: &TableState) -> Html<Msg> {
     )
 }
 
-fn render_context_menu(context_menu_state: &contextmenu::State) -> Html<Msg> {
+fn render_context_menu(contextmenu: &Contextmenu) -> Html<Msg> {
     contextmenu::render(
         false,
-        &context_menu_state,
+        &contextmenu.state,
         || Box::new(|| Box::new(|msg| Msg::TransportContextMenuMsg(msg))),
         Attributes::new(),
         Events::new(),
         vec![btn::contextmenu_text(
             Attributes::new(),
-            Events::new(),
+            Events::new().on_click({
+                let position = contextmenu.position.clone();
+                move |_| Msg::AddChracaterToTable(position)
+            }),
             "キャラクターを作成",
         )],
     )
