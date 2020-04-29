@@ -59,12 +59,12 @@ impl Renderer {
         gl.tex_parameteri(
             web_sys::WebGlRenderingContext::TEXTURE_2D,
             web_sys::WebGlRenderingContext::TEXTURE_MIN_FILTER,
-            web_sys::WebGlRenderingContext::LINEAR as i32,
+            web_sys::WebGlRenderingContext::NEAREST as i32,
         );
         gl.tex_parameteri(
             web_sys::WebGlRenderingContext::TEXTURE_2D,
             web_sys::WebGlRenderingContext::TEXTURE_MAG_FILTER,
-            web_sys::WebGlRenderingContext::LINEAR as i32,
+            web_sys::WebGlRenderingContext::NEAREST as i32,
         );
         gl.tex_parameteri(
             web_sys::WebGlRenderingContext::TEXTURE_2D,
@@ -78,6 +78,14 @@ impl Renderer {
         );
 
         gl.enable(web_sys::WebGlRenderingContext::CULL_FACE);
+
+        gl.enable(web_sys::WebGlRenderingContext::DEPTH_TEST);
+        gl.depth_func(web_sys::WebGlRenderingContext::LEQUAL);
+        gl.enable(web_sys::WebGlRenderingContext::BLEND);
+        gl.blend_func(
+            web_sys::WebGlRenderingContext::SRC_ALPHA,
+            web_sys::WebGlRenderingContext::ONE_MINUS_SRC_ALPHA,
+        );
 
         Self {
             gl,
@@ -106,7 +114,7 @@ impl Renderer {
             .dot(&camera.perspective_matrix(&canvas_size));
         gl.viewport(0, 0, canvas_size[0] as i32, canvas_size[1] as i32);
         gl.clear_color(0.0, 0.0, 0.0, 0.0);
-        gl.clear(web_sys::WebGlRenderingContext::COLOR_BUFFER_BIT);
+        gl.clear(web_sys::WebGlRenderingContext::COLOR_BUFFER_BIT | web_sys::WebGlRenderingContext::DEPTH_BUFFER_BIT );
 
         // render table
         self.alloc_memory(&self.table_renderer);
@@ -130,9 +138,10 @@ impl Renderer {
             self.draw_with_model(&camera, &vp_matrix, character, &self.character_renderer);
         }
 
+        // v-sync
         let gl = (*gl).clone();
         let a = Closure::once(Box::new(move || {
-            gl.flush();
+            gl.finish();
         }) as Box<dyn FnOnce()>);
         web_sys::window()
             .unwrap()
