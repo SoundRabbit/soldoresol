@@ -148,6 +148,7 @@ impl Renderer {
             web_sys::WebGlRenderingContext::UNSIGNED_SHORT,
             0,
         );
+        table.flip();
         let gl = (*gl).clone();
         let a = Closure::once(Box::new(move || {
             gl.flush();

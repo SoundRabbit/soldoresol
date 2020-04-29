@@ -18,6 +18,10 @@ impl World {
         self.table_id
     }
 
+    pub fn table(&self) -> &Table {
+        &self.table
+    }
+
     pub fn table_mut(&mut self) -> &mut Table {
         &mut self.table
     }

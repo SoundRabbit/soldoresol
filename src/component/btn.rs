@@ -6,13 +6,7 @@ pub fn primary<Msg>(
     events: Events<Msg>,
     children: Vec<Html<Msg>>,
 ) -> Html<Msg> {
-    Html::button(
-        attributes
-            .string("data-btn-variant", "primary")
-            .class("btn"),
-        events,
-        children,
-    )
+    Html::button(attributes.class("app__btn--primary"), events, children)
 }
 
 #[allow(dead_code)]
@@ -21,13 +15,7 @@ pub fn secondary<Msg>(
     events: Events<Msg>,
     children: Vec<Html<Msg>>,
 ) -> Html<Msg> {
-    Html::button(
-        attributes
-            .string("data-btn-variant", "secondary")
-            .class("btn"),
-        events,
-        children,
-    )
+    Html::button(attributes.class("app__btn--secondary"), events, children)
 }
 
 #[allow(dead_code)]
@@ -36,11 +24,7 @@ pub fn info<Msg>(
     events: Events<Msg>,
     children: Vec<Html<Msg>>,
 ) -> Html<Msg> {
-    Html::button(
-        attributes.string("data-btn-variant", "info").class("btn"),
-        events,
-        children,
-    )
+    Html::button(attributes.class("app__btn--info"), events, children)
 }
 
 #[allow(dead_code)]
@@ -49,11 +33,7 @@ pub fn danger<Msg>(
     events: Events<Msg>,
     children: Vec<Html<Msg>>,
 ) -> Html<Msg> {
-    Html::button(
-        attributes.string("data-btn-variant", "danger").class("btn"),
-        events,
-        children,
-    )
+    Html::button(attributes.class("app__btn--danger"), events, children)
 }
 
 #[allow(dead_code)]
@@ -62,13 +42,7 @@ pub fn success<Msg>(
     events: Events<Msg>,
     children: Vec<Html<Msg>>,
 ) -> Html<Msg> {
-    Html::button(
-        attributes
-            .string("data-btn-variant", "success")
-            .class("btn"),
-        events,
-        children,
-    )
+    Html::button(attributes.class("app__btn--success"), events, children)
 }
 
 #[allow(dead_code)]
@@ -77,17 +51,13 @@ pub fn dark<Msg>(
     events: Events<Msg>,
     children: Vec<Html<Msg>>,
 ) -> Html<Msg> {
-    Html::button(
-        attributes.string("data-btn-variant", "dark").class("btn"),
-        events,
-        children,
-    )
+    Html::button(attributes.class("app__btn--dark"), events, children)
 }
 
 #[allow(dead_code)]
 pub fn close<Msg>(attributes: Attributes, events: Events<Msg>) -> Html<Msg> {
     Html::button(
-        attributes.class("btn_close").class("material-icons"),
+        attributes.class("app__close-btn").class("material-icons"),
         events,
         vec![Html::text("clear")],
     )
@@ -96,7 +66,7 @@ pub fn close<Msg>(attributes: Attributes, events: Events<Msg>) -> Html<Msg> {
 #[allow(dead_code)]
 pub fn add<Msg>(attributes: Attributes, events: Events<Msg>) -> Html<Msg> {
     Html::button(
-        attributes.class("btn_add").class("material-icons"),
+        attributes.class("app__add-btn").class("material-icons"),
         events,
         vec![Html::text("add")],
     )
@@ -112,19 +82,19 @@ pub fn tab<Msg>(
 ) -> Html<Msg> {
     Html::a(
         attributes
-            .class("btn_tab")
-            .string("data-btn_tab-selected", selected.to_string()),
+            .class("app__tab-btn")
+            .string("data-selected", selected.to_string()),
         events,
         vec![
             Html::span(
-                Attributes::new().class("btn_tab-text"),
+                Attributes::new().class("app__tab-btn-text"),
                 Events::new(),
                 vec![Html::text(name)],
             ),
             if deletable {
                 Html::button(
                     Attributes::new()
-                        .class("btn_tab-close")
+                        .class("app__close-tab-btn")
                         .class("material-icons"),
                     Events::new(),
                     vec![Html::text("clear")],
@@ -143,7 +113,7 @@ pub fn context_menu_text<Msg>(
     text: impl Into<String>,
 ) -> Html<Msg> {
     Html::button(
-        attributes.class("btn_contextmenu"),
+        attributes.class("app__contextmenu-btn"),
         events,
         vec![Html::text(text)],
     )

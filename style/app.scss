@@ -13,6 +13,89 @@
         top: 0;
         left: 0;
     }
+
+    &__debug-modeless {
+        position: fixed;
+        width: 40rem;
+        height: 25rem;
+        top: 0;
+        left: 0;
+        background-color: $gray-300;;
+    }
+
+    %__btn {
+        border: none;
+        outline: none;
+        padding-top: 0.2em;
+        padding-bottom: 0.21em;
+        padding-left: 1.2ch;
+        padding-right: 1.2ch;
+        text-align: center;
+        border-radius: 0.3em;
+        font-size: 0.83em;
+
+        &:hover {
+            cursor: pointer;
+        }
+    }
+
+    &__btn {
+        @extend %__btn;
+
+        &--primary {
+            @extend %__btn;
+            background-color: $blue-500;
+            color: white;
+            &:hover {
+                background-color: $blue-400;
+            }
+        }
+
+        &--secondary {
+            @extend %__btn;
+            background-color: $gray-500;
+            color: white;
+            &:hover {
+                background-color: $gray-400;
+            }
+        }
+
+        &--info {
+            @extend %__btn;
+            background-color: $purple-500;
+            color: white;
+            &:hover {
+                background-color: $purple-400;
+            }
+        }
+
+        &--danger {
+            @extend %__btn;
+            background-color: $red-500;
+            color: white;
+            &:hover {
+                background-color: $red-400;
+            }
+        }
+
+        &--success {
+            @extend %__btn;
+            background-color: $green-500;
+            color: white;
+            &:hover {
+                background-color: $green-400;
+            }
+        }
+
+        &--dark {
+            @extend %__btn;
+            background-color: $gray-900;
+            color: white;
+            &:hover {
+                background-color: $gray-800;
+            }
+        }
+    }
 }
 
 #app-sidemenu {

@@ -1,10 +1,12 @@
-// use super::btn;
+use super::btn;
 // use super::chat;
 // use super::context_menu;
 // use super::handout;
 // use super::measure_length::measure_length;
 // use super::radio::radio;
+use super::checkbox::checkbox;
 use crate::model::Camera;
+use crate::model::ColorSystem;
 use crate::model::Table;
 use crate::model::World;
 use crate::random_id;
@@ -28,7 +30,7 @@ enum TableTool {
     Selecter,
     Pen,
     Eracer,
-    Measure,
+    Measure(Option<[f64; 2]>),
 }
 
 struct TableState {
@@ -58,10 +60,15 @@ pub enum Msg {
     WindowResized,
 
     // テーブル操作の制御
-    SetMouseCoord([f64; 2]),
     SetCameraRotationWithMouseCoord([f64; 2]),
     SetCameraMovementWithMouseCoord([f64; 2]),
     SetCameraMovementWithMouseWheel(f64),
+    SetSelectingTableTool(TableTool),
+    SetIsBindToGrid(bool),
+    SetCursorWithMouseCoord([f64; 2]),
+    DrawLineWithMouseCoord([f64; 2]),
+    EraceLineWithMouseCoord([f64; 2]),
+    SetMeasureStartPointAndEndPointWithMouseCoord([f64; 2], [f64; 2]),
 }
 
 pub struct Sub;
@@ -86,7 +93,7 @@ fn init() -> (State, Cmd<Msg, Sub>) {
         renderer: None,
         canvas_size: [0.0, 0.0],
         table_state: TableState {
-            selecting_tool: TableTool::Selecter,
+            selecting_tool: TableTool::Pen,
             last_mouse_coord: [0.0, 0.0],
         },
         // context_menu_state: context_menu::init(),
@@ -146,8 +153,42 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
 
         //テーブル操作の制御
-        Msg::SetMouseCoord(mouse_coord) => {
+        Msg::SetCursorWithMouseCoord(mouse_coord) => {
+            let camera = &state.camera;
+            let table_coord = camera.collision_point_on_xy_plane(&state.canvas_size, &mouse_coord);
+            let table_coord = [table_coord[0], table_coord[1]];
+            let table = state.world.table_mut();
+            match state.table_state.selecting_tool {
+                TableTool::Pen => {
+                    table.draw_cursor(
+                        &table_coord,
+                        0.25,
+                        ColorSystem::gray_900(255),
+                        ColorSystem::gray_900(255),
+                    );
+                }
+                TableTool::Eracer => {
+                    table.draw_cursor(
+                        &table_coord,
+                        0.5,
+                        ColorSystem::gray_900(255),
+                        ColorSystem::gray_100(255),
+                    );
+                }
+                TableTool::Measure(_) => {
+                    table.draw_cursor(
+                        &table_coord,
+                        0.125,
+                        ColorSystem::red_500(255),
+                        ColorSystem::red_500(255),
+                    );
+                }
+                _ => {}
+            }
             state.table_state.last_mouse_coord = mouse_coord;
+            if let Some(renderer) = &state.renderer {
+                renderer.render(&mut state.world, &camera);
+            }
             Cmd::none()
         }
         Msg::SetCameraRotationWithMouseCoord(mouse_coord) => {
@@ -198,6 +239,63 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             }
             Cmd::none()
         }
+        Msg::SetSelectingTableTool(table_tool) => {
+            state.table_state.selecting_tool = table_tool;
+            if let Some(renderer) = &state.renderer {
+                renderer.render(&mut state.world, &state.camera);
+            }
+            Cmd::none()
+        }
+        Msg::SetIsBindToGrid(is_bind_to_grid) => {
+            state.world.table_mut().set_is_bind_to_grid(is_bind_to_grid);
+            Cmd::none()
+        }
+        Msg::DrawLineWithMouseCoord(mouse_coord) => {
+            let camera = &state.camera;
+            let start_point = camera.collision_point_on_xy_plane(
+                &state.canvas_size,
+                &state.table_state.last_mouse_coord,
+            );
+            let start_point = [start_point[0], start_point[1]];
+            let end_point = camera.collision_point_on_xy_plane(&state.canvas_size, &mouse_coord);
+            let end_point = [end_point[0], end_point[1]];
+            state.world.table_mut().draw_line(
+                &start_point,
+                &end_point,
+                ColorSystem::gray_900(255),
+                0.5,
+            );
+            update(state, Msg::SetCursorWithMouseCoord(mouse_coord))
+        }
+        Msg::EraceLineWithMouseCoord(mouse_coord) => {
+            let camera = &state.camera;
+            let start_point = camera.collision_point_on_xy_plane(
+                &state.canvas_size,
+                &state.table_state.last_mouse_coord,
+            );
+            let start_point = [start_point[0], start_point[1]];
+            let end_point = camera.collision_point_on_xy_plane(&state.canvas_size, &mouse_coord);
+            let end_point = [end_point[0], end_point[1]];
+            state
+                .world
+                .table_mut()
+                .erace_line(&start_point, &end_point, 1.0);
+            update(state, Msg::SetCursorWithMouseCoord(mouse_coord))
+        }
+        Msg::SetMeasureStartPointAndEndPointWithMouseCoord(start_point, mouse_coord) => {
+            let camera = &state.camera;
+            let start_point = camera.collision_point_on_xy_plane(&state.canvas_size, &start_point);
+            let start_point = [start_point[0], start_point[1]];
+            let end_point = camera.collision_point_on_xy_plane(&state.canvas_size, &mouse_coord);
+            let end_point = [end_point[0], end_point[1]];
+            state.world.table_mut().draw_measure(
+                &start_point,
+                &end_point,
+                ColorSystem::red_500(255),
+                0.2,
+            );
+            update(state, Msg::SetCursorWithMouseCoord(mouse_coord))
+        }
     }
 }
 
@@ -205,7 +303,10 @@ fn render(state: &State) -> Html<Msg> {
     Html::div(
         Attributes::new().class("app"),
         Events::new(),
-        vec![render_canvas(&state.table_state)],
+        vec![
+            render_canvas(&state.table_state),
+            render_debug_modeless(&state),
+        ],
     )
 }
 
@@ -218,7 +319,7 @@ fn render_canvas(table_state: &TableState) -> Html<Msg> {
                 move |e| {
                     let mouse_coord = [e.x() as f64, e.y() as f64];
                     if e.buttons() & 1 == 0 {
-                        Msg::SetMouseCoord(mouse_coord)
+                        Msg::SetCursorWithMouseCoord(mouse_coord)
                     } else if e.ctrl_key() {
                         Msg::SetCameraRotationWithMouseCoord(mouse_coord)
                     } else {
@@ -226,7 +327,15 @@ fn render_canvas(table_state: &TableState) -> Html<Msg> {
                             TableTool::Selecter => {
                                 Msg::SetCameraMovementWithMouseCoord(mouse_coord)
                             }
-                            _ => Msg::NoOp,
+                            TableTool::Pen => Msg::DrawLineWithMouseCoord(mouse_coord),
+                            TableTool::Eracer => Msg::EraceLineWithMouseCoord(mouse_coord),
+                            TableTool::Measure(Some(start_point)) => {
+                                Msg::SetMeasureStartPointAndEndPointWithMouseCoord(
+                                    start_point,
+                                    mouse_coord,
+                                )
+                            }
+                            _ => Msg::SetCursorWithMouseCoord(mouse_coord),
                         }
                     }
                 }
@@ -237,7 +346,62 @@ fn render_canvas(table_state: &TableState) -> Html<Msg> {
                 } else {
                     Msg::NoOp
                 }
+            })
+            .on_mousedown({
+                let selecting_tool = table_state.selecting_tool.clone();
+                move |e| match selecting_tool {
+                    TableTool::Measure(_) => {
+                        let mouse_coord = [e.x() as f64, e.y() as f64];
+                        Msg::SetSelectingTableTool(TableTool::Measure(Some(mouse_coord)))
+                    }
+                    _ => Msg::NoOp,
+                }
+            })
+            .on_mouseup({
+                let selecting_tool = table_state.selecting_tool.clone();
+                move |e| match selecting_tool {
+                    TableTool::Measure(_) => Msg::SetSelectingTableTool(TableTool::Measure(None)),
+                    _ => Msg::NoOp,
+                }
             }),
         vec![],
+    )
+}
+
+fn render_debug_modeless(state: &State) -> Html<Msg> {
+    Html::div(
+        Attributes::new().class("app__debug-modeless"),
+        Events::new(),
+        vec![
+            checkbox(
+                Attributes::new(),
+                Events::new().on_click({
+                    let is_bind_to_grid = state.world.table().is_bind_to_grid();
+                    move |_| Msg::SetIsBindToGrid(!is_bind_to_grid)
+                }),
+                "グリッドにスナップ",
+                state.world.table().is_bind_to_grid(),
+            ),
+            btn::primary(
+                Attributes::new(),
+                Events::new().on_click(|_| Msg::SetSelectingTableTool(TableTool::Selecter)),
+                vec![Html::text("選択")],
+            ),
+            btn::primary(
+                Attributes::new(),
+                Events::new().on_click(|_| Msg::SetSelectingTableTool(TableTool::Pen)),
+                vec![Html::text("ペン")],
+            ),
+            btn::primary(
+                Attributes::new(),
+                Events::new().on_click(|_| Msg::SetSelectingTableTool(TableTool::Eracer)),
+                vec![Html::text("消しゴム")],
+            ),
+            btn::primary(
+                Attributes::new(),
+                Events::new().on_click(|_| Msg::SetSelectingTableTool(TableTool::Measure(None))),
+                vec![Html::text("計測")],
+            ),
+        ],
     )
 }

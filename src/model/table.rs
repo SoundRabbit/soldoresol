@@ -175,6 +175,17 @@ impl Table {
         self.layers.to_element()
     }
 
+    pub fn flip(&self) {
+        let texture_width = self.size[0] * self.pixel_ratio;
+        let texture_height = self.size[1] * self.pixel_ratio;
+        self.layers
+            .context(MEASURE_LAYER)
+            .clear_rect(0.0, 0.0, texture_width, texture_height);
+        self.layers
+            .context(CURSOR_LAYER)
+            .clear_rect(0.0, 0.0, texture_width, texture_height);
+    }
+
     fn get_texture_position(&self, position: &[f64; 2]) -> [f64; 2] {
         let p = position;
         let p = if self.is_bind_to_grid {
@@ -282,7 +293,7 @@ impl Table {
     }
 
     pub fn draw_measure(&self, begin: &[f64; 2], end: &[f64; 2], color: Color, line_width: f64) {
-        let context = self.layers.context(PEN_LAYER);
+        let context = self.layers.context(MEASURE_LAYER);
 
         let [bx, by] = self.get_texture_position(begin);
         let [ex, ey] = self.get_texture_position(end);
