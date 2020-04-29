@@ -236,7 +236,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             let x_movement = mouse_coord[0] - state.table_state.last_mouse_coord[0];
             let y_movement = mouse_coord[1] - state.table_state.last_mouse_coord[1];
             let long_edge = state.canvas_size[0].max(state.canvas_size[1]);
-            let rotation_factor = 1.0 / long_edge;
+            let rotation_factor = 3.0 / long_edge;
             let camera = &mut state.camera;
             camera.set_x_axis_rotation(camera.x_axis_rotation() + y_movement * rotation_factor);
             camera.set_z_axis_rotation(camera.z_axis_rotation() + x_movement * rotation_factor);
@@ -250,7 +250,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             let x_movement = mouse_coord[0] - state.table_state.last_mouse_coord[0];
             let y_movement = mouse_coord[1] - state.table_state.last_mouse_coord[1];
             let long_edge = state.canvas_size[0].max(state.canvas_size[1]);
-            let movement_factor = 20.0 / long_edge;
+            let movement_factor = 50.0 / long_edge;
             let camera = &mut state.camera;
             let movement = camera.movement();
             let movement = [

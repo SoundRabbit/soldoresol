@@ -57,7 +57,7 @@ impl Camera {
     }
 
     pub fn set_x_axis_rotation(&mut self, x_axis_rotation: f64) {
-        self.x_axis_rotation = x_axis_rotation;
+        self.x_axis_rotation = x_axis_rotation.max(-0.5 * std::f64::consts::PI).min(0.0);
     }
 
     pub fn x_axis_rotation(&self) -> f64 {
