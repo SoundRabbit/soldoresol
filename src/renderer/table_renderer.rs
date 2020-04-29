@@ -9,7 +9,6 @@ use ndarray::Array2;
 
 pub struct TableRenderer {
     vertexis_buffer: WebGlF32Vbo,
-    color_buffer: WebGlF32Vbo,
     texture_coord_buffer: WebGlF32Vbo,
     index_buffer: WebGlI16Ibo,
 }
@@ -25,21 +24,11 @@ impl TableRenderer {
             ]
             .concat(),
         );
-        let color_buffer = gl.create_vbo_with_f32array(
-            &[
-                [1.0, 1.0, 1.0, 1.0],
-                [1.0, 1.0, 1.0, 1.0],
-                [1.0, 1.0, 1.0, 1.0],
-                [1.0, 1.0, 1.0, 1.0],
-            ]
-            .concat(),
-        );
         let texture_coord_buffer =
             gl.create_vbo_with_f32array(&[[1.0, 1.0], [0.0, 1.0], [1.0, 0.0], [0.0, 0.0]].concat());
         let index_buffer = gl.create_ibo_with_i16array(&[0, 1, 2, 3, 2, 1]);
         Self {
             vertexis_buffer,
-            color_buffer,
             texture_coord_buffer,
             index_buffer,
         }
@@ -51,10 +40,6 @@ impl BasicRenderer for TableRenderer {
 
     fn vertexis(&self) -> &WebGlF32Vbo {
         &self.vertexis_buffer
-    }
-
-    fn color(&self) -> &WebGlF32Vbo {
-        &self.color_buffer
     }
 
     fn texture_coord(&self) -> &WebGlF32Vbo {

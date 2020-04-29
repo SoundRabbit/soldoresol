@@ -23,7 +23,6 @@ pub struct Renderer {
     table_renderer: TableRenderer,
     character_renderer: CharacterRenderer,
     a_vertex_location: WebGlAttributeLocation,
-    a_color_location: WebGlAttributeLocation,
     a_texture_coord_location: WebGlAttributeLocation,
     u_translate_location: web_sys::WebGlUniformLocation,
     u_texture_location: web_sys::WebGlUniformLocation,
@@ -41,8 +40,6 @@ impl Renderer {
 
         let a_vertex_location =
             WebGlAttributeLocation(gl.get_attrib_location(&program, "a_vertex") as u32);
-        let a_color_location =
-            WebGlAttributeLocation(gl.get_attrib_location(&program, "a_color") as u32);
         let a_texture_coord_location =
             WebGlAttributeLocation(gl.get_attrib_location(&program, "a_textureCoord") as u32);
 
@@ -94,7 +91,6 @@ impl Renderer {
             table_renderer,
             character_renderer,
             a_vertex_location,
-            a_color_location,
             a_texture_coord_location,
             u_translate_location,
             u_texture_location,
@@ -114,7 +110,10 @@ impl Renderer {
             .dot(&camera.perspective_matrix(&canvas_size));
         gl.viewport(0, 0, canvas_size[0] as i32, canvas_size[1] as i32);
         gl.clear_color(0.0, 0.0, 0.0, 0.0);
-        gl.clear(web_sys::WebGlRenderingContext::COLOR_BUFFER_BIT | web_sys::WebGlRenderingContext::DEPTH_BUFFER_BIT );
+        gl.clear(
+            web_sys::WebGlRenderingContext::COLOR_BUFFER_BIT
+                | web_sys::WebGlRenderingContext::DEPTH_BUFFER_BIT,
+        );
 
         // render table
         self.alloc_memory(&self.table_renderer);
@@ -153,11 +152,9 @@ impl Renderer {
     fn alloc_memory(&self, renderer: &impl BasicRenderer) {
         let gl = &self.gl;
         let vertexis = renderer.vertexis();
-        let color = renderer.color();
         let texture_coord = renderer.texture_coord();
         let index = renderer.index();
         gl.set_attribute(&vertexis, &self.a_vertex_location, 3, 0);
-        gl.set_attribute(&color, &self.a_color_location, 4, 0);
         gl.set_attribute(&texture_coord, &self.a_texture_coord_location, 2, 0);
         gl.bind_buffer(
             web_sys::WebGlRenderingContext::ELEMENT_ARRAY_BUFFER,
