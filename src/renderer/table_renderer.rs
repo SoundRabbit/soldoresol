@@ -62,6 +62,8 @@ impl TableRenderer {
 
     pub fn model_matrix(&self, _: &Camera, table: &Table) -> Array2<f64> {
         let s = table.size();
-        ModelMatrix::new().with_scale(&[s[0], s[1], 1.0]).into()
+        ModelMatrix::new()
+            .with_scale(&[s[0] / 2.0, s[1] / 2.0, 1.0])
+            .into()
     }
 }

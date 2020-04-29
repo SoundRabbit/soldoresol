@@ -11,7 +11,7 @@ impl Camera {
         Self {
             x_axis_rotation: -0.25 * std::f64::consts::PI,
             z_axis_rotation: -0.03125 * std::f64::consts::PI,
-            movement: [0.0, 0.0, -50.0],
+            movement: [0.0, 0.0, -20.0],
         }
     }
 
