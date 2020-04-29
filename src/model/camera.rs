@@ -60,14 +60,30 @@ impl Camera {
         self.x_axis_rotation = x_axis_rotation;
     }
 
+    pub fn x_axis_rotation(&self) -> f64 {
+        self.x_axis_rotation
+    }
+
     pub fn set_z_axis_rotation(&mut self, z_axis_rotation: f64) {
         self.z_axis_rotation = z_axis_rotation;
     }
 
+    pub fn z_axis_rotation(&self) -> f64 {
+        self.z_axis_rotation
+    }
+
+    pub fn set_movement(&mut self, movement: [f64; 3]) {
+        self.movement = movement;
+    }
+
+    pub fn movement(&self) -> &[f64; 3] {
+        &self.movement
+    }
+
     pub fn view_matrix(&self) -> Array2<f64> {
         let view_matrix = Self::e();
-        let view_matrix = Self::rotate_view_matrix_with_x_axis(view_matrix, self.x_axis_rotation);
         let view_matrix = Self::rotate_view_matrix_with_z_axis(view_matrix, self.z_axis_rotation);
+        let view_matrix = Self::rotate_view_matrix_with_x_axis(view_matrix, self.x_axis_rotation);
         let view_matrix = Self::move_view_matrix(view_matrix, &self.movement);
         view_matrix
     }
