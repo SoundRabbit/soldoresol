@@ -1,9 +1,9 @@
-use super::btn;
-use super::chat;
-use super::context_menu;
-use super::handout;
-use super::measure_length::measure_length;
-use super::radio::radio;
+// use super::btn;
+// use super::chat;
+// use super::context_menu;
+// use super::handout;
+// use super::measure_length::measure_length;
+// use super::radio::radio;
 use crate::model::Camera;
 use crate::model::Table;
 use crate::model::World;
@@ -18,10 +18,10 @@ enum FormKind {
     Handout,
 }
 
-struct FormState {
-    chat: chat::State,
-    handout: handout::State,
-}
+// struct FormState {
+//     chat: chat::State,
+//     handout: handout::State,
+// }
 
 enum TableTool {
     Selecter,
@@ -37,14 +37,14 @@ pub struct State {
     renderer: Option<Renderer>,
     canvas_size: [f64; 2],
     selecting_table_tool: TableTool,
-    context_menu_state: context_menu::State,
-    form_state: FormState,
+    // context_menu_state: context_menu::State,
+    // form_state: FormState,
 }
 
-enum FormMsg {
-    ChatMsg(chat::Msg),
-    HandoutMsg(handout::Msg),
-}
+// enum FormMsg {
+//     ChatMsg(chat::Msg),
+//     HandoutMsg(handout::Msg),
+// }
 
 pub enum Msg {
     NoOp,
@@ -74,11 +74,11 @@ fn init() -> (State, Cmd<Msg, Sub>) {
         renderer: None,
         canvas_size: [0.0, 0.0],
         selecting_table_tool: TableTool::Selecter,
-        context_menu_state: context_menu::init(),
-        form_state: FormState {
-            chat: chat::init(),
-            handout: handout::init(),
-        },
+        // context_menu_state: context_menu::init(),
+        // form_state: FormState {
+        //     chat: chat::init(),
+        //     handout: handout::init(),
+        // },
     };
     let task = Cmd::task(|handler| {
         handler(Msg::SetTableContext(
@@ -114,8 +114,8 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             Cmd::none()
         }
         Msg::WindowResized => {
-            chat::window_resized(&mut state.form_state.chat);
-            handout::window_resized(&mut state.form_state.handout);
+            // chat::window_resized(&mut state.form_state.chat);
+            // handout::window_resized(&mut state.form_state.handout);
             if let Some(renderer) = &state.renderer {
                 renderer.render(&mut state.world, &state.camera);
             }
