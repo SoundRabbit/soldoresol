@@ -176,17 +176,20 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
         //コンテキストメニューの制御
         Msg::OpenContextMenu(mouse_coord) => {
+            state.contextmenu.position = mouse_coord.clone();
             contextmenu::open(&mut state.contextmenu.state, mouse_coord);
             Cmd::none()
         }
         Msg::AddChracaterToTable(mouse_coord) => {
-            let table_coord = state
-                .camera
-                .collision_point_on_xy_plane(&state.canvas_size, &mouse_coord);
+            let camera = &state.camera;
+            let table_coord = camera.collision_point_on_xy_plane(&state.canvas_size, &mouse_coord);
             let table_coord = [table_coord[0], table_coord[1], 0.0];
             let mut character = Character::new();
             character.set_position(table_coord);
             state.world.add_character(character);
+            if let Some(renderer) = &state.renderer {
+                renderer.render(&mut state.world, &camera);
+            }
             Cmd::none()
         }
 

@@ -18,8 +18,8 @@ impl CharacterRenderer {
     pub fn new(gl: &WebGlRenderingContext) -> Self {
         let vertexis_buffer = gl.create_vbo_with_f32array(
             &[
-                [0.5, 0.0, 1.0],
-                [-0.5, 0.0, 1.0],
+                [0.5, 1.0, 0.0],
+                [-0.5, 1.0, 0.0],
                 [0.5, 0.0, 0.0],
                 [-0.5, 0.0, 0.0],
             ]
@@ -65,8 +65,14 @@ impl BasicRenderer for CharacterRenderer {
         &self.index_buffer
     }
 
-    fn model_matrix(&self, _: &Camera, character: &Character) -> Array2<f64> {
+    fn model_matrix(&self, camera: &Camera, character: &Character) -> Array2<f64> {
         let s = character.size();
-        ModelMatrix::new().with_scale(&[s[0], 1.0, s[1]]).into()
+        let p = character.position();
+        ModelMatrix::new()
+            .with_scale(&[s[0], 1.0, s[1]])
+            .with_x_axis_rotation(camera.x_axis_rotation())
+            .with_z_axis_rotation(camera.z_axis_rotation())
+            .with_movement(&p)
+            .into()
     }
 }
