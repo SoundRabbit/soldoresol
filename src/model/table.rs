@@ -198,6 +198,22 @@ impl Table {
         let context = self.layers.context(GRID_LAYER);
 
         context.clear_rect(0.0, 0.0, texture_width as f64, texture_height as f64);
+
+        context.begin_path();
+
+        for x in 0..(self.size[0] as u32 + 1) {
+            let x = x as f64 * self.pixel_ratio;
+            context.move_to(x, 0.0);
+            context.line_to(x, texture_height as f64);
+        }
+
+        for y in 0..(self.size[1] as u32 + 1) {
+            let y = y as f64 * self.pixel_ratio;
+            context.move_to(0.0, y);
+            context.line_to(texture_width as f64, y);
+        }
+
+        context.stroke();
     }
 
     pub fn draw_cursor(

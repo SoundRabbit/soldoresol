@@ -10,7 +10,7 @@ impl Camera {
     pub fn new() -> Self {
         Self {
             x_axis_rotation: -0.25 * std::f64::consts::PI,
-            z_axis_rotation: -0.0625 * std::f64::consts::PI,
+            z_axis_rotation: -0.03125 * std::f64::consts::PI,
             movement: [0.0, 0.0, -50.0],
         }
     }

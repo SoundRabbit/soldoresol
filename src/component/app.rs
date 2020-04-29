@@ -30,6 +30,11 @@ enum TableTool {
     Measure,
 }
 
+struct TableState {
+    selecting_tool: TableTool,
+    ctr_key_is_downed: bool,
+}
+
 pub struct State {
     room_name: String,
     world: World,
@@ -86,7 +91,7 @@ fn init() -> (State, Cmd<Msg, Sub>) {
                 .unwrap()
                 .document()
                 .unwrap()
-                .get_element_by_id("app")
+                .get_element_by_id("table")
                 .unwrap()
                 .dyn_into::<web_sys::HtmlCanvasElement>()
                 .unwrap(),
@@ -125,8 +130,16 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 }
 
 fn render(state: &State) -> Html<Msg> {
+    Html::div(
+        Attributes::new().class("app"),
+        Events::new(),
+        vec![render_canvas()],
+    )
+}
+
+fn render_canvas() -> Html<Msg> {
     Html::canvas(
-        Attributes::new().id("app").class("app"),
+        Attributes::new().class("app__table").id("table"),
         Events::new(),
         vec![],
     )
