@@ -10,8 +10,8 @@ impl Camera {
     pub fn new() -> Self {
         Self {
             x_axis_rotation: -0.25 * std::f64::consts::PI,
-            z_axis_rotation: 0.0625 * std::f64::consts::PI,
-            movement: [0.0, 0.0, 20.0],
+            z_axis_rotation: -0.0625 * std::f64::consts::PI,
+            movement: [0.0, 0.0, -50.0],
         }
     }
 
@@ -57,7 +57,7 @@ impl Camera {
     }
 
     pub fn set_x_axis_rotation(&mut self, x_axis_rotation: f64) {
-        self.x_axis_rotation = x_axis_rotation.max(-0.49 * std::f64::consts::PI).min(0.0);
+        self.x_axis_rotation = x_axis_rotation;
     }
 
     pub fn set_z_axis_rotation(&mut self, z_axis_rotation: f64) {
@@ -76,7 +76,7 @@ impl Camera {
         let w = canvas_size[0];
         let h = canvas_size[1];
         let aspect = w / h;
-        let field_of_view = 30.0;
+        let field_of_view = 60.0 * std::f64::consts::PI / 180.0;
         let near = 0.01;
         let far = 200.0;
         let f = (std::f64::consts::PI * 0.5 - field_of_view * 0.5).tan();

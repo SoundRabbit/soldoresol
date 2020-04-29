@@ -79,7 +79,7 @@ impl TexstureLayerCollection {
         }
         Self {
             layers: layers,
-            integrated: TexstureLayer::new(size),
+            integrated: TexstureLayer::new(&[2048, 2048]),
             background_color: Color::from([0.0, 0.0, 0.0, 0.0]).to_jsvalue(),
         }
     }
@@ -88,7 +88,7 @@ impl TexstureLayerCollection {
         for layer in &mut self.layers {
             layer.set_size(size);
         }
-        self.integrated.set_size(size);
+        self.integrated.set_size(&[2048, 2048]);
     }
 
     pub fn set_background_color(&mut self, background_color: Color) {
@@ -130,6 +130,9 @@ impl TexstureLayerCollection {
                 )
                 .unwrap();
         }
+
+        context.fill();
+        context.stroke();
 
         element
     }

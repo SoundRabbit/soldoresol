@@ -14,6 +14,7 @@ use webgl::WebGlRenderingContext;
 pub struct Renderer {
     gl: WebGlRenderingContext,
     program: web_sys::WebGlProgram,
+    texture: web_sys::WebGlTexture,
     table_renderer: TableRenderer,
     a_vertex_location: WebGlAttributeLocation,
     a_color_location: WebGlAttributeLocation,
@@ -41,6 +42,10 @@ impl Renderer {
 
         let u_translate_location = gl.get_uniform_location(&program, "u_translate").unwrap();
         let u_texture_location = gl.get_uniform_location(&program, "u_texture").unwrap();
+
+        let texture = gl.create_texture().unwrap();
+        gl.bind_texture(web_sys::WebGlRenderingContext::TEXTURE_2D, Some(&texture));
+        gl.pixel_storei(web_sys::WebGlRenderingContext::PACK_ALIGNMENT, 1);
 
         let table_renderer = TableRenderer::new(&gl);
 
@@ -70,6 +75,7 @@ impl Renderer {
         Self {
             gl,
             program,
+            texture,
             table_renderer,
             a_vertex_location,
             a_color_location,
@@ -144,6 +150,7 @@ impl Renderer {
         );
         let gl = (*gl).clone();
         let a = Closure::once(Box::new(move || {
+            web_sys::console::log_1(&JsValue::from("rendered"));
             gl.flush();
         }) as Box<dyn FnOnce()>);
         web_sys::window()

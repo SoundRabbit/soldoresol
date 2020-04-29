@@ -30,7 +30,7 @@ impl Color {
         let str = str + &self.red.to_string() + ",";
         let str = str + &self.green.to_string() + ",";
         let str = str + &self.blue.to_string() + ",";
-        let str = str + &self.alpha.to_string() + ")";
+        let str = str + &(self.alpha as f64 / 255.0).to_string() + ")";
         JsValue::from(&str)
     }
 }

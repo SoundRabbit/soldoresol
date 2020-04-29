@@ -9,7 +9,7 @@ impl Deref for WebGlF32Vbo {
     type Target = web_sys::WebGlBuffer;
 
     fn deref(&self) -> &web_sys::WebGlBuffer {
-        &self
+        &self.0
     }
 }
 
@@ -17,14 +17,14 @@ impl Deref for WebGlI16Ibo {
     type Target = web_sys::WebGlBuffer;
 
     fn deref(&self) -> &web_sys::WebGlBuffer {
-        &self
+        &self.0
     }
 }
 
 impl Deref for WebGlAttributeLocation {
     type Target = u32;
     fn deref(&self) -> &u32 {
-        &self
+        &self.0
     }
 }
 
@@ -32,7 +32,7 @@ impl Deref for WebGlRenderingContext {
     type Target = web_sys::WebGlRenderingContext;
 
     fn deref(&self) -> &web_sys::WebGlRenderingContext {
-        &self
+        &self.0
     }
 }
 
