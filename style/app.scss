@@ -23,6 +23,43 @@
         background-color: $gray-300;;
     }
 
+    %__modal-bg {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+    }
+
+    &__modal-bg {
+        @extend %__modal-bg;
+
+        &--clear {
+            @extend %__modal-bg;
+        }
+
+        &--dark{
+            @extend %__modal-bg;
+        }
+    }
+
+    %__contextmenu {
+        position: fixed;
+        background-color: $gray-900;
+        padding: 0.2rem 0.1rem 0.22rem 0.1rem;
+        border-radius: 0.3rem;
+        z-index: 2048;
+    }
+
+    &__contextmenu {
+        @extend %__contextmenu;
+
+        &--centering {
+            @extend %__contextmenu;
+            transform: translate(-50%, -50%);
+        }
+    }
+
     %__btn {
         border: none;
         outline: none;
@@ -94,6 +131,23 @@
             &:hover {
                 background-color: $gray-800;
             }
+        }
+    }
+
+    &__contextmenu-btn {
+        background-color: $gray-900;
+        color: white;
+        border: none;
+        outline: none;
+        padding-top: 0.2em;
+        padding-bottom: 0.2em;
+        padding-left: 1.2ch;
+        padding-right: 1.2ch;
+        text-align: center;
+        font-size: 0.83em;
+        &:hover {
+            cursor: pointer;
+            background-color: $gray-600;
         }
     }
 }

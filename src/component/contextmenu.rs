@@ -3,7 +3,7 @@ use kagura::prelude::*;
 
 pub struct State {
     showing: bool,
-    loc: [f32; 2],
+    loc: [f64; 2],
 }
 
 pub enum Msg {
@@ -19,7 +19,7 @@ pub fn init() -> State {
 }
 
 #[allow(dead_code)]
-pub fn open(state: &mut State, loc: [f32; 2]) {
+pub fn open(state: &mut State, loc: [f64; 2]) {
     state.loc = loc;
     update(state, Msg::SetShowingState(true));
 }
@@ -49,8 +49,13 @@ pub fn render<M: 'static>(
     if !state.showing {
         return Html::none();
     }
+    let class_name = if centering {
+        "app__contextmenu--centering"
+    } else {
+        "app__contextmenu"
+    };
     Html::div(
-        Attributes::new().class("context_menu-bg"),
+        Attributes::new().class("app__modal-bg--clear"),
         Events::new()
             .on_click({
                 let m = messenger_gen()();
@@ -67,8 +72,7 @@ pub fn render<M: 'static>(
             attributes
                 .style("left", state.loc[0].to_string() + "px")
                 .style("top", state.loc[1].to_string() + "px")
-                .string("data-context_menu-centering", centering.to_string())
-                .class("context_menu"),
+                .class(class_name),
             events,
             children,
         )],

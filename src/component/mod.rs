@@ -2,7 +2,7 @@ pub mod app;
 mod btn;
 // mod chat;
 mod checkbox;
-// mod context_menu;
+mod contextmenu;
 // mod control;
 // mod dialog;
 // mod form;

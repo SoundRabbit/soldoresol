@@ -1,6 +1,6 @@
 use super::btn;
 // use super::chat;
-// use super::context_menu;
+use super::contextmenu;
 // use super::handout;
 // use super::measure_length::measure_length;
 // use super::radio::radio;
@@ -26,7 +26,7 @@ enum FormKind {
 // }
 
 #[derive(Clone)]
-enum TableTool {
+pub enum TableTool {
     Selecter,
     Pen,
     Eracer,
@@ -45,7 +45,7 @@ pub struct State {
     renderer: Option<Renderer>,
     canvas_size: [f64; 2],
     table_state: TableState,
-    // context_menu_state: context_menu::State,
+    context_menu_state: contextmenu::State,
     // form_state: FormState,
 }
 
@@ -58,6 +58,12 @@ pub enum Msg {
     NoOp,
     SetTableContext(web_sys::HtmlCanvasElement),
     WindowResized,
+
+    // メッセージの伝搬
+    TransportContextMenuMsg(contextmenu::Msg),
+
+    //コンテキストメニューの制御
+    OpenContextMenu([f64; 2]),
 
     // テーブル操作の制御
     SetCameraRotationWithMouseCoord([f64; 2]),
@@ -96,7 +102,7 @@ fn init() -> (State, Cmd<Msg, Sub>) {
             selecting_tool: TableTool::Pen,
             last_mouse_coord: [0.0, 0.0],
         },
-        // context_menu_state: context_menu::init(),
+        context_menu_state: contextmenu::init(),
         // form_state: FormState {
         //     chat: chat::init(),
         //     handout: handout::init(),
@@ -149,6 +155,18 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             if let Some(renderer) = &state.renderer {
                 renderer.render(&mut state.world, &state.camera);
             }
+            Cmd::none()
+        }
+
+        //メッセージの伝搬
+        Msg::TransportContextMenuMsg(msg) => {
+            contextmenu::update(&mut state.context_menu_state, msg);
+            Cmd::none()
+        }
+
+        //コンテキストメニューの制御
+        Msg::OpenContextMenu(mouse_coord) => {
+            contextmenu::open(&mut state.context_menu_state, mouse_coord);
             Cmd::none()
         }
 
@@ -306,6 +324,7 @@ fn render(state: &State) -> Html<Msg> {
         vec![
             render_canvas(&state.table_state),
             render_debug_modeless(&state),
+            render_context_menu(&state.context_menu_state),
         ],
     )
 }
@@ -359,12 +378,33 @@ fn render_canvas(table_state: &TableState) -> Html<Msg> {
             })
             .on_mouseup({
                 let selecting_tool = table_state.selecting_tool.clone();
-                move |e| match selecting_tool {
+                move |_| match selecting_tool {
                     TableTool::Measure(_) => Msg::SetSelectingTableTool(TableTool::Measure(None)),
                     _ => Msg::NoOp,
                 }
+            })
+            .on_contextmenu(|e| {
+                let mouse_coord = [e.x() as f64, e.y() as f64];
+                e.prevent_default();
+                e.stop_propagation();
+                Msg::OpenContextMenu(mouse_coord)
             }),
         vec![],
+    )
+}
+
+fn render_context_menu(context_menu_state: &contextmenu::State) -> Html<Msg> {
+    contextmenu::render(
+        false,
+        &context_menu_state,
+        || Box::new(|| Box::new(|msg| Msg::TransportContextMenuMsg(msg))),
+        Attributes::new(),
+        Events::new(),
+        vec![btn::contextmenu_text(
+            Attributes::new(),
+            Events::new(),
+            "キャラクターを作成",
+        )],
     )
 }
 

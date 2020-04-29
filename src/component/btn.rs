@@ -107,7 +107,7 @@ pub fn tab<Msg>(
 }
 
 #[allow(dead_code)]
-pub fn context_menu_text<Msg>(
+pub fn contextmenu_text<Msg>(
     attributes: Attributes,
     events: Events<Msg>,
     text: impl Into<String>,
