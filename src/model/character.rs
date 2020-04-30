@@ -1,8 +1,5 @@
 use super::Color;
 use super::ColorSystem;
-use super::TexstureLayerCollection;
-
-const STANDING_PICTURE_LAYER: usize = 0;
 
 pub struct Character {
     size: [f64; 2],
@@ -14,8 +11,6 @@ pub struct Character {
 
 impl Character {
     pub fn new() -> Self {
-        let mut layers = TexstureLayerCollection::new(&[256, 256], &[256, 256], 1);
-        layers.set_background_color(Color::from(0));
         Self {
             size: [1.0, 3.0],
             position: [0.0, 0.0, 0.0],
