@@ -30,6 +30,7 @@ struct ViewRenderer {
     a_texture_coord_location: WebGlAttributeLocation,
     u_translate_location: web_sys::WebGlUniformLocation,
     u_texture_location: web_sys::WebGlUniformLocation,
+    u_bg_color_location: web_sys::WebGlUniformLocation,
     table_renderer: TableRenderer,
     table_texture: web_sys::WebGlTexture,
     character_renderer: CharacterRenderer,
@@ -109,6 +110,7 @@ impl ViewRenderer {
 
         let u_translate_location = gl.get_uniform_location(&program, "u_translate").unwrap();
         let u_texture_location = gl.get_uniform_location(&program, "u_texture").unwrap();
+        let u_bg_color_location = gl.get_uniform_location(&program, "u_bgColor").unwrap();
 
         let table_texture = gl.create_texture().unwrap();
 
@@ -132,6 +134,7 @@ impl ViewRenderer {
             a_texture_coord_location,
             u_translate_location,
             u_texture_location,
+            u_bg_color_location,
             table_renderer,
             table_texture,
             character_renderer,
@@ -165,7 +168,13 @@ impl ViewRenderer {
             &texture,
         )
         .unwrap();
-        self.draw_with_model(&camera, &vp_matrix, table, &self.table_renderer);
+        self.draw_with_model(
+            &[0.0, 0.0, 0.0, 0.0],
+            &camera,
+            &vp_matrix,
+            table,
+            &self.table_renderer,
+        );
         table.flip();
 
         // render character
@@ -191,7 +200,13 @@ impl ViewRenderer {
                 )
                 .unwrap();
             }
-            self.draw_with_model(&camera, &vp_matrix, character, &self.character_renderer);
+            self.draw_with_model(
+                &character.background_color().to_f32array(),
+                &camera,
+                &vp_matrix,
+                character,
+                &self.character_renderer,
+            );
             character.rendered();
         }
 
@@ -223,6 +238,7 @@ impl ViewRenderer {
 
     fn draw_with_model<M>(
         &self,
+        bg_color: &[f32; 4],
         camera: &Camera,
         vp_matrix: &Array2<f64>,
         model: &M,
@@ -244,6 +260,7 @@ impl ViewRenderer {
             .map(|a| a as f32)
             .collect::<Vec<f32>>(),
         );
+        gl.uniform4fv_with_f32_array(Some(&self.u_bg_color_location), bg_color);
         gl.draw_elements_with_i32(
             web_sys::WebGlRenderingContext::TRIANGLES,
             6,

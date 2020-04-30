@@ -15,10 +15,15 @@ const FRAGMENT_SHADER: &str = r#"
     precision mediump float;
 
     uniform sampler2D u_texture;
+    uniform vec4 u_bgColor;
     varying vec2 v_textureCoord;
     void main() {
         vec4 smpColor = texture2D(u_texture, v_textureCoord);
-        gl_FragColor  = smpColor;
+        float dist_a = u_bgColor.w;
+        float src_a = smpColor.w;
+        float out_a = src_a + dist_a * (1.0 - src_a);
+        vec3 out_rgb  = (smpColor.xyz * src_a + u_bgColor.xyz * dist_a * (1.0 - src_a)) / out_a;
+        gl_FragColor = vec4(out_rgb, out_a);
     }
 "#;
 
