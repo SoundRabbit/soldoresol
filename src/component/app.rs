@@ -87,6 +87,7 @@ pub enum Msg {
     EraceLineWithMouseCoord([f64; 2]),
     SetMeasureStartPointAndEndPointWithMouseCoord([f64; 2], [f64; 2]),
     SetCharacterPositionWithMouseCoord(u32, [f64; 2]),
+    BindCharacterToTableGrid(u32),
 
     // Worldに対する操作
     LoadCharacterImageFromFile(u32, web_sys::File),
@@ -227,6 +228,9 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             let table_coord = [table_coord[0], table_coord[1], 0.0];
             let mut character = Character::new();
             character.set_position(table_coord);
+            if state.world.table().is_bind_to_grid() {
+                character.bind_to_grid();
+            }
             state.world.add_character(character);
             update(state, Msg::Render)
         }
@@ -379,6 +383,14 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.table_state.last_mouse_coord = mouse_coord;
             update(state, Msg::Render)
         }
+        Msg::BindCharacterToTableGrid(character_id) => {
+            if state.world.table().is_bind_to_grid() {
+                if let Some(character) = state.world.character_mut(character_id) {
+                    character.bind_to_grid();
+                }
+            }
+            update(state, Msg::Render)
+        }
 
         // Worldに対する操作
         Msg::LoadCharacterImageFromFile(character_id, file) => Cmd::task(move |resolver| {
@@ -495,7 +507,12 @@ fn render_canvas(table_state: &TableState, focused_character_id: &Option<u32>) -
             })
             .on_mouseup({
                 let selecting_tool = table_state.selecting_tool.clone();
+                let focused_character_id = focused_character_id.clone();
                 move |_| match selecting_tool {
+                    TableTool::Selecter => match focused_character_id {
+                        Some(character_id) => Msg::BindCharacterToTableGrid(character_id),
+                        None => Msg::NoOp,
+                    },
                     TableTool::Measure(_) => Msg::SetSelectingTableTool(TableTool::Measure(None)),
                     _ => Msg::NoOp,
                 }

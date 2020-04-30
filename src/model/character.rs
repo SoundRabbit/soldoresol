@@ -49,6 +49,12 @@ impl Character {
         &self.position
     }
 
+    pub fn bind_to_grid(&mut self) {
+        let p = self.position;
+        let p = [(p[0] * 2.0).round() / 2.0, (p[1] * 2.0).round() / 2.0];
+        self.position = [p[0], p[1], self.position[2]];
+    }
+
     pub fn texture_image(&mut self) -> Option<&web_sys::HtmlImageElement> {
         if self.texture_is_changed {
             if let Some(texture) = &self.texture {
