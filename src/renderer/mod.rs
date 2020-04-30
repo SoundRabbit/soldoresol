@@ -11,6 +11,7 @@ use crate::shader;
 use basic_renderer::BasicRenderer;
 use character_renderer::CharacterRenderer;
 use ndarray::Array2;
+use std::collections::HashMap;
 use table_renderer::TableRenderer;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
@@ -25,13 +26,14 @@ pub struct Renderer {
 struct ViewRenderer {
     gl: WebGlRenderingContext,
     program: web_sys::WebGlProgram,
-    texture: web_sys::WebGlTexture,
     a_vertex_location: WebGlAttributeLocation,
     a_texture_coord_location: WebGlAttributeLocation,
     u_translate_location: web_sys::WebGlUniformLocation,
     u_texture_location: web_sys::WebGlUniformLocation,
     table_renderer: TableRenderer,
+    table_texture: web_sys::WebGlTexture,
     character_renderer: CharacterRenderer,
+    character_texture: HashMap<u32, web_sys::WebGlTexture>,
 }
 
 struct MaskRenderer {
@@ -61,7 +63,7 @@ impl Renderer {
         }
     }
 
-    pub fn render(&self, world: &mut World, camera: &Camera) {
+    pub fn render(&mut self, world: &mut World, camera: &Camera) {
         let canvas = self
             .view_renderer
             .gl
@@ -108,30 +110,7 @@ impl ViewRenderer {
         let u_translate_location = gl.get_uniform_location(&program, "u_translate").unwrap();
         let u_texture_location = gl.get_uniform_location(&program, "u_texture").unwrap();
 
-        let texture = gl.create_texture().unwrap();
-        gl.bind_texture(web_sys::WebGlRenderingContext::TEXTURE_2D, Some(&texture));
-        gl.pixel_storei(web_sys::WebGlRenderingContext::PACK_ALIGNMENT, 1);
-
-        gl.tex_parameteri(
-            web_sys::WebGlRenderingContext::TEXTURE_2D,
-            web_sys::WebGlRenderingContext::TEXTURE_MIN_FILTER,
-            web_sys::WebGlRenderingContext::NEAREST as i32,
-        );
-        gl.tex_parameteri(
-            web_sys::WebGlRenderingContext::TEXTURE_2D,
-            web_sys::WebGlRenderingContext::TEXTURE_MAG_FILTER,
-            web_sys::WebGlRenderingContext::NEAREST as i32,
-        );
-        gl.tex_parameteri(
-            web_sys::WebGlRenderingContext::TEXTURE_2D,
-            web_sys::WebGlRenderingContext::TEXTURE_WRAP_S,
-            web_sys::WebGlRenderingContext::CLAMP_TO_EDGE as i32,
-        );
-        gl.tex_parameteri(
-            web_sys::WebGlRenderingContext::TEXTURE_2D,
-            web_sys::WebGlRenderingContext::TEXTURE_WRAP_T,
-            web_sys::WebGlRenderingContext::CLAMP_TO_EDGE as i32,
-        );
+        let table_texture = gl.create_texture().unwrap();
 
         gl.enable(web_sys::WebGlRenderingContext::CULL_FACE);
 
@@ -149,17 +128,18 @@ impl ViewRenderer {
         Self {
             gl,
             program,
-            texture,
             a_vertex_location,
             a_texture_coord_location,
             u_translate_location,
             u_texture_location,
             table_renderer,
+            table_texture,
             character_renderer,
+            character_texture: HashMap::new(),
         }
     }
 
-    pub fn render(&self, canvas_size: &[f64; 2], world: &mut World, camera: &Camera) {
+    pub fn render(&mut self, canvas_size: &[f64; 2], world: &mut World, camera: &Camera) {
         let gl = &self.gl;
         let vp_matrix = camera
             .view_matrix()
@@ -175,6 +155,7 @@ impl ViewRenderer {
         self.alloc_memory(&self.table_renderer);
         let table = world.table_mut();
         let texture = table.texture_element();
+        self.set_texture(&self.table_texture);
         gl.tex_image_2d_with_u32_and_u32_and_canvas(
             web_sys::WebGlRenderingContext::TEXTURE_2D,
             0,
@@ -189,19 +170,29 @@ impl ViewRenderer {
 
         // render character
         self.alloc_memory(&self.character_renderer);
-        for (_, character) in world.characters_mut() {
-            let texture = character.texture_element();
-            gl.tex_image_2d_with_u32_and_u32_and_canvas(
-                web_sys::WebGlRenderingContext::TEXTURE_2D,
-                0,
-                web_sys::WebGlRenderingContext::RGBA as i32,
-                web_sys::WebGlRenderingContext::RGBA,
-                web_sys::WebGlRenderingContext::UNSIGNED_BYTE,
-                &texture,
-            )
-            .unwrap();
+        for (character_id, character) in world.characters_mut() {
+            if self.character_texture.get(character_id).is_none() {
+                let texture_buffer = gl.create_texture().unwrap();
+                self.character_texture.insert(*character_id, texture_buffer);
+            }
+            if let Some(texture_buffer) = self.character_texture.get(character_id) {
+                self.set_texture(texture_buffer);
+            }
+            let texture = character.texture_image();
+            if let Some(texture) = texture {
+                web_sys::console::log_1(&JsValue::from("set texture"));
+                gl.tex_image_2d_with_u32_and_u32_and_image(
+                    web_sys::WebGlRenderingContext::TEXTURE_2D,
+                    0,
+                    web_sys::WebGlRenderingContext::RGBA as i32,
+                    web_sys::WebGlRenderingContext::RGBA,
+                    web_sys::WebGlRenderingContext::UNSIGNED_BYTE,
+                    &texture,
+                )
+                .unwrap();
+            }
             self.draw_with_model(&camera, &vp_matrix, character, &self.character_renderer);
-            character.set_is_focused(false);
+            character.rendered();
         }
 
         // v-sync
@@ -258,6 +249,35 @@ impl ViewRenderer {
             6,
             web_sys::WebGlRenderingContext::UNSIGNED_SHORT,
             0,
+        );
+    }
+
+    fn set_texture(&self, texture_buffer: &web_sys::WebGlTexture) {
+        let gl = &self.gl;
+        gl.bind_texture(
+            web_sys::WebGlRenderingContext::TEXTURE_2D,
+            Some(texture_buffer),
+        );
+        gl.pixel_storei(web_sys::WebGlRenderingContext::PACK_ALIGNMENT, 1);
+        gl.tex_parameteri(
+            web_sys::WebGlRenderingContext::TEXTURE_2D,
+            web_sys::WebGlRenderingContext::TEXTURE_MIN_FILTER,
+            web_sys::WebGlRenderingContext::NEAREST as i32,
+        );
+        gl.tex_parameteri(
+            web_sys::WebGlRenderingContext::TEXTURE_2D,
+            web_sys::WebGlRenderingContext::TEXTURE_MAG_FILTER,
+            web_sys::WebGlRenderingContext::NEAREST as i32,
+        );
+        gl.tex_parameteri(
+            web_sys::WebGlRenderingContext::TEXTURE_2D,
+            web_sys::WebGlRenderingContext::TEXTURE_WRAP_S,
+            web_sys::WebGlRenderingContext::CLAMP_TO_EDGE as i32,
+        );
+        gl.tex_parameteri(
+            web_sys::WebGlRenderingContext::TEXTURE_2D,
+            web_sys::WebGlRenderingContext::TEXTURE_WRAP_T,
+            web_sys::WebGlRenderingContext::CLAMP_TO_EDGE as i32,
         );
     }
 }

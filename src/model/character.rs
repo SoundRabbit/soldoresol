@@ -1,32 +1,40 @@
 use super::Color;
 use super::ColorSystem;
-use super::TexstureLayer;
 use super::TexstureLayerCollection;
-use wasm_bindgen::prelude::*;
-use wasm_bindgen::JsCast;
 
 const STANDING_PICTURE_LAYER: usize = 0;
-const FRAME_LAYER: usize = 1;
 
 pub struct Character {
     size: [f64; 2],
     position: [f64; 3],
-    layers: TexstureLayerCollection,
+    texture: Option<web_sys::HtmlImageElement>,
+    texture_is_changed: bool,
+    background_color: Color,
 }
 
 impl Character {
     pub fn new() -> Self {
-        let mut layers = TexstureLayerCollection::new(&[256, 256], &[256, 256], 2);
-        layers.set_background_color(ColorSystem::gray_200(255));
+        let mut layers = TexstureLayerCollection::new(&[256, 256], &[256, 256], 1);
+        layers.set_background_color(Color::from(0));
         Self {
             size: [1.0, 3.0],
             position: [0.0, 0.0, 0.0],
-            layers,
+            texture: None,
+            texture_is_changed: false,
+            background_color: Color::from(0),
         }
     }
 
     pub fn set_size(&mut self, size: [f64; 2]) {
         self.size = size;
+    }
+
+    pub fn stretch_height(&mut self) {
+        if let Some(texture) = &self.texture {
+            let width = texture.width() as f64;
+            let height = texture.height() as f64;
+            self.size[1] = self.size[0] * height / width;
+        }
     }
 
     pub fn size(&self) -> &[f64; 2] {
@@ -41,22 +49,37 @@ impl Character {
         &self.position
     }
 
-    pub fn texture_element(&mut self) -> &web_sys::HtmlCanvasElement {
-        self.layers.to_element()
+    pub fn texture_image(&mut self) -> Option<&web_sys::HtmlImageElement> {
+        if self.texture_is_changed {
+            if let Some(texture) = &self.texture {
+                Some(texture)
+            } else {
+                None
+            }
+        } else {
+            None
+        }
     }
 
-    pub fn set_is_focused(&self, is_focused: bool) {
-        let canvas = self.layers.element(FRAME_LAYER);
-        let context = self.layers.context(FRAME_LAYER);
-        context.set_line_width(30.0);
-        context.set_stroke_style(&ColorSystem::gray_900(255).to_jsvalue());
-        context.begin_path();
+    pub fn background_color(&self) -> &Color {
+        &self.background_color
+    }
+
+    pub fn set_is_focused(&mut self, is_focused: bool) {
         if is_focused {
-            context.stroke_rect(0.0, 0.0, canvas.width() as f64, canvas.height() as f64);
+            self.background_color = ColorSystem::gray_900(127);
         } else {
-            context.clear_rect(0.0, 0.0, canvas.width() as f64, canvas.height() as f64);
+            self.background_color = Color::from(0);
         }
-        context.fill();
-        context.stroke();
+    }
+
+    pub fn set_image(&mut self, image: web_sys::HtmlImageElement) {
+        self.texture = Some(image);
+        self.texture_is_changed = true;
+    }
+
+    pub fn rendered(&mut self) {
+        self.texture_is_changed = false;
+        self.set_is_focused(false);
     }
 }

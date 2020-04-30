@@ -25,7 +25,7 @@ impl CharacterRenderer {
             .concat(),
         );
         let texture_coord_buffer =
-            gl.create_vbo_with_f32array(&[[1.0, 1.0], [0.0, 1.0], [1.0, 0.0], [0.0, 0.0]].concat());
+            gl.create_vbo_with_f32array(&[[1.0, 0.0], [0.0, 0.0], [1.0, 1.0], [0.0, 1.0]].concat());
         let index_buffer = gl.create_ibo_with_i16array(&[0, 1, 2, 3, 2, 1]);
         Self {
             vertexis_buffer,

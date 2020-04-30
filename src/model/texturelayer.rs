@@ -104,6 +104,7 @@ impl TexstureLayerCollection {
             .unwrap();
         context.begin_path();
 
+        context.clear_rect(0.0, 0.0, width, height);
         context.set_fill_style(&self.background_color);
         context.fill_rect(0.0, 0.0, width, height);
         for layer in &self.layers {

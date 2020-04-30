@@ -13,6 +13,7 @@ use crate::model::World;
 use crate::random_id;
 use crate::renderer::Renderer;
 use kagura::prelude::*;
+use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 
@@ -41,6 +42,7 @@ struct TableState {
 
 struct Contextmenu {
     state: contextmenu::State,
+    character_id: Option<u32>,
     position: [f64; 2],
 }
 
@@ -53,6 +55,7 @@ pub struct State {
     table_state: TableState,
     contextmenu: Contextmenu,
     // form_state: FormState,
+    debug__character_id: Option<u32>,
 }
 
 // enum FormMsg {
@@ -64,6 +67,7 @@ pub enum Msg {
     NoOp,
     SetTableContext,
     WindowResized,
+    Render,
 
     // メッセージの伝搬
     TransportContextMenuMsg(contextmenu::Msg),
@@ -82,6 +86,13 @@ pub enum Msg {
     DrawLineWithMouseCoord([f64; 2]),
     EraceLineWithMouseCoord([f64; 2]),
     SetMeasureStartPointAndEndPointWithMouseCoord([f64; 2], [f64; 2]),
+
+    // Worldに対する操作
+    LoadCharacterImageFromFile(u32, web_sys::File),
+    SetCharacterImage(u32, web_sys::HtmlImageElement),
+
+    //デバッグ用
+    Debug_SetSelectingCharacterId(u32),
 }
 
 pub struct Sub;
@@ -112,11 +123,13 @@ fn init() -> (State, Cmd<Msg, Sub>) {
         contextmenu: Contextmenu {
             state: contextmenu::init(),
             position: [0.0, 0.0],
+            character_id: None,
         },
         // form_state: FormState {
         //     chat: chat::init(),
         //     handout: handout::init(),
         // },
+        debug__character_id: None,
     };
     let task = Cmd::task(|handler| {
         handler(Msg::SetTableContext);
@@ -155,7 +168,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 .dyn_into::<web_sys::WebGlRenderingContext>()
                 .unwrap();
             web_sys::console::log_1(&JsValue::from("Renderer::new"));
-            let renderer = Renderer::new(gl);
+            let mut renderer = Renderer::new(gl);
             web_sys::console::log_1(&JsValue::from("renderer.render"));
 
             renderer.render(&mut state.world, &state.camera);
@@ -170,7 +183,10 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.canvas_size = canvas_size;
             // chat::window_resized(&mut state.form_state.chat);
             // handout::window_resized(&mut state.form_state.handout);
-            if let Some(renderer) = &state.renderer {
+            update(state, Msg::Render)
+        }
+        Msg::Render => {
+            if let Some(renderer) = &mut state.renderer {
                 renderer.render(&mut state.world, &state.camera);
             }
             Cmd::none()
@@ -195,10 +211,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             let mut character = Character::new();
             character.set_position(table_coord);
             state.world.add_character(character);
-            if let Some(renderer) = &state.renderer {
-                renderer.render(&mut state.world, &camera);
-            }
-            Cmd::none()
+            update(state, Msg::Render)
         }
 
         //テーブル操作の制御
@@ -235,12 +248,15 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 _ => {}
             }
             state.table_state.last_mouse_coord = mouse_coord;
-            if let Some(renderer) = &state.renderer {
+            if let Some(renderer) = &mut state.renderer {
                 renderer.render(&mut state.world, &camera);
                 let focused_id = renderer
                     .table_object_id(&[mouse_coord[0], state.canvas_size[1] - mouse_coord[1]]);
                 if let Some(character) = state.world.character_mut(focused_id) {
                     character.set_is_focused(true);
+                    state.contextmenu.character_id = Some(focused_id);
+                } else {
+                    state.contextmenu.character_id = None;
                 }
             }
             Cmd::none()
@@ -254,10 +270,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             camera.set_x_axis_rotation(camera.x_axis_rotation() + y_movement * rotation_factor);
             camera.set_z_axis_rotation(camera.z_axis_rotation() + x_movement * rotation_factor);
             state.table_state.last_mouse_coord = mouse_coord;
-            if let Some(renderer) = &state.renderer {
-                renderer.render(&mut state.world, &camera);
-            }
-            Cmd::none()
+            update(state, Msg::Render)
         }
         Msg::SetCameraMovementWithMouseCoord(mouse_coord) => {
             let x_movement = mouse_coord[0] - state.table_state.last_mouse_coord[0];
@@ -273,10 +286,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             ];
             camera.set_movement(movement);
             state.table_state.last_mouse_coord = mouse_coord;
-            if let Some(renderer) = &state.renderer {
-                renderer.render(&mut state.world, &camera);
-            }
-            Cmd::none()
+            update(state, Msg::Render)
         }
         Msg::SetCameraMovementWithMouseWheel(delta_y) => {
             let camera = &mut state.camera;
@@ -288,17 +298,11 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 movement[2] - movement_factor * delta_y,
             ];
             camera.set_movement(movement);
-            if let Some(renderer) = &state.renderer {
-                renderer.render(&mut state.world, &camera);
-            }
-            Cmd::none()
+            update(state, Msg::Render)
         }
         Msg::SetSelectingTableTool(table_tool) => {
             state.table_state.selecting_tool = table_tool;
-            if let Some(renderer) = &state.renderer {
-                renderer.render(&mut state.world, &state.camera);
-            }
-            Cmd::none()
+            update(state, Msg::Render)
         }
         Msg::SetIsBindToGrid(is_bind_to_grid) => {
             state.world.table_mut().set_is_bind_to_grid(is_bind_to_grid);
@@ -349,6 +353,53 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 0.2,
             );
             update(state, Msg::SetCursorWithMouseCoord(mouse_coord))
+        }
+
+        // Worldに対する操作
+        Msg::LoadCharacterImageFromFile(character_id, file) => Cmd::task(move |resolver| {
+            let file_reader = Rc::new(web_sys::FileReader::new().unwrap());
+            let file_reader_ = Rc::clone(&file_reader);
+            let on_load = Closure::once(Box::new(move || {
+                if let Ok(result) = file_reader_.result() {
+                    if let Some(data_url) = result.as_string() {
+                        let image = web_sys::window()
+                            .unwrap()
+                            .document()
+                            .unwrap()
+                            .create_element("img")
+                            .unwrap()
+                            .dyn_into::<web_sys::HtmlImageElement>()
+                            .unwrap();
+                        let image_ = image.clone();
+                        let on_load = Closure::once(Box::new(move || {
+                            resolver(Msg::SetCharacterImage(character_id, image));
+                        }));
+                        image_.set_onload(Some(&on_load.as_ref().unchecked_ref()));
+                        image_.set_src(&data_url);
+                        on_load.forget();
+                        return;
+                    }
+                }
+                resolver(Msg::NoOp);
+            }) as Box<dyn FnOnce()>);
+            file_reader.set_onload(Some(&on_load.as_ref().unchecked_ref()));
+            file_reader.read_as_data_url(&file).unwrap();
+            on_load.forget();
+        }),
+        Msg::SetCharacterImage(character_id, image) => {
+            if let Some(character) = state.world.character_mut(character_id) {
+                character.set_image(image);
+                character.stretch_height();
+                update(state, Msg::Render)
+            } else {
+                Cmd::none()
+            }
+        }
+
+        //デバッグ用
+        Msg::Debug_SetSelectingCharacterId(character_id) => {
+            state.debug__character_id = Some(character_id);
+            Cmd::none()
         }
     }
 }
@@ -430,6 +481,14 @@ fn render_canvas(table_state: &TableState) -> Html<Msg> {
 }
 
 fn render_context_menu(contextmenu: &Contextmenu) -> Html<Msg> {
+    if let Some(character_id) = contextmenu.character_id {
+        render_context_menu_character(contextmenu, character_id)
+    } else {
+        render_context_menu_default(contextmenu)
+    }
+}
+
+fn render_context_menu_default(contextmenu: &Contextmenu) -> Html<Msg> {
     contextmenu::render(
         false,
         &contextmenu.state,
@@ -443,6 +502,21 @@ fn render_context_menu(contextmenu: &Contextmenu) -> Html<Msg> {
                 move |_| Msg::AddChracaterToTable(position)
             }),
             "キャラクターを作成",
+        )],
+    )
+}
+
+fn render_context_menu_character(contextmenu: &Contextmenu, character_id: u32) -> Html<Msg> {
+    contextmenu::render(
+        false,
+        &contextmenu.state,
+        || Box::new(|| Box::new(|msg| Msg::TransportContextMenuMsg(msg))),
+        Attributes::new(),
+        Events::new(),
+        vec![btn::contextmenu_text(
+            Attributes::new(),
+            Events::new().on_click(move |_| Msg::Debug_SetSelectingCharacterId(character_id)),
+            "キャラクターを選択",
         )],
     )
 }
@@ -481,6 +555,49 @@ fn render_debug_modeless(state: &State) -> Html<Msg> {
                 Events::new().on_click(|_| Msg::SetSelectingTableTool(TableTool::Measure(None))),
                 vec![Html::text("計測")],
             ),
+            render_debug_modeless_character(&state.debug__character_id),
         ],
     )
+}
+
+fn render_debug_modeless_character(character_id: &Option<u32>) -> Html<Msg> {
+    if let Some(character_id) = character_id {
+        Html::div(
+            Attributes::new(),
+            Events::new(),
+            vec![
+                Html::div(
+                    Attributes::new(),
+                    Events::new(),
+                    vec![
+                        Html::text("キャラクターID："),
+                        Html::text(character_id.to_string()),
+                    ],
+                ),
+                Html::input(
+                    Attributes::new().type_("file"),
+                    Events::new().on("change", {
+                        let character_id = *character_id;
+                        move |e| {
+                            let files = e
+                                .target()
+                                .unwrap()
+                                .dyn_into::<web_sys::HtmlInputElement>()
+                                .unwrap()
+                                .files()
+                                .unwrap();
+                            if let Some(file) = files.item(0) {
+                                Msg::LoadCharacterImageFromFile(character_id, file)
+                            } else {
+                                Msg::NoOp
+                            }
+                        }
+                    }),
+                    vec![],
+                ),
+            ],
+        )
+    } else {
+        Html::div(Attributes::new(), Events::new(), vec![])
+    }
 }
