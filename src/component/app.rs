@@ -152,14 +152,27 @@ fn get_device_pixel_ratio() -> f64 {
     web_sys::window().unwrap().device_pixel_ratio()
 }
 
+fn get_table_position(state: &State, mouse_coord: &[f64; 2]) -> [f64; 2] {
+    let dpr = get_device_pixel_ratio();
+    let mouse_coord = [mouse_coord[0] * dpr, mouse_coord[1] * dpr];
+    let p = state
+        .camera
+        .collision_point_on_xy_plane(&state.canvas_size, &mouse_coord);
+    [p[0], p[1]]
+}
+
 fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
     match msg {
         Msg::NoOp => Cmd::none(),
         Msg::SetTableContext => {
             let canvas = get_table_canvas_element();
-            let canvas_size = [canvas.client_width() as f64, canvas.client_height() as f64];
-            canvas.set_height(canvas.client_height() as u32);
-            canvas.set_width(canvas.client_width() as u32);
+            let dpr = get_device_pixel_ratio();
+            let canvas_size = [
+                canvas.client_width() as f64 * dpr,
+                canvas.client_height() as f64 * dpr,
+            ];
+            canvas.set_width(canvas_size[0] as u32);
+            canvas.set_height(canvas_size[1] as u32);
             state.canvas_size = canvas_size;
             let gl = canvas
                 .get_context("webgl")
@@ -177,9 +190,13 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
         Msg::WindowResized => {
             let canvas = get_table_canvas_element();
-            let canvas_size = [canvas.client_width() as f64, canvas.client_height() as f64];
-            canvas.set_height(canvas.client_height() as u32);
-            canvas.set_width(canvas.client_width() as u32);
+            let dpr = get_device_pixel_ratio();
+            let canvas_size = [
+                canvas.client_width() as f64 * dpr,
+                canvas.client_height() as f64 * dpr,
+            ];
+            canvas.set_width(canvas_size[0] as u32);
+            canvas.set_height(canvas_size[1] as u32);
             state.canvas_size = canvas_size;
             // chat::window_resized(&mut state.form_state.chat);
             // handout::window_resized(&mut state.form_state.handout);
@@ -205,8 +222,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             Cmd::none()
         }
         Msg::AddChracaterToTable(mouse_coord) => {
-            let camera = &state.camera;
-            let table_coord = camera.collision_point_on_xy_plane(&state.canvas_size, &mouse_coord);
+            let table_coord = get_table_position(&state, &mouse_coord);
             let table_coord = [table_coord[0], table_coord[1], 0.0];
             let mut character = Character::new();
             character.set_position(table_coord);
@@ -217,7 +233,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         //テーブル操作の制御
         Msg::SetCursorWithMouseCoord(mouse_coord) => {
             let camera = &state.camera;
-            let table_coord = camera.collision_point_on_xy_plane(&state.canvas_size, &mouse_coord);
+            let table_coord = get_table_position(&state, &mouse_coord);
             let table_coord = [table_coord[0], table_coord[1]];
             let table = state.world.table_mut();
             match state.table_state.selecting_tool {
@@ -250,8 +266,11 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.table_state.last_mouse_coord = mouse_coord;
             if let Some(renderer) = &mut state.renderer {
                 renderer.render(&mut state.world, &camera);
-                let focused_id = renderer
-                    .table_object_id(&[mouse_coord[0], state.canvas_size[1] - mouse_coord[1]]);
+                let dpr = get_device_pixel_ratio();
+                let focused_id = renderer.table_object_id(&[
+                    mouse_coord[0] * dpr,
+                    state.canvas_size[1] - mouse_coord[1] * dpr,
+                ]);
                 if let Some(character) = state.world.character_mut(focused_id) {
                     character.set_is_focused(true);
                     state.contextmenu.character_id = Some(focused_id);
@@ -265,7 +284,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             let x_movement = mouse_coord[0] - state.table_state.last_mouse_coord[0];
             let y_movement = mouse_coord[1] - state.table_state.last_mouse_coord[1];
             let long_edge = state.canvas_size[0].max(state.canvas_size[1]);
-            let rotation_factor = 3.0 / long_edge;
+            let rotation_factor = 3.0 / long_edge * get_device_pixel_ratio();
             let camera = &mut state.camera;
             camera.set_x_axis_rotation(camera.x_axis_rotation() + y_movement * rotation_factor);
             camera.set_z_axis_rotation(camera.z_axis_rotation() + x_movement * rotation_factor);
@@ -276,7 +295,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             let x_movement = mouse_coord[0] - state.table_state.last_mouse_coord[0];
             let y_movement = mouse_coord[1] - state.table_state.last_mouse_coord[1];
             let long_edge = state.canvas_size[0].max(state.canvas_size[1]);
-            let movement_factor = 50.0 / long_edge;
+            let movement_factor = 50.0 / long_edge * get_device_pixel_ratio();
             let camera = &mut state.camera;
             let movement = camera.movement();
             let movement = [
@@ -309,13 +328,9 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             Cmd::none()
         }
         Msg::DrawLineWithMouseCoord(mouse_coord) => {
-            let camera = &state.camera;
-            let start_point = camera.collision_point_on_xy_plane(
-                &state.canvas_size,
-                &state.table_state.last_mouse_coord,
-            );
+            let start_point = get_table_position(&state, &state.table_state.last_mouse_coord);
             let start_point = [start_point[0], start_point[1]];
-            let end_point = camera.collision_point_on_xy_plane(&state.canvas_size, &mouse_coord);
+            let end_point = get_table_position(&state, &mouse_coord);
             let end_point = [end_point[0], end_point[1]];
             state.world.table_mut().draw_line(
                 &start_point,
@@ -326,13 +341,9 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             update(state, Msg::SetCursorWithMouseCoord(mouse_coord))
         }
         Msg::EraceLineWithMouseCoord(mouse_coord) => {
-            let camera = &state.camera;
-            let start_point = camera.collision_point_on_xy_plane(
-                &state.canvas_size,
-                &state.table_state.last_mouse_coord,
-            );
+            let start_point = get_table_position(&state, &state.table_state.last_mouse_coord);
             let start_point = [start_point[0], start_point[1]];
-            let end_point = camera.collision_point_on_xy_plane(&state.canvas_size, &mouse_coord);
+            let end_point = get_table_position(&state, &mouse_coord);
             let end_point = [end_point[0], end_point[1]];
             state
                 .world
@@ -341,10 +352,9 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             update(state, Msg::SetCursorWithMouseCoord(mouse_coord))
         }
         Msg::SetMeasureStartPointAndEndPointWithMouseCoord(start_point, mouse_coord) => {
-            let camera = &state.camera;
-            let start_point = camera.collision_point_on_xy_plane(&state.canvas_size, &start_point);
+            let start_point = get_table_position(&state, &start_point);
             let start_point = [start_point[0], start_point[1]];
-            let end_point = camera.collision_point_on_xy_plane(&state.canvas_size, &mouse_coord);
+            let end_point = get_table_position(&state, &mouse_coord);
             let end_point = [end_point[0], end_point[1]];
             state.world.table_mut().draw_measure(
                 &start_point,
