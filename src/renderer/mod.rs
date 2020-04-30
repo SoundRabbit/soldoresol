@@ -45,6 +45,7 @@ struct ViewRenderer {
     u_translate_location: web_sys::WebGlUniformLocation,
     u_texture_location: web_sys::WebGlUniformLocation,
     u_bg_color_location: web_sys::WebGlUniformLocation,
+    u_circle_flag_location: web_sys::WebGlUniformLocation,
     table_renderer: TableRenderer,
     table_texture: web_sys::WebGlTexture,
     character_renderer: CharacterRenderer,
@@ -125,6 +126,7 @@ impl ViewRenderer {
         let u_translate_location = gl.get_uniform_location(&program, "u_translate").unwrap();
         let u_texture_location = gl.get_uniform_location(&program, "u_texture").unwrap();
         let u_bg_color_location = gl.get_uniform_location(&program, "u_bgColor").unwrap();
+        let u_circle_flag_location = gl.get_uniform_location(&program, "u_circleFlag").unwrap();
 
         let table_texture = gl.create_texture().unwrap();
 
@@ -149,6 +151,7 @@ impl ViewRenderer {
             u_translate_location,
             u_texture_location,
             u_bg_color_location,
+            u_circle_flag_location,
             table_renderer,
             table_texture,
             character_renderer,

@@ -16,14 +16,22 @@ const FRAGMENT_SHADER: &str = r#"
 
     uniform sampler2D u_texture;
     uniform vec4 u_bgColor;
+    uniform bool u_circleFlag;
     varying vec2 v_textureCoord;
     void main() {
-        vec4 smpColor = texture2D(u_texture, v_textureCoord);
-        float dist_a = u_bgColor.w;
-        float src_a = smpColor.w;
-        float out_a = src_a + dist_a * (1.0 - src_a);
-        vec3 out_rgb  = (smpColor.xyz * src_a + u_bgColor.xyz * dist_a * (1.0 - src_a)) / out_a;
-        gl_FragColor = vec4(out_rgb, out_a);
+        float x = v_textureCoord.x * 2.0 - 1.0;
+        float y = v_textureCoord.y * 2.0 - 1.0;
+
+        if (u_circleFlag && (x * x + y * y) > 1.0) {
+            discard;
+        } else {
+            vec4 smpColor = texture2D(u_texture, v_textureCoord);
+            float dist_a = u_bgColor.w;
+            float src_a = smpColor.w;
+            float out_a = src_a + dist_a * (1.0 - src_a);
+            vec3 out_rgb  = (smpColor.xyz * src_a + u_bgColor.xyz * dist_a * (1.0 - src_a)) / out_a;
+            gl_FragColor = vec4(out_rgb, out_a);
+        }
     }
 "#;
 
