@@ -74,7 +74,8 @@ pub enum Msg {
 
     //コンテキストメニューの制御
     OpenContextMenu([f64; 2]),
-    AddChracaterToTable([f64; 2]),
+    AddChracaterWithMouseCoord([f64; 2]),
+    CloneCharacterWithCharacterId(u32),
 
     // テーブル操作の制御
     SetCameraRotationWithMouseCoord([f64; 2]),
@@ -92,6 +93,7 @@ pub enum Msg {
     // Worldに対する操作
     LoadCharacterImageFromFile(u32, web_sys::File),
     SetCharacterImage(u32, web_sys::HtmlImageElement),
+    AddChracater(Character),
 
     //デバッグ用
     Debug_SetSelectingCharacterId(u32),
@@ -223,16 +225,29 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             contextmenu::open(&mut state.contextmenu.state, mouse_coord);
             Cmd::none()
         }
-        Msg::AddChracaterToTable(mouse_coord) => {
-            let table_coord = get_table_position(&state, &mouse_coord);
-            let table_coord = [table_coord[0], table_coord[1], 0.0];
+        Msg::AddChracater(character) => {
+            state.world.add_character(character);
+            update(state, Msg::Render)
+        }
+        Msg::AddChracaterWithMouseCoord(mouse_coord) => {
+            let position = get_table_position(&state, &mouse_coord);
+            let position = [position[0], position[1], 0.0];
             let mut character = Character::new();
-            character.set_position(table_coord);
+            character.set_position(position);
             if state.world.table().is_bind_to_grid() {
                 character.bind_to_grid();
             }
-            state.world.add_character(character);
-            update(state, Msg::Render)
+            update(state, Msg::AddChracater(character))
+        }
+        Msg::CloneCharacterWithCharacterId(character_id) => {
+            if let Some(character) = state.world.character(character_id) {
+                let mut character = character.clone();
+                let p = character.position();
+                character.set_position([p[0] + 1.0, p[1] + 1.0, p[2]]);
+                update(state, Msg::AddChracater(character))
+            } else {
+                Cmd::none()
+            }
         }
 
         //テーブル操作の制御
@@ -546,7 +561,7 @@ fn render_context_menu_default(contextmenu: &Contextmenu) -> Html<Msg> {
             Attributes::new(),
             Events::new().on_click({
                 let position = contextmenu.position.clone();
-                move |_| Msg::AddChracaterToTable(position)
+                move |_| Msg::AddChracaterWithMouseCoord(position)
             }),
             "キャラクターを作成",
         )],
@@ -560,11 +575,18 @@ fn render_context_menu_character(contextmenu: &Contextmenu, character_id: u32) -
         || Box::new(|| Box::new(|msg| Msg::TransportContextMenuMsg(msg))),
         Attributes::new(),
         Events::new(),
-        vec![btn::contextmenu_text(
-            Attributes::new(),
-            Events::new().on_click(move |_| Msg::Debug_SetSelectingCharacterId(character_id)),
-            "キャラクターを選択",
-        )],
+        vec![
+            btn::contextmenu_text(
+                Attributes::new(),
+                Events::new().on_click(move |_| Msg::Debug_SetSelectingCharacterId(character_id)),
+                "キャラクターを選択",
+            ),
+            btn::contextmenu_text(
+                Attributes::new(),
+                Events::new().on_click(move |_| Msg::CloneCharacterWithCharacterId(character_id)),
+                "コピーを作成",
+            ),
+        ],
     )
 }
 

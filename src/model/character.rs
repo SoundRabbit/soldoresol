@@ -89,3 +89,17 @@ impl Character {
         self.set_is_focused(false);
     }
 }
+
+impl Clone for Character {
+    fn clone(&self) -> Self {
+        let mut clone = Self::new();
+
+        clone.set_size(self.size.clone());
+        clone.set_position(self.position.clone());
+        if let Some(texture) = &self.texture {
+            clone.set_image(texture.clone());
+        }
+
+        clone
+    }
+}
