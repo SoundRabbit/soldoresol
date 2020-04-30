@@ -1,21 +1,26 @@
 use super::table::Table;
 use super::Character;
-use crate::random_id;
+use super::Tablemask;
+use std::collections::hash_map;
 use std::collections::HashMap;
 use wasm_bindgen::prelude::*;
 
 pub struct World {
+    id_counter: u32,
     table_id: u32,
     table: Table,
     characters: HashMap<u32, Character>,
+    tablemasks: HashMap<u32, Tablemask>,
 }
 
 impl World {
     pub fn new(table_size: [f64; 2]) -> Self {
         Self {
+            id_counter: 1,
             table_id: 0,
             table: Table::new(table_size, 64.0),
             characters: HashMap::new(),
+            tablemasks: HashMap::new(),
         }
     }
 
@@ -31,7 +36,7 @@ impl World {
         &mut self.table
     }
 
-    pub fn characters(&self) -> std::collections::hash_map::Iter<u32, Character> {
+    pub fn characters(&self) -> hash_map::Iter<u32, Character> {
         self.characters.iter()
     }
 
@@ -48,16 +53,28 @@ impl World {
     }
 
     pub fn add_character(&mut self, character: Character) -> u32 {
-        loop {
-            let character_id = random_id::u32val();
-            match self.characters.get(&character_id) {
-                Some(_) => continue,
-                None => {
-                    self.characters.insert(character_id, character);
-                    web_sys::console::log_1(&JsValue::from(character_id));
-                    return character_id;
-                }
-            }
-        }
+        let character_id = self.id_counter;
+        self.id_counter += 1;
+        self.characters.insert(character_id, character);
+        return character_id;
+    }
+
+    pub fn tablemasks(&self) -> hash_map::Iter<u32, Tablemask> {
+        self.tablemasks.iter()
+    }
+
+    pub fn tablemask(&self, tablemask_id: &u32) -> Option<&Tablemask> {
+        self.tablemasks.get(tablemask_id)
+    }
+
+    pub fn tablemask_mut(&mut self, tablemask_id: &u32) -> Option<&mut Tablemask> {
+        self.tablemasks.get_mut(tablemask_id)
+    }
+
+    pub fn add_tablemask(&mut self, tablemask: Tablemask) -> u32 {
+        let tablemask_id = self.id_counter;
+        self.id_counter += 1;
+        self.tablemasks.insert(tablemask_id, tablemask);
+        return tablemask_id;
     }
 }
