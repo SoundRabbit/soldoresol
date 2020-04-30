@@ -193,7 +193,7 @@ impl ViewRenderer {
 
         // render character
         self.alloc_memory(&self.character_renderer);
-        let mut characters: BTreeMap<Total<f64>, u32> = BTreeMap::new();
+        let mut characters: BTreeMap<Total<f64>, Vec<u32>> = BTreeMap::new();
 
         for (character_id, character) in world.characters() {
             let mvp_matrix = self
@@ -201,41 +201,46 @@ impl ViewRenderer {
                 .model_matrix(&camera, &character)
                 .dot(&vp_matrix);
             let s = mvp_matrix.dot(&arr1(&[0.0, 0.0, 0.0, 1.0]));
-            assert!(characters
-                .insert(Total(-s[2] / s[3]), *character_id)
-                .is_none());
+            let key = Total(-s[2] / s[3]);
+            if let Some(v) = characters.get_mut(&key) {
+                v.push(*character_id);
+            } else {
+                characters.insert(key, vec![*character_id]);
+            }
         }
 
-        for (_, character_id) in characters {
-            if let Some(character) = world.character_mut(character_id) {
-                if self.character_texture.get(&character_id).is_none() {
-                    let texture_buffer = gl.create_texture().unwrap();
-                    self.character_texture.insert(character_id, texture_buffer);
+        for (_, character_ids) in characters {
+            for character_id in character_ids {
+                if let Some(character) = world.character_mut(character_id) {
+                    if self.character_texture.get(&character_id).is_none() {
+                        let texture_buffer = gl.create_texture().unwrap();
+                        self.character_texture.insert(character_id, texture_buffer);
+                    }
+                    if let Some(texture_buffer) = self.character_texture.get(&character_id) {
+                        self.set_texture(texture_buffer);
+                    }
+                    let texture = character.texture_image();
+                    if let Some(texture) = texture {
+                        web_sys::console::log_1(&JsValue::from("set texture"));
+                        gl.tex_image_2d_with_u32_and_u32_and_image(
+                            web_sys::WebGlRenderingContext::TEXTURE_2D,
+                            0,
+                            web_sys::WebGlRenderingContext::RGBA as i32,
+                            web_sys::WebGlRenderingContext::RGBA,
+                            web_sys::WebGlRenderingContext::UNSIGNED_BYTE,
+                            &texture,
+                        )
+                        .unwrap();
+                    }
+                    self.draw_with_model(
+                        &character.background_color().to_f32array(),
+                        &camera,
+                        &vp_matrix,
+                        character,
+                        &self.character_renderer,
+                    );
+                    character.rendered();
                 }
-                if let Some(texture_buffer) = self.character_texture.get(&character_id) {
-                    self.set_texture(texture_buffer);
-                }
-                let texture = character.texture_image();
-                if let Some(texture) = texture {
-                    web_sys::console::log_1(&JsValue::from("set texture"));
-                    gl.tex_image_2d_with_u32_and_u32_and_image(
-                        web_sys::WebGlRenderingContext::TEXTURE_2D,
-                        0,
-                        web_sys::WebGlRenderingContext::RGBA as i32,
-                        web_sys::WebGlRenderingContext::RGBA,
-                        web_sys::WebGlRenderingContext::UNSIGNED_BYTE,
-                        &texture,
-                    )
-                    .unwrap();
-                }
-                self.draw_with_model(
-                    &character.background_color().to_f32array(),
-                    &camera,
-                    &vp_matrix,
-                    character,
-                    &self.character_renderer,
-                );
-                character.rendered();
             }
         }
 
