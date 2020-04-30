@@ -479,7 +479,7 @@ fn render_canvas(table_state: &TableState, focused_character_id: &Option<u32>) -
                     let mouse_coord = [e.x() as f64, e.y() as f64];
                     if e.buttons() & 1 == 0 {
                         Msg::SetCursorWithMouseCoord(mouse_coord)
-                    } else if e.ctrl_key() {
+                    } else if e.alt_key() || e.ctrl_key() {
                         Msg::SetCameraRotationWithMouseCoord(mouse_coord)
                     } else {
                         match selecting_tool {
