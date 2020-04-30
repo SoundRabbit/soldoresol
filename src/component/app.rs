@@ -314,7 +314,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
         Msg::SetCameraMovementWithMouseWheel(delta_y) => {
             let camera = &mut state.camera;
-            let movement_factor = 0.1;
+            let movement_factor = 0.02;
             let movement = camera.movement();
             let movement = [
                 movement[0],
