@@ -42,7 +42,6 @@ struct TableState {
 
 struct Contextmenu {
     state: contextmenu::State,
-    character_id: Option<u32>,
     position: [f64; 2],
 }
 
@@ -54,6 +53,7 @@ pub struct State {
     canvas_size: [f64; 2],
     table_state: TableState,
     contextmenu: Contextmenu,
+    focused_character_id: Option<u32>,
     // form_state: FormState,
     debug__character_id: Option<u32>,
 }
@@ -86,6 +86,7 @@ pub enum Msg {
     DrawLineWithMouseCoord([f64; 2]),
     EraceLineWithMouseCoord([f64; 2]),
     SetMeasureStartPointAndEndPointWithMouseCoord([f64; 2], [f64; 2]),
+    SetCharacterPositionWithMouseCoord(u32, [f64; 2]),
 
     // Worldに対する操作
     LoadCharacterImageFromFile(u32, web_sys::File),
@@ -123,12 +124,12 @@ fn init() -> (State, Cmd<Msg, Sub>) {
         contextmenu: Contextmenu {
             state: contextmenu::init(),
             position: [0.0, 0.0],
-            character_id: None,
         },
         // form_state: FormState {
         //     chat: chat::init(),
         //     handout: handout::init(),
         // },
+        focused_character_id: None,
         debug__character_id: None,
     };
     let task = Cmd::task(|handler| {
@@ -273,9 +274,9 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 ]);
                 if let Some(character) = state.world.character_mut(focused_id) {
                     character.set_is_focused(true);
-                    state.contextmenu.character_id = Some(focused_id);
+                    state.focused_character_id = Some(focused_id);
                 } else {
-                    state.contextmenu.character_id = None;
+                    state.focused_character_id = None;
                 }
             }
             Cmd::none()
@@ -364,6 +365,20 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             );
             update(state, Msg::SetCursorWithMouseCoord(mouse_coord))
         }
+        Msg::SetCharacterPositionWithMouseCoord(character_id, mouse_coord) => {
+            let movement = {
+                let a = get_table_position(&state, &state.table_state.last_mouse_coord);
+                let b = get_table_position(&state, &mouse_coord);
+                [b[0] - a[0], b[1] - a[1]]
+            };
+            if let Some(character) = state.world.character_mut(character_id) {
+                let p = character.position();
+                let p = [p[0] + movement[0], p[1] + movement[1], p[2]];
+                character.set_position(p);
+            }
+            state.table_state.last_mouse_coord = mouse_coord;
+            update(state, Msg::Render)
+        }
 
         // Worldに対する操作
         Msg::LoadCharacterImageFromFile(character_id, file) => Cmd::task(move |resolver| {
@@ -419,19 +434,20 @@ fn render(state: &State) -> Html<Msg> {
         Attributes::new().class("app").id("app"),
         Events::new(),
         vec![
-            render_canvas(&state.table_state),
+            render_canvas(&state.table_state, &state.focused_character_id),
             render_debug_modeless(&state),
-            render_context_menu(&state.contextmenu),
+            render_context_menu(&state.contextmenu, &state.focused_character_id),
         ],
     )
 }
 
-fn render_canvas(table_state: &TableState) -> Html<Msg> {
+fn render_canvas(table_state: &TableState, focused_character_id: &Option<u32>) -> Html<Msg> {
     Html::canvas(
         Attributes::new().class("app__table").id("table"),
         Events::new()
             .on_mousemove({
                 let selecting_tool = table_state.selecting_tool.clone();
+                let focused_character_id = focused_character_id.clone();
                 move |e| {
                     let mouse_coord = [e.x() as f64, e.y() as f64];
                     if e.buttons() & 1 == 0 {
@@ -440,9 +456,13 @@ fn render_canvas(table_state: &TableState) -> Html<Msg> {
                         Msg::SetCameraRotationWithMouseCoord(mouse_coord)
                     } else {
                         match selecting_tool {
-                            TableTool::Selecter => {
-                                Msg::SetCameraMovementWithMouseCoord(mouse_coord)
-                            }
+                            TableTool::Selecter => match focused_character_id {
+                                Some(character_id) => Msg::SetCharacterPositionWithMouseCoord(
+                                    character_id,
+                                    mouse_coord,
+                                ),
+                                None => Msg::SetCameraMovementWithMouseCoord(mouse_coord),
+                            },
                             TableTool::Pen => Msg::DrawLineWithMouseCoord(mouse_coord),
                             TableTool::Eracer => Msg::EraceLineWithMouseCoord(mouse_coord),
                             TableTool::Measure(Some(start_point)) => {
@@ -490,9 +510,9 @@ fn render_canvas(table_state: &TableState) -> Html<Msg> {
     )
 }
 
-fn render_context_menu(contextmenu: &Contextmenu) -> Html<Msg> {
-    if let Some(character_id) = contextmenu.character_id {
-        render_context_menu_character(contextmenu, character_id)
+fn render_context_menu(contextmenu: &Contextmenu, focused_character_id: &Option<u32>) -> Html<Msg> {
+    if let Some(character_id) = focused_character_id {
+        render_context_menu_character(contextmenu, *character_id)
     } else {
         render_context_menu_default(contextmenu)
     }
