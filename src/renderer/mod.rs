@@ -1,7 +1,7 @@
-mod basic_renderer;
-mod character_renderer;
+mod mask_renderer;
 mod model_matrix;
-mod table_renderer;
+mod program;
+mod view_renderer;
 mod webgl;
 
 use crate::model::Camera;
@@ -9,471 +9,52 @@ use crate::model::Character;
 use crate::model::Color;
 use crate::model::World;
 use crate::shader;
-use basic_renderer::BasicRenderer;
-use character_renderer::CharacterRenderer;
+use mask_renderer::MaskRenderer;
+use model_matrix::ModelMatrix;
 use ndarray::arr1;
 use ndarray::Array2;
 use std::collections::BTreeMap;
 use std::collections::HashMap;
-use table_renderer::TableRenderer;
+use view_renderer::ViewRenderer;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use webgl::WebGlAttributeLocation;
 use webgl::WebGlRenderingContext;
 
-#[derive(PartialEq, PartialOrd)]
-pub struct Total<T>(pub T);
-
-impl<T: PartialEq> Eq for Total<T> {}
-
-impl<T: PartialOrd> Ord for Total<T> {
-    fn cmp(&self, other: &Total<T>) -> std::cmp::Ordering {
-        self.0.partial_cmp(&other.0).unwrap()
-    }
-}
-
 pub struct Renderer {
+    gl: WebGlRenderingContext,
     view_renderer: ViewRenderer,
     mask_renderer: MaskRenderer,
-}
-
-struct ViewRenderer {
-    gl: WebGlRenderingContext,
-    program: web_sys::WebGlProgram,
-    a_vertex_location: WebGlAttributeLocation,
-    a_texture_coord_location: WebGlAttributeLocation,
-    u_translate_location: web_sys::WebGlUniformLocation,
-    u_texture_location: web_sys::WebGlUniformLocation,
-    u_bg_color_location: web_sys::WebGlUniformLocation,
-    u_circle_flag_location: web_sys::WebGlUniformLocation,
-    table_renderer: TableRenderer,
-    table_texture: web_sys::WebGlTexture,
-    character_renderer: CharacterRenderer,
-    character_texture: HashMap<u32, web_sys::WebGlTexture>,
-}
-
-struct MaskRenderer {
-    canvas: web_sys::HtmlCanvasElement,
-    gl: WebGlRenderingContext,
-    program: web_sys::WebGlProgram,
-    a_vertex_location: WebGlAttributeLocation,
-    u_translate_location: web_sys::WebGlUniformLocation,
-    u_mask_color_location: web_sys::WebGlUniformLocation,
-    table_renderer: TableRenderer,
-    character_renderer: CharacterRenderer,
 }
 
 impl Renderer {
     pub fn new(gl: web_sys::WebGlRenderingContext) -> Self {
         let gl = WebGlRenderingContext(gl);
-
-        web_sys::console::log_1(&JsValue::from("ViewRenderer::new"));
-        let view_renderer = ViewRenderer::new(gl);
-
-        web_sys::console::log_1(&JsValue::from("MaskRenderer::new"));
+        let view_renderer = ViewRenderer::new(&gl);
         let mask_renderer = MaskRenderer::new();
-
         Self {
+            gl,
             view_renderer,
             mask_renderer,
         }
     }
 
+    pub fn table_object_id(&self, position: &[f64; 2]) -> u32 {
+        self.mask_renderer.table_object_id(position)
+    }
+
     pub fn render(&mut self, world: &mut World, camera: &Camera) {
         let canvas = self
-            .view_renderer
             .gl
             .canvas()
             .unwrap()
             .dyn_into::<web_sys::HtmlCanvasElement>()
             .unwrap();
         let canvas_size = [canvas.width() as f64, canvas.height() as f64];
-        self.view_renderer.render(&canvas_size, world, camera);
-        self.mask_renderer.render(&canvas_size, world, camera);
-    }
 
-    pub fn table_object_id(&self, position: &[f64; 2]) -> u32 {
-        let mut pixel = [0, 0, 0, 0];
-        self.mask_renderer
-            .gl
-            .read_pixels_with_opt_u8_array(
-                position[0] as i32,
-                position[1] as i32,
-                1,
-                1,
-                web_sys::WebGlRenderingContext::RGBA,
-                web_sys::WebGlRenderingContext::UNSIGNED_BYTE,
-                Some(&mut pixel),
-            )
-            .unwrap();
-        u32::from_be_bytes([pixel[3], pixel[0], pixel[1], pixel[2]])
-    }
-}
+        self.view_renderer
+            .render(&self.gl, &canvas_size, &camera, world);
 
-impl ViewRenderer {
-    pub fn new(gl: WebGlRenderingContext) -> Self {
-        let vertex_shader = shader::compile_shader(&gl, &shader::default::vertex_shader()).unwrap();
-        let fragment_shader =
-            shader::compile_shader(&gl, &shader::default::fragment_shader()).unwrap();
-        let program = shader::link_program(&gl, &vertex_shader, &fragment_shader).unwrap();
-        gl.use_program(Some(&program));
-
-        let a_vertex_location =
-            WebGlAttributeLocation(gl.get_attrib_location(&program, "a_vertex") as u32);
-        let a_texture_coord_location =
-            WebGlAttributeLocation(gl.get_attrib_location(&program, "a_textureCoord") as u32);
-
-        let u_translate_location = gl.get_uniform_location(&program, "u_translate").unwrap();
-        let u_texture_location = gl.get_uniform_location(&program, "u_texture").unwrap();
-        let u_bg_color_location = gl.get_uniform_location(&program, "u_bgColor").unwrap();
-        let u_circle_flag_location = gl.get_uniform_location(&program, "u_circleFlag").unwrap();
-
-        let table_texture = gl.create_texture().unwrap();
-
-        gl.enable(web_sys::WebGlRenderingContext::CULL_FACE);
-
-        gl.enable(web_sys::WebGlRenderingContext::DEPTH_TEST);
-        gl.depth_func(web_sys::WebGlRenderingContext::LEQUAL);
-        gl.enable(web_sys::WebGlRenderingContext::BLEND);
-        gl.blend_func(
-            web_sys::WebGlRenderingContext::SRC_ALPHA,
-            web_sys::WebGlRenderingContext::ONE_MINUS_SRC_ALPHA,
-        );
-
-        let table_renderer = TableRenderer::new(&gl);
-        let character_renderer = CharacterRenderer::new(&gl);
-
-        Self {
-            gl,
-            program,
-            a_vertex_location,
-            a_texture_coord_location,
-            u_translate_location,
-            u_texture_location,
-            u_bg_color_location,
-            u_circle_flag_location,
-            table_renderer,
-            table_texture,
-            character_renderer,
-            character_texture: HashMap::new(),
-        }
-    }
-
-    pub fn render(&mut self, canvas_size: &[f64; 2], world: &mut World, camera: &Camera) {
-        let gl = &self.gl;
-        let vp_matrix = camera
-            .view_matrix()
-            .dot(&camera.perspective_matrix(&canvas_size));
-        gl.viewport(0, 0, canvas_size[0] as i32, canvas_size[1] as i32);
-        gl.clear_color(0.0, 0.0, 0.0, 0.0);
-        gl.clear(
-            web_sys::WebGlRenderingContext::COLOR_BUFFER_BIT
-                | web_sys::WebGlRenderingContext::DEPTH_BUFFER_BIT,
-        );
-
-        // render table
-        self.alloc_memory(&self.table_renderer);
-        let table = world.table_mut();
-        let texture = table.texture_element();
-        self.set_texture(&self.table_texture);
-        gl.tex_image_2d_with_u32_and_u32_and_canvas(
-            web_sys::WebGlRenderingContext::TEXTURE_2D,
-            0,
-            web_sys::WebGlRenderingContext::RGBA as i32,
-            web_sys::WebGlRenderingContext::RGBA,
-            web_sys::WebGlRenderingContext::UNSIGNED_BYTE,
-            &texture,
-        )
-        .unwrap();
-        self.draw_with_model(
-            &[0.0, 0.0, 0.0, 0.0],
-            &camera,
-            &vp_matrix,
-            table,
-            &self.table_renderer,
-        );
-        table.flip();
-
-        // render character
-        self.alloc_memory(&self.character_renderer);
-        let mut characters: BTreeMap<Total<f64>, Vec<u32>> = BTreeMap::new();
-
-        for (character_id, character) in world.characters() {
-            let mvp_matrix = self
-                .character_renderer
-                .model_matrix(&camera, &character)
-                .dot(&vp_matrix);
-            let s = mvp_matrix.dot(&arr1(&[0.0, 0.0, 0.0, 1.0]));
-            let key = Total(-s[2] / s[3]);
-            if let Some(v) = characters.get_mut(&key) {
-                v.push(*character_id);
-            } else {
-                characters.insert(key, vec![*character_id]);
-            }
-        }
-
-        for (_, character_ids) in characters {
-            for character_id in character_ids {
-                if let Some(character) = world.character_mut(character_id) {
-                    if self.character_texture.get(&character_id).is_none() {
-                        let texture_buffer = gl.create_texture().unwrap();
-                        self.character_texture.insert(character_id, texture_buffer);
-                    }
-                    if let Some(texture_buffer) = self.character_texture.get(&character_id) {
-                        self.set_texture(texture_buffer);
-                    }
-                    let texture = character.texture_image();
-                    if let Some(texture) = texture {
-                        web_sys::console::log_1(&JsValue::from("set texture"));
-                        gl.tex_image_2d_with_u32_and_u32_and_image(
-                            web_sys::WebGlRenderingContext::TEXTURE_2D,
-                            0,
-                            web_sys::WebGlRenderingContext::RGBA as i32,
-                            web_sys::WebGlRenderingContext::RGBA,
-                            web_sys::WebGlRenderingContext::UNSIGNED_BYTE,
-                            &texture,
-                        )
-                        .unwrap();
-                    }
-                    self.draw_with_model(
-                        &character.background_color().to_f32array(),
-                        &camera,
-                        &vp_matrix,
-                        character,
-                        &self.character_renderer,
-                    );
-                    character.rendered();
-                }
-            }
-        }
-
-        // v-sync
-        let gl = (*gl).clone();
-        let a = Closure::once(Box::new(move || {
-            gl.flush();
-        }) as Box<dyn FnOnce()>);
-        web_sys::window()
-            .unwrap()
-            .request_animation_frame(a.as_ref().unchecked_ref())
-            .unwrap();
-        a.forget();
-    }
-
-    fn alloc_memory(&self, renderer: &impl BasicRenderer) {
-        let gl = &self.gl;
-        let vertexis = renderer.vertexis();
-        let texture_coord = renderer.texture_coord();
-        let index = renderer.index();
-        gl.set_attribute(&vertexis, &self.a_vertex_location, 3, 0);
-        gl.set_attribute(&texture_coord, &self.a_texture_coord_location, 2, 0);
-        gl.bind_buffer(
-            web_sys::WebGlRenderingContext::ELEMENT_ARRAY_BUFFER,
-            Some(index),
-        );
-        gl.uniform1i(Some(&self.u_texture_location), 0);
-    }
-
-    fn draw_with_model<M>(
-        &self,
-        bg_color: &[f32; 4],
-        camera: &Camera,
-        vp_matrix: &Array2<f64>,
-        model: &M,
-        renderer: &impl BasicRenderer<Model = M>,
-    ) {
-        let gl = &self.gl;
-        let mvp_matrix = renderer.model_matrix(&camera, &model).dot(vp_matrix);
-        gl.uniform_matrix4fv_with_f32_array(
-            Some(&self.u_translate_location),
-            false,
-            &[
-                mvp_matrix.row(0).to_vec(),
-                mvp_matrix.row(1).to_vec(),
-                mvp_matrix.row(2).to_vec(),
-                mvp_matrix.row(3).to_vec(),
-            ]
-            .concat()
-            .into_iter()
-            .map(|a| a as f32)
-            .collect::<Vec<f32>>(),
-        );
-        gl.uniform4fv_with_f32_array(Some(&self.u_bg_color_location), bg_color);
-        gl.draw_elements_with_i32(
-            web_sys::WebGlRenderingContext::TRIANGLES,
-            6,
-            web_sys::WebGlRenderingContext::UNSIGNED_SHORT,
-            0,
-        );
-    }
-
-    fn set_texture(&self, texture_buffer: &web_sys::WebGlTexture) {
-        let gl = &self.gl;
-        gl.bind_texture(
-            web_sys::WebGlRenderingContext::TEXTURE_2D,
-            Some(texture_buffer),
-        );
-        gl.pixel_storei(web_sys::WebGlRenderingContext::PACK_ALIGNMENT, 1);
-        gl.tex_parameteri(
-            web_sys::WebGlRenderingContext::TEXTURE_2D,
-            web_sys::WebGlRenderingContext::TEXTURE_MIN_FILTER,
-            web_sys::WebGlRenderingContext::NEAREST as i32,
-        );
-        gl.tex_parameteri(
-            web_sys::WebGlRenderingContext::TEXTURE_2D,
-            web_sys::WebGlRenderingContext::TEXTURE_MAG_FILTER,
-            web_sys::WebGlRenderingContext::NEAREST as i32,
-        );
-        gl.tex_parameteri(
-            web_sys::WebGlRenderingContext::TEXTURE_2D,
-            web_sys::WebGlRenderingContext::TEXTURE_WRAP_S,
-            web_sys::WebGlRenderingContext::CLAMP_TO_EDGE as i32,
-        );
-        gl.tex_parameteri(
-            web_sys::WebGlRenderingContext::TEXTURE_2D,
-            web_sys::WebGlRenderingContext::TEXTURE_WRAP_T,
-            web_sys::WebGlRenderingContext::CLAMP_TO_EDGE as i32,
-        );
-    }
-}
-
-impl MaskRenderer {
-    pub fn new() -> Self {
-        let canvas = web_sys::window()
-            .unwrap()
-            .document()
-            .unwrap()
-            .create_element("canvas")
-            .unwrap()
-            .dyn_into::<web_sys::HtmlCanvasElement>()
-            .unwrap();
-        let gl = canvas
-            .get_context("webgl")
-            .unwrap()
-            .unwrap()
-            .dyn_into::<web_sys::WebGlRenderingContext>()
-            .unwrap();
-        let gl = WebGlRenderingContext(gl);
-
-        let vertex_shader = shader::compile_shader(&gl, &shader::mask::vertex_shader()).unwrap();
-        let fragment_shader =
-            shader::compile_shader(&gl, &shader::mask::fragment_shader()).unwrap();
-        let program = shader::link_program(&gl, &vertex_shader, &fragment_shader).unwrap();
-        gl.use_program(Some(&program));
-
-        let a_vertex_location =
-            WebGlAttributeLocation(gl.get_attrib_location(&program, "a_vertex") as u32);
-
-        let u_translate_location = gl.get_uniform_location(&program, "u_translate").unwrap();
-        let u_mask_color_location = gl.get_uniform_location(&program, "u_maskColor").unwrap();
-
-        gl.enable(web_sys::WebGlRenderingContext::DEPTH_TEST);
-        gl.depth_func(web_sys::WebGlRenderingContext::LEQUAL);
-        gl.enable(web_sys::WebGlRenderingContext::BLEND);
-        gl.blend_func(
-            web_sys::WebGlRenderingContext::ONE,
-            web_sys::WebGlRenderingContext::ZERO,
-        );
-
-        let table_renderer = TableRenderer::new(&gl);
-        let character_renderer = CharacterRenderer::new(&gl);
-
-        Self {
-            canvas,
-            gl,
-            program,
-            a_vertex_location,
-            u_translate_location,
-            u_mask_color_location,
-            table_renderer,
-            character_renderer,
-        }
-    }
-
-    pub fn render(&self, canvas_size: &[f64; 2], world: &mut World, camera: &Camera) {
-        let gl = &self.gl;
-        let canvas = &self.canvas;
-        canvas.set_width(canvas_size[0] as u32);
-        canvas.set_height(canvas_size[1] as u32);
-        let vp_matrix = camera
-            .view_matrix()
-            .dot(&camera.perspective_matrix(&canvas_size));
-        gl.viewport(0, 0, canvas_size[0] as i32, canvas_size[1] as i32);
-        gl.clear_color(0.0, 0.0, 0.0, 0.0);
-        gl.clear(
-            web_sys::WebGlRenderingContext::COLOR_BUFFER_BIT
-                | web_sys::WebGlRenderingContext::DEPTH_BUFFER_BIT,
-        );
-
-        // render table
-        self.alloc_memory(&self.table_renderer);
-        let table = world.table();
-        self.draw_with_model(
-            world.table_id(),
-            &camera,
-            &vp_matrix,
-            table,
-            &self.table_renderer,
-        );
-
-        // render character
-        self.alloc_memory(&self.character_renderer);
-        for (character_id, character) in world.characters() {
-            self.draw_with_model(
-                character_id.clone(),
-                &camera,
-                &vp_matrix,
-                character,
-                &self.character_renderer,
-            );
-        }
-
-        gl.flush();
-    }
-
-    fn alloc_memory(&self, renderer: &impl BasicRenderer) {
-        let gl = &self.gl;
-        let vertexis = renderer.vertexis();
-        let index = renderer.index();
-        gl.set_attribute(&vertexis, &self.a_vertex_location, 3, 0);
-        gl.bind_buffer(
-            web_sys::WebGlRenderingContext::ELEMENT_ARRAY_BUFFER,
-            Some(index),
-        );
-    }
-
-    fn draw_with_model<M>(
-        &self,
-        id: u32,
-        camera: &Camera,
-        vp_matrix: &Array2<f64>,
-        model: &M,
-        renderer: &impl BasicRenderer<Model = M>,
-    ) {
-        let gl = &self.gl;
-        let mvp_matrix = renderer.model_matrix(&camera, &model).dot(vp_matrix);
-        gl.uniform_matrix4fv_with_f32_array(
-            Some(&self.u_translate_location),
-            false,
-            &[
-                mvp_matrix.row(0).to_vec(),
-                mvp_matrix.row(1).to_vec(),
-                mvp_matrix.row(2).to_vec(),
-                mvp_matrix.row(3).to_vec(),
-            ]
-            .concat()
-            .into_iter()
-            .map(|a| a as f32)
-            .collect::<Vec<f32>>(),
-        );
-        gl.uniform4fv_with_f32_array(
-            Some(&self.u_mask_color_location),
-            &Color::from(id).to_f32array(),
-        );
-        gl.draw_elements_with_i32(
-            web_sys::WebGlRenderingContext::TRIANGLES,
-            6,
-            web_sys::WebGlRenderingContext::UNSIGNED_SHORT,
-            0,
-        );
+        self.mask_renderer.render(&canvas_size, &camera, world);
     }
 }
