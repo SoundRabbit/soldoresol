@@ -1,6 +1,8 @@
-use super::{ModelMatrix, WebGlAttributeLocation, WebGlF32Vbo, WebGlI16Ibo, WebGlRenderingContext};
+use super::super::program::MaskProgram;
+use super::super::webgl::{WebGlF32Vbo, WebGlI16Ibo, WebGlRenderingContext};
+use super::super::ModelMatrix;
 use crate::model::{Camera, Character, Color};
-use ndarray::{arr1, Array2};
+use ndarray::Array2;
 use std::collections::hash_map;
 
 #[derive(PartialEq, PartialOrd)]
@@ -40,14 +42,12 @@ impl CharacterCollectionRenderer {
     pub fn render(
         &self,
         gl: &WebGlRenderingContext,
+        program: &MaskProgram,
         camera: &Camera,
         vp_matrix: &Array2<f64>,
-        a_vertex_location: &WebGlAttributeLocation,
-        u_translate_location: &web_sys::WebGlUniformLocation,
-        u_mask_color_location: &web_sys::WebGlUniformLocation,
         characters: hash_map::Iter<u32, Character>,
     ) {
-        gl.set_attribute(&self.vertexis_buffer, a_vertex_location, 3, 0);
+        gl.set_attribute(&self.vertexis_buffer, &program.a_vertex_location, 3, 0);
         gl.bind_buffer(
             web_sys::WebGlRenderingContext::ELEMENT_ARRAY_BUFFER,
             Some(&self.index_buffer),
@@ -64,7 +64,7 @@ impl CharacterCollectionRenderer {
                 .into();
             let mvp_matrix = model_matrix.dot(vp_matrix);
             gl.uniform_matrix4fv_with_f32_array(
-                Some(u_translate_location),
+                Some(&program.u_translate_location),
                 false,
                 &[
                     mvp_matrix.row(0).to_vec(),
@@ -78,7 +78,7 @@ impl CharacterCollectionRenderer {
                 .collect::<Vec<f32>>(),
             );
             gl.uniform4fv_with_f32_array(
-                Some(u_mask_color_location),
+                Some(&program.u_mask_color_location),
                 &Color::from(*character_id).to_f32array(),
             );
             gl.draw_elements_with_i32(

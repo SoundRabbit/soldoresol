@@ -1,8 +1,10 @@
 mod character_program;
+mod mask_program;
 
 use super::webgl;
 use super::WebGlRenderingContext;
 pub use character_program::CharacterProgram;
+pub use mask_program::MaskProgram;
 
 fn compile_shader(
     context: &web_sys::WebGlRenderingContext,

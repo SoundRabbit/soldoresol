@@ -5,20 +5,11 @@ mod view_renderer;
 mod webgl;
 
 use crate::model::Camera;
-use crate::model::Character;
-use crate::model::Color;
 use crate::model::World;
-use crate::shader;
 use mask_renderer::MaskRenderer;
 use model_matrix::ModelMatrix;
-use ndarray::arr1;
-use ndarray::Array2;
-use std::collections::BTreeMap;
-use std::collections::HashMap;
 use view_renderer::ViewRenderer;
-use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
-use webgl::WebGlAttributeLocation;
 use webgl::WebGlRenderingContext;
 
 pub struct Renderer {

@@ -1,10 +1,8 @@
 mod character_collection_renderer;
 
+use super::webgl::WebGlRenderingContext;
 use crate::model::{Camera, World};
 use character_collection_renderer::CharacterCollectionRenderer;
-
-use super::webgl::{WebGlAttributeLocation, WebGlF32Vbo, WebGlI16Ibo, WebGlRenderingContext};
-use super::ModelMatrix;
 
 pub struct ViewRenderer {
     character_collection_renderer: CharacterCollectionRenderer,

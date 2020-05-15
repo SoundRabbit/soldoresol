@@ -2,19 +2,15 @@ mod character_collection_renderer;
 
 use character_collection_renderer::CharacterCollectionRenderer;
 
-use super::webgl::{WebGlAttributeLocation, WebGlF32Vbo, WebGlI16Ibo, WebGlRenderingContext};
-use super::ModelMatrix;
+use super::program::MaskProgram;
+use super::webgl::WebGlRenderingContext;
 use crate::model::{Camera, World};
-use crate::shader;
 use wasm_bindgen::JsCast;
 
 pub struct MaskRenderer {
     canvas: web_sys::HtmlCanvasElement,
     gl: WebGlRenderingContext,
-    program: web_sys::WebGlProgram,
-    a_vertex_location: WebGlAttributeLocation,
-    u_translate_location: web_sys::WebGlUniformLocation,
-    u_mask_color_location: web_sys::WebGlUniformLocation,
+    mask_program: MaskProgram,
     character_collection_renderer: CharacterCollectionRenderer,
 }
 
@@ -36,18 +32,6 @@ impl MaskRenderer {
             .unwrap();
         let gl = WebGlRenderingContext(gl);
 
-        let vertex_shader = shader::compile_shader(&gl, &shader::mask::vertex_shader()).unwrap();
-        let fragment_shader =
-            shader::compile_shader(&gl, &shader::mask::fragment_shader()).unwrap();
-        let program = shader::link_program(&gl, &vertex_shader, &fragment_shader).unwrap();
-        gl.use_program(Some(&program));
-
-        let a_vertex_location =
-            WebGlAttributeLocation(gl.get_attrib_location(&program, "a_vertex") as u32);
-
-        let u_translate_location = gl.get_uniform_location(&program, "u_translate").unwrap();
-        let u_mask_color_location = gl.get_uniform_location(&program, "u_maskColor").unwrap();
-
         gl.enable(web_sys::WebGlRenderingContext::DEPTH_TEST);
         gl.depth_func(web_sys::WebGlRenderingContext::LEQUAL);
         gl.enable(web_sys::WebGlRenderingContext::BLEND);
@@ -58,13 +42,13 @@ impl MaskRenderer {
 
         let character_collection_renderer = CharacterCollectionRenderer::new(&gl);
 
+        let mask_program = MaskProgram::new(&gl);
+        mask_program.use_program(&gl);
+
         Self {
             canvas,
             gl,
-            program,
-            a_vertex_location,
-            u_translate_location,
-            u_mask_color_location,
+            mask_program,
             character_collection_renderer,
         }
     }
@@ -102,11 +86,9 @@ impl MaskRenderer {
 
         self.character_collection_renderer.render(
             gl,
+            &self.mask_program,
             camera,
             &vp_matrix,
-            &self.a_vertex_location,
-            &self.u_translate_location,
-            &self.u_mask_color_location,
             world.characters(),
         );
 
