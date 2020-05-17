@@ -12,7 +12,7 @@ pub struct Character {
 impl Character {
     pub fn new() -> Self {
         Self {
-            size: [1.0, 3.0],
+            size: [1.0, 0.0],
             position: [0.0, 0.0, 0.0],
             texture: None,
             texture_is_changed: false,

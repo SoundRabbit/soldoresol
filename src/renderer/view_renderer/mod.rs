@@ -48,7 +48,6 @@ impl ViewRenderer {
         gl.depth_func(web_sys::WebGlRenderingContext::ALWAYS);
         self.table_renderer
             .render(gl, camera, &vp_matrix, world.table_mut());
-        gl.depth_func(web_sys::WebGlRenderingContext::LEQUAL);
         self.character_collection_renderer
             .render(gl, camera, &vp_matrix, world.characters_mut());
 

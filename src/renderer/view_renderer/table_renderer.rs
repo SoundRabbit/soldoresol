@@ -1,4 +1,4 @@
-use super::super::program::MaskProgram;
+use super::super::program::TableGridProgram;
 use super::super::program::TableTextureProgram;
 use super::super::webgl::{WebGlF32Vbo, WebGlI16Ibo, WebGlRenderingContext};
 use super::super::ModelMatrix;
@@ -14,7 +14,7 @@ pub struct TableRenderer {
     polygon_texture_coord_buffer: WebGlF32Vbo,
     polygon_texture_buffer_0: web_sys::WebGlTexture,
     polygon_texture_buffer_1: web_sys::WebGlTexture,
-    mask_program: MaskProgram,
+    table_grid_program: TableGridProgram,
     table_texture_program: TableTextureProgram,
 }
 
@@ -90,7 +90,7 @@ impl TableRenderer {
             web_sys::WebGlRenderingContext::CLAMP_TO_EDGE as i32,
         );
 
-        let mask_program = MaskProgram::new(gl);
+        let table_grid_program = TableGridProgram::new(gl);
         let table_texture_program = TableTextureProgram::new(gl);
         Self {
             grid_vertexis_buffer,
@@ -100,7 +100,7 @@ impl TableRenderer {
             polygon_index_buffer,
             polygon_texture_buffer_0,
             polygon_texture_buffer_1,
-            mask_program,
+            table_grid_program,
             table_texture_program,
         }
     }
@@ -201,10 +201,10 @@ impl TableRenderer {
 
         gl.disable(web_sys::WebGlRenderingContext::CULL_FACE);
 
-        self.mask_program.use_program(gl);
+        self.table_grid_program.use_program(gl);
         gl.set_attribute(
             &self.grid_vertexis_buffer,
-            &self.mask_program.a_vertex_location,
+            &self.table_grid_program.a_vertex_location,
             3,
             0,
         );
@@ -231,7 +231,7 @@ impl TableRenderer {
                     .into();
                 let mvp_matrix = model_matrix.dot(vp_matrix);
                 gl.uniform_matrix4fv_with_f32_array(
-                    Some(&self.mask_program.u_translate_location),
+                    Some(&self.table_grid_program.u_translate_location),
                     false,
                     &[
                         mvp_matrix.row(0).to_vec(),
@@ -245,7 +245,7 @@ impl TableRenderer {
                     .collect::<Vec<f32>>(),
                 );
                 gl.uniform4fv_with_f32_array(
-                    Some(&self.mask_program.u_mask_color_location),
+                    Some(&self.table_grid_program.u_mask_color_location),
                     &Color::from([0, 0, 0, 255]).to_f32array(),
                 );
                 gl.draw_elements_with_i32(

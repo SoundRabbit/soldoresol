@@ -51,33 +51,26 @@ pub struct TableTextureProgram {
 
 impl TableTextureProgram {
     pub fn new(gl: &WebGlRenderingContext) -> Self {
-        web_sys::console::log_1(&JsValue::from("A"));
         let v_shader = super::compile_shader(
             gl,
             VERTEX_SHADER,
             web_sys::WebGlRenderingContext::VERTEX_SHADER,
         )
         .unwrap();
-        web_sys::console::log_1(&JsValue::from("B"));
         let f_shader = super::compile_shader(
             gl,
             FRAGMENT_SHADER,
             web_sys::WebGlRenderingContext::FRAGMENT_SHADER,
         )
         .unwrap();
-        web_sys::console::log_1(&JsValue::from("C"));
         let program = super::link_program(gl, &v_shader, &f_shader).unwrap();
         let a_vertex_location =
             WebGlAttributeLocation(gl.get_attrib_location(&program, "a_vertex") as u32);
         let a_texture_coord_location =
             WebGlAttributeLocation(gl.get_attrib_location(&program, "a_textureCoord") as u32);
-        web_sys::console::log_1(&JsValue::from("D"));
         let u_translate_location = gl.get_uniform_location(&program, "u_translate").unwrap();
-        web_sys::console::log_1(&JsValue::from("E"));
         let u_bg_color_location = gl.get_uniform_location(&program, "u_bgColor").unwrap();
-        web_sys::console::log_1(&JsValue::from("F"));
         let u_texture_0_location = gl.get_uniform_location(&program, "u_texture0").unwrap();
-        web_sys::console::log_1(&JsValue::from("G"));
         let u_texture_1_location = gl.get_uniform_location(&program, "u_texture1").unwrap();
 
         Self {

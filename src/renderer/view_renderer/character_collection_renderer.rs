@@ -1,7 +1,8 @@
 use super::super::program::CharacterProgram;
+use super::super::program::MaskProgram;
 use super::super::webgl::{WebGlF32Vbo, WebGlI16Ibo, WebGlRenderingContext};
 use super::super::ModelMatrix;
-use crate::model::{Camera, Character};
+use crate::model::{Camera, Character, Color};
 use ndarray::{arr1, Array2};
 use std::collections::{hash_map, BTreeMap, HashMap};
 
@@ -17,16 +18,20 @@ impl<T: PartialOrd> Ord for Total<T> {
 }
 
 pub struct CharacterCollectionRenderer {
-    vertexis_buffer: WebGlF32Vbo,
-    texture_coord_buffer: WebGlF32Vbo,
-    index_buffer: WebGlI16Ibo,
-    texture_buffer: HashMap<u128, web_sys::WebGlTexture>,
+    img_vertexis_buffer: WebGlF32Vbo,
+    img_texture_coord_buffer: WebGlF32Vbo,
+    img_index_buffer: WebGlI16Ibo,
+    img_texture_buffer: HashMap<u128, web_sys::WebGlTexture>,
+    mask_vertexis_buffer: WebGlF32Vbo,
+    mask_texture_coord_buffer: WebGlF32Vbo,
+    mask_index_buffer: WebGlI16Ibo,
     character_program: CharacterProgram,
+    mask_program: MaskProgram,
 }
 
 impl CharacterCollectionRenderer {
     pub fn new(gl: &WebGlRenderingContext) -> Self {
-        let vertexis_buffer = gl.create_vbo_with_f32array(
+        let img_vertexis_buffer = gl.create_vbo_with_f32array(
             &[
                 [0.5, 1.0, 0.0],
                 [-0.5, 1.0, 0.0],
@@ -35,17 +40,37 @@ impl CharacterCollectionRenderer {
             ]
             .concat(),
         );
-        let texture_coord_buffer =
+        let img_texture_coord_buffer =
             gl.create_vbo_with_f32array(&[[1.0, 0.0], [0.0, 0.0], [1.0, 1.0], [0.0, 1.0]].concat());
-        let index_buffer = gl.create_ibo_with_i16array(&[0, 1, 2, 3, 2, 1]);
+        let img_index_buffer = gl.create_ibo_with_i16array(&[0, 1, 2, 3, 2, 1]);
         let character_program = CharacterProgram::new(gl);
 
+        let mask_vertexis_buffer = gl.create_vbo_with_f32array(
+            &[
+                [0.5, 0.5, 0.0],
+                [-0.5, 0.5, 0.0],
+                [0.5, -0.5, 0.0],
+                [-0.5, -0.5, 0.0],
+            ]
+            .concat(),
+        );
+        let mask_texture_coord_buffer =
+            gl.create_vbo_with_f32array(&[[1.0, 1.0], [0.0, 1.0], [1.0, 0.0], [0.0, 0.0]].concat());
+        let mask_index_buffer = gl.create_ibo_with_i16array(&[0, 1, 2, 3, 2, 1]);
+
+        let character_program = CharacterProgram::new(gl);
+        let mask_program = MaskProgram::new(gl);
+
         Self {
-            vertexis_buffer,
-            texture_coord_buffer,
-            index_buffer,
-            texture_buffer: HashMap::new(),
+            img_vertexis_buffer,
+            img_texture_coord_buffer,
+            img_index_buffer,
+            img_texture_buffer: HashMap::new(),
+            mask_vertexis_buffer,
+            mask_texture_coord_buffer,
+            mask_index_buffer,
             character_program,
+            mask_program,
         }
     }
 
@@ -56,23 +81,23 @@ impl CharacterCollectionRenderer {
         vp_matrix: &Array2<f64>,
         characters: hash_map::IterMut<u128, Character>,
     ) {
-        self.character_program.use_program(gl);
+        self.mask_program.use_program(gl);
         gl.set_attribute(
-            &self.vertexis_buffer,
-            &self.character_program.a_vertex_location,
+            &self.mask_vertexis_buffer,
+            &self.mask_program.a_vertex_location,
             3,
             0,
         );
         gl.set_attribute(
-            &self.texture_coord_buffer,
-            &self.character_program.a_texture_coord_location,
+            &self.mask_texture_coord_buffer,
+            &self.mask_program.a_texture_coord_location,
             2,
             0,
         );
-        gl.uniform1i(Some(&self.character_program.u_texture_location), 0);
+        gl.uniform1i(Some(&self.mask_program.u_flag_round_location), 1);
         gl.bind_buffer(
             web_sys::WebGlRenderingContext::ELEMENT_ARRAY_BUFFER,
-            Some(&self.index_buffer),
+            Some(&self.mask_index_buffer),
         );
 
         let mut z_index: BTreeMap<Total<f64>, Vec<(Array2<f64>, u128, &mut Character)>> =
@@ -81,12 +106,44 @@ impl CharacterCollectionRenderer {
             let s = character.size();
             let p = character.position();
             let model_matrix: Array2<f64> = ModelMatrix::new()
+                .with_scale(&[s[0], s[0], 1.0])
+                .with_movement(&p)
+                .into();
+            let mvp_matrix = model_matrix.dot(vp_matrix);
+
+            gl.uniform_matrix4fv_with_f32_array(
+                Some(&self.mask_program.u_translate_location),
+                false,
+                &[
+                    mvp_matrix.row(0).to_vec(),
+                    mvp_matrix.row(1).to_vec(),
+                    mvp_matrix.row(2).to_vec(),
+                    mvp_matrix.row(3).to_vec(),
+                ]
+                .concat()
+                .into_iter()
+                .map(|a| a as f32)
+                .collect::<Vec<f32>>(),
+            );
+            gl.uniform4fv_with_f32_array(
+                Some(&self.mask_program.u_mask_color_location),
+                &Color::from([0.0, 0.0, 0.0, 0.75]).to_f32array(),
+            );
+            gl.draw_elements_with_i32(
+                web_sys::WebGlRenderingContext::TRIANGLES,
+                6,
+                web_sys::WebGlRenderingContext::UNSIGNED_SHORT,
+                0,
+            );
+
+            let model_matrix: Array2<f64> = ModelMatrix::new()
                 .with_scale(&[s[0], s[1], 1.0])
                 .with_x_axis_rotation(camera.x_axis_rotation())
                 .with_z_axis_rotation(camera.z_axis_rotation())
                 .with_movement(&p)
                 .into();
             let mvp_matrix = model_matrix.dot(vp_matrix);
+
             let s = mvp_matrix.dot(&arr1(&[0.0, 0.0, 0.0, 1.0]));
             let key = Total(-s[2] / s[3]);
             let value = (mvp_matrix, *character_id, character);
@@ -97,9 +154,30 @@ impl CharacterCollectionRenderer {
             }
         }
 
+        gl.depth_func(web_sys::WebGlRenderingContext::LEQUAL);
+
+        self.character_program.use_program(gl);
+        gl.set_attribute(
+            &self.img_vertexis_buffer,
+            &self.character_program.a_vertex_location,
+            3,
+            0,
+        );
+        gl.set_attribute(
+            &self.img_texture_coord_buffer,
+            &self.character_program.a_texture_coord_location,
+            2,
+            0,
+        );
+        gl.uniform1i(Some(&self.character_program.u_texture_location), 0);
+        gl.bind_buffer(
+            web_sys::WebGlRenderingContext::ELEMENT_ARRAY_BUFFER,
+            Some(&self.img_index_buffer),
+        );
+
         for (_, character_list) in z_index {
             for (mvp_matrix, character_id, character) in character_list {
-                if self.texture_buffer.get(&character_id).is_none() {
+                if self.img_texture_buffer.get(&character_id).is_none() {
                     let texture_buffer = gl.create_texture().unwrap();
                     gl.bind_texture(
                         web_sys::WebGlRenderingContext::TEXTURE_2D,
@@ -126,9 +204,9 @@ impl CharacterCollectionRenderer {
                         web_sys::WebGlRenderingContext::TEXTURE_WRAP_T,
                         web_sys::WebGlRenderingContext::CLAMP_TO_EDGE as i32,
                     );
-                    self.texture_buffer.insert(character_id, texture_buffer);
+                    self.img_texture_buffer.insert(character_id, texture_buffer);
                 }
-                let texture_buffer = self.texture_buffer.get(&character_id).unwrap();
+                let texture_buffer = self.img_texture_buffer.get(&character_id).unwrap();
                 gl.bind_texture(
                     web_sys::WebGlRenderingContext::TEXTURE_2D,
                     Some(texture_buffer),
