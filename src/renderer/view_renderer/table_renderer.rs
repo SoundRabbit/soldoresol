@@ -87,6 +87,7 @@ impl TableRenderer {
 
         self.character_program.use_program(gl);
 
+        gl.enable(web_sys::WebGlRenderingContext::CULL_FACE);
         gl.set_attribute(
             &self.polygon_vertexis_buffer,
             &self.character_program.a_vertex_location,
@@ -147,6 +148,8 @@ impl TableRenderer {
             web_sys::WebGlRenderingContext::UNSIGNED_SHORT,
             0,
         );
+
+        gl.disable(web_sys::WebGlRenderingContext::CULL_FACE);
 
         self.mask_program.use_program(gl);
         gl.set_attribute(
