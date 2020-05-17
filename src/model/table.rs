@@ -66,6 +66,7 @@ impl Table {
     }
 
     pub fn rendered(&mut self) {
+        self.clear_measure();
         self.drawing_texture_is_changed = false;
         self.measure_texture_is_changed = false;
     }
@@ -168,6 +169,19 @@ impl Table {
         context.arc(bx, by, radious, 0.0, 2.0 * std::f64::consts::PI);
         context.fill();
         context.stroke();
+
+        self.measure_texture_is_changed = true;
+    }
+
+    pub fn clear_measure(&mut self) {
+        let context = self.measure_texture.context();
+
+        context.clear_rect(
+            0.0,
+            0.0,
+            self.size[0] * self.pixel_ratio,
+            self.size[1] * self.pixel_ratio,
+        );
 
         self.measure_texture_is_changed = true;
     }

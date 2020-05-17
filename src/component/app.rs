@@ -184,9 +184,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 .unwrap()
                 .dyn_into::<web_sys::WebGlRenderingContext>()
                 .unwrap();
-            web_sys::console::log_1(&JsValue::from("Renderer::new"));
             let mut renderer = Renderer::new(gl);
-            web_sys::console::log_1(&JsValue::from("renderer.render"));
 
             renderer.render(&mut state.world, &state.camera);
             state.renderer = Some(renderer);
@@ -340,6 +338,12 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             update(state, Msg::Render)
         }
         Msg::SetSelectingTableTool(table_tool) => {
+            match &table_tool {
+                TableTool::Measure(Option::None) => {
+                    state.world.table_mut().clear_measure();
+                }
+                _ => {}
+            }
             state.table_state.selecting_tool = table_tool;
             update(state, Msg::Render)
         }
