@@ -101,33 +101,37 @@ impl CharacterCollectionRenderer {
             for (mvp_matrix, character_id, character) in character_list {
                 if self.texture_buffer.get(&character_id).is_none() {
                     let texture_buffer = gl.create_texture().unwrap();
+                    gl.bind_texture(
+                        web_sys::WebGlRenderingContext::TEXTURE_2D,
+                        Some(&texture_buffer),
+                    );
+                    gl.pixel_storei(web_sys::WebGlRenderingContext::PACK_ALIGNMENT, 1);
+                    gl.tex_parameteri(
+                        web_sys::WebGlRenderingContext::TEXTURE_2D,
+                        web_sys::WebGlRenderingContext::TEXTURE_MIN_FILTER,
+                        web_sys::WebGlRenderingContext::NEAREST as i32,
+                    );
+                    gl.tex_parameteri(
+                        web_sys::WebGlRenderingContext::TEXTURE_2D,
+                        web_sys::WebGlRenderingContext::TEXTURE_MAG_FILTER,
+                        web_sys::WebGlRenderingContext::NEAREST as i32,
+                    );
+                    gl.tex_parameteri(
+                        web_sys::WebGlRenderingContext::TEXTURE_2D,
+                        web_sys::WebGlRenderingContext::TEXTURE_WRAP_S,
+                        web_sys::WebGlRenderingContext::CLAMP_TO_EDGE as i32,
+                    );
+                    gl.tex_parameteri(
+                        web_sys::WebGlRenderingContext::TEXTURE_2D,
+                        web_sys::WebGlRenderingContext::TEXTURE_WRAP_T,
+                        web_sys::WebGlRenderingContext::CLAMP_TO_EDGE as i32,
+                    );
                     self.texture_buffer.insert(character_id, texture_buffer);
                 }
                 let texture_buffer = self.texture_buffer.get(&character_id).unwrap();
                 gl.bind_texture(
                     web_sys::WebGlRenderingContext::TEXTURE_2D,
                     Some(texture_buffer),
-                );
-                gl.pixel_storei(web_sys::WebGlRenderingContext::PACK_ALIGNMENT, 1);
-                gl.tex_parameteri(
-                    web_sys::WebGlRenderingContext::TEXTURE_2D,
-                    web_sys::WebGlRenderingContext::TEXTURE_MIN_FILTER,
-                    web_sys::WebGlRenderingContext::NEAREST as i32,
-                );
-                gl.tex_parameteri(
-                    web_sys::WebGlRenderingContext::TEXTURE_2D,
-                    web_sys::WebGlRenderingContext::TEXTURE_MAG_FILTER,
-                    web_sys::WebGlRenderingContext::NEAREST as i32,
-                );
-                gl.tex_parameteri(
-                    web_sys::WebGlRenderingContext::TEXTURE_2D,
-                    web_sys::WebGlRenderingContext::TEXTURE_WRAP_S,
-                    web_sys::WebGlRenderingContext::CLAMP_TO_EDGE as i32,
-                );
-                gl.tex_parameteri(
-                    web_sys::WebGlRenderingContext::TEXTURE_2D,
-                    web_sys::WebGlRenderingContext::TEXTURE_WRAP_T,
-                    web_sys::WebGlRenderingContext::CLAMP_TO_EDGE as i32,
                 );
                 if let Some(texture) = character.texture_image() {
                     gl.tex_image_2d_with_u32_and_u32_and_image(

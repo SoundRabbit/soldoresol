@@ -1,5 +1,5 @@
 use super::color::Color;
-use super::TexstureLayerCollection;
+use super::TexstureLayer;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 
@@ -12,29 +12,25 @@ pub struct Table {
     size: [f64; 2],
     pixel_ratio: f64,
     is_bind_to_grid: bool,
-    layers: TexstureLayerCollection,
+    texture: TexstureLayer,
+    texture_is_changed: bool,
 }
 
 impl Table {
     pub fn new(size: [f64; 2], pixel_ratio: f64) -> Self {
         let texture_width = (size[0] * pixel_ratio) as u32;
         let texture_height = (size[1] * pixel_ratio) as u32;
-        let mut layers =
-            TexstureLayerCollection::new(&[texture_width, texture_height], &[2048, 2048], 4);
-        layers.set_background_color(Color::from([255, 255, 255, 255]));
-        let mut table = Self {
+        Self {
             size,
             pixel_ratio,
             is_bind_to_grid: false,
-            layers,
-        };
-        table.draw_grid();
-        table
+            texture: TexstureLayer::new(&[texture_width, texture_height]),
+            texture_is_changed: true,
+        }
     }
 
     pub fn set_size(&mut self, size: [f64; 2]) {
         self.size = size;
-        self.draw_grid();
     }
 
     pub fn size(&self) -> &[f64; 2] {
@@ -49,19 +45,16 @@ impl Table {
         self.is_bind_to_grid
     }
 
-    pub fn texture_element(&mut self) -> &web_sys::HtmlCanvasElement {
-        self.layers.to_element()
+    pub fn texture_element(&self) -> Option<&web_sys::HtmlCanvasElement> {
+        if self.texture_is_changed {
+            Some(self.texture.element())
+        } else {
+            None
+        }
     }
 
-    pub fn flip(&self) {
-        let texture_width = self.size[0] * self.pixel_ratio;
-        let texture_height = self.size[1] * self.pixel_ratio;
-        self.layers
-            .context(MEASURE_LAYER)
-            .clear_rect(0.0, 0.0, texture_width, texture_height);
-        self.layers
-            .context(CURSOR_LAYER)
-            .clear_rect(0.0, 0.0, texture_width, texture_height);
+    pub fn rendered(&mut self) {
+        self.texture_is_changed = false;
     }
 
     fn get_texture_position(&self, position: &[f64; 2]) -> [f64; 2] {
@@ -78,33 +71,6 @@ impl Table {
         ]
     }
 
-    fn draw_grid(&mut self) {
-        let texture_width = (self.size[0] * self.pixel_ratio) as u32;
-        let texture_height = (self.size[1] * self.pixel_ratio) as u32;
-
-        self.layers.set_size(&[texture_width, texture_height]);
-
-        let context = self.layers.context(GRID_LAYER);
-
-        context.clear_rect(0.0, 0.0, texture_width as f64, texture_height as f64);
-
-        context.begin_path();
-
-        for x in 0..(self.size[0] as u32 + 1) {
-            let x = x as f64 * self.pixel_ratio;
-            context.move_to(x, 0.0);
-            context.line_to(x, texture_height as f64);
-        }
-
-        for y in 0..(self.size[1] as u32 + 1) {
-            let y = y as f64 * self.pixel_ratio;
-            context.move_to(0.0, y);
-            context.line_to(texture_width as f64, y);
-        }
-
-        context.stroke();
-    }
-
     pub fn draw_cursor(
         &self,
         position: &[f64; 2],
@@ -112,26 +78,13 @@ impl Table {
         outer_color: Color,
         inner_color: Color,
     ) {
-        let context = self.layers.context(CURSOR_LAYER);
+        let context = self.texture.context();
 
         let [px, py] = self.get_texture_position(position);
-
-        let radious = radius * self.pixel_ratio;
-
-        context.set_stroke_style(&outer_color.to_jsvalue());
-        context.set_fill_style(&inner_color.to_jsvalue());
-        context.set_line_width(self.pixel_ratio / 16.0);
-        context.set_line_cap("round");
-        context.begin_path();
-        context
-            .arc(px, py, radious, 0.0, 2.0 * std::f64::consts::PI)
-            .unwrap();
-        context.stroke();
-        context.fill();
     }
 
-    pub fn draw_line(&self, begin: &[f64; 2], end: &[f64; 2], color: Color, line_width: f64) {
-        let context = self.layers.context(PEN_LAYER);
+    pub fn draw_line(&mut self, begin: &[f64; 2], end: &[f64; 2], color: Color, line_width: f64) {
+        let context = self.texture.context();
 
         let [bx, by] = self.get_texture_position(begin);
         let [ex, ey] = self.get_texture_position(end);
@@ -147,10 +100,12 @@ impl Table {
         context.line_to(ex, ey);
         context.fill();
         context.stroke();
+
+        self.texture_is_changed = true;
     }
 
-    pub fn erace_line(&self, begin: &[f64; 2], end: &[f64; 2], line_width: f64) {
-        let context = self.layers.context(PEN_LAYER);
+    pub fn erace_line(&mut self, begin: &[f64; 2], end: &[f64; 2], line_width: f64) {
+        let context = self.texture.context();
 
         let [bx, by] = self.get_texture_position(begin);
         let [ex, ey] = self.get_texture_position(end);
@@ -168,10 +123,18 @@ impl Table {
         context
             .set_global_composite_operation("source-over")
             .unwrap();
+
+        self.texture_is_changed = true;
     }
 
-    pub fn draw_measure(&self, begin: &[f64; 2], end: &[f64; 2], color: Color, line_width: f64) {
-        let context = self.layers.context(MEASURE_LAYER);
+    pub fn draw_measure(
+        &mut self,
+        begin: &[f64; 2],
+        end: &[f64; 2],
+        color: Color,
+        line_width: f64,
+    ) {
+        let context = self.texture.context();
 
         let [bx, by] = self.get_texture_position(begin);
         let [ex, ey] = self.get_texture_position(end);
@@ -192,5 +155,7 @@ impl Table {
         context.arc(bx, by, radious, 0.0, 2.0 * std::f64::consts::PI);
         context.fill();
         context.stroke();
+
+        self.texture_is_changed = true;
     }
 }

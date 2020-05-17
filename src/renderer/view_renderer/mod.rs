@@ -44,8 +44,10 @@ impl ViewRenderer {
             web_sys::WebGlRenderingContext::COLOR_BUFFER_BIT
                 | web_sys::WebGlRenderingContext::DEPTH_BUFFER_BIT,
         );
+        gl.disable(web_sys::WebGlRenderingContext::DEPTH_TEST);
         self.table_renderer
-            .render(gl, camera, &vp_matrix, world.table());
+            .render(gl, camera, &vp_matrix, world.table_mut());
+        gl.enable(web_sys::WebGlRenderingContext::DEPTH_TEST);
         self.character_collection_renderer
             .render(gl, camera, &vp_matrix, world.characters_mut());
 

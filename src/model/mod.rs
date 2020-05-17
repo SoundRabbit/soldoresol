@@ -14,5 +14,4 @@ pub use color_system::ColorSystem;
 pub use table::Table;
 pub use tablemask::Tablemask;
 pub use texturelayer::TexstureLayer;
-pub use texturelayer::TexstureLayerCollection;
 pub use world::World;
