@@ -18,6 +18,7 @@ impl ViewRenderer {
             web_sys::WebGlRenderingContext::SRC_ALPHA,
             web_sys::WebGlRenderingContext::ONE_MINUS_SRC_ALPHA,
         );
+        gl.enable(web_sys::WebGlRenderingContext::DEPTH_TEST);
 
         let character_collection_renderer = CharacterCollectionRenderer::new(gl);
         let table_renderer = TableRenderer::new(gl);
@@ -44,10 +45,10 @@ impl ViewRenderer {
             web_sys::WebGlRenderingContext::COLOR_BUFFER_BIT
                 | web_sys::WebGlRenderingContext::DEPTH_BUFFER_BIT,
         );
-        gl.disable(web_sys::WebGlRenderingContext::DEPTH_TEST);
+        gl.depth_func(web_sys::WebGlRenderingContext::ALWAYS);
         self.table_renderer
             .render(gl, camera, &vp_matrix, world.table_mut());
-        gl.enable(web_sys::WebGlRenderingContext::DEPTH_TEST);
+        gl.depth_func(web_sys::WebGlRenderingContext::LEQUAL);
         self.character_collection_renderer
             .render(gl, camera, &vp_matrix, world.characters_mut());
 

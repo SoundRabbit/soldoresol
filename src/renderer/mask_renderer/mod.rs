@@ -4,7 +4,7 @@ mod table_renderer;
 use super::program::MaskProgram;
 use super::webgl::WebGlRenderingContext;
 use crate::model::{Camera, World};
-use character_collection_renderer::CharacterCollectionRenderer;
+pub use character_collection_renderer::CharacterCollectionRenderer;
 use table_renderer::TableRenderer;
 use wasm_bindgen::JsCast;
 

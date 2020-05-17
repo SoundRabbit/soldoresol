@@ -13,10 +13,10 @@ impl TableRenderer {
     pub fn new(gl: &WebGlRenderingContext) -> Self {
         let vertexis_buffer = gl.create_vbo_with_f32array(
             &[
-                [0.5, 0.0, 0.5],
-                [-0.5, 0.0, 0.5],
-                [0.5, 0.0, -0.5],
-                [-0.5, 0.0, -0.5],
+                [0.5, 0.5, 0.0],
+                [-0.5, 0.5, 0.0],
+                [0.5, -0.5, 0.0],
+                [-0.5, -0.5, 0.0],
             ]
             .concat(),
         );
@@ -42,11 +42,7 @@ impl TableRenderer {
             Some(&self.index_buffer),
         );
         let s = table.size();
-        let model_matrix: Array2<f64> = ModelMatrix::new()
-            .with_scale(&[s[0], 1.0, s[1]])
-            .with_x_axis_rotation(camera.x_axis_rotation())
-            .with_z_axis_rotation(camera.z_axis_rotation())
-            .into();
+        let model_matrix: Array2<f64> = ModelMatrix::new().with_scale(&[s[0], s[1], 1.0]).into();
         let mvp_matrix = model_matrix.dot(vp_matrix);
         gl.uniform_matrix4fv_with_f32_array(
             Some(&program.u_translate_location),
