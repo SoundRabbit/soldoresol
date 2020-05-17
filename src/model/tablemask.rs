@@ -10,9 +10,9 @@ pub struct Tablemask {
 impl Tablemask {
     pub fn new() -> Self {
         Self {
-            size: [1.0, 3.0],
+            size: [8.0, 8.0],
             position: [0.0, 0.0, 0.0],
-            background_color: Color::from(0),
+            background_color: Color::from([1.0, 0.0, 0.0, 0.5]),
         }
     }
 

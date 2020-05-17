@@ -1,14 +1,17 @@
 mod character_collection_renderer;
 mod table_renderer;
+mod tablemask_collection_renderer;
 
 use super::webgl::WebGlRenderingContext;
 use crate::model::{Camera, World};
 use character_collection_renderer::CharacterCollectionRenderer;
 use table_renderer::TableRenderer;
+use tablemask_collection_renderer::TablemaskCollectionRenderer;
 
 pub struct ViewRenderer {
     character_collection_renderer: CharacterCollectionRenderer,
     table_renderer: TableRenderer,
+    tablemask_collection_renderer: TablemaskCollectionRenderer,
 }
 
 impl ViewRenderer {
@@ -22,10 +25,12 @@ impl ViewRenderer {
 
         let character_collection_renderer = CharacterCollectionRenderer::new(gl);
         let table_renderer = TableRenderer::new(gl);
+        let tablemask_collection_renderer = TablemaskCollectionRenderer::new(gl);
 
         Self {
             character_collection_renderer,
             table_renderer,
+            tablemask_collection_renderer,
         }
     }
 
@@ -48,6 +53,8 @@ impl ViewRenderer {
         gl.depth_func(web_sys::WebGlRenderingContext::ALWAYS);
         self.table_renderer
             .render(gl, camera, &vp_matrix, world.table_mut());
+        self.tablemask_collection_renderer
+            .render(gl, camera, &vp_matrix, world.tablemasks());
         self.character_collection_renderer
             .render(gl, camera, &vp_matrix, world.characters_mut());
 

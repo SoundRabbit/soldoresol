@@ -43,12 +43,12 @@ impl World {
         self.characters.iter_mut()
     }
 
-    pub fn character(&self, character_id: u128) -> Option<&Character> {
-        self.characters.get(&character_id)
+    pub fn character(&self, character_id: &u128) -> Option<&Character> {
+        self.characters.get(character_id)
     }
 
-    pub fn character_mut(&mut self, character_id: u128) -> Option<&mut Character> {
-        self.characters.get_mut(&character_id)
+    pub fn character_mut(&mut self, character_id: &u128) -> Option<&mut Character> {
+        self.characters.get_mut(character_id)
     }
 
     pub fn add_character(&mut self, character: Character) -> u128 {

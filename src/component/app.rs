@@ -8,7 +8,7 @@ use super::checkbox::checkbox;
 use crate::model::Camera;
 use crate::model::Character;
 use crate::model::ColorSystem;
-use crate::model::Table;
+use crate::model::Tablemask;
 use crate::model::World;
 use crate::random_id;
 use crate::renderer::Renderer;
@@ -53,7 +53,7 @@ pub struct State {
     canvas_size: [f64; 2],
     table_state: TableState,
     contextmenu: Contextmenu,
-    focused_character_id: Option<u128>,
+    focused_object_id: Option<u128>,
     // form_state: FormState,
     debug__character_id: Option<u128>,
 }
@@ -75,6 +75,7 @@ pub enum Msg {
     //コンテキストメニューの制御
     OpenContextMenu([f64; 2]),
     AddChracaterWithMouseCoord([f64; 2]),
+    AddTablemaskWithMouseCoord([f64; 2]),
     CloneCharacterWithCharacterId(u128),
 
     // テーブル操作の制御
@@ -87,13 +88,14 @@ pub enum Msg {
     DrawLineWithMouseCoord([f64; 2]),
     EraceLineWithMouseCoord([f64; 2]),
     SetMeasureStartPointAndEndPointWithMouseCoord([f64; 2], [f64; 2]),
-    SetCharacterPositionWithMouseCoord(u128, [f64; 2]),
-    BindCharacterToTableGrid(u128),
+    SetObjectPositionWithMouseCoord(u128, [f64; 2]),
+    BindObjectToTableGrid(u128),
 
     // Worldに対する操作
     LoadCharacterImageFromFile(u128, web_sys::File),
     SetCharacterImage(u128, web_sys::HtmlImageElement),
     AddChracater(Character),
+    AddTablemask(Tablemask),
 
     //デバッグ用
     Debug_SetSelectingCharacterId(u128),
@@ -132,7 +134,7 @@ fn init() -> (State, Cmd<Msg, Sub>) {
         //     chat: chat::init(),
         //     handout: handout::init(),
         // },
-        focused_character_id: None,
+        focused_object_id: None,
         debug__character_id: None,
     };
     let task = Cmd::task(|handler| {
@@ -223,10 +225,6 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             contextmenu::open(&mut state.contextmenu.state, mouse_coord);
             Cmd::none()
         }
-        Msg::AddChracater(character) => {
-            state.world.add_character(character);
-            update(state, Msg::Render)
-        }
         Msg::AddChracaterWithMouseCoord(mouse_coord) => {
             let position = get_table_position(&state, &mouse_coord);
             let position = [position[0], position[1], 0.0];
@@ -237,8 +235,18 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             }
             update(state, Msg::AddChracater(character))
         }
+        Msg::AddTablemaskWithMouseCoord(mouse_coord) => {
+            let position = get_table_position(&state, &mouse_coord);
+            let position = [position[0], position[1], 0.0];
+            let mut tablemask = Tablemask::new();
+            tablemask.set_position(position);
+            if state.world.table().is_bind_to_grid() {
+                tablemask.bind_to_grid();
+            }
+            update(state, Msg::AddTablemask(tablemask))
+        }
         Msg::CloneCharacterWithCharacterId(character_id) => {
-            if let Some(character) = state.world.character(character_id) {
+            if let Some(character) = state.world.character(&character_id) {
                 let mut character = character.clone();
                 let p = character.position();
                 character.set_position([p[0] + 1.0, p[1] + 1.0, p[2]]);
@@ -289,11 +297,13 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     mouse_coord[0] * dpr,
                     state.canvas_size[1] - mouse_coord[1] * dpr,
                 ]);
-                if let Some(character) = state.world.character_mut(focused_id) {
+                if let Some(character) = state.world.character_mut(&focused_id) {
                     character.set_is_focused(true);
-                    state.focused_character_id = Some(focused_id);
+                    state.focused_object_id = Some(focused_id);
+                } else if let Some(_) = state.world.tablemask(&focused_id) {
+                    state.focused_object_id = Some(focused_id);
                 } else {
-                    state.focused_character_id = None;
+                    state.focused_object_id = None;
                 }
             }
             Cmd::none()
@@ -388,24 +398,32 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             );
             update(state, Msg::SetCursorWithMouseCoord(mouse_coord))
         }
-        Msg::SetCharacterPositionWithMouseCoord(character_id, mouse_coord) => {
+        Msg::SetObjectPositionWithMouseCoord(object_id, mouse_coord) => {
             let movement = {
                 let a = get_table_position(&state, &state.table_state.last_mouse_coord);
                 let b = get_table_position(&state, &mouse_coord);
                 [b[0] - a[0], b[1] - a[1]]
             };
-            if let Some(character) = state.world.character_mut(character_id) {
+            if let Some(character) = state.world.character_mut(&object_id) {
                 let p = character.position();
                 let p = [p[0] + movement[0], p[1] + movement[1], p[2]];
                 character.set_position(p);
             }
+            if let Some(tablemask) = state.world.tablemask_mut(&object_id) {
+                let p = tablemask.position();
+                let p = [p[0] + movement[0], p[1] + movement[1], p[2]];
+                tablemask.set_position(p);
+            }
             state.table_state.last_mouse_coord = mouse_coord;
             update(state, Msg::Render)
         }
-        Msg::BindCharacterToTableGrid(character_id) => {
+        Msg::BindObjectToTableGrid(object_id) => {
             if state.world.table().is_bind_to_grid() {
-                if let Some(character) = state.world.character_mut(character_id) {
+                if let Some(character) = state.world.character_mut(&object_id) {
                     character.bind_to_grid();
+                }
+                if let Some(tablemask) = state.world.tablemask_mut(&object_id) {
+                    tablemask.bind_to_grid();
                 }
             }
             update(state, Msg::Render)
@@ -443,13 +461,21 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             on_load.forget();
         }),
         Msg::SetCharacterImage(character_id, image) => {
-            if let Some(character) = state.world.character_mut(character_id) {
+            if let Some(character) = state.world.character_mut(&character_id) {
                 character.set_image(image);
                 character.stretch_height();
                 update(state, Msg::Render)
             } else {
                 Cmd::none()
             }
+        }
+        Msg::AddChracater(character) => {
+            state.world.add_character(character);
+            update(state, Msg::Render)
+        }
+        Msg::AddTablemask(tablemask) => {
+            state.world.add_tablemask(tablemask);
+            update(state, Msg::Render)
         }
 
         //デバッグ用
@@ -465,20 +491,20 @@ fn render(state: &State) -> Html<Msg> {
         Attributes::new().class("app").id("app"),
         Events::new(),
         vec![
-            render_canvas(&state.table_state, &state.focused_character_id),
+            render_canvas(&state.table_state, &state.focused_object_id),
             render_debug_modeless(&state),
-            render_context_menu(&state.contextmenu, &state.focused_character_id),
+            render_context_menu(&state.contextmenu, &state.focused_object_id),
         ],
     )
 }
 
-fn render_canvas(table_state: &TableState, focused_character_id: &Option<u128>) -> Html<Msg> {
+fn render_canvas(table_state: &TableState, focused_object_id: &Option<u128>) -> Html<Msg> {
     Html::canvas(
         Attributes::new().class("app__table").id("table"),
         Events::new()
             .on_mousemove({
                 let selecting_tool = table_state.selecting_tool.clone();
-                let focused_character_id = focused_character_id.clone();
+                let focused_object_id = focused_object_id.clone();
                 move |e| {
                     let mouse_coord = [e.x() as f64, e.y() as f64];
                     if e.buttons() & 1 == 0 {
@@ -487,11 +513,10 @@ fn render_canvas(table_state: &TableState, focused_character_id: &Option<u128>) 
                         Msg::SetCameraRotationWithMouseCoord(mouse_coord)
                     } else {
                         match selecting_tool {
-                            TableTool::Selecter => match focused_character_id {
-                                Some(character_id) => Msg::SetCharacterPositionWithMouseCoord(
-                                    character_id,
-                                    mouse_coord,
-                                ),
+                            TableTool::Selecter => match focused_object_id {
+                                Some(character_id) => {
+                                    Msg::SetObjectPositionWithMouseCoord(character_id, mouse_coord)
+                                }
                                 None => Msg::SetCameraMovementWithMouseCoord(mouse_coord),
                             },
                             TableTool::Pen => Msg::DrawLineWithMouseCoord(mouse_coord),
@@ -526,10 +551,10 @@ fn render_canvas(table_state: &TableState, focused_character_id: &Option<u128>) 
             })
             .on_mouseup({
                 let selecting_tool = table_state.selecting_tool.clone();
-                let focused_character_id = focused_character_id.clone();
+                let focused_object_id = focused_object_id.clone();
                 move |_| match selecting_tool {
-                    TableTool::Selecter => match focused_character_id {
-                        Some(character_id) => Msg::BindCharacterToTableGrid(character_id),
+                    TableTool::Selecter => match focused_object_id {
+                        Some(object_id) => Msg::BindObjectToTableGrid(object_id),
                         None => Msg::NoOp,
                     },
                     TableTool::Measure(_) => Msg::SetSelectingTableTool(TableTool::Measure(None)),
@@ -546,11 +571,8 @@ fn render_canvas(table_state: &TableState, focused_character_id: &Option<u128>) 
     )
 }
 
-fn render_context_menu(
-    contextmenu: &Contextmenu,
-    focused_character_id: &Option<u128>,
-) -> Html<Msg> {
-    if let Some(character_id) = focused_character_id {
+fn render_context_menu(contextmenu: &Contextmenu, focused_object_id: &Option<u128>) -> Html<Msg> {
+    if let Some(character_id) = focused_object_id {
         render_context_menu_character(contextmenu, *character_id)
     } else {
         render_context_menu_default(contextmenu)
@@ -564,14 +586,24 @@ fn render_context_menu_default(contextmenu: &Contextmenu) -> Html<Msg> {
         || Box::new(|| Box::new(|msg| Msg::TransportContextMenuMsg(msg))),
         Attributes::new(),
         Events::new(),
-        vec![btn::contextmenu_text(
-            Attributes::new(),
-            Events::new().on_click({
-                let position = contextmenu.position.clone();
-                move |_| Msg::AddChracaterWithMouseCoord(position)
-            }),
-            "キャラクターを作成",
-        )],
+        vec![
+            btn::contextmenu_text(
+                Attributes::new(),
+                Events::new().on_click({
+                    let position = contextmenu.position.clone();
+                    move |_| Msg::AddChracaterWithMouseCoord(position)
+                }),
+                "キャラクターを作成",
+            ),
+            btn::contextmenu_text(
+                Attributes::new(),
+                Events::new().on_click({
+                    let position = contextmenu.position.clone();
+                    move |_| Msg::AddTablemaskWithMouseCoord(position)
+                }),
+                "マップマスクを作成",
+            ),
+        ],
     )
 }
 
