@@ -1,9 +1,10 @@
-use super::super::program::CharacterProgram;
 use super::super::program::MaskProgram;
+use super::super::program::TableTextureProgram;
 use super::super::webgl::{WebGlF32Vbo, WebGlI16Ibo, WebGlRenderingContext};
 use super::super::ModelMatrix;
 use crate::model::{Camera, Color, Table};
 use ndarray::Array2;
+use wasm_bindgen::prelude::*;
 
 pub struct TableRenderer {
     grid_vertexis_buffer: WebGlF32Vbo,
@@ -11,9 +12,10 @@ pub struct TableRenderer {
     polygon_vertexis_buffer: WebGlF32Vbo,
     polygon_index_buffer: WebGlI16Ibo,
     polygon_texture_coord_buffer: WebGlF32Vbo,
-    polygon_texture_buffer: web_sys::WebGlTexture,
+    polygon_texture_buffer_0: web_sys::WebGlTexture,
+    polygon_texture_buffer_1: web_sys::WebGlTexture,
     mask_program: MaskProgram,
-    character_program: CharacterProgram,
+    table_texture_program: TableTextureProgram,
 }
 
 impl TableRenderer {
@@ -33,11 +35,38 @@ impl TableRenderer {
         let polygon_texture_coord_buffer =
             gl.create_vbo_with_f32array(&[[1.0, 1.0], [0.0, 1.0], [1.0, 0.0], [0.0, 0.0]].concat());
         let polygon_index_buffer = gl.create_ibo_with_i16array(&[0, 1, 2, 3, 2, 1]);
-        let polygon_texture_buffer = gl.create_texture().unwrap();
+        let polygon_texture_buffer_0 = gl.create_texture().unwrap();
+        let polygon_texture_buffer_1 = gl.create_texture().unwrap();
 
         gl.bind_texture(
             web_sys::WebGlRenderingContext::TEXTURE_2D,
-            Some(&polygon_texture_buffer),
+            Some(&polygon_texture_buffer_0),
+        );
+        gl.pixel_storei(web_sys::WebGlRenderingContext::PACK_ALIGNMENT, 1);
+        gl.tex_parameteri(
+            web_sys::WebGlRenderingContext::TEXTURE_2D,
+            web_sys::WebGlRenderingContext::TEXTURE_MIN_FILTER,
+            web_sys::WebGlRenderingContext::NEAREST as i32,
+        );
+        gl.tex_parameteri(
+            web_sys::WebGlRenderingContext::TEXTURE_2D,
+            web_sys::WebGlRenderingContext::TEXTURE_MAG_FILTER,
+            web_sys::WebGlRenderingContext::NEAREST as i32,
+        );
+        gl.tex_parameteri(
+            web_sys::WebGlRenderingContext::TEXTURE_2D,
+            web_sys::WebGlRenderingContext::TEXTURE_WRAP_S,
+            web_sys::WebGlRenderingContext::CLAMP_TO_EDGE as i32,
+        );
+        gl.tex_parameteri(
+            web_sys::WebGlRenderingContext::TEXTURE_2D,
+            web_sys::WebGlRenderingContext::TEXTURE_WRAP_T,
+            web_sys::WebGlRenderingContext::CLAMP_TO_EDGE as i32,
+        );
+
+        gl.bind_texture(
+            web_sys::WebGlRenderingContext::TEXTURE_2D,
+            Some(&polygon_texture_buffer_1),
         );
         gl.pixel_storei(web_sys::WebGlRenderingContext::PACK_ALIGNMENT, 1);
         gl.tex_parameteri(
@@ -62,16 +91,17 @@ impl TableRenderer {
         );
 
         let mask_program = MaskProgram::new(gl);
-        let character_program = CharacterProgram::new(gl);
+        let table_texture_program = TableTextureProgram::new(gl);
         Self {
             grid_vertexis_buffer,
             grid_index_buffer,
             polygon_vertexis_buffer,
             polygon_texture_coord_buffer,
             polygon_index_buffer,
-            polygon_texture_buffer,
+            polygon_texture_buffer_0,
+            polygon_texture_buffer_1,
             mask_program,
-            character_program,
+            table_texture_program,
         }
     }
 
@@ -85,31 +115,32 @@ impl TableRenderer {
         let [height, width] = table.size();
         let (height, width) = (*height, *width);
 
-        self.character_program.use_program(gl);
+        self.table_texture_program.use_program(gl);
 
         gl.enable(web_sys::WebGlRenderingContext::CULL_FACE);
         gl.set_attribute(
             &self.polygon_vertexis_buffer,
-            &self.character_program.a_vertex_location,
+            &self.table_texture_program.a_vertex_location,
             3,
             0,
         );
         gl.set_attribute(
             &self.polygon_texture_coord_buffer,
-            &self.character_program.a_texture_coord_location,
+            &self.table_texture_program.a_texture_coord_location,
             2,
             0,
         );
-        gl.uniform1i(Some(&self.character_program.u_texture_location), 0);
         gl.bind_buffer(
             web_sys::WebGlRenderingContext::ELEMENT_ARRAY_BUFFER,
             Some(&self.polygon_index_buffer),
         );
+
+        gl.uniform1i(Some(&self.table_texture_program.u_texture_0_location), 0);
         gl.bind_texture(
             web_sys::WebGlRenderingContext::TEXTURE_2D,
-            Some(&self.polygon_texture_buffer),
+            Some(&self.polygon_texture_buffer_0),
         );
-        if let Some(texture) = table.texture_element() {
+        if let Some(texture) = table.drawing_texture_element() {
             gl.tex_image_2d_with_u32_and_u32_and_canvas(
                 web_sys::WebGlRenderingContext::TEXTURE_2D,
                 0,
@@ -121,11 +152,30 @@ impl TableRenderer {
             .unwrap();
         }
 
+        gl.active_texture(web_sys::WebGlRenderingContext::TEXTURE1);
+        gl.uniform1i(Some(&self.table_texture_program.u_texture_1_location), 1);
+        gl.bind_texture(
+            web_sys::WebGlRenderingContext::TEXTURE_2D,
+            Some(&self.polygon_texture_buffer_1),
+        );
+        if let Some(texture) = table.measure_texture_element() {
+            gl.tex_image_2d_with_u32_and_u32_and_canvas(
+                web_sys::WebGlRenderingContext::TEXTURE_2D,
+                0,
+                web_sys::WebGlRenderingContext::RGBA as i32,
+                web_sys::WebGlRenderingContext::RGBA,
+                web_sys::WebGlRenderingContext::UNSIGNED_BYTE,
+                texture,
+            )
+            .unwrap();
+        }
+        gl.active_texture(web_sys::WebGlRenderingContext::TEXTURE0);
+
         let model_matrix: Array2<f64> = ModelMatrix::new().with_scale(&[width, height, 1.0]).into();
         let mvp_matrix = model_matrix.dot(vp_matrix);
 
         gl.uniform_matrix4fv_with_f32_array(
-            Some(&self.character_program.u_translate_location),
+            Some(&self.table_texture_program.u_translate_location),
             false,
             &[
                 mvp_matrix.row(0).to_vec(),
@@ -139,7 +189,7 @@ impl TableRenderer {
             .collect::<Vec<f32>>(),
         );
         gl.uniform4fv_with_f32_array(
-            Some(&self.character_program.u_bg_color_location),
+            Some(&self.table_texture_program.u_bg_color_location),
             &Color::from([255, 255, 255, 0]).to_f32array(),
         );
         gl.draw_elements_with_i32(

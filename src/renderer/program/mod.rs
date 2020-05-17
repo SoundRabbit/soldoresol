@@ -1,10 +1,12 @@
 mod character_program;
 mod mask_program;
+mod table_texture_program;
 
 use super::webgl;
 use super::WebGlRenderingContext;
 pub use character_program::CharacterProgram;
 pub use mask_program::MaskProgram;
+pub use table_texture_program::TableTextureProgram;
 
 fn compile_shader(
     context: &web_sys::WebGlRenderingContext,

@@ -12,8 +12,10 @@ pub struct Table {
     size: [f64; 2],
     pixel_ratio: f64,
     is_bind_to_grid: bool,
-    texture: TexstureLayer,
-    texture_is_changed: bool,
+    drawing_texture: TexstureLayer,
+    drawing_texture_is_changed: bool,
+    measure_texture: TexstureLayer,
+    measure_texture_is_changed: bool,
 }
 
 impl Table {
@@ -24,8 +26,10 @@ impl Table {
             size,
             pixel_ratio,
             is_bind_to_grid: false,
-            texture: TexstureLayer::new(&[texture_width, texture_height]),
-            texture_is_changed: true,
+            drawing_texture: TexstureLayer::new(&[texture_width, texture_height]),
+            drawing_texture_is_changed: true,
+            measure_texture: TexstureLayer::new(&[texture_width, texture_height]),
+            measure_texture_is_changed: true,
         }
     }
 
@@ -45,16 +49,25 @@ impl Table {
         self.is_bind_to_grid
     }
 
-    pub fn texture_element(&self) -> Option<&web_sys::HtmlCanvasElement> {
-        if self.texture_is_changed {
-            Some(self.texture.element())
+    pub fn drawing_texture_element(&self) -> Option<&web_sys::HtmlCanvasElement> {
+        if self.drawing_texture_is_changed {
+            Some(self.drawing_texture.element())
+        } else {
+            None
+        }
+    }
+
+    pub fn measure_texture_element(&self) -> Option<&web_sys::HtmlCanvasElement> {
+        if self.measure_texture_is_changed {
+            Some(self.measure_texture.element())
         } else {
             None
         }
     }
 
     pub fn rendered(&mut self) {
-        self.texture_is_changed = false;
+        self.drawing_texture_is_changed = false;
+        self.measure_texture_is_changed = false;
     }
 
     fn get_texture_position(&self, position: &[f64; 2]) -> [f64; 2] {
@@ -78,13 +91,13 @@ impl Table {
         outer_color: Color,
         inner_color: Color,
     ) {
-        let context = self.texture.context();
+        let context = self.drawing_texture.context();
 
         let [px, py] = self.get_texture_position(position);
     }
 
     pub fn draw_line(&mut self, begin: &[f64; 2], end: &[f64; 2], color: Color, line_width: f64) {
-        let context = self.texture.context();
+        let context = self.drawing_texture.context();
 
         let [bx, by] = self.get_texture_position(begin);
         let [ex, ey] = self.get_texture_position(end);
@@ -101,11 +114,11 @@ impl Table {
         context.fill();
         context.stroke();
 
-        self.texture_is_changed = true;
+        self.drawing_texture_is_changed = true;
     }
 
     pub fn erace_line(&mut self, begin: &[f64; 2], end: &[f64; 2], line_width: f64) {
-        let context = self.texture.context();
+        let context = self.drawing_texture.context();
 
         let [bx, by] = self.get_texture_position(begin);
         let [ex, ey] = self.get_texture_position(end);
@@ -124,7 +137,7 @@ impl Table {
             .set_global_composite_operation("source-over")
             .unwrap();
 
-        self.texture_is_changed = true;
+        self.drawing_texture_is_changed = true;
     }
 
     pub fn draw_measure(
@@ -134,7 +147,7 @@ impl Table {
         color: Color,
         line_width: f64,
     ) {
-        let context = self.texture.context();
+        let context = self.measure_texture.context();
 
         let [bx, by] = self.get_texture_position(begin);
         let [ex, ey] = self.get_texture_position(end);
@@ -156,6 +169,6 @@ impl Table {
         context.fill();
         context.stroke();
 
-        self.texture_is_changed = true;
+        self.measure_texture_is_changed = true;
     }
 }

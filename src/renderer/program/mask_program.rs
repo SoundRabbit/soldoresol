@@ -29,23 +29,19 @@ pub struct MaskProgram {
 
 impl MaskProgram {
     pub fn new(gl: &WebGlRenderingContext) -> Self {
-        web_sys::console::log_1(&JsValue::from("A"));
         let v_shader = super::compile_shader(
             gl,
             VERTEX_SHADER,
             web_sys::WebGlRenderingContext::VERTEX_SHADER,
         )
         .unwrap();
-        web_sys::console::log_1(&JsValue::from("B"));
         let f_shader = super::compile_shader(
             gl,
             FRAGMENT_SHADER,
             web_sys::WebGlRenderingContext::FRAGMENT_SHADER,
         )
         .unwrap();
-        web_sys::console::log_1(&JsValue::from("C"));
         let program = super::link_program(gl, &v_shader, &f_shader).unwrap();
-        web_sys::console::log_1(&JsValue::from("D"));
         let a_vertex_location =
             WebGlAttributeLocation(gl.get_attrib_location(&program, "a_vertex") as u32);
         let u_translate_location = gl.get_uniform_location(&program, "u_translate").unwrap();
