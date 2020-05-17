@@ -20,7 +20,7 @@ pub struct CharacterCollectionRenderer {
     vertexis_buffer: WebGlF32Vbo,
     texture_coord_buffer: WebGlF32Vbo,
     index_buffer: WebGlI16Ibo,
-    texture_buffer: HashMap<u32, web_sys::WebGlTexture>,
+    texture_buffer: HashMap<u128, web_sys::WebGlTexture>,
     character_program: CharacterProgram,
 }
 
@@ -54,7 +54,7 @@ impl CharacterCollectionRenderer {
         gl: &WebGlRenderingContext,
         camera: &Camera,
         vp_matrix: &Array2<f64>,
-        characters: hash_map::IterMut<u32, Character>,
+        characters: hash_map::IterMut<u128, Character>,
     ) {
         self.character_program.use_program(gl);
         gl.set_attribute(
@@ -75,7 +75,7 @@ impl CharacterCollectionRenderer {
             Some(&self.index_buffer),
         );
 
-        let mut z_index: BTreeMap<Total<f64>, Vec<(Array2<f64>, u32, &mut Character)>> =
+        let mut z_index: BTreeMap<Total<f64>, Vec<(Array2<f64>, u128, &mut Character)>> =
             BTreeMap::new();
         for (character_id, character) in characters {
             let s = character.size();

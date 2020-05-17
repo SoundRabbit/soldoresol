@@ -14,6 +14,7 @@ pub struct MaskRenderer {
     mask_program: MaskProgram,
     table_renderer: TableRenderer,
     character_collection_renderer: CharacterCollectionRenderer,
+    id_map: Vec<u128>,
 }
 
 impl MaskRenderer {
@@ -54,10 +55,11 @@ impl MaskRenderer {
             mask_program,
             table_renderer,
             character_collection_renderer,
+            id_map: Vec::new(),
         }
     }
 
-    pub fn table_object_id(&self, position: &[f64; 2]) -> u32 {
+    pub fn table_object_id(&self, position: &[f64; 2]) -> u128 {
         let mut pixel = [0, 0, 0, 0];
         self.gl
             .read_pixels_with_opt_u8_array(
@@ -70,7 +72,7 @@ impl MaskRenderer {
                 Some(&mut pixel),
             )
             .unwrap();
-        u32::from_be_bytes([pixel[3], pixel[0], pixel[1], pixel[2]])
+        self.id_map[u32::from_be_bytes([pixel[3], pixel[0], pixel[1], pixel[2]]) as usize]
     }
 
     pub fn render(&mut self, canvas_size: &[f64; 2], camera: &Camera, world: &mut World) {
@@ -88,6 +90,8 @@ impl MaskRenderer {
                 | web_sys::WebGlRenderingContext::DEPTH_BUFFER_BIT,
         );
 
+        self.id_map.clear();
+
         self.table_renderer.render(
             gl,
             &self.mask_program,
@@ -95,6 +99,7 @@ impl MaskRenderer {
             &vp_matrix,
             world.table(),
             world.table_id(),
+            &mut self.id_map,
         );
 
         self.character_collection_renderer.render(
@@ -103,6 +108,7 @@ impl MaskRenderer {
             camera,
             &vp_matrix,
             world.characters(),
+            &mut self.id_map,
         );
 
         gl.flush();

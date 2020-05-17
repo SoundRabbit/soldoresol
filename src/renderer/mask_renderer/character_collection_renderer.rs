@@ -45,7 +45,8 @@ impl CharacterCollectionRenderer {
         program: &MaskProgram,
         camera: &Camera,
         vp_matrix: &Array2<f64>,
-        characters: hash_map::Iter<u32, Character>,
+        characters: hash_map::Iter<u128, Character>,
+        id_map: &mut Vec<u128>,
     ) {
         gl.set_attribute(&self.vertexis_buffer, &program.a_vertex_location, 3, 0);
         gl.bind_buffer(
@@ -79,7 +80,7 @@ impl CharacterCollectionRenderer {
             );
             gl.uniform4fv_with_f32_array(
                 Some(&program.u_mask_color_location),
-                &Color::from(*character_id).to_f32array(),
+                &Color::from(id_map.len() as u32).to_f32array(),
             );
             gl.draw_elements_with_i32(
                 web_sys::WebGlRenderingContext::TRIANGLES,
@@ -87,6 +88,7 @@ impl CharacterCollectionRenderer {
                 web_sys::WebGlRenderingContext::UNSIGNED_SHORT,
                 0,
             );
+            id_map.push(*character_id);
         }
     }
 }

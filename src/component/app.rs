@@ -53,9 +53,9 @@ pub struct State {
     canvas_size: [f64; 2],
     table_state: TableState,
     contextmenu: Contextmenu,
-    focused_character_id: Option<u32>,
+    focused_character_id: Option<u128>,
     // form_state: FormState,
-    debug__character_id: Option<u32>,
+    debug__character_id: Option<u128>,
 }
 
 // enum FormMsg {
@@ -75,7 +75,7 @@ pub enum Msg {
     //コンテキストメニューの制御
     OpenContextMenu([f64; 2]),
     AddChracaterWithMouseCoord([f64; 2]),
-    CloneCharacterWithCharacterId(u32),
+    CloneCharacterWithCharacterId(u128),
 
     // テーブル操作の制御
     SetCameraRotationWithMouseCoord([f64; 2]),
@@ -87,16 +87,16 @@ pub enum Msg {
     DrawLineWithMouseCoord([f64; 2]),
     EraceLineWithMouseCoord([f64; 2]),
     SetMeasureStartPointAndEndPointWithMouseCoord([f64; 2], [f64; 2]),
-    SetCharacterPositionWithMouseCoord(u32, [f64; 2]),
-    BindCharacterToTableGrid(u32),
+    SetCharacterPositionWithMouseCoord(u128, [f64; 2]),
+    BindCharacterToTableGrid(u128),
 
     // Worldに対する操作
-    LoadCharacterImageFromFile(u32, web_sys::File),
-    SetCharacterImage(u32, web_sys::HtmlImageElement),
+    LoadCharacterImageFromFile(u128, web_sys::File),
+    SetCharacterImage(u128, web_sys::HtmlImageElement),
     AddChracater(Character),
 
     //デバッグ用
-    Debug_SetSelectingCharacterId(u32),
+    Debug_SetSelectingCharacterId(u128),
 }
 
 pub struct Sub;
@@ -472,7 +472,7 @@ fn render(state: &State) -> Html<Msg> {
     )
 }
 
-fn render_canvas(table_state: &TableState, focused_character_id: &Option<u32>) -> Html<Msg> {
+fn render_canvas(table_state: &TableState, focused_character_id: &Option<u128>) -> Html<Msg> {
     Html::canvas(
         Attributes::new().class("app__table").id("table"),
         Events::new()
@@ -546,7 +546,10 @@ fn render_canvas(table_state: &TableState, focused_character_id: &Option<u32>) -
     )
 }
 
-fn render_context_menu(contextmenu: &Contextmenu, focused_character_id: &Option<u32>) -> Html<Msg> {
+fn render_context_menu(
+    contextmenu: &Contextmenu,
+    focused_character_id: &Option<u128>,
+) -> Html<Msg> {
     if let Some(character_id) = focused_character_id {
         render_context_menu_character(contextmenu, *character_id)
     } else {
@@ -572,7 +575,7 @@ fn render_context_menu_default(contextmenu: &Contextmenu) -> Html<Msg> {
     )
 }
 
-fn render_context_menu_character(contextmenu: &Contextmenu, character_id: u32) -> Html<Msg> {
+fn render_context_menu_character(contextmenu: &Contextmenu, character_id: u128) -> Html<Msg> {
     contextmenu::render(
         false,
         &contextmenu.state,
@@ -633,7 +636,7 @@ fn render_debug_modeless(state: &State) -> Html<Msg> {
     )
 }
 
-fn render_debug_modeless_character(character_id: &Option<u32>) -> Html<Msg> {
+fn render_debug_modeless_character(character_id: &Option<u128>) -> Html<Msg> {
     if let Some(character_id) = character_id {
         Html::div(
             Attributes::new(),
