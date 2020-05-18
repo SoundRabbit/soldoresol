@@ -1,3 +1,4 @@
+use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen(raw_module = "../src/skyway.js")]
@@ -25,7 +26,7 @@ extern "C" {
     pub type MeshRoom;
 
     #[wasm_bindgen(method)]
-    pub fn send(this: &MeshRoom, data: &JsValue);
+    pub fn send(this: &MeshRoom, data: String);
 
     #[wasm_bindgen(method)]
     pub fn on(this: &MeshRoom, event: &str, listener: Option<&js_sys::Function>);
@@ -48,4 +49,19 @@ impl Room {
     pub fn new(payload: MeshRoom, id: String) -> Self {
         Self { id, payload }
     }
+
+    pub fn send(&self, msg: &Msg) {
+        if let Ok(data) = serde_json::to_string(msg) {
+            self.payload.send(data);
+        } else {
+            web_sys::console::log_1(&JsValue::from(
+                "some problems area occured in serializing message.",
+            ));
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub enum Msg {
+    DrawLineToTable([f64; 2], [f64; 2]),
 }

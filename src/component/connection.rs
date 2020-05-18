@@ -60,7 +60,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
 fn render(state: &State) -> Html<Msg> {
     Html::component(
-        app::new(state.room.as_ref().map(|room| Rc::clone(room))).subscribe(|sub| match sub {
+        app::new(state.room.as_ref().map(|r| Rc::clone(r))).subscribe(|sub| match sub {
             app::Sub::ConnectToRoom(room_id) => Msg::ConnectToRoom(room_id),
         }),
     )

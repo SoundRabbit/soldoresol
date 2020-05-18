@@ -12,6 +12,7 @@ use crate::model::Tablemask;
 use crate::model::World;
 use crate::random_id;
 use crate::renderer::Renderer;
+use crate::skyway;
 use crate::skyway::ReceiveData;
 use crate::skyway::Room;
 use kagura::prelude::*;
@@ -103,6 +104,7 @@ pub enum Msg {
     // 接続に関する操作
     ConnectToRoom,
     CreateRoom,
+    ReceiveMsg(skyway::Msg),
 
     //デバッグ用
     Debug_SetSelectingCharacterId(u128),
@@ -114,6 +116,8 @@ pub enum Sub {
 }
 
 pub fn new(room: Option<Rc<Room>>) -> Component<Msg, State, Sub> {
+    web_sys::console::log_1(&JsValue::from("create app"));
+
     let component = Component::new(
         init(room.as_ref().map(|room| Rc::clone(room))),
         update,
@@ -134,8 +138,13 @@ pub fn new(room: Option<Rc<Room>>) -> Component<Msg, State, Sub> {
             let room = Rc::clone(&room);
             move |mut handler| {
                 let a = Closure::wrap(Box::new({
-                    |receive_data: ReceiveData| {
-                        web_sys::console::log_1(&JsValue::from(&receive_data.data()));
+                    move |receive_data: ReceiveData| {
+                        web_sys::console::log_1(&JsValue::from("receive some data"));
+                        if let Ok(msg) = serde_json::from_str::<skyway::Msg>(&receive_data.data()) {
+                            handler(Msg::ReceiveMsg(msg));
+                        } else {
+                            web_sys::console::log_1(&JsValue::from("faild to deserialize message"));
+                        }
                     }
                 }) as Box<dyn FnMut(ReceiveData)>);
                 room.payload.on("data", Some(a.as_ref().unchecked_ref()));
@@ -407,6 +416,10 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 ColorSystem::gray_900(255),
                 0.5,
             );
+            send_message(
+                &state.room,
+                &skyway::Msg::DrawLineToTable(start_point, end_point),
+            );
             update(state, Msg::SetCursorWithMouseCoord(mouse_coord))
         }
         Msg::EraceLineWithMouseCoord(mouse_coord) => {
@@ -520,8 +533,21 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
         Msg::CreateRoom => {
             let room_id = random_id::hex(16);
+            web_sys::console::log_1(&JsValue::from("create a room"));
+
             Cmd::Sub(Sub::ConnectToRoom(room_id))
         }
+        Msg::ReceiveMsg(msg) => match msg {
+            skyway::Msg::DrawLineToTable(start_point, end_point) => {
+                state.world.table_mut().draw_line(
+                    &start_point,
+                    &end_point,
+                    ColorSystem::gray_900(255),
+                    0.5,
+                );
+                update(state, Msg::Render)
+            }
+        },
 
         //デバッグ用
         Msg::Debug_SetSelectingCharacterId(character_id) => {
@@ -532,6 +558,14 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.inputing_room_id = room_id;
             Cmd::none()
         }
+    }
+}
+
+fn send_message(room: &Option<Rc<Room>>, msg: &skyway::Msg) {
+    web_sys::console::log_1(&JsValue::from("send message"));
+    if let Some(room) = room {
+        room.send(msg);
+    } else {
     }
 }
 
