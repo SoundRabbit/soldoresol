@@ -97,6 +97,7 @@ pub enum Msg {
 
     // Worldに対する操作
     LoadCharacterImageFromFile(u128, web_sys::File),
+    LoadCharacterImageFromDataUrl(u128, String, bool),
     SetCharacterImage(u128, web_sys::HtmlImageElement),
     AddChracater(Character),
     AddTablemask(Tablemask),
@@ -403,6 +404,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
         Msg::SetIsBindToGrid(is_bind_to_grid) => {
             state.world.table_mut().set_is_bind_to_grid(is_bind_to_grid);
+            send_message(&state.room, &skyway::Msg::SetIsBindToGrid(is_bind_to_grid));
             Cmd::none()
         }
         Msg::DrawLineWithMouseCoord(mouse_coord) => {
@@ -455,11 +457,19 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             if let Some(character) = state.world.character_mut(&object_id) {
                 let p = character.position();
                 let p = [p[0] + movement[0], p[1] + movement[1], p[2]];
+                send_message(
+                    &state.room,
+                    &skyway::Msg::SetObjectPosition(object_id, p.clone()),
+                );
                 character.set_position(p);
             }
             if let Some(tablemask) = state.world.tablemask_mut(&object_id) {
                 let p = tablemask.position();
                 let p = [p[0] + movement[0], p[1] + movement[1], p[2]];
+                send_message(
+                    &state.room,
+                    &skyway::Msg::SetObjectPosition(object_id, p.clone()),
+                );
                 tablemask.set_position(p);
             }
             state.table_state.last_mouse_coord = mouse_coord;
@@ -469,9 +479,17 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             if state.world.table().is_bind_to_grid() {
                 if let Some(character) = state.world.character_mut(&object_id) {
                     character.bind_to_grid();
+                    send_message(
+                        &state.room,
+                        &skyway::Msg::SetObjectPosition(object_id, character.position().clone()),
+                    );
                 }
                 if let Some(tablemask) = state.world.tablemask_mut(&object_id) {
                     tablemask.bind_to_grid();
+                    send_message(
+                        &state.room,
+                        &skyway::Msg::SetObjectPosition(object_id, tablemask.position().clone()),
+                    );
                 }
             }
             update(state, Msg::Render)
@@ -484,21 +502,11 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             let on_load = Closure::once(Box::new(move || {
                 if let Ok(result) = file_reader_.result() {
                     if let Some(data_url) = result.as_string() {
-                        let image = web_sys::window()
-                            .unwrap()
-                            .document()
-                            .unwrap()
-                            .create_element("img")
-                            .unwrap()
-                            .dyn_into::<web_sys::HtmlImageElement>()
-                            .unwrap();
-                        let image_ = image.clone();
-                        let on_load = Closure::once(Box::new(move || {
-                            resolver(Msg::SetCharacterImage(character_id, image));
-                        }));
-                        image_.set_onload(Some(&on_load.as_ref().unchecked_ref()));
-                        image_.set_src(&data_url);
-                        on_load.forget();
+                        resolver(Msg::LoadCharacterImageFromDataUrl(
+                            character_id,
+                            data_url,
+                            true,
+                        ));
                         return;
                     }
                 }
@@ -507,6 +515,32 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             file_reader.set_onload(Some(&on_load.as_ref().unchecked_ref()));
             file_reader.read_as_data_url(&file).unwrap();
             on_load.forget();
+        }),
+        Msg::LoadCharacterImageFromDataUrl(character_id, data_url, t) => Cmd::task({
+            let room = state.room.clone();
+            move |resolver| {
+                let image = web_sys::window()
+                    .unwrap()
+                    .document()
+                    .unwrap()
+                    .create_element("img")
+                    .unwrap()
+                    .dyn_into::<web_sys::HtmlImageElement>()
+                    .unwrap();
+                let image_ = image.clone();
+                let on_load = Closure::once(Box::new(move || {
+                    resolver(Msg::SetCharacterImage(character_id, image));
+                }));
+                image_.set_onload(Some(&on_load.as_ref().unchecked_ref()));
+                image_.set_src(&data_url);
+                on_load.forget();
+                if t {
+                    send_message(
+                        &room,
+                        &skyway::Msg::SetCharacterImage(character_id, data_url),
+                    );
+                }
+            }
         }),
         Msg::SetCharacterImage(character_id, image) => {
             if let Some(character) = state.world.character_mut(&character_id) {
@@ -518,7 +552,13 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             }
         }
         Msg::AddChracater(character) => {
-            state.world.add_character(character);
+            let position = character.position().clone();
+            let character_id = state.world.add_character(character);
+
+            send_message(
+                &state.room,
+                &skyway::Msg::CreateCharacterToTable(character_id, position),
+            );
             update(state, Msg::Render)
         }
         Msg::AddTablemask(tablemask) => {
@@ -538,6 +578,12 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             Cmd::Sub(Sub::ConnectToRoom(room_id))
         }
         Msg::ReceiveMsg(msg) => match msg {
+            skyway::Msg::CreateCharacterToTable(character_id, position) => {
+                let mut character = Character::new();
+                character.set_position(position);
+                state.world.add_character_with_id(character_id, character);
+                update(state, Msg::Render)
+            }
             skyway::Msg::DrawLineToTable(start_point, end_point) => {
                 state.world.table_mut().draw_line(
                     &start_point,
@@ -545,6 +591,25 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     ColorSystem::gray_900(255),
                     0.5,
                 );
+                update(state, Msg::Render)
+            }
+            skyway::Msg::SetCharacterImage(character_id, data_url) => update(
+                state,
+                Msg::LoadCharacterImageFromDataUrl(character_id, data_url, false),
+            ),
+            skyway::Msg::SetObjectPosition(object_id, position) => {
+                if let Some(character) = state.world.character_mut(&object_id) {
+                    character.set_position(position);
+                    update(state, Msg::Render)
+                } else if let Some(tablemask) = state.world.tablemask_mut(&object_id) {
+                    tablemask.set_position(position);
+                    update(state, Msg::Render)
+                } else {
+                    Cmd::none()
+                }
+            }
+            skyway::Msg::SetIsBindToGrid(is_bind_to_grid) => {
+                state.world.table_mut().set_is_bind_to_grid(is_bind_to_grid);
                 update(state, Msg::Render)
             }
         },

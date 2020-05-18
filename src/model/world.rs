@@ -57,6 +57,10 @@ impl World {
         return character_id;
     }
 
+    pub fn add_character_with_id(&mut self, character_id: u128, character: Character) {
+        self.characters.insert(character_id, character);
+    }
+
     pub fn tablemasks(&self) -> hash_map::Iter<u128, Tablemask> {
         self.tablemasks.iter()
     }

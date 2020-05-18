@@ -64,4 +64,8 @@ impl Room {
 #[derive(Serialize, Deserialize)]
 pub enum Msg {
     DrawLineToTable([f64; 2], [f64; 2]),
+    CreateCharacterToTable(u128, [f64; 3]),
+    SetCharacterImage(u128, String),
+    SetObjectPosition(u128, [f64; 3]),
+    SetIsBindToGrid(bool),
 }

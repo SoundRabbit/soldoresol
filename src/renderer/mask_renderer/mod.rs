@@ -109,6 +109,8 @@ impl MaskRenderer {
 
         self.id_map.push(world.table_id());
 
+        gl.depth_func(web_sys::WebGlRenderingContext::ALWAYS);
+
         self.tablemask_collection_renderer.render(
             gl,
             &self.mask_program,

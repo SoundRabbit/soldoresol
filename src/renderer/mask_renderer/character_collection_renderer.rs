@@ -64,47 +64,18 @@ impl CharacterCollectionRenderer {
             Some(&self.index_buffer),
         );
 
+        let mut mvp_matrixies: Vec<(Array2<f64>, [f32; 4])> = vec![];
+
         for (character_id, character) in characters {
             let s = character.size();
             let p = character.position();
-            let model_matrix: Array2<f64> = ModelMatrix::new()
-                .with_scale(&[s[0], s[1], 1.0])
-                .with_x_axis_rotation(camera.x_axis_rotation())
-                .with_z_axis_rotation(camera.z_axis_rotation())
-                .with_movement(&p)
-                .into();
-            let mvp_matrix = model_matrix.dot(vp_matrix);
-            gl.uniform_matrix4fv_with_f32_array(
-                Some(&program.u_translate_location),
-                false,
-                &[
-                    mvp_matrix.row(0).to_vec(),
-                    mvp_matrix.row(1).to_vec(),
-                    mvp_matrix.row(2).to_vec(),
-                    mvp_matrix.row(3).to_vec(),
-                ]
-                .concat()
-                .into_iter()
-                .map(|a| a as f32)
-                .collect::<Vec<f32>>(),
-            );
-            gl.uniform4fv_with_f32_array(
-                Some(&program.u_mask_color_location),
-                &Color::from(id_map.len() as u32).to_f32array(),
-            );
-            gl.uniform1i(Some(&program.u_flag_round_location), 0);
-            gl.draw_elements_with_i32(
-                web_sys::WebGlRenderingContext::TRIANGLES,
-                6,
-                web_sys::WebGlRenderingContext::UNSIGNED_SHORT,
-                0,
-            );
-
             let model_matrix: Array2<f64> = ModelMatrix::new()
                 .with_scale(&[s[0], s[0], 1.0])
                 .with_movement(&[p[0], p[1] - 0.5, p[2]])
                 .into();
             let mvp_matrix = model_matrix.dot(vp_matrix);
+            let color = Color::from(id_map.len() as u32).to_f32array();
+
             gl.uniform_matrix4fv_with_f32_array(
                 Some(&program.u_translate_location),
                 false,
@@ -120,6 +91,8 @@ impl CharacterCollectionRenderer {
                 .collect::<Vec<f32>>(),
             );
             gl.uniform1i(Some(&program.u_flag_round_location), 1);
+            gl.uniform4fv_with_f32_array(Some(&program.u_mask_color_location), &color);
+
             gl.draw_elements_with_i32(
                 web_sys::WebGlRenderingContext::TRIANGLES,
                 6,
@@ -127,7 +100,44 @@ impl CharacterCollectionRenderer {
                 0,
             );
 
+            let model_matrix: Array2<f64> = ModelMatrix::new()
+                .with_scale(&[s[0], s[1], 1.0])
+                .with_x_axis_rotation(camera.x_axis_rotation())
+                .with_z_axis_rotation(camera.z_axis_rotation())
+                .with_movement(&p)
+                .into();
+            let mvp_matrix = model_matrix.dot(vp_matrix);
+
+            mvp_matrixies.push((mvp_matrix, color));
+
             id_map.push(*character_id);
+        }
+
+        gl.depth_func(web_sys::WebGlRenderingContext::LEQUAL);
+
+        for (mvp_matrix, color) in mvp_matrixies {
+            gl.uniform_matrix4fv_with_f32_array(
+                Some(&program.u_translate_location),
+                false,
+                &[
+                    mvp_matrix.row(0).to_vec(),
+                    mvp_matrix.row(1).to_vec(),
+                    mvp_matrix.row(2).to_vec(),
+                    mvp_matrix.row(3).to_vec(),
+                ]
+                .concat()
+                .into_iter()
+                .map(|a| a as f32)
+                .collect::<Vec<f32>>(),
+            );
+            gl.uniform1i(Some(&program.u_flag_round_location), 0);
+            gl.uniform4fv_with_f32_array(Some(&program.u_mask_color_location), &color);
+            gl.draw_elements_with_i32(
+                web_sys::WebGlRenderingContext::TRIANGLES,
+                6,
+                web_sys::WebGlRenderingContext::UNSIGNED_SHORT,
+                0,
+            );
         }
     }
 }
