@@ -56,6 +56,7 @@ pub struct State {
     table_state: TableState,
     contextmenu: Contextmenu,
     focused_object_id: Option<u128>,
+    inputing_room_id: String,
     // form_state: FormState,
     debug__character_id: Option<u128>,
 }
@@ -99,8 +100,13 @@ pub enum Msg {
     AddChracater(Character),
     AddTablemask(Tablemask),
 
+    // 接続に関する操作
+    ConnectToRoom,
+    CreateRoom,
+
     //デバッグ用
     Debug_SetSelectingCharacterId(u128),
+    Debug_InputRoomId(String),
 }
 
 pub enum Sub {
@@ -162,6 +168,7 @@ fn init(room: Option<Rc<Room>>) -> impl FnOnce() -> (State, Cmd<Msg, Sub>) {
             //     handout: handout::init(),
             // },
             focused_object_id: None,
+            inputing_room_id: "".into(),
             debug__character_id: None,
         };
         let task = Cmd::task(|handler| {
@@ -506,9 +513,23 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             update(state, Msg::Render)
         }
 
+        // 接続に関する操作
+        Msg::ConnectToRoom => {
+            let room_id = state.inputing_room_id.clone();
+            Cmd::Sub(Sub::ConnectToRoom(room_id))
+        }
+        Msg::CreateRoom => {
+            let room_id = random_id::hex(16);
+            Cmd::Sub(Sub::ConnectToRoom(room_id))
+        }
+
         //デバッグ用
         Msg::Debug_SetSelectingCharacterId(character_id) => {
             state.debug__character_id = Some(character_id);
+            Cmd::none()
+        }
+        Msg::Debug_InputRoomId(room_id) => {
+            state.inputing_room_id = room_id;
             Cmd::none()
         }
     }
@@ -691,9 +712,52 @@ fn render_debug_modeless(state: &State) -> Html<Msg> {
                 Events::new().on_click(|_| Msg::SetSelectingTableTool(TableTool::Measure(None))),
                 vec![Html::text("計測")],
             ),
+            render_debug_modeless_room(&state.room, &state.inputing_room_id),
             render_debug_modeless_character(&state.debug__character_id),
         ],
     )
+}
+
+fn render_debug_modeless_room(room: &Option<Rc<Room>>, inputing_room_id: &String) -> Html<Msg> {
+    if let Some(room) = room {
+        Html::div(
+            Attributes::new(),
+            Events::new(),
+            vec![
+                Html::span(
+                    Attributes::new(),
+                    Events::new(),
+                    vec![Html::text("ルームID：")],
+                ),
+                Html::span(Attributes::new(), Events::new(), vec![Html::text(&room.id)]),
+            ],
+        )
+    } else {
+        Html::div(
+            Attributes::new(),
+            Events::new(),
+            vec![
+                Html::input(
+                    Attributes::new()
+                        .value(inputing_room_id)
+                        .placeholder("接続先のルームID"),
+                    Events::new().on_input(|s| Msg::Debug_InputRoomId(s)),
+                    vec![],
+                ),
+                Html::button(
+                    Attributes::new(),
+                    Events::new().on_click(|_| Msg::ConnectToRoom),
+                    vec![Html::text("ルームに入る")],
+                ),
+                Html::span(Attributes::new(), Events::new(), vec![Html::text("or")]),
+                Html::button(
+                    Attributes::new(),
+                    Events::new().on_click(|_| Msg::CreateRoom),
+                    vec![Html::text("ルームを作成する")],
+                ),
+            ],
+        )
+    }
 }
 
 fn render_debug_modeless_character(character_id: &Option<u128>) -> Html<Msg> {

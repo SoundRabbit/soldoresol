@@ -51,6 +51,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             Cmd::none()
         }
         Msg::ConnectToRoom(room_id) => {
+            web_sys::console::log_1(&JsValue::from("ConnectToRoom"));
             state.room = Some(Rc::new(Room::new(state.peer.join_room(&room_id), room_id)));
             Cmd::none()
         }
