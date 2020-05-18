@@ -12,6 +12,8 @@ use crate::model::Tablemask;
 use crate::model::World;
 use crate::random_id;
 use crate::renderer::Renderer;
+use crate::skyway::ReceiveData;
+use crate::skyway::Room;
 use kagura::prelude::*;
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
@@ -46,7 +48,7 @@ struct Contextmenu {
 }
 
 pub struct State {
-    room_id: u128,
+    room: Option<Rc<Room>>,
     world: World,
     camera: Camera,
     renderer: Option<Renderer>,
@@ -101,10 +103,17 @@ pub enum Msg {
     Debug_SetSelectingCharacterId(u128),
 }
 
-pub struct Sub;
+pub enum Sub {
+    ConnectToRoom(String),
+}
 
-pub fn new() -> Component<Msg, State, Sub> {
-    Component::new(init, update, render).batch(|mut handler| {
+pub fn new(room: Option<Rc<Room>>) -> Component<Msg, State, Sub> {
+    let component = Component::new(
+        init(room.as_ref().map(|room| Rc::clone(room))),
+        update,
+        render,
+    )
+    .batch(|mut handler| {
         let a = Closure::wrap(Box::new(move || {
             handler(Msg::WindowResized);
         }) as Box<dyn FnMut()>);
@@ -112,35 +121,54 @@ pub fn new() -> Component<Msg, State, Sub> {
             .unwrap()
             .set_onresize(Some(a.as_ref().unchecked_ref()));
         a.forget();
-    })
+    });
+
+    if let Some(room) = room {
+        component.batch({
+            let room = Rc::clone(&room);
+            move |mut handler| {
+                let a = Closure::wrap(Box::new({
+                    |receive_data: ReceiveData| {
+                        web_sys::console::log_1(&JsValue::from(&receive_data.data()));
+                    }
+                }) as Box<dyn FnMut(ReceiveData)>);
+                room.payload.on("data", Some(a.as_ref().unchecked_ref()));
+                a.forget();
+            }
+        })
+    } else {
+        component
+    }
 }
 
-fn init() -> (State, Cmd<Msg, Sub>) {
-    let state = State {
-        room_id: random_id::u128val(),
-        world: World::new([20.0, 20.0]),
-        camera: Camera::new(),
-        renderer: None,
-        canvas_size: [0.0, 0.0],
-        table_state: TableState {
-            selecting_tool: TableTool::Pen,
-            last_mouse_coord: [0.0, 0.0],
-        },
-        contextmenu: Contextmenu {
-            state: contextmenu::init(),
-            position: [0.0, 0.0],
-        },
-        // form_state: FormState {
-        //     chat: chat::init(),
-        //     handout: handout::init(),
-        // },
-        focused_object_id: None,
-        debug__character_id: None,
-    };
-    let task = Cmd::task(|handler| {
-        handler(Msg::SetTableContext);
-    });
-    (state, task)
+fn init(room: Option<Rc<Room>>) -> impl FnOnce() -> (State, Cmd<Msg, Sub>) {
+    || {
+        let state = State {
+            room: room,
+            world: World::new([20.0, 20.0]),
+            camera: Camera::new(),
+            renderer: None,
+            canvas_size: [0.0, 0.0],
+            table_state: TableState {
+                selecting_tool: TableTool::Pen,
+                last_mouse_coord: [0.0, 0.0],
+            },
+            contextmenu: Contextmenu {
+                state: contextmenu::init(),
+                position: [0.0, 0.0],
+            },
+            // form_state: FormState {
+            //     chat: chat::init(),
+            //     handout: handout::init(),
+            // },
+            focused_object_id: None,
+            debug__character_id: None,
+        };
+        let task = Cmd::task(|handler| {
+            handler(Msg::SetTableContext);
+        });
+        (state, task)
+    }
 }
 
 fn get_table_canvas_element() -> web_sys::HtmlCanvasElement {

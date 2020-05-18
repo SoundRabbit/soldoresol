@@ -14,8 +14,9 @@ mod component;
 mod model;
 mod random_id;
 mod renderer;
+mod skyway;
 
 #[wasm_bindgen(start)]
 pub fn main() {
-    kagura::run(component::app::new(), "app");
+    kagura::run(component::connection::new(), "app");
 }
