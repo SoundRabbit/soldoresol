@@ -46,7 +46,7 @@ struct Contextmenu {
 }
 
 pub struct State {
-    room_name: String,
+    room_id: u128,
     world: World,
     camera: Camera,
     renderer: Option<Renderer>,
@@ -117,7 +117,7 @@ pub fn new() -> Component<Msg, State, Sub> {
 
 fn init() -> (State, Cmd<Msg, Sub>) {
     let state = State {
-        room_name: String::from("無名の部屋@") + &random_id::hex(16),
+        room_id: random_id::u128val(),
         world: World::new([20.0, 20.0]),
         camera: Camera::new(),
         renderer: None,
