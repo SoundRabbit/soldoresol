@@ -147,7 +147,7 @@ impl Table {
         end: &[f64; 2],
         color: Color,
         line_width: f64,
-    ) {
+    ) -> f64 {
         let context = self.measure_texture.context();
 
         let [bx, by] = self.get_texture_position(begin);
@@ -171,6 +171,8 @@ impl Table {
         context.stroke();
 
         self.measure_texture_is_changed = true;
+
+        radious / self.pixel_ratio
     }
 
     pub fn clear_measure(&mut self) {

@@ -67,6 +67,7 @@ impl TableTool {
 
 struct TableState {
     selecting_tool: TableTool,
+    measure_length: Option<f64>,
     last_mouse_coord: [f64; 2],
 }
 
@@ -178,6 +179,7 @@ fn init(room: Rc<Room>) -> impl FnOnce() -> (State, Cmd<Msg, Sub>) {
             canvas_size: [0.0, 0.0],
             table_state: TableState {
                 selecting_tool: TableTool::Pen,
+                measure_length: None,
                 last_mouse_coord: [0.0, 0.0],
             },
             contextmenu: Contextmenu {
@@ -406,6 +408,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         Msg::SetSelectingTableTool(table_tool) => {
             match &table_tool {
                 TableTool::Measure(Option::None) => {
+                    state.table_state.measure_length = None;
                     state.world.table_mut().clear_measure();
                 }
                 _ => {}
@@ -452,12 +455,13 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             let start_point = [start_point[0], start_point[1]];
             let end_point = get_table_position(&state, &mouse_coord);
             let end_point = [end_point[0], end_point[1]];
-            state.world.table_mut().draw_measure(
+            let measure_length = state.world.table_mut().draw_measure(
                 &start_point,
                 &end_point,
                 ColorSystem::red_500(255),
                 0.2,
             );
+            state.table_state.measure_length = Some(measure_length);
             update(state, Msg::SetCursorWithMouseCoord(mouse_coord))
         }
         Msg::SetObjectPositionWithMouseCoord(object_id, mouse_coord) => {
@@ -628,7 +632,29 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
 fn render(state: &State) -> Html<Msg> {
     Html::div(
-        Attributes::new().class("app").id("app"),
+        Attributes::new()
+            .id("app")
+            .class("fullscreen")
+            .style("display", "grid")
+            .style("grid-template-rows", "max-content 1fr"),
+        Events::new(),
+        vec![
+            render_header_menu(
+                &state.room.id,
+                &state.table_state.selecting_tool,
+                state.world.table().is_bind_to_grid(),
+                state.is_2d_mode,
+            ),
+            render_canvas_container(&state),
+        ],
+    )
+}
+
+fn render_canvas_container(state: &State) -> Html<Msg> {
+    Html::div(
+        Attributes::new()
+            .class("cover")
+            .style("position", "relative"),
         Events::new(),
         vec![
             render_canvas(
@@ -636,13 +662,8 @@ fn render(state: &State) -> Html<Msg> {
                 &state.focused_object_id,
                 state.is_2d_mode,
             ),
+            render_measure_length(&state.table_state.measure_length),
             render_hint(),
-            render_header_menu(
-                &state.room.id,
-                &state.table_state.selecting_tool,
-                state.world.table().is_bind_to_grid(),
-                state.is_2d_mode,
-            ),
         ],
     )
 }
@@ -653,13 +674,13 @@ fn render_canvas(
     is_2d_mode: bool,
 ) -> Html<Msg> {
     Html::canvas(
-        Attributes::new().class("fullscreen").id("table"),
+        Attributes::new().id("table").class("cover"),
         Events::new()
             .on_mousemove({
                 let selecting_tool = table_state.selecting_tool.clone();
                 let focused_object_id = focused_object_id.clone();
                 move |e| {
-                    let mouse_coord = [e.x() as f64, e.y() as f64];
+                    let mouse_coord = [e.offset_x() as f64, e.offset_y() as f64];
                     if e.buttons() & 1 == 0 {
                         Msg::SetCursorWithMouseCoord(mouse_coord)
                     } else if (e.alt_key() || e.ctrl_key()) && !is_2d_mode {
@@ -696,7 +717,7 @@ fn render_canvas(
                 let selecting_tool = table_state.selecting_tool.clone();
                 move |e| match selecting_tool {
                     TableTool::Measure(_) => {
-                        let mouse_coord = [e.x() as f64, e.y() as f64];
+                        let mouse_coord = [e.offset_x() as f64, e.offset_y() as f64];
                         Msg::SetSelectingTableTool(TableTool::Measure(Some(mouse_coord)))
                     }
                     _ => Msg::NoOp,
@@ -715,12 +736,12 @@ fn render_canvas(
                 }
             })
             .on_contextmenu(|e| {
-                let mouse_coord = [e.x() as f64, e.y() as f64];
+                let mouse_coord = [e.screen_x() as f64, e.screen_y() as f64];
                 e.prevent_default();
                 e.stop_propagation();
                 Msg::OpenContextMenu(mouse_coord)
             }),
-        vec![],
+        vec![render_hint()],
     )
 }
 
@@ -886,12 +907,7 @@ fn render_header_menu(
     is_2d_mode: bool,
 ) -> Html<Msg> {
     Html::div(
-        Attributes::new()
-            .class("panel grid")
-            .style("position", "fixed")
-            .style("top", "0")
-            .style("left", "0")
-            .style("width", "100vw"),
+        Attributes::new().class("panel grid"),
         Events::new(),
         vec![
             Html::div(
@@ -1005,10 +1021,25 @@ fn render_hint() -> Html<Msg> {
     Html::div(
         Attributes::new()
             .class("text-secondary")
-            .style("position", "fixed")
+            .style("position", "absolute")
             .style("bottom", "5em")
             .style("right", "5em"),
         Events::new(),
         vec![Html::text("Ctrl + ドラッグで視界を回転")],
     )
+}
+
+fn render_measure_length(measure_length: &Option<f64>) -> Html<Msg> {
+    if let Some(measure_length) = measure_length {
+        Html::div(
+            Attributes::new()
+                .style("position", "absolute")
+                .style("top", "5em")
+                .style("right", "5em"),
+            Events::new(),
+            vec![Html::text(format!("計測結果：{:.1}", measure_length))],
+        )
+    } else {
+        Html::none()
+    }
 }
