@@ -84,6 +84,7 @@ pub struct State {
     table_state: TableState,
     contextmenu: Contextmenu,
     focused_object_id: Option<u128>,
+    is_2d_mode: bool,
     // form_state: FormState,
     debug__character_id: Option<u128>,
 }
@@ -120,6 +121,7 @@ pub enum Msg {
     SetMeasureStartPointAndEndPointWithMouseCoord([f64; 2], [f64; 2]),
     SetObjectPositionWithMouseCoord(u128, [f64; 2]),
     BindObjectToTableGrid(u128),
+    SetIs2dMode(bool),
 
     // Worldに対する操作
     LoadCharacterImageFromFile(u128, web_sys::File),
@@ -186,6 +188,7 @@ fn init(room: Rc<Room>) -> impl FnOnce() -> (State, Cmd<Msg, Sub>) {
             //     chat: chat::init(),
             //     handout: handout::init(),
             // },
+            is_2d_mode: false,
             focused_object_id: None,
             debug__character_id: None,
         };
@@ -501,6 +504,14 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             }
             update(state, Msg::Render)
         }
+        Msg::SetIs2dMode(is_2d_mode) => {
+            if is_2d_mode {
+                state.camera.set_x_axis_rotation(0.0);
+                state.camera.set_z_axis_rotation(0.0);
+            }
+            state.is_2d_mode = is_2d_mode;
+            update(state, Msg::Render)
+        }
 
         // Worldに対する操作
         Msg::LoadCharacterImageFromFile(character_id, file) => Cmd::task(move |resolver| {
@@ -620,13 +631,27 @@ fn render(state: &State) -> Html<Msg> {
         Attributes::new().class("app").id("app"),
         Events::new(),
         vec![
-            render_canvas(&state.table_state, &state.focused_object_id),
-            render_header_menu(&state.room.id, &state.table_state.selecting_tool),
+            render_canvas(
+                &state.table_state,
+                &state.focused_object_id,
+                state.is_2d_mode,
+            ),
+            render_hint(),
+            render_header_menu(
+                &state.room.id,
+                &state.table_state.selecting_tool,
+                state.world.table().is_bind_to_grid(),
+                state.is_2d_mode,
+            ),
         ],
     )
 }
 
-fn render_canvas(table_state: &TableState, focused_object_id: &Option<u128>) -> Html<Msg> {
+fn render_canvas(
+    table_state: &TableState,
+    focused_object_id: &Option<u128>,
+    is_2d_mode: bool,
+) -> Html<Msg> {
     Html::canvas(
         Attributes::new().class("fullscreen").id("table"),
         Events::new()
@@ -637,7 +662,7 @@ fn render_canvas(table_state: &TableState, focused_object_id: &Option<u128>) -> 
                     let mouse_coord = [e.x() as f64, e.y() as f64];
                     if e.buttons() & 1 == 0 {
                         Msg::SetCursorWithMouseCoord(mouse_coord)
-                    } else if e.alt_key() || e.ctrl_key() {
+                    } else if (e.alt_key() || e.ctrl_key()) && !is_2d_mode {
                         Msg::SetCameraRotationWithMouseCoord(mouse_coord)
                     } else {
                         match selecting_tool {
@@ -854,10 +879,15 @@ fn render_debug_modeless_character(character_id: &Option<u128>) -> Html<Msg> {
     }
 }
 
-fn render_header_menu(room_id: &String, selecting_tool: &TableTool) -> Html<Msg> {
+fn render_header_menu(
+    room_id: &String,
+    selecting_tool: &TableTool,
+    is_bind_to_grid: bool,
+    is_2d_mode: bool,
+) -> Html<Msg> {
     Html::div(
         Attributes::new()
-            .class("grid")
+            .class("panel grid")
             .style("position", "fixed")
             .style("top", "0")
             .style("left", "0")
@@ -885,16 +915,20 @@ fn render_header_menu(room_id: &String, selecting_tool: &TableTool) -> Html<Msg>
             ),
             Html::div(Attributes::new().class("grid-w-15"), Events::new(), vec![]),
             Html::div(
-                Attributes::new().class("grid-w-3 centering-a"),
+                Attributes::new().class("grid-w-3 justify-r"),
                 Events::new(),
-                vec![btn::danger(
-                    Attributes::new(),
+                vec![Html::div(
+                    Attributes::new().class("linear-h"),
                     Events::new(),
-                    vec![Html::text("ルームから出る")],
+                    vec![btn::danger(
+                        Attributes::new(),
+                        Events::new(),
+                        vec![Html::text("ルームから出る")],
+                    )],
                 )],
             ),
             Html::div(
-                Attributes::new().class("grid-w-6 linear-h container-a"),
+                Attributes::new().class("grid-w-12 linear-h container-a"),
                 Events::new(),
                 vec![
                     btn::selectable(
@@ -924,8 +958,57 @@ fn render_header_menu(room_id: &String, selecting_tool: &TableTool) -> Html<Msg>
                             .on_click(|_| Msg::SetSelectingTableTool(TableTool::Measure(None))),
                         vec![],
                     ),
+                    Html::div(
+                        Attributes::new().class("keyvalue"),
+                        Events::new(),
+                        vec![
+                            Html::span(
+                                Attributes::new().class("text-label"),
+                                Events::new(),
+                                vec![Html::text("グリッドにスナップ")],
+                            ),
+                            btn::toggle(
+                                is_bind_to_grid,
+                                Attributes::new(),
+                                Events::new()
+                                    .on_click(move |_| Msg::SetIsBindToGrid(!is_bind_to_grid)),
+                            ),
+                        ],
+                    ),
                 ],
             ),
+            Html::div(
+                Attributes::new().class("grid-w-12 justify-r"),
+                Events::new(),
+                vec![Html::div(
+                    Attributes::new().class("linear-h"),
+                    Events::new(),
+                    vec![
+                        Html::span(
+                            Attributes::new().class("text-label"),
+                            Events::new(),
+                            vec![Html::text("2Dモード")],
+                        ),
+                        btn::toggle(
+                            is_2d_mode,
+                            Attributes::new(),
+                            Events::new().on_click(move |_| Msg::SetIs2dMode(!is_2d_mode)),
+                        ),
+                    ],
+                )],
+            ),
         ],
+    )
+}
+
+fn render_hint() -> Html<Msg> {
+    Html::div(
+        Attributes::new()
+            .class("text-secondary")
+            .style("position", "fixed")
+            .style("bottom", "5em")
+            .style("right", "5em"),
+        Events::new(),
+        vec![Html::text("Ctrl + ドラッグで視界を回転")],
     )
 }

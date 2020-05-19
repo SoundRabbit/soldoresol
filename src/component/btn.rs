@@ -101,6 +101,15 @@ pub fn selectable<Msg>(
 }
 
 #[allow(dead_code)]
+pub fn toggle<Msg>(is_toggled: bool, attributes: Attributes, events: Events<Msg>) -> Html<Msg> {
+    if is_toggled {
+        Html::span(attributes.class("toggle toggle-on"), events, vec![])
+    } else {
+        Html::span(attributes.class("toggle toggle-off"), events, vec![])
+    }
+}
+
+#[allow(dead_code)]
 pub fn close<Msg>(attributes: Attributes, events: Events<Msg>) -> Html<Msg> {
     Html::button(
         attributes.class("app__close-btn").class("material-icons"),

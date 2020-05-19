@@ -2,7 +2,8 @@
     &-h {
         display: grid;
         grid-auto-columns: max-content;
-        column-gap: 0.5em;
+        column-gap: 0.8em;
         grid-auto-flow: column;
+        align-items: start;
     }
 }

@@ -1,0 +1,39 @@
+@import "color";
+
+.toggle {
+    display: inline-block;
+    height: 1.8em;
+    width: 3em;
+    border-radius: 0.9em;
+    box-sizing: border-box;
+    border: 0.1em solid $gray-600;
+    position: relative;
+
+    &:hover {
+        cursor: pointer;
+    }
+
+    &::before {
+        display: inline-block;
+        position: absolute;
+        height: 1.6em;
+        width: 1.6em;
+        border-radius: 50%;
+        background-color: $gray-200;
+        content: "";
+    }
+
+    &-on {
+        background-color: $blue-400;
+        &::before {
+            right: 0;
+        }
+    }
+
+    &-off {
+        background-color: $gray-400;
+        &::before {
+            left: 0;
+        }
+    }
+}
