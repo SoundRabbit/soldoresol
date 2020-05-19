@@ -1,0 +1,17 @@
+.grid {
+    display: grid;
+    grid-template-columns: repeat(24, 1fr);
+    grid-auto-rows: max-content;
+    
+    @for $c from 1 through 24 {
+        & > .grid-w-#{$c} {
+            grid-column: span $c;
+        }
+    }
+
+    @for $c from 1 through 24 {
+        & > .grid-c-#{$c} {
+            grid-column: $c;
+        }
+    }
+}

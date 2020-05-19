@@ -1,18 +1,11 @@
-@import "app";
-@import "btn";
-@import "chat";
-@import "checkbox";
 @import "color";
-@import "context_menu";
-@import "control";
-@import "dialog";
-@import "form";
-@import "handout";
-@import "icon";
-@import "measure_length";
-@import "measure_tool";
-@import "modal";
-@import "radio";
+@import "fullscreen";
+@import "centering";
+@import "frame";
+@import "grid";
+@import "pure-button";
+@import "justify";
+@import "pure-form";
 
 html, body {
     padding: 0;
@@ -35,8 +28,4 @@ html, body {
 ::-webkit-scrollbar-thumb {
     background-color: $gray-300;
     border-radius: 0.5ch;
-}
-
-h1, h2, h3, h4, h5, h6 {
-    margin: 0;
 }

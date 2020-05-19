@@ -1,0 +1,12 @@
+.centering {
+    &-a {
+        display: grid;
+        align-content: center;
+        justify-content: center;
+    }
+
+    &-v {
+        display: grid;
+        align-content: center;
+    }
+}

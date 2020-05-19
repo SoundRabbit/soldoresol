@@ -1,0 +1,13 @@
+.justify {
+    &-l {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    &-r {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+    }
+}

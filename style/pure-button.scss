@@ -1,0 +1,7 @@
+@import "color";
+
+.pure-button {
+    &-primary {
+        background-color: $blue-500;
+    }
+}
