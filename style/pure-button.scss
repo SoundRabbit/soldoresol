@@ -2,6 +2,27 @@
 
 .pure-button {
     &-primary {
+        color: $gray-000 !important;
         background-color: $blue-500 !important;
+    }
+    &-secondary {
+        color: $gray-000 !important;
+        background-color: $gray-500 !important;
+    }
+    &-info {
+        color: $gray-900 !important;
+        background-color: $blue-300 !important;
+    }
+    &-danger {
+        color: $gray-000 !important;
+        background-color: $red-900 !important;
+    }
+    &-success {
+        color: $gray-000 !important;
+        background-color: $green-500 !important;
+    }
+    &-dark {
+        color: $gray-000 !important;
+        background-color: $gray-900 !important;
     }
 }

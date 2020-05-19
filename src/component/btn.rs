@@ -19,7 +19,11 @@ pub fn secondary<Msg>(
     events: Events<Msg>,
     children: Vec<Html<Msg>>,
 ) -> Html<Msg> {
-    Html::button(attributes.class("app__btn--secondary"), events, children)
+    Html::button(
+        attributes.class("pure-button pure-button-secondary"),
+        events,
+        children,
+    )
 }
 
 #[allow(dead_code)]
@@ -28,7 +32,11 @@ pub fn info<Msg>(
     events: Events<Msg>,
     children: Vec<Html<Msg>>,
 ) -> Html<Msg> {
-    Html::button(attributes.class("app__btn--info"), events, children)
+    Html::button(
+        attributes.class("pure-button pure-button-info"),
+        events,
+        children,
+    )
 }
 
 #[allow(dead_code)]
@@ -37,7 +45,11 @@ pub fn danger<Msg>(
     events: Events<Msg>,
     children: Vec<Html<Msg>>,
 ) -> Html<Msg> {
-    Html::button(attributes.class("app__btn--danger"), events, children)
+    Html::button(
+        attributes.class("pure-button pure-button-danger"),
+        events,
+        children,
+    )
 }
 
 #[allow(dead_code)]
@@ -46,7 +58,11 @@ pub fn success<Msg>(
     events: Events<Msg>,
     children: Vec<Html<Msg>>,
 ) -> Html<Msg> {
-    Html::button(attributes.class("app__btn--success"), events, children)
+    Html::button(
+        attributes.class("pure-button pure-button-success"),
+        events,
+        children,
+    )
 }
 
 #[allow(dead_code)]
@@ -55,7 +71,33 @@ pub fn dark<Msg>(
     events: Events<Msg>,
     children: Vec<Html<Msg>>,
 ) -> Html<Msg> {
-    Html::button(attributes.class("app__btn--dark"), events, children)
+    Html::button(
+        attributes.class("pure-button pure-button-dark"),
+        events,
+        children,
+    )
+}
+
+#[allow(dead_code)]
+pub fn selectable<Msg>(
+    is_selected: bool,
+    attributes: Attributes,
+    events: Events<Msg>,
+    children: Vec<Html<Msg>>,
+) -> Html<Msg> {
+    if is_selected {
+        Html::button(
+            attributes.class("pure-button pure-button-primary"),
+            events,
+            children,
+        )
+    } else {
+        Html::button(
+            attributes.class("pure-button pure-button-secondary"),
+            events,
+            children,
+        )
+    }
 }
 
 #[allow(dead_code)]

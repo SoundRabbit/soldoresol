@@ -32,10 +32,37 @@ enum FormKind {
 
 #[derive(Clone)]
 pub enum TableTool {
-    Selecter,
+    Selector,
     Pen,
     Eracer,
     Measure(Option<[f64; 2]>),
+}
+
+impl TableTool {
+    fn is_selector(&self) -> bool {
+        match self {
+            Self::Selector => true,
+            _ => false,
+        }
+    }
+    fn is_pen(&self) -> bool {
+        match self {
+            Self::Pen => true,
+            _ => false,
+        }
+    }
+    fn is_eracer(&self) -> bool {
+        match self {
+            Self::Eracer => true,
+            _ => false,
+        }
+    }
+    fn is_measure(&self) -> bool {
+        match self {
+            Self::Measure(_) => true,
+            _ => false,
+        }
+    }
 }
 
 struct TableState {
@@ -594,15 +621,14 @@ fn render(state: &State) -> Html<Msg> {
         Events::new(),
         vec![
             render_canvas(&state.table_state, &state.focused_object_id),
-            render_debug_modeless(&state),
-            render_context_menu(&state.contextmenu, &state.focused_object_id),
+            render_header_menu(&state.room.id, &state.table_state.selecting_tool),
         ],
     )
 }
 
 fn render_canvas(table_state: &TableState, focused_object_id: &Option<u128>) -> Html<Msg> {
     Html::canvas(
-        Attributes::new().class("app__table").id("table"),
+        Attributes::new().class("fullscreen").id("table"),
         Events::new()
             .on_mousemove({
                 let selecting_tool = table_state.selecting_tool.clone();
@@ -615,7 +641,7 @@ fn render_canvas(table_state: &TableState, focused_object_id: &Option<u128>) -> 
                         Msg::SetCameraRotationWithMouseCoord(mouse_coord)
                     } else {
                         match selecting_tool {
-                            TableTool::Selecter => match focused_object_id {
+                            TableTool::Selector => match focused_object_id {
                                 Some(character_id) => {
                                     Msg::SetObjectPositionWithMouseCoord(character_id, mouse_coord)
                                 }
@@ -655,7 +681,7 @@ fn render_canvas(table_state: &TableState, focused_object_id: &Option<u128>) -> 
                 let selecting_tool = table_state.selecting_tool.clone();
                 let focused_object_id = focused_object_id.clone();
                 move |_| match selecting_tool {
-                    TableTool::Selecter => match focused_object_id {
+                    TableTool::Selector => match focused_object_id {
                         Some(object_id) => Msg::BindObjectToTableGrid(object_id),
                         None => Msg::NoOp,
                     },
@@ -747,7 +773,7 @@ fn render_debug_modeless(state: &State) -> Html<Msg> {
             ),
             btn::primary(
                 Attributes::new(),
-                Events::new().on_click(|_| Msg::SetSelectingTableTool(TableTool::Selecter)),
+                Events::new().on_click(|_| Msg::SetSelectingTableTool(TableTool::Selector)),
                 vec![Html::text("選択")],
             ),
             btn::primary(
@@ -826,4 +852,80 @@ fn render_debug_modeless_character(character_id: &Option<u128>) -> Html<Msg> {
     } else {
         Html::div(Attributes::new(), Events::new(), vec![])
     }
+}
+
+fn render_header_menu(room_id: &String, selecting_tool: &TableTool) -> Html<Msg> {
+    Html::div(
+        Attributes::new()
+            .class("grid")
+            .style("position", "fixed")
+            .style("top", "0")
+            .style("left", "0")
+            .style("width", "100vw"),
+        Events::new(),
+        vec![
+            Html::div(
+                Attributes::new().class("grid-w-6 keyvalue pure-form"),
+                Events::new(),
+                vec![
+                    Html::label(
+                        Attributes::new().string("for", "roomid"),
+                        Events::new(),
+                        vec![Html::text("ルームID")],
+                    ),
+                    Html::input(
+                        Attributes::new()
+                            .value(room_id)
+                            .id("roomid")
+                            .flag("readonly"),
+                        Events::new(),
+                        vec![],
+                    ),
+                ],
+            ),
+            Html::div(Attributes::new().class("grid-w-15"), Events::new(), vec![]),
+            Html::div(
+                Attributes::new().class("grid-w-3 centering-a"),
+                Events::new(),
+                vec![btn::danger(
+                    Attributes::new(),
+                    Events::new(),
+                    vec![Html::text("ルームから出る")],
+                )],
+            ),
+            Html::div(
+                Attributes::new().class("grid-w-6 linear-h container-a"),
+                Events::new(),
+                vec![
+                    btn::selectable(
+                        selecting_tool.is_selector(),
+                        Attributes::new()
+                            .class("fas fa-mouse-pointer")
+                            .title("選択"),
+                        Events::new().on_click(|_| Msg::SetSelectingTableTool(TableTool::Selector)),
+                        vec![],
+                    ),
+                    btn::selectable(
+                        selecting_tool.is_pen(),
+                        Attributes::new().class("fas fa-pen").title("ペン"),
+                        Events::new().on_click(|_| Msg::SetSelectingTableTool(TableTool::Pen)),
+                        vec![],
+                    ),
+                    btn::selectable(
+                        selecting_tool.is_eracer(),
+                        Attributes::new().class("fas fa-eraser").title("消しゴム"),
+                        Events::new().on_click(|_| Msg::SetSelectingTableTool(TableTool::Eracer)),
+                        vec![],
+                    ),
+                    btn::selectable(
+                        selecting_tool.is_measure(),
+                        Attributes::new().class("fas fa-ruler").title("計測"),
+                        Events::new()
+                            .on_click(|_| Msg::SetSelectingTableTool(TableTool::Measure(None))),
+                        vec![],
+                    ),
+                ],
+            ),
+        ],
+    )
 }
