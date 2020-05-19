@@ -1,12 +1,13 @@
 use super::app;
 use crate::skyway::{Peer, Room};
+use crate::Config;
 use kagura::prelude::*;
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 
-pub fn new() -> Component<Msg, State, Sub> {
-    let peer = Rc::new(Peer::new("de699024-d415-4dca-ae46-3094fae4bc51"));
+pub fn new(config: Rc<Config>) -> Component<Msg, State, Sub> {
+    let peer = Rc::new(Peer::new(&config.skyway.key));
     Component::new(init(Rc::clone(&peer)), update, render).batch({
         let peer = Rc::clone(&peer);
         move |mut handler| {

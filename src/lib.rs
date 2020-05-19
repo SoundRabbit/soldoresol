@@ -5,18 +5,21 @@ extern crate ndarray;
 extern crate regex;
 extern crate serde;
 extern crate serde_json;
+extern crate toml;
 extern crate wasm_bindgen;
 extern crate web_sys;
 
-use wasm_bindgen::prelude::*;
-
 mod component;
+mod config;
 mod model;
 mod random_id;
 mod renderer;
 mod skyway;
 
+use config::Config;
+use wasm_bindgen::prelude::*;
+
 #[wasm_bindgen(start)]
 pub fn main() {
-    kagura::run(component::connection::new(), "app");
+    kagura::run(component::config_loder::new(true), "app");
 }
