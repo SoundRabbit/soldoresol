@@ -38,8 +38,16 @@
             @extend %__modal-bg;
         }
 
-        &--dark{
+        &--dark {
             @extend %__modal-bg;
+            background-color: rgba(0,0,0,0.2);
+        }
+
+        &--centering {
+            @extend %__modal-bg;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
     }
 

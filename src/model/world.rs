@@ -78,4 +78,10 @@ impl World {
         self.tablemasks.insert(tablemask_id, tablemask);
         return tablemask_id;
     }
+
+    pub fn data() {}
+}
+
+pub struct Data {
+    pub table_id: u128,
 }

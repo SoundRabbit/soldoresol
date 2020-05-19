@@ -49,7 +49,7 @@ struct Contextmenu {
 }
 
 pub struct State {
-    room: Option<Rc<Room>>,
+    room: Rc<Room>,
     world: World,
     camera: Camera,
     renderer: Option<Renderer>,
@@ -116,31 +116,22 @@ pub enum Sub {
     ConnectToRoom(String),
 }
 
-pub fn new(room: Option<Rc<Room>>) -> Component<Msg, State, Sub> {
-    web_sys::console::log_1(&JsValue::from("create app"));
-
-    let component = Component::new(
-        init(room.as_ref().map(|room| Rc::clone(room))),
-        update,
-        render,
-    )
-    .batch(|mut handler| {
-        let a = Closure::wrap(Box::new(move || {
-            handler(Msg::WindowResized);
-        }) as Box<dyn FnMut()>);
-        web_sys::window()
-            .unwrap()
-            .set_onresize(Some(a.as_ref().unchecked_ref()));
-        a.forget();
-    });
-
-    if let Some(room) = room {
-        component.batch({
+pub fn new(room: Rc<Room>) -> Component<Msg, State, Sub> {
+    Component::new(init(Rc::clone(&room)), update, render)
+        .batch(|mut handler| {
+            let a = Closure::wrap(Box::new(move || {
+                handler(Msg::WindowResized);
+            }) as Box<dyn FnMut()>);
+            web_sys::window()
+                .unwrap()
+                .set_onresize(Some(a.as_ref().unchecked_ref()));
+            a.forget();
+        })
+        .batch({
             let room = Rc::clone(&room);
             move |mut handler| {
                 let a = Closure::wrap(Box::new({
                     move |receive_data: ReceiveData| {
-                        web_sys::console::log_1(&JsValue::from("receive some data"));
                         if let Ok(msg) = serde_json::from_str::<skyway::Msg>(&receive_data.data()) {
                             handler(Msg::ReceiveMsg(msg));
                         } else {
@@ -152,12 +143,9 @@ pub fn new(room: Option<Rc<Room>>) -> Component<Msg, State, Sub> {
                 a.forget();
             }
         })
-    } else {
-        component
-    }
 }
 
-fn init(room: Option<Rc<Room>>) -> impl FnOnce() -> (State, Cmd<Msg, Sub>) {
+fn init(room: Rc<Room>) -> impl FnOnce() -> (State, Cmd<Msg, Sub>) {
     || {
         let state = State {
             room: room,
@@ -404,7 +392,9 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
         Msg::SetIsBindToGrid(is_bind_to_grid) => {
             state.world.table_mut().set_is_bind_to_grid(is_bind_to_grid);
-            send_message(&state.room, &skyway::Msg::SetIsBindToGrid(is_bind_to_grid));
+            state
+                .room
+                .send(&skyway::Msg::SetIsBindToGrid(is_bind_to_grid));
             Cmd::none()
         }
         Msg::DrawLineWithMouseCoord(mouse_coord) => {
@@ -418,10 +408,9 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 ColorSystem::gray_900(255),
                 0.5,
             );
-            send_message(
-                &state.room,
-                &skyway::Msg::DrawLineToTable(start_point, end_point),
-            );
+            state
+                .room
+                .send(&skyway::Msg::DrawLineToTable(start_point, end_point));
             update(state, Msg::SetCursorWithMouseCoord(mouse_coord))
         }
         Msg::EraceLineWithMouseCoord(mouse_coord) => {
@@ -457,19 +446,17 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             if let Some(character) = state.world.character_mut(&object_id) {
                 let p = character.position();
                 let p = [p[0] + movement[0], p[1] + movement[1], p[2]];
-                send_message(
-                    &state.room,
-                    &skyway::Msg::SetObjectPosition(object_id, p.clone()),
-                );
+                state
+                    .room
+                    .send(&skyway::Msg::SetObjectPosition(object_id, p.clone()));
                 character.set_position(p);
             }
             if let Some(tablemask) = state.world.tablemask_mut(&object_id) {
                 let p = tablemask.position();
                 let p = [p[0] + movement[0], p[1] + movement[1], p[2]];
-                send_message(
-                    &state.room,
-                    &skyway::Msg::SetObjectPosition(object_id, p.clone()),
-                );
+                state
+                    .room
+                    .send(&skyway::Msg::SetObjectPosition(object_id, p.clone()));
                 tablemask.set_position(p);
             }
             state.table_state.last_mouse_coord = mouse_coord;
@@ -479,17 +466,17 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             if state.world.table().is_bind_to_grid() {
                 if let Some(character) = state.world.character_mut(&object_id) {
                     character.bind_to_grid();
-                    send_message(
-                        &state.room,
-                        &skyway::Msg::SetObjectPosition(object_id, character.position().clone()),
-                    );
+                    state.room.send(&skyway::Msg::SetObjectPosition(
+                        object_id,
+                        character.position().clone(),
+                    ));
                 }
                 if let Some(tablemask) = state.world.tablemask_mut(&object_id) {
                     tablemask.bind_to_grid();
-                    send_message(
-                        &state.room,
-                        &skyway::Msg::SetObjectPosition(object_id, tablemask.position().clone()),
-                    );
+                    state.room.send(&skyway::Msg::SetObjectPosition(
+                        object_id,
+                        tablemask.position().clone(),
+                    ));
                 }
             }
             update(state, Msg::Render)
@@ -535,10 +522,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 image_.set_src(&data_url);
                 on_load.forget();
                 if t {
-                    send_message(
-                        &room,
-                        &skyway::Msg::SetCharacterImage(character_id, data_url),
-                    );
+                    room.send(&skyway::Msg::SetCharacterImage(character_id, data_url));
                 }
             }
         }),
@@ -555,10 +539,9 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             let position = character.position().clone();
             let character_id = state.world.add_character(character);
 
-            send_message(
-                &state.room,
-                &skyway::Msg::CreateCharacterToTable(character_id, position),
-            );
+            state
+                .room
+                .send(&skyway::Msg::CreateCharacterToTable(character_id, position));
             update(state, Msg::Render)
         }
         Msg::AddTablemask(tablemask) => {
@@ -623,14 +606,6 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.inputing_room_id = room_id;
             Cmd::none()
         }
-    }
-}
-
-fn send_message(room: &Option<Rc<Room>>, msg: &skyway::Msg) {
-    web_sys::console::log_1(&JsValue::from("send message"));
-    if let Some(room) = room {
-        room.send(msg);
-    } else {
     }
 }
 
@@ -811,52 +786,25 @@ fn render_debug_modeless(state: &State) -> Html<Msg> {
                 Events::new().on_click(|_| Msg::SetSelectingTableTool(TableTool::Measure(None))),
                 vec![Html::text("計測")],
             ),
-            render_debug_modeless_room(&state.room, &state.inputing_room_id),
+            render_debug_modeless_room(Rc::clone(&state.room), &state.inputing_room_id),
             render_debug_modeless_character(&state.debug__character_id),
         ],
     )
 }
 
-fn render_debug_modeless_room(room: &Option<Rc<Room>>, inputing_room_id: &String) -> Html<Msg> {
-    if let Some(room) = room {
-        Html::div(
-            Attributes::new(),
-            Events::new(),
-            vec![
-                Html::span(
-                    Attributes::new(),
-                    Events::new(),
-                    vec![Html::text("ルームID：")],
-                ),
-                Html::span(Attributes::new(), Events::new(), vec![Html::text(&room.id)]),
-            ],
-        )
-    } else {
-        Html::div(
-            Attributes::new(),
-            Events::new(),
-            vec![
-                Html::input(
-                    Attributes::new()
-                        .value(inputing_room_id)
-                        .placeholder("接続先のルームID"),
-                    Events::new().on_input(|s| Msg::Debug_InputRoomId(s)),
-                    vec![],
-                ),
-                Html::button(
-                    Attributes::new(),
-                    Events::new().on_click(|_| Msg::ConnectToRoom),
-                    vec![Html::text("ルームに入る")],
-                ),
-                Html::span(Attributes::new(), Events::new(), vec![Html::text("or")]),
-                Html::button(
-                    Attributes::new(),
-                    Events::new().on_click(|_| Msg::CreateRoom),
-                    vec![Html::text("ルームを作成する")],
-                ),
-            ],
-        )
-    }
+fn render_debug_modeless_room(room: Rc<Room>, inputing_room_id: &String) -> Html<Msg> {
+    Html::div(
+        Attributes::new(),
+        Events::new(),
+        vec![
+            Html::span(
+                Attributes::new(),
+                Events::new(),
+                vec![Html::text("ルームID：")],
+            ),
+            Html::span(Attributes::new(), Events::new(), vec![Html::text(&room.id)]),
+        ],
+    )
 }
 
 fn render_debug_modeless_character(character_id: &Option<u128>) -> Html<Msg> {

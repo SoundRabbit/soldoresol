@@ -1,4 +1,4 @@
-use super::app;
+use super::room;
 use crate::skyway::{Peer, Room};
 use crate::Config;
 use kagura::prelude::*;
@@ -60,7 +60,34 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 }
 
 fn render(state: &State) -> Html<Msg> {
-    Html::component(app::new(state.room.clone()).subscribe(|sub| match sub {
-        app::Sub::ConnectToRoom(room_id) => Msg::ConnectToRoom(room_id),
-    }))
+    if let Some(room) = &state.room {
+        Html::component(room::new(Rc::clone(room)).subscribe(|sub| match sub {
+            room::Sub::ConnectToRoom(room_id) => Msg::ConnectToRoom(room_id),
+        }))
+    } else {
+        Html::div(
+            Attributes::new().class("app").id("app"),
+            Events::new(),
+            vec![Html::div(
+                Attributes::new().class("app__modal-bg--dark"),
+                Events::new(),
+                vec![Html::div(
+                    Attributes::new().class("app__modal-bg--centering"),
+                    Events::new(),
+                    vec![Html::div(
+                        Attributes::new().class("modal"),
+                        Events::new(),
+                        vec![
+                            Html::h2(
+                                Attributes::new(),
+                                Events::new(),
+                                vec![Html::text("ルームに接続")],
+                            ),
+                            Html::input(Attributes::new(), Events::new(), vec![]),
+                        ],
+                    )],
+                )],
+            )],
+        )
+    }
 }
