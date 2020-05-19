@@ -1,4 +1,6 @@
+use super::btn;
 use super::room;
+use crate::random_id;
 use crate::skyway::{Peer, Room};
 use crate::Config;
 use kagura::prelude::*;
@@ -25,10 +27,12 @@ pub struct State {
     peer_id: Option<String>,
     room: Option<Rc<Room>>,
     peer: Rc<Peer>,
+    inputing_room_id: String,
 }
 
 pub enum Msg {
     SetPeerId(String),
+    SetRoomId(String),
     ConnectToRoom(String),
 }
 
@@ -40,6 +44,7 @@ fn init(peer: Rc<Peer>) -> impl FnOnce() -> (State, Cmd<Msg, Sub>) {
             peer_id: None,
             room: None,
             peer: peer,
+            inputing_room_id: "".into(),
         };
         (state, Cmd::none())
     }
@@ -51,9 +56,15 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.peer_id = Some(peer_id);
             Cmd::none()
         }
+        Msg::SetRoomId(room_id) => {
+            state.inputing_room_id = room_id;
+            Cmd::none()
+        }
         Msg::ConnectToRoom(room_id) => {
-            web_sys::console::log_1(&JsValue::from("ConnectToRoom"));
-            state.room = Some(Rc::new(Room::new(state.peer.join_room(&room_id), room_id)));
+            if room_id != "" {
+                state.room = Some(Rc::new(Room::new(state.peer.join_room(&room_id), room_id)));
+                state.inputing_room_id = "".into();
+            }
             Cmd::none()
         }
     }
@@ -66,28 +77,78 @@ fn render(state: &State) -> Html<Msg> {
         }))
     } else {
         Html::div(
-            Attributes::new().class("app").id("app"),
+            Attributes::new()
+                .id("app")
+                .class("fullscreen centering-v grid"),
             Events::new(),
-            vec![Html::div(
-                Attributes::new().class("app__modal-bg--dark"),
-                Events::new(),
-                vec![Html::div(
-                    Attributes::new().class("app__modal-bg--centering"),
+            vec![
+                Html::div(Attributes::new().class("grid-w-7"), Events::new(), vec![]),
+                Html::div(
+                    Attributes::new().class("grid-w-10 frame"),
                     Events::new(),
-                    vec![Html::div(
-                        Attributes::new().class("modal"),
-                        Events::new(),
-                        vec![
-                            Html::h2(
-                                Attributes::new(),
-                                Events::new(),
-                                vec![Html::text("ルームに接続")],
-                            ),
-                            Html::input(Attributes::new(), Events::new(), vec![]),
-                        ],
-                    )],
-                )],
-            )],
+                    vec![
+                        Html::div(
+                            Attributes::new().class("frame-header"),
+                            Events::new(),
+                            vec![Html::text("ルームに接続していません。")],
+                        ),
+                        Html::div(
+                            Attributes::new().class("frame-body grid"),
+                            Events::new(),
+                            vec![
+                                Html::div(
+                                    Attributes::new().class("grid-w-10 centering-a pure-form"),
+                                    Events::new(),
+                                    vec![
+                                        Html::fieldset(
+                                            Attributes::new(),
+                                            Events::new(),
+                                            vec![Html::input(
+                                                Attributes::new()
+                                                    .type_("text")
+                                                    .class("pure-input-1")
+                                                    .placeholder("ルームID"),
+                                                Events::new().on_input(|s| Msg::SetRoomId(s)),
+                                                vec![],
+                                            )],
+                                        ),
+                                        btn::primary(
+                                            Attributes::new(),
+                                            Events::new().on_click({
+                                                let room_id = state.inputing_room_id.clone();
+                                                move |_| Msg::ConnectToRoom(room_id)
+                                            }),
+                                            vec![Html::text("接続")],
+                                        ),
+                                    ],
+                                ),
+                                Html::div(
+                                    Attributes::new().class("grid-w-4 centering-a"),
+                                    Events::new(),
+                                    vec![Html::text("または")],
+                                ),
+                                Html::div(
+                                    Attributes::new().class("grid-w-10 centering-a pure-form"),
+                                    Events::new(),
+                                    vec![btn::primary(
+                                        Attributes::new(),
+                                        Events::new().on_click({
+                                            let room_id = random_id::base64();
+                                            move |_| Msg::ConnectToRoom(room_id)
+                                        }),
+                                        vec![Html::text("新規ルームを開く")],
+                                    )],
+                                ),
+                            ],
+                        ),
+                        Html::div(
+                            Attributes::new().class("frame-footer"),
+                            Events::new(),
+                            vec![Html::text("※ルームIDは20文字の英数字と記号です。")],
+                        ),
+                    ],
+                ),
+            ],
         )
     }
 }

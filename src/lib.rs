@@ -1,3 +1,4 @@
+extern crate base64;
 extern crate bincode;
 extern crate hex;
 extern crate kagura;

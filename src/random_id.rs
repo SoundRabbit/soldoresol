@@ -14,6 +14,10 @@ pub fn hex(len: usize) -> String {
     hex::encode(&u8vec(len))
 }
 
+pub fn base64() -> String {
+    base64::encode(&u8vec(3 * 5))
+}
+
 pub fn u128val() -> u128 {
     let mut buf = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     let id = u8vec(16);

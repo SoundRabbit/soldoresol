@@ -20,7 +20,8 @@
     & > .frame-footer {
         line-height: 1;
         padding: 0.5em;
-        background-color: $gray-900;
+        background-color: $gray-700;
+        font-size: 0.8em;
         &[data-frame-footer-type="danger"] {
             background-color: $red-900;
         }

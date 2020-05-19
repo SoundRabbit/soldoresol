@@ -6,7 +6,11 @@ pub fn primary<Msg>(
     events: Events<Msg>,
     children: Vec<Html<Msg>>,
 ) -> Html<Msg> {
-    Html::button(attributes.class("app__btn--primary"), events, children)
+    Html::button(
+        attributes.class("pure-button pure-button-primary"),
+        events,
+        children,
+    )
 }
 
 #[allow(dead_code)]
