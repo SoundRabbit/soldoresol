@@ -14,8 +14,10 @@ pub fn hex(len: usize) -> String {
     hex::encode(&u8vec(len))
 }
 
-pub fn base64() -> String {
+pub fn base64url() -> String {
     base64::encode(&u8vec(3 * 5))
+        .replace("+", "-")
+        .replace("/", "_")
 }
 
 pub fn u128val() -> u128 {

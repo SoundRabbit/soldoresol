@@ -131,7 +131,7 @@ fn render(state: &State) -> Html<Msg> {
                                     vec![btn::primary(
                                         Attributes::new(),
                                         Events::new().on_click({
-                                            let room_id = random_id::base64();
+                                            let room_id = random_id::base64url();
                                             move |_| Msg::ConnectToRoom(room_id)
                                         }),
                                         vec![Html::text("新規ルームを開く")],

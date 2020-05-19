@@ -892,7 +892,7 @@ fn render_header_menu(
                         vec![],
                     ),
                     Html::div(
-                        Attributes::new().class("keyvalue"),
+                        Attributes::new().class("keyvalue").title(""),
                         Events::new(),
                         vec![
                             Html::span(
