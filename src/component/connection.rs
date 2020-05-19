@@ -72,9 +72,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
 fn render(state: &State) -> Html<Msg> {
     if let Some(room) = &state.room {
-        Html::component(room::new(Rc::clone(room)).subscribe(|sub| match sub {
-            room::Sub::ConnectToRoom(room_id) => Msg::ConnectToRoom(room_id),
-        }))
+        Html::component(room::new(Rc::clone(room)))
     } else {
         Html::div(
             Attributes::new()

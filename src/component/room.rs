@@ -57,7 +57,6 @@ pub struct State {
     table_state: TableState,
     contextmenu: Contextmenu,
     focused_object_id: Option<u128>,
-    inputing_room_id: String,
     // form_state: FormState,
     debug__character_id: Option<u128>,
 }
@@ -103,18 +102,13 @@ pub enum Msg {
     AddTablemask(Tablemask),
 
     // 接続に関する操作
-    ConnectToRoom,
-    CreateRoom,
     ReceiveMsg(skyway::Msg),
 
     //デバッグ用
     Debug_SetSelectingCharacterId(u128),
-    Debug_InputRoomId(String),
 }
 
-pub enum Sub {
-    ConnectToRoom(String),
-}
+pub enum Sub {}
 
 pub fn new(room: Rc<Room>) -> Component<Msg, State, Sub> {
     Component::new(init(Rc::clone(&room)), update, render)
@@ -166,7 +160,6 @@ fn init(room: Rc<Room>) -> impl FnOnce() -> (State, Cmd<Msg, Sub>) {
             //     handout: handout::init(),
             // },
             focused_object_id: None,
-            inputing_room_id: "".into(),
             debug__character_id: None,
         };
         let task = Cmd::task(|handler| {
@@ -550,16 +543,6 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
 
         // 接続に関する操作
-        Msg::ConnectToRoom => {
-            let room_id = state.inputing_room_id.clone();
-            Cmd::Sub(Sub::ConnectToRoom(room_id))
-        }
-        Msg::CreateRoom => {
-            let room_id = random_id::hex(16);
-            web_sys::console::log_1(&JsValue::from("create a room"));
-
-            Cmd::Sub(Sub::ConnectToRoom(room_id))
-        }
         Msg::ReceiveMsg(msg) => match msg {
             skyway::Msg::CreateCharacterToTable(character_id, position) => {
                 let mut character = Character::new();
@@ -600,10 +583,6 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         //デバッグ用
         Msg::Debug_SetSelectingCharacterId(character_id) => {
             state.debug__character_id = Some(character_id);
-            Cmd::none()
-        }
-        Msg::Debug_InputRoomId(room_id) => {
-            state.inputing_room_id = room_id;
             Cmd::none()
         }
     }
@@ -786,13 +765,13 @@ fn render_debug_modeless(state: &State) -> Html<Msg> {
                 Events::new().on_click(|_| Msg::SetSelectingTableTool(TableTool::Measure(None))),
                 vec![Html::text("計測")],
             ),
-            render_debug_modeless_room(Rc::clone(&state.room), &state.inputing_room_id),
+            render_debug_modeless_room(Rc::clone(&state.room)),
             render_debug_modeless_character(&state.debug__character_id),
         ],
     )
 }
 
-fn render_debug_modeless_room(room: Rc<Room>, inputing_room_id: &String) -> Html<Msg> {
+fn render_debug_modeless_room(room: Rc<Room>) -> Html<Msg> {
     Html::div(
         Attributes::new(),
         Events::new(),
