@@ -73,7 +73,8 @@ struct TableState {
 
 struct Contextmenu {
     state: contextmenu::State,
-    position: [f64; 2],
+    grobal_position: [f64; 2],
+    canvas_position: [f64; 2],
 }
 
 pub struct State {
@@ -105,10 +106,10 @@ pub enum Msg {
     TransportContextMenuMsg(contextmenu::Msg),
 
     //コンテキストメニューの制御
-    OpenContextMenu([f64; 2]),
+    OpenContextMenu([f64; 2], [f64; 2]),
     AddChracaterWithMouseCoord([f64; 2]),
     AddTablemaskWithMouseCoord([f64; 2]),
-    CloneCharacterWithCharacterId(u128),
+    CloneObjectWithObjectId(u128),
 
     // テーブル操作の制御
     SetCameraRotationWithMouseCoord([f64; 2]),
@@ -184,7 +185,8 @@ fn init(room: Rc<Room>) -> impl FnOnce() -> (State, Cmd<Msg, Sub>) {
             },
             contextmenu: Contextmenu {
                 state: contextmenu::init(),
-                position: [0.0, 0.0],
+                canvas_position: [0.0, 0.0],
+                grobal_position: [0.0, 0.0],
             },
             // form_state: FormState {
             //     chat: chat::init(),
@@ -278,9 +280,10 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
 
         //コンテキストメニューの制御
-        Msg::OpenContextMenu(mouse_coord) => {
-            state.contextmenu.position = mouse_coord.clone();
-            contextmenu::open(&mut state.contextmenu.state, mouse_coord);
+        Msg::OpenContextMenu(page_mouse_coord, offset_mouse_coord) => {
+            state.contextmenu.grobal_position = page_mouse_coord.clone();
+            state.contextmenu.canvas_position = offset_mouse_coord;
+            contextmenu::open(&mut state.contextmenu.state, page_mouse_coord);
             Cmd::none()
         }
         Msg::AddChracaterWithMouseCoord(mouse_coord) => {
@@ -303,12 +306,17 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             }
             update(state, Msg::AddTablemask(tablemask))
         }
-        Msg::CloneCharacterWithCharacterId(character_id) => {
-            if let Some(character) = state.world.character(&character_id) {
+        Msg::CloneObjectWithObjectId(object_id) => {
+            if let Some(character) = state.world.character(&object_id) {
                 let mut character = character.clone();
-                let p = character.position();
+                let p = character.position().clone();
                 character.set_position([p[0] + 1.0, p[1] + 1.0, p[2]]);
                 update(state, Msg::AddChracater(character))
+            } else if let Some(tablemask) = state.world.tablemask(&object_id) {
+                let mut tablemask = tablemask.clone();
+                let p = tablemask.position().clone();
+                tablemask.set_position([p[0] + 1.0, p[1] + 1.0, p[2]]);
+                update(state, Msg::AddTablemask(tablemask))
             } else {
                 Cmd::none()
             }
@@ -646,6 +654,7 @@ fn render(state: &State) -> Html<Msg> {
                 state.is_2d_mode,
             ),
             render_canvas_container(&state),
+            render_context_menu(&state.contextmenu, &state.focused_object_id),
         ],
     )
 }
@@ -736,10 +745,11 @@ fn render_canvas(
                 }
             })
             .on_contextmenu(|e| {
-                let mouse_coord = [e.screen_x() as f64, e.screen_y() as f64];
+                let page_mouse_coord = [e.page_x() as f64, e.page_y() as f64];
+                let offset_mouse_coord = [e.offset_x() as f64, e.offset_y() as f64];
                 e.prevent_default();
                 e.stop_propagation();
-                Msg::OpenContextMenu(mouse_coord)
+                Msg::OpenContextMenu(page_mouse_coord, offset_mouse_coord)
             }),
         vec![render_hint()],
     )
@@ -747,7 +757,7 @@ fn render_canvas(
 
 fn render_context_menu(contextmenu: &Contextmenu, focused_object_id: &Option<u128>) -> Html<Msg> {
     if let Some(character_id) = focused_object_id {
-        render_context_menu_character(contextmenu, *character_id)
+        render_context_menu_object(contextmenu, *character_id)
     } else {
         render_context_menu_default(contextmenu)
     }
@@ -760,144 +770,51 @@ fn render_context_menu_default(contextmenu: &Contextmenu) -> Html<Msg> {
         || Box::new(|| Box::new(|msg| Msg::TransportContextMenuMsg(msg))),
         Attributes::new(),
         Events::new(),
-        vec![
-            btn::contextmenu_text(
-                Attributes::new(),
-                Events::new().on_click({
-                    let position = contextmenu.position.clone();
-                    move |_| Msg::AddChracaterWithMouseCoord(position)
-                }),
-                "キャラクターを作成",
-            ),
-            btn::contextmenu_text(
-                Attributes::new(),
-                Events::new().on_click({
-                    let position = contextmenu.position.clone();
-                    move |_| Msg::AddTablemaskWithMouseCoord(position)
-                }),
-                "マップマスクを作成",
-            ),
-        ],
+        vec![Html::ul(
+            Attributes::new().class("pure-menu-list"),
+            Events::new(),
+            vec![
+                btn::contextmenu_text(
+                    Attributes::new(),
+                    Events::new().on_click({
+                        let position = contextmenu.canvas_position.clone();
+                        move |_| Msg::AddChracaterWithMouseCoord(position)
+                    }),
+                    "キャラクターを作成",
+                ),
+                btn::contextmenu_text(
+                    Attributes::new(),
+                    Events::new().on_click({
+                        let position = contextmenu.canvas_position.clone();
+                        move |_| Msg::AddTablemaskWithMouseCoord(position)
+                    }),
+                    "マップマスクを作成",
+                ),
+            ],
+        )],
     )
 }
 
-fn render_context_menu_character(contextmenu: &Contextmenu, character_id: u128) -> Html<Msg> {
+fn render_context_menu_object(contextmenu: &Contextmenu, object_id: u128) -> Html<Msg> {
     contextmenu::render(
         false,
         &contextmenu.state,
         || Box::new(|| Box::new(|msg| Msg::TransportContextMenuMsg(msg))),
         Attributes::new(),
         Events::new(),
-        vec![
-            btn::contextmenu_text(
-                Attributes::new(),
-                Events::new().on_click(move |_| Msg::Debug_SetSelectingCharacterId(character_id)),
-                "キャラクターを選択",
-            ),
-            btn::contextmenu_text(
-                Attributes::new(),
-                Events::new().on_click(move |_| Msg::CloneCharacterWithCharacterId(character_id)),
-                "コピーを作成",
-            ),
-        ],
-    )
-}
-
-fn render_debug_modeless(state: &State) -> Html<Msg> {
-    Html::div(
-        Attributes::new().class("app__debug-modeless"),
-        Events::new(),
-        vec![
-            checkbox(
-                Attributes::new(),
-                Events::new().on_click({
-                    let is_bind_to_grid = state.world.table().is_bind_to_grid();
-                    move |_| Msg::SetIsBindToGrid(!is_bind_to_grid)
-                }),
-                "グリッドにスナップ",
-                state.world.table().is_bind_to_grid(),
-            ),
-            btn::primary(
-                Attributes::new(),
-                Events::new().on_click(|_| Msg::SetSelectingTableTool(TableTool::Selector)),
-                vec![Html::text("選択")],
-            ),
-            btn::primary(
-                Attributes::new(),
-                Events::new().on_click(|_| Msg::SetSelectingTableTool(TableTool::Pen)),
-                vec![Html::text("ペン")],
-            ),
-            btn::primary(
-                Attributes::new(),
-                Events::new().on_click(|_| Msg::SetSelectingTableTool(TableTool::Eracer)),
-                vec![Html::text("消しゴム")],
-            ),
-            btn::primary(
-                Attributes::new(),
-                Events::new().on_click(|_| Msg::SetSelectingTableTool(TableTool::Measure(None))),
-                vec![Html::text("計測")],
-            ),
-            render_debug_modeless_room(Rc::clone(&state.room)),
-            render_debug_modeless_character(&state.debug__character_id),
-        ],
-    )
-}
-
-fn render_debug_modeless_room(room: Rc<Room>) -> Html<Msg> {
-    Html::div(
-        Attributes::new(),
-        Events::new(),
-        vec![
-            Html::span(
-                Attributes::new(),
-                Events::new(),
-                vec![Html::text("ルームID：")],
-            ),
-            Html::span(Attributes::new(), Events::new(), vec![Html::text(&room.id)]),
-        ],
-    )
-}
-
-fn render_debug_modeless_character(character_id: &Option<u128>) -> Html<Msg> {
-    if let Some(character_id) = character_id {
-        Html::div(
-            Attributes::new(),
+        vec![Html::ul(
+            Attributes::new().class("pure-menu-list"),
             Events::new(),
             vec![
-                Html::div(
+                btn::contextmenu_text(Attributes::new(), Events::new(), "編集"),
+                btn::contextmenu_text(
                     Attributes::new(),
-                    Events::new(),
-                    vec![
-                        Html::text("キャラクターID："),
-                        Html::text(character_id.to_string()),
-                    ],
-                ),
-                Html::input(
-                    Attributes::new().type_("file"),
-                    Events::new().on("change", {
-                        let character_id = *character_id;
-                        move |e| {
-                            let files = e
-                                .target()
-                                .unwrap()
-                                .dyn_into::<web_sys::HtmlInputElement>()
-                                .unwrap()
-                                .files()
-                                .unwrap();
-                            if let Some(file) = files.item(0) {
-                                Msg::LoadCharacterImageFromFile(character_id, file)
-                            } else {
-                                Msg::NoOp
-                            }
-                        }
-                    }),
-                    vec![],
+                    Events::new().on_click(move |_| Msg::CloneObjectWithObjectId(object_id)),
+                    "コピーを作成",
                 ),
             ],
-        )
-    } else {
-        Html::div(Attributes::new(), Events::new(), vec![])
-    }
+        )],
+    )
 }
 
 fn render_header_menu(

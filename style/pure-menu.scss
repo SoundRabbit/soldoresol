@@ -1,0 +1,13 @@
+@import "color";
+
+.pure-menu {
+    color: $gray-000;
+    background-color: $gray-900 !important;
+    &-link{
+        color: inherit !important;
+        &:hover {
+            background-color: $gray-700 !important;
+            cursor: pointer;
+        }
+    }
+}

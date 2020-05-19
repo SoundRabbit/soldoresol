@@ -49,13 +49,8 @@ pub fn render<M: 'static>(
     if !state.showing {
         return Html::none();
     }
-    let class_name = if centering {
-        "app__contextmenu--centering"
-    } else {
-        "app__contextmenu"
-    };
     Html::div(
-        Attributes::new().class("app__modal-bg--clear"),
+        Attributes::new().class("fullscreen"),
         Events::new()
             .on_click({
                 let m = messenger_gen()();
@@ -70,9 +65,10 @@ pub fn render<M: 'static>(
             }),
         vec![Html::div(
             attributes
+                .class("pure-menu")
+                .style("position", "absolute")
                 .style("left", state.loc[0].to_string() + "px")
-                .style("top", state.loc[1].to_string() + "px")
-                .class(class_name),
+                .style("top", state.loc[1].to_string() + "px"),
             events,
             children,
         )],

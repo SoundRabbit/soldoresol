@@ -167,9 +167,13 @@ pub fn contextmenu_text<Msg>(
     events: Events<Msg>,
     text: impl Into<String>,
 ) -> Html<Msg> {
-    Html::button(
-        attributes.class("app__contextmenu-btn"),
-        events,
-        vec![Html::text(text)],
+    Html::li(
+        Attributes::new().class("pure-menu-item"),
+        Events::new(),
+        vec![Html::a(
+            attributes.class("pure-menu-link"),
+            events,
+            vec![Html::text(text)],
+        )],
     )
 }
