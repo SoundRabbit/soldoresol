@@ -182,7 +182,7 @@ fn init(room: Rc<Room>) -> impl FnOnce() -> (State, Cmd<Msg, Sub>) {
             renderer: None,
             canvas_size: [0.0, 0.0],
             table_state: TableState {
-                selecting_tool: TableTool::Pen,
+                selecting_tool: TableTool::Selector,
                 measure_length: None,
                 last_mouse_coord: [0.0, 0.0],
             },
