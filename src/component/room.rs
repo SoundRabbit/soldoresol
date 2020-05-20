@@ -1094,12 +1094,47 @@ fn render_object_modeless(
                     ),
                 ],
             ),
-            if let Some(tablemask) = world.tablemask(&focused_id) {
+            if let Some(character) = world.character(&focused_id) {
+                render_character_modeless(character, focused_id)
+            } else if let Some(tablemask) = world.tablemask(&focused_id) {
                 render_tablemask_modeless(tablemask, focused_id)
             } else {
                 Html::none()
             },
             modeless::footer(Attributes::new(), Events::new(), vec![]),
+        ],
+    )
+}
+
+fn render_character_modeless(character: &Character, character_id: u128) -> Html<Msg> {
+    modeless::body(
+        Attributes::new().class("container-a grid pure-form"),
+        Events::new(),
+        vec![
+            Html::span(
+                Attributes::new(),
+                Events::new(),
+                vec![Html::text("立ち絵を選択")],
+            ),
+            Html::input(
+                Attributes::new().type_("file"),
+                Events::new().on("change", move |e| {
+                    if let Some(file) = e
+                        .target()
+                        .unwrap()
+                        .dyn_into::<web_sys::HtmlInputElement>()
+                        .unwrap()
+                        .files()
+                        .unwrap()
+                        .item(0)
+                    {
+                        Msg::LoadCharacterImageFromFile(character_id, file)
+                    } else {
+                        Msg::NoOp
+                    }
+                }),
+                vec![],
+            ),
         ],
     )
 }
