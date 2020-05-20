@@ -134,12 +134,15 @@ pub enum Msg {
 
     // 接続に関する操作
     ReceiveMsg(skyway::Msg),
+    DisconnectFromRoom,
 
     //デバッグ用
     Debug_SetSelectingCharacterId(u128),
 }
 
-pub enum Sub {}
+pub enum Sub {
+    DisconnectFromRoom,
+}
 
 pub fn new(room: Rc<Room>) -> Component<Msg, State, Sub> {
     Component::new(init(Rc::clone(&room)), update, render)
@@ -629,6 +632,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 update(state, Msg::Render)
             }
         },
+        Msg::DisconnectFromRoom => Cmd::Sub(Sub::DisconnectFromRoom),
 
         //デバッグ用
         Msg::Debug_SetSelectingCharacterId(character_id) => {
@@ -855,7 +859,7 @@ fn render_header_menu(
                     Events::new(),
                     vec![btn::danger(
                         Attributes::new(),
-                        Events::new(),
+                        Events::new().on_click(|_| Msg::DisconnectFromRoom),
                         vec![Html::text("ルームから出る")],
                     )],
                 )],
@@ -937,7 +941,7 @@ fn render_header_menu(
 fn render_hint() -> Html<Msg> {
     Html::div(
         Attributes::new()
-            .class("text-secondary-d")
+            .class("text-color-secondary-d")
             .style("position", "absolute")
             .style("bottom", "5em")
             .style("right", "5em"),

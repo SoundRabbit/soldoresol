@@ -37,6 +37,7 @@ pub enum Msg {
     SetPeerId(String),
     SetRoomId(String),
     ConnectToRoom(String),
+    DisconnectFromRoom,
 }
 
 pub enum Sub {}
@@ -78,12 +79,22 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             }
             Cmd::none()
         }
+        Msg::DisconnectFromRoom => {
+            if let Some(room) = &mut state.room {
+                room.payload.close();
+                state.inputing_room_id = room.id.clone();
+            }
+            state.room = None;
+            Cmd::none()
+        }
     }
 }
 
 fn render(state: &State) -> Html<Msg> {
     if let Some(room) = &state.room {
-        Html::component(room::new(Rc::clone(room)))
+        Html::component(room::new(Rc::clone(room)).subscribe(|sub| match sub {
+            room::Sub::DisconnectFromRoom => Msg::DisconnectFromRoom,
+        }))
     } else {
         Html::div(
             Attributes::new()
@@ -123,6 +134,7 @@ fn render(state: &State) -> Html<Msg> {
                                         vec![Html::input(
                                             Attributes::new()
                                                 .type_("text")
+                                                .value(&state.inputing_room_id)
                                                 .class("pure-input-1")
                                                 .placeholder("ルームID"),
                                             Events::new().on_input(|s| Msg::SetRoomId(s)),

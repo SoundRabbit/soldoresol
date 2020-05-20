@@ -31,6 +31,9 @@ extern "C" {
     #[wasm_bindgen(method)]
     pub fn on(this: &MeshRoom, event: &str, listener: Option<&js_sys::Function>);
 
+    #[wasm_bindgen(method)]
+    pub fn close(this: &MeshRoom);
+
     pub type ReceiveData;
 
     #[wasm_bindgen(method, getter)]
