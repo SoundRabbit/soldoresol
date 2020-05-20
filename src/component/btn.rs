@@ -109,12 +109,20 @@ pub fn toggle<Msg>(is_toggled: bool, attributes: Attributes, events: Events<Msg>
     }
 }
 
+pub fn allocate<Msg>(attributes: Attributes, events: Events<Msg>) -> Html<Msg> {
+    Html::button(
+        attributes.class("pure-button pure-button-light allocate fab fa-buromobelexperte"),
+        events,
+        vec![],
+    )
+}
+
 #[allow(dead_code)]
 pub fn close<Msg>(attributes: Attributes, events: Events<Msg>) -> Html<Msg> {
     Html::button(
-        attributes.class("app__close-btn").class("material-icons"),
+        attributes.class("pure-button pure-button-danger fas fa-times"),
         events,
-        vec![Html::text("clear")],
+        vec![],
     )
 }
 

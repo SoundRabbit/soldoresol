@@ -3,6 +3,10 @@
     grid-template-columns: repeat(24, 1fr);
     grid-auto-rows: max-content;
 
+    &-table {
+        grid-template-rows: repeat(14, 1fr);
+    }
+
     & > &-j-l {
         grid-column-start: 1;
     }
@@ -16,27 +20,51 @@
         grid-column-end: -1;
     }
     
-    @for $c from 1 through 24 {
-        & > &-w-#{$c} {
-            grid-column: span $c;
+    @for $width from 1 through 24 {
+        & > &-w-#{$width} {
+            grid-column: span $width;
         }
     }
 
-    @for $c from 1 through 23 {
-        & > &-cs-#{$c} {
-            grid-column-start: $c;
+    @for $column from 1 through 23 {
+        & > &-cs-#{$column} {
+            grid-column-start: $column;
         }
     }
 
-    @for $c from 2 through 24 {
-        & > &-ce-#{$c} {
-            grid-column-end: $c;
+    @for $column from 2 through 24 {
+        & > &-ce-#{$column} {
+            grid-column-end: $column;
         }
     }
 
-    @for $c from 1 through 12 {
-        & > &-cc-2x#{$c} {
-            grid-column: #{13 - $c} / #{12 + $c};
+    @for $column from 1 through 12 {
+        & > &-cc-2x#{$column} {
+            grid-column: #{13 - $column} / #{12 + $column};
+        }
+    }
+
+    @for $height from 1 through 14 {
+        & > &-h-#{$height} {
+            grid-row: span $height;
+        }
+    }
+
+    @for $row from 1 through 7 {
+        & > &-rs-#{$row} {
+            grid-row-start: $row;
+        }
+    }
+
+    @for $row from 2 through 14 {
+        & > &-re-#{$row} {
+            grid-row-end: $row;
+        }
+    }
+
+    @for $row from 1 through 7 {
+        & > &-rc-2x#{$row} {
+            grid-row: #{8 - $row} / #{7 + $row};
         }
     }
 }

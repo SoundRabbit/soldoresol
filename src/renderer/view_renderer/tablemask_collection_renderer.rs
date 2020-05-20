@@ -67,7 +67,7 @@ impl TablemaskCollectionRenderer {
             let s = tablemask.size();
             let p = tablemask.position();
             let model_matrix: Array2<f64> = ModelMatrix::new()
-                .with_scale(&[s[0], s[0], 1.0])
+                .with_scale(&[s[0], s[1], 1.0])
                 .with_movement(&p)
                 .into();
             let mvp_matrix = model_matrix.dot(vp_matrix);

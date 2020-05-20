@@ -1,10 +1,6 @@
 use super::btn;
-// use super::chat;
 use super::contextmenu;
-// use super::handout;
-// use super::measure_length::measure_length;
-// use super::radio::radio;
-use super::checkbox::checkbox;
+use super::modeless;
 use crate::model::Camera;
 use crate::model::Character;
 use crate::model::ColorSystem;
@@ -16,6 +12,7 @@ use crate::skyway;
 use crate::skyway::ReceiveData;
 use crate::skyway::Room;
 use kagura::prelude::*;
+use std::collections::HashMap;
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
@@ -24,11 +21,6 @@ enum FormKind {
     Chat,
     Handout,
 }
-
-// struct FormState {
-//     chat: chat::State,
-//     handout: handout::State,
-// }
 
 #[derive(Clone)]
 pub enum TableTool {
@@ -77,6 +69,28 @@ struct Contextmenu {
     canvas_position: [f64; 2],
 }
 
+struct ModelessState {
+    is_showing: bool,
+    loc: [u32; 2],
+    size: [u32; 2],
+}
+
+impl ModelessState {
+    pub fn new(is_showing: bool) -> Self {
+        Self {
+            is_showing,
+            loc: [0, 0],
+            size: [12, 7],
+        }
+    }
+}
+
+enum Modeless {
+    Object { tabs: Vec<u128>, focused: usize },
+}
+
+type ModelessCollection = Vec<(ModelessState, Modeless)>;
+
 pub struct State {
     room: Rc<Room>,
     world: World,
@@ -87,14 +101,10 @@ pub struct State {
     contextmenu: Contextmenu,
     focused_object_id: Option<u128>,
     is_2d_mode: bool,
-    // form_state: FormState,
+    modelesses: ModelessCollection,
+    object_modeless_address: HashMap<u128, [usize; 2]>,
     debug__character_id: Option<u128>,
 }
-
-// enum FormMsg {
-//     ChatMsg(chat::Msg),
-//     HandoutMsg(handout::Msg),
-// }
 
 pub enum Msg {
     NoOp,
@@ -124,6 +134,8 @@ pub enum Msg {
     SetObjectPositionWithMouseCoord(u128, [f64; 2]),
     BindObjectToTableGrid(u128),
     SetIs2dMode(bool),
+    OpenObjectModeless(u128),
+    CloseModeless(usize),
 
     // Worldに対する操作
     LoadCharacterImageFromFile(u128, web_sys::File),
@@ -131,6 +143,7 @@ pub enum Msg {
     SetCharacterImage(u128, web_sys::HtmlImageElement),
     AddChracater(Character),
     AddTablemask(Tablemask),
+    SetTablemaskSize(u128, [f64; 2]),
 
     // 接続に関する操作
     ReceiveMsg(skyway::Msg),
@@ -191,11 +204,9 @@ fn init(room: Rc<Room>) -> impl FnOnce() -> (State, Cmd<Msg, Sub>) {
                 canvas_position: [0.0, 0.0],
                 grobal_position: [0.0, 0.0],
             },
-            // form_state: FormState {
-            //     chat: chat::init(),
-            //     handout: handout::init(),
-            // },
             is_2d_mode: false,
+            modelesses: vec![],
+            object_modeless_address: HashMap::new(),
             focused_object_id: None,
             debug__character_id: None,
         };
@@ -284,6 +295,10 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
         //コンテキストメニューの制御
         Msg::OpenContextMenu(page_mouse_coord, offset_mouse_coord) => {
+            update(
+                state,
+                Msg::SetCursorWithMouseCoord(offset_mouse_coord.clone()),
+            );
             state.contextmenu.grobal_position = page_mouse_coord.clone();
             state.contextmenu.canvas_position = offset_mouse_coord;
             contextmenu::open(&mut state.contextmenu.state, page_mouse_coord);
@@ -527,6 +542,37 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.is_2d_mode = is_2d_mode;
             update(state, Msg::Render)
         }
+        Msg::OpenObjectModeless(object_id) => {
+            let mut modeless_is_registered = false;
+            if let Some(address) = state.object_modeless_address.get(&object_id) {
+                if let Some((state, modeless)) = state.modelesses.get_mut(address[0]) {
+                    match modeless {
+                        Modeless::Object { focused, .. } => {
+                            *focused = address[1];
+                            state.is_showing = true;
+                            modeless_is_registered = true;
+                        }
+                    }
+                }
+            }
+            if !modeless_is_registered {
+                state.modelesses.push((
+                    ModelessState::new(true),
+                    Modeless::Object {
+                        tabs: vec![object_id],
+                        focused: 0,
+                    },
+                ));
+                state
+                    .object_modeless_address
+                    .insert(object_id, [state.modelesses.len(), 0]);
+            }
+            Cmd::none()
+        }
+        Msg::CloseModeless(modeless_idx) => {
+            state.modelesses[modeless_idx].0.is_showing = false;
+            Cmd::none()
+        }
 
         // Worldに対する操作
         Msg::LoadCharacterImageFromFile(character_id, file) => Cmd::task(move |resolver| {
@@ -592,6 +638,12 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
         Msg::AddTablemask(tablemask) => {
             state.world.add_tablemask(tablemask);
+            update(state, Msg::Render)
+        }
+        Msg::SetTablemaskSize(tablemask_id, size) => {
+            if let Some(tablemask) = state.world.tablemask_mut(&tablemask_id) {
+                tablemask.set_size(size);
+            }
             update(state, Msg::Render)
         }
 
@@ -670,24 +722,37 @@ fn render_canvas_container(state: &State) -> Html<Msg> {
             .style("position", "relative"),
         Events::new(),
         vec![
-            render_canvas(
+            render_canvas(),
+            render_measure_length(&state.table_state.measure_length),
+            render_hint(),
+            render_canvas_overlaper(
                 &state.table_state,
                 &state.focused_object_id,
                 state.is_2d_mode,
+                &state.world,
+                &state.modelesses,
             ),
-            render_measure_length(&state.table_state.measure_length),
-            render_hint(),
         ],
     )
 }
 
-fn render_canvas(
+fn render_canvas() -> Html<Msg> {
+    Html::canvas(
+        Attributes::new().id("table").class("cover"),
+        Events::new(),
+        vec![],
+    )
+}
+
+fn render_canvas_overlaper(
     table_state: &TableState,
     focused_object_id: &Option<u128>,
     is_2d_mode: bool,
+    world: &World,
+    modelesses: &ModelessCollection,
 ) -> Html<Msg> {
-    Html::canvas(
-        Attributes::new().id("table").class("cover"),
+    modeless::container(
+        Attributes::new().class("cover"),
         Events::new()
             .on_mousemove({
                 let selecting_tool = table_state.selecting_tool.clone();
@@ -755,7 +820,21 @@ fn render_canvas(
                 e.stop_propagation();
                 Msg::OpenContextMenu(page_mouse_coord, offset_mouse_coord)
             }),
-        vec![render_hint()],
+        modelesses
+            .iter()
+            .enumerate()
+            .map(|(idx, (state, modeless))| {
+                if !state.is_showing {
+                    Html::none()
+                } else {
+                    match modeless {
+                        Modeless::Object { focused, tabs } => {
+                            render_object_modeless(idx, state, tabs, *focused, world)
+                        }
+                    }
+                }
+            })
+            .collect(),
     )
 }
 
@@ -810,7 +889,11 @@ fn render_context_menu_object(contextmenu: &Contextmenu, object_id: u128) -> Htm
             Attributes::new().class("pure-menu-list"),
             Events::new(),
             vec![
-                btn::contextmenu_text(Attributes::new(), Events::new(), "編集"),
+                btn::contextmenu_text(
+                    Attributes::new(),
+                    Events::new().on_click(move |_| Msg::OpenObjectModeless(object_id)),
+                    "編集",
+                ),
                 btn::contextmenu_text(
                     Attributes::new(),
                     Events::new().on_click(move |_| Msg::CloneObjectWithObjectId(object_id)),
@@ -963,4 +1046,135 @@ fn render_measure_length(measure_length: &Option<f64>) -> Html<Msg> {
     } else {
         Html::none()
     }
+}
+
+fn render_object_modeless(
+    modeless_idx: usize,
+    state: &ModelessState,
+    tabs: &Vec<u128>,
+    focused: usize,
+    world: &World,
+) -> Html<Msg> {
+    let focused_id = tabs[focused];
+    modeless::frame(
+        &state.loc,
+        &state.size,
+        Attributes::new(),
+        Events::new()
+            .on_mousedown(|e| {
+                e.stop_propagation();
+                Msg::NoOp
+            })
+            .on_mousemove(|e| {
+                e.stop_propagation();
+                Msg::NoOp
+            })
+            .on_contextmenu(|e| {
+                e.stop_propagation();
+                Msg::NoOp
+            }),
+        vec![
+            modeless::header(
+                Attributes::new()
+                    .style("display", "grid")
+                    .style("grid-template-columns", "1fr max-content"),
+                Events::new(),
+                vec![
+                    Html::div(Attributes::new(), Events::new(), vec![]),
+                    Html::div(
+                        Attributes::new().class("linear-h"),
+                        Events::new(),
+                        vec![
+                            btn::allocate(Attributes::new(), Events::new()),
+                            btn::close(
+                                Attributes::new(),
+                                Events::new().on_click(move |_| Msg::CloseModeless(modeless_idx)),
+                            ),
+                        ],
+                    ),
+                ],
+            ),
+            if let Some(tablemask) = world.tablemask(&focused_id) {
+                render_tablemask_modeless(tablemask, focused_id)
+            } else {
+                Html::none()
+            },
+            modeless::footer(Attributes::new(), Events::new(), vec![]),
+        ],
+    )
+}
+
+fn render_tablemask_modeless(tablemask: &Tablemask, tablemask_id: u128) -> Html<Msg> {
+    let input_width_id = random_id::hex(4);
+    let input_height_id = random_id::hex(4);
+    let width = tablemask.size()[0];
+    let height = tablemask.size()[1];
+
+    modeless::body(
+        Attributes::new().class("container-a grid pure-form"),
+        Events::new(),
+        vec![
+            Html::fieldset(
+                Attributes::new().class("grid-w-11 keyvalue"),
+                Events::new(),
+                vec![
+                    Html::label(
+                        Attributes::new()
+                            .class("text-label")
+                            .string("for", &input_width_id),
+                        Events::new(),
+                        vec![Html::text("width")],
+                    ),
+                    Html::input(
+                        Attributes::new()
+                            .type_("number")
+                            .value(width.to_string())
+                            .class("pure-input-1")
+                            .id(input_width_id),
+                        Events::new().on_input({
+                            move |w| {
+                                if let Ok(w) = w.parse() {
+                                    Msg::SetTablemaskSize(tablemask_id, [w, height])
+                                } else {
+                                    Msg::NoOp
+                                }
+                            }
+                        }),
+                        vec![],
+                    ),
+                ],
+            ),
+            Html::div(Attributes::new().class("grid-w-2"), Events::new(), vec![]),
+            Html::fieldset(
+                Attributes::new().class("grid-w-11 keyvalue"),
+                Events::new(),
+                vec![
+                    Html::label(
+                        Attributes::new()
+                            .class("text-label")
+                            .string("for", &input_height_id),
+                        Events::new(),
+                        vec![Html::text("height")],
+                    ),
+                    Html::input(
+                        Attributes::new()
+                            .type_("number")
+                            .value(height.to_string())
+                            .class("pure-input-1")
+                            .id(input_height_id),
+                        Events::new().on_input({
+                            move |h| {
+                                if let Ok(h) = h.parse() {
+                                    Msg::SetTablemaskSize(tablemask_id, [width, h])
+                                } else {
+                                    Msg::NoOp
+                                }
+                            }
+                        }),
+                        vec![],
+                    ),
+                ],
+            ),
+        ],
+    )
 }
