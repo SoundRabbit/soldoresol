@@ -1,14 +1,17 @@
 @import "color";
 
 .text {
-    &-primary {
+    &-color-primary-d {
         color: $blue-600;
     }
-    &-secondary {
+    &-color-secondary-d {
         color: $gray-600;
     }
-    &-success {
+    &-color-success-d {
         color: $green-600;
+    }
+    &-color-danger-l {
+        color: $red-400;
     }
 
     &-label {

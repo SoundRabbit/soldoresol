@@ -937,7 +937,7 @@ fn render_header_menu(
 fn render_hint() -> Html<Msg> {
     Html::div(
         Attributes::new()
-            .class("text-secondary")
+            .class("text-secondary-d")
             .style("position", "absolute")
             .style("bottom", "5em")
             .style("right", "5em"),
