@@ -26,7 +26,7 @@ fn init(is_dev_mode: bool) -> impl FnOnce() -> (State, Cmd<Msg, Sub>) {
         let config_url = if is_dev_mode {
             "/config.dev.toml"
         } else {
-            "/config.toml"
+            "./config.toml"
         };
         let task = Cmd::task(task::http::get(config_url, task::http::Props::new(), |r| {
             Msg::SetConfig(r)
