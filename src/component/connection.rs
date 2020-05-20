@@ -108,7 +108,7 @@ fn render(state: &State) -> Html<Msg> {
                     Html::div(
                         Attributes::new().class("frame-header"),
                         Events::new(),
-                        vec![Html::text("Soldoresol v0.1.0")],
+                        vec![Html::text("Soldoresol")],
                     ),
                     Html::div(
                         Attributes::new().class("frame-body grid"),
