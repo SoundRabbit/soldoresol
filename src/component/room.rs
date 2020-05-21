@@ -144,6 +144,7 @@ pub enum Msg {
     AddChracater(Character),
     AddTablemask(Tablemask),
     SetTablemaskSize(u128, [f64; 2]),
+    SetTablemaskSizeIsBinded(u128, bool),
 
     // 接続に関する操作
     ReceiveMsg(skyway::Msg),
@@ -646,6 +647,12 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         Msg::SetTablemaskSize(tablemask_id, size) => {
             if let Some(tablemask) = state.world.tablemask_mut(&tablemask_id) {
                 tablemask.set_size(size);
+            }
+            update(state, Msg::Render)
+        }
+        Msg::SetTablemaskSizeIsBinded(tablemask_id, is_binded) => {
+            if let Some(tablemask) = state.world.tablemask_mut(&tablemask_id) {
+                tablemask.set_size_is_binded(is_binded);
             }
             update(state, Msg::Render)
         }
@@ -1177,9 +1184,13 @@ fn render_tablemask_modeless(tablemask: &Tablemask, tablemask_id: u128) -> Html<
                             .class("pure-input-1")
                             .id(input_width_id),
                         Events::new().on_input({
+                            let size_is_binded = tablemask.size_is_binded();
                             move |w| {
                                 if let Ok(w) = w.parse() {
-                                    Msg::SetTablemaskSize(tablemask_id, [w, height])
+                                    Msg::SetTablemaskSize(
+                                        tablemask_id,
+                                        [w, if size_is_binded { w } else { height }],
+                                    )
                                 } else {
                                     Msg::NoOp
                                 }
@@ -1189,7 +1200,25 @@ fn render_tablemask_modeless(tablemask: &Tablemask, tablemask_id: u128) -> Html<
                     ),
                 ],
             ),
-            Html::div(Attributes::new().class("grid-w-2"), Events::new(), vec![]),
+            Html::div(
+                Attributes::new().class("grid-w-2 centering-a"),
+                Events::new(),
+                vec![if tablemask.size_is_binded() {
+                    btn::transparent(
+                        Attributes::new().class("fas fa-link text-color-light"),
+                        Events::new()
+                            .on_click(move |_| Msg::SetTablemaskSizeIsBinded(tablemask_id, false)),
+                        vec![],
+                    )
+                } else {
+                    btn::transparent(
+                        Attributes::new().class("fas fa-link text-color-gray"),
+                        Events::new()
+                            .on_click(move |_| Msg::SetTablemaskSizeIsBinded(tablemask_id, true)),
+                        vec![],
+                    )
+                }],
+            ),
             Html::fieldset(
                 Attributes::new().class("grid-w-11 keyvalue"),
                 Events::new(),
@@ -1208,9 +1237,13 @@ fn render_tablemask_modeless(tablemask: &Tablemask, tablemask_id: u128) -> Html<
                             .class("pure-input-1")
                             .id(input_height_id),
                         Events::new().on_input({
+                            let size_is_binded = tablemask.size_is_binded();
                             move |h| {
                                 if let Ok(h) = h.parse() {
-                                    Msg::SetTablemaskSize(tablemask_id, [width, h])
+                                    Msg::SetTablemaskSize(
+                                        tablemask_id,
+                                        [if size_is_binded { h } else { width }, h],
+                                    )
                                 } else {
                                     Msg::NoOp
                                 }

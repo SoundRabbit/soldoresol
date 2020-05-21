@@ -25,4 +25,7 @@
         color: $gray-000 !important;
         background-color: $gray-900 !important;
     }
+    &-transparent {
+        background-color: transparent;
+    }
 }

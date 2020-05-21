@@ -127,6 +127,19 @@ pub fn close<Msg>(attributes: Attributes, events: Events<Msg>) -> Html<Msg> {
 }
 
 #[allow(dead_code)]
+pub fn transparent<Msg>(
+    attributes: Attributes,
+    events: Events<Msg>,
+    children: Vec<Html<Msg>>,
+) -> Html<Msg> {
+    Html::button(
+        attributes.class("pure-button pure-button-transparent"),
+        events,
+        children,
+    )
+}
+
+#[allow(dead_code)]
 pub fn add<Msg>(attributes: Attributes, events: Events<Msg>) -> Html<Msg> {
     Html::button(
         attributes.class("app__add-btn").class("material-icons"),
