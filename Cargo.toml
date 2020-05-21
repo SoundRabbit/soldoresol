@@ -36,6 +36,7 @@ version = "0.3.32"
 features = [
     "CanvasRenderingContext2d",
     "Crypto",
+    "DataTransfer",
     "DragEvent",
     "Event",
     "File",

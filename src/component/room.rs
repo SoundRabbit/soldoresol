@@ -1,5 +1,6 @@
 use super::btn;
 use super::contextmenu;
+use super::modal;
 use super::modeless;
 use crate::model::Camera;
 use crate::model::Character;
@@ -16,11 +17,6 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
-
-enum FormKind {
-    Chat,
-    Handout,
-}
 
 #[derive(Clone)]
 pub enum TableTool {
@@ -71,16 +67,16 @@ struct Contextmenu {
 
 struct ModelessState {
     is_showing: bool,
-    loc: [u32; 2],
-    size: [u32; 2],
+    loc_a: [i32; 2],
+    loc_b: [i32; 2],
 }
 
 impl ModelessState {
     pub fn new(is_showing: bool) -> Self {
         Self {
             is_showing,
-            loc: [0, 0],
-            size: [12, 7],
+            loc_a: [1, 1],
+            loc_b: [12, 8],
         }
     }
 }
@@ -102,8 +98,8 @@ pub struct State {
     focused_object_id: Option<u128>,
     is_2d_mode: bool,
     modelesses: ModelessCollection,
+    dragged_modeless_idx: Option<usize>,
     object_modeless_address: HashMap<u128, [usize; 2]>,
-    debug__character_id: Option<u128>,
 }
 
 pub enum Msg {
@@ -134,8 +130,12 @@ pub enum Msg {
     SetObjectPositionWithMouseCoord(u128, [f64; 2]),
     BindObjectToTableGrid(u128),
     SetIs2dMode(bool),
+
+    // モードレス
     OpenObjectModeless(u128),
     CloseModeless(usize),
+    SetDraggedModeless(usize),
+    SetModelessLoc(usize, [i32; 2]),
 
     // Worldに対する操作
     LoadCharacterImageFromFile(u128, web_sys::File),
@@ -149,9 +149,6 @@ pub enum Msg {
     // 接続に関する操作
     ReceiveMsg(skyway::Msg),
     DisconnectFromRoom,
-
-    //デバッグ用
-    Debug_SetSelectingCharacterId(u128),
 }
 
 pub enum Sub {
@@ -207,9 +204,9 @@ fn init(room: Rc<Room>) -> impl FnOnce() -> (State, Cmd<Msg, Sub>) {
             },
             is_2d_mode: false,
             modelesses: vec![],
+            dragged_modeless_idx: None,
             object_modeless_address: HashMap::new(),
             focused_object_id: None,
-            debug__character_id: None,
         };
         let task = Cmd::task(|handler| {
             handler(Msg::SetTableContext);
@@ -546,6 +543,8 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.is_2d_mode = is_2d_mode;
             update(state, Msg::Render)
         }
+
+        // モードレス
         Msg::OpenObjectModeless(object_id) => {
             let mut modeless_is_registered = false;
             if let Some(address) = state.object_modeless_address.get(&object_id) {
@@ -569,12 +568,20 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 ));
                 state
                     .object_modeless_address
-                    .insert(object_id, [state.modelesses.len(), 0]);
+                    .insert(object_id, [state.modelesses.len() - 1, 0]);
             }
             Cmd::none()
         }
         Msg::CloseModeless(modeless_idx) => {
             state.modelesses[modeless_idx].0.is_showing = false;
+            Cmd::none()
+        }
+        Msg::SetDraggedModeless(modeless_idx) => {
+            state.dragged_modeless_idx = Some(modeless_idx);
+            Cmd::none()
+        }
+        Msg::SetModelessLoc(modeless_idx, loc) => {
+            state.modelesses[modeless_idx].0.loc_a = loc;
             Cmd::none()
         }
 
@@ -702,12 +709,6 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             }
         },
         Msg::DisconnectFromRoom => Cmd::Sub(Sub::DisconnectFromRoom),
-
-        //デバッグ用
-        Msg::Debug_SetSelectingCharacterId(character_id) => {
-            state.debug__character_id = Some(character_id);
-            Cmd::none()
-        }
     }
 }
 
@@ -727,7 +728,7 @@ fn render(state: &State) -> Html<Msg> {
                 state.is_2d_mode,
             ),
             render_canvas_container(&state),
-            render_context_menu(&state.contextmenu, &state.focused_object_id),
+            render_context_menu(&state.contextmenu, &state.focused_object_id, &state.world),
         ],
     )
 }
@@ -748,6 +749,7 @@ fn render_canvas_container(state: &State) -> Html<Msg> {
                 state.is_2d_mode,
                 &state.world,
                 &state.modelesses,
+                &state.dragged_modeless_idx,
             ),
         ],
     )
@@ -767,6 +769,7 @@ fn render_canvas_overlaper(
     is_2d_mode: bool,
     world: &World,
     modelesses: &ModelessCollection,
+    dragged_modeless_idx: &Option<usize>,
 ) -> Html<Msg> {
     modeless::container(
         Attributes::new().class("cover"),
@@ -855,9 +858,17 @@ fn render_canvas_overlaper(
     )
 }
 
-fn render_context_menu(contextmenu: &Contextmenu, focused_object_id: &Option<u128>) -> Html<Msg> {
-    if let Some(character_id) = focused_object_id {
-        render_context_menu_object(contextmenu, *character_id)
+fn render_context_menu(
+    contextmenu: &Contextmenu,
+    focused_object_id: &Option<u128>,
+    world: &World,
+) -> Html<Msg> {
+    if let Some(focused_object_id) = focused_object_id {
+        if world.tablemask(focused_object_id).is_some() {
+            render_context_menu_tablemask(contextmenu, *focused_object_id)
+        } else {
+            render_context_menu_character(contextmenu, *focused_object_id)
+        }
     } else {
         render_context_menu_default(contextmenu)
     }
@@ -895,7 +906,7 @@ fn render_context_menu_default(contextmenu: &Contextmenu) -> Html<Msg> {
     )
 }
 
-fn render_context_menu_object(contextmenu: &Contextmenu, object_id: u128) -> Html<Msg> {
+fn render_context_menu_character(contextmenu: &Contextmenu, object_id: u128) -> Html<Msg> {
     contextmenu::render(
         false,
         &contextmenu.state,
@@ -910,6 +921,89 @@ fn render_context_menu_object(contextmenu: &Contextmenu, object_id: u128) -> Htm
                     Attributes::new(),
                     Events::new().on_click(move |_| Msg::OpenObjectModeless(object_id)),
                     "編集",
+                ),
+                btn::contextmenu_text(
+                    Attributes::new(),
+                    Events::new().on_click(move |_| Msg::CloneObjectWithObjectId(object_id)),
+                    "コピーを作成",
+                ),
+            ],
+        )],
+    )
+}
+
+fn render_context_menu_tablemask(contextmenu: &Contextmenu, object_id: u128) -> Html<Msg> {
+    contextmenu::render(
+        false,
+        &contextmenu.state,
+        || Box::new(|| Box::new(|msg| Msg::TransportContextMenuMsg(msg))),
+        Attributes::new(),
+        Events::new(),
+        vec![Html::ul(
+            Attributes::new().class("pure-menu-list"),
+            Events::new(),
+            vec![
+                Html::li(
+                    Attributes::new().class("pure-menu-item pure-menu-has-children"),
+                    Events::new(),
+                    vec![
+                        btn::contextmenu_text(Attributes::new(), Events::new(), "サイズ"),
+                        Html::ul(
+                            Attributes::new().class("pure-menu-children"),
+                            Events::new(),
+                            vec![
+                                btn::contextmenu_text(
+                                    Attributes::new(),
+                                    Events::new().on_click(move |_| {
+                                        Msg::SetTablemaskSize(object_id, [2., 2.])
+                                    }),
+                                    "2x2",
+                                ),
+                                btn::contextmenu_text(
+                                    Attributes::new(),
+                                    Events::new().on_click(move |_| {
+                                        Msg::SetTablemaskSize(object_id, [3., 3.])
+                                    }),
+                                    "3x3",
+                                ),
+                                btn::contextmenu_text(
+                                    Attributes::new(),
+                                    Events::new().on_click(move |_| {
+                                        Msg::SetTablemaskSize(object_id, [4., 4.])
+                                    }),
+                                    "4x4",
+                                ),
+                                btn::contextmenu_text(
+                                    Attributes::new(),
+                                    Events::new().on_click(move |_| {
+                                        Msg::SetTablemaskSize(object_id, [5., 5.])
+                                    }),
+                                    "5x5",
+                                ),
+                                btn::contextmenu_text(
+                                    Attributes::new(),
+                                    Events::new().on_click(move |_| {
+                                        Msg::SetTablemaskSize(object_id, [6., 6.])
+                                    }),
+                                    "6x6",
+                                ),
+                                btn::contextmenu_text(
+                                    Attributes::new(),
+                                    Events::new().on_click(move |_| {
+                                        Msg::SetTablemaskSize(object_id, [7., 7.])
+                                    }),
+                                    "7x7",
+                                ),
+                                btn::contextmenu_text(
+                                    Attributes::new(),
+                                    Events::new().on_click(move |_| {
+                                        Msg::SetTablemaskSize(object_id, [8., 8.])
+                                    }),
+                                    "8x8",
+                                ),
+                            ],
+                        ),
+                    ],
                 ),
                 btn::contextmenu_text(
                     Attributes::new(),
@@ -1073,14 +1167,13 @@ fn render_object_modeless(
     world: &World,
 ) -> Html<Msg> {
     let focused_id = tabs[focused];
-    modeless::frame(
-        &state.loc,
-        &state.size,
+    modal::frame(
+        6,
         Attributes::new(),
         Events::new()
-            .on_mousedown(|e| {
+            .on_mousedown(move |e| {
                 e.stop_propagation();
-                Msg::NoOp
+                Msg::SetDraggedModeless(modeless_idx)
             })
             .on_mousemove(|e| {
                 e.stop_propagation();
@@ -1091,7 +1184,7 @@ fn render_object_modeless(
                 Msg::NoOp
             }),
         vec![
-            modeless::header(
+            modal::header(
                 Attributes::new()
                     .style("display", "grid")
                     .style("grid-template-columns", "1fr max-content"),
@@ -1101,40 +1194,44 @@ fn render_object_modeless(
                     Html::div(
                         Attributes::new().class("linear-h"),
                         Events::new(),
-                        vec![
-                            btn::allocate(Attributes::new(), Events::new()),
-                            btn::close(
-                                Attributes::new(),
-                                Events::new().on_click(move |_| Msg::CloseModeless(modeless_idx)),
-                            ),
-                        ],
+                        vec![btn::close(
+                            Attributes::new(),
+                            Events::new().on_click(move |_| Msg::CloseModeless(modeless_idx)),
+                        )],
                     ),
                 ],
             ),
             if let Some(character) = world.character(&focused_id) {
-                render_character_modeless(character, focused_id)
+                render_object_modeless_character(character, focused_id)
             } else if let Some(tablemask) = world.tablemask(&focused_id) {
-                render_tablemask_modeless(tablemask, focused_id)
+                render_object_modeless_tablemask(tablemask, focused_id)
             } else {
                 Html::none()
             },
-            modeless::footer(Attributes::new(), Events::new(), vec![]),
+            modal::footer(Attributes::new(), Events::new(), vec![]),
         ],
     )
 }
 
-fn render_character_modeless(character: &Character, character_id: u128) -> Html<Msg> {
-    modeless::body(
+fn render_object_modeless_character(character: &Character, character_id: u128) -> Html<Msg> {
+    modal::body(
         Attributes::new().class("container-a grid pure-form"),
         Events::new(),
         vec![
+            Html::img(
+                Attributes::new()
+                    .string("src", character.texture_src())
+                    .class("grid-w-f"),
+                Events::new(),
+                vec![],
+            ),
             Html::span(
-                Attributes::new(),
+                Attributes::new().class("grid-w-f"),
                 Events::new(),
                 vec![Html::text("立ち絵を選択")],
             ),
             Html::input(
-                Attributes::new().type_("file"),
+                Attributes::new().type_("file").class("grid-w-f"),
                 Events::new().on("change", move |e| {
                     if let Some(file) = e
                         .target()
@@ -1156,7 +1253,7 @@ fn render_character_modeless(character: &Character, character_id: u128) -> Html<
     )
 }
 
-fn render_tablemask_modeless(tablemask: &Tablemask, tablemask_id: u128) -> Html<Msg> {
+fn render_object_modeless_tablemask(tablemask: &Tablemask, tablemask_id: u128) -> Html<Msg> {
     let input_width_id = random_id::hex(4);
     let input_height_id = random_id::hex(4);
     let width = tablemask.size()[0];

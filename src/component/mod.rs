@@ -3,6 +3,7 @@ mod checkbox;
 pub mod config_loder;
 mod connection;
 mod contextmenu;
+mod modal;
 mod modeless;
 mod room;
 

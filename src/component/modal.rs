@@ -5,31 +5,21 @@ pub fn container<Msg>(
     events: Events<Msg>,
     children: Vec<Html<Msg>>,
 ) -> Html<Msg> {
-    Html::div(attributes.class("grid grid-table"), events, children)
+    Html::div(
+        attributes.class("fullscreen bg-color-dark-t centering-v grid"),
+        events,
+        children,
+    )
 }
 
 pub fn frame<Msg>(
-    loc_a: &[i32; 2],
-    loc_b: &[i32; 2],
+    size: u32,
     attributes: Attributes,
     events: Events<Msg>,
     children: Vec<Html<Msg>>,
 ) -> Html<Msg> {
-    let clm = format!(
-        "grid-cs-{} grid-ce-{}",
-        loc_a[0].min(loc_b[0]).max(1),
-        loc_a[0].max(loc_b[0]).min(25)
-    );
-    let row = format!(
-        "grid-rs-{} grid-re-{}",
-        loc_a[1].min(loc_b[1]).max(1),
-        loc_a[1].max(loc_b[1]).min(15)
-    );
-
     Html::div(
-        attributes
-            .class(format!("frame {} {}", clm, row))
-            .draggable(false),
+        attributes.class(format!("frame grid-cc-2x{}", size / 2)),
         events,
         children,
     )

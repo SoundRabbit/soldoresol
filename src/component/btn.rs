@@ -109,6 +109,7 @@ pub fn toggle<Msg>(is_toggled: bool, attributes: Attributes, events: Events<Msg>
     }
 }
 
+#[allow(dead_code)]
 pub fn allocate<Msg>(attributes: Attributes, events: Events<Msg>) -> Html<Msg> {
     Html::button(
         attributes.class("pure-button pure-button-light allocate fab fa-buromobelexperte"),

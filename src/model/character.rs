@@ -50,7 +50,7 @@ impl Character {
         self.position = [p[0], p[1], self.position[2]];
     }
 
-    pub fn texture_image(&mut self) -> Option<&web_sys::HtmlImageElement> {
+    pub fn texture_image(&self) -> Option<&web_sys::HtmlImageElement> {
         if self.texture_is_changed {
             if let Some(texture) = &self.texture {
                 Some(texture)
@@ -60,6 +60,13 @@ impl Character {
         } else {
             None
         }
+    }
+
+    pub fn texture_src(&self) -> String {
+        self.texture
+            .as_ref()
+            .map(|el| el.src())
+            .unwrap_or("".into())
     }
 
     pub fn background_color(&self) -> &Color {

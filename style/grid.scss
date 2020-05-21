@@ -26,13 +26,13 @@
         }
     }
 
-    @for $column from 1 through 23 {
+    @for $column from 1 through 24 {
         & > &-cs-#{$column} {
             grid-column-start: $column;
         }
     }
 
-    @for $column from 2 through 24 {
+    @for $column from 2 through 25 {
         & > &-ce-#{$column} {
             grid-column-end: $column;
         }
@@ -40,8 +40,13 @@
 
     @for $column from 1 through 12 {
         & > &-cc-2x#{$column} {
-            grid-column: #{13 - $column} / #{12 + $column};
+            grid-column: #{13 - $column} / #{13 + $column};
         }
+    }
+
+    & > &-h-f {
+        grid-row-start: 1;
+        grid-row-end: -1;
     }
 
     @for $height from 1 through 14 {
@@ -50,13 +55,13 @@
         }
     }
 
-    @for $row from 1 through 7 {
+    @for $row from 1 through 14 {
         & > &-rs-#{$row} {
             grid-row-start: $row;
         }
     }
 
-    @for $row from 2 through 14 {
+    @for $row from 2 through 15 {
         & > &-re-#{$row} {
             grid-row-end: $row;
         }
@@ -64,7 +69,7 @@
 
     @for $row from 1 through 7 {
         & > &-rc-2x#{$row} {
-            grid-row: #{8 - $row} / #{7 + $row};
+            grid-row: #{8 - $row} / #{8 + $row};
         }
     }
 }
