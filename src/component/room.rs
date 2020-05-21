@@ -474,6 +474,9 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 .world
                 .table_mut()
                 .erace_line(&start_point, &end_point, 1.0);
+            state
+                .room
+                .send(&skyway::Msg::EraceLineToTable(start_point, end_point));
             update(state, Msg::SetCursorWithMouseCoord(mouse_coord))
         }
         Msg::SetMeasureStartPointAndEndPointWithMouseCoord(start_point, mouse_coord) => {
@@ -662,6 +665,13 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     ColorSystem::gray_900(255),
                     0.5,
                 );
+                update(state, Msg::Render)
+            }
+            skyway::Msg::EraceLineToTable(start_point, end_point) => {
+                state
+                    .world
+                    .table_mut()
+                    .erace_line(&start_point, &end_point, 1.0);
                 update(state, Msg::Render)
             }
             skyway::Msg::SetCharacterImage(character_id, data_url) => update(
