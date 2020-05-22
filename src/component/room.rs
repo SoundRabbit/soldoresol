@@ -745,7 +745,7 @@ fn render(state: &State) -> Html<Msg> {
     Html::div(
         Attributes::new()
             .id("app")
-            .class("fullscreen")
+            .class("fullscreen unselectable")
             .style("display", "grid")
             .style("grid-template-rows", "max-content 1fr"),
         Events::new(),
@@ -820,6 +820,7 @@ fn render_canvas_overlaper(
                 let selecting_tool = table_state.selecting_tool.clone();
                 let focused_object_id = focused_object_id.clone();
                 move |e| {
+                    e.stop_propagation();
                     let mouse_coord = [e.offset_x() as f64, e.offset_y() as f64];
                     if e.buttons() & 1 == 0 {
                         Msg::SetCursorWithMouseCoord(mouse_coord)
@@ -847,6 +848,7 @@ fn render_canvas_overlaper(
                 }
             })
             .on("wheel", |e| {
+                e.stop_propagation();
                 if let Ok(e) = e.dyn_into::<web_sys::WheelEvent>() {
                     Msg::SetCameraMovementWithMouseWheel(e.delta_y())
                 } else {
@@ -855,24 +857,32 @@ fn render_canvas_overlaper(
             })
             .on_mousedown({
                 let selecting_tool = table_state.selecting_tool.clone();
-                move |e| match selecting_tool {
-                    TableTool::Measure(_) => {
-                        let mouse_coord = [e.offset_x() as f64, e.offset_y() as f64];
-                        Msg::SetSelectingTableTool(TableTool::Measure(Some(mouse_coord)))
+                move |e| {
+                    e.stop_propagation();
+                    match selecting_tool {
+                        TableTool::Measure(_) => {
+                            let mouse_coord = [e.offset_x() as f64, e.offset_y() as f64];
+                            Msg::SetSelectingTableTool(TableTool::Measure(Some(mouse_coord)))
+                        }
+                        _ => Msg::NoOp,
                     }
-                    _ => Msg::NoOp,
                 }
             })
             .on_mouseup({
                 let selecting_tool = table_state.selecting_tool.clone();
                 let focused_object_id = focused_object_id.clone();
-                move |_| match selecting_tool {
-                    TableTool::Selector => match focused_object_id {
-                        Some(object_id) => Msg::BindObjectToTableGrid(object_id),
-                        None => Msg::NoOp,
-                    },
-                    TableTool::Measure(_) => Msg::SetSelectingTableTool(TableTool::Measure(None)),
-                    _ => Msg::NoOp,
+                move |e| {
+                    e.stop_propagation();
+                    match selecting_tool {
+                        TableTool::Selector => match focused_object_id {
+                            Some(object_id) => Msg::BindObjectToTableGrid(object_id),
+                            None => Msg::NoOp,
+                        },
+                        TableTool::Measure(_) => {
+                            Msg::SetSelectingTableTool(TableTool::Measure(None))
+                        }
+                        _ => Msg::NoOp,
+                    }
                 }
             })
             .on_contextmenu(|e| {
@@ -1208,6 +1218,7 @@ fn render_object_modeless(
     focused: usize,
     world: &World,
 ) -> Html<Msg> {
+    let height = state.loc_b[1] - state.loc_a[1];
     let focused_id = tabs[focused];
     modeless::frame(
         &state.loc_a,
@@ -1223,6 +1234,10 @@ fn render_object_modeless(
                 Msg::NoOp
             })
             .on_contextmenu(|e| {
+                e.stop_propagation();
+                Msg::NoOp
+            })
+            .on("wheel", |e| {
                 e.stop_propagation();
                 Msg::NoOp
             }),
@@ -1252,7 +1267,7 @@ fn render_object_modeless(
                 ],
             ),
             if let Some(character) = world.character(&focused_id) {
-                render_object_modeless_character(character, focused_id)
+                render_object_modeless_character(height, character, focused_id)
             } else if let Some(tablemask) = world.tablemask(&focused_id) {
                 render_object_modeless_tablemask(tablemask, focused_id)
             } else {
@@ -1263,43 +1278,54 @@ fn render_object_modeless(
     )
 }
 
-fn render_object_modeless_character(character: &Character, character_id: u128) -> Html<Msg> {
+fn render_object_modeless_character(
+    modeless_height: i32,
+    character: &Character,
+    character_id: u128,
+) -> Html<Msg> {
     modeless::body(
-        Attributes::new().class("container-a grid pure-form"),
+        Attributes::new().class("scroll-v flex-h"),
         Events::new(),
-        vec![
-            Html::img(
-                Attributes::new()
-                    .string("src", character.texture_src())
-                    .class("grid-w-f pure-img"),
-                Events::new(),
-                vec![],
-            ),
-            Html::span(
-                Attributes::new().class("grid-w-f"),
-                Events::new(),
-                vec![Html::text("立ち絵を選択")],
-            ),
-            Html::input(
-                Attributes::new().type_("file").class("grid-w-f"),
-                Events::new().on("change", move |e| {
-                    if let Some(file) = e
-                        .target()
-                        .unwrap()
-                        .dyn_into::<web_sys::HtmlInputElement>()
-                        .unwrap()
-                        .files()
-                        .unwrap()
-                        .item(0)
-                    {
-                        Msg::LoadCharacterImageFromFile(character_id, file)
-                    } else {
-                        Msg::NoOp
-                    }
-                }),
-                vec![],
-            ),
-        ],
+        vec![Html::div(
+            Attributes::new().class("container-a"),
+            Events::new(),
+            vec![
+                Html::div(
+                    Attributes::new().class("centering-a"),
+                    Events::new(),
+                    vec![Html::img(
+                        Attributes::new()
+                            .string("src", character.texture_src())
+                            .class("pure-img")
+                            .style(
+                                "max-height",
+                                format!("{}vh", (modeless_height - 1) as f64 * 100.0 / 14.0),
+                            ),
+                        Events::new(),
+                        vec![],
+                    )],
+                ),
+                Html::input(
+                    Attributes::new().type_("file").class("grid-w-f"),
+                    Events::new().on("change", move |e| {
+                        if let Some(file) = e
+                            .target()
+                            .unwrap()
+                            .dyn_into::<web_sys::HtmlInputElement>()
+                            .unwrap()
+                            .files()
+                            .unwrap()
+                            .item(0)
+                        {
+                            Msg::LoadCharacterImageFromFile(character_id, file)
+                        } else {
+                            Msg::NoOp
+                        }
+                    }),
+                    vec![],
+                ),
+            ],
+        )],
     )
 }
 

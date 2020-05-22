@@ -229,6 +229,7 @@ fn render(wrapper: &StateWrapper) -> Html<Msg> {
                                                 let x_step = width / 24.0;
                                                 let y_step = height / 14.0;
                                                 move |e| {
+                                                    e.stop_propagation();
                                                     if e.buttons() & 1 != 0 {
                                                         let dpr = get_device_pixel_ratio();
                                                         let col = (e.offset_x() as f64 * dpr

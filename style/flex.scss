@@ -1,0 +1,7 @@
+.flex {
+    &-h {
+        display: flex;
+        align-content: start;
+        flex-wrap: wrap;
+    }
+}
