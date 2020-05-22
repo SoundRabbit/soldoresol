@@ -19,7 +19,7 @@ pub fn frame<Msg>(
     children: Vec<Html<Msg>>,
 ) -> Html<Msg> {
     Html::div(
-        attributes.class(format!("frame grid-cc-2x{}", size / 2)),
+        attributes.class(format!("frame flame-modal grid-cc-2x{}", size / 2)),
         events,
         children,
     )

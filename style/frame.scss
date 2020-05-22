@@ -6,6 +6,10 @@
     grid-template-rows: max-content 1fr max-content;
     box-shadow: 0 0 0.1rem 0 $gray-900;
     color: $gray-000;
+
+    &-modal {
+        max-height: 90vh;
+    }
     
     & > .frame-header {
         line-height: 1;

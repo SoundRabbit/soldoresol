@@ -14,6 +14,7 @@ use crate::skyway;
 use crate::skyway::ReceiveData;
 use crate::skyway::Room;
 use kagura::prelude::*;
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
@@ -76,8 +77,8 @@ impl ModelessState {
     pub fn new(is_showing: bool) -> Self {
         Self {
             is_showing,
-            loc_a: [1, 1],
-            loc_b: [12, 8],
+            loc_a: [20, 1],
+            loc_b: [25, 15],
         }
     }
 }
@@ -99,7 +100,7 @@ pub struct State {
     focused_object_id: Option<u128>,
     is_2d_mode: bool,
     modelesses: ModelessCollection,
-    editing_modeless_idx: Option<usize>,
+    editing_modeless: Option<(usize, Rc<RefCell<modeless_modal::State>>)>,
     object_modeless_address: HashMap<u128, [usize; 2]>,
 }
 
@@ -205,7 +206,7 @@ fn init(room: Rc<Room>) -> impl FnOnce() -> (State, Cmd<Msg, Sub>) {
             },
             is_2d_mode: false,
             modelesses: vec![],
-            editing_modeless_idx: None,
+            editing_modeless: None,
             object_modeless_address: HashMap::new(),
             focused_object_id: None,
         };
@@ -578,11 +579,20 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             Cmd::none()
         }
         Msg::OpenModelessModal(modeless_idx) => {
-            state.editing_modeless_idx = Some(modeless_idx);
+            if let Some((modeless, ..)) = state.modelesses.get(modeless_idx) {
+                let props = modeless_modal::Props {
+                    origin: modeless.loc_a.clone(),
+                    corner: modeless.loc_b.clone(),
+                };
+                state.editing_modeless = Some((
+                    modeless_idx,
+                    Rc::new(RefCell::new(modeless_modal::State::new(&props))),
+                ));
+            }
             Cmd::none()
         }
         Msg::CloseModelessModal => {
-            state.editing_modeless_idx = None;
+            state.editing_modeless = None;
             Cmd::none()
         }
 
@@ -752,12 +762,14 @@ fn render_canvas_container(state: &State) -> Html<Msg> {
                 &state.modelesses,
             ),
             state
-                .editing_modeless_idx
+                .editing_modeless
                 .as_ref()
-                .map(|_| {
-                    Html::component(modeless_modal::new().subscribe(|sub| match sub {
-                        modeless_modal::Sub::Close => Msg::CloseModelessModal,
-                    }))
+                .map(|(_, props)| {
+                    Html::component(modeless_modal::new(Rc::clone(props)).subscribe(
+                        |sub| match sub {
+                            modeless_modal::Sub::Close => Msg::CloseModelessModal,
+                        },
+                    ))
                 })
                 .unwrap_or(Html::none()),
         ],
@@ -1237,7 +1249,7 @@ fn render_object_modeless_character(character: &Character, character_id: u128) -
             Html::img(
                 Attributes::new()
                     .string("src", character.texture_src())
-                    .class("grid-w-f"),
+                    .class("grid-w-f pure-img"),
                 Events::new(),
                 vec![],
             ),
