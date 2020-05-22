@@ -30,6 +30,13 @@ impl State {
             corner: [props.corner[0] - 1, props.corner[1] - 1],
         }
     }
+
+    fn to_props(&self) -> Props {
+        Props {
+            origin: self.origin.clone(),
+            corner: [self.corner[0] + 1, self.corner[1] + 1],
+        }
+    }
 }
 
 pub struct StateWrapper {
@@ -40,6 +47,8 @@ pub enum Msg {
     NoOp,
     SetCanvasContext,
     Close,
+    Reflect,
+    ReflectToClose,
     SetOrigin([i32; 2]),
     SetCorner([i32; 2]),
     RefineCoord,
@@ -47,6 +56,8 @@ pub enum Msg {
 
 pub enum Sub {
     Close,
+    Reflect(Props),
+    ReflectToClose(Props),
 }
 
 fn get_canvas_element(id: &str) -> web_sys::HtmlCanvasElement {
@@ -102,6 +113,8 @@ fn update(wrapper: &mut StateWrapper, msg: Msg) -> Cmd<Msg, Sub> {
             Cmd::none()
         }
         Msg::Close => Cmd::sub(Sub::Close),
+        Msg::Reflect => Cmd::sub(Sub::Reflect(state.to_props())),
+        Msg::ReflectToClose => Cmd::sub(Sub::ReflectToClose(state.to_props())),
         Msg::SetOrigin(origin) => {
             let w = state.corner[0] - state.origin[0];
             let h = state.corner[1] - state.origin[1];
@@ -245,11 +258,18 @@ fn render(wrapper: &StateWrapper) -> Html<Msg> {
                     vec![Html::div(
                         Attributes::new().class("linear-h"),
                         Events::new(),
-                        vec![btn::success(
-                            Attributes::new(),
-                            Events::new(),
-                            vec![Html::text("OK")],
-                        )],
+                        vec![
+                            btn::success(
+                                Attributes::new(),
+                                Events::new().on_click(|_| Msg::Reflect),
+                                vec![Html::text("適用")],
+                            ),
+                            btn::primary(
+                                Attributes::new(),
+                                Events::new().on_click(|_| Msg::ReflectToClose),
+                                vec![Html::text("OK")],
+                            ),
+                        ],
                     )],
                 ),
             ],

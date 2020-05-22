@@ -138,6 +138,8 @@ pub enum Msg {
     CloseModeless(usize),
     OpenModelessModal(usize),
     CloseModelessModal,
+    ReflectModelessModal(modeless_modal::Props),
+    CloseModelessModalWithProps(modeless_modal::Props),
 
     // Worldに対する操作
     LoadCharacterImageFromFile(u128, web_sys::File),
@@ -595,6 +597,22 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.editing_modeless = None;
             Cmd::none()
         }
+        Msg::ReflectModelessModal(props) => {
+            let modeless = state
+                .editing_modeless
+                .as_ref()
+                .map(|(idx, ..)| *idx)
+                .and_then(|idx| state.modelesses.get_mut(idx));
+            if let Some((modeless, ..)) = modeless {
+                modeless.loc_a = props.origin;
+                modeless.loc_b = props.corner;
+            }
+            Cmd::none()
+        }
+        Msg::CloseModelessModalWithProps(props) => {
+            update(state, Msg::ReflectModelessModal(props));
+            update(state, Msg::CloseModelessModal)
+        }
 
         // Worldに対する操作
         Msg::LoadCharacterImageFromFile(character_id, file) => Cmd::task(move |resolver| {
@@ -768,6 +786,10 @@ fn render_canvas_container(state: &State) -> Html<Msg> {
                     Html::component(modeless_modal::new(Rc::clone(props)).subscribe(
                         |sub| match sub {
                             modeless_modal::Sub::Close => Msg::CloseModelessModal,
+                            modeless_modal::Sub::Reflect(props) => Msg::ReflectModelessModal(props),
+                            modeless_modal::Sub::ReflectToClose(props) => {
+                                Msg::CloseModelessModalWithProps(props)
+                            }
                         },
                     ))
                 })
