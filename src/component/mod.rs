@@ -5,6 +5,7 @@ mod connection;
 mod contextmenu;
 mod modal;
 mod modeless;
+mod modeless_modal;
 mod room;
 
 type Messenger<From: 'static, To: 'static> = Box<dyn FnOnce(From) -> To + 'static>;

@@ -2,6 +2,7 @@ use super::btn;
 use super::contextmenu;
 use super::modal;
 use super::modeless;
+use super::modeless_modal;
 use crate::model::Camera;
 use crate::model::Character;
 use crate::model::ColorSystem;
@@ -98,7 +99,7 @@ pub struct State {
     focused_object_id: Option<u128>,
     is_2d_mode: bool,
     modelesses: ModelessCollection,
-    dragged_modeless_idx: Option<usize>,
+    editing_modeless_idx: Option<usize>,
     object_modeless_address: HashMap<u128, [usize; 2]>,
 }
 
@@ -134,7 +135,7 @@ pub enum Msg {
     // モードレス
     OpenObjectModeless(u128),
     CloseModeless(usize),
-    SetDraggedModeless(usize),
+    OpenModelessModal(usize),
     SetModelessLoc(usize, [i32; 2]),
 
     // Worldに対する操作
@@ -204,7 +205,7 @@ fn init(room: Rc<Room>) -> impl FnOnce() -> (State, Cmd<Msg, Sub>) {
             },
             is_2d_mode: false,
             modelesses: vec![],
-            dragged_modeless_idx: None,
+            editing_modeless_idx: None,
             object_modeless_address: HashMap::new(),
             focused_object_id: None,
         };
@@ -576,8 +577,8 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.modelesses[modeless_idx].0.is_showing = false;
             Cmd::none()
         }
-        Msg::SetDraggedModeless(modeless_idx) => {
-            state.dragged_modeless_idx = Some(modeless_idx);
+        Msg::OpenModelessModal(modeless_idx) => {
+            state.editing_modeless_idx = Some(modeless_idx);
             Cmd::none()
         }
         Msg::SetModelessLoc(modeless_idx, loc) => {
@@ -749,8 +750,12 @@ fn render_canvas_container(state: &State) -> Html<Msg> {
                 state.is_2d_mode,
                 &state.world,
                 &state.modelesses,
-                &state.dragged_modeless_idx,
             ),
+            state
+                .editing_modeless_idx
+                .as_ref()
+                .map(|_| Html::component(modeless_modal::new()))
+                .unwrap_or(Html::none()),
         ],
     )
 }
@@ -769,7 +774,6 @@ fn render_canvas_overlaper(
     is_2d_mode: bool,
     world: &World,
     modelesses: &ModelessCollection,
-    dragged_modeless_idx: &Option<usize>,
 ) -> Html<Msg> {
     modeless::container(
         Attributes::new().class("cover"),
@@ -1167,13 +1171,14 @@ fn render_object_modeless(
     world: &World,
 ) -> Html<Msg> {
     let focused_id = tabs[focused];
-    modal::frame(
-        6,
+    modeless::frame(
+        &state.loc_a,
+        &state.loc_b,
         Attributes::new(),
         Events::new()
             .on_mousedown(move |e| {
                 e.stop_propagation();
-                Msg::SetDraggedModeless(modeless_idx)
+                Msg::NoOp
             })
             .on_mousemove(|e| {
                 e.stop_propagation();
@@ -1184,7 +1189,7 @@ fn render_object_modeless(
                 Msg::NoOp
             }),
         vec![
-            modal::header(
+            modeless::header(
                 Attributes::new()
                     .style("display", "grid")
                     .style("grid-template-columns", "1fr max-content"),
@@ -1194,10 +1199,17 @@ fn render_object_modeless(
                     Html::div(
                         Attributes::new().class("linear-h"),
                         Events::new(),
-                        vec![btn::close(
-                            Attributes::new(),
-                            Events::new().on_click(move |_| Msg::CloseModeless(modeless_idx)),
-                        )],
+                        vec![
+                            btn::allocate(
+                                Attributes::new(),
+                                Events::new()
+                                    .on_click(move |_| Msg::OpenModelessModal(modeless_idx)),
+                            ),
+                            btn::close(
+                                Attributes::new(),
+                                Events::new().on_click(move |_| Msg::CloseModeless(modeless_idx)),
+                            ),
+                        ],
                     ),
                 ],
             ),
@@ -1208,13 +1220,13 @@ fn render_object_modeless(
             } else {
                 Html::none()
             },
-            modal::footer(Attributes::new(), Events::new(), vec![]),
+            modeless::footer(Attributes::new(), Events::new(), vec![]),
         ],
     )
 }
 
 fn render_object_modeless_character(character: &Character, character_id: u128) -> Html<Msg> {
-    modal::body(
+    modeless::body(
         Attributes::new().class("container-a grid pure-form"),
         Events::new(),
         vec![
