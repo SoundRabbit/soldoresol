@@ -136,7 +136,7 @@ pub enum Msg {
     OpenObjectModeless(u128),
     CloseModeless(usize),
     OpenModelessModal(usize),
-    SetModelessLoc(usize, [i32; 2]),
+    CloseModelessModal,
 
     // Worldに対する操作
     LoadCharacterImageFromFile(u128, web_sys::File),
@@ -581,8 +581,8 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.editing_modeless_idx = Some(modeless_idx);
             Cmd::none()
         }
-        Msg::SetModelessLoc(modeless_idx, loc) => {
-            state.modelesses[modeless_idx].0.loc_a = loc;
+        Msg::CloseModelessModal => {
+            state.editing_modeless_idx = None;
             Cmd::none()
         }
 
@@ -754,7 +754,11 @@ fn render_canvas_container(state: &State) -> Html<Msg> {
             state
                 .editing_modeless_idx
                 .as_ref()
-                .map(|_| Html::component(modeless_modal::new()))
+                .map(|_| {
+                    Html::component(modeless_modal::new().subscribe(|sub| match sub {
+                        modeless_modal::Sub::Close => Msg::CloseModelessModal,
+                    }))
+                })
                 .unwrap_or(Html::none()),
         ],
     )

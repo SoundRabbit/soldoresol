@@ -1,3 +1,4 @@
+use super::btn;
 use super::modal;
 use crate::random_id;
 use kagura::prelude::*;
@@ -11,9 +12,12 @@ pub struct State {
 
 pub enum Msg {
     SetCanvasContext,
+    Close,
 }
 
-pub enum Sub {}
+pub enum Sub {
+    Close,
+}
 
 fn get_canvas_element(id: &str) -> web_sys::HtmlCanvasElement {
     web_sys::window()
@@ -54,6 +58,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.context = Some(context);
             Cmd::none()
         }
+        Msg::Close => Cmd::sub(Sub::Close),
     }
 }
 
@@ -66,8 +71,32 @@ fn render(state: &State) -> Html<Msg> {
             Attributes::new(),
             Events::new(),
             vec![
-                modal::header(Attributes::new(), Events::new(), vec![]),
-                modal::body(Attributes::new(), Events::new(), vec![]),
+                modal::header(
+                    Attributes::new()
+                        .style("display", "grid")
+                        .style("grid-template-columns", "1fr max-content"),
+                    Events::new(),
+                    vec![
+                        Html::div(Attributes::new(), Events::new(), vec![]),
+                        Html::div(
+                            Attributes::new().class("linear-h"),
+                            Events::new(),
+                            vec![btn::close(
+                                Attributes::new(),
+                                Events::new().on_click(move |_| Msg::Close),
+                            )],
+                        ),
+                    ],
+                ),
+                modal::body(
+                    Attributes::new(),
+                    Events::new(),
+                    vec![Html::canvas(
+                        Attributes::new().id(&state.canvas_id),
+                        Events::new(),
+                        vec![],
+                    )],
+                ),
                 modal::header(Attributes::new(), Events::new(), vec![]),
             ],
         )],
