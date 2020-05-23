@@ -1,7 +1,8 @@
-use super::table::Table;
-use super::Character;
-use super::Tablemask;
+use super::character::{Character, CharacterData};
+use super::table::{Table, TableData};
+use super::tablemask::{Tablemask, TablemaskData};
 use crate::random_id;
+use serde::{Deserialize, Serialize};
 use std::collections::hash_map;
 use std::collections::HashMap;
 use wasm_bindgen::prelude::*;
@@ -11,6 +12,14 @@ pub struct World {
     table: Table,
     characters: HashMap<u128, Character>,
     tablemasks: HashMap<u128, Tablemask>,
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct WorldData {
+    pub table_id: u128,
+    pub table_data: TableData,
+    pub character_data: HashMap<u128, CharacterData>,
+    pub tablemask_data: HashMap<u128, TablemaskData>,
 }
 
 impl World {
@@ -79,9 +88,22 @@ impl World {
         return tablemask_id;
     }
 
-    pub fn data() {}
-}
+    pub fn to_data(&self) -> WorldData {
+        let mut character_data: HashMap<u128, CharacterData> = HashMap::new();
+        for (id, character) in self.characters() {
+            character_data.insert(*id, character.to_data());
+        }
 
-pub struct Data {
-    pub table_id: u128,
+        let mut tablemask_data: HashMap<u128, TablemaskData> = HashMap::new();
+        for (id, tablemask) in self.tablemasks() {
+            tablemask_data.insert(*id, tablemask.to_data());
+        }
+
+        WorldData {
+            table_id: self.table_id(),
+            table_data: self.table().to_data(),
+            character_data,
+            tablemask_data,
+        }
+    }
 }

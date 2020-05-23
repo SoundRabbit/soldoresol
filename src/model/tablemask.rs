@@ -1,11 +1,20 @@
 use super::Color;
 use super::ColorSystem;
+use serde::{Deserialize, Serialize};
 
 pub struct Tablemask {
     size: [f64; 2],
     position: [f64; 3],
     background_color: Color,
     size_is_binded: bool,
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct TablemaskData {
+    pub size: [f64; 2],
+    pub position: [f64; 3],
+    pub background_color: u32,
+    pub size_is_binded: bool,
 }
 
 impl Tablemask {
@@ -49,6 +58,15 @@ impl Tablemask {
 
     pub fn background_color(&self) -> &Color {
         &self.background_color
+    }
+
+    pub fn to_data(&self) -> TablemaskData {
+        TablemaskData {
+            size: self.size.clone(),
+            position: self.position.clone(),
+            background_color: self.background_color.to_u32(),
+            size_is_binded: self.size_is_binded,
+        }
     }
 }
 

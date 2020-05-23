@@ -1,5 +1,6 @@
 use super::Color;
 use super::ColorSystem;
+use serde::{Deserialize, Serialize};
 
 pub struct Character {
     size: [f64; 2],
@@ -7,6 +8,13 @@ pub struct Character {
     texture: Option<web_sys::HtmlImageElement>,
     texture_is_changed: bool,
     background_color: Color,
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct CharacterData {
+    pub size: [f64; 2],
+    pub position: [f64; 3],
+    pub image: String,
 }
 
 impl Character {
@@ -89,6 +97,14 @@ impl Character {
     pub fn rendered(&mut self) {
         self.texture_is_changed = false;
         self.set_is_focused(false);
+    }
+
+    pub fn to_data(&self) -> CharacterData {
+        CharacterData {
+            size: self.size.clone(),
+            position: self.position.clone(),
+            image: self.texture_src(),
+        }
     }
 }
 

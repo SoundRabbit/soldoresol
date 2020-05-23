@@ -1,5 +1,6 @@
 use super::color::Color;
 use super::TexstureLayer;
+use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 
@@ -9,13 +10,20 @@ const MEASURE_LAYER: usize = 2;
 const CURSOR_LAYER: usize = 3;
 
 pub struct Table {
-    size: [f64; 2],
-    pixel_ratio: f64,
-    is_bind_to_grid: bool,
-    drawing_texture: TexstureLayer,
-    drawing_texture_is_changed: bool,
-    measure_texture: TexstureLayer,
-    measure_texture_is_changed: bool,
+    pub size: [f64; 2],
+    pub pixel_ratio: f64,
+    pub is_bind_to_grid: bool,
+    pub drawing_texture: TexstureLayer,
+    pub drawing_texture_is_changed: bool,
+    pub measure_texture: TexstureLayer,
+    pub measure_texture_is_changed: bool,
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct TableData {
+    pub size: [f64; 2],
+    pub is_bind_to_grid: bool,
+    pub drawing_texture: String,
 }
 
 impl Table {
@@ -186,5 +194,13 @@ impl Table {
         );
 
         self.measure_texture_is_changed = true;
+    }
+
+    pub fn to_data(&self) -> TableData {
+        TableData {
+            size: self.size.clone(),
+            is_bind_to_grid: self.is_bind_to_grid.clone(),
+            drawing_texture: self.drawing_texture.element().to_data_url().unwrap(),
+        }
     }
 }
