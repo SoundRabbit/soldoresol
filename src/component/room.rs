@@ -127,6 +127,7 @@ pub enum Msg {
     AddChracaterWithMouseCoord([f64; 2]),
     AddTablemaskWithMouseCoord([f64; 2]),
     CloneObjectWithObjectId(u128),
+    RemoveObjectWithObjectId(u128, bool),
 
     // テーブル操作の制御
     SetCameraRotationWithMouseCoord([f64; 2]),
@@ -371,6 +372,13 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             } else {
                 Cmd::none()
             }
+        }
+        Msg::RemoveObjectWithObjectId(object_id, transport) => {
+            state.world.remove_object(&object_id);
+            if transport {
+                state.room.send(&skyway::Msg::RemoveObject(object_id));
+            }
+            update(state, Msg::Render)
         }
 
         //テーブル操作の制御
@@ -864,6 +872,9 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 data_urls.insert(data_id, data);
                 update(state, Msg::LoadFromDataUrls(data_urls, false))
             }
+            skyway::Msg::RemoveObject(object_id) => {
+                update(state, Msg::RemoveObjectWithObjectId(object_id, false))
+            }
         },
         Msg::SendAllData => {
             state
@@ -1123,6 +1134,11 @@ fn render_context_menu_character(contextmenu: &Contextmenu, object_id: u128) -> 
                     Events::new().on_click(move |_| Msg::CloneObjectWithObjectId(object_id)),
                     "コピーを作成",
                 ),
+                btn::contextmenu_text(
+                    Attributes::new(),
+                    Events::new().on_click(move |_| Msg::RemoveObjectWithObjectId(object_id, true)),
+                    "削除",
+                ),
             ],
         )],
     )
@@ -1205,6 +1221,11 @@ fn render_context_menu_tablemask(contextmenu: &Contextmenu, object_id: u128) -> 
                     Attributes::new(),
                     Events::new().on_click(move |_| Msg::CloneObjectWithObjectId(object_id)),
                     "コピーを作成",
+                ),
+                btn::contextmenu_text(
+                    Attributes::new(),
+                    Events::new().on_click(move |_| Msg::RemoveObjectWithObjectId(object_id, true)),
+                    "削除",
                 ),
             ],
         )],

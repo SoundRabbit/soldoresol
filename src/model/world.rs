@@ -107,6 +107,11 @@ impl World {
             tablemask_data,
         }
     }
+
+    pub fn remove_object(&mut self, object_id: &u128) {
+        self.characters.remove(object_id);
+        self.tablemasks.remove(object_id);
+    }
 }
 
 impl From<WorldData> for World {

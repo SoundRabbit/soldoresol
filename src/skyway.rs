@@ -75,4 +75,5 @@ pub enum Msg {
     SetWorld(crate::model::WorldData),
     SetResource(crate::model::ResourceData),
     AddResource(u128, crate::model::resource::DataString),
+    RemoveObject(u128),
 }
