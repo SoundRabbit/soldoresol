@@ -729,37 +729,40 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             let mut file_readers = vec![];
             for i in 0..len {
                 if let Some(file) = file_list.item(i) {
-                    let file_reader = Rc::new(web_sys::FileReader::new().unwrap());
-                    let a = {
-                        let file_reader = Rc::clone(&file_reader);
-                        let data_id = random_id::u128val();
-                        let mut common = Rc::clone(&common);
-                        Closure::once(Box::new(move || {
-                            file_reader
-                                .result()
-                                .ok()
-                                .and_then(|result| result.as_string())
-                                .map(|data_url| {
-                                    common
-                                        .0
-                                        .borrow_mut()
-                                        .insert(data_id, DataString::Image(data_url));
-                                    if let Some((data_urls, resolve)) = Rc::get_mut(&mut common) {
-                                        let mut r = None;
-                                        std::mem::swap(&mut r, resolve);
-                                        r.map(|r| {
-                                            r(Msg::LoadFromDataUrls(
-                                                data_urls.borrow_mut().drain().collect(),
-                                                true,
-                                            ))
-                                        });
-                                    };
-                                });
-                        }) as Box<dyn FnOnce()>)
-                    };
-                    file_reader.set_onload(Some(&a.as_ref().unchecked_ref()));
-                    file_readers.push((file, file_reader));
-                    a.forget();
+                    if file.type_() == String::from("image/png") {
+                        let file_reader = Rc::new(web_sys::FileReader::new().unwrap());
+                        let a = {
+                            let file_reader = Rc::clone(&file_reader);
+                            let data_id = random_id::u128val();
+                            let mut common = Rc::clone(&common);
+                            Closure::once(Box::new(move || {
+                                file_reader
+                                    .result()
+                                    .ok()
+                                    .and_then(|result| result.as_string())
+                                    .map(|data_url| {
+                                        common
+                                            .0
+                                            .borrow_mut()
+                                            .insert(data_id, DataString::Image(data_url));
+                                        if let Some((data_urls, resolve)) = Rc::get_mut(&mut common)
+                                        {
+                                            let mut r = None;
+                                            std::mem::swap(&mut r, resolve);
+                                            r.map(|r| {
+                                                r(Msg::LoadFromDataUrls(
+                                                    data_urls.borrow_mut().drain().collect(),
+                                                    true,
+                                                ))
+                                            });
+                                        };
+                                    });
+                            }) as Box<dyn FnOnce()>)
+                        };
+                        file_reader.set_onload(Some(&a.as_ref().unchecked_ref()));
+                        file_readers.push((file, file_reader));
+                        a.forget();
+                    }
                 }
             }
             for (file, file_reader) in file_readers {
