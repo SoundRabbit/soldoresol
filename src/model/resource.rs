@@ -17,7 +17,7 @@ impl Resource {
     }
 
     pub fn insert(&mut self, data_id: u128, data: Data) {
-        self.insert(data_id, data);
+        self.data.insert(data_id, data);
     }
 
     pub fn get(&self, data_id: u128) -> Option<&Data> {
@@ -28,5 +28,12 @@ impl Resource {
         self.data.get(data_id).and_then(|data| match data {
             Data::Image(image) => Some(Rc::clone(image)),
         })
+    }
+
+    pub fn get_images(&self) -> Vec<Rc<web_sys::HtmlImageElement>> {
+        self.data
+            .iter()
+            .filter_map(|(data_id, _)| self.get_as_image(data_id))
+            .collect()
     }
 }

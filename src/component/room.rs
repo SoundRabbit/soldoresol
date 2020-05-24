@@ -91,6 +91,10 @@ enum Modeless {
 
 type ModelessCollection = Vec<(ModelessState, Modeless)>;
 
+enum Modal {
+    Resource,
+}
+
 pub struct State {
     room: Rc<Room>,
     world: World,
@@ -103,6 +107,7 @@ pub struct State {
     focused_object_id: Option<u128>,
     is_2d_mode: bool,
     modelesses: ModelessCollection,
+    modals: Vec<Modal>,
     editing_modeless: Option<(usize, Rc<RefCell<modeless_modal::State>>)>,
     object_modeless_address: HashMap<u128, [usize; 2]>,
 }
@@ -144,6 +149,10 @@ pub enum Msg {
     ReflectModelessModal(modeless_modal::Props),
     CloseModelessModalWithProps(modeless_modal::Props),
 
+    // モーダル
+    OpenModal(Modal),
+    CloseModal,
+
     // Worldに対する操作
     SetCharacterImage(u128, u128),
     AddChracater(Character),
@@ -158,6 +167,7 @@ pub enum Msg {
 
     // 接続に関する操作
     ReceiveMsg(skyway::Msg),
+    SendWorldData,
     DisconnectFromRoom,
 }
 
@@ -192,6 +202,16 @@ pub fn new(room: Rc<Room>) -> Component<Msg, State, Sub> {
                 a.forget();
             }
         })
+        .batch({
+            let room = Rc::clone(&room);
+            move |mut handler| {
+                let a = Closure::wrap(Box::new(move |peer_id: String| handler(Msg::SendWorldData))
+                    as Box<dyn FnMut(String)>);
+                room.payload
+                    .on("peerJoin", Some(a.as_ref().unchecked_ref()));
+                a.forget();
+            }
+        })
 }
 
 fn init(room: Rc<Room>) -> impl FnOnce() -> (State, Cmd<Msg, Sub>) {
@@ -215,6 +235,7 @@ fn init(room: Rc<Room>) -> impl FnOnce() -> (State, Cmd<Msg, Sub>) {
             },
             is_2d_mode: false,
             modelesses: vec![],
+            modals: vec![],
             editing_modeless: None,
             object_modeless_address: HashMap::new(),
             focused_object_id: None,
@@ -621,6 +642,16 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             update(state, Msg::CloseModelessModal)
         }
 
+        // モーダル
+        Msg::OpenModal(modal) => {
+            state.modals.push(modal);
+            Cmd::none()
+        }
+        Msg::CloseModal => {
+            state.modals.pop();
+            Cmd::none()
+        }
+
         // Worldに対する操作
         Msg::SetCharacterImage(character_id, data_id) => {
             if let Some(character) = state.world.character_mut(&character_id) {
@@ -668,7 +699,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         Msg::LoadFromFileList(file_list) => Cmd::task(move |resolve| {
             let len = file_list.length();
             let common = Rc::new((RefCell::new(Vec::new()), Some(resolve)));
-            let mut file_readers = HashMap::new();
+            let mut file_readers = vec![];
             for i in 0..len {
                 if let Some(file) = file_list.item(i) {
                     let file_reader = Rc::new(web_sys::FileReader::new().unwrap());
@@ -677,7 +708,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                         let data_id = random_id::u128val();
                         let mut common = Rc::clone(&common);
                         Closure::once(Box::new(move || {
-                            let n = file_reader
+                            file_reader
                                 .result()
                                 .ok()
                                 .and_then(|result| result.as_string())
@@ -697,14 +728,12 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                         }) as Box<dyn FnOnce()>)
                     };
                     file_reader.set_onload(Some(&a.as_ref().unchecked_ref()));
-                    file_readers.insert(i, file_reader);
+                    file_readers.push((file, file_reader));
                     a.forget();
                 }
             }
-            for i in 0..len {
-                if let (Some(file), Some(file_reader)) = (file_list.item(i), file_readers.get(&i)) {
-                    file_reader.read_as_data_url(&file).unwrap();
-                }
+            for (file, file_reader) in file_readers {
+                file_reader.read_as_data_url(&file).unwrap();
             }
         }),
         Msg::LoadFromDataUrlList(data_urls, transport) => {
@@ -806,6 +835,12 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 Msg::LoadFromDataUrlList(vec![(data_id, data)], false),
             ),
         },
+        Msg::SendWorldData => {
+            state
+                .room
+                .send(&skyway::Msg::SetWorld(state.world.to_data()));
+            Cmd::none()
+        }
         Msg::DisconnectFromRoom => Cmd::Sub(Sub::DisconnectFromRoom),
     }
 }
@@ -827,6 +862,7 @@ fn render(state: &State) -> Html<Msg> {
             ),
             render_canvas_container(&state),
             render_context_menu(&state.contextmenu, &state.focused_object_id, &state.world),
+            render_modals(&state.modals, &state.resource),
         ],
     )
 }
@@ -1167,18 +1203,25 @@ fn render_header_menu(
                     ),
                 ],
             ),
-            Html::div(Attributes::new().class("grid-w-15"), Events::new(), vec![]),
+            Html::div(Attributes::new().class("grid-w-12"), Events::new(), vec![]),
             Html::div(
-                Attributes::new().class("grid-w-3 justify-r"),
+                Attributes::new().class("grid-w-6 justify-r"),
                 Events::new(),
                 vec![Html::div(
                     Attributes::new().class("linear-h"),
                     Events::new(),
-                    vec![btn::danger(
-                        Attributes::new(),
-                        Events::new().on_click(|_| Msg::DisconnectFromRoom),
-                        vec![Html::text("ルームから出る")],
-                    )],
+                    vec![
+                        btn::primary(
+                            Attributes::new(),
+                            Events::new().on_click(|_| Msg::OpenModal(Modal::Resource)),
+                            vec![Html::text("リソース")],
+                        ),
+                        btn::danger(
+                            Attributes::new(),
+                            Events::new().on_click(|_| Msg::DisconnectFromRoom),
+                            vec![Html::text("ルームから出る")],
+                        ),
+                    ],
                 )],
             ),
             Html::div(
@@ -1483,6 +1526,85 @@ fn render_object_modeless_tablemask(tablemask: &Tablemask, tablemask_id: u128) -
                         vec![],
                     ),
                 ],
+            ),
+        ],
+    )
+}
+
+fn render_modals(modals: &Vec<Modal>, resource: &Resource) -> Html<Msg> {
+    if modals.is_empty() {
+        Html::none()
+    } else {
+        let mut children = vec![];
+        for modal in modals {
+            let child = match modal {
+                Modal::Resource => render_modal_resource(resource),
+            };
+            children.push(child);
+        }
+        modal::container(Attributes::new(), Events::new(), children)
+    }
+}
+
+fn render_modal_resource(resource: &Resource) -> Html<Msg> {
+    modal::frame(
+        12,
+        Attributes::new(),
+        Events::new(),
+        vec![
+            modal::header(
+                Attributes::new()
+                    .style("display", "grid")
+                    .style("grid-template-columns", "1fr max-content"),
+                Events::new(),
+                vec![
+                    Html::div(Attributes::new(), Events::new(), vec![]),
+                    Html::div(
+                        Attributes::new().class("linear-h"),
+                        Events::new(),
+                        vec![btn::close(
+                            Attributes::new(),
+                            Events::new().on_click(move |_| Msg::CloseModal),
+                        )],
+                    ),
+                ],
+            ),
+            modal::body(
+                Attributes::new()
+                    .class("scroll-v grid container")
+                    .style("min-height", "50vh"),
+                Events::new()
+                    .on("dragover", |e| {
+                        e.prevent_default();
+                        Msg::NoOp
+                    })
+                    .on("drop", |e| {
+                        e.prevent_default();
+                        let e = e.dyn_into::<web_sys::DragEvent>().unwrap();
+                        e.data_transfer()
+                            .unwrap()
+                            .files()
+                            .map(|files| Msg::LoadFromFileList(files))
+                            .unwrap_or(Msg::NoOp)
+                    }),
+                resource
+                    .get_images()
+                    .iter()
+                    .map(|image| {
+                        Html::img(
+                            Attributes::new()
+                                .class("grid-w-2 pure-img")
+                                .string("src", image.src()),
+                            Events::new(),
+                            vec![],
+                        )
+                    })
+                    .collect(),
+            ),
+            modal::footer(
+                Attributes::new(),
+                Events::new(),
+                vec![Html::text("ファイルはドラッグ & ドロップで追加できます。")],
             ),
         ],
     )
