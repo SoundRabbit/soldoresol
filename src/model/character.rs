@@ -7,6 +7,8 @@ pub struct Character {
     position: [f64; 3],
     image_id: Option<u128>,
     background_color: Color,
+    hp: i64,
+    mp: i64,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -14,6 +16,8 @@ pub struct CharacterData {
     pub size: [f64; 2],
     pub position: [f64; 3],
     pub image_id: Option<u128>,
+    pub hp: i64,
+    pub mp: i64,
 }
 
 impl Character {
@@ -23,6 +27,8 @@ impl Character {
             position: [0.0, 0.0, 0.0],
             image_id: None,
             background_color: Color::from(0),
+            hp: 0,
+            mp: 0,
         }
     }
 
@@ -40,6 +46,22 @@ impl Character {
 
     pub fn position(&self) -> &[f64; 3] {
         &self.position
+    }
+
+    pub fn set_hp(&mut self, hp: i64) {
+        self.hp = hp;
+    }
+
+    pub fn hp(&self) -> i64 {
+        self.hp
+    }
+
+    pub fn set_mp(&mut self, mp: i64) {
+        self.mp = mp;
+    }
+
+    pub fn mp(&self) -> i64 {
+        self.mp
     }
 
     pub fn bind_to_grid(&mut self) {
@@ -81,6 +103,8 @@ impl Character {
             size: self.size.clone(),
             position: self.position.clone(),
             image_id: self.texture_id(),
+            hp: self.hp,
+            mp: self.mp,
         }
     }
 }
@@ -106,6 +130,8 @@ impl From<CharacterData> for Character {
             position: character_data.position,
             image_id: character_data.image_id,
             background_color: Color::from(0),
+            hp: character_data.hp,
+            mp: character_data.mp,
         }
     }
 }

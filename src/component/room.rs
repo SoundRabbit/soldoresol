@@ -156,6 +156,8 @@ pub enum Msg {
 
     // Worldに対する操作
     SetCharacterImage(u128, u128),
+    SetCharacterHp(u128, i64),
+    SetCharacterMp(u128, i64),
     AddChracater(Character),
     AddTablemask(Tablemask),
     SetTablemaskSize(u128, [f64; 2]),
@@ -666,6 +668,22 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 } else {
                     Cmd::none()
                 }
+            } else {
+                Cmd::none()
+            }
+        }
+        Msg::SetCharacterHp(character_id, hp) => {
+            if let Some(character) = state.world.character_mut(&character_id) {
+                character.set_hp(hp);
+                Cmd::none()
+            } else {
+                Cmd::none()
+            }
+        }
+        Msg::SetCharacterMp(character_id, mp) => {
+            if let Some(character) = state.world.character_mut(&character_id) {
+                character.set_mp(mp);
+                Cmd::none()
             } else {
                 Cmd::none()
             }
@@ -1428,33 +1446,75 @@ fn render_object_modeless_character(
                 Html::div(
                     Attributes::new().class("centering-a"),
                     Events::new(),
-                    vec![character
-                        .texture_id()
-                        .and_then(|data_id| resource.get_as_image(&data_id))
-                        .map(|image| {
-                            Html::img(
-                                Attributes::new()
-                                    .string("src", image.src())
-                                    .class("pure-img")
-                                    .style(
-                                        "max-height",
-                                        format!(
-                                            "{}vh",
-                                            (modeless_height - 1) as f64 * 100.0 / 14.0
+                    vec![
+                        character
+                            .texture_id()
+                            .and_then(|data_id| resource.get_as_image(&data_id))
+                            .map(|image| {
+                                Html::img(
+                                    Attributes::new()
+                                        .string("src", image.src())
+                                        .class("pure-img")
+                                        .style(
+                                            "max-height",
+                                            format!(
+                                                "{}vh",
+                                                (modeless_height - 1) as f64 * 100.0 / 14.0
+                                            ),
                                         ),
-                                    ),
-                                Events::new(),
-                                vec![],
-                            )
-                        })
-                        .unwrap_or(Html::none())],
+                                    Events::new(),
+                                    vec![],
+                                )
+                            })
+                            .unwrap_or(Html::none()),
+                        btn::primary(
+                            Attributes::new(),
+                            Events::new().on_click(move |_| {
+                                Msg::OpenModal(Modal::SelectCharacterImage(character_id))
+                            }),
+                            vec![Html::text("画像を選択")],
+                        ),
+                    ],
                 ),
-                btn::primary(
-                    Attributes::new(),
-                    Events::new().on_click(move |_| {
-                        Msg::OpenModal(Modal::SelectCharacterImage(character_id))
-                    }),
-                    vec![Html::text("画像を選択")],
+                Html::div(
+                    Attributes::new().class("keyvalue pure-form"),
+                    Events::new(),
+                    vec![
+                        Html::span(Attributes::new(), Events::new(), vec![Html::text("HP")]),
+                        Html::input(
+                            Attributes::new()
+                                .value(character.hp().to_string())
+                                .type_("number"),
+                            Events::new().on_input(move |s| {
+                                if let Ok(s) = s.parse() {
+                                    Msg::SetCharacterHp(character_id, s)
+                                } else {
+                                    Msg::NoOp
+                                }
+                            }),
+                            vec![],
+                        ),
+                    ],
+                ),
+                Html::div(
+                    Attributes::new().class("keyvalue pure-form"),
+                    Events::new(),
+                    vec![
+                        Html::span(Attributes::new(), Events::new(), vec![Html::text("MP")]),
+                        Html::input(
+                            Attributes::new()
+                                .value(character.mp().to_string())
+                                .type_("number"),
+                            Events::new().on_input(move |s| {
+                                if let Ok(s) = s.parse() {
+                                    Msg::SetCharacterMp(character_id, s)
+                                } else {
+                                    Msg::NoOp
+                                }
+                            }),
+                            vec![],
+                        ),
+                    ],
                 ),
             ],
         )],
