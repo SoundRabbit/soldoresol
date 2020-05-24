@@ -5,6 +5,7 @@ mod view_renderer;
 mod webgl;
 
 use crate::model::Camera;
+use crate::model::Resource;
 use crate::model::World;
 use mask_renderer::MaskRenderer;
 use model_matrix::ModelMatrix;
@@ -34,7 +35,7 @@ impl Renderer {
         self.mask_renderer.table_object_id(position)
     }
 
-    pub fn render(&mut self, world: &mut World, camera: &Camera) {
+    pub fn render(&mut self, world: &mut World, camera: &Camera, resource: &Resource) {
         let canvas = self
             .gl
             .canvas()
@@ -44,7 +45,7 @@ impl Renderer {
         let canvas_size = [canvas.width() as f64, canvas.height() as f64];
 
         self.view_renderer
-            .render(&self.gl, &canvas_size, &camera, world);
+            .render(&self.gl, &canvas_size, &camera, world, resource);
 
         self.mask_renderer.render(&canvas_size, &camera, world);
     }

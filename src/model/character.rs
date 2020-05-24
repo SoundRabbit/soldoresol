@@ -5,8 +5,7 @@ use serde::{Deserialize, Serialize};
 pub struct Character {
     size: [f64; 2],
     position: [f64; 3],
-    texture: Option<web_sys::HtmlImageElement>,
-    texture_is_changed: bool,
+    image_id: Option<u128>,
     background_color: Color,
 }
 
@@ -14,7 +13,7 @@ pub struct Character {
 pub struct CharacterData {
     pub size: [f64; 2],
     pub position: [f64; 3],
-    pub image: String,
+    pub image_id: Option<u128>,
 }
 
 impl Character {
@@ -22,22 +21,13 @@ impl Character {
         Self {
             size: [1.0, 0.0],
             position: [0.0, 0.0, 0.0],
-            texture: None,
-            texture_is_changed: false,
+            image_id: None,
             background_color: Color::from(0),
         }
     }
 
     pub fn set_size(&mut self, size: [f64; 2]) {
         self.size = size;
-    }
-
-    pub fn stretch_height(&mut self) {
-        if let Some(texture) = &self.texture {
-            let width = texture.width() as f64;
-            let height = texture.height() as f64;
-            self.size[1] = self.size[0] * height / width;
-        }
     }
 
     pub fn size(&self) -> &[f64; 2] {
@@ -58,23 +48,12 @@ impl Character {
         self.position = [p[0], p[1], self.position[2]];
     }
 
-    pub fn texture_image(&self) -> Option<&web_sys::HtmlImageElement> {
-        if self.texture_is_changed {
-            if let Some(texture) = &self.texture {
-                Some(texture)
-            } else {
-                None
-            }
+    pub fn texture_id(&self) -> Option<u128> {
+        if let Some(texture) = self.image_id {
+            Some(texture)
         } else {
             None
         }
-    }
-
-    pub fn texture_src(&self) -> String {
-        self.texture
-            .as_ref()
-            .map(|el| el.src())
-            .unwrap_or("".into())
     }
 
     pub fn background_color(&self) -> &Color {
@@ -89,13 +68,11 @@ impl Character {
         }
     }
 
-    pub fn set_image(&mut self, image: web_sys::HtmlImageElement) {
-        self.texture = Some(image);
-        self.texture_is_changed = true;
+    pub fn set_image_id(&mut self, data_id: u128) {
+        self.image_id = Some(data_id);
     }
 
     pub fn rendered(&mut self) {
-        self.texture_is_changed = false;
         self.set_is_focused(false);
     }
 
@@ -103,7 +80,7 @@ impl Character {
         CharacterData {
             size: self.size.clone(),
             position: self.position.clone(),
-            image: self.texture_src(),
+            image_id: self.texture_id(),
         }
     }
 }
@@ -114,8 +91,8 @@ impl Clone for Character {
 
         clone.set_size(self.size.clone());
         clone.set_position(self.position.clone());
-        if let Some(texture) = &self.texture {
-            clone.set_image(texture.clone());
+        if let Some(image_id) = self.image_id {
+            clone.set_image_id(image_id);
         }
 
         clone

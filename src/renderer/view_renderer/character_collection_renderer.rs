@@ -2,7 +2,7 @@ use super::super::program::CharacterProgram;
 use super::super::program::MaskProgram;
 use super::super::webgl::{WebGlF32Vbo, WebGlI16Ibo, WebGlRenderingContext};
 use super::super::ModelMatrix;
-use crate::model::{Camera, Character, Color};
+use crate::model::{Camera, Character, Color, Resource};
 use ndarray::{arr1, Array2};
 use std::collections::{hash_map, BTreeMap, HashMap};
 
@@ -80,6 +80,7 @@ impl CharacterCollectionRenderer {
         camera: &Camera,
         vp_matrix: &Array2<f64>,
         characters: hash_map::IterMut<u128, Character>,
+        resource: &Resource,
     ) {
         self.mask_program.use_program(gl);
         gl.set_attribute(
@@ -100,9 +101,8 @@ impl CharacterCollectionRenderer {
             Some(&self.mask_index_buffer),
         );
 
-        let mut z_index: BTreeMap<Total<f64>, Vec<(Array2<f64>, u128, &mut Character)>> =
-            BTreeMap::new();
-        for (character_id, character) in characters {
+        let mut z_index: BTreeMap<Total<f64>, Vec<(Array2<f64>, &mut Character)>> = BTreeMap::new();
+        for (_, character) in characters {
             let s = character.size();
             let p = character.position();
             let model_matrix: Array2<f64> = ModelMatrix::new()
@@ -146,7 +146,7 @@ impl CharacterCollectionRenderer {
 
             let s = mvp_matrix.dot(&arr1(&[0.0, 0.0, 0.0, 1.0]));
             let key = Total(-s[2] / s[3]);
-            let value = (mvp_matrix, *character_id, character);
+            let value = (mvp_matrix, character);
             if let Some(v) = z_index.get_mut(&key) {
                 v.push(value);
             } else {
@@ -176,78 +176,80 @@ impl CharacterCollectionRenderer {
         );
 
         for (_, character_list) in z_index {
-            for (mvp_matrix, character_id, character) in character_list {
-                if self.img_texture_buffer.get(&character_id).is_none() {
-                    let texture_buffer = gl.create_texture().unwrap();
+            for (mvp_matrix, character) in character_list {
+                let texture_id = character.texture_id();
+                if let Some(texture_id) = texture_id {
+                    if let (None, Some(texture)) = (
+                        self.img_texture_buffer.get(&texture_id),
+                        resource.get_as_image(&texture_id),
+                    ) {
+                        let texture_buffer = gl.create_texture().unwrap();
+                        gl.bind_texture(
+                            web_sys::WebGlRenderingContext::TEXTURE_2D,
+                            Some(&texture_buffer),
+                        );
+                        gl.pixel_storei(web_sys::WebGlRenderingContext::PACK_ALIGNMENT, 1);
+                        gl.tex_parameteri(
+                            web_sys::WebGlRenderingContext::TEXTURE_2D,
+                            web_sys::WebGlRenderingContext::TEXTURE_MIN_FILTER,
+                            web_sys::WebGlRenderingContext::NEAREST as i32,
+                        );
+                        gl.tex_parameteri(
+                            web_sys::WebGlRenderingContext::TEXTURE_2D,
+                            web_sys::WebGlRenderingContext::TEXTURE_MAG_FILTER,
+                            web_sys::WebGlRenderingContext::NEAREST as i32,
+                        );
+                        gl.tex_parameteri(
+                            web_sys::WebGlRenderingContext::TEXTURE_2D,
+                            web_sys::WebGlRenderingContext::TEXTURE_WRAP_S,
+                            web_sys::WebGlRenderingContext::CLAMP_TO_EDGE as i32,
+                        );
+                        gl.tex_parameteri(
+                            web_sys::WebGlRenderingContext::TEXTURE_2D,
+                            web_sys::WebGlRenderingContext::TEXTURE_WRAP_T,
+                            web_sys::WebGlRenderingContext::CLAMP_TO_EDGE as i32,
+                        );
+                        gl.tex_image_2d_with_u32_and_u32_and_image(
+                            web_sys::WebGlRenderingContext::TEXTURE_2D,
+                            0,
+                            web_sys::WebGlRenderingContext::RGBA as i32,
+                            web_sys::WebGlRenderingContext::RGBA,
+                            web_sys::WebGlRenderingContext::UNSIGNED_BYTE,
+                            &texture,
+                        )
+                        .unwrap();
+                        self.img_texture_buffer.insert(texture_id, texture_buffer);
+                    }
+                    let texture_buffer = self.img_texture_buffer.get(&texture_id).unwrap();
                     gl.bind_texture(
                         web_sys::WebGlRenderingContext::TEXTURE_2D,
-                        Some(&texture_buffer),
+                        Some(texture_buffer),
                     );
-                    gl.pixel_storei(web_sys::WebGlRenderingContext::PACK_ALIGNMENT, 1);
-                    gl.tex_parameteri(
-                        web_sys::WebGlRenderingContext::TEXTURE_2D,
-                        web_sys::WebGlRenderingContext::TEXTURE_MIN_FILTER,
-                        web_sys::WebGlRenderingContext::NEAREST as i32,
+                    gl.uniform_matrix4fv_with_f32_array(
+                        Some(&self.character_program.u_translate_location),
+                        false,
+                        &[
+                            mvp_matrix.row(0).to_vec(),
+                            mvp_matrix.row(1).to_vec(),
+                            mvp_matrix.row(2).to_vec(),
+                            mvp_matrix.row(3).to_vec(),
+                        ]
+                        .concat()
+                        .into_iter()
+                        .map(|a| a as f32)
+                        .collect::<Vec<f32>>(),
                     );
-                    gl.tex_parameteri(
-                        web_sys::WebGlRenderingContext::TEXTURE_2D,
-                        web_sys::WebGlRenderingContext::TEXTURE_MAG_FILTER,
-                        web_sys::WebGlRenderingContext::NEAREST as i32,
+                    gl.uniform4fv_with_f32_array(
+                        Some(&self.character_program.u_bg_color_location),
+                        &character.background_color().to_f32array(),
                     );
-                    gl.tex_parameteri(
-                        web_sys::WebGlRenderingContext::TEXTURE_2D,
-                        web_sys::WebGlRenderingContext::TEXTURE_WRAP_S,
-                        web_sys::WebGlRenderingContext::CLAMP_TO_EDGE as i32,
-                    );
-                    gl.tex_parameteri(
-                        web_sys::WebGlRenderingContext::TEXTURE_2D,
-                        web_sys::WebGlRenderingContext::TEXTURE_WRAP_T,
-                        web_sys::WebGlRenderingContext::CLAMP_TO_EDGE as i32,
-                    );
-                    self.img_texture_buffer.insert(character_id, texture_buffer);
-                }
-                let texture_buffer = self.img_texture_buffer.get(&character_id).unwrap();
-                gl.bind_texture(
-                    web_sys::WebGlRenderingContext::TEXTURE_2D,
-                    Some(texture_buffer),
-                );
-                if let Some(texture) = character.texture_image() {
-                    gl.tex_image_2d_with_u32_and_u32_and_image(
-                        web_sys::WebGlRenderingContext::TEXTURE_2D,
+                    gl.draw_elements_with_i32(
+                        web_sys::WebGlRenderingContext::TRIANGLES,
+                        6,
+                        web_sys::WebGlRenderingContext::UNSIGNED_SHORT,
                         0,
-                        web_sys::WebGlRenderingContext::RGBA as i32,
-                        web_sys::WebGlRenderingContext::RGBA,
-                        web_sys::WebGlRenderingContext::UNSIGNED_BYTE,
-                        &texture,
-                    )
-                    .unwrap();
+                    );
                 }
-
-                gl.uniform_matrix4fv_with_f32_array(
-                    Some(&self.character_program.u_translate_location),
-                    false,
-                    &[
-                        mvp_matrix.row(0).to_vec(),
-                        mvp_matrix.row(1).to_vec(),
-                        mvp_matrix.row(2).to_vec(),
-                        mvp_matrix.row(3).to_vec(),
-                    ]
-                    .concat()
-                    .into_iter()
-                    .map(|a| a as f32)
-                    .collect::<Vec<f32>>(),
-                );
-                gl.uniform4fv_with_f32_array(
-                    Some(&self.character_program.u_bg_color_location),
-                    &character.background_color().to_f32array(),
-                );
-                gl.draw_elements_with_i32(
-                    web_sys::WebGlRenderingContext::TRIANGLES,
-                    6,
-                    web_sys::WebGlRenderingContext::UNSIGNED_SHORT,
-                    0,
-                );
-
                 character.rendered();
             }
         }

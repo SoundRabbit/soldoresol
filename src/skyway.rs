@@ -69,7 +69,7 @@ pub enum Msg {
     DrawLineToTable([f64; 2], [f64; 2]),
     EraceLineToTable([f64; 2], [f64; 2]),
     CreateCharacterToTable(u128, [f64; 3]),
-    SetCharacterImage(u128, String),
+    SetCharacterImage(u128, u128),
     SetObjectPosition(u128, [f64; 3]),
     SetIsBindToGrid(bool),
     AddResource(u128, String),

@@ -6,6 +6,8 @@ use super::modeless_modal;
 use crate::model::Camera;
 use crate::model::Character;
 use crate::model::ColorSystem;
+use crate::model::Data;
+use crate::model::Resource;
 use crate::model::Tablemask;
 use crate::model::World;
 use crate::random_id;
@@ -92,6 +94,7 @@ type ModelessCollection = Vec<(ModelessState, Modeless)>;
 pub struct State {
     room: Rc<Room>,
     world: World,
+    resource: Resource,
     camera: Camera,
     renderer: Option<Renderer>,
     canvas_size: [f64; 2],
@@ -102,7 +105,6 @@ pub struct State {
     modelesses: ModelessCollection,
     editing_modeless: Option<(usize, Rc<RefCell<modeless_modal::State>>)>,
     object_modeless_address: HashMap<u128, [usize; 2]>,
-    images: HashMap<u128, Rc<web_sys::HtmlImageElement>>,
 }
 
 pub enum Msg {
@@ -143,9 +145,7 @@ pub enum Msg {
     CloseModelessModalWithProps(modeless_modal::Props),
 
     // Worldに対する操作
-    LoadCharacterImageFromFile(u128, web_sys::File),
-    LoadCharacterImageFromDataUrl(u128, String, bool),
-    SetCharacterImage(u128, web_sys::HtmlImageElement),
+    SetCharacterImage(u128, u128),
     AddChracater(Character),
     AddTablemask(Tablemask),
     SetTablemaskSize(u128, [f64; 2]),
@@ -199,6 +199,7 @@ fn init(room: Rc<Room>) -> impl FnOnce() -> (State, Cmd<Msg, Sub>) {
         let state = State {
             room: room,
             world: World::new([20.0, 20.0]),
+            resource: Resource::new(),
             camera: Camera::new(),
             renderer: None,
             canvas_size: [0.0, 0.0],
@@ -217,7 +218,6 @@ fn init(room: Rc<Room>) -> impl FnOnce() -> (State, Cmd<Msg, Sub>) {
             editing_modeless: None,
             object_modeless_address: HashMap::new(),
             focused_object_id: None,
-            images: HashMap::new(),
         };
         let task = Cmd::task(|handler| {
             handler(Msg::SetTableContext);
@@ -271,7 +271,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 .unwrap();
             let mut renderer = Renderer::new(gl);
 
-            renderer.render(&mut state.world, &state.camera);
+            renderer.render(&mut state.world, &state.camera, &state.resource);
             state.renderer = Some(renderer);
             Cmd::none()
         }
@@ -291,7 +291,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
         Msg::Render => {
             if let Some(renderer) = &mut state.renderer {
-                renderer.render(&mut state.world, &state.camera);
+                renderer.render(&mut state.world, &state.camera, &state.resource);
             }
             Cmd::none()
         }
@@ -384,7 +384,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             }
             state.table_state.last_mouse_coord = mouse_coord;
             if let Some(renderer) = &mut state.renderer {
-                renderer.render(&mut state.world, &camera);
+                renderer.render(&mut state.world, &camera, &state.resource);
                 let dpr = get_device_pixel_ratio();
                 let focused_id = renderer.table_object_id(&[
                     mouse_coord[0] * dpr,
@@ -622,54 +622,18 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
 
         // Worldに対する操作
-        Msg::LoadCharacterImageFromFile(character_id, file) => Cmd::task(move |resolver| {
-            let file_reader = Rc::new(web_sys::FileReader::new().unwrap());
-            let file_reader_ = Rc::clone(&file_reader);
-            let on_load = Closure::once(Box::new(move || {
-                if let Ok(result) = file_reader_.result() {
-                    if let Some(data_url) = result.as_string() {
-                        resolver(Msg::LoadCharacterImageFromDataUrl(
-                            character_id,
-                            data_url,
-                            true,
-                        ));
-                        return;
-                    }
-                }
-                resolver(Msg::NoOp);
-            }) as Box<dyn FnOnce()>);
-            file_reader.set_onload(Some(&on_load.as_ref().unchecked_ref()));
-            file_reader.read_as_data_url(&file).unwrap();
-            on_load.forget();
-        }),
-        Msg::LoadCharacterImageFromDataUrl(character_id, data_url, t) => Cmd::task({
-            let room = state.room.clone();
-            move |resolver| {
-                let image = web_sys::window()
-                    .unwrap()
-                    .document()
-                    .unwrap()
-                    .create_element("img")
-                    .unwrap()
-                    .dyn_into::<web_sys::HtmlImageElement>()
-                    .unwrap();
-                let image_ = image.clone();
-                let on_load = Closure::once(Box::new(move || {
-                    resolver(Msg::SetCharacterImage(character_id, image));
-                }));
-                image_.set_onload(Some(&on_load.as_ref().unchecked_ref()));
-                image_.set_src(&data_url);
-                on_load.forget();
-                if t {
-                    room.send(&skyway::Msg::SetCharacterImage(character_id, data_url));
-                }
-            }
-        }),
-        Msg::SetCharacterImage(character_id, image) => {
+        Msg::SetCharacterImage(character_id, data_id) => {
             if let Some(character) = state.world.character_mut(&character_id) {
-                character.set_image(image);
-                character.stretch_height();
-                update(state, Msg::Render)
+                character.set_image_id(data_id);
+                if let Some(image) = state.resource.get_as_image(&data_id) {
+                    let h = image.height() as f64;
+                    let w = image.width() as f64;
+                    let s = character.size();
+                    character.set_size([s[0], s[1] * h / w]);
+                    update(state, Msg::Render)
+                } else {
+                    Cmd::none()
+                }
             } else {
                 Cmd::none()
             }
@@ -786,7 +750,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
         Msg::LoadReasourceList(images) => {
             for image in images {
-                state.images.insert(image.0, image.1);
+                state.resource.insert(image.0, Data::Image(image.1));
             }
             Cmd::none()
         }
@@ -815,10 +779,9 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     .erace_line(&start_point, &end_point, 1.0);
                 update(state, Msg::Render)
             }
-            skyway::Msg::SetCharacterImage(character_id, data_url) => update(
-                state,
-                Msg::LoadCharacterImageFromDataUrl(character_id, data_url, false),
-            ),
+            skyway::Msg::SetCharacterImage(character_id, data_id) => {
+                update(state, Msg::SetCharacterImage(character_id, data_id))
+            }
             skyway::Msg::SetObjectPosition(object_id, position) => {
                 if let Some(character) = state.world.character_mut(&object_id) {
                     character.set_position(position);
@@ -879,6 +842,7 @@ fn render_canvas_container(state: &State) -> Html<Msg> {
                 &state.focused_object_id,
                 state.is_2d_mode,
                 &state.world,
+                &state.resource,
                 &state.modelesses,
             ),
             state
@@ -913,6 +877,7 @@ fn render_canvas_overlaper(
     focused_object_id: &Option<u128>,
     is_2d_mode: bool,
     world: &World,
+    resource: &Resource,
     modelesses: &ModelessCollection,
 ) -> Html<Msg> {
     modeless::container(
@@ -1003,7 +968,7 @@ fn render_canvas_overlaper(
                 } else {
                     match modeless {
                         Modeless::Object { focused, tabs } => {
-                            render_object_modeless(idx, state, tabs, *focused, world)
+                            render_object_modeless(idx, state, tabs, *focused, world, resource)
                         }
                     }
                 }
@@ -1319,6 +1284,7 @@ fn render_object_modeless(
     tabs: &Vec<u128>,
     focused: usize,
     world: &World,
+    resource: &Resource,
 ) -> Html<Msg> {
     let height = state.loc_b[1] - state.loc_a[1];
     let focused_id = tabs[focused];
@@ -1369,7 +1335,7 @@ fn render_object_modeless(
                 ],
             ),
             if let Some(character) = world.character(&focused_id) {
-                render_object_modeless_character(height, character, focused_id)
+                render_object_modeless_character(height, character, focused_id, resource)
             } else if let Some(tablemask) = world.tablemask(&focused_id) {
                 render_object_modeless_tablemask(tablemask, focused_id)
             } else {
@@ -1384,6 +1350,7 @@ fn render_object_modeless_character(
     modeless_height: i32,
     character: &Character,
     character_id: u128,
+    resource: &Resource,
 ) -> Html<Msg> {
     modeless::body(
         Attributes::new().class("scroll-v flex-h"),
@@ -1391,42 +1358,27 @@ fn render_object_modeless_character(
         vec![Html::div(
             Attributes::new().class("container-a"),
             Events::new(),
-            vec![
-                Html::div(
-                    Attributes::new().class("centering-a"),
-                    Events::new(),
-                    vec![Html::img(
-                        Attributes::new()
-                            .string("src", character.texture_src())
-                            .class("pure-img")
-                            .style(
-                                "max-height",
-                                format!("{}vh", (modeless_height - 1) as f64 * 100.0 / 14.0),
-                            ),
-                        Events::new(),
-                        vec![],
-                    )],
-                ),
-                Html::input(
-                    Attributes::new().type_("file").class("grid-w-f"),
-                    Events::new().on("change", move |e| {
-                        if let Some(file) = e
-                            .target()
-                            .unwrap()
-                            .dyn_into::<web_sys::HtmlInputElement>()
-                            .unwrap()
-                            .files()
-                            .unwrap()
-                            .item(0)
-                        {
-                            Msg::LoadCharacterImageFromFile(character_id, file)
-                        } else {
-                            Msg::NoOp
-                        }
-                    }),
-                    vec![],
-                ),
-            ],
+            vec![Html::div(
+                Attributes::new().class("centering-a"),
+                Events::new(),
+                vec![character
+                    .texture_id()
+                    .and_then(|data_id| resource.get_as_image(&data_id))
+                    .map(|image| {
+                        Html::img(
+                            Attributes::new()
+                                .string("src", image.src())
+                                .class("pure-img")
+                                .style(
+                                    "max-height",
+                                    format!("{}vh", (modeless_height - 1) as f64 * 100.0 / 14.0),
+                                ),
+                            Events::new(),
+                            vec![],
+                        )
+                    })
+                    .unwrap_or(Html::none())],
+            )],
         )],
     )
 }

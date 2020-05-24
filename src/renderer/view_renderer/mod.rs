@@ -3,7 +3,7 @@ mod table_renderer;
 mod tablemask_collection_renderer;
 
 use super::webgl::WebGlRenderingContext;
-use crate::model::{Camera, World};
+use crate::model::{Camera, Resource, World};
 use character_collection_renderer::CharacterCollectionRenderer;
 use table_renderer::TableRenderer;
 use tablemask_collection_renderer::TablemaskCollectionRenderer;
@@ -40,6 +40,7 @@ impl ViewRenderer {
         canvas_size: &[f64; 2],
         camera: &Camera,
         world: &mut World,
+        resource: &Resource,
     ) {
         let vp_matrix = camera
             .view_matrix()
@@ -55,8 +56,13 @@ impl ViewRenderer {
             .render(gl, camera, &vp_matrix, world.table_mut());
         self.tablemask_collection_renderer
             .render(gl, camera, &vp_matrix, world.tablemasks());
-        self.character_collection_renderer
-            .render(gl, camera, &vp_matrix, world.characters_mut());
+        self.character_collection_renderer.render(
+            gl,
+            camera,
+            &vp_matrix,
+            world.characters_mut(),
+            resource,
+        );
 
         gl.flush();
     }
