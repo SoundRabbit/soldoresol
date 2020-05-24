@@ -38,10 +38,10 @@ impl Resource {
         })
     }
 
-    pub fn get_images(&self) -> Vec<Rc<web_sys::HtmlImageElement>> {
+    pub fn get_images(&self) -> Vec<(u128, Rc<web_sys::HtmlImageElement>)> {
         self.data
             .iter()
-            .filter_map(|(data_id, _)| self.get_as_image(data_id))
+            .filter_map(|(data_id, _)| self.get_as_image(data_id).map(|image| (*data_id, image)))
             .collect()
     }
 

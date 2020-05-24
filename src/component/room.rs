@@ -93,6 +93,7 @@ type ModelessCollection = Vec<(ModelessState, Modeless)>;
 
 enum Modal {
     Resource,
+    SelectCharacterImage(u128),
 }
 
 pub struct State {
@@ -660,7 +661,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     let h = image.height() as f64;
                     let w = image.width() as f64;
                     let s = character.size();
-                    character.set_size([s[0], s[1] * h / w]);
+                    character.set_size([s[0], s[0] * h / w]);
                     update(state, Msg::Render)
                 } else {
                     Cmd::none()
@@ -866,7 +867,11 @@ fn render(state: &State) -> Html<Msg> {
             .class("fullscreen unselectable")
             .style("display", "grid")
             .style("grid-template-rows", "max-content 1fr"),
-        Events::new(),
+        Events::new().on("drop", |e| {
+            e.prevent_default();
+            e.stop_propagation();
+            Msg::NoOp
+        }),
         vec![
             render_header_menu(
                 &state.room.id,
@@ -1419,27 +1424,39 @@ fn render_object_modeless_character(
         vec![Html::div(
             Attributes::new().class("container-a"),
             Events::new(),
-            vec![Html::div(
-                Attributes::new().class("centering-a"),
-                Events::new(),
-                vec![character
-                    .texture_id()
-                    .and_then(|data_id| resource.get_as_image(&data_id))
-                    .map(|image| {
-                        Html::img(
-                            Attributes::new()
-                                .string("src", image.src())
-                                .class("pure-img")
-                                .style(
-                                    "max-height",
-                                    format!("{}vh", (modeless_height - 1) as f64 * 100.0 / 14.0),
-                                ),
-                            Events::new(),
-                            vec![],
-                        )
-                    })
-                    .unwrap_or(Html::none())],
-            )],
+            vec![
+                Html::div(
+                    Attributes::new().class("centering-a"),
+                    Events::new(),
+                    vec![character
+                        .texture_id()
+                        .and_then(|data_id| resource.get_as_image(&data_id))
+                        .map(|image| {
+                            Html::img(
+                                Attributes::new()
+                                    .string("src", image.src())
+                                    .class("pure-img")
+                                    .style(
+                                        "max-height",
+                                        format!(
+                                            "{}vh",
+                                            (modeless_height - 1) as f64 * 100.0 / 14.0
+                                        ),
+                                    ),
+                                Events::new(),
+                                vec![],
+                            )
+                        })
+                        .unwrap_or(Html::none())],
+                ),
+                btn::primary(
+                    Attributes::new(),
+                    Events::new().on_click(move |_| {
+                        Msg::OpenModal(Modal::SelectCharacterImage(character_id))
+                    }),
+                    vec![Html::text("画像を選択")],
+                ),
+            ],
         )],
     )
 }
@@ -1553,6 +1570,9 @@ fn render_modals(modals: &Vec<Modal>, resource: &Resource) -> Html<Msg> {
         for modal in modals {
             let child = match modal {
                 Modal::Resource => render_modal_resource(resource),
+                Modal::SelectCharacterImage(character_id) => {
+                    render_modal_select_character_image(*character_id, resource)
+                }
             };
             children.push(child);
         }
@@ -1603,13 +1623,78 @@ fn render_modal_resource(resource: &Resource) -> Html<Msg> {
                     }),
                 resource
                     .get_images()
-                    .iter()
-                    .map(|image| {
+                    .into_iter()
+                    .map(|(_, image)| {
                         Html::img(
                             Attributes::new()
                                 .class("grid-w-2 pure-img")
                                 .string("src", image.src()),
                             Events::new(),
+                            vec![],
+                        )
+                    })
+                    .collect(),
+            ),
+            modal::footer(
+                Attributes::new(),
+                Events::new(),
+                vec![Html::text("ファイルはドラッグ & ドロップで追加できます。")],
+            ),
+        ],
+    )
+}
+
+fn render_modal_select_character_image(character_id: u128, resource: &Resource) -> Html<Msg> {
+    modal::frame(
+        12,
+        Attributes::new(),
+        Events::new(),
+        vec![
+            modal::header(
+                Attributes::new()
+                    .style("display", "grid")
+                    .style("grid-template-columns", "1fr max-content"),
+                Events::new(),
+                vec![
+                    Html::div(Attributes::new(), Events::new(), vec![]),
+                    Html::div(
+                        Attributes::new().class("linear-h"),
+                        Events::new(),
+                        vec![btn::close(
+                            Attributes::new(),
+                            Events::new().on_click(move |_| Msg::CloseModal),
+                        )],
+                    ),
+                ],
+            ),
+            modal::body(
+                Attributes::new()
+                    .class("scroll-v grid container")
+                    .style("min-height", "50vh"),
+                Events::new()
+                    .on("dragover", |e| {
+                        e.prevent_default();
+                        Msg::NoOp
+                    })
+                    .on("drop", |e| {
+                        e.prevent_default();
+                        let e = e.dyn_into::<web_sys::DragEvent>().unwrap();
+                        e.data_transfer()
+                            .unwrap()
+                            .files()
+                            .map(|files| Msg::LoadFromFileList(files))
+                            .unwrap_or(Msg::NoOp)
+                    }),
+                resource
+                    .get_images()
+                    .into_iter()
+                    .map(|(data_id, image)| {
+                        Html::img(
+                            Attributes::new()
+                                .class("grid-w-2 pure-img clickable")
+                                .string("src", image.src()),
+                            Events::new()
+                                .on_click(move |_| Msg::SetCharacterImage(character_id, data_id)),
                             vec![],
                         )
                     })
