@@ -102,6 +102,7 @@ pub struct State {
     modelesses: ModelessCollection,
     editing_modeless: Option<(usize, Rc<RefCell<modeless_modal::State>>)>,
     object_modeless_address: HashMap<u128, [usize; 2]>,
+    images: HashMap<u128, Rc<web_sys::HtmlImageElement>>,
 }
 
 pub enum Msg {
@@ -149,6 +150,11 @@ pub enum Msg {
     AddTablemask(Tablemask),
     SetTablemaskSize(u128, [f64; 2]),
     SetTablemaskSizeIsBinded(u128, bool),
+
+    // リソース管理
+    LoadFromFileList(web_sys::FileList),
+    LoadFromDataUrlList(Vec<(u128, String)>, bool),
+    LoadReasourceList(Vec<(u128, Rc<web_sys::HtmlImageElement>)>),
 
     // 接続に関する操作
     ReceiveMsg(skyway::Msg),
@@ -211,6 +217,7 @@ fn init(room: Rc<Room>) -> impl FnOnce() -> (State, Cmd<Msg, Sub>) {
             editing_modeless: None,
             object_modeless_address: HashMap::new(),
             focused_object_id: None,
+            images: HashMap::new(),
         };
         let task = Cmd::task(|handler| {
             handler(Msg::SetTableContext);
@@ -693,6 +700,97 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             update(state, Msg::Render)
         }
 
+        // リソース
+        Msg::LoadFromFileList(file_list) => Cmd::task(move |resolve| {
+            let len = file_list.length();
+            let common = Rc::new((RefCell::new(Vec::new()), Some(resolve)));
+            let mut file_readers = HashMap::new();
+            for i in 0..len {
+                if let Some(file) = file_list.item(i) {
+                    let file_reader = Rc::new(web_sys::FileReader::new().unwrap());
+                    let a = {
+                        let file_reader = Rc::clone(&file_reader);
+                        let data_id = random_id::u128val();
+                        let mut common = Rc::clone(&common);
+                        Closure::once(Box::new(move || {
+                            let n = file_reader
+                                .result()
+                                .ok()
+                                .and_then(|result| result.as_string())
+                                .map(|data_url| {
+                                    common.0.borrow_mut().push((data_id, data_url));
+                                    if let Some((data_urls, resolve)) = Rc::get_mut(&mut common) {
+                                        let mut r = None;
+                                        std::mem::swap(&mut r, resolve);
+                                        r.map(|r| {
+                                            r(Msg::LoadFromDataUrlList(
+                                                data_urls.borrow_mut().drain(..).collect(),
+                                                true,
+                                            ))
+                                        });
+                                    };
+                                });
+                        }) as Box<dyn FnOnce()>)
+                    };
+                    file_reader.set_onload(Some(&a.as_ref().unchecked_ref()));
+                    file_readers.insert(i, file_reader);
+                    a.forget();
+                }
+            }
+            for i in 0..len {
+                if let (Some(file), Some(file_reader)) = (file_list.item(i), file_readers.get(&i)) {
+                    file_reader.read_as_data_url(&file).unwrap();
+                }
+            }
+        }),
+        Msg::LoadFromDataUrlList(data_urls, transport) => {
+            let room = Rc::clone(&state.room);
+            Cmd::task(move |resolve| {
+                let common = Rc::new((RefCell::new(Vec::new()), Some(resolve)));
+                for data_url in data_urls {
+                    let image = Rc::new(
+                        web_sys::window()
+                            .unwrap()
+                            .document()
+                            .unwrap()
+                            .create_element("img")
+                            .unwrap()
+                            .dyn_into::<web_sys::HtmlImageElement>()
+                            .unwrap(),
+                    );
+                    let a = {
+                        let image = Rc::clone(&image);
+                        let data_id = data_url.0;
+                        let mut common = Rc::clone(&common);
+                        Closure::once(Box::new(move || {
+                            common.0.borrow_mut().push((data_id, image));
+                            if let Some((data, resolve)) = Rc::get_mut(&mut common) {
+                                let mut r = None;
+                                std::mem::swap(&mut r, resolve);
+                                r.map(|r| {
+                                    r(Msg::LoadReasourceList(
+                                        data.borrow_mut().drain(..).collect(),
+                                    ))
+                                });
+                            };
+                        }))
+                    };
+                    image.set_onload(Some(&a.as_ref().unchecked_ref()));
+                    image.set_src(&data_url.1);
+                    a.forget();
+                    if transport {
+                        room.send(&skyway::Msg::AddResource(data_url.0, data_url.1));
+                    }
+                }
+            })
+        }
+        Msg::LoadReasourceList(images) => {
+            for image in images {
+                state.images.insert(image.0, image.1);
+            }
+            Cmd::none()
+        }
+
         // 接続に関する操作
         Msg::ReceiveMsg(msg) => match msg {
             skyway::Msg::CreateCharacterToTable(character_id, position) => {
@@ -736,6 +834,10 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 state.world.table_mut().set_is_bind_to_grid(is_bind_to_grid);
                 update(state, Msg::Render)
             }
+            skyway::Msg::AddResource(data_id, data) => update(
+                state,
+                Msg::LoadFromDataUrlList(vec![(data_id, data)], false),
+            ),
         },
         Msg::DisconnectFromRoom => Cmd::Sub(Sub::DisconnectFromRoom),
     }

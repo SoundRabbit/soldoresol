@@ -72,4 +72,5 @@ pub enum Msg {
     SetCharacterImage(u128, String),
     SetObjectPosition(u128, [f64; 3]),
     SetIsBindToGrid(bool),
+    AddResource(u128, String),
 }
