@@ -797,6 +797,10 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 state.world.table_mut().set_is_bind_to_grid(is_bind_to_grid);
                 update(state, Msg::Render)
             }
+            skyway::Msg::SetWorld(world_data) => {
+                state.world = World::from(world_data);
+                update(state, Msg::Render)
+            }
             skyway::Msg::AddResource(data_id, data) => update(
                 state,
                 Msg::LoadFromDataUrlList(vec![(data_id, data)], false),

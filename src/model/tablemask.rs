@@ -79,3 +79,14 @@ impl Clone for Tablemask {
         clone
     }
 }
+
+impl From<TablemaskData> for Tablemask {
+    fn from(tablemask_data: TablemaskData) -> Self {
+        Self {
+            size: tablemask_data.size,
+            position: tablemask_data.position,
+            background_color: Color::from(tablemask_data.background_color),
+            size_is_binded: tablemask_data.size_is_binded,
+        }
+    }
+}

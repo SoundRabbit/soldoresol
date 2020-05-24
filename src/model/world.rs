@@ -5,11 +5,12 @@ use crate::random_id;
 use serde::{Deserialize, Serialize};
 use std::collections::hash_map;
 use std::collections::HashMap;
+use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 
 pub struct World {
     table_id: u128,
-    table: Table,
+    table: Rc<Table>,
     characters: HashMap<u128, Character>,
     tablemasks: HashMap<u128, Tablemask>,
 }
@@ -26,7 +27,7 @@ impl World {
     pub fn new(table_size: [f64; 2]) -> Self {
         Self {
             table_id: random_id::u128val(),
-            table: Table::new(table_size, 64.0),
+            table: Rc::new(Table::new(table_size, 64.0)),
             characters: HashMap::new(),
             tablemasks: HashMap::new(),
         }
@@ -41,7 +42,7 @@ impl World {
     }
 
     pub fn table_mut(&mut self) -> &mut Table {
-        &mut self.table
+        Rc::get_mut(&mut self.table).unwrap()
     }
 
     pub fn characters(&self) -> hash_map::Iter<u128, Character> {
@@ -89,12 +90,12 @@ impl World {
     }
 
     pub fn to_data(&self) -> WorldData {
-        let mut character_data: HashMap<u128, CharacterData> = HashMap::new();
+        let mut character_data = HashMap::new();
         for (id, character) in self.characters() {
             character_data.insert(*id, character.to_data());
         }
 
-        let mut tablemask_data: HashMap<u128, TablemaskData> = HashMap::new();
+        let mut tablemask_data = HashMap::new();
         for (id, tablemask) in self.tablemasks() {
             tablemask_data.insert(*id, tablemask.to_data());
         }
@@ -104,6 +105,27 @@ impl World {
             table_data: self.table().to_data(),
             character_data,
             tablemask_data,
+        }
+    }
+}
+
+impl From<WorldData> for World {
+    fn from(world_data: WorldData) -> Self {
+        let mut characters = HashMap::new();
+        for (id, character_data) in world_data.character_data {
+            characters.insert(id, Character::from(character_data));
+        }
+
+        let mut tablemasks = HashMap::new();
+        for (id, tablemask_data) in world_data.tablemask_data {
+            tablemasks.insert(id, Tablemask::from(tablemask_data));
+        }
+
+        Self {
+            table_id: world_data.table_id,
+            table: Rc::from(world_data.table_data),
+            characters,
+            tablemasks,
         }
     }
 }

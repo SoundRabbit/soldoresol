@@ -72,5 +72,6 @@ pub enum Msg {
     SetCharacterImage(u128, u128),
     SetObjectPosition(u128, [f64; 3]),
     SetIsBindToGrid(bool),
+    SetWorld(crate::model::WorldData),
     AddResource(u128, String),
 }

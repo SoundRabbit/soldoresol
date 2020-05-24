@@ -98,3 +98,14 @@ impl Clone for Character {
         clone
     }
 }
+
+impl From<CharacterData> for Character {
+    fn from(character_data: CharacterData) -> Self {
+        Self {
+            size: character_data.size,
+            position: character_data.position,
+            image_id: character_data.image_id,
+            background_color: Color::from(0),
+        }
+    }
+}

@@ -17,4 +17,4 @@ pub use resource::Resource;
 pub use table::Table;
 pub use tablemask::Tablemask;
 pub use texturelayer::TexstureLayer;
-pub use world::World;
+pub use world::{World, WorldData};

@@ -1,6 +1,7 @@
 use super::color::Color;
 use super::TexstureLayer;
 use serde::{Deserialize, Serialize};
+use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 
@@ -10,13 +11,13 @@ const MEASURE_LAYER: usize = 2;
 const CURSOR_LAYER: usize = 3;
 
 pub struct Table {
-    pub size: [f64; 2],
-    pub pixel_ratio: f64,
-    pub is_bind_to_grid: bool,
-    pub drawing_texture: TexstureLayer,
-    pub drawing_texture_is_changed: bool,
-    pub measure_texture: TexstureLayer,
-    pub measure_texture_is_changed: bool,
+    size: [f64; 2],
+    pixel_ratio: f64,
+    is_bind_to_grid: bool,
+    drawing_texture: TexstureLayer,
+    drawing_texture_is_changed: bool,
+    measure_texture: TexstureLayer,
+    measure_texture_is_changed: bool,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -24,6 +25,7 @@ pub struct TableData {
     pub size: [f64; 2],
     pub is_bind_to_grid: bool,
     pub drawing_texture: String,
+    pub pixel_ratio: f64,
 }
 
 impl Table {
@@ -201,6 +203,50 @@ impl Table {
             size: self.size.clone(),
             is_bind_to_grid: self.is_bind_to_grid.clone(),
             drawing_texture: self.drawing_texture.element().to_data_url().unwrap(),
+            pixel_ratio: self.pixel_ratio,
         }
+    }
+}
+
+impl From<TableData> for Rc<Table> {
+    fn from(table_data: TableData) -> Self {
+        let size = table_data.size;
+        let pixel_ratio = table_data.pixel_ratio;
+        let texture_width = (size[0] * pixel_ratio) as u32;
+        let texture_height = (size[1] * pixel_ratio) as u32;
+        let table = Rc::new(Table {
+            size: size,
+            pixel_ratio: pixel_ratio,
+            is_bind_to_grid: table_data.is_bind_to_grid,
+            drawing_texture: TexstureLayer::new(&[texture_width, texture_height]),
+            drawing_texture_is_changed: true,
+            measure_texture: TexstureLayer::new(&[texture_width, texture_height]),
+            measure_texture_is_changed: true,
+        });
+
+        let image = Rc::new(
+            web_sys::window()
+                .unwrap()
+                .document()
+                .unwrap()
+                .create_element("img")
+                .unwrap()
+                .dyn_into::<web_sys::HtmlImageElement>()
+                .unwrap(),
+        );
+
+        let a = {
+            let table = Rc::clone(&table);
+            let image = Rc::clone(&image);
+            Closure::once(Box::new(move || {
+                let context = table.drawing_texture.context();
+                context.draw_image_with_html_image_element(&image, 0.0, 0.0);
+            }))
+        };
+
+        image.set_onload(Some(a.as_ref().unchecked_ref()));
+        image.set_src(&table_data.drawing_texture);
+
+        table
     }
 }
