@@ -1,4 +1,4 @@
-(window.webpackJsonp=window.webpackJsonp||[]).push([[2],{6:function(e,t){var n;n=function(){return this}();try{n=n||new Function("return this")()}catch(e){"object"==typeof window&&(n=window)}e.exports=n},8:function(e,t,n){
+(window.webpackJsonp=window.webpackJsonp||[]).push([[2],{10:function(e,t,n){
 /*!
  * SkyWay Copyright(c) 2020 NTT Communications Corporation
  * peerjs Copyright(c) 2013 Michelle Bu <michelle@michellebu.com>
@@ -423,4 +423,4 @@ var r=n(/*! base64-js */"./node_modules/base64-js/index.js"),i=n(/*! ieee754 */"
   !*** ws (ignored) ***!
   \********************/
 /*! no static exports found */
-/*! ModuleConcatenation bailout: Module is not an ECMAScript module */function(e,t){}}).default},e.exports=r()}}]);
+/*! ModuleConcatenation bailout: Module is not an ECMAScript module */function(e,t){}}).default},e.exports=r()},8:function(e,t){var n;n=function(){return this}();try{n=n||new Function("return this")()}catch(e){"object"==typeof window&&(n=window)}e.exports=n}}]);
