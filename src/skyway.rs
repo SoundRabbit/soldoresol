@@ -73,5 +73,6 @@ pub enum Msg {
     SetObjectPosition(u128, [f64; 3]),
     SetIsBindToGrid(bool),
     SetWorld(crate::model::WorldData),
-    AddResource(u128, String),
+    SetResource(crate::model::ResourceData),
+    AddResource(u128, crate::model::resource::DataString),
 }

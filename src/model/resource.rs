@@ -1,3 +1,4 @@
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::rc::Rc;
 
@@ -8,6 +9,13 @@ pub enum Data {
 pub struct Resource {
     data: HashMap<u128, Data>,
 }
+
+#[derive(Deserialize, Serialize)]
+pub enum DataString {
+    Image(String),
+}
+
+pub type ResourceData = HashMap<u128, DataString>;
 
 impl Resource {
     pub fn new() -> Self {
@@ -35,5 +43,19 @@ impl Resource {
             .iter()
             .filter_map(|(data_id, _)| self.get_as_image(data_id))
             .collect()
+    }
+
+    pub fn to_data(&self) -> ResourceData {
+        let mut resource_data = HashMap::new();
+
+        for (id, data) in &self.data {
+            match data {
+                Data::Image(image) => {
+                    resource_data.insert(*id, DataString::Image(image.src()));
+                }
+            }
+        }
+
+        resource_data
     }
 }

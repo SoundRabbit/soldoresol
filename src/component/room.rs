@@ -3,10 +3,10 @@ use super::contextmenu;
 use super::modal;
 use super::modeless;
 use super::modeless_modal;
+use crate::model::resource::{Data, DataString};
 use crate::model::Camera;
 use crate::model::Character;
 use crate::model::ColorSystem;
-use crate::model::Data;
 use crate::model::Resource;
 use crate::model::Tablemask;
 use crate::model::World;
@@ -162,12 +162,12 @@ pub enum Msg {
 
     // リソース管理
     LoadFromFileList(web_sys::FileList),
-    LoadFromDataUrlList(Vec<(u128, String)>, bool),
-    LoadReasourceList(Vec<(u128, Rc<web_sys::HtmlImageElement>)>),
+    LoadFromDataUrls(HashMap<u128, DataString>, bool),
+    LoadReasources(HashMap<u128, Rc<web_sys::HtmlImageElement>>),
 
     // 接続に関する操作
     ReceiveMsg(skyway::Msg),
-    SendWorldData,
+    SendAllData,
     DisconnectFromRoom,
 }
 
@@ -205,7 +205,7 @@ pub fn new(room: Rc<Room>) -> Component<Msg, State, Sub> {
         .batch({
             let room = Rc::clone(&room);
             move |mut handler| {
-                let a = Closure::wrap(Box::new(move |peer_id: String| handler(Msg::SendWorldData))
+                let a = Closure::wrap(Box::new(move |peer_id: String| handler(Msg::SendAllData))
                     as Box<dyn FnMut(String)>);
                 room.payload
                     .on("peerJoin", Some(a.as_ref().unchecked_ref()));
@@ -698,7 +698,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         // リソース
         Msg::LoadFromFileList(file_list) => Cmd::task(move |resolve| {
             let len = file_list.length();
-            let common = Rc::new((RefCell::new(Vec::new()), Some(resolve)));
+            let common = Rc::new((RefCell::new(HashMap::new()), Some(resolve)));
             let mut file_readers = vec![];
             for i in 0..len {
                 if let Some(file) = file_list.item(i) {
@@ -713,13 +713,16 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                                 .ok()
                                 .and_then(|result| result.as_string())
                                 .map(|data_url| {
-                                    common.0.borrow_mut().push((data_id, data_url));
+                                    common
+                                        .0
+                                        .borrow_mut()
+                                        .insert(data_id, DataString::Image(data_url));
                                     if let Some((data_urls, resolve)) = Rc::get_mut(&mut common) {
                                         let mut r = None;
                                         std::mem::swap(&mut r, resolve);
                                         r.map(|r| {
-                                            r(Msg::LoadFromDataUrlList(
-                                                data_urls.borrow_mut().drain(..).collect(),
+                                            r(Msg::LoadFromDataUrls(
+                                                data_urls.borrow_mut().drain().collect(),
                                                 true,
                                             ))
                                         });
@@ -736,48 +739,52 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 file_reader.read_as_data_url(&file).unwrap();
             }
         }),
-        Msg::LoadFromDataUrlList(data_urls, transport) => {
+        Msg::LoadFromDataUrls(data_urls, transport) => {
             let room = Rc::clone(&state.room);
             Cmd::task(move |resolve| {
-                let common = Rc::new((RefCell::new(Vec::new()), Some(resolve)));
-                for data_url in data_urls {
-                    let image = Rc::new(
-                        web_sys::window()
-                            .unwrap()
-                            .document()
-                            .unwrap()
-                            .create_element("img")
-                            .unwrap()
-                            .dyn_into::<web_sys::HtmlImageElement>()
-                            .unwrap(),
-                    );
-                    let a = {
-                        let image = Rc::clone(&image);
-                        let data_id = data_url.0;
-                        let mut common = Rc::clone(&common);
-                        Closure::once(Box::new(move || {
-                            common.0.borrow_mut().push((data_id, image));
-                            if let Some((data, resolve)) = Rc::get_mut(&mut common) {
-                                let mut r = None;
-                                std::mem::swap(&mut r, resolve);
-                                r.map(|r| {
-                                    r(Msg::LoadReasourceList(
-                                        data.borrow_mut().drain(..).collect(),
-                                    ))
-                                });
+                let common = Rc::new((RefCell::new(HashMap::new()), Some(resolve)));
+                for (data_id, data_url) in data_urls {
+                    match &data_url {
+                        DataString::Image(data_url) => {
+                            let image = Rc::new(
+                                web_sys::window()
+                                    .unwrap()
+                                    .document()
+                                    .unwrap()
+                                    .create_element("img")
+                                    .unwrap()
+                                    .dyn_into::<web_sys::HtmlImageElement>()
+                                    .unwrap(),
+                            );
+                            let a = {
+                                let image = Rc::clone(&image);
+                                let data_id = data_id;
+                                let mut common = Rc::clone(&common);
+                                Closure::once(Box::new(move || {
+                                    common.0.borrow_mut().insert(data_id, image);
+                                    if let Some((data, resolve)) = Rc::get_mut(&mut common) {
+                                        let mut r = None;
+                                        std::mem::swap(&mut r, resolve);
+                                        r.map(|r| {
+                                            r(Msg::LoadReasources(
+                                                data.borrow_mut().drain().collect(),
+                                            ))
+                                        });
+                                    };
+                                }))
                             };
-                        }))
-                    };
-                    image.set_onload(Some(&a.as_ref().unchecked_ref()));
-                    image.set_src(&data_url.1);
-                    a.forget();
+                            image.set_onload(Some(&a.as_ref().unchecked_ref()));
+                            image.set_src(&data_url);
+                            a.forget();
+                        }
+                    }
                     if transport {
-                        room.send(&skyway::Msg::AddResource(data_url.0, data_url.1));
+                        room.send(&skyway::Msg::AddResource(data_id, data_url));
                     }
                 }
             })
         }
-        Msg::LoadReasourceList(images) => {
+        Msg::LoadReasources(images) => {
             for image in images {
                 state.resource.insert(image.0, Data::Image(image.1));
             }
@@ -830,15 +837,22 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 state.world = World::from(world_data);
                 update(state, Msg::Render)
             }
-            skyway::Msg::AddResource(data_id, data) => update(
-                state,
-                Msg::LoadFromDataUrlList(vec![(data_id, data)], false),
-            ),
+            skyway::Msg::SetResource(resource_data) => {
+                update(state, Msg::LoadFromDataUrls(resource_data, false))
+            }
+            skyway::Msg::AddResource(data_id, data) => {
+                let mut data_urls = HashMap::new();
+                data_urls.insert(data_id, data);
+                update(state, Msg::LoadFromDataUrls(data_urls, false))
+            }
         },
-        Msg::SendWorldData => {
+        Msg::SendAllData => {
             state
                 .room
                 .send(&skyway::Msg::SetWorld(state.world.to_data()));
+            state
+                .room
+                .send(&skyway::Msg::SetResource(state.resource.to_data()));
             Cmd::none()
         }
         Msg::DisconnectFromRoom => Cmd::Sub(Sub::DisconnectFromRoom),
