@@ -704,7 +704,11 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         Msg::SetCharacterImage(character_id, data_id, transport) => {
             if let Some(character) = state.world.character_mut(&character_id) {
                 character.set_image_id(data_id);
-                state.room.send(&skyway::Msg::SetCharacterImage(character_id, data_id));
+                if transport {
+                    state
+                        .room
+                        .send(&skyway::Msg::SetCharacterImage(character_id, data_id));
+                }
                 update(state, Msg::Render)
             } else {
                 state.cmd_queue.dequeue()
@@ -1845,8 +1849,9 @@ fn render_modal_select_character_image(character_id: u128, resource: &Resource) 
                             Attributes::new()
                                 .class("grid-w-2 pure-img clickable")
                                 .string("src", image.src()),
-                            Events::new()
-                                .on_click(move |_| Msg::SetCharacterImage(character_id, data_id, true)),
+                            Events::new().on_click(move |_| {
+                                Msg::SetCharacterImage(character_id, data_id, true)
+                            }),
                             vec![],
                         )
                     })
