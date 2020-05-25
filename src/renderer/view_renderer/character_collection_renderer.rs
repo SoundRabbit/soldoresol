@@ -18,11 +18,16 @@ impl<T: PartialOrd> Ord for Total<T> {
     }
 }
 
+struct Texture {
+    payload: web_sys::WebGlTexture,
+    size: [f64; 2],
+}
+
 pub struct CharacterCollectionRenderer {
     img_vertexis_buffer: WebGlF32Vbo,
     img_texture_coord_buffer: WebGlF32Vbo,
     img_index_buffer: WebGlI16Ibo,
-    img_texture_buffer: HashMap<u128, web_sys::WebGlTexture>,
+    img_texture_buffer: HashMap<u128, Texture>,
     mask_vertexis_buffer: WebGlF32Vbo,
     mask_texture_coord_buffer: WebGlF32Vbo,
     mask_index_buffer: WebGlI16Ibo,
@@ -137,7 +142,6 @@ impl CharacterCollectionRenderer {
             );
 
             let model_matrix: Array2<f64> = ModelMatrix::new()
-                .with_scale(&[s[0], s[1], 1.0])
                 .with_x_axis_rotation(camera.x_axis_rotation())
                 .with_z_axis_rotation(camera.z_axis_rotation())
                 .with_movement(&p)
@@ -218,37 +222,50 @@ impl CharacterCollectionRenderer {
                             &texture,
                         )
                         .unwrap();
-                        self.img_texture_buffer.insert(texture_id, texture_buffer);
+                        self.img_texture_buffer.insert(
+                            texture_id,
+                            Texture {
+                                payload: texture_buffer,
+                                size: [texture.width() as f64, texture.height() as f64],
+                            },
+                        );
                     }
-                    let texture_buffer = self.img_texture_buffer.get(&texture_id).unwrap();
-                    gl.bind_texture(
-                        web_sys::WebGlRenderingContext::TEXTURE_2D,
-                        Some(texture_buffer),
-                    );
-                    gl.uniform_matrix4fv_with_f32_array(
-                        Some(&self.character_program.u_translate_location),
-                        false,
-                        &[
-                            mvp_matrix.row(0).to_vec(),
-                            mvp_matrix.row(1).to_vec(),
-                            mvp_matrix.row(2).to_vec(),
-                            mvp_matrix.row(3).to_vec(),
-                        ]
-                        .concat()
-                        .into_iter()
-                        .map(|a| a as f32)
-                        .collect::<Vec<f32>>(),
-                    );
-                    gl.uniform4fv_with_f32_array(
-                        Some(&self.character_program.u_bg_color_location),
-                        &character.background_color().to_f32array(),
-                    );
-                    gl.draw_elements_with_i32(
-                        web_sys::WebGlRenderingContext::TRIANGLES,
-                        6,
-                        web_sys::WebGlRenderingContext::UNSIGNED_SHORT,
-                        0,
-                    );
+                    if let Some(texture) = self.img_texture_buffer.get(&texture_id) {
+                        let s = character.size();
+                        let model_matrix: Array2<f64> = ModelMatrix::new()
+                            .with_scale(&[s[0], s[1] * texture.size[1] / texture.size[0], 1.0])
+                            .into();
+                        let mvp_matrix = model_matrix.dot(&mvp_matrix);
+
+                        gl.bind_texture(
+                            web_sys::WebGlRenderingContext::TEXTURE_2D,
+                            Some(&texture.payload),
+                        );
+                        gl.uniform_matrix4fv_with_f32_array(
+                            Some(&self.character_program.u_translate_location),
+                            false,
+                            &[
+                                mvp_matrix.row(0).to_vec(),
+                                mvp_matrix.row(1).to_vec(),
+                                mvp_matrix.row(2).to_vec(),
+                                mvp_matrix.row(3).to_vec(),
+                            ]
+                            .concat()
+                            .into_iter()
+                            .map(|a| a as f32)
+                            .collect::<Vec<f32>>(),
+                        );
+                        gl.uniform4fv_with_f32_array(
+                            Some(&self.character_program.u_bg_color_location),
+                            &character.background_color().to_f32array(),
+                        );
+                        gl.draw_elements_with_i32(
+                            web_sys::WebGlRenderingContext::TRIANGLES,
+                            6,
+                            web_sys::WebGlRenderingContext::UNSIGNED_SHORT,
+                            0,
+                        );
+                    }
                 }
                 character.rendered();
             }

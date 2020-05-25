@@ -97,5 +97,5 @@ pub struct Log {
 #[derive(Deserialize)]
 pub struct Message {
     pub src: String,
-    pub data: Option<String>
+    pub data: Option<String>,
 }

@@ -173,7 +173,7 @@ pub enum Msg {
     CloseModal,
 
     // Worldに対する操作
-    SetCharacterImage(u128, u128),
+    SetCharacterImage(u128, u128, bool),
     SetCharacterHp(u128, i64),
     SetCharacterMp(u128, i64),
     AddChracater(Character),
@@ -701,9 +701,10 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
 
         // Worldに対する操作
-        Msg::SetCharacterImage(character_id, data_id) => {
+        Msg::SetCharacterImage(character_id, data_id, transport) => {
             if let Some(character) = state.world.character_mut(&character_id) {
                 character.set_image_id(data_id);
+                state.room.send(&skyway::Msg::SetCharacterImage(character_id, data_id));
                 update(state, Msg::Render)
             } else {
                 state.cmd_queue.dequeue()
@@ -875,7 +876,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 update(state, Msg::Render)
             }
             skyway::Msg::SetCharacterImage(character_id, data_id) => {
-                update(state, Msg::SetCharacterImage(character_id, data_id))
+                update(state, Msg::SetCharacterImage(character_id, data_id, false))
             }
             skyway::Msg::SetObjectPosition(object_id, position) => {
                 if let Some(character) = state.world.character_mut(&object_id) {
@@ -1845,7 +1846,7 @@ fn render_modal_select_character_image(character_id: u128, resource: &Resource) 
                                 .class("grid-w-2 pure-img clickable")
                                 .string("src", image.src()),
                             Events::new()
-                                .on_click(move |_| Msg::SetCharacterImage(character_id, data_id)),
+                                .on_click(move |_| Msg::SetCharacterImage(character_id, data_id, true)),
                             vec![],
                         )
                     })
