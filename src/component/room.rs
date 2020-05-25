@@ -1,26 +1,16 @@
-use super::btn;
-use super::contextmenu;
-use super::modal;
-use super::modeless;
-use super::modeless_modal;
-use crate::model::resource::{Data, DataString};
-use crate::model::Camera;
-use crate::model::Character;
-use crate::model::ColorSystem;
-use crate::model::Resource;
-use crate::model::Tablemask;
-use crate::model::World;
-use crate::random_id;
-use crate::renderer::Renderer;
-use crate::skyway;
-use crate::skyway::ReceiveData;
-use crate::skyway::{Peer, Room};
+use super::{btn, contextmenu, modal, modeless, modeless_modal};
+use crate::{
+    model::{
+        resource::{Data, DataString},
+        Camera, Character, ColorSystem, Resource, Tablemask, World,
+    },
+    random_id,
+    renderer::Renderer,
+    skyway::{self, Peer, ReceiveData, Room},
+};
 use kagura::prelude::*;
-use std::cell::RefCell;
-use std::collections::HashMap;
-use std::rc::Rc;
-use wasm_bindgen::prelude::*;
-use wasm_bindgen::JsCast;
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use wasm_bindgen::{prelude::*, JsCast};
 
 #[derive(Clone)]
 pub enum TableTool {
