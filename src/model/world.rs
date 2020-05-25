@@ -6,7 +6,6 @@ use serde::{Deserialize, Serialize};
 use std::collections::hash_map;
 use std::collections::HashMap;
 use std::rc::Rc;
-use wasm_bindgen::prelude::*;
 
 pub struct World {
     table_id: u128,

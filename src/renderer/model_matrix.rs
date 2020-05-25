@@ -53,6 +53,7 @@ impl ModelMatrix {
         self
     }
 
+    #[allow(dead_code)]
     pub fn with_y_axis_rotation(mut self, y_axis_rotation: f64) -> Self {
         let (s, c) = y_axis_rotation.sin_cos();
         let t = arr2(&[

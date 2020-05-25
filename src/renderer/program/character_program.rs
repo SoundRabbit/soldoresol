@@ -1,6 +1,5 @@
 use super::webgl::WebGlAttributeLocation;
 use super::WebGlRenderingContext;
-use wasm_bindgen::prelude::*;
 use web_sys::WebGlUniformLocation;
 
 const VERTEX_SHADER: &str = r#"

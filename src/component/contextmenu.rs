@@ -7,7 +7,6 @@ pub struct State {
 }
 
 pub enum Msg {
-    NoOp,
     SetShowingState(bool),
 }
 
@@ -31,7 +30,6 @@ pub fn close(state: &mut State) {
 
 pub fn update(state: &mut State, msg: Msg) {
     match msg {
-        Msg::NoOp => {}
         Msg::SetShowingState(s) => {
             state.showing = s;
         }
@@ -39,7 +37,7 @@ pub fn update(state: &mut State, msg: Msg) {
 }
 
 pub fn render<M: 'static>(
-    centering: bool,
+    _centering: bool,
     state: &State,
     messenger_gen: impl Fn() -> MessengerGen<Msg, M>,
     attributes: Attributes,

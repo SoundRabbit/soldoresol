@@ -4,10 +4,6 @@ pub struct WebGlF32Vbo(web_sys::WebGlBuffer);
 pub struct WebGlI16Ibo(web_sys::WebGlBuffer);
 pub struct WebGlAttributeLocation(pub u32);
 pub struct WebGlRenderingContext(pub web_sys::WebGlRenderingContext);
-pub enum VboUssage {
-    StaticDraw,
-    DynamicDraw,
-}
 
 impl Deref for WebGlF32Vbo {
     type Target = web_sys::WebGlBuffer;

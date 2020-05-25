@@ -4,7 +4,6 @@ use super::super::webgl::{WebGlF32Vbo, WebGlI16Ibo, WebGlRenderingContext};
 use super::super::ModelMatrix;
 use crate::model::{Camera, Color, Table};
 use ndarray::Array2;
-use wasm_bindgen::prelude::*;
 
 pub struct TableRenderer {
     grid_vertexis_buffer: WebGlF32Vbo,
@@ -108,7 +107,7 @@ impl TableRenderer {
     pub fn render(
         &self,
         gl: &WebGlRenderingContext,
-        camera: &Camera,
+        _camera: &Camera,
         vp_matrix: &Array2<f64>,
         table: &mut Table,
     ) {

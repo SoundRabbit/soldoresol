@@ -1,7 +1,7 @@
 use super::super::program::MaskProgram;
 use super::super::webgl::{WebGlF32Vbo, WebGlI16Ibo, WebGlRenderingContext};
 use super::super::ModelMatrix;
-use crate::model::{Camera, Color, Tablemask};
+use crate::model::{Camera, Tablemask};
 use ndarray::Array2;
 use std::collections::hash_map;
 
@@ -40,7 +40,7 @@ impl TablemaskCollectionRenderer {
     pub fn render(
         &self,
         gl: &WebGlRenderingContext,
-        camera: &Camera,
+        _camera: &Camera,
         vp_matrix: &Array2<f64>,
         tablemasks: hash_map::Iter<u128, Tablemask>,
     ) {

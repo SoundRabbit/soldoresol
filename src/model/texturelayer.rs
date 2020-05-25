@@ -1,5 +1,3 @@
-use super::color::Color;
-use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 
 pub struct TexstureLayer {
@@ -7,6 +5,7 @@ pub struct TexstureLayer {
     context: web_sys::CanvasRenderingContext2d,
 }
 
+#[allow(dead_code)]
 impl TexstureLayer {
     pub fn new(size: &[u32; 2]) -> Self {
         let element = web_sys::window()

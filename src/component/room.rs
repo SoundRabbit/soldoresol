@@ -91,12 +91,13 @@ enum Modeless {
 
 type ModelessCollection = Vec<(ModelessState, Modeless)>;
 
-enum Modal {
+pub enum Modal {
     Resource,
     SelectCharacterImage(u128),
 }
 
 pub struct State {
+    _peer: Rc<Peer>,
     room: Rc<Room>,
     world: World,
     resource: Resource,
@@ -180,7 +181,42 @@ pub enum Sub {
 }
 
 pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
-    Component::new(init(Rc::clone(&room)), update, render)
+    let init = {
+        let peer = Rc::clone(&peer);
+        let room = Rc::clone(&room);
+        move || {
+            let state = State {
+                _peer: peer,
+                room: room,
+                world: World::new([20.0, 20.0]),
+                resource: Resource::new(),
+                camera: Camera::new(),
+                renderer: None,
+                canvas_size: [0.0, 0.0],
+                table_state: TableState {
+                    selecting_tool: TableTool::Selector,
+                    measure_length: None,
+                    last_mouse_coord: [0.0, 0.0],
+                },
+                contextmenu: Contextmenu {
+                    state: contextmenu::init(),
+                    canvas_position: [0.0, 0.0],
+                    grobal_position: [0.0, 0.0],
+                },
+                is_2d_mode: false,
+                modelesses: vec![],
+                modals: vec![],
+                editing_modeless: None,
+                object_modeless_address: HashMap::new(),
+                focused_object_id: None,
+            };
+            let task = Cmd::task(|handler| {
+                handler(Msg::SetTableContext);
+            });
+            (state, task)
+        }
+    };
+    Component::new(init, update, render)
         .batch(|mut handler| {
             let a = Closure::wrap(Box::new(move || {
                 handler(Msg::WindowResized);
@@ -209,46 +245,13 @@ pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
         .batch({
             let room = Rc::clone(&room);
             move |mut handler| {
-                let a = Closure::wrap(Box::new(move |peer_id: String| handler(Msg::SendAllData))
+                let a = Closure::wrap(Box::new(move |_peer_id: String| handler(Msg::SendAllData))
                     as Box<dyn FnMut(String)>);
                 room.payload
                     .on("peerJoin", Some(a.as_ref().unchecked_ref()));
                 a.forget();
             }
         })
-}
-
-fn init(room: Rc<Room>) -> impl FnOnce() -> (State, Cmd<Msg, Sub>) {
-    || {
-        let state = State {
-            room: room,
-            world: World::new([20.0, 20.0]),
-            resource: Resource::new(),
-            camera: Camera::new(),
-            renderer: None,
-            canvas_size: [0.0, 0.0],
-            table_state: TableState {
-                selecting_tool: TableTool::Selector,
-                measure_length: None,
-                last_mouse_coord: [0.0, 0.0],
-            },
-            contextmenu: Contextmenu {
-                state: contextmenu::init(),
-                canvas_position: [0.0, 0.0],
-                grobal_position: [0.0, 0.0],
-            },
-            is_2d_mode: false,
-            modelesses: vec![],
-            modals: vec![],
-            editing_modeless: None,
-            object_modeless_address: HashMap::new(),
-            focused_object_id: None,
-        };
-        let task = Cmd::task(|handler| {
-            handler(Msg::SetTableContext);
-        });
-        (state, task)
-    }
 }
 
 fn get_table_canvas_element() -> web_sys::HtmlCanvasElement {
@@ -670,8 +673,8 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 if let Some(image) = state.resource.get_as_image(&data_id) {
                     let h = image.height() as f64;
                     let w = image.width() as f64;
-                    let s = character.size();
-                    character.set_size([s[0], s[0] * h / w]);
+                    let s = character.size()[0];
+                    character.set_size([s, s * h / w]);
                     update(state, Msg::Render)
                 } else {
                     Cmd::none()

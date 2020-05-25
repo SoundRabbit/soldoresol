@@ -1,10 +1,8 @@
 use super::peer_connection;
-use crate::skyway::{Peer, Room};
 use crate::Config;
 use kagura::prelude::*;
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
-use wasm_bindgen::JsCast;
 
 pub fn new(is_dev_mode: bool) -> Component<Msg, State, Sub> {
     Component::new(init(is_dev_mode), update, render)

@@ -17,6 +17,7 @@ pub enum DataString {
 
 pub type ResourceData = HashMap<u128, DataString>;
 
+#[allow(dead_code)]
 impl Resource {
     pub fn new() -> Self {
         Self {

@@ -5,11 +5,6 @@ use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 
-const PEN_LAYER: usize = 0;
-const GRID_LAYER: usize = 1;
-const MEASURE_LAYER: usize = 2;
-const CURSOR_LAYER: usize = 3;
-
 pub struct Table {
     size: [f64; 2],
     pixel_ratio: f64,
@@ -98,13 +93,13 @@ impl Table {
     pub fn draw_cursor(
         &self,
         position: &[f64; 2],
-        radius: f64,
-        outer_color: Color,
-        inner_color: Color,
+        _radius: f64,
+        _outer_color: Color,
+        _inner_color: Color,
     ) {
-        let context = self.drawing_texture.context();
+        let _context = self.drawing_texture.context();
 
-        let [px, py] = self.get_texture_position(position);
+        let [_px, _py] = self.get_texture_position(position);
     }
 
     pub fn draw_line(&mut self, begin: &[f64; 2], end: &[f64; 2], color: Color, line_width: f64) {
@@ -165,7 +160,7 @@ impl Table {
 
         let radious = ((ex - bx).powi(2) + (ey - by).powi(2)).sqrt();
 
-        context.set_line_width(8.0);
+        context.set_line_width(line_width);
         context.set_line_cap("round");
         context.set_stroke_style(&color.to_jsvalue());
         context.set_fill_style(&JsValue::from("transparent"));
@@ -176,7 +171,7 @@ impl Table {
         context.move_to(bx, by);
         context.line_to(ex, ey);
         context.move_to(bx + radious, by);
-        context.arc(bx, by, radious, 0.0, 2.0 * std::f64::consts::PI);
+        let _ = context.arc(bx, by, radious, 0.0, 2.0 * std::f64::consts::PI);
         context.fill();
         context.stroke();
 
@@ -240,7 +235,7 @@ impl From<TableData> for Rc<Table> {
             let image = Rc::clone(&image);
             Closure::once(Box::new(move || {
                 let context = table.drawing_texture.context();
-                context.draw_image_with_html_image_element(&image, 0.0, 0.0);
+                let _ = context.draw_image_with_html_image_element(&image, 0.0, 0.0);
             }))
         };
 

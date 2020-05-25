@@ -37,7 +37,7 @@ impl TablemaskCollectionRenderer {
         &self,
         gl: &WebGlRenderingContext,
         program: &MaskProgram,
-        camera: &Camera,
+        _camera: &Camera,
         vp_matrix: &Array2<f64>,
         tablemasks: hash_map::Iter<u128, Tablemask>,
         id_map: &mut Vec<u128>,

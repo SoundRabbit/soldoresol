@@ -29,6 +29,7 @@ pub fn u128val() -> u128 {
     u128::from_be_bytes(buf)
 }
 
+#[allow(dead_code)]
 pub fn u32val() -> u32 {
     let mut buf = [0, 0, 0, 0];
     let id = u8vec(4);
@@ -38,6 +39,7 @@ pub fn u32val() -> u32 {
     u32::from_be_bytes(buf)
 }
 
+#[allow(dead_code)]
 pub fn u32color() -> u32 {
     let mut buf = [255, 255, 255, 255];
     let id = u8vec(3);

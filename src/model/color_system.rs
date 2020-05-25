@@ -2,6 +2,7 @@ use super::Color;
 
 pub struct ColorSystem {}
 
+#[allow(dead_code)]
 impl ColorSystem {
     pub fn gray_100(alpha: u8) -> Color {
         Color::from([0xfa, 0xfb, 0xfc, alpha])
