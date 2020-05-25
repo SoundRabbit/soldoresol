@@ -14,7 +14,7 @@ use crate::random_id;
 use crate::renderer::Renderer;
 use crate::skyway;
 use crate::skyway::ReceiveData;
-use crate::skyway::Room;
+use crate::skyway::{Peer, Room};
 use kagura::prelude::*;
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -179,7 +179,7 @@ pub enum Sub {
     DisconnectFromRoom,
 }
 
-pub fn new(room: Rc<Room>) -> Component<Msg, State, Sub> {
+pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
     Component::new(init(Rc::clone(&room)), update, render)
         .batch(|mut handler| {
             let a = Closure::wrap(Box::new(move || {
@@ -1172,49 +1172,49 @@ fn render_context_menu_tablemask(contextmenu: &Contextmenu, object_id: u128) -> 
                                     Events::new().on_click(move |_| {
                                         Msg::SetTablemaskSize(object_id, [2., 2.])
                                     }),
-                                    "2x2",
-                                ),
-                                btn::contextmenu_text(
-                                    Attributes::new(),
-                                    Events::new().on_click(move |_| {
-                                        Msg::SetTablemaskSize(object_id, [3., 3.])
-                                    }),
-                                    "3x3",
+                                    "半径1",
                                 ),
                                 btn::contextmenu_text(
                                     Attributes::new(),
                                     Events::new().on_click(move |_| {
                                         Msg::SetTablemaskSize(object_id, [4., 4.])
                                     }),
-                                    "4x4",
-                                ),
-                                btn::contextmenu_text(
-                                    Attributes::new(),
-                                    Events::new().on_click(move |_| {
-                                        Msg::SetTablemaskSize(object_id, [5., 5.])
-                                    }),
-                                    "5x5",
+                                    "半径2",
                                 ),
                                 btn::contextmenu_text(
                                     Attributes::new(),
                                     Events::new().on_click(move |_| {
                                         Msg::SetTablemaskSize(object_id, [6., 6.])
                                     }),
-                                    "6x6",
-                                ),
-                                btn::contextmenu_text(
-                                    Attributes::new(),
-                                    Events::new().on_click(move |_| {
-                                        Msg::SetTablemaskSize(object_id, [7., 7.])
-                                    }),
-                                    "7x7",
+                                    "半径3",
                                 ),
                                 btn::contextmenu_text(
                                     Attributes::new(),
                                     Events::new().on_click(move |_| {
                                         Msg::SetTablemaskSize(object_id, [8., 8.])
                                     }),
-                                    "8x8",
+                                    "半径4",
+                                ),
+                                btn::contextmenu_text(
+                                    Attributes::new(),
+                                    Events::new().on_click(move |_| {
+                                        Msg::SetTablemaskSize(object_id, [10., 10.])
+                                    }),
+                                    "半径5",
+                                ),
+                                btn::contextmenu_text(
+                                    Attributes::new(),
+                                    Events::new().on_click(move |_| {
+                                        Msg::SetTablemaskSize(object_id, [12., 12.])
+                                    }),
+                                    "半径6",
+                                ),
+                                btn::contextmenu_text(
+                                    Attributes::new(),
+                                    Events::new().on_click(move |_| {
+                                        Msg::SetTablemaskSize(object_id, [14., 14.])
+                                    }),
+                                    "半径7",
                                 ),
                             ],
                         ),

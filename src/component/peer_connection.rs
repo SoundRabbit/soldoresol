@@ -1,5 +1,5 @@
 use super::btn;
-use super::room;
+use super::room_connection;
 use crate::random_id;
 use crate::skyway::{Peer, Room};
 use crate::Config;
@@ -92,9 +92,13 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
 fn render(state: &State) -> Html<Msg> {
     if let Some(room) = &state.room {
-        Html::component(room::new(Rc::clone(room)).subscribe(|sub| match sub {
-            room::Sub::DisconnectFromRoom => Msg::DisconnectFromRoom,
-        }))
+        Html::component(
+            room_connection::new(Rc::clone(&state.peer), Rc::clone(room)).subscribe(
+                |sub| match sub {
+                    room_connection::Sub::DisconnectFromRoom => Msg::DisconnectFromRoom,
+                },
+            ),
+        )
     } else {
         Html::div(
             Attributes::new()

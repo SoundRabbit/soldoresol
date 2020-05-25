@@ -1,4 +1,4 @@
-use super::connection;
+use super::peer_connection;
 use crate::skyway::{Peer, Room};
 use crate::Config;
 use kagura::prelude::*;
@@ -52,7 +52,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
 fn render(state: &State) -> Html<Msg> {
     if let Some(config) = &state.config {
-        Html::component(connection::new(Rc::clone(config)))
+        Html::component(peer_connection::new(Rc::clone(config)))
     } else {
         Html::div(
             Attributes::new().class("app").id("app"),
