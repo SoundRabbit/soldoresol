@@ -34,6 +34,9 @@ extern "C" {
     #[wasm_bindgen(method)]
     pub fn close(this: &MeshRoom);
 
+    #[wasm_bindgen(method, js_name = "getLog")]
+    pub fn get_log(this: &MeshRoom);
+
     pub type ReceiveData;
 
     #[wasm_bindgen(method, getter)]
@@ -41,6 +44,11 @@ extern "C" {
 
     #[wasm_bindgen(method, getter)]
     pub fn data(this: &ReceiveData) -> String;
+
+    pub type LogList;
+
+    #[wasm_bindgen(method, indexing_getter)]
+    pub fn get(this: &LogList, index: usize) -> Option<String>;
 }
 
 pub struct Room {
@@ -76,4 +84,18 @@ pub enum Msg {
     SetResource(crate::model::ResourceData),
     AddResource(u128, crate::model::resource::DataString),
     RemoveObject(u128),
+}
+
+#[derive(Deserialize)]
+pub struct Log {
+    #[serde(rename = "messageType")]
+    pub message_type: String,
+
+    pub message: Message,
+}
+
+#[derive(Deserialize)]
+pub struct Message {
+    pub src: String,
+    pub data: Option<String>
 }

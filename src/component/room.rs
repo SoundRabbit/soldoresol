@@ -9,7 +9,11 @@ use crate::{
     skyway::{self, Peer, ReceiveData, Room},
 };
 use kagura::prelude::*;
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::{
+    cell::RefCell,
+    collections::{HashMap, HashSet, VecDeque},
+    rc::Rc,
+};
 use wasm_bindgen::{prelude::*, JsCast};
 
 #[derive(Clone)]
@@ -86,8 +90,29 @@ pub enum Modal {
     SelectCharacterImage(u128),
 }
 
+struct CmdQueue<M, S> {
+    payload: VecDeque<Cmd<M, S>>,
+}
+
+impl<M, S> CmdQueue<M, S> {
+    fn new() -> Self {
+        Self {
+            payload: VecDeque::new(),
+        }
+    }
+
+    fn enqueue(&mut self, cmd: Cmd<M, S>) {
+        self.payload.push_back(cmd);
+    }
+
+    fn dequeue(&mut self) -> Cmd<M, S> {
+        self.payload.pop_front().unwrap_or(Cmd::none())
+    }
+}
+
 pub struct State {
     _peer: Rc<Peer>,
+    peers: HashSet<String>,
     room: Rc<Room>,
     world: World,
     resource: Resource,
@@ -102,6 +127,7 @@ pub struct State {
     modals: Vec<Modal>,
     editing_modeless: Option<(usize, Rc<RefCell<modeless_modal::State>>)>,
     object_modeless_address: HashMap<u128, [usize; 2]>,
+    cmd_queue: CmdQueue<Msg, Sub>,
 }
 
 pub enum Msg {
@@ -162,7 +188,9 @@ pub enum Msg {
 
     // 接続に関する操作
     ReceiveMsg(skyway::Msg),
-    SendAllData,
+    ReceiveLog(skyway::LogList),
+    DeelMsgListWithNonCmd(Vec<skyway::Msg>),
+    PeerJoin(String),
     DisconnectFromRoom,
 }
 
@@ -177,6 +205,7 @@ pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
         move || {
             let state = State {
                 _peer: peer,
+                peers: HashSet::new(),
                 room: room,
                 world: World::new([20.0, 20.0]),
                 resource: Resource::new(),
@@ -199,6 +228,7 @@ pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
                 editing_modeless: None,
                 object_modeless_address: HashMap::new(),
                 focused_object_id: None,
+                cmd_queue: CmdQueue::new(),
             };
             let task = Cmd::task(|handler| {
                 handler(Msg::SetTableContext);
@@ -235,10 +265,24 @@ pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
         .batch({
             let room = Rc::clone(&room);
             move |mut handler| {
-                let a = Closure::wrap(Box::new(move |_peer_id: String| handler(Msg::SendAllData))
-                    as Box<dyn FnMut(String)>);
+                let a =
+                    Closure::wrap(
+                        Box::new(move |peer_id: String| handler(Msg::PeerJoin(peer_id)))
+                            as Box<dyn FnMut(String)>,
+                    );
                 room.payload
                     .on("peerJoin", Some(a.as_ref().unchecked_ref()));
+                a.forget();
+            }
+        })
+        .batch({
+            let room = Rc::clone(&room);
+            move |mut handler| {
+                let a = Closure::wrap(Box::new(move |logs: skyway::LogList| {
+                    handler(Msg::ReceiveLog(logs))
+                }) as Box<dyn FnMut(skyway::LogList)>);
+                room.payload.on("log", Some(a.as_ref().unchecked_ref()));
+                room.payload.get_log();
                 a.forget();
             }
         })
@@ -270,7 +314,7 @@ fn get_table_position(state: &State, mouse_coord: &[f64; 2]) -> [f64; 2] {
 
 fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
     match msg {
-        Msg::NoOp => Cmd::none(),
+        Msg::NoOp => state.cmd_queue.dequeue(),
         Msg::SetTableContext => {
             let canvas = get_table_canvas_element();
             let dpr = get_device_pixel_ratio();
@@ -291,7 +335,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
             renderer.render(&mut state.world, &state.camera, &state.resource);
             state.renderer = Some(renderer);
-            Cmd::none()
+            state.cmd_queue.dequeue()
         }
         Msg::WindowResized => {
             let canvas = get_table_canvas_element();
@@ -311,13 +355,13 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             if let Some(renderer) = &mut state.renderer {
                 renderer.render(&mut state.world, &state.camera, &state.resource);
             }
-            Cmd::none()
+            state.cmd_queue.dequeue()
         }
 
         //メッセージの伝搬
         Msg::TransportContextMenuMsg(msg) => {
             contextmenu::update(&mut state.contextmenu.state, msg);
-            Cmd::none()
+            state.cmd_queue.dequeue()
         }
 
         //コンテキストメニューの制御
@@ -329,7 +373,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.contextmenu.grobal_position = page_mouse_coord.clone();
             state.contextmenu.canvas_position = offset_mouse_coord;
             contextmenu::open(&mut state.contextmenu.state, page_mouse_coord);
-            Cmd::none()
+            state.cmd_queue.dequeue()
         }
         Msg::AddChracaterWithMouseCoord(mouse_coord) => {
             let position = get_table_position(&state, &mouse_coord);
@@ -363,7 +407,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 tablemask.set_position([p[0] + 1.0, p[1] + 1.0, p[2]]);
                 update(state, Msg::AddTablemask(tablemask))
             } else {
-                Cmd::none()
+                state.cmd_queue.dequeue()
             }
         }
         Msg::RemoveObjectWithObjectId(object_id, transport) => {
@@ -424,7 +468,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     state.focused_object_id = None;
                 }
             }
-            Cmd::none()
+            state.cmd_queue.dequeue()
         }
         Msg::SetCameraRotationWithMouseCoord(mouse_coord) => {
             let x_movement = mouse_coord[0] - state.table_state.last_mouse_coord[0];
@@ -481,7 +525,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state
                 .room
                 .send(&skyway::Msg::SetIsBindToGrid(is_bind_to_grid));
-            Cmd::none()
+            state.cmd_queue.dequeue()
         }
         Msg::DrawLineWithMouseCoord(mouse_coord) => {
             let start_point = get_table_position(&state, &state.table_state.last_mouse_coord);
@@ -606,11 +650,11 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     .object_modeless_address
                     .insert(object_id, [state.modelesses.len() - 1, 0]);
             }
-            Cmd::none()
+            state.cmd_queue.dequeue()
         }
         Msg::CloseModeless(modeless_idx) => {
             state.modelesses[modeless_idx].0.is_showing = false;
-            Cmd::none()
+            state.cmd_queue.dequeue()
         }
         Msg::OpenModelessModal(modeless_idx) => {
             if let Some((modeless, ..)) = state.modelesses.get(modeless_idx) {
@@ -623,11 +667,11 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     Rc::new(RefCell::new(modeless_modal::State::new(&props))),
                 ));
             }
-            Cmd::none()
+            state.cmd_queue.dequeue()
         }
         Msg::CloseModelessModal => {
             state.editing_modeless = None;
-            Cmd::none()
+            state.cmd_queue.dequeue()
         }
         Msg::ReflectModelessModal(props) => {
             let modeless = state
@@ -639,7 +683,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 modeless.loc_a = props.origin;
                 modeless.loc_b = props.corner;
             }
-            Cmd::none()
+            state.cmd_queue.dequeue()
         }
         Msg::CloseModelessModalWithProps(props) => {
             update(state, Msg::ReflectModelessModal(props));
@@ -649,44 +693,36 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         // モーダル
         Msg::OpenModal(modal) => {
             state.modals.push(modal);
-            Cmd::none()
+            state.cmd_queue.dequeue()
         }
         Msg::CloseModal => {
             state.modals.pop();
-            Cmd::none()
+            state.cmd_queue.dequeue()
         }
 
         // Worldに対する操作
         Msg::SetCharacterImage(character_id, data_id) => {
             if let Some(character) = state.world.character_mut(&character_id) {
                 character.set_image_id(data_id);
-                if let Some(image) = state.resource.get_as_image(&data_id) {
-                    let h = image.height() as f64;
-                    let w = image.width() as f64;
-                    let s = character.size()[0];
-                    character.set_size([s, s * h / w]);
-                    update(state, Msg::Render)
-                } else {
-                    Cmd::none()
-                }
+                update(state, Msg::Render)
             } else {
-                Cmd::none()
+                state.cmd_queue.dequeue()
             }
         }
         Msg::SetCharacterHp(character_id, hp) => {
             if let Some(character) = state.world.character_mut(&character_id) {
                 character.set_hp(hp);
-                Cmd::none()
+                state.cmd_queue.dequeue()
             } else {
-                Cmd::none()
+                state.cmd_queue.dequeue()
             }
         }
         Msg::SetCharacterMp(character_id, mp) => {
             if let Some(character) = state.world.character_mut(&character_id) {
                 character.set_mp(mp);
-                Cmd::none()
+                state.cmd_queue.dequeue()
             } else {
-                Cmd::none()
+                state.cmd_queue.dequeue()
             }
         }
         Msg::AddChracater(character) => {
@@ -811,7 +847,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             for image in images {
                 state.resource.insert(image.0, Data::Image(image.1));
             }
-            Cmd::none()
+            state.cmd_queue.dequeue()
         }
 
         // 接続に関する操作
@@ -849,7 +885,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     tablemask.set_position(position);
                     update(state, Msg::Render)
                 } else {
-                    Cmd::none()
+                    state.cmd_queue.dequeue()
                 }
             }
             skyway::Msg::SetIsBindToGrid(is_bind_to_grid) => {
@@ -872,14 +908,52 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 update(state, Msg::RemoveObjectWithObjectId(object_id, false))
             }
         },
-        Msg::SendAllData => {
-            state
-                .room
-                .send(&skyway::Msg::SetWorld(state.world.to_data()));
-            state
-                .room
-                .send(&skyway::Msg::SetResource(state.resource.to_data()));
-            Cmd::none()
+        Msg::ReceiveLog(logs) => {
+            let mut msgs = vec![];
+            let mut resource_data = HashMap::new();
+            let mut i = 0;
+
+            while let Some(log) = logs.get(i) {
+                if let Ok(log) = serde_json::from_str::<skyway::Log>(&log) {
+                    let message_type = log.message_type;
+                    let message = log.message;
+
+                    if message_type == "ROOM_USER_JOIN" {
+                        state.peers.insert(message.src);
+                    } else if message_type == "ROOM_DATA" {
+                        message
+                            .data
+                            .and_then(|data| serde_json::from_str::<skyway::Msg>(&data).ok())
+                            .map(|msg| {
+                                if let skyway::Msg::SetResource(data) = msg {
+                                    for a_data in data {
+                                        resource_data.insert(a_data.0, a_data.1);
+                                    }
+                                } else if let skyway::Msg::AddResource(data_id, data) = msg {
+                                    resource_data.insert(data_id, data);
+                                } else {
+                                    msgs.push(msg);
+                                }
+                            });
+                    }
+                }
+                i += 1;
+            }
+
+            state.cmd_queue.enqueue(Cmd::task(move |resolve| {
+                resolve(Msg::DeelMsgListWithNonCmd(msgs))
+            }));
+            update(state, Msg::LoadFromDataUrls(resource_data, false))
+        }
+        Msg::DeelMsgListWithNonCmd(msgs) => {
+            for msg in msgs {
+                update(state, Msg::ReceiveMsg(msg));
+            }
+            state.cmd_queue.dequeue()
+        }
+        Msg::PeerJoin(peer_id) => {
+            state.peers.insert(peer_id);
+            state.cmd_queue.dequeue()
         }
         Msg::DisconnectFromRoom => Cmd::Sub(Sub::DisconnectFromRoom),
     }
