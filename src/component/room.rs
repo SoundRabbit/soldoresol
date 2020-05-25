@@ -6,12 +6,12 @@ use crate::{
     },
     random_id,
     renderer::Renderer,
-    skyway::{self, Peer, ReceiveData, Room},
+    skyway::{self, DataConnection, Peer, ReceiveData, Room},
 };
 use kagura::prelude::*;
 use std::{
-    cell::RefCell,
-    collections::{HashMap, HashSet, VecDeque},
+    cell::{Cell, RefCell},
+    collections::{BTreeSet, HashMap, VecDeque},
     rc::Rc,
 };
 use wasm_bindgen::{prelude::*, JsCast};
@@ -111,8 +111,8 @@ impl<M, S> CmdQueue<M, S> {
 }
 
 pub struct State {
-    _peer: Rc<Peer>,
-    peers: HashSet<String>,
+    peer: Rc<Peer>,
+    peers: BTreeSet<String>,
     room: Rc<Room>,
     world: World,
     resource: Resource,
@@ -203,9 +203,14 @@ pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
         let peer = Rc::clone(&peer);
         let room = Rc::clone(&room);
         move || {
+            let peers = {
+                let mut p = BTreeSet::new();
+                p.insert(peer.id());
+                p
+            };
             let state = State {
-                _peer: peer,
-                peers: HashSet::new(),
+                peer: peer,
+                peers: peers,
                 room: room,
                 world: World::new([20.0, 20.0]),
                 resource: Resource::new(),
@@ -250,14 +255,17 @@ pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
             let room = Rc::clone(&room);
             move |mut handler| {
                 let a = Closure::wrap(Box::new({
-                    move |receive_data: ReceiveData| {
-                        if let Ok(msg) = serde_json::from_str::<skyway::Msg>(&receive_data.data()) {
+                    move |receive_data: Option<ReceiveData>| {
+                        let msg = receive_data.and_then(|receive_data| {
+                            serde_json::from_str::<skyway::Msg>(&receive_data.data()).ok()
+                        });
+                        if let Some(msg) = msg {
                             handler(Msg::ReceiveMsg(msg));
                         } else {
                             web_sys::console::log_1(&JsValue::from("faild to deserialize message"));
                         }
                     }
-                }) as Box<dyn FnMut(ReceiveData)>);
+                }) as Box<dyn FnMut(Option<ReceiveData>)>);
                 room.payload.on("data", Some(a.as_ref().unchecked_ref()));
                 a.forget();
             }
@@ -265,11 +273,9 @@ pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
         .batch({
             let room = Rc::clone(&room);
             move |mut handler| {
-                let a =
-                    Closure::wrap(
-                        Box::new(move |peer_id: String| handler(Msg::PeerJoin(peer_id)))
-                            as Box<dyn FnMut(String)>,
-                    );
+                let a = Closure::wrap(Box::new(move |peer_id: String| {
+                    handler(Msg::PeerJoin(peer_id));
+                }) as Box<dyn FnMut(String)>);
                 room.payload
                     .on("peerJoin", Some(a.as_ref().unchecked_ref()));
                 a.forget();
@@ -283,6 +289,59 @@ pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
                 }) as Box<dyn FnMut(skyway::LogList)>);
                 room.payload.on("log", Some(a.as_ref().unchecked_ref()));
                 room.payload.get_log();
+                a.forget();
+            }
+        })
+        .batch({
+            let peer = Rc::clone(&peer);
+            move |handler| {
+                let handler = Rc::new(handler);
+                let connection_num = Rc::new(Cell::new(0));
+
+                // 接続済みユーザーからの接続が発生するごとに発火
+                let a = Closure::wrap(Box::new({
+                    let handler = Rc::clone(&handler);
+                    let connection_num = Rc::clone(&connection_num);
+                    move |data_connection: DataConnection| {
+                        let data_connection = Rc::new(data_connection);
+
+                        // それぞれのユーザーからデータが送られてくるごとに発生
+                        let a = Closure::wrap(Box::new({
+                            let mut handler = Rc::clone(&handler);
+                            move |receive_data: Option<String>| {
+                                let msg = receive_data.and_then(|receive_data| {
+                                    serde_json::from_str::<skyway::Msg>(&receive_data).ok()
+                                });
+                                if let Some(msg) = msg {
+                                    Rc::get_mut(&mut handler)
+                                        .map(|handler| handler(Msg::ReceiveMsg(msg)));
+                                } else {
+                                    web_sys::console::log_1(&JsValue::from(
+                                        "faild to deserialize message",
+                                    ));
+                                }
+                            }
+                        })
+                            as Box<dyn FnMut(Option<String>)>);
+                        data_connection.on("data", Some(a.as_ref().unchecked_ref()));
+                        a.forget();
+
+                        let a = Closure::wrap(Box::new({
+                            let data_connection = Rc::clone(&data_connection);
+                            let connection_num = Rc::clone(&connection_num);
+                            move || {
+                                let cn = connection_num.get();
+                                if cn == 0 {
+                                    data_connection.send_str("true");
+                                }
+                                connection_num.set(cn + 1);
+                            }
+                        }) as Box<dyn FnMut()>);
+                        data_connection.on("open", Some(a.as_ref().unchecked_ref()));
+                        a.forget();
+                    }
+                }) as Box<dyn FnMut(DataConnection)>);
+                peer.on("connection", Some(a.as_ref().unchecked_ref()));
                 a.forget();
             }
         })
@@ -957,7 +1016,47 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.cmd_queue.dequeue()
         }
         Msg::PeerJoin(peer_id) => {
+            let data_connect = Rc::new(state.peer.connect(&peer_id));
+            let world_data = state.world.to_data();
+
             state.peers.insert(peer_id);
+
+            let my_peer_id = state.peer.id();
+
+            let stride = state.peers.len() - 1;
+            let n = {
+                let mut i = 0;
+                for peer_id in &state.peers {
+                    if my_peer_id == peer_id as &str {
+                        break;
+                    }
+                    i += 1;
+                }
+                i
+            };
+
+            let resource_data = state.resource.to_data_with_n_and_stride(n, stride);
+
+            let a = Closure::once(Box::new({
+                let data_connect = Rc::clone(&data_connect);
+                move || {
+                    web_sys::console::log_1(&JsValue::from("send resource data"));
+                    data_connect.send(&skyway::Msg::SetResource(resource_data));
+                }
+            }) as Box<dyn FnOnce()>);
+            data_connect.on("open", Some(a.as_ref().unchecked_ref()));
+            a.forget();
+
+            let a = Closure::once(Box::new({
+                let data_connect = Rc::clone(&data_connect);
+                move || {
+                    web_sys::console::log_1(&JsValue::from("send world data"));
+                    data_connect.send(&skyway::Msg::SetWorld(world_data));
+                }
+            }) as Box<dyn FnOnce()>);
+            data_connect.on("data", Some(a.as_ref().unchecked_ref()));
+            a.forget();
+
             state.cmd_queue.dequeue()
         }
         Msg::DisconnectFromRoom => Cmd::Sub(Sub::DisconnectFromRoom),

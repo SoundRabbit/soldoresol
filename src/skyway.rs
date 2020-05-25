@@ -15,7 +15,7 @@ extern "C" {
     pub fn id(this: &Peer) -> String;
 
     #[wasm_bindgen(method)]
-    pub fn connect(this: &Peer, peer_id: &str);
+    pub fn connect(this: &Peer, peer_id: &str) -> DataConnection;
 
     #[wasm_bindgen(method, js_name = "joinRoom")]
     pub fn join_room(this: &Peer, room_id: &str) -> MeshRoom;
@@ -23,10 +23,18 @@ extern "C" {
 
 #[wasm_bindgen]
 extern "C" {
+    pub type DataConnection;
+
+    #[wasm_bindgen(method, js_name = "send")]
+    pub fn send_str(this: &DataConnection, data: &str);
+
+    #[wasm_bindgen(method)]
+    pub fn on(this: &DataConnection, event: &str, listener: Option<&js_sys::Function>);
+
     pub type MeshRoom;
 
     #[wasm_bindgen(method)]
-    pub fn send(this: &MeshRoom, data: String);
+    pub fn send(this: &MeshRoom, data: &str);
 
     #[wasm_bindgen(method)]
     pub fn on(this: &MeshRoom, event: &str, listener: Option<&js_sys::Function>);
@@ -51,6 +59,18 @@ extern "C" {
     pub fn get(this: &LogList, index: usize) -> Option<String>;
 }
 
+impl DataConnection {
+    pub fn send(&self, msg: &Msg) {
+        if let Ok(data) = serde_json::to_string(msg) {
+            self.send_str(&data);
+        } else {
+            web_sys::console::log_1(&JsValue::from(
+                "some problems area occured in serializing message.",
+            ));
+        }
+    }
+}
+
 pub struct Room {
     pub id: String,
     pub payload: MeshRoom,
@@ -63,7 +83,7 @@ impl Room {
 
     pub fn send(&self, msg: &Msg) {
         if let Ok(data) = serde_json::to_string(msg) {
-            self.payload.send(data);
+            self.payload.send(&data);
         } else {
             web_sys::console::log_1(&JsValue::from(
                 "some problems area occured in serializing message.",

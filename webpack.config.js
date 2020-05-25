@@ -61,7 +61,8 @@ module.exports = {
         }),
         new WasmPackPlugin({
             crateDirectory: path.join(__dirname, "./"),
-            forceMode: "release",
+            forceMode: "development",
+            // forceMode: "production",
             target: "web",
         }),
         new HtmlWebpackInlineSourcePlugin(),

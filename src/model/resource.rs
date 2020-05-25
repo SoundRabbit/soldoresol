@@ -58,4 +58,32 @@ impl Resource {
 
         resource_data
     }
+
+    pub fn to_data_with_n_and_stride(&self, n: usize, stride: usize) -> ResourceData {
+        let mut keys = vec![];
+
+        for key in self.data.keys() {
+            keys.push(key);
+        }
+
+        keys.sort();
+
+        let mut resource_data = HashMap::new();
+        let mut i = 0;
+
+        for key in keys {
+            if i % stride == n {
+                if let Some(data) = self.data.get(key) {
+                    match data {
+                        Data::Image(image) => {
+                            resource_data.insert(*key, DataString::Image(image.src()));
+                        }
+                    }
+                }
+            }
+            i += 1;
+        }
+
+        resource_data
+    }
 }
