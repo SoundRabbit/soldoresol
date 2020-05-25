@@ -1,6 +1,8 @@
-use super::super::program::MaskProgram;
-use super::super::webgl::{WebGlF32Vbo, WebGlI16Ibo, WebGlRenderingContext};
-use super::super::ModelMatrix;
+use super::super::{
+    program::MaskProgram,
+    webgl::{WebGlF32Vbo, WebGlI16Ibo, WebGlRenderingContext},
+    ModelMatrix,
+};
 use crate::model::{Camera, Color, Table};
 use ndarray::Array2;
 

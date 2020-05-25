@@ -1,13 +1,13 @@
-use super::btn;
-use super::room_connection;
-use crate::random_id;
-use crate::skyway::{Peer, Room};
-use crate::Config;
+use super::{btn, room_connection};
+use crate::{
+    random_id,
+    skyway::{Peer, Room},
+    Config,
+};
 use kagura::prelude::*;
 use regex::Regex;
 use std::rc::Rc;
-use wasm_bindgen::prelude::*;
-use wasm_bindgen::JsCast;
+use wasm_bindgen::{prelude::*, JsCast};
 
 pub fn new(config: Rc<Config>) -> Component<Msg, State, Sub> {
     let peer = Rc::new(Peer::new(&config.skyway.key));

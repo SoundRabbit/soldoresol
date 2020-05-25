@@ -2,8 +2,7 @@ use super::room;
 use crate::skyway::{Peer, Room};
 use kagura::prelude::*;
 use std::rc::Rc;
-use wasm_bindgen::prelude::*;
-use wasm_bindgen::JsCast;
+use wasm_bindgen::{prelude::*, JsCast};
 
 enum RoomConnection {
     UnOpened(Rc<Room>),

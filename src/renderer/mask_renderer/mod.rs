@@ -1,12 +1,9 @@
 mod character_collection_renderer;
-// mod table_renderer;
 mod tablemask_collection_renderer;
 
-use super::program::MaskProgram;
-use super::webgl::WebGlRenderingContext;
+use super::{program::MaskProgram, webgl::WebGlRenderingContext};
 use crate::model::{Camera, World};
 pub use character_collection_renderer::CharacterCollectionRenderer;
-// use table_renderer::TableRenderer;
 use tablemask_collection_renderer::TablemaskCollectionRenderer;
 use wasm_bindgen::JsCast;
 
@@ -14,7 +11,6 @@ pub struct MaskRenderer {
     canvas: web_sys::HtmlCanvasElement,
     gl: WebGlRenderingContext,
     mask_program: MaskProgram,
-    // table_renderer: TableRenderer,
     character_collection_renderer: CharacterCollectionRenderer,
     tablemask_collection_renderer: TablemaskCollectionRenderer,
     id_map: Vec<u128>,
@@ -47,7 +43,6 @@ impl MaskRenderer {
         );
 
         let character_collection_renderer = CharacterCollectionRenderer::new(&gl);
-        // let table_renderer = TableRenderer::new(&gl);
         let tablemask_collection_renderer = TablemaskCollectionRenderer::new(&gl);
 
         let mask_program = MaskProgram::new(&gl);
@@ -57,7 +52,6 @@ impl MaskRenderer {
             canvas,
             gl,
             mask_program,
-            // table_renderer,
             character_collection_renderer,
             tablemask_collection_renderer,
             id_map: Vec::new(),
@@ -96,16 +90,6 @@ impl MaskRenderer {
         );
 
         self.id_map.clear();
-
-        // self.table_renderer.render(
-        //     gl,
-        //     &self.mask_program,
-        //     camera,
-        //     &vp_matrix,
-        //     world.table(),
-        //     world.table_id(),
-        //     &mut self.id_map,
-        // );
 
         self.id_map.push(world.table_id());
 

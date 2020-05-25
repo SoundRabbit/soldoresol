@@ -1,10 +1,7 @@
-use super::btn;
-use super::modal;
-use crate::model::Color;
-use crate::random_id;
+use super::{btn, modal};
+use crate::{model::Color, random_id};
 use kagura::prelude::*;
-use std::cell::RefCell;
-use std::rc::Rc;
+use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::JsCast;
 
 pub struct Props {

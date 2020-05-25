@@ -1,5 +1,4 @@
-use super::Color;
-use super::ColorSystem;
+use super::{Color, ColorSystem};
 use serde::{Deserialize, Serialize};
 
 pub struct Character {

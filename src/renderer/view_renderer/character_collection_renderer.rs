@@ -1,7 +1,8 @@
-use super::super::program::CharacterProgram;
-use super::super::program::MaskProgram;
-use super::super::webgl::{WebGlF32Vbo, WebGlI16Ibo, WebGlRenderingContext};
-use super::super::ModelMatrix;
+use super::super::{
+    program::{CharacterProgram, MaskProgram},
+    webgl::{WebGlF32Vbo, WebGlI16Ibo, WebGlRenderingContext},
+    ModelMatrix,
+};
 use crate::model::{Camera, Character, Color, Resource};
 use ndarray::{arr1, Array2};
 use std::collections::{hash_map, BTreeMap, HashMap};

@@ -1,11 +1,14 @@
-use super::character::{Character, CharacterData};
-use super::table::{Table, TableData};
-use super::tablemask::{Tablemask, TablemaskData};
+use super::{
+    character::{Character, CharacterData},
+    table::{Table, TableData},
+    tablemask::{Tablemask, TablemaskData},
+};
 use crate::random_id;
 use serde::{Deserialize, Serialize};
-use std::collections::hash_map;
-use std::collections::HashMap;
-use std::rc::Rc;
+use std::{
+    collections::{hash_map, HashMap},
+    rc::Rc,
+};
 
 pub struct World {
     table_id: u128,

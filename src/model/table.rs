@@ -1,9 +1,7 @@
-use super::color::Color;
-use super::TexstureLayer;
+use super::{color::Color, TexstureLayer};
 use serde::{Deserialize, Serialize};
 use std::rc::Rc;
-use wasm_bindgen::prelude::*;
-use wasm_bindgen::JsCast;
+use wasm_bindgen::{prelude::*, JsCast};
 
 pub struct Table {
     size: [f64; 2],

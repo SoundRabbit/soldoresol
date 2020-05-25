@@ -1,5 +1,4 @@
-use super::super::program::TableGridProgram;
-use super::super::program::TableTextureProgram;
+use super::super::program::{TableGridProgram, TableTextureProgram};
 use super::super::webgl::{WebGlF32Vbo, WebGlI16Ibo, WebGlRenderingContext};
 use super::super::ModelMatrix;
 use crate::model::{Camera, Color, Table};
