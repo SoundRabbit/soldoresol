@@ -10,7 +10,7 @@ use crate::{
 };
 use kagura::prelude::*;
 use std::{
-    cell::{Cell, RefCell, RefMut},
+    cell::{Cell, RefCell},
     collections::{BTreeSet, HashMap, VecDeque},
     rc::Rc,
 };
@@ -101,7 +101,7 @@ impl<M, S> CmdQueue<M, S> {
         }
     }
 
-    fn enqueue(&mut self, cmd: Cmd<M, S>) {
+    fn _enqueue(&mut self, cmd: Cmd<M, S>) {
         self.payload.push_back(cmd);
     }
 
@@ -188,8 +188,6 @@ pub enum Msg {
 
     // 接続に関する操作
     ReceiveMsg(skyway::Msg),
-    ReceiveLog(skyway::LogList),
-    DeelMsgListWithNonCmd(Vec<skyway::Msg>),
     PeerJoin(String),
     DisconnectFromRoom,
 }
@@ -986,49 +984,6 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 update(state, Msg::RemoveObjectWithObjectId(object_id, false))
             }
         },
-        Msg::ReceiveLog(logs) => {
-            let mut msgs = vec![];
-            let mut resource_data = HashMap::new();
-            let mut i = 0;
-
-            while let Some(log) = logs.get(i) {
-                if let Ok(log) = serde_json::from_str::<skyway::Log>(&log) {
-                    let message_type = log.message_type;
-                    let message = log.message;
-
-                    if message_type == "ROOM_USER_JOIN" {
-                        state.peers.insert(message.src);
-                    } else if message_type == "ROOM_DATA" {
-                        message
-                            .data
-                            .and_then(|data| serde_json::from_str::<skyway::Msg>(&data).ok())
-                            .map(|msg| {
-                                if let skyway::Msg::SetResource(data) = msg {
-                                    for a_data in data {
-                                        resource_data.insert(a_data.0, a_data.1);
-                                    }
-                                } else if let skyway::Msg::AddResource(data_id, data) = msg {
-                                    resource_data.insert(data_id, data);
-                                } else {
-                                    msgs.push(msg);
-                                }
-                            });
-                    }
-                }
-                i += 1;
-            }
-
-            state.cmd_queue.enqueue(Cmd::task(move |resolve| {
-                resolve(Msg::DeelMsgListWithNonCmd(msgs))
-            }));
-            update(state, Msg::LoadFromDataUrls(resource_data, false))
-        }
-        Msg::DeelMsgListWithNonCmd(msgs) => {
-            for msg in msgs {
-                update(state, Msg::ReceiveMsg(msg));
-            }
-            state.cmd_queue.dequeue()
-        }
         Msg::PeerJoin(peer_id) => {
             let data_connect = Rc::new(state.peer.connect(&peer_id));
             let world_data = state.world.to_data();
