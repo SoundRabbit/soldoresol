@@ -304,10 +304,13 @@ pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
                     let connection_num = Rc::clone(&connection_num);
                     move |data_connection: DataConnection| {
                         let data_connection = Rc::new(data_connection);
+                        let received_msg_num = Rc::new(Cell::new(0));
 
                         // それぞれのユーザーからデータが送られてくるごとに発生
                         let a = Closure::wrap(Box::new({
                             let mut handler = Rc::clone(&handler);
+                            let data_connection = Rc::clone(&data_connection);
+                            let received_msg_num = Rc::clone(&received_msg_num);
                             move |receive_data: Option<String>| {
                                 let msg = receive_data.and_then(|receive_data| {
                                     serde_json::from_str::<skyway::Msg>(&receive_data).ok()
@@ -315,10 +318,14 @@ pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
                                 if let Some(msg) = msg {
                                     Rc::get_mut(&mut handler)
                                         .map(|handler| handler(Msg::ReceiveMsg(msg)));
+                                    received_msg_num.set(received_msg_num.get() + 1);
                                 } else {
                                     web_sys::console::log_1(&JsValue::from(
                                         "faild to deserialize message",
                                     ));
+                                }
+                                if received_msg_num.get() >= 2 {
+                                    data_connection.close(true);
                                 }
                             }
                         })
@@ -329,10 +336,13 @@ pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
                         let a = Closure::wrap(Box::new({
                             let data_connection = Rc::clone(&data_connection);
                             let connection_num = Rc::clone(&connection_num);
+                            let received_msg_num = Rc::clone(&received_msg_num);
                             move || {
                                 let cn = connection_num.get();
                                 if cn == 0 {
-                                    data_connection.send_str("true");
+                                    data_connection.send_str("FirstConnection");
+                                } else {
+                                    received_msg_num.set(received_msg_num.get() + 1);
                                 }
                                 connection_num.set(cn + 1);
                             }

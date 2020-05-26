@@ -31,6 +31,9 @@ extern "C" {
     #[wasm_bindgen(method)]
     pub fn on(this: &DataConnection, event: &str, listener: Option<&js_sys::Function>);
 
+    #[wasm_bindgen(method)]
+    pub fn close(this: &DataConnection, fource_close: bool);
+
     pub type MeshRoom;
 
     #[wasm_bindgen(method)]
@@ -104,6 +107,23 @@ pub enum Msg {
     SetResource(crate::model::ResourceData),
     AddResource(u128, crate::model::resource::DataString),
     RemoveObject(u128),
+}
+
+impl std::fmt::Display for Msg {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Msg::DrawLineToTable(..) => write!(f, "DrawLineToTable"),
+            Msg::EraceLineToTable(..) => write!(f, "EraceLineToTable"),
+            Msg::CreateCharacterToTable(..) => write!(f, "CreateCharacterToTable"),
+            Msg::SetCharacterImage(..) => write!(f, "SetCharacterImage"),
+            Msg::SetObjectPosition(..) => write!(f, "SetObjectPosition"),
+            Msg::SetIsBindToGrid(..) => write!(f, "SetIsBindToGrid"),
+            Msg::SetWorld(..) => write!(f, "SetWorld"),
+            Msg::SetResource(..) => write!(f, "SetResource"),
+            Msg::AddResource(..) => write!(f, "AddResource"),
+            Msg::RemoveObject(..) => write!(f, "RemoveObject"),
+        }
+    }
 }
 
 #[derive(Deserialize)]
