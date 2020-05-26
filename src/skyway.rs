@@ -105,6 +105,7 @@ pub enum Msg {
     SetIsBindToGrid(bool),
     SetWorld(crate::model::WorldData),
     SetResource(crate::model::ResourceData),
+    SetConnection(std::collections::BTreeSet<String>),
     AddResource(u128, crate::model::resource::DataString),
     RemoveObject(u128),
 }
@@ -120,6 +121,7 @@ impl std::fmt::Display for Msg {
             Msg::SetIsBindToGrid(..) => write!(f, "SetIsBindToGrid"),
             Msg::SetWorld(..) => write!(f, "SetWorld"),
             Msg::SetResource(..) => write!(f, "SetResource"),
+            Msg::SetConnection(..) => write!(f, "SetConnection"),
             Msg::AddResource(..) => write!(f, "AddResource"),
             Msg::RemoveObject(..) => write!(f, "RemoveObject"),
         }

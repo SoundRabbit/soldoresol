@@ -217,29 +217,6 @@ impl From<TableData> for Rc<Table> {
             measure_texture_is_changed: true,
         });
 
-        let image = Rc::new(
-            web_sys::window()
-                .unwrap()
-                .document()
-                .unwrap()
-                .create_element("img")
-                .unwrap()
-                .dyn_into::<web_sys::HtmlImageElement>()
-                .unwrap(),
-        );
-
-        let a = {
-            let table = Rc::clone(&table);
-            let image = Rc::clone(&image);
-            Closure::once(Box::new(move || {
-                let context = table.drawing_texture.context();
-                let _ = context.draw_image_with_html_image_element(&image, 0.0, 0.0);
-            }))
-        };
-
-        image.set_onload(Some(a.as_ref().unchecked_ref()));
-        image.set_src(&table_data.drawing_texture);
-
         table
     }
 }
