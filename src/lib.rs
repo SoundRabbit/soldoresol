@@ -12,12 +12,15 @@ extern crate web_sys;
 
 mod component;
 mod config;
+#[macro_use]
+mod js_object;
 mod model;
 mod random_id;
 mod renderer;
 mod skyway;
 
 use config::Config;
+use js_object::JsObject;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen(start)]

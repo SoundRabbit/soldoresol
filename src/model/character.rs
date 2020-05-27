@@ -1,22 +1,21 @@
 use super::{Color, ColorSystem};
-use serde::{Deserialize, Serialize};
+use crate::JsObject;
 
 pub struct Character {
     size: [f64; 2],
     position: [f64; 3],
     image_id: Option<u128>,
     background_color: Color,
-    hp: i64,
-    mp: i64,
+    hp: i32,
+    mp: i32,
 }
 
-#[derive(Deserialize, Serialize)]
 pub struct CharacterData {
     pub size: [f64; 2],
     pub position: [f64; 3],
     pub image_id: Option<u128>,
-    pub hp: i64,
-    pub mp: i64,
+    pub hp: i32,
+    pub mp: i32,
 }
 
 impl Character {
@@ -47,19 +46,19 @@ impl Character {
         &self.position
     }
 
-    pub fn set_hp(&mut self, hp: i64) {
+    pub fn set_hp(&mut self, hp: i32) {
         self.hp = hp;
     }
 
-    pub fn hp(&self) -> i64 {
+    pub fn hp(&self) -> i32 {
         self.hp
     }
 
-    pub fn set_mp(&mut self, mp: i64) {
+    pub fn set_mp(&mut self, mp: i32) {
         self.mp = mp;
     }
 
-    pub fn mp(&self) -> i64 {
+    pub fn mp(&self) -> i32 {
         self.mp
     }
 
@@ -131,6 +130,22 @@ impl From<CharacterData> for Character {
             background_color: Color::from(0),
             hp: character_data.hp,
             mp: character_data.mp,
+        }
+    }
+}
+
+impl CharacterData {
+    pub fn as_object(&self) -> JsObject {
+        let image_id = self.image_id.map(|id| id.to_string());
+        let hp: i32 = self.hp;
+        let mp: i32 = self.mp;
+
+        object! {
+            size: array![self.size[0], self.size[1]],
+            position: array![self.position[0], self.position[1], self.position[2]],
+            image_id: image_id,
+            hp: hp,
+            mp: mp
         }
     }
 }

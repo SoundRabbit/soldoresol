@@ -1,4 +1,5 @@
 use super::{Color, ColorSystem};
+use crate::JsObject;
 use serde::{Deserialize, Serialize};
 
 pub struct Tablemask {
@@ -86,6 +87,20 @@ impl From<TablemaskData> for Tablemask {
             position: tablemask_data.position,
             background_color: Color::from(tablemask_data.background_color),
             size_is_binded: tablemask_data.size_is_binded,
+        }
+    }
+}
+
+impl TablemaskData {
+    pub fn as_object(&self) -> JsObject {
+        let background_color: u32 = self.background_color;
+        let size_is_binded: bool = self.size_is_binded;
+
+        object! {
+            size: array![self.size[0], self.size[1]],
+            position: array![self.position[0], self.position[1], self.position[2]],
+            background_color: background_color,
+            size_is_binded: size_is_binded
         }
     }
 }

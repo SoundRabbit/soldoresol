@@ -7,7 +7,9 @@ use crate::{
     random_id,
     renderer::Renderer,
     skyway::{self, DataConnection, Peer, ReceiveData, Room},
+    JsObject,
 };
+use js_sys::JsString;
 use kagura::prelude::*;
 use std::{
     cell::{Cell, RefCell},
@@ -101,7 +103,7 @@ impl<M, S> CmdQueue<M, S> {
         }
     }
 
-    fn _enqueue(&mut self, cmd: Cmd<M, S>) {
+    fn enqueue(&mut self, cmd: Cmd<M, S>) {
         self.payload.push_back(cmd);
     }
 
@@ -174,8 +176,8 @@ pub enum Msg {
 
     // Worldに対する操作
     SetCharacterImage(u128, u128, bool),
-    SetCharacterHp(u128, i64),
-    SetCharacterMp(u128, i64),
+    SetCharacterHp(u128, i32),
+    SetCharacterMp(u128, i32),
     AddChracater(Character),
     AddTablemask(Tablemask),
     SetTablemaskSize(u128, [f64; 2]),
@@ -254,9 +256,15 @@ pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
             move |mut handler| {
                 let a = Closure::wrap(Box::new({
                     move |receive_data: Option<ReceiveData>| {
-                        let msg = receive_data.and_then(|receive_data| {
-                            serde_json::from_str::<skyway::Msg>(&receive_data.data()).ok()
-                        });
+                        let msg = receive_data
+                            .map(|receive_data| skyway::Msg::from(receive_data.data()))
+                            .and_then(|msg| {
+                                if let skyway::Msg::None = msg {
+                                    None
+                                } else {
+                                    Some(msg)
+                                }
+                            });
                         if let Some(msg) = msg {
                             handler(Msg::ReceiveMsg(msg));
                         } else {
@@ -298,10 +306,16 @@ pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
                             let handler = Rc::clone(&handler);
                             let data_connection = Rc::clone(&data_connection);
                             let received_msg_num = Rc::clone(&received_msg_num);
-                            move |receive_data: Option<String>| {
-                                let msg = receive_data.and_then(|receive_data| {
-                                    serde_json::from_str::<skyway::Msg>(&receive_data).ok()
-                                });
+                            move |receive_data: Option<ReceiveData>| {
+                                let msg = receive_data
+                                    .map(|receive_data| skyway::Msg::from(receive_data.data()))
+                                    .and_then(|msg| {
+                                        if let skyway::Msg::None = msg {
+                                            None
+                                        } else {
+                                            Some(msg)
+                                        }
+                                    });
                                 if let Some(msg) = msg {
                                     received_msg_num.set(received_msg_num.get() + 1);
                                     web_sys::console::log_1(&JsValue::from(format!(
@@ -327,7 +341,7 @@ pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
                                 }
                             }
                         })
-                            as Box<dyn FnMut(Option<String>)>);
+                            as Box<dyn FnMut(Option<ReceiveData>)>);
                         data_connection.on("data", Some(a.as_ref().unchecked_ref()));
                         a.forget();
 
@@ -338,7 +352,7 @@ pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
                             move || {
                                 let cn = connection_num.get();
                                 if cn == 0 {
-                                    data_connection.send_str("FirstConnection");
+                                    data_connection.send(&JsString::from("FirstConnection"));
                                 } else {
                                     received_msg_num.set(received_msg_num.get() + 2);
                                 }
@@ -753,7 +767,8 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.cmd_queue.dequeue()
         }
         Msg::CloseModelessModalWithProps(props) => {
-            update(state, Msg::ReflectModelessModal(props));
+            let cmd = update(state, Msg::ReflectModelessModal(props));
+            state.cmd_queue.enqueue(cmd);
             update(state, Msg::CloseModelessModal)
         }
 
@@ -837,10 +852,9 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                             let data_id = random_id::u128val();
                             let mut common = Rc::clone(&common);
                             Closure::once(Box::new(move || {
-                                file_reader
+                                let _ = file_reader
                                     .result()
-                                    .ok()
-                                    .and_then(|result| result.as_string())
+                                    .and_then(|result| result.dyn_into::<JsString>())
                                     .map(|data_url| {
                                         common
                                             .0
@@ -905,7 +919,9 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                                 }))
                             };
                             image.set_onload(Some(&a.as_ref().unchecked_ref()));
-                            image.set_src(&data_url);
+                            if let Some(image) = image.dyn_ref::<JsObject>() {
+                                image.set("src", data_url)
+                            }
                             a.forget();
                         }
                     }
@@ -969,7 +985,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 update(state, Msg::Render)
             }
             skyway::Msg::SetResource(resource_data) => {
-                update(state, Msg::LoadFromDataUrls(resource_data, false))
+                update(state, Msg::LoadFromDataUrls(resource_data.into(), false))
             }
             skyway::Msg::SetConnection(peers) => {
                 state.peers = peers;
@@ -983,6 +999,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             skyway::Msg::RemoveObject(object_id) => {
                 update(state, Msg::RemoveObjectWithObjectId(object_id, false))
             }
+            skyway::Msg::None => state.cmd_queue.dequeue(),
         },
         Msg::PeerJoin(peer_id) => {
             let data_connect = Rc::new(state.peer.connect(&peer_id));
@@ -1011,7 +1028,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 let data_connect = Rc::clone(&data_connect);
                 move || {
                     web_sys::console::log_1(&JsValue::from("send resource data"));
-                    data_connect.send(&skyway::Msg::SetResource(resource_data));
+                    data_connect.send(&skyway::Msg::SetResource(resource_data).as_object());
                 }
             }) as Box<dyn FnOnce()>);
             data_connect.on("open", Some(a.as_ref().unchecked_ref()));
@@ -1022,8 +1039,8 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 let peers = state.peers.clone();
                 move || {
                     web_sys::console::log_1(&JsValue::from("send world data"));
-                    data_connect.send(&skyway::Msg::SetWorld(world_data));
-                    data_connect.send(&skyway::Msg::SetConnection(peers));
+                    data_connect.send(&skyway::Msg::SetWorld(world_data).as_object());
+                    data_connect.send(&skyway::Msg::SetConnection(peers).as_object());
                 }
             }) as Box<dyn FnOnce()>);
             data_connect.on("data", Some(a.as_ref().unchecked_ref()));

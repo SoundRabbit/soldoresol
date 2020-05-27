@@ -1,5 +1,7 @@
-use serde::{Deserialize, Serialize};
+use crate::JsObject;
+use js_sys::JsString;
 use std::{collections::HashMap, rc::Rc};
+use wasm_bindgen::JsCast;
 
 pub enum Data {
     Image(Rc<web_sys::HtmlImageElement>),
@@ -9,12 +11,13 @@ pub struct Resource {
     data: HashMap<u128, Data>,
 }
 
-#[derive(Deserialize, Serialize)]
 pub enum DataString {
-    Image(String),
+    Image(JsString),
 }
 
-pub type ResourceData = HashMap<u128, DataString>;
+pub struct ResourceData {
+    payload: HashMap<u128, DataString>,
+}
 
 #[allow(dead_code)]
 impl Resource {
@@ -46,17 +49,7 @@ impl Resource {
     }
 
     pub fn to_data(&self) -> ResourceData {
-        let mut resource_data = HashMap::new();
-
-        for (id, data) in &self.data {
-            match data {
-                Data::Image(image) => {
-                    resource_data.insert(*id, DataString::Image(image.src()));
-                }
-            }
-        }
-
-        resource_data
+        self.to_data_with_n_and_stride(0, 1)
     }
 
     pub fn to_data_with_n_and_stride(&self, n: usize, stride: usize) -> ResourceData {
@@ -76,7 +69,19 @@ impl Resource {
                 if let Some(data) = self.data.get(key) {
                     match data {
                         Data::Image(image) => {
-                            resource_data.insert(*key, DataString::Image(image.src()));
+                            resource_data.insert(
+                                *key,
+                                DataString::Image(
+                                    image
+                                        .dyn_ref::<JsObject>()
+                                        .unwrap()
+                                        .get("src")
+                                        .unwrap()
+                                        .dyn_into::<JsString>()
+                                        .ok()
+                                        .unwrap(),
+                                ),
+                            );
                         }
                     }
                 }
@@ -84,6 +89,37 @@ impl Resource {
             i += 1;
         }
 
-        resource_data
+        ResourceData {
+            payload: resource_data,
+        }
+    }
+}
+
+impl DataString {
+    pub fn as_object(&self) -> JsObject {
+        match self {
+            Self::Image(data) => object! {
+                type: "Image",
+                payload: data
+            },
+        }
+    }
+}
+
+impl ResourceData {
+    pub fn as_object(&self) -> JsObject {
+        let obj = object! {};
+
+        for (id, data) in &self.payload {
+            obj.set(&id.to_string(), &data.as_object());
+        }
+
+        obj
+    }
+}
+
+impl Into<HashMap<u128, DataString>> for ResourceData {
+    fn into(self) -> HashMap<u128, DataString> {
+        self.payload
     }
 }

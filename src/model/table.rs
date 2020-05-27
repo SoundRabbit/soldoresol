@@ -1,5 +1,5 @@
 use super::{color::Color, TexstureLayer};
-use serde::{Deserialize, Serialize};
+use crate::JsObject;
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 
@@ -13,7 +13,6 @@ pub struct Table {
     measure_texture_is_changed: bool,
 }
 
-#[derive(Deserialize, Serialize)]
 pub struct TableData {
     pub size: [f64; 2],
     pub is_bind_to_grid: bool,
@@ -218,5 +217,20 @@ impl From<TableData> for Rc<Table> {
         });
 
         table
+    }
+}
+
+impl TableData {
+    pub fn as_object(&self) -> JsObject {
+        let is_bind_to_grid: bool = self.is_bind_to_grid;
+        let pixel_ratio: f64 = self.pixel_ratio;
+        let drawing_texture = &self.drawing_texture;
+
+        object! {
+            size: array![self.size[0], self.size[1]],
+            is_bind_to_grid: is_bind_to_grid,
+            drawing_texture: drawing_texture,
+            pixel_ratio: pixel_ratio
+        }
     }
 }

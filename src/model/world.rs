@@ -3,8 +3,7 @@ use super::{
     table::{Table, TableData},
     tablemask::{Tablemask, TablemaskData},
 };
-use crate::random_id;
-use serde::{Deserialize, Serialize};
+use crate::{random_id, JsObject};
 use std::{
     collections::{hash_map, HashMap},
     rc::Rc,
@@ -17,7 +16,6 @@ pub struct World {
     tablemasks: HashMap<u128, Tablemask>,
 }
 
-#[derive(Deserialize, Serialize)]
 pub struct WorldData {
     pub table_id: u128,
     pub table_data: TableData,
@@ -134,5 +132,24 @@ impl From<WorldData> for World {
             characters,
             tablemasks,
         }
+    }
+}
+
+impl WorldData {
+    pub fn as_object(&self) -> JsObject {
+        let obj = object! {
+            table_id: self.table_id.to_string(),
+            table_data: self.table_data.as_object()
+        };
+
+        for (id, data) in &self.character_data {
+            obj.set(&id.to_string(), &data.as_object());
+        }
+
+        for (id, data) in &self.tablemask_data {
+            obj.set(&id.to_string(), &data.as_object());
+        }
+
+        obj
     }
 }
