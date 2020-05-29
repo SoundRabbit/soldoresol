@@ -67,6 +67,7 @@ struct Contextmenu {
 
 struct ModelessState {
     is_showing: bool,
+    grubbed: Option<[bool; 4]>,
     loc_a: [i32; 2],
     loc_b: [i32; 2],
 }
@@ -75,6 +76,7 @@ impl ModelessState {
     pub fn new(is_showing: bool) -> Self {
         Self {
             is_showing,
+            grubbed: None,
             loc_a: [20, 1],
             loc_b: [25, 15],
         }
@@ -165,6 +167,7 @@ pub enum Msg {
     // モードレス
     OpenObjectModeless(u128),
     CloseModeless(usize),
+    GrubModeless(usize, Option<[bool; 4]>),
     OpenModelessModal(usize),
     CloseModelessModal,
     ReflectModelessModal(modeless_modal::Props),
@@ -738,16 +741,22 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.modelesses[modeless_idx].0.is_showing = false;
             state.cmd_queue.dequeue()
         }
+        Msg::GrubModeless(modeless_idx, grubbed) => {
+            state.modelesses[modeless_idx].0.grubbed = grubbed;
+            state.cmd_queue.dequeue()
+        }
         Msg::OpenModelessModal(modeless_idx) => {
-            if let Some((modeless, ..)) = state.modelesses.get(modeless_idx) {
+            if let Some((modeless, ..)) = state.modelesses.get_mut(modeless_idx) {
                 let props = modeless_modal::Props {
                     origin: modeless.loc_a.clone(),
                     corner: modeless.loc_b.clone(),
+                    mode: modeless_modal::Mode::Move,
                 };
                 state.editing_modeless = Some((
                     modeless_idx,
                     Rc::new(RefCell::new(modeless_modal::State::new(&props))),
                 ));
+                modeless.grubbed = None;
             }
             state.cmd_queue.dequeue()
         }
@@ -1100,8 +1109,6 @@ fn render_canvas_container(state: &State) -> Html<Msg> {
                 .map(|(_, props)| {
                     Html::component(modeless_modal::new(Rc::clone(props)).subscribe(
                         |sub| match sub {
-                            modeless_modal::Sub::Close => Msg::CloseModelessModal,
-                            modeless_modal::Sub::Reflect(props) => Msg::ReflectModelessModal(props),
                             modeless_modal::Sub::ReflectToClose(props) => {
                                 Msg::CloseModelessModalWithProps(props)
                             }
@@ -1552,21 +1559,12 @@ fn render_object_modeless(
     world: &World,
     resource: &Resource,
 ) -> Html<Msg> {
-    let height = state.loc_b[1] - state.loc_a[1];
     let focused_id = tabs[focused];
     modeless::frame(
         &state.loc_a,
         &state.loc_b,
         Attributes::new(),
         Events::new()
-            .on_mousedown(move |e| {
-                e.stop_propagation();
-                Msg::NoOp
-            })
-            .on_mousemove(|e| {
-                e.stop_propagation();
-                Msg::NoOp
-            })
             .on_contextmenu(|e| {
                 e.stop_propagation();
                 Msg::NoOp
@@ -1574,6 +1572,25 @@ fn render_object_modeless(
             .on("wheel", |e| {
                 e.stop_propagation();
                 Msg::NoOp
+            })
+            .on_mousedown(move |e| {
+                e.stop_propagation();
+                Msg::GrubModeless(modeless_idx, Some([false, false, false, false]))
+            })
+            .on_mouseup(move |e| {
+                e.stop_propagation();
+                Msg::GrubModeless(modeless_idx, None)
+            })
+            .on_mousemove({
+                let grubbed = state.grubbed.is_some();
+                move |e| {
+                    e.stop_propagation();
+                    if grubbed {
+                        Msg::OpenModelessModal(modeless_idx)
+                    } else {
+                        Msg::NoOp
+                    }
+                }
             }),
         vec![
             modeless::header(
@@ -1584,24 +1601,17 @@ fn render_object_modeless(
                 vec![
                     Html::div(Attributes::new(), Events::new(), vec![]),
                     Html::div(
-                        Attributes::new().class("linear-h"),
+                        Attributes::new(),
                         Events::new(),
-                        vec![
-                            btn::allocate(
-                                Attributes::new(),
-                                Events::new()
-                                    .on_click(move |_| Msg::OpenModelessModal(modeless_idx)),
-                            ),
-                            btn::close(
-                                Attributes::new(),
-                                Events::new().on_click(move |_| Msg::CloseModeless(modeless_idx)),
-                            ),
-                        ],
+                        vec![btn::close(
+                            Attributes::new(),
+                            Events::new().on_click(move |_| Msg::CloseModeless(modeless_idx)),
+                        )],
                     ),
                 ],
             ),
             if let Some(character) = world.character(&focused_id) {
-                render_object_modeless_character(height, character, focused_id, resource)
+                render_object_modeless_character(character, focused_id, resource)
             } else if let Some(tablemask) = world.tablemask(&focused_id) {
                 render_object_modeless_tablemask(tablemask, focused_id)
             } else {
@@ -1613,7 +1623,6 @@ fn render_object_modeless(
 }
 
 fn render_object_modeless_character(
-    modeless_height: i32,
     character: &Character,
     character_id: u128,
     resource: &Resource,
