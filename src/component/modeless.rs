@@ -58,3 +58,67 @@ pub fn footer<Msg>(
 ) -> Html<Msg> {
     Html::div(attributes.class("frame-footer"), events, children)
 }
+
+pub mod resizer {
+    use kagura::prelude::*;
+
+    fn base<Msg>(attributes: Attributes, events: Events<Msg>) -> Html<Msg> {
+        Html::div(attributes, events, vec![])
+    }
+
+    pub fn top<Msg>(events: Events<Msg>) -> Html<Msg> {
+        base(
+            Attributes::new().class("frame-resizer frame-resizer-t"),
+            events,
+        )
+    }
+
+    pub fn left<Msg>(events: Events<Msg>) -> Html<Msg> {
+        base(
+            Attributes::new().class("frame-resizer frame-resizer-l"),
+            events,
+        )
+    }
+
+    pub fn bottom<Msg>(events: Events<Msg>) -> Html<Msg> {
+        base(
+            Attributes::new().class("frame-resizer frame-resizer-b"),
+            events,
+        )
+    }
+
+    pub fn right<Msg>(events: Events<Msg>) -> Html<Msg> {
+        base(
+            Attributes::new().class("frame-resizer frame-resizer-r"),
+            events,
+        )
+    }
+
+    pub fn top_left<Msg>(events: Events<Msg>) -> Html<Msg> {
+        base(
+            Attributes::new().class("frame-resizer frame-resizer-tl"),
+            events,
+        )
+    }
+
+    pub fn bottom_left<Msg>(events: Events<Msg>) -> Html<Msg> {
+        base(
+            Attributes::new().class("frame-resizer frame-resizer-bl"),
+            events,
+        )
+    }
+
+    pub fn bottom_right<Msg>(events: Events<Msg>) -> Html<Msg> {
+        base(
+            Attributes::new().class("frame-resizer frame-resizer-br"),
+            events,
+        )
+    }
+
+    pub fn top_right<Msg>(events: Events<Msg>) -> Html<Msg> {
+        base(
+            Attributes::new().class("frame-resizer frame-resizer-tr"),
+            events,
+        )
+    }
+}

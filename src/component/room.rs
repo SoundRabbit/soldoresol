@@ -747,16 +747,18 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
         Msg::OpenModelessModal(modeless_idx) => {
             if let Some((modeless, ..)) = state.modelesses.get_mut(modeless_idx) {
-                let props = modeless_modal::Props {
-                    origin: modeless.loc_a.clone(),
-                    corner: modeless.loc_b.clone(),
-                    mode: modeless_modal::Mode::Move,
-                };
-                state.editing_modeless = Some((
-                    modeless_idx,
-                    Rc::new(RefCell::new(modeless_modal::State::new(&props))),
-                ));
-                modeless.grubbed = None;
+                if let Some(resizable) = modeless.grubbed {
+                    let props = modeless_modal::Props {
+                        origin: modeless.loc_a.clone(),
+                        corner: modeless.loc_b.clone(),
+                        resizable: resizable.clone(),
+                    };
+                    state.editing_modeless = Some((
+                        modeless_idx,
+                        Rc::new(RefCell::new(modeless_modal::State::new(&props))),
+                    ));
+                    modeless.grubbed = None;
+                }
             }
             state.cmd_queue.dequeue()
         }
@@ -1575,7 +1577,7 @@ fn render_object_modeless(
             })
             .on_mousedown(move |e| {
                 e.stop_propagation();
-                Msg::GrubModeless(modeless_idx, Some([false, false, false, false]))
+                Msg::GrubModeless(modeless_idx, Some([true, true, true, true]))
             })
             .on_mouseup(move |e| {
                 e.stop_propagation();
@@ -1618,6 +1620,38 @@ fn render_object_modeless(
                 Html::none()
             },
             modeless::footer(Attributes::new(), Events::new(), vec![]),
+            modeless::resizer::top(Events::new().on_mousedown(move |e| {
+                e.stop_propagation();
+                Msg::GrubModeless(modeless_idx, Some([true, false, false, false]))
+            })),
+            modeless::resizer::left(Events::new().on_mousedown(move |e| {
+                e.stop_propagation();
+                Msg::GrubModeless(modeless_idx, Some([false, true, false, false]))
+            })),
+            modeless::resizer::bottom(Events::new().on_mousedown(move |e| {
+                e.stop_propagation();
+                Msg::GrubModeless(modeless_idx, Some([false, false, true, false]))
+            })),
+            modeless::resizer::right(Events::new().on_mousedown(move |e| {
+                e.stop_propagation();
+                Msg::GrubModeless(modeless_idx, Some([false, false, false, true]))
+            })),
+            modeless::resizer::top_left(Events::new().on_mousedown(move |e| {
+                e.stop_propagation();
+                Msg::GrubModeless(modeless_idx, Some([true, true, false, false]))
+            })),
+            modeless::resizer::bottom_left(Events::new().on_mousedown(move |e| {
+                e.stop_propagation();
+                Msg::GrubModeless(modeless_idx, Some([false, true, true, false]))
+            })),
+            modeless::resizer::bottom_right(Events::new().on_mousedown(move |e| {
+                e.stop_propagation();
+                Msg::GrubModeless(modeless_idx, Some([false, false, true, true]))
+            })),
+            modeless::resizer::top_right(Events::new().on_mousedown(move |e| {
+                e.stop_propagation();
+                Msg::GrubModeless(modeless_idx, Some([true, false, false, true]))
+            })),
         ],
     )
 }

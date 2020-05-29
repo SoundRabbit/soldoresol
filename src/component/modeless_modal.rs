@@ -4,16 +4,10 @@ use kagura::prelude::*;
 use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::JsCast;
 
-#[derive(Clone)]
-pub enum Mode {
-    Move,
-    Resize,
-}
-
 pub struct Props {
     pub origin: [i32; 2],
     pub corner: [i32; 2],
-    pub mode: Mode,
+    pub resizable: [bool; 4],
 }
 
 pub struct State {
@@ -22,8 +16,8 @@ pub struct State {
     canvas_id: String,
     origin: [i32; 2],
     corner: [i32; 2],
-    mouse: Option<[i32; 2]>,
-    mode: Mode,
+    mouse: Option<[i32; 4]>,
+    resizable: [bool; 4],
 }
 
 impl State {
@@ -35,7 +29,7 @@ impl State {
             origin: [props.origin[0] - 1, props.origin[1] - 1],
             corner: [props.corner[0] - 1, props.corner[1] - 1],
             mouse: None,
-            mode: props.mode.clone(),
+            resizable: props.resizable.clone(),
         }
     }
 
@@ -43,7 +37,7 @@ impl State {
         Props {
             origin: [self.origin[0] + 1, self.origin[1] + 1],
             corner: [self.corner[0] + 1, self.corner[1] + 1],
-            mode: self.mode.clone(),
+            resizable: self.resizable.clone(),
         }
     }
 }
@@ -122,17 +116,24 @@ fn update(wrapper: &mut StateWrapper, msg: Msg) -> Cmd<Msg, Sub> {
         Msg::ReflectToClose => Cmd::sub(Sub::ReflectToClose(state.as_props())),
         Msg::SetOrigin(origin) => {
             if let Some(mouse) = state.mouse {
-                let w = state.corner[0] - state.origin[0];
-                let h = state.corner[1] - state.origin[1];
-
-                state.origin[0] = origin[0] + mouse[0];
-                state.origin[1] = origin[1] + mouse[1];
-                state.corner[0] = origin[0] + mouse[0] + w;
-                state.corner[1] = origin[1] + mouse[1] + h;
+                if state.resizable[0] {
+                    state.origin[1] = origin[1] + mouse[0];
+                }
+                if state.resizable[1] {
+                    state.origin[0] = origin[0] + mouse[1];
+                }
+                if state.resizable[2] {
+                    state.corner[1] = origin[1] + mouse[2];
+                }
+                if state.resizable[3] {
+                    state.corner[0] = origin[0] + mouse[3];
+                }
             } else {
-                let dx = state.origin[0] - origin[0];
-                let dy = state.origin[1] - origin[1];
-                state.mouse = Some([dx, dy]);
+                let dt = state.origin[1] - origin[1];
+                let dl = state.origin[0] - origin[0];
+                let db = state.corner[1] - origin[1];
+                let dr = state.corner[0] - origin[0];
+                state.mouse = Some([dt, dl, db, dr]);
             }
 
             render_canvas(&state);
