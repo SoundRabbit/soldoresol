@@ -1,6 +1,7 @@
 mod btn;
 pub mod config_loder;
 mod contextmenu;
+mod image;
 mod modal;
 mod modeless;
 mod modeless_modal;

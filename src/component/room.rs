@@ -1,7 +1,7 @@
-use super::{btn, contextmenu, modal, modeless, modeless_modal};
+use super::{btn, contextmenu, image, modal, modeless, modeless_modal};
 use crate::{
     model::{
-        resource::{Data, DataString},
+        resource::{Data, DataString, ResourceData},
         Camera, Character, ColorSystem, Resource, Tablemask, World,
     },
     random_id,
@@ -257,7 +257,8 @@ pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
                 let a = Closure::wrap(Box::new({
                     move |receive_data: Option<ReceiveData>| {
                         let msg = receive_data
-                            .map(|receive_data| skyway::Msg::from(receive_data.data()))
+                            .and_then(|receive_data| receive_data.data())
+                            .map(|receive_data| skyway::Msg::from(receive_data))
                             .and_then(|msg| {
                                 if let skyway::Msg::None = msg {
                                     None
@@ -306,9 +307,9 @@ pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
                             let handler = Rc::clone(&handler);
                             let data_connection = Rc::clone(&data_connection);
                             let received_msg_num = Rc::clone(&received_msg_num);
-                            move |receive_data: Option<ReceiveData>| {
+                            move |receive_data: Option<JsObject>| {
                                 let msg = receive_data
-                                    .map(|receive_data| skyway::Msg::from(receive_data.data()))
+                                    .map(|receive_data| skyway::Msg::from(receive_data))
                                     .and_then(|msg| {
                                         if let skyway::Msg::None = msg {
                                             None
@@ -341,7 +342,7 @@ pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
                                 }
                             }
                         })
-                            as Box<dyn FnMut(Option<ReceiveData>)>);
+                            as Box<dyn FnMut(Option<JsObject>)>);
                         data_connection.on("data", Some(a.as_ref().unchecked_ref()));
                         a.forget();
 
@@ -926,7 +927,9 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                         }
                     }
                     if transport {
-                        room.send(&skyway::Msg::AddResource(data_id, data_url));
+                        room.send(&skyway::Msg::SetResource(ResourceData::from((
+                            data_id, data_url,
+                        ))));
                     }
                 }
             })
@@ -990,11 +993,6 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             skyway::Msg::SetConnection(peers) => {
                 state.peers = peers;
                 state.cmd_queue.dequeue()
-            }
-            skyway::Msg::AddResource(data_id, data) => {
-                let mut data_urls = HashMap::new();
-                data_urls.insert(data_id, data);
-                update(state, Msg::LoadFromDataUrls(data_urls, false))
             }
             skyway::Msg::RemoveObject(object_id) => {
                 update(state, Msg::RemoveObjectWithObjectId(object_id, false))
@@ -1081,7 +1079,7 @@ fn render(state: &State) -> Html<Msg> {
 fn render_canvas_container(state: &State) -> Html<Msg> {
     Html::div(
         Attributes::new()
-            .class("cover")
+            .class("cover cover-a")
             .style("position", "relative"),
         Events::new(),
         vec![
@@ -1117,7 +1115,7 @@ fn render_canvas_container(state: &State) -> Html<Msg> {
 
 fn render_canvas() -> Html<Msg> {
     Html::canvas(
-        Attributes::new().id("table").class("cover"),
+        Attributes::new().id("table").class("cover cover-a"),
         Events::new(),
         vec![],
     )
@@ -1132,7 +1130,7 @@ fn render_canvas_overlaper(
     modelesses: &ModelessCollection,
 ) -> Html<Msg> {
     modeless::container(
-        Attributes::new().class("cover"),
+        Attributes::new().class("cover cover-a"),
         Events::new()
             .on_mousemove({
                 let selecting_tool = table_state.selecting_tool.clone();
@@ -1634,21 +1632,11 @@ fn render_object_modeless_character(
                         character
                             .texture_id()
                             .and_then(|data_id| resource.get_as_image(&data_id))
-                            .map(|image| {
-                                Html::img(
-                                    Attributes::new()
-                                        .string("src", image.src())
-                                        .class("pure-img")
-                                        .style(
-                                            "max-height",
-                                            format!(
-                                                "{}vh",
-                                                (modeless_height - 1) as f64 * 100.0 / 14.0
-                                            ),
-                                        ),
-                                    Events::new(),
-                                    vec![],
-                                )
+                            .map(|img| {
+                                Html::component(image::new(
+                                    img,
+                                    Attributes::new().class("pure-img"),
+                                ))
                             })
                             .unwrap_or(Html::none()),
                         btn::primary(
@@ -1868,14 +1856,11 @@ fn render_modal_resource(resource: &Resource) -> Html<Msg> {
                 resource
                     .get_images()
                     .into_iter()
-                    .map(|(_, image)| {
-                        Html::img(
-                            Attributes::new()
-                                .class("grid-w-2 pure-img")
-                                .string("src", image.src()),
-                            Events::new(),
-                            vec![],
-                        )
+                    .map(|(_, img)| {
+                        Html::component(image::new(
+                            img,
+                            Attributes::new().class("grid-w-2 pure-img"),
+                        ))
                     })
                     .collect(),
             ),
@@ -1932,15 +1917,16 @@ fn render_modal_select_character_image(character_id: u128, resource: &Resource) 
                 resource
                     .get_images()
                     .into_iter()
-                    .map(|(data_id, image)| {
-                        Html::img(
-                            Attributes::new()
-                                .class("grid-w-2 pure-img clickable")
-                                .string("src", image.src()),
+                    .map(|(data_id, img)| {
+                        Html::div(
+                            Attributes::new().class("grid-w-2 clickable"),
                             Events::new().on_click(move |_| {
                                 Msg::SetCharacterImage(character_id, data_id, true)
                             }),
-                            vec![],
+                            vec![Html::component(image::new(
+                                img,
+                                Attributes::new().class("pure-img"),
+                            ))],
                         )
                     })
                     .collect(),

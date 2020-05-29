@@ -1,5 +1,8 @@
-use crate::JsObject;
-use js_sys::Object;
+use crate::{
+    model::{resource::DataString, ResourceData, WorldData},
+    JsObject,
+};
+use std::collections::BTreeSet;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen(raw_module = "../src/skyway.js")]
@@ -55,7 +58,7 @@ extern "C" {
     pub fn src(this: &ReceiveData) -> String;
 
     #[wasm_bindgen(method, getter)]
-    pub fn data(this: &ReceiveData) -> JsObject;
+    pub fn data(this: &ReceiveData) -> Option<JsObject>;
 }
 
 pub struct Room {
@@ -69,7 +72,9 @@ impl Room {
     }
 
     pub fn send(&self, msg: &Msg) {
-        self.payload.send(&msg.as_object())
+        let msg = msg.as_object();
+        web_sys::console::log_1(&JsValue::from(&msg));
+        self.payload.send(&msg)
     }
 }
 
@@ -80,10 +85,9 @@ pub enum Msg {
     SetCharacterImage(u128, u128),
     SetObjectPosition(u128, [f64; 3]),
     SetIsBindToGrid(bool),
-    SetWorld(crate::model::WorldData),
-    SetResource(crate::model::ResourceData),
-    SetConnection(std::collections::BTreeSet<String>),
-    AddResource(u128, crate::model::resource::DataString),
+    SetWorld(WorldData),
+    SetResource(ResourceData),
+    SetConnection(BTreeSet<String>),
     RemoveObject(u128),
     None,
 }
@@ -137,10 +141,6 @@ impl Msg {
                     payload: payload
                 }
             }
-            Self::AddResource(id, payload) => object! {
-                type: &self.type_name(),
-                payload: array![id.to_string(), payload.as_object()]
-            },
             Self::RemoveObject(id) => object! {
                 type: &self.type_name(),
                 payload: id.to_string()
@@ -165,7 +165,6 @@ impl std::fmt::Display for Msg {
             Self::SetWorld(..) => write!(f, "SetWorld"),
             Self::SetResource(..) => write!(f, "SetResource"),
             Self::SetConnection(..) => write!(f, "SetConnection"),
-            Self::AddResource(..) => write!(f, "AddResource"),
             Self::RemoveObject(..) => write!(f, "RemoveObject"),
             Self::None => write!(f, "None"),
         }
@@ -174,11 +173,13 @@ impl std::fmt::Display for Msg {
 
 impl From<JsObject> for Msg {
     fn from(obj: JsObject) -> Self {
+        web_sys::console::log_1(&JsValue::from(&obj));
         if let (Some(msg_type), Some(payload)) = (
             obj.get("type").and_then(|t| t.as_string()),
             obj.get("payload"),
         ) {
-            match msg_type {
+            match msg_type.as_str() {
+                "SetResource" => Self::SetResource(ResourceData::from(payload)),
                 _ => Self::None,
             }
         } else {

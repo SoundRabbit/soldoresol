@@ -21,7 +21,7 @@ macro_rules! object {
 
             let tmp = js_sys::Object::new().dyn_into::<JsObject>().unwrap();
             $(
-                tmp.set(stringify!($tag), &JsValue::from($v));
+                tmp.set(stringify!($n), &JsValue::from($v));
             )*
             tmp
         }

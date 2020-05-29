@@ -123,3 +123,50 @@ impl Into<HashMap<u128, DataString>> for ResourceData {
         self.payload
     }
 }
+
+impl From<JsObject> for ResourceData {
+    fn from(obj: JsObject) -> Self {
+        use js_sys::Object;
+
+        let mut payload = HashMap::new();
+
+        for key in Object::keys(&obj).values() {
+            if let Some(key) = key
+                .ok()
+                .and_then(|key| key.as_string())
+                .and_then(|key| key.parse::<u128>().ok())
+            {
+                if let Some(data) = obj.get(&key.to_string()) {
+                    if let (Some(t), Some(p)) = (
+                        data.get("type").and_then(|t| t.as_string()),
+                        data.get("payload")
+                            .and_then(|p| p.dyn_into::<JsString>().ok()),
+                    ) {
+                        match t.as_str() {
+                            "Image" => {
+                                payload.insert(key, DataString::Image(p));
+                            }
+                            _ => {}
+                        }
+                    }
+                }
+            }
+        }
+
+        Self { payload }
+    }
+}
+
+impl From<HashMap<u128, DataString>> for ResourceData {
+    fn from(payload: HashMap<u128, DataString>) -> Self {
+        Self { payload }
+    }
+}
+
+impl From<(u128, DataString)> for ResourceData {
+    fn from(id_data_pair: (u128, DataString)) -> Self {
+        let mut payload = HashMap::new();
+        payload.insert(id_data_pair.0, id_data_pair.1);
+        Self { payload }
+    }
+}
