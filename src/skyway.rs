@@ -2,8 +2,9 @@ use crate::{
     model::{resource::DataString, ResourceData, WorldData},
     JsObject,
 };
+use js_sys::Array;
 use std::collections::BTreeSet;
-use wasm_bindgen::prelude::*;
+use wasm_bindgen::{prelude::*, JsCast};
 
 #[wasm_bindgen(raw_module = "../src/skyway.js")]
 extern "C" {
@@ -101,11 +102,11 @@ impl Msg {
         match self {
             Self::DrawLineToTable(b, e) | Self::EraceLineToTable(b, e) => object! {
                 type: &self.type_name(),
-                payload: array![array![b[0], b[1]], array![e[0], e[1]]]
+                payload: array![b[0], b[1], e[0], e[1]]
             },
             Self::CreateCharacterToTable(id, pos) | Self::SetObjectPosition(id, pos) => object! {
                 type: &self.type_name(),
-                payload: array![id.to_string(), array![pos[0], pos[1], pos[2]]]
+                payload: array![id.to_string(), pos[0], pos[1], pos[2]]
             },
             Self::SetCharacterImage(c_id, d_id) => object! {
                 type: &self.type_name(),
@@ -179,7 +180,67 @@ impl From<JsObject> for Msg {
             obj.get("payload"),
         ) {
             match msg_type.as_str() {
+                "DrawLineToTable" => {
+                    let args = payload.dyn_ref::<Array>().unwrap().to_vec();
+                    Self::DrawLineToTable(
+                        [args[0].as_f64().unwrap(), args[1].as_f64().unwrap()],
+                        [args[2].as_f64().unwrap(), args[3].as_f64().unwrap()],
+                    )
+                }
+                "EraceLineToTable" => {
+                    let args = payload.dyn_ref::<Array>().unwrap().to_vec();
+                    Self::DrawLineToTable(
+                        [args[0].as_f64().unwrap(), args[1].as_f64().unwrap()],
+                        [args[2].as_f64().unwrap(), args[3].as_f64().unwrap()],
+                    )
+                }
+                "CreateCharacterToTable" => {
+                    let args = payload.dyn_ref::<Array>().unwrap().to_vec();
+                    Self::CreateCharacterToTable(
+                        args[0].as_string().unwrap().parse().unwrap(),
+                        [
+                            args[1].as_f64().unwrap(),
+                            args[2].as_f64().unwrap(),
+                            args[3].as_f64().unwrap(),
+                        ],
+                    )
+                }
+                "SetObjectPosition" => {
+                    let args = payload.dyn_ref::<Array>().unwrap().to_vec();
+                    Self::SetObjectPosition(
+                        args[0].as_string().unwrap().parse().unwrap(),
+                        [
+                            args[1].as_f64().unwrap(),
+                            args[2].as_f64().unwrap(),
+                            args[3].as_f64().unwrap(),
+                        ],
+                    )
+                }
+                "SetCharacterImage" => {
+                    let args = payload.dyn_ref::<Array>().unwrap().to_vec();
+                    Self::SetCharacterImage(
+                        args[0].as_string().unwrap().parse().unwrap(),
+                        args[1].as_string().unwrap().parse().unwrap(),
+                    )
+                }
+                "SetIsBindToGrid" => Self::SetIsBindToGrid(payload.as_bool().unwrap()),
+                "SetWorld" => Self::SetWorld(WorldData::from(payload)),
                 "SetResource" => Self::SetResource(ResourceData::from(payload)),
+                "SetConnection" => {
+                    let args = payload.dyn_ref::<Array>().unwrap().to_vec();
+                    let peer_ids = args
+                        .into_iter()
+                        .map(|a| a.as_string().unwrap().parse().unwrap());
+
+                    let mut connection = BTreeSet::new();
+
+                    for peer_id in peer_ids {
+                        connection.insert(peer_id);
+                    }
+
+                    Self::SetConnection(connection)
+                }
+                "RemoveObject" => Self::RemoveObject(payload.as_string().unwrap().parse().unwrap()),
                 _ => Self::None,
             }
         } else {

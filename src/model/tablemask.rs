@@ -104,3 +104,35 @@ impl TablemaskData {
         }
     }
 }
+
+impl From<JsObject> for TablemaskData {
+    fn from(obj: JsObject) -> Self {
+        use js_sys::Array;
+        use wasm_bindgen::JsCast;
+
+        let size = obj.get("size").unwrap().dyn_into::<Array>().ok().unwrap();
+        let size = [size.get(0).as_f64().unwrap(), size.get(1).as_f64().unwrap()];
+
+        let position = obj
+            .get("position")
+            .unwrap()
+            .dyn_into::<Array>()
+            .ok()
+            .unwrap();
+        let position = [
+            position.get(0).as_f64().unwrap(),
+            position.get(1).as_f64().unwrap(),
+            position.get(2).as_f64().unwrap(),
+        ];
+
+        let background_color = obj.get("background_color").unwrap().as_f64().unwrap() as u32;
+        let size_is_binded = obj.get("size_is_binded").unwrap().as_bool().unwrap();
+
+        Self {
+            size,
+            position,
+            background_color,
+            size_is_binded,
+        }
+    }
+}

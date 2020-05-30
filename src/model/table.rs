@@ -234,3 +234,25 @@ impl TableData {
         }
     }
 }
+
+impl From<JsObject> for TableData {
+    fn from(obj: JsObject) -> Self {
+        use js_sys::Array;
+        use wasm_bindgen::JsCast;
+
+        let size = obj.get("size").unwrap().dyn_into::<Array>().ok().unwrap();
+        let size = [size.get(0).as_f64().unwrap(), size.get(1).as_f64().unwrap()];
+
+        let pixel_ratio = obj.get("pixel_ratio").unwrap().as_f64().unwrap();
+
+        let drawing_texture = obj.get("drawing_texture").unwrap().as_string().unwrap();
+        let is_bind_to_grid = obj.get("is_bind_to_grid").unwrap().as_bool().unwrap();
+
+        Self {
+            size,
+            pixel_ratio,
+            drawing_texture,
+            is_bind_to_grid,
+        }
+    }
+}

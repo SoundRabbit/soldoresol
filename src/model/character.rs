@@ -149,3 +149,44 @@ impl CharacterData {
         }
     }
 }
+
+impl From<JsObject> for CharacterData {
+    fn from(obj: JsObject) -> Self {
+        use js_sys::Array;
+        use wasm_bindgen::JsCast;
+
+        let size = obj.get("size").unwrap().dyn_into::<Array>().ok().unwrap();
+        let size = [size.get(0).as_f64().unwrap(), size.get(1).as_f64().unwrap()];
+
+        let position = obj
+            .get("position")
+            .unwrap()
+            .dyn_into::<Array>()
+            .ok()
+            .unwrap();
+        let position = [
+            position.get(0).as_f64().unwrap(),
+            position.get(1).as_f64().unwrap(),
+            position.get(2).as_f64().unwrap(),
+        ];
+
+        let image_id = obj
+            .get("image_id")
+            .unwrap()
+            .as_string()
+            .unwrap()
+            .parse()
+            .ok();
+
+        let hp = obj.get("hp").unwrap().as_f64().unwrap() as i32;
+        let mp = obj.get("mp").unwrap().as_f64().unwrap() as i32;
+
+        Self {
+            size,
+            position,
+            image_id,
+            hp,
+            mp,
+        }
+    }
+}

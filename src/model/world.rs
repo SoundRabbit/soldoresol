@@ -142,14 +142,57 @@ impl WorldData {
             table_data: self.table_data.as_object()
         };
 
+        let character_data = object! {};
         for (id, data) in &self.character_data {
-            obj.set(&id.to_string(), &data.as_object());
+            character_data.set(&id.to_string(), &data.as_object());
         }
+        obj.set("character_data", &character_data);
 
+        let tablemask_data = object! {};
         for (id, data) in &self.tablemask_data {
-            obj.set(&id.to_string(), &data.as_object());
+            tablemask_data.set(&id.to_string(), &data.as_object());
         }
+        obj.set("tablemask_data", &tablemask_data);
 
         obj
+    }
+}
+
+impl From<JsObject> for WorldData {
+    fn from(obj: JsObject) -> Self {
+        use js_sys::{Array, Object};
+        use wasm_bindgen::JsCast;
+
+        let table_id = obj
+            .get("table_id")
+            .unwrap()
+            .as_string()
+            .unwrap()
+            .parse()
+            .unwrap();
+        let table_data = TableData::from(obj.get("table_data").unwrap());
+
+        let mut character_data = HashMap::new();
+        for c in Object::entries(&obj.get("character_data").unwrap()).to_vec() {
+            let c = c.dyn_into::<Array>().unwrap();
+            let id = c.get(0).as_string().unwrap().parse().unwrap();
+            let data = CharacterData::from(c.get(1).dyn_into::<JsObject>().unwrap());
+            character_data.insert(id, data);
+        }
+
+        let mut tablemask_data = HashMap::new();
+        for t in Object::entries(&obj.get("tablemask_data").unwrap()).to_vec() {
+            let t = t.dyn_into::<Array>().unwrap();
+            let id = t.get(0).as_string().unwrap().parse().unwrap();
+            let data = TablemaskData::from(t.get(1).dyn_into::<JsObject>().unwrap());
+            tablemask_data.insert(id, data);
+        }
+
+        Self {
+            table_id,
+            table_data,
+            character_data,
+            tablemask_data,
+        }
     }
 }
