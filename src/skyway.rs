@@ -1,5 +1,5 @@
 use crate::{
-    model::{resource::DataString, ResourceData, WorldData},
+    model::{ResourceData, WorldData},
     JsObject,
 };
 use js_sys::Array;

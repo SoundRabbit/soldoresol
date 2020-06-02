@@ -1,4 +1,3 @@
-use super::{btn, modal};
 use crate::{model::Color, random_id};
 use kagura::prelude::*;
 use std::{cell::RefCell, rc::Rc};
