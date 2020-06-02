@@ -25,5 +25,5 @@ use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen(start)]
 pub fn main() {
-    kagura::run(component::config_loder::new(false), "app");
+    kagura::run(component::config_loder::new(true), "app");
 }

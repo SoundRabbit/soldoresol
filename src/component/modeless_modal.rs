@@ -187,20 +187,6 @@ fn render_canvas(state: &State) {
 
         context.clear_rect(0.0, 0.0, width, height);
 
-        context.set_line_width(2.0);
-        context.set_stroke_style(&Color::from(0x7ff1f8ff).to_jsvalue());
-        context.set_fill_style(&Color::from(0x3f032f62).to_jsvalue());
-
-        for row in 0..14 {
-            for col in 0..24 {
-                if !(xa <= col && col < xb && ya <= row && row < yb) {
-                    let x = col as f64 * x_step;
-                    let y = row as f64 * y_step;
-                    context.fill_rect(x, y, x_step, y_step);
-                }
-            }
-        }
-
         context.set_fill_style(&Color::from(0x7f0366d6).to_jsvalue());
 
         for row in 0..14 {
@@ -210,14 +196,6 @@ fn render_canvas(state: &State) {
                     let y = row as f64 * y_step;
                     context.fill_rect(x, y, x_step, y_step);
                 }
-            }
-        }
-
-        for row in 0..14 {
-            for col in 0..24 {
-                let x = col as f64 * x_step;
-                let y = row as f64 * y_step;
-                context.stroke_rect(x, y, x_step, y_step);
             }
         }
     }
