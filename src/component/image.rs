@@ -1,6 +1,4 @@
-use super::room;
-use crate::{random_id, JsObject};
-use js_sys::JsString;
+use crate::random_id;
 use kagura::prelude::*;
 use std::rc::Rc;
 use wasm_bindgen::JsCast;
@@ -66,7 +64,7 @@ pub fn new(
     Component::new(init, update, render)
 }
 
-fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
+fn update(_: &mut State, _: Msg) -> Cmd<Msg, Sub> {
     Cmd::none()
 }
 
