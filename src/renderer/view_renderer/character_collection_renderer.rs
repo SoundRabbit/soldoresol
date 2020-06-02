@@ -196,12 +196,12 @@ impl CharacterCollectionRenderer {
                         gl.tex_parameteri(
                             web_sys::WebGlRenderingContext::TEXTURE_2D,
                             web_sys::WebGlRenderingContext::TEXTURE_MIN_FILTER,
-                            web_sys::WebGlRenderingContext::NEAREST as i32,
+                            web_sys::WebGlRenderingContext::LINEAR as i32,
                         );
                         gl.tex_parameteri(
                             web_sys::WebGlRenderingContext::TEXTURE_2D,
                             web_sys::WebGlRenderingContext::TEXTURE_MAG_FILTER,
-                            web_sys::WebGlRenderingContext::NEAREST as i32,
+                            web_sys::WebGlRenderingContext::LINEAR as i32,
                         );
                         gl.tex_parameteri(
                             web_sys::WebGlRenderingContext::TEXTURE_2D,
