@@ -12,6 +12,18 @@ pub fn container<Msg>(
     )
 }
 
+pub fn container_t<Msg>(
+    attributes: Attributes,
+    events: Events<Msg>,
+    children: Vec<Html<Msg>>,
+) -> Html<Msg> {
+    Html::div(
+        attributes.class("fullscreen centering-v grid"),
+        events,
+        children,
+    )
+}
+
 pub fn frame<Msg>(
     size: u32,
     attributes: Attributes,
