@@ -127,6 +127,22 @@ fn update(wrapper: &mut StateWrapper, msg: Msg) -> Cmd<Msg, Sub> {
                 if state.resizable[3] {
                     state.corner[0] = origin[0] + mouse[3];
                 }
+
+                let cx = (-state.origin[0]).max(0) + (24 - state.corner[0]).min(0);
+                let cy = (-state.origin[1]).max(0) + (14 - state.corner[1]).min(0);
+
+                if state.resizable[0] {
+                    state.origin[1] += cy;
+                }
+                if state.resizable[1] {
+                    state.origin[0] += cx;
+                }
+                if state.resizable[2] {
+                    state.corner[1] += cy;
+                }
+                if state.resizable[3] {
+                    state.corner[0] += cx;
+                }
             } else {
                 let dt = state.origin[1] - origin[1];
                 let dl = state.origin[0] - origin[0];
