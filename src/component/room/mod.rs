@@ -40,15 +40,17 @@ impl ChatTab {
     }
 }
 
-pub struct ChatTabCollection {
+pub struct ChatDataCollection {
     selecting_idx: usize,
+    inputing_message: String,
     tabs: Vec<ChatTab>,
 }
 
-impl ChatTabCollection {
+impl ChatDataCollection {
     fn new() -> Self {
         Self {
             selecting_idx: 0,
+            inputing_message: "".into(),
             tabs: vec![ChatTab::new("メイン"), ChatTab::new("サブ")],
         }
     }
@@ -157,7 +159,7 @@ pub struct State {
     room: Rc<Room>,
     world: World,
     resource: Resource,
-    chat_tabs: ChatTabCollection,
+    chat_data: ChatDataCollection,
     camera: Camera,
     renderer: Option<Renderer>,
     canvas_size: [f64; 2],
@@ -227,6 +229,11 @@ pub enum Msg {
     SetTablemaskSize(u128, [f64; 2]),
     SetTablemaskSizeIsBinded(u128, bool),
 
+    // チャット関係
+    SetSelectingChatTabIdx(usize),
+    InputChatMessage(String),
+    SendChatItem,
+
     // リソース管理
     LoadFromFileList(web_sys::FileList),
     LoadFromDataUrls(HashMap<u128, DataString>, bool),
@@ -258,7 +265,7 @@ pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
                 room: room,
                 world: World::new([20.0, 20.0]),
                 resource: Resource::new(),
-                chat_tabs: ChatTabCollection::new(),
+                chat_data: ChatDataCollection::new(),
                 camera: Camera::new(),
                 renderer: None,
                 canvas_size: [0.0, 0.0],
@@ -916,6 +923,30 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             update(state, Msg::Render)
         }
 
+        // チャット周り
+        Msg::SetSelectingChatTabIdx(tab_idx) => {
+            state.chat_data.selecting_idx = tab_idx;
+            state.cmd_queue.dequeue()
+        }
+        Msg::InputChatMessage(message) => {
+            state.chat_data.inputing_message = message;
+            state.cmd_queue.dequeue()
+        }
+        Msg::SendChatItem => {
+            let tab_idx = state.chat_data.selecting_idx;
+            let mut message = "".into();
+
+            std::mem::swap(&mut state.chat_data.inputing_message, &mut message);
+
+            let chat_item = ChatItem {
+                display_name: "".into(),
+                payload: message,
+            };
+
+            state.chat_data.tabs[tab_idx].items.push(chat_item);
+            state.cmd_queue.dequeue()
+        }
+
         // リソース
         Msg::LoadFromFileList(file_list) => Cmd::task(move |resolve| {
             let len = file_list.length();
@@ -1328,7 +1359,7 @@ fn render_canvas_container(state: &State) -> Html<Msg> {
                 state.is_2d_mode,
                 &state.world,
                 &state.resource,
-                &state.chat_tabs,
+                &state.chat_data,
                 &state.modelesses,
             ),
             state
@@ -1362,7 +1393,7 @@ fn render_canvas_overlaper(
     is_2d_mode: bool,
     world: &World,
     resource: &Resource,
-    chat_tabs: &ChatTabCollection,
+    chat_tabs: &ChatDataCollection,
     modelesses: &ModelessCollection,
 ) -> Html<Msg> {
     modeless_container(

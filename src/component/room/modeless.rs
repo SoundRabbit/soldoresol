@@ -1,6 +1,6 @@
 use super::{
     super::{btn, image, modeless},
-    ChatTabCollection, Modal, ModelessState, Msg,
+    ChatDataCollection, Modal, ModelessState, Msg,
 };
 use crate::{
     model::{Character, Resource, Tablemask, World},
@@ -219,10 +219,10 @@ fn object_tablemask(tablemask: &Tablemask, tablemask_id: u128) -> Html<Msg> {
 pub fn chat(
     modeless_idx: usize,
     state: &ModelessState,
-    chat_tabs: &ChatTabCollection,
+    chat_data: &ChatDataCollection,
 ) -> Html<Msg> {
-    let selecting_idx = chat_tabs.selecting_idx;
-    let selecting_tab = &chat_tabs.tabs[selecting_idx];
+    let selecting_idx = chat_data.selecting_idx;
+    let selecting_tab = &chat_data.tabs[selecting_idx];
     frame(
         modeless_idx,
         state,
@@ -268,7 +268,7 @@ pub fn chat(
                             Html::div(
                                 Attributes::new(),
                                 Events::new(),
-                                chat_tabs
+                                chat_data
                                     .tabs
                                     .iter()
                                     .enumerate()
@@ -276,7 +276,9 @@ pub fn chat(
                                         btn::tab(
                                             tab_idx == selecting_idx,
                                             Attributes::new(),
-                                            Events::new(),
+                                            Events::new().on_click(move |_| {
+                                                Msg::SetSelectingChatTabIdx(tab_idx)
+                                            }),
                                             &tab.name,
                                         )
                                     })
@@ -289,8 +291,11 @@ pub fn chat(
                         Events::new(),
                         vec![
                             Html::textarea(
-                                Attributes::new().style("resize", "none").class("text-wrap"),
-                                Events::new(),
+                                Attributes::new()
+                                    .style("resize", "none")
+                                    .class("text-wrap")
+                                    .value(&chat_data.inputing_message),
+                                Events::new().on_input(|m| Msg::InputChatMessage(m)),
                                 vec![],
                             ),
                             Html::div(
@@ -298,7 +303,7 @@ pub fn chat(
                                 Events::new(),
                                 vec![btn::info(
                                     Attributes::new(),
-                                    Events::new(),
+                                    Events::new().on_click(|_| Msg::SendChatItem),
                                     vec![
                                         Html::i(
                                             Attributes::new().class("fas fa-paper-plane"),
