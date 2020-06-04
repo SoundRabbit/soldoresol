@@ -10,7 +10,7 @@
     &-v {
         display: grid;
         grid-auto-rows: max-content;
-        column-gap: 0.8em;
+        row-gap: 0.8em;
         grid-auto-flow: row;
         align-items: start;
     }

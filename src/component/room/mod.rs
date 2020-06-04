@@ -1167,7 +1167,14 @@ fn render_header_menu(
                         btn::primary(
                             Attributes::new(),
                             Events::new().on_click(|_| Msg::OpenModal(Modal::Resource)),
-                            vec![Html::text("リソース")],
+                            vec![
+                                Html::i(
+                                    Attributes::new().class("fas fa-layer-group"),
+                                    Events::new(),
+                                    vec![],
+                                ),
+                                Html::text(" リソース"),
+                            ],
                         ),
                         btn::danger(
                             Attributes::new(),
