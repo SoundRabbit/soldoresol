@@ -23,22 +23,9 @@ pub fn object(
         Attributes::new(),
         Events::new(),
         vec![
-            modeless::header(
-                Attributes::new()
-                    .style("display", "grid")
-                    .style("grid-template-columns", "1fr max-content"),
-                Events::new(),
-                vec![
-                    Html::div(Attributes::new(), Events::new(), vec![]),
-                    Html::div(
-                        Attributes::new(),
-                        Events::new(),
-                        vec![btn::close(
-                            Attributes::new(),
-                            Events::new().on_click(move |_| Msg::CloseModeless(modeless_idx)),
-                        )],
-                    ),
-                ],
+            header(
+                modeless_idx,
+                Html::div(Attributes::new(), Events::new(), vec![]),
             ),
             if let Some(character) = world.character(&focused_id) {
                 object_character(character, focused_id, resource)
@@ -310,4 +297,24 @@ fn resizers(modeless_idx: usize) -> Vec<Html<Msg>> {
             Msg::GrubModeless(modeless_idx, Some([true, false, false, true]))
         })),
     ]
+}
+
+fn header(modeless_idx: usize, header: Html<Msg>) -> Html<Msg> {
+    modeless::header(
+        Attributes::new()
+            .style("display", "grid")
+            .style("grid-template-columns", "1fr max-content"),
+        Events::new(),
+        vec![
+            header,
+            Html::div(
+                Attributes::new(),
+                Events::new(),
+                vec![btn::close(
+                    Attributes::new(),
+                    Events::new().on_click(move |_| Msg::CloseModeless(modeless_idx)),
+                )],
+            ),
+        ],
+    )
 }
