@@ -227,7 +227,67 @@ pub fn chat(modeless_idx: usize, state: &ModelessState) -> Html<Msg> {
                 modeless_idx,
                 Html::div(Attributes::new(), Events::new(), vec![]),
             ),
-            modeless::body(Attributes::new(), Events::new(), vec![]),
+            modeless::body(
+                Attributes::new()
+                    .class("linear-v")
+                    .style("grid-template-rows", "1fr")
+                    .style("row-gap", "0"),
+                Events::new(),
+                vec![
+                    Html::div(
+                        Attributes::new()
+                            .class("container-a linear-v")
+                            .style("align-self", "stretch")
+                            .style("grid-template-rows", "1fr")
+                            .style("row-gap", "0"),
+                        Events::new(),
+                        vec![
+                            Html::div(
+                                Attributes::new()
+                                    .style("align-self", "stretch")
+                                    .class("scroll-v"),
+                                Events::new(),
+                                vec![],
+                            ),
+                            Html::div(
+                                Attributes::new(),
+                                Events::new(),
+                                vec![
+                                    btn::tab(true, Attributes::new(), Events::new(), "メイン"),
+                                    btn::tab(false, Attributes::new(), Events::new(), "サブ"),
+                                ],
+                            ),
+                        ],
+                    ),
+                    Html::div(
+                        Attributes::new().class("pure-form linear-v"),
+                        Events::new(),
+                        vec![
+                            Html::textarea(
+                                Attributes::new().style("resize", "none").class("text-wrap"),
+                                Events::new(),
+                                vec![],
+                            ),
+                            Html::div(
+                                Attributes::new().class("justify-r"),
+                                Events::new(),
+                                vec![btn::info(
+                                    Attributes::new(),
+                                    Events::new(),
+                                    vec![
+                                        Html::i(
+                                            Attributes::new().class("fas fa-paper-plane"),
+                                            Events::new(),
+                                            vec![],
+                                        ),
+                                        Html::text(" 送信"),
+                                    ],
+                                )],
+                            ),
+                        ],
+                    ),
+                ],
+            ),
             modeless::footer(Attributes::new(), Events::new(), vec![]),
         ],
     )

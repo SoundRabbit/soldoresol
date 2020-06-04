@@ -151,36 +151,24 @@ pub fn add<Msg>(attributes: Attributes, events: Events<Msg>) -> Html<Msg> {
 
 #[allow(dead_code)]
 pub fn tab<Msg>(
-    selected: bool,
-    deletable: bool,
+    is_selected: bool,
     attributes: Attributes,
     events: Events<Msg>,
     name: impl Into<String>,
 ) -> Html<Msg> {
-    Html::a(
-        attributes
-            .class("app__tab-btn")
-            .string("data-selected", selected.to_string()),
-        events,
-        vec![
-            Html::span(
-                Attributes::new().class("app__tab-btn-text"),
-                Events::new(),
-                vec![Html::text(name)],
-            ),
-            if deletable {
-                Html::button(
-                    Attributes::new()
-                        .class("app__close-tab-btn")
-                        .class("material-icons"),
-                    Events::new(),
-                    vec![Html::text("clear")],
-                )
-            } else {
-                Html::none()
-            },
-        ],
-    )
+    if is_selected {
+        Html::button(
+            attributes.class("pure-button pure-button-tab pure-button-primary"),
+            events,
+            vec![Html::text(name)],
+        )
+    } else {
+        Html::button(
+            attributes.class("pure-button pure-button-tab pure-button-secondary"),
+            events,
+            vec![Html::text(name)],
+        )
+    }
 }
 
 #[allow(dead_code)]
