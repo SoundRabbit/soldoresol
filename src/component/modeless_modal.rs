@@ -167,6 +167,7 @@ fn render(wrapper: &StateWrapper) -> Html<Msg> {
             .class("cover cover-a"),
         Events::new()
             .on_mouseup(|_| Msg::ReflectToClose)
+            .on_mouseleave(|_| Msg::ReflectToClose)
             .on_mousemove({
                 let width = state.canvas_size[0];
                 let height = state.canvas_size[1];
