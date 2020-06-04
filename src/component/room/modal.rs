@@ -9,7 +9,20 @@ use wasm_bindgen::JsCast;
 pub fn resource(resource: &Resource) -> Html<Msg> {
     modal::container(
         Attributes::new(),
-        Events::new(),
+        Events::new()
+            .on("dragover", |e| {
+                e.prevent_default();
+                Msg::NoOp
+            })
+            .on("drop", |e| {
+                e.prevent_default();
+                let e = e.dyn_into::<web_sys::DragEvent>().unwrap();
+                e.data_transfer()
+                    .unwrap()
+                    .files()
+                    .map(|files| Msg::LoadFromFileList(files))
+                    .unwrap_or(Msg::NoOp)
+            }),
         vec![modal::frame(
             12,
             Attributes::new(),
@@ -36,20 +49,7 @@ pub fn resource(resource: &Resource) -> Html<Msg> {
                     Attributes::new()
                         .class("scroll-v grid container")
                         .style("min-height", "50vh"),
-                    Events::new()
-                        .on("dragover", |e| {
-                            e.prevent_default();
-                            Msg::NoOp
-                        })
-                        .on("drop", |e| {
-                            e.prevent_default();
-                            let e = e.dyn_into::<web_sys::DragEvent>().unwrap();
-                            e.data_transfer()
-                                .unwrap()
-                                .files()
-                                .map(|files| Msg::LoadFromFileList(files))
-                                .unwrap_or(Msg::NoOp)
-                        }),
+                    Events::new(),
                     resource
                         .get_images()
                         .into_iter()
@@ -74,7 +74,20 @@ pub fn resource(resource: &Resource) -> Html<Msg> {
 pub fn select_character_image(character_id: u128, resource: &Resource) -> Html<Msg> {
     modal::container(
         Attributes::new(),
-        Events::new(),
+        Events::new()
+            .on("dragover", |e| {
+                e.prevent_default();
+                Msg::NoOp
+            })
+            .on("drop", |e| {
+                e.prevent_default();
+                let e = e.dyn_into::<web_sys::DragEvent>().unwrap();
+                e.data_transfer()
+                    .unwrap()
+                    .files()
+                    .map(|files| Msg::LoadFromFileList(files))
+                    .unwrap_or(Msg::NoOp)
+            }),
         vec![modal::frame(
             12,
             Attributes::new(),
@@ -101,20 +114,7 @@ pub fn select_character_image(character_id: u128, resource: &Resource) -> Html<M
                     Attributes::new()
                         .class("scroll-v grid container")
                         .style("min-height", "50vh"),
-                    Events::new()
-                        .on("dragover", |e| {
-                            e.prevent_default();
-                            Msg::NoOp
-                        })
-                        .on("drop", |e| {
-                            e.prevent_default();
-                            let e = e.dyn_into::<web_sys::DragEvent>().unwrap();
-                            e.data_transfer()
-                                .unwrap()
-                                .files()
-                                .map(|files| Msg::LoadFromFileList(files))
-                                .unwrap_or(Msg::NoOp)
-                        }),
+                    Events::new(),
                     resource
                         .get_images()
                         .into_iter()
