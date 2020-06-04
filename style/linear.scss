@@ -6,4 +6,12 @@
         grid-auto-flow: column;
         align-items: start;
     }
+
+    &-v {
+        display: grid;
+        grid-auto-rows: max-content;
+        column-gap: 0.8em;
+        grid-auto-flow: row;
+        align-items: start;
+    }
 }

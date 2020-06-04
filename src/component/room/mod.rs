@@ -80,8 +80,8 @@ impl ModelessState {
         Self {
             is_showing,
             grubbed: None,
-            loc_a: [20, 1],
-            loc_b: [25, 15],
+            loc_a: [19, 2],
+            loc_b: [24, 6],
         }
     }
 }
@@ -1084,7 +1084,8 @@ fn render(state: &State) -> Html<Msg> {
             .id("app")
             .class("fullscreen unselectable")
             .style("display", "grid")
-            .style("grid-template-rows", "max-content 1fr"),
+            .style("grid-template-rows", "max-content 1fr")
+            .style("grid-template-columns", "max-content 1fr"),
         Events::new().on("drop", |e| {
             e.prevent_default();
             e.stop_propagation();
@@ -1098,6 +1099,7 @@ fn render(state: &State) -> Html<Msg> {
                     state.world.table().is_bind_to_grid(),
                     state.is_2d_mode,
                 ),
+                render_side_menu(),
                 render_canvas_container(&state),
                 render_context_menu(&state.contextmenu, &state.focused_object_id, &state.world),
             ],
@@ -1109,10 +1111,155 @@ fn render(state: &State) -> Html<Msg> {
     )
 }
 
+fn render_header_menu(
+    room_id: &String,
+    selecting_tool: &TableTool,
+    is_bind_to_grid: bool,
+    is_2d_mode: bool,
+) -> Html<Msg> {
+    Html::div(
+        Attributes::new()
+            .style("grid-column", "span 2")
+            .class("panel grid"),
+        Events::new(),
+        vec![
+            Html::div(
+                Attributes::new().class("grid-w-6 keyvalue pure-form"),
+                Events::new(),
+                vec![
+                    Html::label(
+                        Attributes::new().string("for", "roomid"),
+                        Events::new(),
+                        vec![Html::text("ルームID")],
+                    ),
+                    Html::input(
+                        Attributes::new()
+                            .value(room_id)
+                            .id("roomid")
+                            .flag("readonly"),
+                        Events::new(),
+                        vec![],
+                    ),
+                ],
+            ),
+            Html::div(Attributes::new().class("grid-w-12"), Events::new(), vec![]),
+            Html::div(
+                Attributes::new().class("grid-w-6 justify-r"),
+                Events::new(),
+                vec![Html::div(
+                    Attributes::new().class("linear-h"),
+                    Events::new(),
+                    vec![
+                        btn::primary(
+                            Attributes::new(),
+                            Events::new().on_click(|_| Msg::OpenModal(Modal::Resource)),
+                            vec![Html::text("リソース")],
+                        ),
+                        btn::danger(
+                            Attributes::new(),
+                            Events::new().on_click(|_| Msg::DisconnectFromRoom),
+                            vec![Html::text("ルームから出る")],
+                        ),
+                    ],
+                )],
+            ),
+            Html::div(
+                Attributes::new().class("grid-w-12 linear-h container-a"),
+                Events::new(),
+                vec![
+                    btn::selectable(
+                        selecting_tool.is_selector(),
+                        Attributes::new()
+                            .class("fas fa-mouse-pointer")
+                            .title("選択"),
+                        Events::new().on_click(|_| Msg::SetSelectingTableTool(TableTool::Selector)),
+                        vec![],
+                    ),
+                    btn::selectable(
+                        selecting_tool.is_pen(),
+                        Attributes::new().class("fas fa-pen").title("ペン"),
+                        Events::new().on_click(|_| Msg::SetSelectingTableTool(TableTool::Pen)),
+                        vec![],
+                    ),
+                    btn::selectable(
+                        selecting_tool.is_eracer(),
+                        Attributes::new().class("fas fa-eraser").title("消しゴム"),
+                        Events::new().on_click(|_| Msg::SetSelectingTableTool(TableTool::Eracer)),
+                        vec![],
+                    ),
+                    btn::selectable(
+                        selecting_tool.is_measure(),
+                        Attributes::new().class("fas fa-ruler").title("計測"),
+                        Events::new()
+                            .on_click(|_| Msg::SetSelectingTableTool(TableTool::Measure(None))),
+                        vec![],
+                    ),
+                    Html::div(
+                        Attributes::new().class("keyvalue").title(""),
+                        Events::new(),
+                        vec![
+                            Html::span(
+                                Attributes::new().class("text-label"),
+                                Events::new(),
+                                vec![Html::text("グリッドにスナップ")],
+                            ),
+                            btn::toggle(
+                                is_bind_to_grid,
+                                Attributes::new(),
+                                Events::new()
+                                    .on_click(move |_| Msg::SetIsBindToGrid(!is_bind_to_grid)),
+                            ),
+                        ],
+                    ),
+                ],
+            ),
+            Html::div(
+                Attributes::new().class("grid-w-12 justify-r"),
+                Events::new(),
+                vec![Html::div(
+                    Attributes::new().class("linear-h"),
+                    Events::new(),
+                    vec![
+                        Html::span(
+                            Attributes::new().class("text-label"),
+                            Events::new(),
+                            vec![Html::text("2Dモード")],
+                        ),
+                        btn::toggle(
+                            is_2d_mode,
+                            Attributes::new(),
+                            Events::new().on_click(move |_| Msg::SetIs2dMode(!is_2d_mode)),
+                        ),
+                    ],
+                )],
+            ),
+        ],
+    )
+}
+
+fn render_side_menu() -> Html<Msg> {
+    Html::div(
+        Attributes::new().class("panel linear-v"),
+        Events::new(),
+        vec![btn::primary(
+            Attributes::new(),
+            Events::new(),
+            vec![
+                Html::i(
+                    Attributes::new().class("fas fa-comment"),
+                    Events::new(),
+                    vec![],
+                ),
+                Html::text(" チャット"),
+            ],
+        )],
+    )
+}
+
 fn render_canvas_container(state: &State) -> Html<Msg> {
     Html::div(
         Attributes::new()
-            .class("cover cover-a")
+            .class("cover")
             .style("position", "relative"),
         Events::new(),
         vec![
@@ -1421,130 +1568,6 @@ fn render_context_menu_tablemask(contextmenu: &Contextmenu, object_id: u128) -> 
                 ),
             ],
         )],
-    )
-}
-
-fn render_header_menu(
-    room_id: &String,
-    selecting_tool: &TableTool,
-    is_bind_to_grid: bool,
-    is_2d_mode: bool,
-) -> Html<Msg> {
-    Html::div(
-        Attributes::new().class("panel grid"),
-        Events::new(),
-        vec![
-            Html::div(
-                Attributes::new().class("grid-w-6 keyvalue pure-form"),
-                Events::new(),
-                vec![
-                    Html::label(
-                        Attributes::new().string("for", "roomid"),
-                        Events::new(),
-                        vec![Html::text("ルームID")],
-                    ),
-                    Html::input(
-                        Attributes::new()
-                            .value(room_id)
-                            .id("roomid")
-                            .flag("readonly"),
-                        Events::new(),
-                        vec![],
-                    ),
-                ],
-            ),
-            Html::div(Attributes::new().class("grid-w-12"), Events::new(), vec![]),
-            Html::div(
-                Attributes::new().class("grid-w-6 justify-r"),
-                Events::new(),
-                vec![Html::div(
-                    Attributes::new().class("linear-h"),
-                    Events::new(),
-                    vec![
-                        btn::primary(
-                            Attributes::new(),
-                            Events::new().on_click(|_| Msg::OpenModal(Modal::Resource)),
-                            vec![Html::text("リソース")],
-                        ),
-                        btn::danger(
-                            Attributes::new(),
-                            Events::new().on_click(|_| Msg::DisconnectFromRoom),
-                            vec![Html::text("ルームから出る")],
-                        ),
-                    ],
-                )],
-            ),
-            Html::div(
-                Attributes::new().class("grid-w-12 linear-h container-a"),
-                Events::new(),
-                vec![
-                    btn::selectable(
-                        selecting_tool.is_selector(),
-                        Attributes::new()
-                            .class("fas fa-mouse-pointer")
-                            .title("選択"),
-                        Events::new().on_click(|_| Msg::SetSelectingTableTool(TableTool::Selector)),
-                        vec![],
-                    ),
-                    btn::selectable(
-                        selecting_tool.is_pen(),
-                        Attributes::new().class("fas fa-pen").title("ペン"),
-                        Events::new().on_click(|_| Msg::SetSelectingTableTool(TableTool::Pen)),
-                        vec![],
-                    ),
-                    btn::selectable(
-                        selecting_tool.is_eracer(),
-                        Attributes::new().class("fas fa-eraser").title("消しゴム"),
-                        Events::new().on_click(|_| Msg::SetSelectingTableTool(TableTool::Eracer)),
-                        vec![],
-                    ),
-                    btn::selectable(
-                        selecting_tool.is_measure(),
-                        Attributes::new().class("fas fa-ruler").title("計測"),
-                        Events::new()
-                            .on_click(|_| Msg::SetSelectingTableTool(TableTool::Measure(None))),
-                        vec![],
-                    ),
-                    Html::div(
-                        Attributes::new().class("keyvalue").title(""),
-                        Events::new(),
-                        vec![
-                            Html::span(
-                                Attributes::new().class("text-label"),
-                                Events::new(),
-                                vec![Html::text("グリッドにスナップ")],
-                            ),
-                            btn::toggle(
-                                is_bind_to_grid,
-                                Attributes::new(),
-                                Events::new()
-                                    .on_click(move |_| Msg::SetIsBindToGrid(!is_bind_to_grid)),
-                            ),
-                        ],
-                    ),
-                ],
-            ),
-            Html::div(
-                Attributes::new().class("grid-w-12 justify-r"),
-                Events::new(),
-                vec![Html::div(
-                    Attributes::new().class("linear-h"),
-                    Events::new(),
-                    vec![
-                        Html::span(
-                            Attributes::new().class("text-label"),
-                            Events::new(),
-                            vec![Html::text("2Dモード")],
-                        ),
-                        btn::toggle(
-                            is_2d_mode,
-                            Attributes::new(),
-                            Events::new().on_click(move |_| Msg::SetIs2dMode(!is_2d_mode)),
-                        ),
-                    ],
-                )],
-            ),
-        ],
     )
 }
 
