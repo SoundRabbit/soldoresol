@@ -400,6 +400,7 @@ fn get_table_position(state: &State, mouse_coord: &[f64; 2]) -> [f64; 2] {
     [p[0], p[1]]
 }
 
+#[allow(irrefutable_let_patterns)]
 fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
     match msg {
         Msg::NoOp => state.cmd_queue.dequeue(),
@@ -745,7 +746,20 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.cmd_queue.dequeue()
         }
         Msg::GrubModeless(modeless_idx, grubbed) => {
-            state.modelesses[modeless_idx].0.grubbed = grubbed;
+            let mut modeless = state.modelesses.remove(modeless_idx);
+            modeless.0.grubbed = grubbed;
+            state.modelesses.push(modeless);
+            let mut idx = 0;
+            for modeless in &state.modelesses {
+                if let Modeless::Object { tabs, .. } = &modeless.1 {
+                    for object_id in tabs {
+                        if let Some(address) = state.object_modeless_address.get_mut(object_id) {
+                            address[0] = idx;
+                        }
+                    }
+                }
+                idx += 1;
+            }
             state.cmd_queue.dequeue()
         }
         Msg::OpenModelessModal(modeless_idx) => {
