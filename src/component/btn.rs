@@ -121,7 +121,7 @@ pub fn allocate<Msg>(attributes: Attributes, events: Events<Msg>) -> Html<Msg> {
 #[allow(dead_code)]
 pub fn close<Msg>(attributes: Attributes, events: Events<Msg>) -> Html<Msg> {
     Html::button(
-        attributes.class("pure-button pure-button-danger fas fa-times"),
+        attributes.class("pure-button pure-button-dark fas fa-times"),
         events,
         vec![],
     )

@@ -88,6 +88,7 @@ impl ModelessState {
 
 enum Modeless {
     Object { tabs: Vec<u128>, focused: usize },
+    Chat,
 }
 
 type ModelessCollection = Vec<(ModelessState, Modeless)>;
@@ -133,7 +134,8 @@ pub struct State {
     modelesses: ModelessCollection,
     modals: Vec<Modal>,
     editing_modeless: Option<(usize, Rc<RefCell<modeless_modal::State>>)>,
-    object_modeless_address: HashMap<u128, [usize; 2]>,
+    object_modeless_address: HashMap<u128, usize>,
+    chat_modeless_address: Option<usize>,
     cmd_queue: CmdQueue<Msg, Sub>,
 }
 
@@ -169,8 +171,10 @@ pub enum Msg {
 
     // モードレス
     OpenObjectModeless(u128),
+    OpenChatModeless,
     CloseModeless(usize),
     GrubModeless(usize, Option<[bool; 4]>),
+    FocusModeless(usize),
     OpenModelessModal(usize),
     CloseModelessModal,
     ReflectModelessModal(modeless_modal::Props),
@@ -238,6 +242,7 @@ pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
                 modals: vec![],
                 editing_modeless: None,
                 object_modeless_address: HashMap::new(),
+                chat_modeless_address: None,
                 focused_object_id: None,
                 cmd_queue: CmdQueue::new(),
             };
@@ -400,7 +405,6 @@ fn get_table_position(state: &State, mouse_coord: &[f64; 2]) -> [f64; 2] {
     [p[0], p[1]]
 }
 
-#[allow(irrefutable_let_patterns)]
 fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
     match msg {
         Msg::NoOp => state.cmd_queue.dequeue(),
@@ -715,19 +719,10 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
         // モードレス
         Msg::OpenObjectModeless(object_id) => {
-            let mut modeless_is_registered = false;
-            if let Some(address) = state.object_modeless_address.get(&object_id) {
-                if let Some((state, modeless)) = state.modelesses.get_mut(address[0]) {
-                    match modeless {
-                        Modeless::Object { focused, .. } => {
-                            *focused = address[1];
-                            state.is_showing = true;
-                            modeless_is_registered = true;
-                        }
-                    }
-                }
-            }
-            if !modeless_is_registered {
+            if let Some(address) = state.object_modeless_address.get(&object_id).map(|a| *a) {
+                state.modelesses[address].0.is_showing = true;
+                update(state, Msg::FocusModeless(address))
+            } else {
                 state.modelesses.push((
                     ModelessState::new(true),
                     Modeless::Object {
@@ -737,25 +732,44 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 ));
                 state
                     .object_modeless_address
-                    .insert(object_id, [state.modelesses.len() - 1, 0]);
+                    .insert(object_id, state.modelesses.len() - 1);
+                state.cmd_queue.dequeue()
             }
-            state.cmd_queue.dequeue()
+        }
+        Msg::OpenChatModeless => {
+            if let Some(address) = state.chat_modeless_address {
+                state.modelesses[address].0.is_showing = true;
+                update(state, Msg::FocusModeless(address))
+            } else {
+                let mut modeless_state = ModelessState::new(true);
+                modeless_state.loc_a = [1, 1];
+                modeless_state.loc_b = [7, 15];
+                state.modelesses.push((modeless_state, Modeless::Chat));
+                state.chat_modeless_address = Some(state.modelesses.len() - 1);
+                state.cmd_queue.dequeue()
+            }
         }
         Msg::CloseModeless(modeless_idx) => {
             state.modelesses[modeless_idx].0.is_showing = false;
             state.cmd_queue.dequeue()
         }
         Msg::GrubModeless(modeless_idx, grubbed) => {
-            let mut modeless = state.modelesses.remove(modeless_idx);
-            modeless.0.grubbed = grubbed;
+            state.modelesses[modeless_idx].0.grubbed = grubbed;
+            update(state, Msg::FocusModeless(modeless_idx))
+        }
+        Msg::FocusModeless(modeless_idx) => {
+            let modeless = state.modelesses.remove(modeless_idx);
             state.modelesses.push(modeless);
             let mut idx = 0;
             for modeless in &state.modelesses {
-                if let Modeless::Object { tabs, .. } = &modeless.1 {
-                    for object_id in tabs {
-                        if let Some(address) = state.object_modeless_address.get_mut(object_id) {
-                            address[0] = idx;
+                match &modeless.1 {
+                    Modeless::Object { tabs, .. } => {
+                        for object_id in tabs {
+                            state.object_modeless_address.insert(*object_id, idx);
                         }
+                    }
+                    Modeless::Chat => {
+                        state.chat_modeless_address = Some(idx);
                     }
                 }
                 idx += 1;
@@ -1243,7 +1257,7 @@ fn render_side_menu() -> Html<Msg> {
         Events::new(),
         vec![btn::primary(
             Attributes::new(),
-            Events::new(),
+            Events::new().on_click(|_| Msg::OpenChatModeless),
             vec![
                 Html::i(
                     Attributes::new().class("fas fa-comment"),
@@ -1397,6 +1411,7 @@ fn render_canvas_overlaper(
                         Modeless::Object { focused, tabs } => {
                             modeless::object(idx, state, tabs, *focused, world, resource)
                         }
+                        Modeless::Chat => modeless::chat(idx, state),
                     }
                 }
             })

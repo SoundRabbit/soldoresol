@@ -216,6 +216,23 @@ fn object_tablemask(tablemask: &Tablemask, tablemask_id: u128) -> Html<Msg> {
     )
 }
 
+pub fn chat(modeless_idx: usize, state: &ModelessState) -> Html<Msg> {
+    frame(
+        modeless_idx,
+        state,
+        Attributes::new(),
+        Events::new(),
+        vec![
+            header(
+                modeless_idx,
+                Html::div(Attributes::new(), Events::new(), vec![]),
+            ),
+            modeless::body(Attributes::new(), Events::new(), vec![]),
+            modeless::footer(Attributes::new(), Events::new(), vec![]),
+        ],
+    )
+}
+
 fn frame(
     modeless_idx: usize,
     state: &ModelessState,
