@@ -1,6 +1,6 @@
 use super::{
     super::{btn, image, modeless},
-    Modal, ModelessState, Msg,
+    ChatTabCollection, Modal, ModelessState, Msg,
 };
 use crate::{
     model::{Character, Resource, Tablemask, World},
@@ -216,7 +216,13 @@ fn object_tablemask(tablemask: &Tablemask, tablemask_id: u128) -> Html<Msg> {
     )
 }
 
-pub fn chat(modeless_idx: usize, state: &ModelessState) -> Html<Msg> {
+pub fn chat(
+    modeless_idx: usize,
+    state: &ModelessState,
+    chat_tabs: &ChatTabCollection,
+) -> Html<Msg> {
+    let selecting_idx = chat_tabs.selecting_idx;
+    let selecting_tab = &chat_tabs.tabs[selecting_idx];
     frame(
         modeless_idx,
         state,
@@ -247,15 +253,34 @@ pub fn chat(modeless_idx: usize, state: &ModelessState) -> Html<Msg> {
                                     .style("align-self", "stretch")
                                     .class("scroll-v"),
                                 Events::new(),
-                                vec![],
+                                selecting_tab
+                                    .items
+                                    .iter()
+                                    .map(|item| {
+                                        Html::div(
+                                            Attributes::new(),
+                                            Events::new(),
+                                            vec![Html::text(&item.payload)],
+                                        )
+                                    })
+                                    .collect(),
                             ),
                             Html::div(
                                 Attributes::new(),
                                 Events::new(),
-                                vec![
-                                    btn::tab(true, Attributes::new(), Events::new(), "メイン"),
-                                    btn::tab(false, Attributes::new(), Events::new(), "サブ"),
-                                ],
+                                chat_tabs
+                                    .tabs
+                                    .iter()
+                                    .enumerate()
+                                    .map(|(tab_idx, tab)| {
+                                        btn::tab(
+                                            tab_idx == selecting_idx,
+                                            Attributes::new(),
+                                            Events::new(),
+                                            &tab.name,
+                                        )
+                                    })
+                                    .collect(),
                             ),
                         ],
                     ),

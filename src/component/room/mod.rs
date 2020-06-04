@@ -21,6 +21,39 @@ use std::{
 };
 use wasm_bindgen::{prelude::*, JsCast};
 
+struct ChatItem {
+    display_name: String,
+    payload: String,
+}
+
+struct ChatTab {
+    name: String,
+    items: Vec<ChatItem>,
+}
+
+impl ChatTab {
+    fn new(name: impl Into<String>) -> Self {
+        Self {
+            name: name.into(),
+            items: vec![],
+        }
+    }
+}
+
+pub struct ChatTabCollection {
+    selecting_idx: usize,
+    tabs: Vec<ChatTab>,
+}
+
+impl ChatTabCollection {
+    fn new() -> Self {
+        Self {
+            selecting_idx: 0,
+            tabs: vec![ChatTab::new("メイン"), ChatTab::new("サブ")],
+        }
+    }
+}
+
 #[derive(Clone)]
 pub enum TableTool {
     Selector,
@@ -124,6 +157,7 @@ pub struct State {
     room: Rc<Room>,
     world: World,
     resource: Resource,
+    chat_tabs: ChatTabCollection,
     camera: Camera,
     renderer: Option<Renderer>,
     canvas_size: [f64; 2],
@@ -224,6 +258,7 @@ pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
                 room: room,
                 world: World::new([20.0, 20.0]),
                 resource: Resource::new(),
+                chat_tabs: ChatTabCollection::new(),
                 camera: Camera::new(),
                 renderer: None,
                 canvas_size: [0.0, 0.0],
@@ -1293,6 +1328,7 @@ fn render_canvas_container(state: &State) -> Html<Msg> {
                 state.is_2d_mode,
                 &state.world,
                 &state.resource,
+                &state.chat_tabs,
                 &state.modelesses,
             ),
             state
@@ -1326,6 +1362,7 @@ fn render_canvas_overlaper(
     is_2d_mode: bool,
     world: &World,
     resource: &Resource,
+    chat_tabs: &ChatTabCollection,
     modelesses: &ModelessCollection,
 ) -> Html<Msg> {
     modeless_container(
@@ -1418,7 +1455,7 @@ fn render_canvas_overlaper(
                         Modeless::Object { focused, tabs } => {
                             modeless::object(idx, state, tabs, *focused, world, resource)
                         }
-                        Modeless::Chat => modeless::chat(idx, state),
+                        Modeless::Chat => modeless::chat(idx, state, chat_tabs),
                     }
                 }
             })
