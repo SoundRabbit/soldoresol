@@ -1556,7 +1556,7 @@ fn render_hint() -> Html<Msg> {
             .style("bottom", "5em")
             .style("right", "5em"),
         Events::new(),
-        vec![Html::text("Ctrl + ドラッグで視界を回転")],
+        vec![Html::text("Ctrl + ドラッグ or Alt + ドラッグで視界を回転")],
     )
 }
 
