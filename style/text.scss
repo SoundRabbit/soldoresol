@@ -1,6 +1,10 @@
 @import "color";
 
 .text {
+    &-wrap {
+        line-height: 1.5;;
+    }
+
     &-color-primary-d {
         color: $blue-600;
     }

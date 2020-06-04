@@ -172,6 +172,11 @@ fn render(state: &State) -> Html<Msg> {
                                     vec![Html::text("新規ルームを開く")],
                                 )],
                             ),
+                            Html::div(
+                                Attributes::new().class("grid-w-f container-a text-wrap"),
+                                Events::new(),
+                                vec![Html::i(Attributes::new().class("fas fa-info-circle"), Events::new(), vec![]), Html::text("接続したいルームのルームIDを入力して「接続」を押すか、「新規ルームを開く」を押して新しくルームを作成してください。新しく作成したルームには、そのルームIDを知っている人でなければ接続できません。また1人以上が接続していないルームのデータは消滅します。")],
+                            ),
                         ],
                     ),
                     Html::div(
