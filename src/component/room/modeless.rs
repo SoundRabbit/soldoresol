@@ -264,25 +264,38 @@ pub fn chat(
                                             }),
                                             vec![
                                                 {
-                                                    let common =
-                                                        "chat-icon icon icon-medium icon-rounded";
                                                     match item.icon {
                                                         Icon::None => Html::div(
-                                                            Attributes::new().class(common),
+                                                            Attributes::new().class(concat!(
+                                                                "chat-icon ",
+                                                                "icon ",
+                                                                "icon-medium ",
+                                                                "icon-rounded"
+                                                            )),
                                                             Events::new(),
                                                             vec![],
                                                         ),
                                                         Icon::DefaultUser => Html::div(
-                                                            Attributes::new().class(format!(
-                                                                "{} {}",
-                                                                common,
-                                                                "bg-color-light text-color-dark fas fa-kiwi-bird"
+                                                            Attributes::new().class(concat!(
+                                                                "chat-icon ",
+                                                                "icon ",
+                                                                "icon-medium ",
+                                                                "icon-rounded ",
+                                                                "bg-color-light ",
+                                                                "text-color-dark ",
+                                                                "fas ",
+                                                                "fa-kiwi-bird"
                                                             )),
                                                             Events::new(),
                                                             vec![],
                                                         ),
                                                         Icon::Resource(..) => Html::div(
-                                                            Attributes::new().class(common),
+                                                            Attributes::new().class(concat!(
+                                                                "chat-icon ",
+                                                                "icon ",
+                                                                "icon-medium ",
+                                                                "icon-rounded"
+                                                            )),
                                                             Events::new(),
                                                             vec![],
                                                         ),
