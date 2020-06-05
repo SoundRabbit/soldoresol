@@ -21,6 +21,23 @@ use std::{
 };
 use wasm_bindgen::{prelude::*, JsCast};
 
+pub struct PersonalData {
+    name: String,
+}
+
+impl PersonalData {
+    fn new() -> Self {
+        Self {
+            name: "Player".into(),
+        }
+    }
+
+    fn with_peer_id(mut self, peer_id: &str) -> Self {
+        self.name = self.name + "_" + peer_id;
+        self
+    }
+}
+
 struct ChatItem {
     display_name: String,
     peer_id: String,
@@ -159,6 +176,7 @@ pub struct State {
     peer: Rc<Peer>,
     peers: BTreeSet<String>,
     room: Rc<Room>,
+    personal_data: PersonalData,
     world: World,
     resource: Resource,
     chat_data: ChatDataCollection,
@@ -261,10 +279,12 @@ pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
                 p.insert(peer.id());
                 p
             };
+            let peer_id = peer.id();
             let state = State {
                 peer: peer,
                 peers: peers,
                 room: room,
+                personal_data: PersonalData::new().with_peer_id(&peer_id),
                 world: World::new([20.0, 20.0]),
                 resource: Resource::new(),
                 chat_data: ChatDataCollection::new(),
@@ -1194,7 +1214,7 @@ fn render(state: &State) -> Html<Msg> {
                 render_canvas_container(&state),
                 render_context_menu(&state.contextmenu, &state.focused_object_id, &state.world),
             ],
-            render_modals(&state.modals, &state.resource),
+            render_modals(&state.modals, &state.personal_data, &state.resource),
         ]
         .into_iter()
         .flatten()
@@ -1715,7 +1735,11 @@ fn render_measure_length(measure_length: &Option<f64>) -> Html<Msg> {
     }
 }
 
-fn render_modals(modals: &Vec<Modal>, resource: &Resource) -> Vec<Html<Msg>> {
+fn render_modals(
+    modals: &Vec<Modal>,
+    personal_data: &PersonalData,
+    resource: &Resource,
+) -> Vec<Html<Msg>> {
     let mut children = vec![];
     for modal in modals {
         let child = match modal {
@@ -1723,7 +1747,7 @@ fn render_modals(modals: &Vec<Modal>, resource: &Resource) -> Vec<Html<Msg>> {
             Modal::SelectCharacterImage(character_id) => {
                 modal::select_character_image(*character_id, resource)
             }
-            Modal::PersonalSetting => modal::personal_setting(),
+            Modal::PersonalSetting => modal::personal_setting(personal_data),
         };
         children.push(child);
     }

@@ -3,6 +3,14 @@
 .pure-form {
     padding: .35em .25em .75em !important;
 
+    & label {
+        margin: 0;
+    }
+
+    & input {
+        align-self: stretch;
+    }
+
     & input:focus,
     & textarea:focus {
         border-color: $blue-400 !important;

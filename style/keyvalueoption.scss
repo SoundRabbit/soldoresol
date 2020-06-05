@@ -1,6 +1,6 @@
-.keyvalue {
+.keyvalueoption {
     display: grid;
-    grid-template-columns: max-content 1fr;
+    grid-template-columns: max-content 1fr max-content;
     grid-auto-rows: max-content;
     column-gap: 0.5em;
     align-items: center;

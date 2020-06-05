@@ -1,6 +1,6 @@
 use super::{
     super::{btn, image, modal},
-    Msg,
+    Msg, PersonalData,
 };
 use crate::model::Resource;
 use kagura::prelude::*;
@@ -142,7 +142,7 @@ pub fn select_character_image(character_id: u128, resource: &Resource) -> Html<M
     )
 }
 
-pub fn personal_setting() -> Html<Msg> {
+pub fn personal_setting(personal_data: &PersonalData) -> Html<Msg> {
     modal::container(
         Attributes::new(),
         Events::new(),
@@ -174,10 +174,32 @@ pub fn personal_setting() -> Html<Msg> {
                 ),
                 modal::body(
                     Attributes::new()
-                        .class("scroll-v grid container")
+                        .class("scroll-v pure-form")
                         .style("min-height", "50vh"),
                     Events::new(),
-                    vec![],
+                    vec![Html::div(
+                        Attributes::new().class("keyvalueoption"),
+                        Events::new(),
+                        vec![
+                            Html::label(
+                                Attributes::new().string("for", "player-name"),
+                                Events::new(),
+                                vec![Html::text("プレイヤー名")],
+                            ),
+                            Html::input(
+                                Attributes::new()
+                                    .id("player-name")
+                                    .value(&personal_data.name),
+                                Events::new(),
+                                vec![],
+                            ),
+                            btn::primary(
+                                Attributes::new(),
+                                Events::new(),
+                                vec![Html::text("リセット")],
+                            ),
+                        ],
+                    )],
                 ),
                 modal::footer(Attributes::new(), Events::new(), vec![]),
             ],
