@@ -1,6 +1,6 @@
 use super::{
     super::{btn, image, modeless},
-    ChatDataCollection, Icon, Modal, ModelessState, Msg,
+    ChatDataCollection, Icon, Modal, ModelessState, Msg, SelectImageModal,
 };
 use crate::{
     model::{Character, Resource, Tablemask, World},
@@ -64,7 +64,11 @@ fn object_character(character: &Character, character_id: u128, resource: &Resour
                         btn::primary(
                             Attributes::new(),
                             Events::new().on_click({
-                                move |_| Msg::OpenModal(Modal::SelectCharacterImage(character_id))
+                                move |_| {
+                                    Msg::OpenModal(Modal::SelectImage(SelectImageModal::Character(
+                                        character_id,
+                                    )))
+                                }
                             }),
                             vec![Html::text("画像を選択")],
                         ),

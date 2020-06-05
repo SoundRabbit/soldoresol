@@ -155,9 +155,15 @@ enum Modeless {
 
 type ModelessCollection = Vec<(ModelessState, Modeless)>;
 
+#[derive(Clone)]
+pub enum SelectImageModal {
+    Player,
+    Character(u128),
+}
+
 pub enum Modal {
     Resource,
-    SelectCharacterImage(u128),
+    SelectImage(SelectImageModal),
     PersonalSetting,
 }
 
@@ -251,6 +257,7 @@ pub enum Msg {
 
     // PersonalData
     SetPersonalDataWithPlayerName(String),
+    SetPersonalDataWithIconImage(u128),
 
     // Worldに対する操作
     SetCharacterImage(u128, u128, bool),
@@ -914,6 +921,10 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.personal_data.name = player_name;
             state.cmd_queue.dequeue()
         }
+        Msg::SetPersonalDataWithIconImage(r_id) => {
+            state.personal_data.icon = Some(r_id);
+            update(state, Msg::CloseModal)
+        }
 
         // Worldに対する操作
         Msg::SetCharacterImage(character_id, data_id, transport) => {
@@ -924,7 +935,8 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                         .room
                         .send(&skyway::Msg::SetCharacterImage(character_id, data_id));
                 }
-                update(state, Msg::Render)
+                state.cmd_queue.enqueue(Cmd::task(|r| r(Msg::Render)));
+                update(state, Msg::CloseModal)
             } else {
                 state.cmd_queue.dequeue()
             }
@@ -1766,9 +1778,7 @@ fn render_modals(
     for modal in modals {
         let child = match modal {
             Modal::Resource => modal::resource(resource),
-            Modal::SelectCharacterImage(character_id) => {
-                modal::select_character_image(*character_id, resource)
-            }
+            Modal::SelectImage(modal_type) => modal::select_image(resource, modal_type),
             Modal::PersonalSetting => modal::personal_setting(personal_data, resource),
         };
         children.push(child);

@@ -1,6 +1,6 @@
 use super::{
     super::{btn, image, modal},
-    Msg, PersonalData,
+    Modal, Msg, PersonalData, SelectImageModal,
 };
 use crate::model::Resource;
 use kagura::prelude::*;
@@ -71,7 +71,7 @@ pub fn resource(resource: &Resource) -> Html<Msg> {
     )
 }
 
-pub fn select_character_image(character_id: u128, resource: &Resource) -> Html<Msg> {
+pub fn select_image(resource: &Resource, modal_type: &SelectImageModal) -> Html<Msg> {
     modal::container(
         Attributes::new(),
         Events::new()
@@ -121,8 +121,16 @@ pub fn select_character_image(character_id: u128, resource: &Resource) -> Html<M
                         .map(|(data_id, img)| {
                             Html::div(
                                 Attributes::new().class("grid-w-2 clickable"),
-                                Events::new().on_click(move |_| {
-                                    Msg::SetCharacterImage(character_id, data_id, true)
+                                Events::new().on_click({
+                                    let modal_type = modal_type.clone();
+                                    move |_| match modal_type {
+                                        SelectImageModal::Character(c_id) => {
+                                            Msg::SetCharacterImage(c_id, data_id, true)
+                                        }
+                                        SelectImageModal::Player => {
+                                            Msg::SetPersonalDataWithIconImage(data_id)
+                                        }
+                                    }
                                 }),
                                 vec![Html::component(image::new(
                                     img,
@@ -209,7 +217,11 @@ pub fn personal_setting(personal_data: &PersonalData, resource: &Resource) -> Ht
                                         )),
                                     btn::primary(
                                         Attributes::new(),
-                                        Events::new(),
+                                        Events::new().on_click(|_| {
+                                            Msg::OpenModal(Modal::SelectImage(
+                                                SelectImageModal::Player,
+                                            ))
+                                        }),
                                         vec![Html::text("画像を選択")],
                                     ),
                                 ],
