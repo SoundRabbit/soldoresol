@@ -43,6 +43,7 @@ features = [
     "FileList",
     "FileReader",
     "HtmlCanvasElement",
+    "HtmlCollection",
     "HtmlElement",
     "HtmlImageElement",
     "HtmlInputElement",
