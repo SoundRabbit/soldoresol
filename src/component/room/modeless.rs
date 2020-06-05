@@ -442,6 +442,17 @@ fn frame(
                         Msg::NoOp
                     }
                 }
+            })
+            .on_mouseleave({
+                let grubbed = state.grubbed.is_some();
+                move |e| {
+                    e.stop_propagation();
+                    if grubbed {
+                        Msg::OpenModelessModal(modeless_idx)
+                    } else {
+                        Msg::NoOp
+                    }
+                }
             }),
         vec![children, resizers(modeless_idx)]
             .into_iter()
