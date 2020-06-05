@@ -263,25 +263,37 @@ pub fn chat(
                                                 e.stop_propagation();
                                                 Msg::NoOp
                                             }),
-                                            vec![Html::div(
-                                                Attributes::new().class("chat-payload"),
-                                                Events::new(),
-                                                vec![
-                                                    Html::pre(
-                                                        Attributes::new().class("text-wrap"),
-                                                        Events::new(),
-                                                        vec![Html::text(&item.payload)],
-                                                    ),
-                                                    Html::textarea(
-                                                        Attributes::new()
-                                                            .class("text-wrap")
-                                                            .flag("readonly")
-                                                            .value(&item.payload),
-                                                        Events::new(),
-                                                        vec![],
-                                                    ),
-                                                ],
-                                            )],
+                                            vec![
+                                                Html::div(
+                                                    Attributes::new().class("chat-args"),
+                                                    Events::new(),
+                                                    vec![Html::text(
+                                                        String::from("")
+                                                            + &item.display_name
+                                                            + "@"
+                                                            + &item.peer_id,
+                                                    )],
+                                                ),
+                                                Html::div(
+                                                    Attributes::new().class("chat-payload"),
+                                                    Events::new(),
+                                                    vec![
+                                                        Html::pre(
+                                                            Attributes::new().class("text-wrap"),
+                                                            Events::new(),
+                                                            vec![Html::text(&item.payload)],
+                                                        ),
+                                                        Html::textarea(
+                                                            Attributes::new()
+                                                                .class("text-wrap")
+                                                                .flag("readonly")
+                                                                .value(&item.payload),
+                                                            Events::new(),
+                                                            vec![],
+                                                        ),
+                                                    ],
+                                                ),
+                                            ],
                                         )
                                     })
                                     .collect(),

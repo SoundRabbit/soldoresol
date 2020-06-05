@@ -2,7 +2,9 @@
 
 .pure-form {
     padding: .35em .25em .75em !important;
-    & input:focus {
+
+    & input:focus,
+    & textarea:focus {
         border-color: $blue-400 !important;
     }
 }

@@ -23,6 +23,7 @@ use wasm_bindgen::{prelude::*, JsCast};
 
 struct ChatItem {
     display_name: String,
+    peer_id: String,
     payload: String,
 }
 
@@ -948,6 +949,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
             let chat_item = ChatItem {
                 display_name: "".into(),
+                peer_id: state.peer.id(),
                 payload: message,
             };
 
@@ -1337,15 +1339,19 @@ fn render_side_menu() -> Html<Msg> {
         Attributes::new().class("panel linear-v"),
         Events::new(),
         vec![btn::primary(
-            Attributes::new(),
+            Attributes::new()
+                .class("linear-v")
+                .style("font-size", "0.8em"),
             Events::new().on_click(|_| Msg::OpenChatModeless),
             vec![
                 Html::i(
-                    Attributes::new().class("fas fa-comment"),
+                    Attributes::new()
+                        .class("fas fa-comment")
+                        .style("font-size", "2em"),
                     Events::new(),
                     vec![],
                 ),
-                Html::text(" チャット"),
+                Html::text("チャット"),
             ],
         )],
     )

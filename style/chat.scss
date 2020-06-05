@@ -3,7 +3,11 @@
         display: grid;
         grid-template-columns: max-content 1fr;
         grid-template-rows: max-content max-content;
-        grid-template-areas: "icon arg""icon text";
+        grid-template-areas: "icon args""icon text";
+    }
+
+    &-args {
+        grid-area: args;
     }
 
     &-payload {
