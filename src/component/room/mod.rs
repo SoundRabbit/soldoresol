@@ -784,8 +784,8 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 update(state, Msg::FocusModeless(address))
             } else {
                 let mut modeless_state = ModelessState::new(true);
-                modeless_state.loc_a = [1, 1];
-                modeless_state.loc_b = [7, 15];
+                modeless_state.loc_a = [2, 2];
+                modeless_state.loc_b = [8, 14];
                 state.modelesses.push((modeless_state, Modeless::Chat));
                 state.chat_modeless_address = Some(state.modelesses.len() - 1);
                 state.cmd_queue.dequeue()
@@ -942,9 +942,9 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
         Msg::SendChatItem => {
             let tab_idx = state.chat_data.selecting_idx;
-            let mut message = "".into();
+            let message = state.chat_data.inputing_message.as_str().trim_end().into();
 
-            std::mem::swap(&mut state.chat_data.inputing_message, &mut message);
+            state.chat_data.inputing_message = "".into();
 
             let chat_item = ChatItem {
                 display_name: "".into(),

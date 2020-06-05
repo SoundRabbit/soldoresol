@@ -9,7 +9,6 @@
     &-payload {
         grid-area: text;
         min-height: max-content;
-        max-height: 40vh;
         position: relative;
 
         &>pre {
@@ -18,6 +17,10 @@
             padding: .5em .6em;
             margin: 0;
             overflow: hidden;
+            white-space: pre-wrap !important;
+            overflow-wrap: anywhere !important;
+            max-height: 40vh;
+            box-sizing: border-box;
         }
 
         &>textarea {
@@ -27,6 +30,9 @@
             width: 100%;
             height: 100%;
             resize: none;
+            white-space: pre-wrap !important;
+            overflow-wrap: anywhere !important;
+            max-height: 40vh;
         }
     }
 }
