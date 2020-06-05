@@ -178,7 +178,7 @@ pub fn personal_setting(personal_data: &PersonalData) -> Html<Msg> {
                         .style("min-height", "50vh"),
                     Events::new(),
                     vec![Html::div(
-                        Attributes::new().class("keyvalueoption"),
+                        Attributes::new().class("keyvalue"),
                         Events::new(),
                         vec![
                             Html::label(
@@ -190,13 +190,8 @@ pub fn personal_setting(personal_data: &PersonalData) -> Html<Msg> {
                                 Attributes::new()
                                     .id("player-name")
                                     .value(&personal_data.name),
-                                Events::new(),
+                                Events::new().on_input(|n| Msg::SetPersonalDataWithPlayerName(n)),
                                 vec![],
-                            ),
-                            btn::primary(
-                                Attributes::new(),
-                                Events::new(),
-                                vec![Html::text("リセット")],
                             ),
                         ],
                     )],

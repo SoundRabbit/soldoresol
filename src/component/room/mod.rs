@@ -240,6 +240,9 @@ pub enum Msg {
     OpenModal(Modal),
     CloseModal,
 
+    // PersonalData
+    SetPersonalDataWithPlayerName(String),
+
     // Worldに対する操作
     SetCharacterImage(u128, u128, bool),
     SetCharacterHp(u128, i32),
@@ -894,6 +897,12 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
         Msg::CloseModal => {
             state.modals.pop();
+            state.cmd_queue.dequeue()
+        }
+
+        // PersonalData
+        Msg::SetPersonalDataWithPlayerName(player_name) => {
+            state.personal_data.name = player_name;
             state.cmd_queue.dequeue()
         }
 
