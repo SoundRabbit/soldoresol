@@ -53,8 +53,9 @@ pub fn resource(resource: &Resource) -> Html<Msg> {
                     resource
                         .get_images()
                         .into_iter()
-                        .map(|(_, img)| {
+                        .map(|(data_id, img)| {
                             Html::component(image::new(
+                                data_id,
                                 img,
                                 Attributes::new().class("grid-w-2 pure-img"),
                             ))
@@ -133,6 +134,7 @@ pub fn select_image(resource: &Resource, modal_type: &SelectImageModal) -> Html<
                                     }
                                 }),
                                 vec![Html::component(image::new(
+                                    data_id,
                                     img,
                                     Attributes::new().class("pure-img"),
                                 ))],
@@ -195,9 +197,12 @@ pub fn personal_setting(personal_data: &PersonalData, resource: &Resource) -> Ht
                                 vec![
                                     personal_data
                                         .icon
-                                        .and_then(|r_id| resource.get_as_image(&r_id))
-                                        .map(|img| {
+                                        .and_then(|r_id| {
+                                            resource.get_as_image(&r_id).map(|img| (img, r_id))
+                                        })
+                                        .map(|(img, r_id)| {
                                             Html::component(image::new(
+                                                r_id,
                                                 img,
                                                 Attributes::new().class("pure-img"),
                                             ))

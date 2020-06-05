@@ -13,6 +13,7 @@ pub enum Msg {}
 pub enum Sub {}
 
 pub fn new(
+    resource_id: u128,
     img: Rc<web_sys::HtmlImageElement>,
     attributes: Attributes,
 ) -> Component<Msg, State, Sub> {
@@ -34,27 +35,46 @@ pub fn new(
                         .get_element_by_id(&id)
                         .and_then(|el| el.dyn_into::<web_sys::HtmlCanvasElement>().ok())
                     {
-                        let width = img.width();
-                        let height = img.height();
+                        if el
+                            .get_attribute("data-r_id")
+                            .and_then(|r_id| r_id.parse::<u128>().ok())
+                            .map(|r_id| r_id != resource_id)
+                            .unwrap_or(true)
+                        {
+                            let _ = el.set_attribute("data-r_id", &resource_id.to_string());
 
-                        el.set_height(height);
-                        el.set_width(width);
+                            let el_width = el.client_width() as f64;
+                            let el_height = el.client_height() as f64;
 
-                        let width = width as f64;
-                        let height = height as f64;
+                            let img_width = img.width() as f64;
+                            let img_height = img.height() as f64;
 
-                        el.get_context("2d")
-                            .ok()
-                            .and_then(|context| context)
-                            .and_then(|context| {
-                                context.dyn_into::<web_sys::CanvasRenderingContext2d>().ok()
-                            })
-                            .map(|context| {
-                                context.clear_rect(0.0, 0.0, width, height);
-                                context.draw_image_with_html_image_element_and_dw_and_dh(
-                                    &img, 0.0, 0.0, width, height,
-                                )
-                            });
+                            let pixel_ratio =
+                                (el_width / img_width).max(el_height / img_height).min(1.0);
+
+                            let canvas_width = img_width * pixel_ratio;
+                            let canvas_height = img_height * pixel_ratio;
+
+                            el.set_width(canvas_width as u32);
+                            el.set_height(canvas_height as u32);
+
+                            el.get_context("2d")
+                                .ok()
+                                .and_then(|context| context)
+                                .and_then(|context| {
+                                    context.dyn_into::<web_sys::CanvasRenderingContext2d>().ok()
+                                })
+                                .map(|context| {
+                                    context.clear_rect(0.0, 0.0, canvas_width, canvas_height);
+                                    context.draw_image_with_html_image_element_and_dw_and_dh(
+                                        &img,
+                                        0.0,
+                                        0.0,
+                                        canvas_width,
+                                        canvas_height,
+                                    )
+                                });
+                        }
                     }
                 }
             });

@@ -53,9 +53,12 @@ fn object_character(character: &Character, character_id: u128, resource: &Resour
                     vec![
                         character
                             .texture_id()
-                            .and_then(|data_id| resource.get_as_image(&data_id))
-                            .map(|img| {
+                            .and_then(|data_id| {
+                                resource.get_as_image(&data_id).map(|img| (img, data_id))
+                            })
+                            .map(|(img, data_id)| {
                                 Html::component(image::new(
+                                    data_id,
                                     img,
                                     Attributes::new().class("pure-img"),
                                 ))
@@ -255,17 +258,17 @@ pub fn chat(
                                 Attributes::new()
                                     .style("align-self", "stretch")
                                     .class("scroll-v"),
-                                Events::new(),
+                                Events::new().on_mousedown(|e| {
+                                    e.stop_propagation();
+                                    Msg::NoOp
+                                }),
                                 selecting_tab
                                     .items
                                     .iter()
                                     .map(|item| {
                                         Html::div(
                                             Attributes::new().class("pure-form chat-item"),
-                                            Events::new().on_mousedown(|e| {
-                                                e.stop_propagation();
-                                                Msg::NoOp
-                                            }),
+                                            Events::new(),
                                             vec![
                                                 {
                                                     match item.icon {
@@ -279,29 +282,24 @@ pub fn chat(
                                                             Events::new(),
                                                             vec![],
                                                         ),
-                                                        Icon::DefaultUser => Html::div(
+                                                        _ => Html::div(
                                                             Attributes::new().class(concat!(
                                                                 "chat-icon ",
                                                                 "icon ",
                                                                 "icon-medium ",
                                                                 "icon-rounded ",
                                                                 "bg-color-light ",
-                                                                "text-color-dark ",
-                                                                "fas ",
-                                                                "fa-kiwi-bird"
+                                                                "text-color-dark"
                                                             )),
                                                             Events::new(),
-                                                            vec![],
-                                                        ),
-                                                        Icon::Resource(..) => Html::div(
-                                                            Attributes::new().class(concat!(
-                                                                "chat-icon ",
-                                                                "icon ",
-                                                                "icon-medium ",
-                                                                "icon-rounded"
-                                                            )),
-                                                            Events::new(),
-                                                            vec![],
+                                                            vec![Html::text(
+                                                                item.display_name
+                                                                    .as_str()
+                                                                    .chars()
+                                                                    .next()
+                                                                    .map(|c| c.to_string())
+                                                                    .unwrap_or("".into()),
+                                                            )],
                                                         ),
                                                     }
                                                 },
