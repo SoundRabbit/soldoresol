@@ -265,7 +265,7 @@ pub fn chat(
                                             }),
                                             vec![
                                                 Html::div(
-                                                    Attributes::new().class("chat-args"),
+                                                    Attributes::new().class("chat-args text-label"),
                                                     Events::new(),
                                                     vec![Html::text(
                                                         String::from("")

@@ -978,7 +978,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.chat_data.inputing_message = "".into();
 
             let chat_item = ChatItem {
-                display_name: "".into(),
+                display_name: state.personal_data.name.clone(),
                 peer_id: state.peer.id(),
                 payload: message,
             };
