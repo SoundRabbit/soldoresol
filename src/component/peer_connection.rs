@@ -50,7 +50,7 @@ fn init(peer: Rc<Peer>) -> impl FnOnce() -> (State, Cmd<Msg, Sub>) {
             peer: peer,
             inputing_room_id: "".into(),
             error_message: None,
-            room_id_regex: Regex::new(r"^[A-Za-z0-9-_]{20}$").unwrap(),
+            room_id_regex: Regex::new(r"^[A-Za-z0-9@#]{20}$").unwrap(),
         };
         (state, Cmd::none())
     }
