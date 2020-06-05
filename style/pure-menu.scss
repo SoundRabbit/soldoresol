@@ -3,19 +3,23 @@
 .pure-menu {
     color: $gray-000;
     background-color: $gray-900 !important;
+
     &-link {
         color: inherit !important;
+
         &:hover {
             background-color: $gray-700 !important;
             cursor: pointer;
         }
     }
+
     &-has-children {
-        & > .pure-menu-item {
+        &>.pure-menu-item {
             border-right: 0.2em solid $gray-000;
         }
+
         &:hover {
-            & > .pure-menu-children {
+            &>.pure-menu-children {
                 display: block;
                 color: $gray-000;
                 background-color: $gray-900 !important;

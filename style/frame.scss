@@ -11,22 +11,23 @@
     &-modal {
         max-height: 90vh;
     }
-    
-    & > .frame-header {
+
+    &>.frame-header {
         line-height: 1;
         padding: 0.5em;
         background-color: $gray-900;
     }
 
-    & > .frame-body {
+    &>.frame-body {
         background-color: $gray-800;
     }
 
-    & > .frame-footer {
+    &>.frame-footer {
         line-height: 1;
         padding: 0.5em;
         background-color: $gray-700;
         font-size: 0.8em;
+
         &[data-frame-footer-type="danger"] {
             background-color: $red-900;
         }
@@ -37,11 +38,12 @@
         height: 1em;
         position: absolute;
         display: block;
-        
+
         &-t {
             width: calc(100% - 0.4em);
             top: -0.8em;
             left: 0.2em;
+
             &:hover {
                 cursor: n-resize;
             }
@@ -51,6 +53,7 @@
             height: calc(100% - 0.4em);
             top: 0.2em;
             left: -0.8em;
+
             &:hover {
                 cursor: w-resize;
             }
@@ -60,6 +63,7 @@
             width: calc(100% - 0.4em);
             bottom: -0.8em;
             left: 0.2em;
+
             &:hover {
                 cursor: s-resize;
             }
@@ -69,6 +73,7 @@
             height: calc(100% - 0.4em);
             top: 0.2em;
             right: -0.8em;
+
             &:hover {
                 cursor: e-resize;
             }
@@ -77,6 +82,7 @@
         &-tl {
             top: -0.8em;
             left: -0.8em;
+
             &:hover {
                 cursor: nw-resize;
             }
@@ -85,6 +91,7 @@
         &-bl {
             bottom: -0.8em;
             left: -0.8em;
+
             &:hover {
                 cursor: sw-resize;
             }
@@ -93,6 +100,7 @@
         &-br {
             bottom: -0.8em;
             right: -0.8em;
+
             &:hover {
                 cursor: se-resize;
             }
@@ -101,6 +109,7 @@
         &-tr {
             top: -0.8em;
             right: -0.8em;
+
             &:hover {
                 cursor: ne-resize;
             }

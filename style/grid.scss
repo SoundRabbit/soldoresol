@@ -7,68 +7,68 @@
         grid-template-rows: repeat(14, 1fr);
     }
 
-    & > &-j-l {
+    &>&-j-l {
         grid-column-start: 1;
     }
 
-    & > &-j-r {
+    &>&-j-r {
         grid-column-end: -1;
     }
 
-    & > &-w-f {
+    &>&-w-f {
         grid-column-start: 1;
         grid-column-end: -1;
     }
-    
+
     @for $width from 1 through 24 {
-        & > &-w-#{$width} {
+        &>&-w-#{$width} {
             grid-column: span $width;
         }
     }
 
     @for $column from 1 through 24 {
-        & > &-cs-#{$column} {
+        &>&-cs-#{$column} {
             grid-column-start: $column;
         }
     }
 
     @for $column from 2 through 25 {
-        & > &-ce-#{$column} {
+        &>&-ce-#{$column} {
             grid-column-end: $column;
         }
     }
 
     @for $column from 1 through 12 {
-        & > &-cc-2x#{$column} {
+        &>&-cc-2x#{$column} {
             grid-column: #{13 - $column} / #{13 + $column};
         }
     }
 
-    & > &-h-f {
+    &>&-h-f {
         grid-row-start: 1;
         grid-row-end: -1;
     }
 
     @for $height from 1 through 14 {
-        & > &-h-#{$height} {
+        &>&-h-#{$height} {
             grid-row: span $height;
         }
     }
 
     @for $row from 1 through 14 {
-        & > &-rs-#{$row} {
+        &>&-rs-#{$row} {
             grid-row-start: $row;
         }
     }
 
     @for $row from 2 through 15 {
-        & > &-re-#{$row} {
+        &>&-re-#{$row} {
             grid-row-end: $row;
         }
     }
 
     @for $row from 1 through 7 {
-        & > &-rc-2x#{$row} {
+        &>&-rc-2x#{$row} {
             grid-row: #{8 - $row} / #{8 + $row};
         }
     }

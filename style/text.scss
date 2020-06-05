@@ -2,21 +2,26 @@
 
 .text {
     &-wrap {
-        line-height: 1.5;;
+        line-height: 1.5;
+        ;
     }
 
     &-color-primary-d {
         color: $blue-600;
     }
+
     &-color-secondary-d {
         color: $gray-600;
     }
+
     &-color-success-d {
         color: $green-600;
     }
+
     &-color-danger-l {
         color: $red-400;
     }
+
     &-color-light {
         color: $gray-000;
     }

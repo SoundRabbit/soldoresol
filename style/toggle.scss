@@ -25,6 +25,7 @@
 
     &-on {
         background-color: $blue-400;
+
         &::before {
             right: 0;
         }
@@ -32,6 +33,7 @@
 
     &-off {
         background-color: $gray-400;
+
         &::before {
             left: 0;
         }
