@@ -147,20 +147,17 @@ fn update(wrapper: &mut StateWrapper, msg: Msg) -> Cmd<Msg, Sub> {
                 let mut dt = state.origin[1] - origin[1];
                 let mut dl = state.origin[0] - origin[0];
                 let mut db = state.corner[1] - origin[1];
-                let mut dr = state.corner[0] - origin[0];
+                let dr = state.corner[0] - origin[0];
 
                 // 端までマウスを動かしたとき用の補正
-                if state.resizable[0] && !state.resizable[2] {
+                if state.resizable[0] && !state.resizable[2] && dt > 0 {
                     dt -= 1;
                 }
-                if !state.resizable[0] && state.resizable[2] {
+                if !state.resizable[0] && state.resizable[2] && dt < 0 {
                     db += 1;
                 }
-                if state.resizable[1] && !state.resizable[3] {
+                if state.resizable[1] && !state.resizable[3] && dl > 0 {
                     dl -= 1;
-                }
-                if !state.resizable[1] && state.resizable[3] {
-                    dr += 1;
                 }
 
                 state.mouse = Some([dt, dl, db, dr]);

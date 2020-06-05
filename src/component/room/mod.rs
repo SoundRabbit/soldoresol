@@ -830,12 +830,19 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                         modeless_idx,
                         Rc::new(RefCell::new(modeless_modal::State::new(&props))),
                     ));
-                    modeless.grubbed = None;
                 }
             }
             state.cmd_queue.dequeue()
         }
         Msg::CloseModelessModal => {
+            let modeless = state
+                .editing_modeless
+                .as_ref()
+                .map(|(idx, ..)| *idx)
+                .and_then(|idx| state.modelesses.get_mut(idx));
+            if let Some((modeless, ..)) = modeless {
+                modeless.grubbed = None;
+            }
             state.editing_modeless = None;
             state.cmd_queue.dequeue()
         }
@@ -848,6 +855,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             if let Some((modeless, ..)) = modeless {
                 modeless.loc_a = props.origin;
                 modeless.loc_b = props.corner;
+                modeless.grubbed = None;
             }
             state.cmd_queue.dequeue()
         }

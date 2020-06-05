@@ -330,6 +330,15 @@ fn frame(
     events: Events<Msg>,
     children: Vec<Html<Msg>>,
 ) -> Html<Msg> {
+    let attributes = if state
+        .grubbed
+        .map(|g| g[0] || g[1] || g[2] || g[3])
+        .unwrap_or(false)
+    {
+        attributes.class("grubbed")
+    } else {
+        attributes
+    };
     modeless::frame(
         &state.loc_a,
         &state.loc_b,
