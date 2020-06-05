@@ -1,0 +1,16 @@
+.icon {
+    overflow: hidden;
+    display: grid;
+    align-items: center;
+    justify-items: center;
+
+    &-large {
+        width: 2em;
+        height: 2em;
+        font-size: 1.5em;
+    }
+
+    &-rounded {
+        border-radius: 50%;
+    }
+}

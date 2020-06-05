@@ -23,6 +23,7 @@
 @import "grubbed";
 @import "chat";
 @import "keyvalueoption";
+@import "icon";
 
 html,
 body {
@@ -32,6 +33,10 @@ body {
     height: 100%;
     line-height: 1;
     font-family: sans-serif;
+}
+
+* {
+    overflow: hidden;
 }
 
 h1,

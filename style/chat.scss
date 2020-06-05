@@ -4,6 +4,12 @@
         grid-template-columns: max-content 1fr;
         grid-template-rows: max-content max-content;
         grid-template-areas: "icon args""icon text";
+        column-gap: 0.3em;
+        row-gap: 0.2em;
+    }
+
+    &-icon {
+        grid-area: icon;
     }
 
     &-args {

@@ -23,12 +23,14 @@ use wasm_bindgen::{prelude::*, JsCast};
 
 pub struct PersonalData {
     name: String,
+    icon: Option<u128>,
 }
 
 impl PersonalData {
     fn new() -> Self {
         Self {
             name: "Player".into(),
+            icon: None,
         }
     }
 
@@ -38,9 +40,16 @@ impl PersonalData {
     }
 }
 
+enum Icon {
+    None,
+    Resource(u128),
+    DefaultUser,
+}
+
 struct ChatItem {
     display_name: String,
     peer_id: String,
+    icon: Icon,
     payload: String,
 }
 
@@ -980,6 +989,11 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             let chat_item = ChatItem {
                 display_name: state.personal_data.name.clone(),
                 peer_id: state.peer.id(),
+                icon: state
+                    .personal_data
+                    .icon
+                    .map(|r_id| Icon::Resource(r_id))
+                    .unwrap_or(Icon::DefaultUser),
                 payload: message,
             };
 
@@ -1262,9 +1276,8 @@ fn render_header_menu(
                     ),
                 ],
             ),
-            Html::div(Attributes::new().class("grid-w-12"), Events::new(), vec![]),
             Html::div(
-                Attributes::new().class("grid-w-6 justify-r"),
+                Attributes::new().class("grid-w-18 justify-r"),
                 Events::new(),
                 vec![Html::div(
                     Attributes::new().class("linear-h"),

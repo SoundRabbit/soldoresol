@@ -1,6 +1,6 @@
 use super::{
     super::{btn, image, modeless},
-    ChatDataCollection, Modal, ModelessState, Msg,
+    ChatDataCollection, Icon, Modal, ModelessState, Msg,
 };
 use crate::{
     model::{Character, Resource, Tablemask, World},
@@ -244,8 +244,7 @@ pub fn chat(
                         Attributes::new()
                             .class("container-a linear-v")
                             .style("align-self", "stretch")
-                            .style("grid-template-rows", "1fr")
-                            .style("row-gap", "0"),
+                            .style("grid-template-rows", "1fr"),
                         Events::new(),
                         vec![
                             Html::div(
@@ -264,8 +263,33 @@ pub fn chat(
                                                 Msg::NoOp
                                             }),
                                             vec![
+                                                {
+                                                    let common =
+                                                        "chat-icon icon icon-large icon-rounded";
+                                                    match item.icon {
+                                                        Icon::None => Html::div(
+                                                            Attributes::new().class(common),
+                                                            Events::new(),
+                                                            vec![],
+                                                        ),
+                                                        Icon::DefaultUser => Html::div(
+                                                            Attributes::new().class(format!(
+                                                                "{} {}",
+                                                                common,
+                                                                "bg-color-light text-color-dark fas fa-kiwi-bird"
+                                                            )),
+                                                            Events::new(),
+                                                            vec![],
+                                                        ),
+                                                        Icon::Resource(..) => Html::div(
+                                                            Attributes::new().class(common),
+                                                            Events::new(),
+                                                            vec![],
+                                                        ),
+                                                    }
+                                                },
                                                 Html::div(
-                                                    Attributes::new().class("chat-args text-label"),
+                                                    Attributes::new().class("chat-args"),
                                                     Events::new(),
                                                     vec![Html::text(
                                                         String::from("")
