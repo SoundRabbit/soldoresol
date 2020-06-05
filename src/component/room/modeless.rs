@@ -258,9 +258,30 @@ pub fn chat(
                                     .iter()
                                     .map(|item| {
                                         Html::div(
-                                            Attributes::new(),
-                                            Events::new(),
-                                            vec![Html::text(&item.payload)],
+                                            Attributes::new().class("pure-form chat-item"),
+                                            Events::new().on_mousedown(|e| {
+                                                e.stop_propagation();
+                                                Msg::NoOp
+                                            }),
+                                            vec![Html::div(
+                                                Attributes::new().class("chat-payload"),
+                                                Events::new(),
+                                                vec![
+                                                    Html::pre(
+                                                        Attributes::new().class("text-wrap"),
+                                                        Events::new(),
+                                                        vec![Html::text(&item.payload)],
+                                                    ),
+                                                    Html::textarea(
+                                                        Attributes::new()
+                                                            .class("text-wrap")
+                                                            .flag("readonly")
+                                                            .value(&item.payload),
+                                                        Events::new(),
+                                                        vec![],
+                                                    ),
+                                                ],
+                                            )],
                                         )
                                     })
                                     .collect(),
@@ -276,9 +297,14 @@ pub fn chat(
                                         btn::tab(
                                             tab_idx == selecting_idx,
                                             Attributes::new(),
-                                            Events::new().on_click(move |_| {
-                                                Msg::SetSelectingChatTabIdx(tab_idx)
-                                            }),
+                                            Events::new()
+                                                .on_mousedown(|e| {
+                                                    e.stop_propagation();
+                                                    Msg::NoOp
+                                                })
+                                                .on_click(move |_| {
+                                                    Msg::SetSelectingChatTabIdx(tab_idx)
+                                                }),
                                             &tab.name,
                                         )
                                     })
@@ -295,7 +321,12 @@ pub fn chat(
                                     .style("resize", "none")
                                     .class("text-wrap")
                                     .value(&chat_data.inputing_message),
-                                Events::new().on_input(|m| Msg::InputChatMessage(m)),
+                                Events::new()
+                                    .on_mousedown(|e| {
+                                        e.stop_propagation();
+                                        Msg::NoOp
+                                    })
+                                    .on_input(|m| Msg::InputChatMessage(m)),
                                 vec![],
                             ),
                             Html::div(
@@ -303,7 +334,12 @@ pub fn chat(
                                 Events::new(),
                                 vec![btn::info(
                                     Attributes::new(),
-                                    Events::new().on_click(|_| Msg::SendChatItem),
+                                    Events::new()
+                                        .on_mousedown(|e| {
+                                            e.stop_propagation();
+                                            Msg::NoOp
+                                        })
+                                        .on_click(|_| Msg::SendChatItem),
                                     vec![
                                         Html::i(
                                             Attributes::new().class("fas fa-paper-plane"),
