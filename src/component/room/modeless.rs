@@ -265,7 +265,7 @@ pub fn chat(
                                             vec![
                                                 {
                                                     let common =
-                                                        "chat-icon icon icon-large icon-rounded";
+                                                        "chat-icon icon icon-medium icon-rounded";
                                                     match item.icon {
                                                         Icon::None => Html::div(
                                                             Attributes::new().class(common),

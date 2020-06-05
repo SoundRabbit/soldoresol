@@ -1769,7 +1769,7 @@ fn render_modals(
             Modal::SelectCharacterImage(character_id) => {
                 modal::select_character_image(*character_id, resource)
             }
-            Modal::PersonalSetting => modal::personal_setting(personal_data),
+            Modal::PersonalSetting => modal::personal_setting(personal_data, resource),
         };
         children.push(child);
     }

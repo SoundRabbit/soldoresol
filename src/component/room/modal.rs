@@ -142,7 +142,7 @@ pub fn select_character_image(character_id: u128, resource: &Resource) -> Html<M
     )
 }
 
-pub fn personal_setting(personal_data: &PersonalData) -> Html<Msg> {
+pub fn personal_setting(personal_data: &PersonalData, resource: &Resource) -> Html<Msg> {
     modal::container(
         Attributes::new(),
         Events::new(),
@@ -173,25 +173,65 @@ pub fn personal_setting(personal_data: &PersonalData) -> Html<Msg> {
                     ],
                 ),
                 modal::body(
-                    Attributes::new()
-                        .class("scroll-v pure-form")
-                        .style("min-height", "50vh"),
+                    Attributes::new().class("scroll-v pure-form"),
                     Events::new(),
                     vec![Html::div(
-                        Attributes::new().class("keyvalue"),
+                        Attributes::new().class("chat-item"),
                         Events::new(),
                         vec![
-                            Html::label(
-                                Attributes::new().string("for", "player-name"),
-                                Events::new(),
-                                vec![Html::text("プレイヤー名")],
-                            ),
-                            Html::input(
+                            Html::div(
                                 Attributes::new()
-                                    .id("player-name")
-                                    .value(&personal_data.name),
-                                Events::new().on_input(|n| Msg::SetPersonalDataWithPlayerName(n)),
-                                vec![],
+                                    .class("chat-icon linear-v")
+                                    .style("justify-items", "center"),
+                                Events::new(),
+                                vec![
+                                    personal_data
+                                        .icon
+                                        .and_then(|r_id| resource.get_as_image(&r_id))
+                                        .map(|img| {
+                                            Html::component(image::new(
+                                                img,
+                                                Attributes::new().class("pure-img"),
+                                            ))
+                                        })
+                                        .unwrap_or(Html::div(
+                                            Attributes::new().class(concat!(
+                                                "icon ",
+                                                "icon-large ",
+                                                "icon-rounded ",
+                                                "bg-color-light ",
+                                                "text-color-dark ",
+                                                "fas ",
+                                                "fa-kiwi-bird"
+                                            )),
+                                            Events::new(),
+                                            vec![],
+                                        )),
+                                    btn::primary(
+                                        Attributes::new(),
+                                        Events::new(),
+                                        vec![Html::text("画像を選択")],
+                                    ),
+                                ],
+                            ),
+                            Html::div(
+                                Attributes::new().class("chat-args keyvalue"),
+                                Events::new(),
+                                vec![
+                                    Html::label(
+                                        Attributes::new().string("for", "player-name"),
+                                        Events::new(),
+                                        vec![Html::text("プレイヤー名")],
+                                    ),
+                                    Html::input(
+                                        Attributes::new()
+                                            .id("player-name")
+                                            .value(&personal_data.name),
+                                        Events::new()
+                                            .on_input(|n| Msg::SetPersonalDataWithPlayerName(n)),
+                                        vec![],
+                                    ),
+                                ],
                             ),
                         ],
                     )],
