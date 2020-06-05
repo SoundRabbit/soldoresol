@@ -20,7 +20,6 @@ impl<T: PartialOrd> Ord for Total<T> {
 
 struct Texture {
     payload: web_sys::WebGlTexture,
-    size: [f64; 2],
 }
 
 pub struct CharacterCollectionRenderer {
@@ -226,15 +225,13 @@ impl CharacterCollectionRenderer {
                             texture_id,
                             Texture {
                                 payload: texture_buffer,
-                                size: [texture.width() as f64, texture.height() as f64],
                             },
                         );
                     }
                     if let Some(texture) = self.img_texture_buffer.get(&texture_id) {
                         let s = character.size();
-                        let model_matrix: Array2<f64> = ModelMatrix::new()
-                            .with_scale(&[s[0], s[1] * texture.size[1] / texture.size[0], 1.0])
-                            .into();
+                        let model_matrix: Array2<f64> =
+                            ModelMatrix::new().with_scale(&[s[0], s[1], 1.0]).into();
                         let mvp_matrix = model_matrix.dot(&mvp_matrix);
 
                         gl.bind_texture(

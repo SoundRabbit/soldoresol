@@ -29,8 +29,7 @@ version = "1.0.110"
 features = ["derive"]
 
 [dependencies.kagura]
-# version = "0.8.9"
-path = "../kagura"
+version = "0.8.10"
 
 [dependencies.web-sys]
 version = "0.3.32"
