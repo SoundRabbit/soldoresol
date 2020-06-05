@@ -141,3 +141,46 @@ pub fn select_character_image(character_id: u128, resource: &Resource) -> Html<M
         )],
     )
 }
+
+pub fn personal_setting() -> Html<Msg> {
+    modal::container(
+        Attributes::new(),
+        Events::new(),
+        vec![modal::frame(
+            12,
+            Attributes::new(),
+            Events::new(),
+            vec![
+                modal::header(
+                    Attributes::new()
+                        .style("display", "grid")
+                        .style("grid-template-columns", "1fr max-content"),
+                    Events::new(),
+                    vec![
+                        Html::div(
+                            Attributes::new().class("text-label"),
+                            Events::new(),
+                            vec![Html::text("個人設定")],
+                        ),
+                        Html::div(
+                            Attributes::new().class("linear-h"),
+                            Events::new(),
+                            vec![btn::close(
+                                Attributes::new(),
+                                Events::new().on_click(move |_| Msg::CloseModal),
+                            )],
+                        ),
+                    ],
+                ),
+                modal::body(
+                    Attributes::new()
+                        .class("scroll-v grid container")
+                        .style("min-height", "50vh"),
+                    Events::new(),
+                    vec![],
+                ),
+                modal::footer(Attributes::new(), Events::new(), vec![]),
+            ],
+        )],
+    )
+}

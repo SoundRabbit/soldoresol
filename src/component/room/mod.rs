@@ -132,6 +132,7 @@ type ModelessCollection = Vec<(ModelessState, Modeless)>;
 pub enum Modal {
     Resource,
     SelectCharacterImage(u128),
+    PersonalSetting,
 }
 
 struct CmdQueue<M, S> {
@@ -1241,7 +1242,7 @@ fn render_header_menu(
                     Events::new(),
                     vec![
                         btn::primary(
-                            Attributes::new(),
+                            Attributes::new().title("画像データや音楽データなどの管理"),
                             Events::new().on_click(|_| Msg::OpenModal(Modal::Resource)),
                             vec![
                                 Html::i(
@@ -1250,6 +1251,18 @@ fn render_header_menu(
                                     vec![],
                                 ),
                                 Html::text(" リソース"),
+                            ],
+                        ),
+                        btn::primary(
+                            Attributes::new().title("プレイヤー名やアイコンなどの管理"),
+                            Events::new().on_click(|_| Msg::OpenModal(Modal::PersonalSetting)),
+                            vec![
+                                Html::i(
+                                    Attributes::new().class("fas fa-user-cog"),
+                                    Events::new(),
+                                    vec![],
+                                ),
+                                Html::text(" 個人設定"),
                             ],
                         ),
                         btn::danger(
@@ -1710,6 +1723,7 @@ fn render_modals(modals: &Vec<Modal>, resource: &Resource) -> Vec<Html<Msg>> {
             Modal::SelectCharacterImage(character_id) => {
                 modal::select_character_image(*character_id, resource)
             }
+            Modal::PersonalSetting => modal::personal_setting(),
         };
         children.push(child);
     }
