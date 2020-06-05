@@ -1,7 +1,7 @@
 mod modal;
 mod modeless;
 
-use super::{btn, contextmenu, modeless::container as modeless_container, modeless_modal};
+use super::{awesome, btn, contextmenu, modeless::container as modeless_container, modeless_modal};
 use crate::{
     model::{
         resource::{Data, DataString, ResourceData},
@@ -1298,26 +1298,12 @@ fn render_header_menu(
                         btn::primary(
                             Attributes::new().title("画像データや音楽データなどの管理"),
                             Events::new().on_click(|_| Msg::OpenModal(Modal::Resource)),
-                            vec![
-                                Html::i(
-                                    Attributes::new().class("fas fa-layer-group"),
-                                    Events::new(),
-                                    vec![],
-                                ),
-                                Html::text(" リソース"),
-                            ],
+                            vec![awesome::i("fa-layer-group"), Html::text(" リソース")],
                         ),
                         btn::primary(
                             Attributes::new().title("プレイヤー名やアイコンなどの管理"),
                             Events::new().on_click(|_| Msg::OpenModal(Modal::PersonalSetting)),
-                            vec![
-                                Html::i(
-                                    Attributes::new().class("fas fa-user-cog"),
-                                    Events::new(),
-                                    vec![],
-                                ),
-                                Html::text(" 個人設定"),
-                            ],
+                            vec![awesome::i("fa-user-cog"), Html::text(" 個人設定")],
                         ),
                         btn::danger(
                             Attributes::new(),
@@ -1333,30 +1319,28 @@ fn render_header_menu(
                 vec![
                     btn::selectable(
                         selecting_tool.is_selector(),
-                        Attributes::new()
-                            .class("fas fa-mouse-pointer")
-                            .title("選択"),
+                        Attributes::new().title("選択"),
                         Events::new().on_click(|_| Msg::SetSelectingTableTool(TableTool::Selector)),
-                        vec![],
+                        vec![awesome::i("fa-mouse-pointer")],
                     ),
                     btn::selectable(
                         selecting_tool.is_pen(),
-                        Attributes::new().class("fas fa-pen").title("ペン"),
+                        Attributes::new().title("ペン"),
                         Events::new().on_click(|_| Msg::SetSelectingTableTool(TableTool::Pen)),
-                        vec![],
+                        vec![awesome::i("fa-pen")],
                     ),
                     btn::selectable(
                         selecting_tool.is_eracer(),
-                        Attributes::new().class("fas fa-eraser").title("消しゴム"),
+                        Attributes::new().title("消しゴム"),
                         Events::new().on_click(|_| Msg::SetSelectingTableTool(TableTool::Eracer)),
-                        vec![],
+                        vec![awesome::i("fa-eraser")],
                     ),
                     btn::selectable(
                         selecting_tool.is_measure(),
-                        Attributes::new().class("fas fa-ruler").title("計測"),
+                        Attributes::new().title("計測"),
                         Events::new()
                             .on_click(|_| Msg::SetSelectingTableTool(TableTool::Measure(None))),
-                        vec![],
+                        vec![awesome::i("fa-ruler")],
                     ),
                     Html::div(
                         Attributes::new().class("keyvalue").title(""),
@@ -1411,12 +1395,10 @@ fn render_side_menu() -> Html<Msg> {
                 .style("font-size", "0.8em"),
             Events::new().on_click(|_| Msg::OpenChatModeless),
             vec![
-                Html::i(
-                    Attributes::new()
-                        .class("fas fa-comment")
-                        .style("font-size", "2em"),
+                Html::span(
+                    Attributes::new().style("font-size", "2em"),
                     Events::new(),
-                    vec![],
+                    vec![awesome::i("fa-comment")],
                 ),
                 Html::text("チャット"),
             ],

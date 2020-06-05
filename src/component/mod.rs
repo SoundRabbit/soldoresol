@@ -1,3 +1,4 @@
+mod awesome;
 mod btn;
 pub mod config_loder;
 mod contextmenu;

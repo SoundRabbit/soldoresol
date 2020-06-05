@@ -1,5 +1,5 @@
 use super::{
-    super::{btn, image, modal},
+    super::{awesome, btn, image, modal},
     Modal, Msg, PersonalData, SelectImageModal,
 };
 use crate::model::Resource;
@@ -214,11 +214,9 @@ pub fn personal_setting(personal_data: &PersonalData, resource: &Resource) -> Ht
                                                 "icon-rounded ",
                                                 "bg-color-light ",
                                                 "text-color-dark ",
-                                                "fas ",
-                                                "fa-kiwi-bird"
                                             )),
                                             Events::new(),
-                                            vec![],
+                                            vec![awesome::i("fa-kiwi-bird")],
                                         )),
                                     btn::primary(
                                         Attributes::new(),

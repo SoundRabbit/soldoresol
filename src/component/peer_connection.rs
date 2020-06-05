@@ -1,4 +1,4 @@
-use super::{btn, room_connection};
+use super::{awesome, btn, room_connection};
 use crate::{
     random_id,
     skyway::{Peer, Room},
@@ -175,7 +175,7 @@ fn render(state: &State) -> Html<Msg> {
                             Html::div(
                                 Attributes::new().class("grid-w-f container-a text-wrap"),
                                 Events::new(),
-                                vec![Html::i(Attributes::new().class("fas fa-info-circle"), Events::new(), vec![]), Html::text("接続したいルームのルームIDを入力して「接続」を押すか、「新規ルームを開く」を押して新しくルームを作成してください。新しく作成したルームには、そのルームIDを知っている人でなければ接続できません。また1人以上が接続していないルームのデータは消滅します。")],
+                                vec![awesome::i("fa-info-circle"), Html::text("接続したいルームのルームIDを入力して「接続」を押すか、「新規ルームを開く」を押して新しくルームを作成してください。新しく作成したルームには、そのルームIDを知っている人でなければ接続できません。また1人以上が接続していないルームのデータは消滅します。")],
                             ),
                         ],
                     ),

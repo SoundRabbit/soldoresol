@@ -1,5 +1,5 @@
 use super::{
-    super::{btn, image, modeless},
+    super::{awesome, btn, image, modeless},
     ChatDataCollection, Icon, Modal, ModelessState, Msg, SelectImageModal,
 };
 use crate::{
@@ -171,17 +171,17 @@ fn object_tablemask(tablemask: &Tablemask, tablemask_id: u128) -> Html<Msg> {
                 Events::new(),
                 vec![if tablemask.size_is_binded() {
                     btn::transparent(
-                        Attributes::new().class("fas fa-link text-color-light"),
+                        Attributes::new().class("text-color-light"),
                         Events::new()
                             .on_click(move |_| Msg::SetTablemaskSizeIsBinded(tablemask_id, false)),
-                        vec![],
+                        vec![awesome::i("fa-link")],
                     )
                 } else {
                     btn::transparent(
-                        Attributes::new().class("fas fa-link text-color-gray"),
+                        Attributes::new().class("text-color-gray"),
                         Events::new()
                             .on_click(move |_| Msg::SetTablemaskSizeIsBinded(tablemask_id, true)),
-                        vec![],
+                        vec![awesome::i("fa-link")],
                     )
                 }],
             ),
@@ -391,14 +391,7 @@ pub fn chat(
                                             Msg::NoOp
                                         })
                                         .on_click(|_| Msg::SendChatItem),
-                                    vec![
-                                        Html::i(
-                                            Attributes::new().class("fas fa-paper-plane"),
-                                            Events::new(),
-                                            vec![],
-                                        ),
-                                        Html::text(" 送信"),
-                                    ],
+                                    vec![awesome::i("fa-paper-plane"), Html::text(" 送信")],
                                 )],
                             ),
                         ],
