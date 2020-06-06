@@ -1,5 +1,5 @@
 use super::{
-    super::{awesome, btn, modeless},
+    super::{awesome, btn, icon, modeless},
     ChatDataCollection, Icon, Modal, ModelessState, Msg, SelectImageModal,
 };
 use crate::{
@@ -271,58 +271,43 @@ pub fn chat(
                                             Attributes::new().class("pure-form chat-item"),
                                             Events::new(),
                                             vec![
-                                                {
-                                                    let default_icon = Html::div(
+                                                match item.icon {
+                                                    Icon::None => Html::div(
                                                         Attributes::new().class(concat!(
                                                             "chat-icon ",
                                                             "icon ",
                                                             "icon-medium ",
-                                                            "icon-rounded ",
-                                                            "bg-color-light ",
-                                                            "text-color-dark"
+                                                            "icon-rounded"
                                                         )),
                                                         Events::new(),
-                                                        vec![Html::text(
-                                                            item.display_name
-                                                                .as_str()
-                                                                .chars()
-                                                                .next()
-                                                                .map(|c| c.to_string())
-                                                                .unwrap_or("".into()),
-                                                        )],
-                                                    );
-                                                    match item.icon {
-                                                        Icon::None => Html::div(
-                                                            Attributes::new().class(concat!(
-                                                                "chat-icon ",
-                                                                "icon ",
-                                                                "icon-medium ",
-                                                                "icon-rounded"
-                                                            )),
-                                                            Events::new(),
-                                                            vec![],
-                                                        ),
-                                                        Icon::Resource(r_id) => resource
-                                                            .get_as_image_url(&r_id)
-                                                            .map(|img_url| {
-                                                                Html::img(
-                                                                    Attributes::new()
-                                                                        .class("pure-img")
-                                                                        .class("chat-icon")
-                                                                        .class("icon")
-                                                                        .class("icon-medium")
-                                                                        .class("icon-rounded")
-                                                                        .string(
-                                                                            "src",
-                                                                            img_url.as_str(),
-                                                                        ),
-                                                                    Events::new(),
-                                                                    vec![],
-                                                                )
-                                                            })
-                                                            .unwrap_or(default_icon),
-                                                        _ => default_icon,
-                                                    }
+                                                        vec![],
+                                                    ),
+                                                    Icon::Resource(r_id) => resource
+                                                        .get_as_image_url(&r_id)
+                                                        .map(|img_url| {
+                                                            Html::img(
+                                                                Attributes::new()
+                                                                    .class("pure-img")
+                                                                    .class("chat-icon")
+                                                                    .class("icon")
+                                                                    .class("icon-medium")
+                                                                    .class("icon-rounded")
+                                                                    .string(
+                                                                        "src",
+                                                                        img_url.as_str(),
+                                                                    ),
+                                                                Events::new(),
+                                                                vec![],
+                                                            )
+                                                        })
+                                                        .unwrap_or(icon::from_str(
+                                                            Attributes::new().class("chat-icon"),
+                                                            &item.display_name,
+                                                        )),
+                                                    _ => icon::from_str(
+                                                        Attributes::new().class("chat-icon"),
+                                                        &item.display_name,
+                                                    ),
                                                 },
                                                 Html::div(
                                                     Attributes::new().class("chat-args"),

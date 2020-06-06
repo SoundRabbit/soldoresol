@@ -1,5 +1,5 @@
 use super::{
-    super::{awesome, btn, modal},
+    super::{btn, icon, modal},
     Modal, Msg, PersonalData, SelectImageModal,
 };
 use crate::model::Resource;
@@ -212,16 +212,9 @@ pub fn personal_setting(personal_data: &PersonalData, resource: &Resource) -> Ht
                                                 vec![],
                                             )
                                         })
-                                        .unwrap_or(Html::div(
-                                            Attributes::new().class(concat!(
-                                                "icon ",
-                                                "icon-large ",
-                                                "icon-rounded ",
-                                                "bg-color-light ",
-                                                "text-color-dark ",
-                                            )),
-                                            Events::new(),
-                                            vec![awesome::i("fa-kiwi-bird")],
+                                        .unwrap_or(icon::from_str(
+                                            Attributes::new(),
+                                            &personal_data.name,
                                         )),
                                     btn::primary(
                                         Attributes::new(),
