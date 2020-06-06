@@ -1,5 +1,5 @@
 use super::{
-    super::{awesome, btn, image, modal},
+    super::{awesome, btn, modal},
     Modal, Msg, PersonalData, SelectImageModal,
 };
 use crate::model::Resource;
@@ -51,14 +51,17 @@ pub fn resource(resource: &Resource) -> Html<Msg> {
                         .style("min-height", "50vh"),
                     Events::new(),
                     resource
-                        .get_images()
+                        .get_image_urls()
                         .into_iter()
-                        .map(|(data_id, img)| {
-                            Html::component(image::new(
-                                data_id,
-                                img,
-                                Attributes::new().class("grid-w-2 pure-img"),
-                            ))
+                        .map(|(_, img_url)| {
+                            Html::img(
+                                Attributes::new()
+                                    .class("grid-w-2")
+                                    .class("pure-img")
+                                    .string("src", img_url.as_str()),
+                                Events::new(),
+                                vec![],
+                            )
                         })
                         .collect(),
                 ),
@@ -117,9 +120,9 @@ pub fn select_image(resource: &Resource, modal_type: &SelectImageModal) -> Html<
                         .style("min-height", "50vh"),
                     Events::new(),
                     resource
-                        .get_images()
+                        .get_image_urls()
                         .into_iter()
-                        .map(|(data_id, img)| {
+                        .map(|(data_id, img_url)| {
                             Html::div(
                                 Attributes::new().class("grid-w-2 clickable"),
                                 Events::new().on_click({
@@ -133,11 +136,13 @@ pub fn select_image(resource: &Resource, modal_type: &SelectImageModal) -> Html<
                                         }
                                     }
                                 }),
-                                vec![Html::component(image::new(
-                                    data_id,
-                                    img,
-                                    Attributes::new().class("pure-img"),
-                                ))],
+                                vec![Html::img(
+                                    Attributes::new()
+                                        .class("pure-img")
+                                        .string("src", img_url.as_str()),
+                                    Events::new(),
+                                    vec![],
+                                )],
                             )
                         })
                         .collect(),
@@ -197,15 +202,15 @@ pub fn personal_setting(personal_data: &PersonalData, resource: &Resource) -> Ht
                                 vec![
                                     personal_data
                                         .icon
-                                        .and_then(|r_id| {
-                                            resource.get_as_image(&r_id).map(|img| (img, r_id))
-                                        })
-                                        .map(|(img, r_id)| {
-                                            Html::component(image::new(
-                                                r_id,
-                                                img,
-                                                Attributes::new().class("pure-img"),
-                                            ))
+                                        .and_then(|r_id| resource.get_as_image_url(&r_id))
+                                        .map(|img_url| {
+                                            Html::img(
+                                                Attributes::new()
+                                                    .class("pure-img")
+                                                    .string("src", img_url.as_str()),
+                                                Events::new(),
+                                                vec![],
+                                            )
                                         })
                                         .unwrap_or(Html::div(
                                             Attributes::new().class(concat!(

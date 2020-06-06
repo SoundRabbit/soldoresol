@@ -1067,10 +1067,12 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                             let blob = Rc::clone(&blob);
                             let mut common = Rc::clone(&common);
                             Closure::once(Box::new(move || {
+                                let object_url = web_sys::Url::create_object_url_with_blob(&blob)
+                                    .unwrap_or("".into());
                                 common
                                     .0
                                     .borrow_mut()
-                                    .insert(data_id, Data::Image(image, blob));
+                                    .insert(data_id, Data::Image(image, blob, Rc::new(object_url)));
                                 if let Some((data, resolve)) = Rc::get_mut(&mut common) {
                                     let mut r = None;
                                     std::mem::swap(&mut r, resolve);

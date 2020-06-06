@@ -1,5 +1,5 @@
 use super::{
-    super::{awesome, btn, image, modeless},
+    super::{awesome, btn, modeless},
     ChatDataCollection, Icon, Modal, ModelessState, Msg, SelectImageModal,
 };
 use crate::{
@@ -53,15 +53,15 @@ fn object_character(character: &Character, character_id: u128, resource: &Resour
                     vec![
                         character
                             .texture_id()
-                            .and_then(|data_id| {
-                                resource.get_as_image(&data_id).map(|img| (img, data_id))
-                            })
-                            .map(|(img, data_id)| {
-                                Html::component(image::new(
-                                    data_id,
-                                    img,
-                                    Attributes::new().class("pure-img"),
-                                ))
+                            .and_then(|data_id| resource.get_as_image_url(&data_id))
+                            .map(|img_url| {
+                                Html::img(
+                                    Attributes::new()
+                                        .class("pure-img")
+                                        .string("src", img_url.as_str()),
+                                    Events::new(),
+                                    vec![],
+                                )
                             })
                             .unwrap_or(Html::none()),
                         btn::primary(
@@ -303,17 +303,22 @@ pub fn chat(
                                                             vec![],
                                                         ),
                                                         Icon::Resource(r_id) => resource
-                                                            .get_as_image(&r_id)
-                                                            .map(|img| {
-                                                                Html::component(image::new(
-                                                                    r_id,
-                                                                    img,
+                                                            .get_as_image_url(&r_id)
+                                                            .map(|img_url| {
+                                                                Html::img(
                                                                     Attributes::new()
+                                                                        .class("pure-img")
                                                                         .class("chat-icon")
                                                                         .class("icon")
                                                                         .class("icon-medium")
-                                                                        .class("icon-rounded"),
-                                                                ))
+                                                                        .class("icon-rounded")
+                                                                        .string(
+                                                                            "src",
+                                                                            img_url.as_str(),
+                                                                        ),
+                                                                    Events::new(),
+                                                                    vec![],
+                                                                )
                                                             })
                                                             .unwrap_or(default_icon),
                                                         _ => default_icon,

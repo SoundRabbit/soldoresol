@@ -4,7 +4,7 @@ use std::{collections::HashMap, rc::Rc};
 use wasm_bindgen::JsCast;
 
 pub enum Data {
-    Image(Rc<web_sys::HtmlImageElement>, Rc<web_sys::Blob>),
+    Image(Rc<web_sys::HtmlImageElement>, Rc<web_sys::Blob>, Rc<String>),
 }
 
 pub struct Resource {
@@ -44,6 +44,19 @@ impl Resource {
             .collect()
     }
 
+    pub fn get_as_image_url(&self, data_id: &u128) -> Option<Rc<String>> {
+        self.data.get(data_id).and_then(|data| match data {
+            Data::Image(.., url) => Some(Rc::clone(url)),
+        })
+    }
+
+    pub fn get_image_urls(&self) -> Vec<(u128, Rc<String>)> {
+        self.data
+            .iter()
+            .filter_map(|(data_id, _)| self.get_as_image_url(data_id).map(|url| (*data_id, url)))
+            .collect()
+    }
+
     pub fn to_data(&self) -> ResourceData {
         self.to_data_with_n_and_stride(0, 1)
     }
@@ -64,7 +77,7 @@ impl Resource {
             if i % stride == n {
                 if let Some(data) = self.data.get(key) {
                     match data {
-                        Data::Image(.., blob) => {
+                        Data::Image(_, blob, ..) => {
                             resource_data.insert(*key, Rc::clone(blob));
                         }
                     }
