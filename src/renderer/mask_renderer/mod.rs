@@ -18,14 +18,7 @@ pub struct MaskRenderer {
 
 impl MaskRenderer {
     pub fn new() -> Self {
-        let canvas = web_sys::window()
-            .unwrap()
-            .document()
-            .unwrap()
-            .create_element("canvas")
-            .unwrap()
-            .dyn_into::<web_sys::HtmlCanvasElement>()
-            .unwrap();
+        let canvas = crate::util::html_canvas_element();
         let gl = canvas
             .get_context("webgl")
             .unwrap()

@@ -4,7 +4,7 @@ mod modeless;
 use super::{awesome, btn, contextmenu, modeless::container as modeless_container, modeless_modal};
 use crate::{
     model::{
-        resource::{Data, DataString, ResourceData},
+        resource::{Data, ResourceData},
         Camera, Character, ColorSystem, Resource, Tablemask, World,
     },
     random_id,
@@ -278,8 +278,8 @@ pub enum Msg {
 
     // リソース管理
     LoadFromFileList(web_sys::FileList),
-    LoadFromDataUrls(HashMap<u128, DataString>, bool),
-    LoadReasources(HashMap<u128, Rc<web_sys::HtmlImageElement>>),
+    LoadFromBlobs(HashMap<u128, Rc<web_sys::Blob>>, bool),
+    LoadReasources(HashMap<u128, Data>),
 
     // 接続に関する操作
     ReceiveMsg(skyway::Msg),
@@ -1042,103 +1042,63 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
 
         // リソース
-        Msg::LoadFromFileList(file_list) => Cmd::task(move |resolve| {
+        Msg::LoadFromFileList(file_list) => {
             let len = file_list.length();
-            let common = Rc::new((RefCell::new(HashMap::new()), Some(resolve)));
-            let mut file_readers = vec![];
+            let mut blobs = HashMap::new();
             for i in 0..len {
                 if let Some(file) = file_list.item(i) {
-                    if file.type_() == String::from("image/png") {
-                        let file_reader = Rc::new(web_sys::FileReader::new().unwrap());
-                        let a = {
-                            let file_reader = Rc::clone(&file_reader);
-                            let data_id = random_id::u128val();
-                            let mut common = Rc::clone(&common);
-                            Closure::once(Box::new(move || {
-                                let _ = file_reader
-                                    .result()
-                                    .and_then(|result| result.dyn_into::<JsString>())
-                                    .map(|data_url| {
-                                        common
-                                            .0
-                                            .borrow_mut()
-                                            .insert(data_id, DataString::Image(data_url));
-                                        if let Some((data_urls, resolve)) = Rc::get_mut(&mut common)
-                                        {
-                                            let mut r = None;
-                                            std::mem::swap(&mut r, resolve);
-                                            r.map(|r| {
-                                                r(Msg::LoadFromDataUrls(
-                                                    data_urls.borrow_mut().drain().collect(),
-                                                    true,
-                                                ))
-                                            });
-                                        };
-                                    });
-                            }) as Box<dyn FnOnce()>)
-                        };
-                        file_reader.set_onload(Some(&a.as_ref().unchecked_ref()));
-                        file_readers.push((file, file_reader));
-                        a.forget();
-                    }
+                    let blob: web_sys::Blob = file.into();
+                    let data_id = random_id::u128val();
+                    blobs.insert(data_id, Rc::new(blob));
                 }
             }
-            for (file, file_reader) in file_readers {
-                file_reader.read_as_data_url(&file).unwrap();
-            }
-        }),
-        Msg::LoadFromDataUrls(data_urls, transport) => {
+            update(state, Msg::LoadFromBlobs(blobs, true))
+        }
+        Msg::LoadFromBlobs(blobs, transport) => {
             let room = Rc::clone(&state.room);
             Cmd::task(move |resolve| {
                 let common = Rc::new((RefCell::new(HashMap::new()), Some(resolve)));
-                for (data_id, data_url) in data_urls {
-                    match &data_url {
-                        DataString::Image(data_url) => {
-                            let image = Rc::new(
-                                web_sys::window()
-                                    .unwrap()
-                                    .document()
-                                    .unwrap()
-                                    .create_element("img")
-                                    .unwrap()
-                                    .dyn_into::<web_sys::HtmlImageElement>()
-                                    .unwrap(),
-                            );
-                            let a = {
-                                let image = Rc::clone(&image);
-                                let data_id = data_id;
-                                let mut common = Rc::clone(&common);
-                                Closure::once(Box::new(move || {
-                                    common.0.borrow_mut().insert(data_id, image);
-                                    if let Some((data, resolve)) = Rc::get_mut(&mut common) {
-                                        let mut r = None;
-                                        std::mem::swap(&mut r, resolve);
-                                        r.map(|r| {
-                                            r(Msg::LoadReasources(
-                                                data.borrow_mut().drain().collect(),
-                                            ))
-                                        });
-                                    };
-                                }))
-                            };
-                            image.set_onload(Some(&a.as_ref().unchecked_ref()));
-                            if let Some(image) = image.dyn_ref::<JsObject>() {
-                                image.set("src", data_url)
-                            }
-                            a.forget();
+                for (data_id, blob) in blobs {
+                    let blob_type = blob.type_();
+                    if blob_type == "image/png" {
+                        let image = Rc::new(crate::util::html_image_element());
+                        let a = {
+                            let image = Rc::clone(&image);
+                            let blob = Rc::clone(&blob);
+                            let mut common = Rc::clone(&common);
+                            Closure::once(Box::new(move || {
+                                common
+                                    .0
+                                    .borrow_mut()
+                                    .insert(data_id, Data::Image(image, blob));
+                                if let Some((data, resolve)) = Rc::get_mut(&mut common) {
+                                    let mut r = None;
+                                    std::mem::swap(&mut r, resolve);
+                                    r.map(|r| {
+                                        r(Msg::LoadReasources(data.borrow_mut().drain().collect()))
+                                    });
+                                };
+                            }))
+                        };
+                        image.set_onload(Some(&a.as_ref().unchecked_ref()));
+                        if let Ok(object_url) = web_sys::Url::create_object_url_with_blob(&blob) {
+                            image.set_src(&object_url);
                         }
+                        a.forget();
                     }
                     if transport {
                         room.send(&skyway::Msg::SetResource(ResourceData::from((
-                            data_id, data_url,
+                            data_id,
+                            Rc::clone(&blob),
                         ))));
                     }
                 }
             })
         }
+
         Msg::LoadReasources(images) => {
             for image in images {
-                state.resource.insert(image.0, Data::Image(image.1));
+                state.resource.insert(image.0, image.1);
             }
             state.cmd_queue.dequeue()
         }
@@ -1190,7 +1150,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 update(state, Msg::Render)
             }
             skyway::Msg::SetResource(resource_data) => {
-                update(state, Msg::LoadFromDataUrls(resource_data.into(), false))
+                update(state, Msg::LoadFromBlobs(resource_data.into(), false))
             }
             skyway::Msg::SetConnection(peers) => {
                 state.peers = peers;

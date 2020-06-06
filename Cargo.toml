@@ -34,6 +34,7 @@ version = "0.8.10"
 [dependencies.web-sys]
 version = "0.3.32"
 features = [
+    "BlobPropertyBag",
     "CanvasRenderingContext2d",
     "Crypto",
     "DataTransfer",
@@ -50,8 +51,10 @@ features = [
     "HtmlTextAreaElement",
     "ImageData",
     "Location",
+    "MediaSource",
     "MouseEvent",
     "Node",
+    "Url",
     "WebGlBuffer",
     "WebGlRenderingContext",
     "WebGlProgram",

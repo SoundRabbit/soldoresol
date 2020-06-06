@@ -1,22 +1,18 @@
 use crate::JsObject;
-use js_sys::JsString;
+use js_sys::ArrayBuffer;
 use std::{collections::HashMap, rc::Rc};
 use wasm_bindgen::JsCast;
 
 pub enum Data {
-    Image(Rc<web_sys::HtmlImageElement>),
+    Image(Rc<web_sys::HtmlImageElement>, Rc<web_sys::Blob>),
 }
 
 pub struct Resource {
     data: HashMap<u128, Data>,
 }
 
-pub enum DataString {
-    Image(JsString),
-}
-
 pub struct ResourceData {
-    payload: HashMap<u128, DataString>,
+    payload: HashMap<u128, Rc<web_sys::Blob>>,
 }
 
 #[allow(dead_code)]
@@ -37,7 +33,7 @@ impl Resource {
 
     pub fn get_as_image(&self, data_id: &u128) -> Option<Rc<web_sys::HtmlImageElement>> {
         self.data.get(data_id).and_then(|data| match data {
-            Data::Image(image) => Some(Rc::clone(image)),
+            Data::Image(image, ..) => Some(Rc::clone(image)),
         })
     }
 
@@ -68,20 +64,8 @@ impl Resource {
             if i % stride == n {
                 if let Some(data) = self.data.get(key) {
                     match data {
-                        Data::Image(image) => {
-                            resource_data.insert(
-                                *key,
-                                DataString::Image(
-                                    image
-                                        .dyn_ref::<JsObject>()
-                                        .unwrap()
-                                        .get("src")
-                                        .unwrap()
-                                        .dyn_into::<JsString>()
-                                        .ok()
-                                        .unwrap(),
-                                ),
-                            );
+                        Data::Image(.., blob) => {
+                            resource_data.insert(*key, Rc::clone(blob));
                         }
                     }
                 }
@@ -95,31 +79,27 @@ impl Resource {
     }
 }
 
-impl DataString {
-    pub fn as_object(&self) -> JsObject {
-        match self {
-            Self::Image(data) => object! {
-                type: "Image",
-                payload: data
-            },
-        }
-    }
-}
-
 impl ResourceData {
     pub fn as_object(&self) -> JsObject {
         let obj = object! {};
 
         for (id, data) in &self.payload {
-            obj.set(&id.to_string(), &data.as_object());
+            obj.set(
+                &id.to_string(),
+                object! {
+                    type: data.type_().as_str(),
+                    payload: data.as_ref()
+                }
+                .as_ref(),
+            );
         }
 
         obj
     }
 }
 
-impl Into<HashMap<u128, DataString>> for ResourceData {
-    fn into(self) -> HashMap<u128, DataString> {
+impl Into<HashMap<u128, Rc<web_sys::Blob>>> for ResourceData {
+    fn into(self) -> HashMap<u128, Rc<web_sys::Blob>> {
         self.payload
     }
 }
@@ -137,16 +117,18 @@ impl From<JsObject> for ResourceData {
                 .and_then(|key| key.parse::<u128>().ok())
             {
                 if let Some(data) = obj.get(&key.to_string()) {
-                    if let (Some(t), Some(p)) = (
+                    if let (Some(data_type), Some(data)) = (
                         data.get("type").and_then(|t| t.as_string()),
                         data.get("payload")
-                            .and_then(|p| p.dyn_into::<JsString>().ok()),
+                            .and_then(|p| p.dyn_into::<ArrayBuffer>().ok()),
                     ) {
-                        match t.as_str() {
-                            "Image" => {
-                                payload.insert(key, DataString::Image(p));
-                            }
-                            _ => {}
+                        if let Ok(data) = web_sys::Blob::new_with_buffer_source_sequence_and_options(
+                            array![&data].as_ref(),
+                            web_sys::BlobPropertyBag::new().type_(data_type.as_str()),
+                        ) {
+                            use wasm_bindgen::prelude::*;
+                            web_sys::console::log_1(&JsValue::from(key.to_string().as_str()));
+                            payload.insert(key, Rc::new(data));
                         }
                     }
                 }
@@ -157,14 +139,14 @@ impl From<JsObject> for ResourceData {
     }
 }
 
-impl From<HashMap<u128, DataString>> for ResourceData {
-    fn from(payload: HashMap<u128, DataString>) -> Self {
+impl From<HashMap<u128, Rc<web_sys::Blob>>> for ResourceData {
+    fn from(payload: HashMap<u128, Rc<web_sys::Blob>>) -> Self {
         Self { payload }
     }
 }
 
-impl From<(u128, DataString)> for ResourceData {
-    fn from(id_data_pair: (u128, DataString)) -> Self {
+impl From<(u128, Rc<web_sys::Blob>)> for ResourceData {
+    fn from(id_data_pair: (u128, Rc<web_sys::Blob>)) -> Self {
         let mut payload = HashMap::new();
         payload.insert(id_data_pair.0, id_data_pair.1);
         Self { payload }

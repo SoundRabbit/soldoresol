@@ -18,7 +18,7 @@ mod model;
 mod random_id;
 mod renderer;
 mod skyway;
-
+mod util;
 use config::Config;
 use js_object::JsObject;
 use wasm_bindgen::prelude::*;
