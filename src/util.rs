@@ -1,4 +1,4 @@
-use wasm_bindgen::{prelude::*, JsCast};
+use wasm_bindgen::JsCast;
 
 pub fn html_image_element() -> web_sys::HtmlImageElement {
     web_sys::window()
@@ -22,6 +22,7 @@ pub fn html_canvas_element() -> web_sys::HtmlCanvasElement {
         .unwrap()
 }
 
+#[allow(dead_code)]
 pub fn canvas_from_image(img: &web_sys::HtmlImageElement) -> web_sys::HtmlCanvasElement {
     let canvas = html_canvas_element();
 
@@ -35,7 +36,7 @@ pub fn canvas_from_image(img: &web_sys::HtmlImageElement) -> web_sys::HtmlCanvas
         .dyn_into::<web_sys::CanvasRenderingContext2d>()
         .unwrap();
 
-    context.draw_image_with_html_image_element(img, 0.0, 0.0);
+    let _ = context.draw_image_with_html_image_element(img, 0.0, 0.0);
 
     canvas
 }
