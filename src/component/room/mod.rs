@@ -216,6 +216,7 @@ pub struct State {
     chat_modeless_address: Option<usize>,
     pixel_ratio: f64,
     is_low_loading_mode: bool,
+    loading_state: i64,
     cmd_queue: CmdQueue<Msg, Sub>,
 }
 
@@ -292,6 +293,7 @@ pub enum Msg {
     ReceiveMsg(skyway::Msg),
     PeerJoin(String),
     PeerLeave(String),
+    SetLoadingState(bool),
     DisconnectFromRoom,
 }
 
@@ -340,6 +342,7 @@ pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
                 focused_object_id: None,
                 pixel_ratio: 1.0,
                 is_low_loading_mode: false,
+                loading_state: 0,
                 cmd_queue: CmdQueue::new(),
             };
             let task = Cmd::task(|handler| {
@@ -409,7 +412,7 @@ pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
         .batch({
             let peer = Rc::clone(&peer);
             move |handler| {
-                let handler = Rc::new(RefCell::new(handler));
+                let handler = Rc::new(RefCell::new(Some(handler)));
                 let connection_num = Rc::new(Cell::new(0));
 
                 // 接続済みユーザーからの接続が発生するごとに発火
@@ -442,13 +445,11 @@ pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
                                         &msg,
                                         received_msg_num.get()
                                     )));
-                                    let mut h = handler.replace(Box::new(|_| {
-                                        web_sys::console::log_1(&JsValue::from(
-                                            "This is dummy handler",
-                                        ))
-                                    }));
-                                    h(Msg::ReceiveMsg(msg));
-                                    let _ = handler.replace(h);
+                                    let h = handler.borrow_mut().take();
+                                    if let Some(mut h) = h {
+                                        h(Msg::ReceiveMsg(msg));
+                                        let _ = handler.replace(Some(h));
+                                    }
                                 } else {
                                     web_sys::console::log_1(&JsValue::from(
                                         "faild to deserialize message",
@@ -457,6 +458,11 @@ pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
 
                                 if received_msg_num.get() >= 3 {
                                     data_connection.close(false);
+                                    let h = handler.borrow_mut().take();
+                                    if let Some(mut h) = h {
+                                        h(Msg::SetLoadingState(false));
+                                        let _ = handler.replace(Some(h));
+                                    }
                                 }
                             }
                         })
@@ -480,6 +486,12 @@ pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
                         }) as Box<dyn FnMut()>);
                         data_connection.on("open", Some(a.as_ref().unchecked_ref()));
                         a.forget();
+
+                        let h = handler.borrow_mut().take();
+                        if let Some(mut h) = h {
+                            h(Msg::SetLoadingState(true));
+                            let _ = handler.replace(Some(h));
+                        }
                     }
                 }) as Box<dyn FnMut(DataConnection)>);
                 peer.on("connection", Some(a.as_ref().unchecked_ref()));
@@ -1183,54 +1195,70 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             skyway::Msg::None => state.cmd_queue.dequeue(),
         },
         Msg::PeerJoin(peer_id) => {
-            let data_connect = Rc::new(state.peer.connect(&peer_id));
-            let world_data = state.world.to_data();
+            if state.loading_state != 0 {
+                state
+                    .cmd_queue
+                    .enqueue(Cmd::task(move |r| r(Msg::PeerJoin(peer_id))));
+                Cmd::none()
+            } else {
+                let data_connect = Rc::new(state.peer.connect(&peer_id));
+                let world_data = state.world.to_data();
 
-            let my_peer_id = state.peer.id();
+                let my_peer_id = state.peer.id();
 
-            let stride = state.peers.len();
-            let n = {
-                let mut i = 0;
-                for peer_id in &state.peers {
-                    if my_peer_id == peer_id as &str {
-                        break;
+                let stride = state.peers.len();
+                let n = {
+                    let mut i = 0;
+                    for peer_id in &state.peers {
+                        if my_peer_id == peer_id as &str {
+                            break;
+                        }
+                        i += 1;
                     }
-                    i += 1;
-                }
-                i
-            };
+                    i
+                };
 
-            web_sys::console::log_2(&JsValue::from(stride as u32), &JsValue::from(n as u32));
+                web_sys::console::log_2(&JsValue::from(stride as u32), &JsValue::from(n as u32));
 
-            let resource_data = state.resource.to_data_with_n_and_stride(n, stride);
-            state.peers.insert(peer_id);
+                let resource_data = state.resource.to_data_with_n_and_stride(n, stride);
+                state.peers.insert(peer_id);
 
-            let a = Closure::once(Box::new({
-                let data_connect = Rc::clone(&data_connect);
-                move || {
-                    web_sys::console::log_1(&JsValue::from("send resource data"));
-                    data_connect.send(&skyway::Msg::SetResource(resource_data).as_object());
-                }
-            }) as Box<dyn FnOnce()>);
-            data_connect.on("open", Some(a.as_ref().unchecked_ref()));
-            a.forget();
+                let a = Closure::once(Box::new({
+                    let data_connect = Rc::clone(&data_connect);
+                    move || {
+                        web_sys::console::log_1(&JsValue::from("send resource data"));
+                        data_connect.send(&skyway::Msg::SetResource(resource_data).as_object());
+                    }
+                }) as Box<dyn FnOnce()>);
+                data_connect.on("open", Some(a.as_ref().unchecked_ref()));
+                a.forget();
 
-            let a = Closure::once(Box::new({
-                let data_connect = Rc::clone(&data_connect);
-                let peers = state.peers.clone();
-                move || {
-                    web_sys::console::log_1(&JsValue::from("send world data"));
-                    data_connect.send(&skyway::Msg::SetWorld(world_data).as_object());
-                    data_connect.send(&skyway::Msg::SetConnection(peers).as_object());
-                }
-            }) as Box<dyn FnOnce()>);
-            data_connect.on("data", Some(a.as_ref().unchecked_ref()));
-            a.forget();
+                let a = Closure::once(Box::new({
+                    let data_connect = Rc::clone(&data_connect);
+                    let peers = state.peers.clone();
+                    move || {
+                        web_sys::console::log_1(&JsValue::from("send world data"));
+                        data_connect.send(&skyway::Msg::SetWorld(world_data).as_object());
+                        data_connect.send(&skyway::Msg::SetConnection(peers).as_object());
+                    }
+                }) as Box<dyn FnOnce()>);
+                data_connect.on("data", Some(a.as_ref().unchecked_ref()));
+                a.forget();
 
-            state.cmd_queue.dequeue()
+                state.cmd_queue.dequeue()
+            }
         }
         Msg::PeerLeave(peer_id) => {
             state.peers.remove(&peer_id);
+            state.cmd_queue.dequeue()
+        }
+        Msg::SetLoadingState(is_loading) => {
+            if is_loading {
+                state.loading_state += 1;
+            } else {
+                state.loading_state -= 1;
+            }
+            web_sys::console::log_1(&JsValue::from(state.loading_state as i32));
             state.cmd_queue.dequeue()
         }
         Msg::DisconnectFromRoom => Cmd::Sub(Sub::DisconnectFromRoom),

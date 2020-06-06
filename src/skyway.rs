@@ -74,7 +74,6 @@ impl Room {
 
     pub fn send(&self, msg: &Msg) {
         let msg = msg.as_object();
-        web_sys::console::log_1(&JsValue::from(&msg));
         self.payload.send(&msg)
     }
 }
@@ -174,7 +173,6 @@ impl std::fmt::Display for Msg {
 
 impl From<JsObject> for Msg {
     fn from(obj: JsObject) -> Self {
-        web_sys::console::log_1(&JsValue::from(&obj));
         if let (Some(msg_type), Some(payload)) = (
             obj.get("type").and_then(|t| t.as_string()),
             obj.get("payload"),
