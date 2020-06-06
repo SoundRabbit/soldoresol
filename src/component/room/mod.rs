@@ -62,7 +62,14 @@ impl ChatTab {
     fn new(name: impl Into<String>) -> Self {
         Self {
             name: name.into(),
-            items: vec![],
+            items: vec![ChatItem {
+                display_name: "System".into(),
+                peer_id: "".into(),
+                icon: Icon::None,
+                payload:
+                    "チャット機能は開発途中のため、他のクライアントとの通信には対応していません。また、タブの作成や消去にも対応していません。"
+                        .into(),
+            }],
         }
     }
 }
