@@ -291,6 +291,7 @@ pub enum Msg {
     // 接続に関する操作
     ReceiveMsg(skyway::Msg),
     PeerJoin(String),
+    PeerLeave(String),
     DisconnectFromRoom,
 }
 
@@ -391,6 +392,17 @@ pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
                 }) as Box<dyn FnMut(String)>);
                 room.payload
                     .on("peerJoin", Some(a.as_ref().unchecked_ref()));
+                a.forget();
+            }
+        })
+        .batch({
+            let room = Rc::clone(&room);
+            move |mut handler| {
+                let a = Closure::wrap(Box::new(move |peer_id: String| {
+                    handler(Msg::PeerLeave(peer_id));
+                }) as Box<dyn FnMut(String)>);
+                room.payload
+                    .on("peerLeave", Some(a.as_ref().unchecked_ref()));
                 a.forget();
             }
         })
@@ -1215,6 +1227,10 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             data_connect.on("data", Some(a.as_ref().unchecked_ref()));
             a.forget();
 
+            state.cmd_queue.dequeue()
+        }
+        Msg::PeerLeave(peer_id) => {
+            state.peers.remove(&peer_id);
             state.cmd_queue.dequeue()
         }
         Msg::DisconnectFromRoom => Cmd::Sub(Sub::DisconnectFromRoom),
