@@ -227,6 +227,7 @@ pub fn chat(
     modeless_idx: usize,
     state: &ModelessState,
     chat_data: &ChatDataCollection,
+    resource: &Resource,
 ) -> Html<Msg> {
     let selecting_idx = chat_data.selecting_idx;
     let selecting_tab = &chat_data.tabs[selecting_idx];
@@ -271,6 +272,25 @@ pub fn chat(
                                             Events::new(),
                                             vec![
                                                 {
+                                                    let default_icon = Html::div(
+                                                        Attributes::new().class(concat!(
+                                                            "chat-icon ",
+                                                            "icon ",
+                                                            "icon-medium ",
+                                                            "icon-rounded ",
+                                                            "bg-color-light ",
+                                                            "text-color-dark"
+                                                        )),
+                                                        Events::new(),
+                                                        vec![Html::text(
+                                                            item.display_name
+                                                                .as_str()
+                                                                .chars()
+                                                                .next()
+                                                                .map(|c| c.to_string())
+                                                                .unwrap_or("".into()),
+                                                        )],
+                                                    );
                                                     match item.icon {
                                                         Icon::None => Html::div(
                                                             Attributes::new().class(concat!(
@@ -282,25 +302,21 @@ pub fn chat(
                                                             Events::new(),
                                                             vec![],
                                                         ),
-                                                        _ => Html::div(
-                                                            Attributes::new().class(concat!(
-                                                                "chat-icon ",
-                                                                "icon ",
-                                                                "icon-medium ",
-                                                                "icon-rounded ",
-                                                                "bg-color-light ",
-                                                                "text-color-dark"
-                                                            )),
-                                                            Events::new(),
-                                                            vec![Html::text(
-                                                                item.display_name
-                                                                    .as_str()
-                                                                    .chars()
-                                                                    .next()
-                                                                    .map(|c| c.to_string())
-                                                                    .unwrap_or("".into()),
-                                                            )],
-                                                        ),
+                                                        Icon::Resource(r_id) => resource
+                                                            .get_as_image(&r_id)
+                                                            .map(|img| {
+                                                                Html::component(image::new(
+                                                                    r_id,
+                                                                    img,
+                                                                    Attributes::new()
+                                                                        .class("chat-icon")
+                                                                        .class("icon")
+                                                                        .class("icon-medium")
+                                                                        .class("icon-rounded"),
+                                                                ))
+                                                            })
+                                                            .unwrap_or(default_icon),
+                                                        _ => default_icon,
                                                     }
                                                 },
                                                 Html::div(

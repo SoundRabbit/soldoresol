@@ -1571,7 +1571,7 @@ fn render_canvas_overlaper(
                         Modeless::Object { focused, tabs } => {
                             modeless::object(idx, state, tabs, *focused, world, resource)
                         }
-                        Modeless::Chat => modeless::chat(idx, state, chat_tabs),
+                        Modeless::Chat => modeless::chat(idx, state, chat_tabs, resource),
                     }
                 }
             })
