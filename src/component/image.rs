@@ -29,6 +29,14 @@ pub fn new(
                     .document()
                     .unwrap()
                     .get_elements_by_class_name(format!("_{}", resource_id.to_string()).as_str());
+                let src = img
+                    .dyn_ref::<JsObject>()
+                    .and_then(|img| img.get("src"))
+                    .map(|a| {
+                        let a: JsValue = a.into();
+                        a
+                    })
+                    .unwrap_or(JsValue::undefined());
                 for i in 0..els.length() {
                     if let Some(el) = els.get_with_index(i) {
                         if el
@@ -37,20 +45,10 @@ pub fn new(
                             .map(|r_id| r_id != resource_id)
                             .unwrap_or(true)
                         {
-                            if let Some(el) = el.dyn_into::<web_sys::HtmlImageElement>().ok() {
-                                let _ = el.set_attribute("data-r_id", &resource_id.to_string());
+                            let _ = el.set_attribute("data-r_id", &resource_id.to_string());
 
-                                if let (Some(el), Some(img)) =
-                                    (el.dyn_ref::<JsObject>(), img.dyn_ref::<JsObject>())
-                                {
-                                    el.set(
-                                        "src",
-                                        img.get("src")
-                                            .as_ref()
-                                            .map(|a| a as &JsValue)
-                                            .unwrap_or(&JsValue::undefined()),
-                                    );
-                                }
+                            if let Some(el) = el.dyn_ref::<JsObject>() {
+                                el.set("src", &src);
                             }
                         }
                     }

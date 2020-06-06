@@ -208,6 +208,7 @@ pub struct State {
     object_modeless_address: HashMap<u128, usize>,
     chat_modeless_address: Option<usize>,
     pixel_ratio: f64,
+    is_low_loading_mode: bool,
     cmd_queue: CmdQueue<Msg, Sub>,
 }
 
@@ -216,6 +217,7 @@ pub enum Msg {
     SetTableContext,
     WindowResized,
     Render,
+    SetLowLoadingMode(bool),
 
     // メッセージの伝搬
     TransportContextMenuMsg(contextmenu::Msg),
@@ -329,6 +331,7 @@ pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
                 chat_modeless_address: None,
                 focused_object_id: None,
                 pixel_ratio: 1.0,
+                is_low_loading_mode: false,
                 cmd_queue: CmdQueue::new(),
             };
             let task = Cmd::task(|handler| {
@@ -532,6 +535,19 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 renderer.render(&mut state.world, &state.camera, &state.resource);
             }
             state.cmd_queue.dequeue()
+        }
+        Msg::SetLowLoadingMode(flag) => {
+            if state.is_low_loading_mode != flag {
+                state.is_low_loading_mode = flag;
+                if flag {
+                    state.pixel_ratio = 0.5;
+                } else {
+                    state.pixel_ratio = 1.0;
+                }
+                update(state, Msg::WindowResized)
+            } else {
+                state.cmd_queue.dequeue()
+            }
         }
 
         //メッセージの伝搬
@@ -1256,6 +1272,7 @@ fn render(state: &State) -> Html<Msg> {
                     &state.table_state.selecting_tool,
                     state.world.table().is_bind_to_grid(),
                     state.is_2d_mode,
+                    state.is_low_loading_mode,
                 ),
                 render_side_menu(),
                 render_canvas_container(&state),
@@ -1274,6 +1291,7 @@ fn render_header_menu(
     selecting_tool: &TableTool,
     is_bind_to_grid: bool,
     is_2d_mode: bool,
+    is_low_loading_mode: bool,
 ) -> Html<Msg> {
     Html::div(
         Attributes::new()
@@ -1390,15 +1408,39 @@ fn render_header_menu(
                     Attributes::new().class("linear-h"),
                     Events::new(),
                     vec![
-                        Html::span(
-                            Attributes::new().class("text-label"),
+                        Html::div(
+                            Attributes::new().class("keyvalue"),
                             Events::new(),
-                            vec![Html::text("2Dモード")],
+                            vec![
+                                Html::span(
+                                    Attributes::new().class("text-label"),
+                                    Events::new(),
+                                    vec![Html::text("低負荷モード")],
+                                ),
+                                btn::toggle(
+                                    is_low_loading_mode,
+                                    Attributes::new(),
+                                    Events::new().on_click(move |_| {
+                                        Msg::SetLowLoadingMode(!is_low_loading_mode)
+                                    }),
+                                ),
+                            ],
                         ),
-                        btn::toggle(
-                            is_2d_mode,
-                            Attributes::new(),
-                            Events::new().on_click(move |_| Msg::SetIs2dMode(!is_2d_mode)),
+                        Html::div(
+                            Attributes::new().class("keyvalue"),
+                            Events::new(),
+                            vec![
+                                Html::span(
+                                    Attributes::new().class("text-label"),
+                                    Events::new(),
+                                    vec![Html::text("2Dモード")],
+                                ),
+                                btn::toggle(
+                                    is_2d_mode,
+                                    Attributes::new(),
+                                    Events::new().on_click(move |_| Msg::SetIs2dMode(!is_2d_mode)),
+                                ),
+                            ],
                         ),
                     ],
                 )],
