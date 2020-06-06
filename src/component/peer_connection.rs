@@ -121,7 +121,7 @@ fn render(state: &State) -> Html<Msg> {
                             if let Some(error_message) = &state.error_message {
                                 Html::div(
                                     Attributes::new()
-                                        .class("grid-w-f container-a text-color-danger-l"),
+                                        .class("grid-w-f").class("container-a").class("text-color-danger-l"),
                                     Events::new(),
                                     vec![Html::text(error_message)],
                                 )
@@ -129,7 +129,7 @@ fn render(state: &State) -> Html<Msg> {
                                 Html::none()
                             },
                             Html::div(
-                                Attributes::new().class("grid-w-10 centering-a pure-form"),
+                                Attributes::new().class("grid-w-10").class("centering").class("centering-a").class("pure-form"),
                                 Events::new(),
                                 vec![
                                     Html::fieldset(
@@ -156,12 +156,12 @@ fn render(state: &State) -> Html<Msg> {
                                 ],
                             ),
                             Html::div(
-                                Attributes::new().class("grid-w-4 centering-a"),
+                                Attributes::new().class("grid-w-4").class("centering").class("centering-a"),
                                 Events::new(),
                                 vec![Html::text("または")],
                             ),
                             Html::div(
-                                Attributes::new().class("grid-w-10 centering-a pure-form"),
+                                Attributes::new().class("grid-w-10").class("centering").class("centering-a").class("pure-form"),
                                 Events::new(),
                                 vec![btn::primary(
                                     Attributes::new(),
@@ -173,7 +173,7 @@ fn render(state: &State) -> Html<Msg> {
                                 )],
                             ),
                             Html::div(
-                                Attributes::new().class("grid-w-f container-a text-wrap"),
+                                Attributes::new().class("grid-w-f").class("container-a").class("text-wrap"),
                                 Events::new(),
                                 vec![awesome::i("fa-info-circle"), Html::text("接続したいルームのルームIDを入力して「接続」を押すか、「新規ルームを開く」を押して新しくルームを作成してください。新しく作成したルームには、そのルームIDを知っている人でなければ接続できません。また1人以上が接続していないルームのデータは消滅します。")],
                             ),

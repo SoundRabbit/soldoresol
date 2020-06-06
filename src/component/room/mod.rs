@@ -1289,7 +1289,10 @@ fn render_header_menu(
                 ],
             ),
             Html::div(
-                Attributes::new().class("grid-w-18 justify-r"),
+                Attributes::new()
+                    .class("grid-w-18")
+                    .class("justify-r")
+                    .class("centering-h"),
                 Events::new(),
                 vec![Html::div(
                     Attributes::new().class("linear-h"),
@@ -1314,33 +1317,37 @@ fn render_header_menu(
                 )],
             ),
             Html::div(
-                Attributes::new().class("grid-w-12 linear-h container-a"),
+                Attributes::new()
+                    .class("grid-w-12")
+                    .class("linear-h")
+                    .class("container-a")
+                    .class("centering-v-i"),
                 Events::new(),
                 vec![
                     btn::selectable(
                         selecting_tool.is_selector(),
-                        Attributes::new().title("選択"),
+                        Attributes::new(),
                         Events::new().on_click(|_| Msg::SetSelectingTableTool(TableTool::Selector)),
-                        vec![awesome::i("fa-mouse-pointer")],
+                        vec![awesome::i("fa-mouse-pointer"), Html::text(" 選択")],
                     ),
                     btn::selectable(
                         selecting_tool.is_pen(),
-                        Attributes::new().title("ペン"),
+                        Attributes::new(),
                         Events::new().on_click(|_| Msg::SetSelectingTableTool(TableTool::Pen)),
-                        vec![awesome::i("fa-pen")],
+                        vec![awesome::i("fa-pen"), Html::text(" ペン")],
                     ),
                     btn::selectable(
                         selecting_tool.is_eracer(),
-                        Attributes::new().title("消しゴム"),
+                        Attributes::new(),
                         Events::new().on_click(|_| Msg::SetSelectingTableTool(TableTool::Eracer)),
-                        vec![awesome::i("fa-eraser")],
+                        vec![awesome::i("fa-eraser"), Html::text(" 消しゴム")],
                     ),
                     btn::selectable(
                         selecting_tool.is_measure(),
-                        Attributes::new().title("計測"),
+                        Attributes::new(),
                         Events::new()
                             .on_click(|_| Msg::SetSelectingTableTool(TableTool::Measure(None))),
-                        vec![awesome::i("fa-ruler")],
+                        vec![awesome::i("fa-ruler"), Html::text(" 計測")],
                     ),
                     Html::div(
                         Attributes::new().class("keyvalue").title(""),
@@ -1362,7 +1369,10 @@ fn render_header_menu(
                 ],
             ),
             Html::div(
-                Attributes::new().class("grid-w-12 justify-r"),
+                Attributes::new()
+                    .class("grid-w-12")
+                    .class("justify-r")
+                    .class("centering-h"),
                 Events::new(),
                 vec![Html::div(
                     Attributes::new().class("linear-h"),

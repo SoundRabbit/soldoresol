@@ -1,12 +1,29 @@
 .centering {
+    display: grid;
+
     &-a {
-        display: grid;
-        align-content: center;
         justify-content: center;
+        align-content: center;
+
+        &-i {
+            justify-items: center;
+            align-items: center;
+        }
     }
 
     &-v {
-        display: grid;
         align-content: center;
+
+        &-i {
+            align-items: center;
+        }
+    }
+
+    &-h {
+        justify-content: center;
+
+        &-i {
+            justify-items: center;
+        }
     }
 }
