@@ -1,6 +1,7 @@
+use crate::JsObject;
 use kagura::prelude::*;
 use std::rc::Rc;
-use wasm_bindgen::JsCast;
+use wasm_bindgen::{prelude::*, JsCast};
 
 pub struct State {
     attributes: Attributes,
@@ -36,40 +37,20 @@ pub fn new(
                             .map(|r_id| r_id != resource_id)
                             .unwrap_or(true)
                         {
-                            if let Some(el) = el.dyn_into::<web_sys::HtmlCanvasElement>().ok() {
+                            if let Some(el) = el.dyn_into::<web_sys::HtmlImageElement>().ok() {
                                 let _ = el.set_attribute("data-r_id", &resource_id.to_string());
 
-                                let el_width = el.client_width() as f64;
-                                let el_height = el.client_height() as f64;
-
-                                let img_width = img.width() as f64;
-                                let img_height = img.height() as f64;
-
-                                let pixel_ratio =
-                                    (el_width / img_width).max(el_height / img_height).min(1.0);
-
-                                let canvas_width = img_width * pixel_ratio;
-                                let canvas_height = img_height * pixel_ratio;
-
-                                el.set_width(canvas_width as u32);
-                                el.set_height(canvas_height as u32);
-
-                                el.get_context("2d")
-                                    .ok()
-                                    .and_then(|context| context)
-                                    .and_then(|context| {
-                                        context.dyn_into::<web_sys::CanvasRenderingContext2d>().ok()
-                                    })
-                                    .map(|context| {
-                                        context.clear_rect(0.0, 0.0, canvas_width, canvas_height);
-                                        context.draw_image_with_html_image_element_and_dw_and_dh(
-                                            &img,
-                                            0.0,
-                                            0.0,
-                                            canvas_width,
-                                            canvas_height,
-                                        )
-                                    });
+                                if let (Some(el), Some(img)) =
+                                    (el.dyn_ref::<JsObject>(), img.dyn_ref::<JsObject>())
+                                {
+                                    el.set(
+                                        "src",
+                                        img.get("src")
+                                            .as_ref()
+                                            .map(|a| a as &JsValue)
+                                            .unwrap_or(&JsValue::undefined()),
+                                    );
+                                }
                             }
                         }
                     }
@@ -86,7 +67,7 @@ fn update(_: &mut State, _: Msg) -> Cmd<Msg, Sub> {
 }
 
 fn render(state: &State) -> Html<Msg> {
-    Html::canvas(
+    Html::img(
         state
             .attributes
             .clone()

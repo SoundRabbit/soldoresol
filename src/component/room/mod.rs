@@ -207,6 +207,7 @@ pub struct State {
     editing_modeless: Option<(usize, Rc<RefCell<modeless_modal::State>>)>,
     object_modeless_address: HashMap<u128, usize>,
     chat_modeless_address: Option<usize>,
+    pixel_ratio: f64,
     cmd_queue: CmdQueue<Msg, Sub>,
 }
 
@@ -327,6 +328,7 @@ pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
                 object_modeless_address: HashMap::new(),
                 chat_modeless_address: None,
                 focused_object_id: None,
+                pixel_ratio: 1.0,
                 cmd_queue: CmdQueue::new(),
             };
             let task = Cmd::task(|handler| {
@@ -475,12 +477,12 @@ fn get_table_canvas_element() -> web_sys::HtmlCanvasElement {
         .unwrap()
 }
 
-fn get_device_pixel_ratio() -> f64 {
-    web_sys::window().unwrap().device_pixel_ratio()
+fn get_device_pixel_ratio(pixel_ratio: f64) -> f64 {
+    web_sys::window().unwrap().device_pixel_ratio() * pixel_ratio
 }
 
-fn get_table_position(state: &State, mouse_coord: &[f64; 2]) -> [f64; 2] {
-    let dpr = get_device_pixel_ratio();
+fn get_table_position(state: &State, mouse_coord: &[f64; 2], pixel_ratio: f64) -> [f64; 2] {
+    let dpr = get_device_pixel_ratio(pixel_ratio);
     let mouse_coord = [mouse_coord[0] * dpr, mouse_coord[1] * dpr];
     let p = state
         .camera
@@ -493,7 +495,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         Msg::NoOp => state.cmd_queue.dequeue(),
         Msg::SetTableContext => {
             let canvas = get_table_canvas_element();
-            let dpr = get_device_pixel_ratio();
+            let dpr = get_device_pixel_ratio(state.pixel_ratio);
             let canvas_size = [
                 canvas.client_width() as f64 * dpr,
                 canvas.client_height() as f64 * dpr,
@@ -515,7 +517,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
         Msg::WindowResized => {
             let canvas = get_table_canvas_element();
-            let dpr = get_device_pixel_ratio();
+            let dpr = get_device_pixel_ratio(state.pixel_ratio);
             let canvas_size = [
                 canvas.client_width() as f64 * dpr,
                 canvas.client_height() as f64 * dpr,
@@ -523,8 +525,6 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             canvas.set_width(canvas_size[0] as u32);
             canvas.set_height(canvas_size[1] as u32);
             state.canvas_size = canvas_size;
-            // chat::window_resized(&mut state.form_state.chat);
-            // handout::window_resized(&mut state.form_state.handout);
             update(state, Msg::Render)
         }
         Msg::Render => {
@@ -552,7 +552,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.cmd_queue.dequeue()
         }
         Msg::AddChracaterWithMouseCoord(mouse_coord) => {
-            let position = get_table_position(&state, &mouse_coord);
+            let position = get_table_position(&state, &mouse_coord, state.pixel_ratio);
             let position = [position[0], position[1], 0.0];
             let mut character = Character::new();
             character.set_position(position);
@@ -562,7 +562,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             update(state, Msg::AddChracater(character))
         }
         Msg::AddTablemaskWithMouseCoord(mouse_coord) => {
-            let position = get_table_position(&state, &mouse_coord);
+            let position = get_table_position(&state, &mouse_coord, state.pixel_ratio);
             let position = [position[0], position[1], 0.0];
             let mut tablemask = Tablemask::new();
             tablemask.set_position(position);
@@ -597,7 +597,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         //テーブル操作の制御
         Msg::SetCursorWithMouseCoord(mouse_coord) => {
             let camera = &state.camera;
-            let table_coord = get_table_position(&state, &mouse_coord);
+            let table_coord = get_table_position(&state, &mouse_coord, state.pixel_ratio);
             let table_coord = [table_coord[0], table_coord[1]];
             let table = state.world.table_mut();
             match state.table_state.selecting_tool {
@@ -630,7 +630,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.table_state.last_mouse_coord = mouse_coord;
             if let Some(renderer) = &mut state.renderer {
                 renderer.render(&mut state.world, &camera, &state.resource);
-                let dpr = get_device_pixel_ratio();
+                let dpr = get_device_pixel_ratio(state.pixel_ratio);
                 let focused_id = renderer.table_object_id(&[
                     mouse_coord[0] * dpr,
                     state.canvas_size[1] - mouse_coord[1] * dpr,
@@ -650,7 +650,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             let x_movement = mouse_coord[0] - state.table_state.last_mouse_coord[0];
             let y_movement = mouse_coord[1] - state.table_state.last_mouse_coord[1];
             let long_edge = state.canvas_size[0].max(state.canvas_size[1]);
-            let rotation_factor = 3.0 / long_edge * get_device_pixel_ratio();
+            let rotation_factor = 3.0 / long_edge * get_device_pixel_ratio(state.pixel_ratio);
             let camera = &mut state.camera;
             camera.set_x_axis_rotation(camera.x_axis_rotation() + y_movement * rotation_factor);
             camera.set_z_axis_rotation(camera.z_axis_rotation() + x_movement * rotation_factor);
@@ -661,7 +661,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             let x_movement = mouse_coord[0] - state.table_state.last_mouse_coord[0];
             let y_movement = mouse_coord[1] - state.table_state.last_mouse_coord[1];
             let long_edge = state.canvas_size[0].max(state.canvas_size[1]);
-            let movement_factor = 50.0 / long_edge * get_device_pixel_ratio();
+            let movement_factor = 50.0 / long_edge * get_device_pixel_ratio(state.pixel_ratio);
             let camera = &mut state.camera;
             let movement = camera.movement();
             let movement = [
@@ -704,9 +704,13 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.cmd_queue.dequeue()
         }
         Msg::DrawLineWithMouseCoord(mouse_coord) => {
-            let start_point = get_table_position(&state, &state.table_state.last_mouse_coord);
+            let start_point = get_table_position(
+                &state,
+                &state.table_state.last_mouse_coord,
+                state.pixel_ratio,
+            );
             let start_point = [start_point[0], start_point[1]];
-            let end_point = get_table_position(&state, &mouse_coord);
+            let end_point = get_table_position(&state, &mouse_coord, state.pixel_ratio);
             let end_point = [end_point[0], end_point[1]];
             state.world.table_mut().draw_line(
                 &start_point,
@@ -720,9 +724,13 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             update(state, Msg::SetCursorWithMouseCoord(mouse_coord))
         }
         Msg::EraceLineWithMouseCoord(mouse_coord) => {
-            let start_point = get_table_position(&state, &state.table_state.last_mouse_coord);
+            let start_point = get_table_position(
+                &state,
+                &state.table_state.last_mouse_coord,
+                state.pixel_ratio,
+            );
             let start_point = [start_point[0], start_point[1]];
-            let end_point = get_table_position(&state, &mouse_coord);
+            let end_point = get_table_position(&state, &mouse_coord, state.pixel_ratio);
             let end_point = [end_point[0], end_point[1]];
             state
                 .world
@@ -734,9 +742,9 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             update(state, Msg::SetCursorWithMouseCoord(mouse_coord))
         }
         Msg::SetMeasureStartPointAndEndPointWithMouseCoord(start_point, mouse_coord) => {
-            let start_point = get_table_position(&state, &start_point);
+            let start_point = get_table_position(&state, &start_point, state.pixel_ratio);
             let start_point = [start_point[0], start_point[1]];
-            let end_point = get_table_position(&state, &mouse_coord);
+            let end_point = get_table_position(&state, &mouse_coord, state.pixel_ratio);
             let end_point = [end_point[0], end_point[1]];
             let measure_length = state.world.table_mut().draw_measure(
                 &start_point,
@@ -749,8 +757,12 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
         Msg::SetObjectPositionWithMouseCoord(object_id, mouse_coord) => {
             let movement = {
-                let a = get_table_position(&state, &state.table_state.last_mouse_coord);
-                let b = get_table_position(&state, &mouse_coord);
+                let a = get_table_position(
+                    &state,
+                    &state.table_state.last_mouse_coord,
+                    state.pixel_ratio,
+                );
+                let b = get_table_position(&state, &mouse_coord, state.pixel_ratio);
                 [b[0] - a[0], b[1] - a[1]]
             };
             if let Some(character) = state.world.character_mut(&object_id) {
