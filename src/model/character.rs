@@ -153,10 +153,17 @@ impl CharacterData {
 impl From<JsObject> for CharacterData {
     fn from(obj: JsObject) -> Self {
         use js_sys::Array;
-        use wasm_bindgen::JsCast;
+        use wasm_bindgen::{prelude::*, JsCast};
+
+        web_sys::console::log_1(&JsValue::from("A"));
 
         let size = obj.get("size").unwrap().dyn_into::<Array>().ok().unwrap();
+
+        web_sys::console::log_1(&JsValue::from("B"));
+
         let size = [size.get(0).as_f64().unwrap(), size.get(1).as_f64().unwrap()];
+
+        web_sys::console::log_1(&JsValue::from("C"));
 
         let position = obj
             .get("position")
@@ -170,16 +177,19 @@ impl From<JsObject> for CharacterData {
             position.get(2).as_f64().unwrap(),
         ];
 
+        web_sys::console::log_1(&JsValue::from("D"));
+
         let image_id = obj
             .get("image_id")
-            .unwrap()
-            .as_string()
-            .unwrap()
-            .parse()
-            .ok();
+            .and_then(|image_id| image_id.as_string())
+            .and_then(|image_id| image_id.parse().ok());
+
+        web_sys::console::log_1(&JsValue::from("E"));
 
         let hp = obj.get("hp").unwrap().as_f64().unwrap() as i32;
         let mp = obj.get("mp").unwrap().as_f64().unwrap() as i32;
+
+        web_sys::console::log_1(&JsValue::from("F"));
 
         Self {
             size,
