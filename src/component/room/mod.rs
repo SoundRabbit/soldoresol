@@ -281,6 +281,7 @@ pub enum Msg {
 
     // Worldに対する操作
     SetCharacterImage(u128, u128, bool),
+    SetCharacterSize(u128, Option<f64>, Option<f64>),
     SetCharacterHp(u128, i32),
     SetCharacterMp(u128, i32),
     AddChracater(Character),
@@ -1016,6 +1017,32 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             } else {
                 state.cmd_queue.dequeue()
             }
+        }
+        Msg::SetCharacterSize(character_id, width, height) => {
+            let world = &mut state.world;
+            let resource = &state.resource;
+            if let Some(character) = world.character_mut(&character_id) {
+                if let (Some(width), Some(height)) = (width, height) {
+                    character.set_size([width, height]);
+                } else if let Some(width) = width {
+                    if let Some(img) = character
+                        .texture_id()
+                        .and_then(|id| resource.get_as_image(&id))
+                    {
+                        let height = width * img.height() as f64 / img.width() as f64;
+                        character.set_size([width, height]);
+                    }
+                } else if let Some(height) = height {
+                    if let Some(img) = character
+                        .texture_id()
+                        .and_then(|id| resource.get_as_image(&id))
+                    {
+                        let width = height * img.width() as f64 / img.height() as f64;
+                        character.set_size([width, height]);
+                    }
+                }
+            }
+            update(state, Msg::Render)
         }
         Msg::SetCharacterHp(character_id, hp) => {
             if let Some(character) = state.world.character_mut(&character_id) {

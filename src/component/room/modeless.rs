@@ -49,6 +49,9 @@ pub fn object(
 }
 
 fn object_character(character: &Character, character_id: u128, resource: &Resource) -> Html<Msg> {
+    let [width, height] = character.size();
+    let width = *width;
+    let height = *height;
     modeless::body(
         Attributes::new().class("scroll-v"),
         Events::new(),
@@ -101,10 +104,27 @@ fn object_character(character: &Character, character_id: u128, resource: &Resour
                                     Events::new(),
                                     vec![Html::text("幅")],
                                 ),
-                                Html::input(Attributes::new(), Events::new(), vec![]),
+                                Html::input(
+                                    Attributes::new().type_("number").value(width.to_string()),
+                                    Events::new().on_input(move |width| {
+                                        width
+                                            .parse()
+                                            .map(|width| {
+                                                Msg::SetCharacterSize(
+                                                    character_id,
+                                                    Some(width),
+                                                    Some(height),
+                                                )
+                                            })
+                                            .unwrap_or(Msg::NoOp)
+                                    }),
+                                    vec![],
+                                ),
                                 btn::secondary(
                                     Attributes::new(),
-                                    Events::new(),
+                                    Events::new().on_click(move |_| {
+                                        Msg::SetCharacterSize(character_id, None, Some(height))
+                                    }),
                                     vec![Html::text("画像に合わせる")],
                                 ),
                                 Html::label(
@@ -112,10 +132,27 @@ fn object_character(character: &Character, character_id: u128, resource: &Resour
                                     Events::new(),
                                     vec![Html::text("高さ")],
                                 ),
-                                Html::input(Attributes::new(), Events::new(), vec![]),
+                                Html::input(
+                                    Attributes::new().type_("number").value(height.to_string()),
+                                    Events::new().on_input(move |height| {
+                                        height
+                                            .parse()
+                                            .map(|height| {
+                                                Msg::SetCharacterSize(
+                                                    character_id,
+                                                    Some(width),
+                                                    Some(height),
+                                                )
+                                            })
+                                            .unwrap_or(Msg::NoOp)
+                                    }),
+                                    vec![],
+                                ),
                                 btn::secondary(
                                     Attributes::new(),
-                                    Events::new(),
+                                    Events::new().on_click(move |_| {
+                                        Msg::SetCharacterSize(character_id, Some(width), None)
+                                    }),
                                     vec![Html::text("画像に合わせる")],
                                 ),
                             ],
