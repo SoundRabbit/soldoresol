@@ -1116,7 +1116,9 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     let blob = Rc::clone(&blob);
                     move |resolve| {
                         let blob_type = blob.type_();
-                        if blob_type == "image/png" {
+                        let blob_type: Vec<&str> = blob_type.split('/').collect();
+                        let blob_type = blob_type.first().map(|x| x as &str).unwrap_or("");
+                        if blob_type == "image" {
                             let image = Rc::new(crate::util::html_image_element());
                             let a = {
                                 let image = Rc::clone(&image);
