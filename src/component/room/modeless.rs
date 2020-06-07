@@ -8,6 +8,15 @@ use crate::{
 };
 use kagura::prelude::*;
 
+macro_rules! stop_propagation {
+    () => {{
+        |e| {
+            e.stop_propagation();
+            Msg::NoOp
+        }
+    }};
+}
+
 pub fn object(
     modeless_idx: usize,
     state: &ModelessState,
@@ -41,14 +50,17 @@ pub fn object(
 
 fn object_character(character: &Character, character_id: u128, resource: &Resource) -> Html<Msg> {
     modeless::body(
-        Attributes::new().class("scroll-v flex-h"),
+        Attributes::new().class("scroll-v"),
         Events::new(),
         vec![Html::div(
-            Attributes::new().class("container-a"),
-            Events::new(),
+            Attributes::new().class("editormodeless").class("flex-h"),
+            Events::new().on_mousedown(stop_propagation!()),
             vec![
                 Html::div(
-                    Attributes::new().class("centering-a"),
+                    Attributes::new()
+                        .class("container-a")
+                        .class("centering")
+                        .class("centering-a"),
                     Events::new(),
                     vec![
                         character
@@ -78,42 +90,56 @@ fn object_character(character: &Character, character_id: u128, resource: &Resour
                     ],
                 ),
                 Html::div(
-                    Attributes::new().class("keyvalue pure-form"),
+                    Attributes::new().class("container-a"),
                     Events::new(),
                     vec![
-                        Html::span(Attributes::new(), Events::new(), vec![Html::text("HP")]),
-                        Html::input(
-                            Attributes::new()
-                                .value(character.hp().to_string())
-                                .type_("number"),
-                            Events::new().on_input(move |s| {
-                                if let Ok(s) = s.parse() {
-                                    Msg::SetCharacterHp(character_id, s)
-                                } else {
-                                    Msg::NoOp
-                                }
-                            }),
-                            vec![],
+                        Html::div(
+                            Attributes::new().class("keyvalue pure-form"),
+                            Events::new(),
+                            vec![
+                                Html::span(
+                                    Attributes::new(),
+                                    Events::new(),
+                                    vec![Html::text("HP")],
+                                ),
+                                Html::input(
+                                    Attributes::new()
+                                        .value(character.hp().to_string())
+                                        .type_("number"),
+                                    Events::new().on_input(move |s| {
+                                        if let Ok(s) = s.parse() {
+                                            Msg::SetCharacterHp(character_id, s)
+                                        } else {
+                                            Msg::NoOp
+                                        }
+                                    }),
+                                    vec![],
+                                ),
+                            ],
                         ),
-                    ],
-                ),
-                Html::div(
-                    Attributes::new().class("keyvalue pure-form"),
-                    Events::new(),
-                    vec![
-                        Html::span(Attributes::new(), Events::new(), vec![Html::text("MP")]),
-                        Html::input(
-                            Attributes::new()
-                                .value(character.mp().to_string())
-                                .type_("number"),
-                            Events::new().on_input(move |s| {
-                                if let Ok(s) = s.parse() {
-                                    Msg::SetCharacterMp(character_id, s)
-                                } else {
-                                    Msg::NoOp
-                                }
-                            }),
-                            vec![],
+                        Html::div(
+                            Attributes::new().class("keyvalue pure-form"),
+                            Events::new(),
+                            vec![
+                                Html::span(
+                                    Attributes::new(),
+                                    Events::new(),
+                                    vec![Html::text("MP")],
+                                ),
+                                Html::input(
+                                    Attributes::new()
+                                        .value(character.mp().to_string())
+                                        .type_("number"),
+                                    Events::new().on_input(move |s| {
+                                        if let Ok(s) = s.parse() {
+                                            Msg::SetCharacterMp(character_id, s)
+                                        } else {
+                                            Msg::NoOp
+                                        }
+                                    }),
+                                    vec![],
+                                ),
+                            ],
                         ),
                     ],
                 ),
@@ -262,10 +288,7 @@ pub fn chat(
                                 Attributes::new()
                                     .style("align-self", "stretch")
                                     .class("scroll-v"),
-                                Events::new().on_mousedown(|e| {
-                                    e.stop_propagation();
-                                    Msg::NoOp
-                                }),
+                                Events::new().on_mousedown(stop_propagation!()),
                                 selecting_tab
                                     .items
                                     .iter()
@@ -358,10 +381,7 @@ pub fn chat(
                                             tab_idx == selecting_idx,
                                             Attributes::new(),
                                             Events::new()
-                                                .on_mousedown(|e| {
-                                                    e.stop_propagation();
-                                                    Msg::NoOp
-                                                })
+                                                .on_mousedown(stop_propagation!())
                                                 .on_click(move |_| {
                                                     Msg::SetSelectingChatTabIdx(tab_idx)
                                                 }),
@@ -382,10 +402,7 @@ pub fn chat(
                                     .class("text-wrap")
                                     .value(&chat_data.inputing_message),
                                 Events::new()
-                                    .on_mousedown(|e| {
-                                        e.stop_propagation();
-                                        Msg::NoOp
-                                    })
+                                    .on_mousedown(stop_propagation!())
                                     .on_input(|m| Msg::InputChatMessage(m)),
                                 vec![],
                             ),
@@ -395,10 +412,7 @@ pub fn chat(
                                 vec![btn::info(
                                     Attributes::new(),
                                     Events::new()
-                                        .on_mousedown(|e| {
-                                            e.stop_propagation();
-                                            Msg::NoOp
-                                        })
+                                        .on_mousedown(stop_propagation!())
                                         .on_click(|_| Msg::SendChatItem),
                                     vec![awesome::i("fa-paper-plane"), Html::text(" 送信")],
                                 )],
