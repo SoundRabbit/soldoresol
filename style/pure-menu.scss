@@ -3,6 +3,11 @@
 .pure-menu {
     color: $gray-000;
     background-color: $gray-900 !important;
+    overflow: visible;
+
+    & * {
+        overflow: visible;
+    }
 
     &-link {
         color: inherit !important;
