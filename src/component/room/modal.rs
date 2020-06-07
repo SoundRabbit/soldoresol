@@ -1,8 +1,8 @@
 use super::{
-    super::{btn, icon, modal},
-    Modal, Msg, PersonalData, SelectImageModal,
+    super::{btn, color_picker, icon, modal},
+    ColorPickerType, Modal, Msg, PersonalData, SelectImageModal,
 };
-use crate::model::Resource;
+use crate::model::{ColorSystem, Resource};
 use kagura::prelude::*;
 use wasm_bindgen::JsCast;
 
@@ -248,6 +248,53 @@ pub fn personal_setting(personal_data: &PersonalData, resource: &Resource) -> Ht
                             ),
                         ],
                     )],
+                ),
+                modal::footer(Attributes::new(), Events::new(), vec![]),
+            ],
+        )],
+    )
+}
+
+pub fn color_picker(color_picker_type: ColorPickerType) -> Html<Msg> {
+    modal::container(
+        Attributes::new(),
+        Events::new(),
+        vec![modal::frame(
+            12,
+            Attributes::new(),
+            Events::new(),
+            vec![
+                modal::header(
+                    Attributes::new()
+                        .style("display", "grid")
+                        .style("grid-template-columns", "1fr max-content"),
+                    Events::new(),
+                    vec![
+                        Html::div(
+                            Attributes::new().class("text-label"),
+                            Events::new(),
+                            vec![Html::text("色の選択")],
+                        ),
+                        Html::div(
+                            Attributes::new().class("linear-h"),
+                            Events::new(),
+                            vec![btn::close(
+                                Attributes::new(),
+                                Events::new().on_click(move |_| Msg::CloseModal),
+                            )],
+                        ),
+                    ],
+                ),
+                modal::body(
+                    Attributes::new()
+                        .class("scroll-v")
+                        .class("centering")
+                        .class("centering-a"),
+                    Events::new(),
+                    vec![color_picker::picker(Msg::NoOp, move |mut color| {
+                        color.alpha = 127;
+                        Msg::PickColor(color, color_picker_type)
+                    })],
                 ),
                 modal::footer(Attributes::new(), Events::new(), vec![]),
             ],

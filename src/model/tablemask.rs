@@ -67,6 +67,10 @@ impl Tablemask {
         self.position = [p[0], p[1], self.position[2]];
     }
 
+    pub fn set_background_color(&mut self, color: Color) {
+        self.background_color = color;
+    }
+
     pub fn background_color(&self) -> &Color {
         &self.background_color
     }
@@ -88,6 +92,9 @@ impl Clone for Tablemask {
 
         clone.set_size(self.size.clone());
         clone.set_position(self.position.clone());
+        clone.set_background_color(Color::from(self.background_color().to_u32()));
+        clone.set_is_rounded(self.is_rounded());
+
         clone
     }
 }

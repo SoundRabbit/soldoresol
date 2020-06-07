@@ -1,5 +1,6 @@
 mod awesome;
 mod btn;
+mod color_picker;
 pub mod config_loder;
 mod contextmenu;
 mod icon;

@@ -5,7 +5,7 @@ use super::{awesome, btn, contextmenu, modeless::container as modeless_container
 use crate::{
     model::{
         resource::{Data, ResourceData},
-        Camera, Character, ColorSystem, Resource, Tablemask, World,
+        Camera, Character, Color, ColorSystem, Resource, Tablemask, World,
     },
     random_id,
     renderer::Renderer,
@@ -168,10 +168,16 @@ pub enum SelectImageModal {
     Character(u128),
 }
 
+#[derive(Clone)]
+pub enum ColorPickerType {
+    TablemaskColor(u128),
+}
+
 pub enum Modal {
     Resource,
     SelectImage(SelectImageModal),
     PersonalSetting,
+    ColorPicker(ColorPickerType),
 }
 
 struct CmdQueue<M, S> {
@@ -229,6 +235,7 @@ pub enum Msg {
 
     // メッセージの伝搬
     TransportContextMenuMsg(contextmenu::Msg),
+    PickColor(Color, ColorPickerType),
 
     //コンテキストメニューの制御
     OpenContextMenu([f64; 2], [f64; 2]),
@@ -278,6 +285,7 @@ pub enum Msg {
     AddTablemask(Tablemask),
     SetTablemaskSizeWithStyle(u128, [f64; 2], bool),
     SetTablemaskSizeIsBinded(u128, bool),
+    SetTablemaskColor(u128, Color),
 
     // チャット関係
     SetSelectingChatTabIdx(usize),
@@ -586,6 +594,11 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             contextmenu::update(&mut state.contextmenu.state, msg);
             state.cmd_queue.dequeue()
         }
+        Msg::PickColor(color, color_picker_type) => match color_picker_type {
+            ColorPickerType::TablemaskColor(obj_id) => {
+                update(state, Msg::SetTablemaskColor(obj_id, color))
+            }
+        },
 
         //コンテキストメニューの制御
         Msg::OpenContextMenu(page_mouse_coord, offset_mouse_coord) => {
@@ -1039,6 +1052,12 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         Msg::SetTablemaskSizeIsBinded(tablemask_id, is_binded) => {
             if let Some(tablemask) = state.world.tablemask_mut(&tablemask_id) {
                 tablemask.set_size_is_binded(is_binded);
+            }
+            update(state, Msg::Render)
+        }
+        Msg::SetTablemaskColor(tablemask_id, color) => {
+            if let Some(tablemask) = state.world.tablemask_mut(&tablemask_id) {
+                tablemask.set_background_color(color);
             }
             update(state, Msg::Render)
         }
@@ -1915,6 +1934,15 @@ fn render_context_menu_tablemask(contextmenu: &Contextmenu, object_id: u128) -> 
                 ),
                 btn::contextmenu_text(
                     Attributes::new(),
+                    Events::new().on_click(move |_| {
+                        Msg::OpenModal(Modal::ColorPicker(ColorPickerType::TablemaskColor(
+                            object_id,
+                        )))
+                    }),
+                    "色を変更",
+                ),
+                btn::contextmenu_text(
+                    Attributes::new(),
                     Events::new().on_click(move |_| Msg::CloneObjectWithObjectId(object_id)),
                     "コピーを作成",
                 ),
@@ -1966,6 +1994,7 @@ fn render_modals(
             Modal::Resource => modal::resource(resource),
             Modal::SelectImage(modal_type) => modal::select_image(resource, modal_type),
             Modal::PersonalSetting => modal::personal_setting(personal_data, resource),
+            Modal::ColorPicker(color_picker_type) => modal::color_picker(color_picker_type.clone()),
         };
         children.push(child);
     }

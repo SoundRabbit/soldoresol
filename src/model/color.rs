@@ -1,10 +1,10 @@
 use wasm_bindgen::prelude::*;
 
 pub struct Color {
-    red: u8,
-    green: u8,
-    blue: u8,
-    alpha: u8,
+    pub red: u8,
+    pub green: u8,
+    pub blue: u8,
+    pub alpha: u8,
 }
 
 impl Color {
@@ -25,13 +25,17 @@ impl Color {
         u32::from_be_bytes([self.alpha, self.red, self.green, self.blue])
     }
 
-    pub fn to_jsvalue(&self) -> JsValue {
+    pub fn to_string(&self) -> String {
         let str = String::from("rgba(");
         let str = str + &self.red.to_string() + ",";
         let str = str + &self.green.to_string() + ",";
         let str = str + &self.blue.to_string() + ",";
         let str = str + &(self.alpha as f64 / 255.0).to_string() + ")";
-        JsValue::from(&str)
+        str
+    }
+
+    pub fn to_jsvalue(&self) -> JsValue {
+        JsValue::from(&self.to_string())
     }
 }
 
