@@ -1,6 +1,6 @@
 use super::{
     super::{awesome, btn, icon, modeless},
-    ChatDataCollection, Icon, Modal, ModelessState, Msg, SelectImageModal,
+    ChatDataCollection, Icon, Modal, ModelessState, Msg, PersonalData, SelectImageModal, Sender,
 };
 use crate::{
     model::{Character, Resource, Tablemask, World},
@@ -310,10 +310,12 @@ pub fn chat(
     modeless_idx: usize,
     state: &ModelessState,
     chat_data: &ChatDataCollection,
+    personal_data: &PersonalData,
+    world: &World,
     resource: &Resource,
 ) -> Html<Msg> {
-    let selecting_idx = chat_data.selecting_idx;
-    let selecting_tab = &chat_data.tabs[selecting_idx];
+    let selecting_tab_idx = chat_data.selecting_tab_idx;
+    let selecting_tab = &chat_data.tabs[selecting_tab_idx];
     frame(
         modeless_idx,
         state,
@@ -351,44 +353,12 @@ pub fn chat(
                                             Attributes::new().class("pure-form chat-item"),
                                             Events::new(),
                                             vec![
-                                                match item.icon {
-                                                    Icon::None => Html::div(
-                                                        Attributes::new().class(concat!(
-                                                            "chat-icon ",
-                                                            "icon ",
-                                                            "icon-medium ",
-                                                            "icon-rounded"
-                                                        )),
-                                                        Events::new(),
-                                                        vec![],
-                                                    ),
-                                                    Icon::Resource(r_id) => resource
-                                                        .get_as_image_url(&r_id)
-                                                        .map(|img_url| {
-                                                            Html::img(
-                                                                Attributes::new()
-                                                                    .class("pure-img")
-                                                                    .class("chat-icon")
-                                                                    .class("icon")
-                                                                    .class("icon-medium")
-                                                                    .class("icon-rounded")
-                                                                    .string(
-                                                                        "src",
-                                                                        img_url.as_str(),
-                                                                    ),
-                                                                Events::new(),
-                                                                vec![],
-                                                            )
-                                                        })
-                                                        .unwrap_or(icon::from_str(
-                                                            Attributes::new().class("chat-icon"),
-                                                            &item.display_name,
-                                                        )),
-                                                    _ => icon::from_str(
-                                                        Attributes::new().class("chat-icon"),
-                                                        &item.display_name,
-                                                    ),
-                                                },
+                                                chat_icon(
+                                                    "icon-medium",
+                                                    &item.icon,
+                                                    &item.display_name,
+                                                    resource,
+                                                ),
                                                 Html::div(
                                                     Attributes::new().class("chat-args"),
                                                     Events::new(),
@@ -432,7 +402,7 @@ pub fn chat(
                                     .enumerate()
                                     .map(|(tab_idx, tab)| {
                                         btn::tab(
-                                            tab_idx == selecting_idx,
+                                            tab_idx == selecting_tab_idx,
                                             Attributes::new(),
                                             Events::new()
                                                 .on_mousedown(stop_propagation!())
@@ -450,6 +420,37 @@ pub fn chat(
                         Attributes::new().class("pure-form linear-v"),
                         Events::new(),
                         vec![
+                            Html::div(
+                                Attributes::new(),
+                                Events::new(),
+                                chat_data
+                                    .senders
+                                    .iter()
+                                    .map(|sender| match sender {
+                                        Sender::Player => {
+                                            let icon = personal_data
+                                                .icon
+                                                .map(|icon_id| Icon::Resource(icon_id))
+                                                .unwrap_or(Icon::DefaultUser);
+                                            chat_icon(
+                                                "icon-small",
+                                                &icon,
+                                                &personal_data.name,
+                                                resource,
+                                            )
+                                        }
+                                        Sender::Character(character_id) => {
+                                            let character = world.character(character_id);
+                                            let icon = character
+                                                .and_then(|c| c.texture_id())
+                                                .map(|r_id| Icon::Resource(r_id))
+                                                .unwrap_or(Icon::DefaultUser);
+                                            let name = "";
+                                            chat_icon("icon-small", &icon, name, resource)
+                                        }
+                                    })
+                                    .collect(),
+                            ),
                             Html::textarea(
                                 Attributes::new()
                                     .style("resize", "none")
@@ -601,4 +602,38 @@ fn header(modeless_idx: usize, header: Html<Msg>) -> Html<Msg> {
             ),
         ],
     )
+}
+
+fn chat_icon(icon_type: &str, icon: &Icon, alt: &str, resource: &Resource) -> Html<Msg> {
+    match icon {
+        Icon::None => Html::div(
+            Attributes::new()
+                .class("chat-icon")
+                .class("icon")
+                .class(icon_type)
+                .class("icon-rounded"),
+            Events::new(),
+            vec![],
+        ),
+        Icon::Resource(r_id) => resource
+            .get_as_image_url(&r_id)
+            .map(|img_url| {
+                Html::img(
+                    Attributes::new()
+                        .class("pure-img")
+                        .class("chat-icon")
+                        .class("icon")
+                        .class(icon_type)
+                        .class("icon-rounded")
+                        .string("src", img_url.as_str()),
+                    Events::new(),
+                    vec![],
+                )
+            })
+            .unwrap_or(icon::from_str(
+                Attributes::new().class("chat-icon").class(icon_type),
+                alt,
+            )),
+        _ => icon::from_str(Attributes::new().class("chat-icon").class(icon_type), &alt),
+    }
 }

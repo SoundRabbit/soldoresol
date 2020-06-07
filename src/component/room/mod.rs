@@ -74,17 +74,26 @@ impl ChatTab {
     }
 }
 
+enum Sender {
+    Player,
+    Character(u128),
+}
+
 pub struct ChatDataCollection {
-    selecting_idx: usize,
+    selecting_tab_idx: usize,
+    selecting_sender_idx: usize,
     inputing_message: String,
+    senders: Vec<Sender>,
     tabs: Vec<ChatTab>,
 }
 
 impl ChatDataCollection {
     fn new() -> Self {
         Self {
-            selecting_idx: 0,
+            selecting_tab_idx: 0,
+            selecting_sender_idx: 0,
             inputing_message: "".into(),
+            senders: vec![Sender::Player],
             tabs: vec![ChatTab::new("メイン"), ChatTab::new("サブ")],
         }
     }
@@ -1095,7 +1104,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
         // チャット周り
         Msg::SetSelectingChatTabIdx(tab_idx) => {
-            state.chat_data.selecting_idx = tab_idx;
+            state.chat_data.selecting_tab_idx = tab_idx;
             state.cmd_queue.dequeue()
         }
         Msg::InputChatMessage(message) => {
@@ -1103,7 +1112,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.cmd_queue.dequeue()
         }
         Msg::SendChatItem => {
-            let tab_idx = state.chat_data.selecting_idx;
+            let tab_idx = state.chat_data.selecting_tab_idx;
             let message = state.chat_data.inputing_message.as_str().trim_end().into();
 
             state.chat_data.inputing_message = "".into();
@@ -1561,6 +1570,7 @@ fn render_canvas_container(state: &State) -> Html<Msg> {
                 &state.world,
                 &state.resource,
                 &state.chat_data,
+                &state.personal_data,
                 &state.modelesses,
             ),
             state
@@ -1595,6 +1605,7 @@ fn render_canvas_overlaper(
     world: &World,
     resource: &Resource,
     chat_tabs: &ChatDataCollection,
+    personal_data: &PersonalData,
     modelesses: &ModelessCollection,
 ) -> Html<Msg> {
     modeless_container(
@@ -1687,7 +1698,9 @@ fn render_canvas_overlaper(
                         Modeless::Object { focused, tabs } => {
                             modeless::object(idx, state, tabs, *focused, world, resource)
                         }
-                        Modeless::Chat => modeless::chat(idx, state, chat_tabs, resource),
+                        Modeless::Chat => {
+                            modeless::chat(idx, state, chat_tabs, personal_data, world, resource)
+                        }
                     }
                 }
             })

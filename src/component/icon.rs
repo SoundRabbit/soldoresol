@@ -4,7 +4,6 @@ pub fn from_str<Msg>(attrs: Attributes, v: &str) -> Html<Msg> {
     Html::div(
         attrs
             .class("icon")
-            .class("icon-medium")
             .class("icon-rounded")
             .class("bg-color-light")
             .class("text-color-dark"),
