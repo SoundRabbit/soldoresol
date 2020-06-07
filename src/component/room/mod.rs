@@ -295,7 +295,7 @@ pub enum Msg {
     // リソース管理
     LoadFromFileList(web_sys::FileList),
     LoadFromBlobs(HashMap<u128, Rc<web_sys::Blob>>, bool),
-    LoadReasources(HashMap<u128, Data>),
+    LoadReasource(u128, Data),
 
     // 接続に関する操作
     ReceiveMsg(skyway::Msg),
@@ -1106,53 +1106,53 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             update(state, Msg::LoadFromBlobs(blobs, true))
         }
         Msg::LoadFromBlobs(blobs, transport) => {
-            let room = Rc::clone(&state.room);
-            Cmd::task(move |resolve| {
-                let common = Rc::new((RefCell::new(HashMap::new()), Some(resolve)));
-                for (data_id, blob) in blobs {
-                    let blob_type = blob.type_();
-                    if blob_type == "image/png" {
-                        let image = Rc::new(crate::util::html_image_element());
-                        let a = {
-                            let image = Rc::clone(&image);
-                            let blob = Rc::clone(&blob);
-                            let mut common = Rc::clone(&common);
-                            Closure::once(Box::new(move || {
-                                let object_url = web_sys::Url::create_object_url_with_blob(&blob)
-                                    .unwrap_or("".into());
-                                common
-                                    .0
-                                    .borrow_mut()
-                                    .insert(data_id, Data::Image(image, blob, Rc::new(object_url)));
-                                if let Some((data, resolve)) = Rc::get_mut(&mut common) {
-                                    let mut r = None;
-                                    std::mem::swap(&mut r, resolve);
-                                    r.map(|r| {
-                                        r(Msg::LoadReasources(data.borrow_mut().drain().collect()))
-                                    });
-                                };
-                            }))
-                        };
-                        image.set_onload(Some(&a.as_ref().unchecked_ref()));
-                        if let Ok(object_url) = web_sys::Url::create_object_url_with_blob(&blob) {
-                            image.set_src(&object_url);
+            let mut transport_data = HashMap::new();
+            for (data_id, blob) in blobs {
+                let cmd = Cmd::task({
+                    let blob = Rc::clone(&blob);
+                    move |resolve| {
+                        let blob_type = blob.type_();
+                        if blob_type == "image/png" {
+                            let image = Rc::new(crate::util::html_image_element());
+                            let a = {
+                                let image = Rc::clone(&image);
+                                let blob = Rc::clone(&blob);
+                                Closure::once(Box::new(move || {
+                                    let object_url =
+                                        web_sys::Url::create_object_url_with_blob(&blob)
+                                            .unwrap_or("".into());
+                                    resolve(Msg::LoadReasource(
+                                        data_id,
+                                        Data::Image(image, blob, Rc::new(object_url)),
+                                    ));
+                                }))
+                            };
+                            image.set_onload(Some(&a.as_ref().unchecked_ref()));
+                            if let Ok(object_url) = web_sys::Url::create_object_url_with_blob(&blob)
+                            {
+                                image.set_src(&object_url);
+                            }
+                            a.forget();
                         }
-                        a.forget();
                     }
-                    if transport {
-                        room.send(&skyway::Msg::SetResource(ResourceData::from((
-                            data_id,
-                            Rc::clone(&blob),
-                        ))));
-                    }
+                });
+                state.cmd_queue.enqueue(cmd);
+                if transport {
+                    transport_data.insert(data_id, blob);
                 }
-            })
+            }
+            if transport {
+                state
+                    .room
+                    .send(&skyway::Msg::SetResource(ResourceData::from(
+                        transport_data,
+                    )));
+            }
+            state.cmd_queue.dequeue()
         }
 
-        Msg::LoadReasources(images) => {
-            for image in images {
-                state.resource.insert(image.0, image.1);
-            }
+        Msg::LoadReasource(resource_id, data) => {
+            state.resource.insert(resource_id, data);
             state.cmd_queue.dequeue()
         }
 
