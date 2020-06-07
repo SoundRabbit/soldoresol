@@ -24,7 +24,7 @@ impl Tablemask {
         Self {
             size: [8.0, 8.0],
             position: [0.0, 0.0, 0.0],
-            background_color: ColorSystem::red_500(127),
+            background_color: ColorSystem::red(127, 5),
             size_is_binded: true,
             is_rounded: true,
         }

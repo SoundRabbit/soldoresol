@@ -652,24 +652,24 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     table.draw_cursor(
                         &table_coord,
                         0.25,
-                        ColorSystem::gray_900(255),
-                        ColorSystem::gray_900(255),
+                        ColorSystem::gray(255, 9),
+                        ColorSystem::gray(255, 9),
                     );
                 }
                 TableTool::Eracer => {
                     table.draw_cursor(
                         &table_coord,
                         0.5,
-                        ColorSystem::gray_900(255),
-                        ColorSystem::gray_100(255),
+                        ColorSystem::gray(255, 9),
+                        ColorSystem::gray(255, 1),
                     );
                 }
                 TableTool::Measure(_) => {
                     table.draw_cursor(
                         &table_coord,
                         0.125,
-                        ColorSystem::red_500(255),
-                        ColorSystem::red_500(255),
+                        ColorSystem::red(255, 5),
+                        ColorSystem::red(255, 5),
                     );
                 }
                 _ => {}
@@ -762,7 +762,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.world.table_mut().draw_line(
                 &start_point,
                 &end_point,
-                ColorSystem::gray_900(255),
+                ColorSystem::gray(255, 9),
                 0.5,
             );
             state
@@ -796,7 +796,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             let measure_length = state.world.table_mut().draw_measure(
                 &start_point,
                 &end_point,
-                ColorSystem::red_500(255),
+                ColorSystem::red(255, 5),
                 0.2,
             );
             state.table_state.measure_length = Some(measure_length);
@@ -1149,7 +1149,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 state.world.table_mut().draw_line(
                     &start_point,
                     &end_point,
-                    ColorSystem::gray_900(255),
+                    ColorSystem::gray(255, 9),
                     0.5,
                 );
                 update(state, Msg::Render)

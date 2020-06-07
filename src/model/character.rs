@@ -82,7 +82,7 @@ impl Character {
 
     pub fn set_is_focused(&mut self, is_focused: bool) {
         if is_focused {
-            self.background_color = ColorSystem::gray_900(127);
+            self.background_color = ColorSystem::gray(127, 9);
         } else {
             self.background_color = Color::from(0);
         }
