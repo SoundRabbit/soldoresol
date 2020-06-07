@@ -23,6 +23,10 @@
             border-right: 0.2em solid $gray-000;
         }
 
+        &>.pure-menu-children {
+            display: none;
+        }
+
         &:hover {
             &>.pure-menu-children {
                 display: block;

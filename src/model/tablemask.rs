@@ -7,6 +7,7 @@ pub struct Tablemask {
     position: [f64; 3],
     background_color: Color,
     size_is_binded: bool,
+    is_rounded: bool,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -15,6 +16,7 @@ pub struct TablemaskData {
     pub position: [f64; 3],
     pub background_color: u32,
     pub size_is_binded: bool,
+    pub is_rounded: bool,
 }
 
 impl Tablemask {
@@ -24,6 +26,7 @@ impl Tablemask {
             position: [0.0, 0.0, 0.0],
             background_color: ColorSystem::red_500(127),
             size_is_binded: true,
+            is_rounded: true,
         }
     }
 
@@ -40,6 +43,14 @@ impl Tablemask {
 
     pub fn size_is_binded(&self) -> bool {
         self.size_is_binded
+    }
+
+    pub fn set_is_rounded(&mut self, is_rounded: bool) {
+        self.is_rounded = is_rounded;
+    }
+
+    pub fn is_rounded(&self) -> bool {
+        self.is_rounded
     }
 
     pub fn set_position(&mut self, position: [f64; 3]) {
@@ -66,6 +77,7 @@ impl Tablemask {
             position: self.position.clone(),
             background_color: self.background_color.to_u32(),
             size_is_binded: self.size_is_binded,
+            is_rounded: self.is_rounded,
         }
     }
 }
@@ -87,6 +99,7 @@ impl From<TablemaskData> for Tablemask {
             position: tablemask_data.position,
             background_color: Color::from(tablemask_data.background_color),
             size_is_binded: tablemask_data.size_is_binded,
+            is_rounded: tablemask_data.is_rounded,
         }
     }
 }
@@ -95,12 +108,14 @@ impl TablemaskData {
     pub fn as_object(&self) -> JsObject {
         let background_color: u32 = self.background_color;
         let size_is_binded: bool = self.size_is_binded;
+        let is_rounded: bool = self.is_rounded;
 
         object! {
             size: array![self.size[0], self.size[1]],
             position: array![self.position[0], self.position[1], self.position[2]],
             background_color: background_color,
-            size_is_binded: size_is_binded
+            size_is_binded: size_is_binded,
+            is_rounded: is_rounded
         }
     }
 }
@@ -125,14 +140,25 @@ impl From<JsObject> for TablemaskData {
             position.get(2).as_f64().unwrap(),
         ];
 
-        let background_color = obj.get("background_color").unwrap().as_f64().unwrap() as u32;
-        let size_is_binded = obj.get("size_is_binded").unwrap().as_bool().unwrap();
+        let background_color = obj
+            .get("background_color")
+            .and_then(|x| x.as_f64().map(|x| x as u32))
+            .unwrap_or(0xFF000000);
+        let size_is_binded = obj
+            .get("size_is_binded")
+            .and_then(|x| x.as_bool())
+            .unwrap_or(false);
+        let is_rounded = obj
+            .get("is_rounded")
+            .and_then(|x| x.as_bool())
+            .unwrap_or(false);
 
         Self {
             size,
             position,
             background_color,
             size_is_binded,
+            is_rounded,
         }
     }
 }

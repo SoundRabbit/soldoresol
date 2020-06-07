@@ -127,6 +127,7 @@ fn object_tablemask(tablemask: &Tablemask, tablemask_id: u128) -> Html<Msg> {
     let input_height_id = random_id::hex(4);
     let width = tablemask.size()[0];
     let height = tablemask.size()[1];
+    let is_rounded = tablemask.is_rounded();
 
     modeless::body(
         Attributes::new().class("container-a grid pure-form"),
@@ -153,9 +154,10 @@ fn object_tablemask(tablemask: &Tablemask, tablemask_id: u128) -> Html<Msg> {
                             let size_is_binded = tablemask.size_is_binded();
                             move |w| {
                                 if let Ok(w) = w.parse() {
-                                    Msg::SetTablemaskSize(
+                                    Msg::SetTablemaskSizeWithStyle(
                                         tablemask_id,
                                         [w, if size_is_binded { w } else { height }],
+                                        is_rounded,
                                     )
                                 } else {
                                     Msg::NoOp
@@ -206,9 +208,10 @@ fn object_tablemask(tablemask: &Tablemask, tablemask_id: u128) -> Html<Msg> {
                             let size_is_binded = tablemask.size_is_binded();
                             move |h| {
                                 if let Ok(h) = h.parse() {
-                                    Msg::SetTablemaskSize(
+                                    Msg::SetTablemaskSizeWithStyle(
                                         tablemask_id,
                                         [if size_is_binded { h } else { width }, h],
+                                        is_rounded,
                                     )
                                 } else {
                                     Msg::NoOp

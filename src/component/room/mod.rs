@@ -276,7 +276,7 @@ pub enum Msg {
     SetCharacterMp(u128, i32),
     AddChracater(Character),
     AddTablemask(Tablemask),
-    SetTablemaskSize(u128, [f64; 2]),
+    SetTablemaskSizeWithStyle(u128, [f64; 2], bool),
     SetTablemaskSizeIsBinded(u128, bool),
 
     // チャット関係
@@ -1029,8 +1029,9 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.world.add_tablemask(tablemask);
             update(state, Msg::Render)
         }
-        Msg::SetTablemaskSize(tablemask_id, size) => {
+        Msg::SetTablemaskSizeWithStyle(tablemask_id, size, is_rounded) => {
             if let Some(tablemask) = state.world.tablemask_mut(&tablemask_id) {
+                tablemask.set_is_rounded(is_rounded);
                 tablemask.set_size(size);
             }
             update(state, Msg::Render)
@@ -1725,64 +1726,190 @@ fn render_context_menu_tablemask(contextmenu: &Contextmenu, object_id: u128) -> 
             Events::new(),
             vec![
                 Html::li(
-                    Attributes::new().class("pure-menu-item pure-menu-has-children"),
+                    Attributes::new()
+                        .class("pure-menu-item")
+                        .class("pure-menu-has-children"),
                     Events::new(),
                     vec![
                         btn::contextmenu_text(Attributes::new(), Events::new(), "サイズ"),
                         Html::ul(
                             Attributes::new().class("pure-menu-children"),
                             Events::new(),
-                            vec![
-                                btn::contextmenu_text(
-                                    Attributes::new(),
-                                    Events::new().on_click(move |_| {
-                                        Msg::SetTablemaskSize(object_id, [2., 2.])
-                                    }),
-                                    "半径1",
-                                ),
-                                btn::contextmenu_text(
-                                    Attributes::new(),
-                                    Events::new().on_click(move |_| {
-                                        Msg::SetTablemaskSize(object_id, [4., 4.])
-                                    }),
-                                    "半径2",
-                                ),
-                                btn::contextmenu_text(
-                                    Attributes::new(),
-                                    Events::new().on_click(move |_| {
-                                        Msg::SetTablemaskSize(object_id, [6., 6.])
-                                    }),
-                                    "半径3",
-                                ),
-                                btn::contextmenu_text(
-                                    Attributes::new(),
-                                    Events::new().on_click(move |_| {
-                                        Msg::SetTablemaskSize(object_id, [8., 8.])
-                                    }),
-                                    "半径4",
-                                ),
-                                btn::contextmenu_text(
-                                    Attributes::new(),
-                                    Events::new().on_click(move |_| {
-                                        Msg::SetTablemaskSize(object_id, [10., 10.])
-                                    }),
-                                    "半径5",
-                                ),
-                                btn::contextmenu_text(
-                                    Attributes::new(),
-                                    Events::new().on_click(move |_| {
-                                        Msg::SetTablemaskSize(object_id, [12., 12.])
-                                    }),
-                                    "半径6",
-                                ),
-                                btn::contextmenu_text(
-                                    Attributes::new(),
-                                    Events::new().on_click(move |_| {
-                                        Msg::SetTablemaskSize(object_id, [14., 14.])
-                                    }),
-                                    "半径7",
-                                ),
-                            ],
+                            vec![Html::li(
+                                Attributes::new()
+                                    .class("pure-menu-item")
+                                    .class("linear-h")
+                                    .style("display", "grid"),
+                                Events::new(),
+                                vec![
+                                    Html::ul(
+                                        Attributes::new().class("pure-menu-list"),
+                                        Events::new(),
+                                        vec![
+                                            btn::contextmenu_text(
+                                                Attributes::new(),
+                                                Events::new().on_click(move |_| {
+                                                    Msg::SetTablemaskSizeWithStyle(
+                                                        object_id,
+                                                        [2., 2.],
+                                                        true,
+                                                    )
+                                                }),
+                                                "半径1",
+                                            ),
+                                            btn::contextmenu_text(
+                                                Attributes::new(),
+                                                Events::new().on_click(move |_| {
+                                                    Msg::SetTablemaskSizeWithStyle(
+                                                        object_id,
+                                                        [4., 4.],
+                                                        true,
+                                                    )
+                                                }),
+                                                "半径2",
+                                            ),
+                                            btn::contextmenu_text(
+                                                Attributes::new(),
+                                                Events::new().on_click(move |_| {
+                                                    Msg::SetTablemaskSizeWithStyle(
+                                                        object_id,
+                                                        [6., 6.],
+                                                        true,
+                                                    )
+                                                }),
+                                                "半径3",
+                                            ),
+                                            btn::contextmenu_text(
+                                                Attributes::new(),
+                                                Events::new().on_click(move |_| {
+                                                    Msg::SetTablemaskSizeWithStyle(
+                                                        object_id,
+                                                        [8., 8.],
+                                                        true,
+                                                    )
+                                                }),
+                                                "半径4",
+                                            ),
+                                            btn::contextmenu_text(
+                                                Attributes::new(),
+                                                Events::new().on_click(move |_| {
+                                                    Msg::SetTablemaskSizeWithStyle(
+                                                        object_id,
+                                                        [10., 10.],
+                                                        true,
+                                                    )
+                                                }),
+                                                "半径5",
+                                            ),
+                                            btn::contextmenu_text(
+                                                Attributes::new(),
+                                                Events::new().on_click(move |_| {
+                                                    Msg::SetTablemaskSizeWithStyle(
+                                                        object_id,
+                                                        [12., 12.],
+                                                        true,
+                                                    )
+                                                }),
+                                                "半径6",
+                                            ),
+                                            btn::contextmenu_text(
+                                                Attributes::new(),
+                                                Events::new().on_click(move |_| {
+                                                    Msg::SetTablemaskSizeWithStyle(
+                                                        object_id,
+                                                        [14., 14.],
+                                                        true,
+                                                    )
+                                                }),
+                                                "半径7",
+                                            ),
+                                        ],
+                                    ),
+                                    Html::ul(
+                                        Attributes::new().class("pure-menu-list"),
+                                        Events::new(),
+                                        vec![
+                                            btn::contextmenu_text(
+                                                Attributes::new(),
+                                                Events::new().on_click(move |_| {
+                                                    Msg::SetTablemaskSizeWithStyle(
+                                                        object_id,
+                                                        [1., 1.],
+                                                        false,
+                                                    )
+                                                }),
+                                                "矩形1×1",
+                                            ),
+                                            btn::contextmenu_text(
+                                                Attributes::new(),
+                                                Events::new().on_click(move |_| {
+                                                    Msg::SetTablemaskSizeWithStyle(
+                                                        object_id,
+                                                        [2., 2.],
+                                                        false,
+                                                    )
+                                                }),
+                                                "矩形2×2",
+                                            ),
+                                            btn::contextmenu_text(
+                                                Attributes::new(),
+                                                Events::new().on_click(move |_| {
+                                                    Msg::SetTablemaskSizeWithStyle(
+                                                        object_id,
+                                                        [3., 3.],
+                                                        false,
+                                                    )
+                                                }),
+                                                "矩形3×3",
+                                            ),
+                                            btn::contextmenu_text(
+                                                Attributes::new(),
+                                                Events::new().on_click(move |_| {
+                                                    Msg::SetTablemaskSizeWithStyle(
+                                                        object_id,
+                                                        [4., 4.],
+                                                        false,
+                                                    )
+                                                }),
+                                                "矩形4×4",
+                                            ),
+                                            btn::contextmenu_text(
+                                                Attributes::new(),
+                                                Events::new().on_click(move |_| {
+                                                    Msg::SetTablemaskSizeWithStyle(
+                                                        object_id,
+                                                        [5., 5.],
+                                                        false,
+                                                    )
+                                                }),
+                                                "矩形5×5",
+                                            ),
+                                            btn::contextmenu_text(
+                                                Attributes::new(),
+                                                Events::new().on_click(move |_| {
+                                                    Msg::SetTablemaskSizeWithStyle(
+                                                        object_id,
+                                                        [6., 6.],
+                                                        false,
+                                                    )
+                                                }),
+                                                "矩形6×6",
+                                            ),
+                                            btn::contextmenu_text(
+                                                Attributes::new(),
+                                                Events::new().on_click(move |_| {
+                                                    Msg::SetTablemaskSizeWithStyle(
+                                                        object_id,
+                                                        [7., 7.],
+                                                        false,
+                                                    )
+                                                }),
+                                                "矩形7×7",
+                                            ),
+                                        ],
+                                    ),
+                                ],
+                            )],
                         ),
                     ],
                 ),
