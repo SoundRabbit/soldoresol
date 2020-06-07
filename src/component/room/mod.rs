@@ -223,6 +223,8 @@ pub struct State {
     pixel_ratio: f64,
     is_low_loading_mode: bool,
     loading_state: i64,
+    loading_resource_num: u64,
+    loaded_resource_num: u64,
     cmd_queue: CmdQueue<Msg, Sub>,
 }
 
@@ -351,6 +353,8 @@ pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
                 pixel_ratio: 1.0,
                 is_low_loading_mode: false,
                 loading_state: 0,
+                loading_resource_num: 0,
+                loaded_resource_num: 0,
                 cmd_queue: CmdQueue::new(),
             };
             let task = Cmd::task(|handler| {
@@ -1137,6 +1141,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     }
                 });
                 state.cmd_queue.enqueue(cmd);
+                state.loading_resource_num += 1;
                 if transport {
                     transport_data.insert(data_id, blob);
                 }
@@ -1153,6 +1158,12 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
         Msg::LoadReasource(resource_id, data) => {
             state.resource.insert(resource_id, data);
+            state.loading_resource_num -= 1;
+            if state.loading_resource_num == 0 {
+                state.loaded_resource_num = 0;
+            } else {
+                state.loaded_resource_num += 1;
+            }
             state.cmd_queue.dequeue()
         }
 
@@ -1309,6 +1320,7 @@ fn render(state: &State) -> Html<Msg> {
                 ),
                 render_side_menu(),
                 render_canvas_container(&state),
+                render_loading_state(state.loading_resource_num, state.loaded_resource_num),
                 render_context_menu(&state.contextmenu, &state.focused_object_id, &state.world),
             ],
             render_modals(&state.modals, &state.personal_data, &state.resource),
@@ -1954,6 +1966,26 @@ fn render_context_menu_tablemask(contextmenu: &Contextmenu, object_id: u128) -> 
             ],
         )],
     )
+}
+
+fn render_loading_state(loading_resource_num: u64, loaded_resource_num: u64) -> Html<Msg> {
+    if loading_resource_num == 0 {
+        Html::none()
+    } else {
+        Html::div(
+            Attributes::new()
+                .class("text-color-light")
+                .style("position", "fixed")
+                .style("top", "0em")
+                .style("right", "0em"),
+            Events::new(),
+            vec![Html::text(format!(
+                "Loading：{} / {}",
+                loaded_resource_num,
+                loading_resource_num + loaded_resource_num
+            ))],
+        )
+    }
 }
 
 fn render_hint() -> Html<Msg> {
