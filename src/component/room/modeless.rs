@@ -421,35 +421,51 @@ pub fn chat(
                         Events::new(),
                         vec![
                             Html::div(
-                                Attributes::new(),
+                                Attributes::new().class("flex-h"),
                                 Events::new(),
-                                chat_data
-                                    .senders
-                                    .iter()
-                                    .map(|sender| match sender {
-                                        Sender::Player => {
-                                            let icon = personal_data
-                                                .icon
-                                                .map(|icon_id| Icon::Resource(icon_id))
-                                                .unwrap_or(Icon::DefaultUser);
-                                            chat_icon(
-                                                "icon-small",
-                                                &icon,
-                                                &personal_data.name,
-                                                resource,
-                                            )
-                                        }
-                                        Sender::Character(character_id) => {
-                                            let character = world.character(character_id);
-                                            let icon = character
-                                                .and_then(|c| c.texture_id())
-                                                .map(|r_id| Icon::Resource(r_id))
-                                                .unwrap_or(Icon::DefaultUser);
-                                            let name = "";
-                                            chat_icon("icon-small", &icon, name, resource)
-                                        }
-                                    })
-                                    .collect(),
+                                vec![
+                                    chat_data
+                                        .senders
+                                        .iter()
+                                        .map(|sender| match sender {
+                                            Sender::Player => {
+                                                let icon = personal_data
+                                                    .icon
+                                                    .map(|icon_id| Icon::Resource(icon_id))
+                                                    .unwrap_or(Icon::DefaultUser);
+                                                chat_icon(
+                                                    "icon-small",
+                                                    &icon,
+                                                    &personal_data.name,
+                                                    resource,
+                                                )
+                                            }
+                                            Sender::Character(character_id) => {
+                                                let character = world.character(character_id);
+                                                let icon = character
+                                                    .and_then(|c| c.texture_id())
+                                                    .map(|r_id| Icon::Resource(r_id))
+                                                    .unwrap_or(Icon::DefaultUser);
+                                                let name = "";
+                                                chat_icon("icon-small", &icon, name, resource)
+                                            }
+                                        })
+                                        .collect::<Vec<Html<Msg>>>(),
+                                    vec![Html::div(
+                                        Attributes::new()
+                                            .class("chat-icon")
+                                            .class("icon")
+                                            .class("icon-small")
+                                            .class("icon-rounded")
+                                            .class("bg-color-green")
+                                            .class("text-color-light"),
+                                        Events::new(),
+                                        vec![awesome::i("fa-plus")],
+                                    )],
+                                ]
+                                .into_iter()
+                                .flatten()
+                                .collect(),
                             ),
                             Html::textarea(
                                 Attributes::new()

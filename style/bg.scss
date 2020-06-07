@@ -6,6 +6,10 @@
             background-color: rgba($red-500, 0.3);
         }
 
+        &-green {
+            background-color: $green-500;
+        }
+
         &-light {
             background-color: $gray-100;
         }
