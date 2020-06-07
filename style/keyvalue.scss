@@ -2,6 +2,7 @@
     display: grid;
     grid-template-columns: max-content 1fr;
     grid-auto-rows: max-content;
-    column-gap: 0.5em;
+    column-gap: .25em;
+    row-gap: .35em;
     align-items: center;
 }

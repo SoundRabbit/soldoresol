@@ -149,7 +149,7 @@ impl ModelessState {
         Self {
             is_showing,
             grubbed: None,
-            loc_a: [19, 2],
+            loc_a: [18, 2],
             loc_b: [24, 6],
         }
     }

@@ -53,7 +53,10 @@ fn object_character(character: &Character, character_id: u128, resource: &Resour
         Attributes::new().class("scroll-v"),
         Events::new(),
         vec![Html::div(
-            Attributes::new().class("editormodeless").class("flex-h"),
+            Attributes::new()
+                .class("editormodeless")
+                .class("pure-form")
+                .class("flex-h"),
             Events::new().on_mousedown(stop_propagation!()),
             vec![
                 Html::div(
@@ -87,61 +90,75 @@ fn object_character(character: &Character, character_id: u128, resource: &Resour
                             }),
                             vec![Html::text("画像を選択")],
                         ),
+                        Html::div(
+                            Attributes::new()
+                                .class("keyvalueoption")
+                                .class("container-a"),
+                            Events::new(),
+                            vec![
+                                Html::label(
+                                    Attributes::new(),
+                                    Events::new(),
+                                    vec![Html::text("幅")],
+                                ),
+                                Html::input(Attributes::new(), Events::new(), vec![]),
+                                btn::secondary(
+                                    Attributes::new(),
+                                    Events::new(),
+                                    vec![Html::text("画像に合わせる")],
+                                ),
+                                Html::label(
+                                    Attributes::new(),
+                                    Events::new(),
+                                    vec![Html::text("高さ")],
+                                ),
+                                Html::input(Attributes::new(), Events::new(), vec![]),
+                                btn::secondary(
+                                    Attributes::new(),
+                                    Events::new(),
+                                    vec![Html::text("画像に合わせる")],
+                                ),
+                            ],
+                        ),
                     ],
                 ),
                 Html::div(
                     Attributes::new().class("container-a"),
                     Events::new(),
-                    vec![
-                        Html::div(
-                            Attributes::new().class("keyvalue pure-form"),
-                            Events::new(),
-                            vec![
-                                Html::span(
-                                    Attributes::new(),
-                                    Events::new(),
-                                    vec![Html::text("HP")],
-                                ),
-                                Html::input(
-                                    Attributes::new()
-                                        .value(character.hp().to_string())
-                                        .type_("number"),
-                                    Events::new().on_input(move |s| {
-                                        if let Ok(s) = s.parse() {
-                                            Msg::SetCharacterHp(character_id, s)
-                                        } else {
-                                            Msg::NoOp
-                                        }
-                                    }),
-                                    vec![],
-                                ),
-                            ],
-                        ),
-                        Html::div(
-                            Attributes::new().class("keyvalue pure-form"),
-                            Events::new(),
-                            vec![
-                                Html::span(
-                                    Attributes::new(),
-                                    Events::new(),
-                                    vec![Html::text("MP")],
-                                ),
-                                Html::input(
-                                    Attributes::new()
-                                        .value(character.mp().to_string())
-                                        .type_("number"),
-                                    Events::new().on_input(move |s| {
-                                        if let Ok(s) = s.parse() {
-                                            Msg::SetCharacterMp(character_id, s)
-                                        } else {
-                                            Msg::NoOp
-                                        }
-                                    }),
-                                    vec![],
-                                ),
-                            ],
-                        ),
-                    ],
+                    vec![Html::div(
+                        Attributes::new().class("keyvalue"),
+                        Events::new(),
+                        vec![
+                            Html::span(Attributes::new(), Events::new(), vec![Html::text("HP")]),
+                            Html::input(
+                                Attributes::new()
+                                    .value(character.hp().to_string())
+                                    .type_("number"),
+                                Events::new().on_input(move |s| {
+                                    if let Ok(s) = s.parse() {
+                                        Msg::SetCharacterHp(character_id, s)
+                                    } else {
+                                        Msg::NoOp
+                                    }
+                                }),
+                                vec![],
+                            ),
+                            Html::span(Attributes::new(), Events::new(), vec![Html::text("MP")]),
+                            Html::input(
+                                Attributes::new()
+                                    .value(character.mp().to_string())
+                                    .type_("number"),
+                                Events::new().on_input(move |s| {
+                                    if let Ok(s) = s.parse() {
+                                        Msg::SetCharacterMp(character_id, s)
+                                    } else {
+                                        Msg::NoOp
+                                    }
+                                }),
+                                vec![],
+                            ),
+                        ],
+                    )],
                 ),
             ],
         )],
