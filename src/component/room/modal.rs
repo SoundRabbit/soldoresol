@@ -2,7 +2,7 @@ use super::{
     super::{btn, color_picker, icon, modal},
     ColorPickerType, Modal, Msg, PersonalData, SelectImageModal,
 };
-use crate::model::{ColorSystem, Resource};
+use crate::model::Resource;
 use kagura::prelude::*;
 use wasm_bindgen::JsCast;
 
