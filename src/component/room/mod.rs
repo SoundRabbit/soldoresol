@@ -104,7 +104,6 @@ pub struct ChatDataCollection {
     selecting_tab_idx: usize,
     selecting_sender_idx: usize,
     inputing_message: String,
-    skip: usize,
     take: usize,
     senders: Vec<ChatSender>,
     tabs: Vec<ChatTab>,
@@ -116,8 +115,7 @@ impl ChatDataCollection {
             selecting_tab_idx: 0,
             selecting_sender_idx: 0,
             inputing_message: "".into(),
-            skip: 0,
-            take: 40,
+            take: 50,
             senders: vec![ChatSender::Player],
             tabs: vec![ChatTab::new("メイン"), ChatTab::new("サブ")],
         }
@@ -338,7 +336,6 @@ pub enum Msg {
     SetChatSender(usize),
     AddChatSender(ChatSender),
     RemoveChatSender(ChatSender),
-    SetChatSkip(usize),
 
     // リソース管理
     LoadFromFileList(web_sys::FileList),
@@ -1197,10 +1194,6 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         Msg::RemoveChatSender(sender) => {
             let old_senders = state.chat_data.senders.drain(..);
             state.chat_data.senders = old_senders.into_iter().filter(|s| *s != sender).collect();
-            state.cmd_queue.dequeue()
-        }
-        Msg::SetChatSkip(skip) => {
-            state.chat_data.skip = skip;
             state.cmd_queue.dequeue()
         }
 
