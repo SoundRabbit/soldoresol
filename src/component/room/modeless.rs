@@ -1,7 +1,7 @@
 use super::{
     super::{awesome, btn, icon, modeless},
-    CharacterSelecterType, ChatDataCollection, Icon, Modal, ModelessState, Msg, PersonalData,
-    SelectImageModal, Sender,
+    CharacterSelecterType, ChatDataCollection, ChatSender, Icon, Modal, ModelessState, Msg,
+    PersonalData, SelectImageModal,
 };
 use crate::{
     model::{Character, Resource, Tablemask, World},
@@ -450,7 +450,7 @@ pub fn chat(
                                                             e.dyn_into::<web_sys::Element>().ok()
                                                         })
                                                         .and_then(|e| {
-                                                            e.get_attribute("data-character-id")
+                                                            e.get_attribute("data-sender-idx")
                                                         })
                                                         .and_then(|data| data.parse().ok())
                                                         .map(|sender_idx| {
@@ -472,7 +472,7 @@ pub fn chat(
                                                             Attributes::new()
                                                         };
                                                         match sender {
-                                                            Sender::Player => {
+                                                            ChatSender::Player => {
                                                                 let icon = personal_data
                                                                     .icon
                                                                     .map(|icon_id| {
@@ -484,7 +484,7 @@ pub fn chat(
                                                                         .class("clickable")
                                                                         .class("icon-small")
                                                                         .string(
-                                                                            "data-character-id",
+                                                                            "data-sender-idx",
                                                                             idx.to_string(),
                                                                         )
                                                                         .title(&personal_data.name),
@@ -493,7 +493,7 @@ pub fn chat(
                                                                     resource,
                                                                 )
                                                             }
-                                                            Sender::Character(character_id) => {
+                                                            ChatSender::Character(character_id) => {
                                                                 let character =
                                                                     world.character(character_id);
                                                                 let icon = character
@@ -508,7 +508,7 @@ pub fn chat(
                                                                         .class("clickable")
                                                                         .class("icon-small")
                                                                         .string(
-                                                                            "data-character-id",
+                                                                            "data-sender-idx",
                                                                             idx.to_string(),
                                                                         )
                                                                         .title(name),

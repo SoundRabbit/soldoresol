@@ -1,6 +1,6 @@
 use super::{
     super::{btn, color_picker, icon, modal},
-    ColorPickerType, Modal, Msg, PersonalData, SelectImageModal,
+    CharacterSelecterType, ColorPickerType, Modal, Msg, PersonalData, SelectImageModal,
 };
 use crate::model::{Resource, World};
 use kagura::prelude::*;
@@ -304,6 +304,7 @@ pub fn color_picker(color_picker_type: ColorPickerType) -> Html<Msg> {
 }
 
 pub fn character_selecter(
+    character_selecter_type: CharacterSelecterType,
     selected_character_id: HashSet<u128>,
     world: &World,
     resource: &Resource,
@@ -344,7 +345,16 @@ pub fn character_selecter(
                         Attributes::new()
                             .class("container-a")
                             .class("keyvalueoption"),
-                        Events::new(),
+                        Events::new().on_click(|e| {
+                            e.target()
+                                .and_then(|t| t.dyn_into::<web_sys::Element>().ok())
+                                .and_then(|e| e.get_attribute("data-character-id"))
+                                .and_then(|attr| attr.parse().ok())
+                                .map(move |character_id| {
+                                    Msg::SelectCharacter(character_id, character_selecter_type)
+                                })
+                                .unwrap_or(Msg::NoOp)
+                        }),
                         world
                             .characters()
                             .map(|(character_id, character)| {
@@ -354,22 +364,30 @@ pub fn character_selecter(
                                         .and_then(|t_id| resource.get_as_image_url(&t_id))
                                         .map(|img_url| {
                                             icon::from_img(
-                                                Attributes::new().class("icon-medium"),
+                                                Attributes::new().class("icon-medium").string(
+                                                    "data-character-id",
+                                                    character_id.to_string(),
+                                                ),
                                                 img_url.as_str(),
                                             )
                                         })
                                         .unwrap_or(icon::from_str(
-                                            Attributes::new().class("icon-medium"),
+                                            Attributes::new().class("icon-medium").string(
+                                                "data-character-id",
+                                                character_id.to_string(),
+                                            ),
                                             "",
                                         )),
                                     Html::div(
-                                        Attributes::new(),
+                                        Attributes::new()
+                                            .string("data-character-id", character_id.to_string()),
                                         Events::new(),
                                         vec![Html::text("")],
                                     ),
                                     btn::check(
                                         selected_character_id.contains(&character_id),
-                                        Attributes::new(),
+                                        Attributes::new()
+                                            .string("data-character-id", character_id.to_string()),
                                         Events::new(),
                                     ),
                                 ]

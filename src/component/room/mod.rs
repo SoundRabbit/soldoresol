@@ -74,12 +74,12 @@ impl ChatTab {
     }
 }
 
-enum Sender {
+pub enum ChatSender {
     Player,
     Character(u128),
 }
 
-impl Sender {
+impl ChatSender {
     fn as_character(&self) -> Option<u128> {
         match self {
             Self::Character(c_id) => Some(*c_id),
@@ -92,7 +92,7 @@ pub struct ChatDataCollection {
     selecting_tab_idx: usize,
     selecting_sender_idx: usize,
     inputing_message: String,
-    senders: Vec<Sender>,
+    senders: Vec<ChatSender>,
     tabs: Vec<ChatTab>,
 }
 
@@ -102,7 +102,7 @@ impl ChatDataCollection {
             selecting_tab_idx: 0,
             selecting_sender_idx: 0,
             inputing_message: "".into(),
-            senders: vec![Sender::Player],
+            senders: vec![ChatSender::Player],
             tabs: vec![ChatTab::new("メイン"), ChatTab::new("サブ")],
         }
     }
@@ -262,6 +262,7 @@ pub enum Msg {
     // メッセージの伝搬
     TransportContextMenuMsg(contextmenu::Msg),
     PickColor(Color, ColorPickerType),
+    SelectCharacter(u128, CharacterSelecterType),
 
     //コンテキストメニューの制御
     OpenContextMenu([f64; 2], [f64; 2]),
@@ -319,6 +320,7 @@ pub enum Msg {
     InputChatMessage(String),
     SendChatItem,
     SetChatSender(usize),
+    AddChatSender(ChatSender),
 
     // リソース管理
     LoadFromFileList(web_sys::FileList),
@@ -629,6 +631,14 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 update(state, Msg::SetTablemaskColor(obj_id, color))
             }
         },
+        Msg::SelectCharacter(character_id, character_selecter_type) => {
+            match character_selecter_type {
+                CharacterSelecterType::ChatSender => update(
+                    state,
+                    Msg::AddChatSender(ChatSender::Character(character_id)),
+                ),
+            }
+        }
 
         //コンテキストメニューの制御
         Msg::OpenContextMenu(page_mouse_coord, offset_mouse_coord) => {
@@ -1151,6 +1161,10 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             if sender_idx < state.chat_data.senders.len() {
                 state.chat_data.selecting_sender_idx = sender_idx;
             }
+            state.cmd_queue.dequeue()
+        }
+        Msg::AddChatSender(sender) => {
+            state.chat_data.senders.push(sender);
             state.cmd_queue.dequeue()
         }
 
@@ -2101,6 +2115,7 @@ fn render_modals(
             Modal::ColorPicker(color_picker_type) => modal::color_picker(color_picker_type.clone()),
             Modal::CharacterSelecter(character_selecter_type) => match character_selecter_type {
                 CharacterSelecterType::ChatSender => modal::character_selecter(
+                    character_selecter_type.clone(),
                     chat_data
                         .senders
                         .iter()
