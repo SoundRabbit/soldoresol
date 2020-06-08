@@ -10,15 +10,6 @@ use crate::{
 use kagura::prelude::*;
 use wasm_bindgen::JsCast;
 
-macro_rules! stop_propagation {
-    () => {{
-        |e| {
-            e.stop_propagation();
-            Msg::NoOp
-        }
-    }};
-}
-
 pub fn object(
     modeless_idx: usize,
     state: &ModelessState,
@@ -62,7 +53,7 @@ fn object_character(character: &Character, character_id: u128, resource: &Resour
                 .class("editormodeless")
                 .class("pure-form")
                 .class("flex-h"),
-            Events::new().on_mousedown(stop_propagation!()),
+            Events::new(),
             vec![
                 Html::div(
                     Attributes::new()
@@ -348,7 +339,7 @@ pub fn chat(
                                 Attributes::new()
                                     .style("align-self", "stretch")
                                     .class("scroll-v"),
-                                Events::new().on_mousedown(stop_propagation!()),
+                                Events::new(),
                                 selecting_tab
                                     .items
                                     .iter()
@@ -413,11 +404,9 @@ pub fn chat(
                                         btn::tab(
                                             tab_idx == selecting_tab_idx,
                                             Attributes::new(),
-                                            Events::new()
-                                                .on_mousedown(stop_propagation!())
-                                                .on_click(move |_| {
-                                                    Msg::SetSelectingChatTabIdx(tab_idx)
-                                                }),
+                                            Events::new().on_click(move |_| {
+                                                Msg::SetSelectingChatTabIdx(tab_idx)
+                                            }),
                                             &tab.name,
                                         )
                                     })
@@ -450,22 +439,20 @@ pub fn chat(
                                                 .class("flex-h")
                                                 .class("flex-padding")
                                                 .class("centering-v-i"),
-                                            Events::new()
-                                                .on_mousedown(stop_propagation!())
-                                                .on_click(|e| {
-                                                    e.target()
-                                                        .and_then(|e| {
-                                                            e.dyn_into::<web_sys::Element>().ok()
-                                                        })
-                                                        .and_then(|e| {
-                                                            e.get_attribute("data-sender-idx")
-                                                        })
-                                                        .and_then(|data| data.parse().ok())
-                                                        .map(|sender_idx| {
-                                                            Msg::SetChatSender(sender_idx)
-                                                        })
-                                                        .unwrap_or(Msg::NoOp)
-                                                }),
+                                            Events::new().on_click(|e| {
+                                                e.target()
+                                                    .and_then(|e| {
+                                                        e.dyn_into::<web_sys::Element>().ok()
+                                                    })
+                                                    .and_then(|e| {
+                                                        e.get_attribute("data-sender-idx")
+                                                    })
+                                                    .and_then(|data| data.parse().ok())
+                                                    .map(|sender_idx| {
+                                                        Msg::SetChatSender(sender_idx)
+                                                    })
+                                                    .unwrap_or(Msg::NoOp)
+                                            }),
                                             chat_data
                                                 .senders
                                                 .iter()
@@ -533,9 +520,7 @@ pub fn chat(
                                     .style("resize", "none")
                                     .class("text-wrap")
                                     .value(&chat_data.inputing_message),
-                                Events::new()
-                                    .on_mousedown(stop_propagation!())
-                                    .on_input(|m| Msg::InputChatMessage(m)),
+                                Events::new().on_input(|m| Msg::InputChatMessage(m)),
                                 vec![],
                             ),
                             Html::div(
@@ -543,9 +528,7 @@ pub fn chat(
                                 Events::new(),
                                 vec![btn::info(
                                     Attributes::new(),
-                                    Events::new()
-                                        .on_mousedown(stop_propagation!())
-                                        .on_click(|_| Msg::SendChatItem),
+                                    Events::new().on_click(|_| Msg::SendChatItem),
                                     vec![awesome::i("fa-paper-plane"), Html::text(" 送信")],
                                 )],
                             ),
@@ -587,10 +570,6 @@ fn frame(
                 e.stop_propagation();
                 Msg::NoOp
             })
-            .on_mousedown(move |e| {
-                e.stop_propagation();
-                Msg::GrubModeless(modeless_idx, Some([true, true, true, true]))
-            })
             .on_mouseup(move |e| {
                 e.stop_propagation();
                 Msg::GrubModeless(modeless_idx, None)
@@ -617,47 +596,63 @@ fn frame(
                     }
                 }
             }),
-        vec![children, resizers(modeless_idx)]
-            .into_iter()
-            .flatten()
-            .collect(),
+        vec![
+            children,
+            vec![Html::div(
+                Attributes::new(),
+                Events::new().on_mousedown(move |e| {
+                    e.stop_propagation();
+                    e.target()
+                        .and_then(|t| t.dyn_into::<web_sys::Element>().ok())
+                        .and_then(|t| t.get_attribute("data-position"))
+                        .map(|pos| match pos.as_str() {
+                            "top" => {
+                                Msg::GrubModeless(modeless_idx, Some([true, false, false, false]))
+                            }
+                            "left" => {
+                                Msg::GrubModeless(modeless_idx, Some([false, true, false, false]))
+                            }
+                            "bottom" => {
+                                Msg::GrubModeless(modeless_idx, Some([false, false, true, false]))
+                            }
+                            "right" => {
+                                Msg::GrubModeless(modeless_idx, Some([false, false, false, true]))
+                            }
+                            "top_left" => {
+                                Msg::GrubModeless(modeless_idx, Some([true, true, false, false]))
+                            }
+                            "bottom_left" => {
+                                Msg::GrubModeless(modeless_idx, Some([false, true, true, false]))
+                            }
+                            "bottom_right" => {
+                                Msg::GrubModeless(modeless_idx, Some([false, false, true, true]))
+                            }
+                            "top_right" => {
+                                Msg::GrubModeless(modeless_idx, Some([true, false, false, true]))
+                            }
+                            _ => Msg::NoOp,
+                        })
+                        .unwrap_or(Msg::NoOp)
+                }),
+                resizers(),
+            )],
+        ]
+        .into_iter()
+        .flatten()
+        .collect(),
     )
 }
 
-fn resizers(modeless_idx: usize) -> Vec<Html<Msg>> {
+fn resizers() -> Vec<Html<Msg>> {
     vec![
-        modeless::resizer::top(Events::new().on_mousedown(move |e| {
-            e.stop_propagation();
-            Msg::GrubModeless(modeless_idx, Some([true, false, false, false]))
-        })),
-        modeless::resizer::left(Events::new().on_mousedown(move |e| {
-            e.stop_propagation();
-            Msg::GrubModeless(modeless_idx, Some([false, true, false, false]))
-        })),
-        modeless::resizer::bottom(Events::new().on_mousedown(move |e| {
-            e.stop_propagation();
-            Msg::GrubModeless(modeless_idx, Some([false, false, true, false]))
-        })),
-        modeless::resizer::right(Events::new().on_mousedown(move |e| {
-            e.stop_propagation();
-            Msg::GrubModeless(modeless_idx, Some([false, false, false, true]))
-        })),
-        modeless::resizer::top_left(Events::new().on_mousedown(move |e| {
-            e.stop_propagation();
-            Msg::GrubModeless(modeless_idx, Some([true, true, false, false]))
-        })),
-        modeless::resizer::bottom_left(Events::new().on_mousedown(move |e| {
-            e.stop_propagation();
-            Msg::GrubModeless(modeless_idx, Some([false, true, true, false]))
-        })),
-        modeless::resizer::bottom_right(Events::new().on_mousedown(move |e| {
-            e.stop_propagation();
-            Msg::GrubModeless(modeless_idx, Some([false, false, true, true]))
-        })),
-        modeless::resizer::top_right(Events::new().on_mousedown(move |e| {
-            e.stop_propagation();
-            Msg::GrubModeless(modeless_idx, Some([true, false, false, true]))
-        })),
+        modeless::resizer::top(Attributes::new().string("data-position", "top")),
+        modeless::resizer::left(Attributes::new().string("data-position", "left")),
+        modeless::resizer::bottom(Attributes::new().string("data-position", "bottom")),
+        modeless::resizer::right(Attributes::new().string("data-position", "right")),
+        modeless::resizer::top_left(Attributes::new().string("data-position", "top_left")),
+        modeless::resizer::bottom_left(Attributes::new().string("data-position", "bottom_left")),
+        modeless::resizer::bottom_right(Attributes::new().string("data-position", "bottom_right")),
+        modeless::resizer::top_right(Attributes::new().string("data-position", "top_right")),
     ]
 }
 
@@ -666,7 +661,10 @@ fn header(modeless_idx: usize, header: Html<Msg>) -> Html<Msg> {
         Attributes::new()
             .style("display", "grid")
             .style("grid-template-columns", "1fr max-content"),
-        Events::new(),
+        Events::new().on_mousedown(move |e| {
+            e.stop_propagation();
+            Msg::GrubModeless(modeless_idx, Some([true, true, true, true]))
+        }),
         vec![
             header,
             Html::div(
