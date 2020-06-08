@@ -5,6 +5,8 @@ use crate::model::{Camera, Color, Table};
 use ndarray::Array2;
 
 pub struct TableRenderer {
+    table_size: [u64; 2],
+    grid_index_len: i32,
     grid_vertexis_buffer: WebGlF32Vbo,
     grid_index_buffer: WebGlI16Ibo,
     polygon_vertexis_buffer: WebGlF32Vbo,
@@ -18,9 +20,11 @@ pub struct TableRenderer {
 
 impl TableRenderer {
     pub fn new(gl: &WebGlRenderingContext) -> Self {
-        let grid_vertexis_buffer =
-            gl.create_vbo_with_f32array(&[[0.5, 0.0, 0.0], [-0.5, 0.0, 0.0]].concat());
-        let grid_index_buffer = gl.create_ibo_with_i16array(&[0, 1]);
+        let table_size = [20, 20];
+
+        let (grid_vertexis_buffer, grid_index_buffer, grid_index_len) =
+            Self::create_grid_buffers(&gl, &table_size);
+
         let polygon_vertexis_buffer = gl.create_vbo_with_f32array(
             &[
                 [0.5, 0.5, 0.0],
@@ -91,6 +95,8 @@ impl TableRenderer {
         let table_grid_program = TableGridProgram::new(gl);
         let table_texture_program = TableTextureProgram::new(gl);
         Self {
+            table_size,
+            grid_index_len,
             grid_vertexis_buffer,
             grid_index_buffer,
             polygon_vertexis_buffer,
@@ -104,7 +110,7 @@ impl TableRenderer {
     }
 
     pub fn render(
-        &self,
+        &mut self,
         gl: &WebGlRenderingContext,
         _camera: &Camera,
         vp_matrix: &Array2<f64>,
@@ -199,6 +205,18 @@ impl TableRenderer {
 
         gl.disable(web_sys::WebGlRenderingContext::CULL_FACE);
 
+        let table_size = table.size();
+        let table_size = [table_size[0].floor() as u64, table_size[1].floor() as u64];
+        if table_size[0] != self.table_size[0] || table_size[1] != self.table_size[1] {
+            let (grid_vertexis_buffer, grid_index_buffer, grid_index_len) =
+                Self::create_grid_buffers(&gl, &table_size);
+
+            self.grid_vertexis_buffer = grid_vertexis_buffer;
+            self.grid_index_buffer = grid_index_buffer;
+            self.grid_index_len = grid_index_len;
+            self.table_size = table_size;
+        }
+
         self.table_grid_program.use_program(gl);
         gl.set_attribute(
             &self.grid_vertexis_buffer,
@@ -210,51 +228,76 @@ impl TableRenderer {
             web_sys::WebGlRenderingContext::ELEMENT_ARRAY_BUFFER,
             Some(&self.grid_index_buffer),
         );
-
-        let (min_y, max_y) = (-(height / 2.0).floor(), (height / 2.0).floor());
-        let (min_x, max_x) = (-(width / 2.0).floor(), (width / 2.0).floor());
-
-        for d in 0..2 {
-            let (min, max, x_flag, y_flag) = if d % 2 == 0 {
-                (min_y as i32, max_y as i32, 0.0, 1.0)
-            } else {
-                (min_x as i32, max_x as i32, 1.0, 0.0)
-            };
-            for p in (min as i32)..(max as i32 + 1) {
-                let p = p as f64;
-                let model_matrix: Array2<f64> = ModelMatrix::new()
-                    .with_scale(&[width, height, 1.0])
-                    .with_z_axis_rotation(std::f64::consts::PI / 2.0 * x_flag)
-                    .with_movement(&[p * x_flag, p * y_flag, 0.0])
-                    .into();
-                let mvp_matrix = model_matrix.dot(vp_matrix);
-                gl.uniform_matrix4fv_with_f32_array(
-                    Some(&self.table_grid_program.u_translate_location),
-                    false,
-                    &[
-                        mvp_matrix.row(0).to_vec(),
-                        mvp_matrix.row(1).to_vec(),
-                        mvp_matrix.row(2).to_vec(),
-                        mvp_matrix.row(3).to_vec(),
-                    ]
-                    .concat()
-                    .into_iter()
-                    .map(|a| a as f32)
-                    .collect::<Vec<f32>>(),
-                );
-                gl.uniform4fv_with_f32_array(
-                    Some(&self.table_grid_program.u_mask_color_location),
-                    &Color::from([0, 0, 0, 255]).to_f32array(),
-                );
-                gl.draw_elements_with_i32(
-                    web_sys::WebGlRenderingContext::LINE_LOOP,
-                    2,
-                    web_sys::WebGlRenderingContext::UNSIGNED_SHORT,
-                    0,
-                );
-            }
-        }
+        let model_matrix: Array2<f64> = ModelMatrix::new().into();
+        let mvp_matrix = model_matrix.dot(vp_matrix);
+        gl.uniform_matrix4fv_with_f32_array(
+            Some(&self.table_grid_program.u_translate_location),
+            false,
+            &[
+                mvp_matrix.row(0).to_vec(),
+                mvp_matrix.row(1).to_vec(),
+                mvp_matrix.row(2).to_vec(),
+                mvp_matrix.row(3).to_vec(),
+            ]
+            .concat()
+            .into_iter()
+            .map(|a| a as f32)
+            .collect::<Vec<f32>>(),
+        );
+        gl.uniform4fv_with_f32_array(
+            Some(&self.table_grid_program.u_mask_color_location),
+            &Color::from([0, 0, 0, 255]).to_f32array(),
+        );
+        gl.draw_elements_with_i32(
+            web_sys::WebGlRenderingContext::LINES,
+            self.grid_index_len,
+            web_sys::WebGlRenderingContext::UNSIGNED_SHORT,
+            0,
+        );
 
         table.rendered();
+    }
+
+    fn create_grid_buffers(
+        gl: &WebGlRenderingContext,
+        table_size: &[u64; 2],
+    ) -> (WebGlF32Vbo, WebGlI16Ibo, i32) {
+        let width = table_size[0];
+        let height = table_size[1];
+
+        let x_offset = width as f32 / 2.0;
+        let y_offset = height as f32 / 2.0;
+
+        let mut grid_vertexis = vec![];
+
+        for x in 0..(width + 1) {
+            let x = x as f32 - x_offset;
+            grid_vertexis.push(vec![x, -y_offset, 0.0]);
+            grid_vertexis.push(vec![x, y_offset, 0.0]);
+        }
+
+        for y in 0..(height + 1) {
+            let y = y as f32 - y_offset;
+            grid_vertexis.push(vec![-x_offset, y, 0.0]);
+            grid_vertexis.push(vec![x_offset, y, 0.0]);
+        }
+
+        let mut grid_idx = vec![];
+
+        for idx in 0..grid_vertexis.len() {
+            grid_idx.push(idx as i16);
+        }
+
+        let grid_vertexis: Vec<f32> = grid_vertexis.into_iter().flatten().collect();
+
+        let grid_vertexis_buffer = gl.create_vbo_with_f32array(&grid_vertexis);
+
+        let grid_index_buffer = gl.create_ibo_with_i16array(&grid_idx);
+
+        (
+            grid_vertexis_buffer,
+            grid_index_buffer,
+            grid_idx.len() as i32,
+        )
     }
 }
