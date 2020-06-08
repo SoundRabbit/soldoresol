@@ -318,6 +318,9 @@ pub fn chat(
 ) -> Html<Msg> {
     let selecting_tab_idx = chat_data.selecting_tab_idx;
     let selecting_tab = &chat_data.tabs[selecting_tab_idx];
+    let skip = chat_data.skip;
+    let take = chat_data.take;
+
     frame(
         modeless_idx,
         state,
@@ -350,6 +353,8 @@ pub fn chat(
                                 selecting_tab
                                     .items
                                     .iter()
+                                    .skip(skip)
+                                    .take(take)
                                     .map(|item| {
                                         Html::div(
                                             Attributes::new().class("pure-form chat-item"),

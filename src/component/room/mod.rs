@@ -93,6 +93,8 @@ pub struct ChatDataCollection {
     selecting_tab_idx: usize,
     selecting_sender_idx: usize,
     inputing_message: String,
+    skip: usize,
+    take: usize,
     senders: Vec<ChatSender>,
     tabs: Vec<ChatTab>,
 }
@@ -103,6 +105,8 @@ impl ChatDataCollection {
             selecting_tab_idx: 0,
             selecting_sender_idx: 0,
             inputing_message: "".into(),
+            skip: 0,
+            take: 50,
             senders: vec![ChatSender::Player],
             tabs: vec![ChatTab::new("メイン"), ChatTab::new("サブ")],
         }
