@@ -1,5 +1,13 @@
 use kagura::prelude::*;
 
+pub fn none<Msg>(attrs: Attributes) -> Html<Msg> {
+    Html::div(
+        attrs.class("icon").class("icon-rounded"),
+        Events::new(),
+        vec![],
+    )
+}
+
 pub fn from_str<Msg>(attrs: Attributes, v: &str) -> Html<Msg> {
     Html::div(
         attrs
@@ -11,5 +19,17 @@ pub fn from_str<Msg>(attrs: Attributes, v: &str) -> Html<Msg> {
         vec![Html::text(
             v.chars().next().map(|c| c.to_string()).unwrap_or("".into()),
         )],
+    )
+}
+
+pub fn from_img<Msg>(attrs: Attributes, url: impl Into<String>) -> Html<Msg> {
+    Html::img(
+        attrs
+            .class("pure-img")
+            .class("icon")
+            .class("icon-rounded")
+            .string("src", url),
+        Events::new(),
+        vec![],
     )
 }

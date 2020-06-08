@@ -2,7 +2,7 @@ use super::{
     super::{btn, color_picker, icon, modal},
     ColorPickerType, Modal, Msg, PersonalData, SelectImageModal,
 };
-use crate::model::Resource;
+use crate::model::{Resource, World};
 use kagura::prelude::*;
 use wasm_bindgen::JsCast;
 
@@ -295,6 +295,51 @@ pub fn color_picker(color_picker_type: ColorPickerType) -> Html<Msg> {
                         color.alpha = 127;
                         Msg::PickColor(color, color_picker_type)
                     })],
+                ),
+                modal::footer(Attributes::new(), Events::new(), vec![]),
+            ],
+        )],
+    )
+}
+
+pub fn character_selecter(world: &World, resource: &Resource) -> Html<Msg> {
+    modal::container(
+        Attributes::new(),
+        Events::new(),
+        vec![modal::frame(
+            12,
+            Attributes::new(),
+            Events::new(),
+            vec![
+                modal::header(
+                    Attributes::new()
+                        .style("display", "grid")
+                        .style("grid-template-columns", "1fr max-content"),
+                    Events::new(),
+                    vec![
+                        Html::div(
+                            Attributes::new().class("text-label"),
+                            Events::new(),
+                            vec![Html::text("キャラクターの選択")],
+                        ),
+                        Html::div(
+                            Attributes::new().class("linear-h"),
+                            Events::new(),
+                            vec![btn::close(
+                                Attributes::new(),
+                                Events::new().on_click(move |_| Msg::CloseModal),
+                            )],
+                        ),
+                    ],
+                ),
+                modal::body(
+                    Attributes::new().class("scroll-v"),
+                    Events::new(),
+                    vec![Html::div(
+                        Attributes::new().class("container-a").class("linear-v"),
+                        Events::new(),
+                        vec![],
+                    )],
                 ),
                 modal::footer(Attributes::new(), Events::new(), vec![]),
             ],
