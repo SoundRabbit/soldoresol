@@ -371,22 +371,29 @@ pub fn character_selecter(
                                         .and_then(|t_id| resource.get_as_image_url(&t_id))
                                         .map(|img_url| {
                                             icon::from_img(
-                                                Attributes::new().class("icon-medium").string(
-                                                    "data-character-id",
-                                                    character_id.to_string(),
-                                                ),
+                                                Attributes::new()
+                                                    .class("icon-medium")
+                                                    .class("clickable")
+                                                    .string(
+                                                        "data-character-id",
+                                                        character_id.to_string(),
+                                                    ),
                                                 img_url.as_str(),
                                             )
                                         })
                                         .unwrap_or(icon::from_str(
-                                            Attributes::new().class("icon-medium").string(
-                                                "data-character-id",
-                                                character_id.to_string(),
-                                            ),
+                                            Attributes::new()
+                                                .class("icon-medium")
+                                                .class("clickable")
+                                                .string(
+                                                    "data-character-id",
+                                                    character_id.to_string(),
+                                                ),
                                             "",
                                         )),
                                     Html::div(
                                         Attributes::new()
+                                            .class("clickable")
                                             .string("data-character-id", character_id.to_string()),
                                         Events::new(),
                                         vec![Html::text("")],

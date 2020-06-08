@@ -1151,23 +1151,48 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.cmd_queue.dequeue()
         }
         Msg::SendChatItem => {
-            let tab_idx = state.chat_data.selecting_tab_idx;
-            let message = state.chat_data.inputing_message.as_str().trim_end().into();
+            let sender = &state.chat_data.senders[state.chat_data.selecting_sender_idx];
 
-            state.chat_data.inputing_message = "".into();
-
-            let chat_item = ChatItem {
-                display_name: state.personal_data.name.clone(),
-                peer_id: state.peer.id(),
-                icon: state
-                    .personal_data
-                    .icon
-                    .map(|r_id| Icon::Resource(r_id))
-                    .unwrap_or(Icon::DefaultUser),
-                payload: message,
+            let sender = match sender {
+                ChatSender::Player => Some((
+                    state.personal_data.name.clone(),
+                    state
+                        .personal_data
+                        .icon
+                        .map(|r_id| Icon::Resource(r_id))
+                        .unwrap_or(Icon::DefaultUser),
+                )),
+                ChatSender::Character(character_id) => {
+                    if let Some(character) = state.world.character(&character_id) {
+                        Some((
+                            "".into(),
+                            character
+                                .texture_id()
+                                .map(|r_id| Icon::Resource(r_id))
+                                .unwrap_or(Icon::DefaultUser),
+                        ))
+                    } else {
+                        None
+                    }
+                }
             };
 
-            state.chat_data.tabs[tab_idx].items.push(chat_item);
+            if let Some((display_name, icon)) = sender {
+                let tab_idx = state.chat_data.selecting_tab_idx;
+                let message: String = state.chat_data.inputing_message.drain(..).collect();
+                let message: String = message.as_str().trim_end().into();
+
+                if message.as_str().len() > 0 {
+                    let chat_item = ChatItem {
+                        display_name: display_name,
+                        peer_id: state.peer.id(),
+                        icon: icon,
+                        payload: message,
+                    };
+
+                    state.chat_data.tabs[tab_idx].items.push(chat_item);
+                }
+            }
             state.cmd_queue.dequeue()
         }
         Msg::SetChatSender(sender_idx) => {

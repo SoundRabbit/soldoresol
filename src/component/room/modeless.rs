@@ -319,7 +319,6 @@ pub fn chat(
     let selecting_tab_idx = chat_data.selecting_tab_idx;
     let selecting_tab = &chat_data.tabs[selecting_tab_idx];
     let take = chat_data.take;
-    let chat_item_len = selecting_tab.items.len();
 
     frame(
         modeless_idx,
