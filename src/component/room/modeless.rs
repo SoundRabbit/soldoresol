@@ -331,7 +331,7 @@ pub fn chat(
             modeless::body(
                 Attributes::new()
                     .class("linear-v")
-                    .style("grid-template-rows", "1fr")
+                    .style("grid-template-rows", "1fr fit-content(40%)")
                     .style("row-gap", "0"),
                 Events::new(),
                 vec![
