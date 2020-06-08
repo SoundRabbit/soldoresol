@@ -1,7 +1,6 @@
 use super::awesome;
 use kagura::prelude::*;
 
-#[allow(dead_code)]
 pub fn primary<Msg>(
     attributes: Attributes,
     events: Events<Msg>,
@@ -14,7 +13,6 @@ pub fn primary<Msg>(
     )
 }
 
-#[allow(dead_code)]
 pub fn secondary<Msg>(
     attributes: Attributes,
     events: Events<Msg>,
@@ -27,7 +25,6 @@ pub fn secondary<Msg>(
     )
 }
 
-#[allow(dead_code)]
 pub fn info<Msg>(
     attributes: Attributes,
     events: Events<Msg>,
@@ -40,7 +37,6 @@ pub fn info<Msg>(
     )
 }
 
-#[allow(dead_code)]
 pub fn danger<Msg>(
     attributes: Attributes,
     events: Events<Msg>,
@@ -53,7 +49,6 @@ pub fn danger<Msg>(
     )
 }
 
-#[allow(dead_code)]
 pub fn success<Msg>(
     attributes: Attributes,
     events: Events<Msg>,
@@ -66,7 +61,6 @@ pub fn success<Msg>(
     )
 }
 
-#[allow(dead_code)]
 pub fn dark<Msg>(
     attributes: Attributes,
     events: Events<Msg>,
@@ -79,7 +73,6 @@ pub fn dark<Msg>(
     )
 }
 
-#[allow(dead_code)]
 pub fn selectable<Msg>(
     is_selected: bool,
     attributes: Attributes,
@@ -101,7 +94,6 @@ pub fn selectable<Msg>(
     }
 }
 
-#[allow(dead_code)]
 pub fn toggle<Msg>(is_toggled: bool, attributes: Attributes, events: Events<Msg>) -> Html<Msg> {
     if is_toggled {
         Html::span(attributes.class("toggle toggle-on"), events, vec![])
@@ -110,7 +102,6 @@ pub fn toggle<Msg>(is_toggled: bool, attributes: Attributes, events: Events<Msg>
     }
 }
 
-#[allow(dead_code)]
 pub fn allocate<Msg>(attributes: Attributes, events: Events<Msg>) -> Html<Msg> {
     Html::button(
         attributes.class("pure-button pure-button-light allocate fab fa-buromobelexperte"),
@@ -119,7 +110,6 @@ pub fn allocate<Msg>(attributes: Attributes, events: Events<Msg>) -> Html<Msg> {
     )
 }
 
-#[allow(dead_code)]
 pub fn close<Msg>(attributes: Attributes, events: Events<Msg>) -> Html<Msg> {
     Html::button(
         attributes.class("pure-button pure-button-dark"),
@@ -128,7 +118,6 @@ pub fn close<Msg>(attributes: Attributes, events: Events<Msg>) -> Html<Msg> {
     )
 }
 
-#[allow(dead_code)]
 pub fn transparent<Msg>(
     attributes: Attributes,
     events: Events<Msg>,
@@ -141,6 +130,22 @@ pub fn transparent<Msg>(
     )
 }
 
+pub fn check<Msg>(is_checked: bool, attributes: Attributes, events: Events<Msg>) -> Html<Msg> {
+    if is_checked {
+        Html::div(
+            attributes.class("checkbox").class("checkbox-checked"),
+            events,
+            vec![awesome::i("fa-check-square")],
+        )
+    } else {
+        Html::div(
+            attributes.class("checkbox"),
+            events,
+            vec![awesome::i("fa-square")],
+        )
+    }
+}
+
 #[allow(dead_code)]
 pub fn add<Msg>(attributes: Attributes, events: Events<Msg>) -> Html<Msg> {
     Html::button(
@@ -150,7 +155,6 @@ pub fn add<Msg>(attributes: Attributes, events: Events<Msg>) -> Html<Msg> {
     )
 }
 
-#[allow(dead_code)]
 pub fn tab<Msg>(
     is_selected: bool,
     attributes: Attributes,

@@ -79,6 +79,15 @@ enum Sender {
     Character(u128),
 }
 
+impl Sender {
+    fn as_character(&self) -> Option<u128> {
+        match self {
+            Self::Character(c_id) => Some(*c_id),
+            _ => None,
+        }
+    }
+}
+
 pub struct ChatDataCollection {
     selecting_tab_idx: usize,
     selecting_sender_idx: usize,
@@ -182,11 +191,17 @@ pub enum ColorPickerType {
     TablemaskColor(u128),
 }
 
+#[derive(Clone)]
+pub enum CharacterSelecterType {
+    ChatSender,
+}
+
 pub enum Modal {
     Resource,
     SelectImage(SelectImageModal),
     PersonalSetting,
     ColorPicker(ColorPickerType),
+    CharacterSelecter(CharacterSelecterType),
 }
 
 struct CmdQueue<M, S> {
@@ -303,6 +318,7 @@ pub enum Msg {
     SetSelectingChatTabIdx(usize),
     InputChatMessage(String),
     SendChatItem,
+    SetChatSender(usize),
 
     // リソース管理
     LoadFromFileList(web_sys::FileList),
@@ -1131,6 +1147,12 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.chat_data.tabs[tab_idx].items.push(chat_item);
             state.cmd_queue.dequeue()
         }
+        Msg::SetChatSender(sender_idx) => {
+            if sender_idx < state.chat_data.senders.len() {
+                state.chat_data.selecting_sender_idx = sender_idx;
+            }
+            state.cmd_queue.dequeue()
+        }
 
         // リソース
         Msg::LoadFromFileList(file_list) => {
@@ -1361,7 +1383,13 @@ fn render(state: &State) -> Html<Msg> {
                 render_loading_state(state.loading_resource_num, state.loaded_resource_num),
                 render_context_menu(&state.contextmenu, &state.focused_object_id, &state.world),
             ],
-            render_modals(&state.modals, &state.personal_data, &state.resource),
+            render_modals(
+                &state.modals,
+                &state.world,
+                &state.personal_data,
+                &state.chat_data,
+                &state.resource,
+            ),
         ]
         .into_iter()
         .flatten()
@@ -2059,7 +2087,9 @@ fn render_measure_length(measure_length: &Option<f64>) -> Html<Msg> {
 
 fn render_modals(
     modals: &Vec<Modal>,
+    world: &World,
     personal_data: &PersonalData,
+    chat_data: &ChatDataCollection,
     resource: &Resource,
 ) -> Vec<Html<Msg>> {
     let mut children = vec![];
@@ -2069,6 +2099,17 @@ fn render_modals(
             Modal::SelectImage(modal_type) => modal::select_image(resource, modal_type),
             Modal::PersonalSetting => modal::personal_setting(personal_data, resource),
             Modal::ColorPicker(color_picker_type) => modal::color_picker(color_picker_type.clone()),
+            Modal::CharacterSelecter(character_selecter_type) => match character_selecter_type {
+                CharacterSelecterType::ChatSender => modal::character_selecter(
+                    chat_data
+                        .senders
+                        .iter()
+                        .filter_map(|s| s.as_character())
+                        .collect(),
+                    world,
+                    resource,
+                ),
+            },
         };
         children.push(child);
     }

@@ -4,6 +4,7 @@ use super::{
 };
 use crate::model::{Resource, World};
 use kagura::prelude::*;
+use std::collections::HashSet;
 use wasm_bindgen::JsCast;
 
 pub fn resource(resource: &Resource) -> Html<Msg> {
@@ -302,7 +303,11 @@ pub fn color_picker(color_picker_type: ColorPickerType) -> Html<Msg> {
     )
 }
 
-pub fn character_selecter(world: &World, resource: &Resource) -> Html<Msg> {
+pub fn character_selecter(
+    selected_character_id: HashSet<u128>,
+    world: &World,
+    resource: &Resource,
+) -> Html<Msg> {
     modal::container(
         Attributes::new(),
         Events::new(),
@@ -336,9 +341,41 @@ pub fn character_selecter(world: &World, resource: &Resource) -> Html<Msg> {
                     Attributes::new().class("scroll-v"),
                     Events::new(),
                     vec![Html::div(
-                        Attributes::new().class("container-a").class("linear-v"),
+                        Attributes::new()
+                            .class("container-a")
+                            .class("keyvalueoption"),
                         Events::new(),
-                        vec![],
+                        world
+                            .characters()
+                            .map(|(character_id, character)| {
+                                vec![
+                                    character
+                                        .texture_id()
+                                        .and_then(|t_id| resource.get_as_image_url(&t_id))
+                                        .map(|img_url| {
+                                            icon::from_img(
+                                                Attributes::new().class("icon-medium"),
+                                                img_url.as_str(),
+                                            )
+                                        })
+                                        .unwrap_or(icon::from_str(
+                                            Attributes::new().class("icon-medium"),
+                                            "",
+                                        )),
+                                    Html::div(
+                                        Attributes::new(),
+                                        Events::new(),
+                                        vec![Html::text("")],
+                                    ),
+                                    btn::check(
+                                        selected_character_id.contains(&character_id),
+                                        Attributes::new(),
+                                        Events::new(),
+                                    ),
+                                ]
+                            })
+                            .flatten()
+                            .collect(),
                     )],
                 ),
                 modal::footer(Attributes::new(), Events::new(), vec![]),

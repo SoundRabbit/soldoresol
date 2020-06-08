@@ -1,12 +1,14 @@
 use super::{
     super::{awesome, btn, icon, modeless},
-    ChatDataCollection, Icon, Modal, ModelessState, Msg, PersonalData, SelectImageModal, Sender,
+    CharacterSelecterType, ChatDataCollection, Icon, Modal, ModelessState, Msg, PersonalData,
+    SelectImageModal, Sender,
 };
 use crate::{
     model::{Character, Resource, Tablemask, World},
     random_id,
 };
 use kagura::prelude::*;
+use wasm_bindgen::JsCast;
 
 macro_rules! stop_propagation {
     () => {{
@@ -440,7 +442,22 @@ pub fn chat(
                                             Attributes::new()
                                                 .class("linear-h")
                                                 .class("centering-v-i"),
-                                            Events::new().on_mousedown(stop_propagation!()),
+                                            Events::new()
+                                                .on_mousedown(stop_propagation!())
+                                                .on_click(|e| {
+                                                    e.target()
+                                                        .and_then(|e| {
+                                                            e.dyn_into::<web_sys::Element>().ok()
+                                                        })
+                                                        .and_then(|e| {
+                                                            e.get_attribute("data-character-id")
+                                                        })
+                                                        .and_then(|data| data.parse().ok())
+                                                        .map(|sender_idx| {
+                                                            Msg::SetChatSender(sender_idx)
+                                                        })
+                                                        .unwrap_or(Msg::NoOp)
+                                                }),
                                             vec![
                                                 chat_data
                                                     .senders
@@ -466,6 +483,10 @@ pub fn chat(
                                                                     attrs
                                                                         .class("clickable")
                                                                         .class("icon-small")
+                                                                        .string(
+                                                                            "data-character-id",
+                                                                            idx.to_string(),
+                                                                        )
                                                                         .title(&personal_data.name),
                                                                     &icon,
                                                                     &personal_data.name,
@@ -488,8 +509,7 @@ pub fn chat(
                                                                         .class("icon-small")
                                                                         .string(
                                                                             "data-character-id",
-                                                                            character_id
-                                                                                .to_string(),
+                                                                            idx.to_string(),
                                                                         )
                                                                         .title(name),
                                                                     &icon,
@@ -509,7 +529,12 @@ pub fn chat(
                                                         .class("text-color-light")
                                                         .class("aside")
                                                         .title("追加"),
-                                                    Events::new(),
+                                                    Events::new().on_click(|e| {
+                                                        e.stop_propagation();
+                                                        Msg::OpenModal(Modal::CharacterSelecter(
+                                                            CharacterSelecterType::ChatSender,
+                                                        ))
+                                                    }),
                                                     vec![awesome::i("fa-plus")],
                                                 )],
                                             ]
