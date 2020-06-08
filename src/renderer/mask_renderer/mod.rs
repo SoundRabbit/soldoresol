@@ -4,12 +4,13 @@ mod tablemask_collection_renderer;
 use super::{program::MaskProgram, webgl::WebGlRenderingContext};
 use crate::model::{Camera, World};
 pub use character_collection_renderer::CharacterCollectionRenderer;
+use std::rc::Rc;
 use tablemask_collection_renderer::TablemaskCollectionRenderer;
 use wasm_bindgen::JsCast;
 
 pub struct MaskRenderer {
     canvas: web_sys::HtmlCanvasElement,
-    gl: WebGlRenderingContext,
+    gl: Rc<WebGlRenderingContext>,
     mask_program: MaskProgram,
     character_collection_renderer: CharacterCollectionRenderer,
     tablemask_collection_renderer: TablemaskCollectionRenderer,
@@ -25,7 +26,7 @@ impl MaskRenderer {
             .unwrap()
             .dyn_into::<web_sys::WebGlRenderingContext>()
             .unwrap();
-        let gl = WebGlRenderingContext(gl);
+        let gl = Rc::new(WebGlRenderingContext(gl));
 
         gl.enable(web_sys::WebGlRenderingContext::DEPTH_TEST);
         gl.depth_func(web_sys::WebGlRenderingContext::LEQUAL);
@@ -49,6 +50,10 @@ impl MaskRenderer {
             tablemask_collection_renderer,
             id_map: Vec::new(),
         }
+    }
+
+    pub fn gl(&self) -> Rc<WebGlRenderingContext> {
+        Rc::clone(&self.gl)
     }
 
     pub fn table_object_id(&self, position: &[f64; 2]) -> u128 {
@@ -105,7 +110,5 @@ impl MaskRenderer {
             world.characters(),
             &mut self.id_map,
         );
-
-        gl.flush();
     }
 }

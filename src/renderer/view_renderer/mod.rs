@@ -63,7 +63,5 @@ impl ViewRenderer {
             world.characters_mut(),
             resource,
         );
-
-        gl.flush();
     }
 }
