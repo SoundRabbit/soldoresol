@@ -135,14 +135,10 @@ pub fn check<Msg>(is_checked: bool, attributes: Attributes, events: Events<Msg>)
         Html::div(
             attributes.class("checkbox").class("checkbox-checked"),
             events,
-            vec![awesome::i("fa-check-square")],
+            vec![Html::text("✔")],
         )
     } else {
-        Html::div(
-            attributes.class("checkbox"),
-            events,
-            vec![awesome::i("fa-square")],
-        )
+        Html::div(attributes.class("checkbox"), events, vec![])
     }
 }
 

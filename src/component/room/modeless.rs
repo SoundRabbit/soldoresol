@@ -428,19 +428,22 @@ pub fn chat(
                                 Attributes::new(),
                                 Events::new(),
                                 vec![Html::div(
-                                    Attributes::new().class("linear-h"),
+                                    Attributes::new().class("keyvalue"),
                                     Events::new(),
                                     vec![
-                                        Html::div(
-                                            Attributes::new()
-                                                .class("centering")
-                                                .class("centering-v"),
-                                            Events::new(),
-                                            vec![Html::text("From:")],
+                                        btn::info(
+                                            Attributes::new().class("aside"),
+                                            Events::new().on_click(|_| {
+                                                Msg::OpenModal(Modal::CharacterSelecter(
+                                                    CharacterSelecterType::ChatSender,
+                                                ))
+                                            }),
+                                            vec![Html::text("送信元")],
                                         ),
                                         Html::div(
                                             Attributes::new()
-                                                .class("linear-h")
+                                                .class("flex-h")
+                                                .class("flex-padding")
                                                 .class("centering-v-i"),
                                             Events::new()
                                                 .on_mousedown(stop_propagation!())
@@ -458,89 +461,64 @@ pub fn chat(
                                                         })
                                                         .unwrap_or(Msg::NoOp)
                                                 }),
-                                            vec![
-                                                chat_data
-                                                    .senders
-                                                    .iter()
-                                                    .enumerate()
-                                                    .map(|(idx, sender)| {
-                                                        let attrs = if idx
-                                                            == chat_data.selecting_sender_idx
-                                                        {
+                                            chat_data
+                                                .senders
+                                                .iter()
+                                                .enumerate()
+                                                .map(|(idx, sender)| {
+                                                    let attrs =
+                                                        if idx == chat_data.selecting_sender_idx {
                                                             Attributes::new().class("icon-selected")
                                                         } else {
                                                             Attributes::new()
                                                         };
-                                                        match sender {
-                                                            ChatSender::Player => {
-                                                                let icon = personal_data
-                                                                    .icon
-                                                                    .map(|icon_id| {
-                                                                        Icon::Resource(icon_id)
-                                                                    })
-                                                                    .unwrap_or(Icon::DefaultUser);
-                                                                chat_icon(
-                                                                    attrs
-                                                                        .class("clickable")
-                                                                        .class("icon-small")
-                                                                        .string(
-                                                                            "data-sender-idx",
-                                                                            idx.to_string(),
-                                                                        )
-                                                                        .title(&personal_data.name),
-                                                                    &icon,
-                                                                    &personal_data.name,
-                                                                    resource,
-                                                                )
-                                                            }
-                                                            ChatSender::Character(character_id) => {
-                                                                let character =
-                                                                    world.character(character_id);
-                                                                let icon = character
-                                                                    .and_then(|c| c.texture_id())
-                                                                    .map(|r_id| {
-                                                                        Icon::Resource(r_id)
-                                                                    })
-                                                                    .unwrap_or(Icon::DefaultUser);
-                                                                let name = "";
-                                                                chat_icon(
-                                                                    attrs
-                                                                        .class("clickable")
-                                                                        .class("icon-small")
-                                                                        .string(
-                                                                            "data-sender-idx",
-                                                                            idx.to_string(),
-                                                                        )
-                                                                        .title(name),
-                                                                    &icon,
-                                                                    name,
-                                                                    resource,
-                                                                )
-                                                            }
+                                                    match sender {
+                                                        ChatSender::Player => {
+                                                            let icon = personal_data
+                                                                .icon
+                                                                .map(|icon_id| {
+                                                                    Icon::Resource(icon_id)
+                                                                })
+                                                                .unwrap_or(Icon::DefaultUser);
+                                                            chat_icon(
+                                                                attrs
+                                                                    .class("clickable")
+                                                                    .class("icon-small")
+                                                                    .string(
+                                                                        "data-sender-idx",
+                                                                        idx.to_string(),
+                                                                    )
+                                                                    .title(&personal_data.name),
+                                                                &icon,
+                                                                &personal_data.name,
+                                                                resource,
+                                                            )
                                                         }
-                                                    })
-                                                    .collect::<Vec<Html<Msg>>>(),
-                                                vec![btn::success(
-                                                    Attributes::new()
-                                                        .class("icon")
-                                                        .class("icon-small")
-                                                        .class("icon-rounded")
-                                                        .class("bg-color-green")
-                                                        .class("text-color-light")
-                                                        .class("aside")
-                                                        .title("追加"),
-                                                    Events::new().on_click(|e| {
-                                                        e.stop_propagation();
-                                                        Msg::OpenModal(Modal::CharacterSelecter(
-                                                            CharacterSelecterType::ChatSender,
-                                                        ))
-                                                    }),
-                                                    vec![awesome::i("fa-plus")],
-                                                )],
-                                            ]
-                                            .into_iter()
-                                            .flatten()
-                                            .collect(),
+                                                        ChatSender::Character(character_id) => {
+                                                            let character =
+                                                                world.character(character_id);
+                                                            let icon = character
+                                                                .and_then(|c| c.texture_id())
+                                                                .map(|r_id| Icon::Resource(r_id))
+                                                                .unwrap_or(Icon::DefaultUser);
+                                                            let name = "";
+                                                            chat_icon(
+                                                                attrs
+                                                                    .class("clickable")
+                                                                    .class("icon-small")
+                                                                    .string(
+                                                                        "data-sender-idx",
+                                                                        idx.to_string(),
+                                                                    )
+                                                                    .title(name),
+                                                                &icon,
+                                                                name,
+                                                                resource,
+                                                            )
+                                                        }
+                                                    }
+                                                })
+                                                .collect(),
                                         ),
                                     ],
                                 )],

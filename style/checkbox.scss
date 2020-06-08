@@ -1,15 +1,19 @@
 @import "color";
 
 .checkbox {
+    width: 1em;
+    height: 1em;
     font-size: 1.5em;
-    color: $gray-000;
+    background-color: $gray-000;
+    border-radius: 0.25em;
+    text-align: center;
 
     &:hover {
         cursor: pointer;
     }
 
     &-checked {
-        background-color: $gray-000;
-        color: $green-500;
+        background-color: $green-500;
+        color: $gray-000;
     }
 }

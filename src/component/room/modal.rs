@@ -345,15 +345,22 @@ pub fn character_selecter(
                         Attributes::new()
                             .class("container-a")
                             .class("keyvalueoption"),
-                        Events::new().on_click(|e| {
-                            e.target()
-                                .and_then(|t| t.dyn_into::<web_sys::Element>().ok())
-                                .and_then(|e| e.get_attribute("data-character-id"))
-                                .and_then(|attr| attr.parse().ok())
-                                .map(move |character_id| {
-                                    Msg::SelectCharacter(character_id, character_selecter_type)
-                                })
-                                .unwrap_or(Msg::NoOp)
+                        Events::new().on_click({
+                            let selected_character_id = selected_character_id.clone();
+                            move |e| {
+                                e.target()
+                                    .and_then(|t| t.dyn_into::<web_sys::Element>().ok())
+                                    .and_then(|e| e.get_attribute("data-character-id"))
+                                    .and_then(|attr| attr.parse().ok())
+                                    .map(move |character_id| {
+                                        Msg::SelectCharacter(
+                                            character_id,
+                                            !selected_character_id.contains(&character_id),
+                                            character_selecter_type,
+                                        )
+                                    })
+                                    .unwrap_or(Msg::NoOp)
+                            }
                         }),
                         world
                             .characters()

@@ -28,6 +28,7 @@ pub fn from_img<Msg>(attrs: Attributes, url: impl Into<String>) -> Html<Msg> {
             .class("pure-img")
             .class("icon")
             .class("icon-rounded")
+            .class("bg-color-light")
             .string("src", url),
         Events::new(),
         vec![],

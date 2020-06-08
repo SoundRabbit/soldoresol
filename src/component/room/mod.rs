@@ -74,6 +74,7 @@ impl ChatTab {
     }
 }
 
+#[derive(PartialEq, Eq)]
 pub enum ChatSender {
     Player,
     Character(u128),
@@ -262,7 +263,7 @@ pub enum Msg {
     // メッセージの伝搬
     TransportContextMenuMsg(contextmenu::Msg),
     PickColor(Color, ColorPickerType),
-    SelectCharacter(u128, CharacterSelecterType),
+    SelectCharacter(u128, bool, CharacterSelecterType),
 
     //コンテキストメニューの制御
     OpenContextMenu([f64; 2], [f64; 2]),
@@ -321,6 +322,7 @@ pub enum Msg {
     SendChatItem,
     SetChatSender(usize),
     AddChatSender(ChatSender),
+    RemoveChatSender(ChatSender),
 
     // リソース管理
     LoadFromFileList(web_sys::FileList),
@@ -631,12 +633,21 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 update(state, Msg::SetTablemaskColor(obj_id, color))
             }
         },
-        Msg::SelectCharacter(character_id, character_selecter_type) => {
+        Msg::SelectCharacter(character_id, is_selected, character_selecter_type) => {
             match character_selecter_type {
-                CharacterSelecterType::ChatSender => update(
-                    state,
-                    Msg::AddChatSender(ChatSender::Character(character_id)),
-                ),
+                CharacterSelecterType::ChatSender => {
+                    if is_selected {
+                        update(
+                            state,
+                            Msg::AddChatSender(ChatSender::Character(character_id)),
+                        )
+                    } else {
+                        update(
+                            state,
+                            Msg::RemoveChatSender(ChatSender::Character(character_id)),
+                        )
+                    }
+                }
             }
         }
 
@@ -1165,6 +1176,11 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
         Msg::AddChatSender(sender) => {
             state.chat_data.senders.push(sender);
+            state.cmd_queue.dequeue()
+        }
+        Msg::RemoveChatSender(sender) => {
+            let old_senders = state.chat_data.senders.drain(..);
+            state.chat_data.senders = old_senders.into_iter().filter(|s| *s != sender).collect();
             state.cmd_queue.dequeue()
         }
 

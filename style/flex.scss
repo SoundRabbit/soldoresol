@@ -4,4 +4,10 @@
         align-content: start;
         flex-wrap: wrap;
     }
+
+    &-padding {
+        &>* {
+            padding: 0.15em;
+        }
+    }
 }
