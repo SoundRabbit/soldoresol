@@ -429,57 +429,95 @@ pub fn chat(
                                     Attributes::new().class("linear-h"),
                                     Events::new(),
                                     vec![
-                                        chat_data
-                                            .senders
-                                            .iter()
-                                            .map(|sender| match sender {
-                                                Sender::Player => {
-                                                    let icon = personal_data
-                                                        .icon
-                                                        .map(|icon_id| Icon::Resource(icon_id))
-                                                        .unwrap_or(Icon::DefaultUser);
-                                                    chat_icon(
-                                                        Attributes::new()
-                                                            .class("clickable")
-                                                            .class("icon-small"),
-                                                        &icon,
-                                                        &personal_data.name,
-                                                        resource,
-                                                    )
-                                                }
-                                                Sender::Character(character_id) => {
-                                                    let character = world.character(character_id);
-                                                    let icon = character
-                                                        .and_then(|c| c.texture_id())
-                                                        .map(|r_id| Icon::Resource(r_id))
-                                                        .unwrap_or(Icon::DefaultUser);
-                                                    let name = "";
-                                                    chat_icon(
-                                                        Attributes::new()
-                                                            .class("clickable")
-                                                            .class("icon-small"),
-                                                        &icon,
-                                                        name,
-                                                        resource,
-                                                    )
-                                                }
-                                            })
-                                            .collect::<Vec<Html<Msg>>>(),
-                                        vec![Html::div(
+                                        Html::div(
                                             Attributes::new()
-                                                .class("clickable")
-                                                .class("icon")
-                                                .class("icon-small")
-                                                .class("icon-rounded")
-                                                .class("bg-color-green")
-                                                .class("text-color-light"),
+                                                .class("centering")
+                                                .class("centering-v"),
                                             Events::new(),
-                                            vec![awesome::i("fa-plus")],
-                                        )],
-                                    ]
-                                    .into_iter()
-                                    .flatten()
-                                    .collect(),
+                                            vec![Html::text("From:")],
+                                        ),
+                                        Html::div(
+                                            Attributes::new()
+                                                .class("linear-h")
+                                                .class("centering-v-i"),
+                                            Events::new().on_mousedown(stop_propagation!()),
+                                            vec![
+                                                chat_data
+                                                    .senders
+                                                    .iter()
+                                                    .enumerate()
+                                                    .map(|(idx, sender)| {
+                                                        let attrs = if idx
+                                                            == chat_data.selecting_sender_idx
+                                                        {
+                                                            Attributes::new().class("icon-selected")
+                                                        } else {
+                                                            Attributes::new()
+                                                        };
+                                                        match sender {
+                                                            Sender::Player => {
+                                                                let icon = personal_data
+                                                                    .icon
+                                                                    .map(|icon_id| {
+                                                                        Icon::Resource(icon_id)
+                                                                    })
+                                                                    .unwrap_or(Icon::DefaultUser);
+                                                                chat_icon(
+                                                                    attrs
+                                                                        .class("clickable")
+                                                                        .class("icon-small")
+                                                                        .title(&personal_data.name),
+                                                                    &icon,
+                                                                    &personal_data.name,
+                                                                    resource,
+                                                                )
+                                                            }
+                                                            Sender::Character(character_id) => {
+                                                                let character =
+                                                                    world.character(character_id);
+                                                                let icon = character
+                                                                    .and_then(|c| c.texture_id())
+                                                                    .map(|r_id| {
+                                                                        Icon::Resource(r_id)
+                                                                    })
+                                                                    .unwrap_or(Icon::DefaultUser);
+                                                                let name = "";
+                                                                chat_icon(
+                                                                    attrs
+                                                                        .class("clickable")
+                                                                        .class("icon-small")
+                                                                        .string(
+                                                                            "data-character-id",
+                                                                            character_id
+                                                                                .to_string(),
+                                                                        )
+                                                                        .title(name),
+                                                                    &icon,
+                                                                    name,
+                                                                    resource,
+                                                                )
+                                                            }
+                                                        }
+                                                    })
+                                                    .collect::<Vec<Html<Msg>>>(),
+                                                vec![btn::success(
+                                                    Attributes::new()
+                                                        .class("icon")
+                                                        .class("icon-small")
+                                                        .class("icon-rounded")
+                                                        .class("bg-color-green")
+                                                        .class("text-color-light")
+                                                        .class("aside")
+                                                        .title("追加"),
+                                                    Events::new(),
+                                                    vec![awesome::i("fa-plus")],
+                                                )],
+                                            ]
+                                            .into_iter()
+                                            .flatten()
+                                            .collect(),
+                                        ),
+                                    ],
                                 )],
                             ),
                             Html::textarea(

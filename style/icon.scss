@@ -1,3 +1,5 @@
+@import "color";
+
 .icon {
     overflow: hidden;
     display: grid;
@@ -7,6 +9,7 @@
     object-position: top;
     width: 2em;
     height: 2em;
+    box-sizing: border-box;
 
     &-small {
         font-size: 1em;
@@ -22,5 +25,10 @@
 
     &-rounded {
         border-radius: 50%;
+    }
+
+    &-selected {
+        border: 2px solid $blue-400;
+        box-shadow: 0 0 2px 0 $gray-900 inset;
     }
 }
