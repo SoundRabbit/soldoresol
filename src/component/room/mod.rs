@@ -60,7 +60,7 @@ struct ChatTab {
 
 impl ChatTab {
     fn new(name: impl Into<String>) -> Self {
-        Self {
+        let mut s = Self {
             name: name.into(),
             items: vec![ChatItem {
                 display_name: "System".into(),
@@ -70,7 +70,18 @@ impl ChatTab {
                     "チャット機能は開発途中のため、他のクライアントとの通信には対応していません。また、タブの作成や消去にも対応していません。"
                         .into(),
             }],
+        };
+
+        for i in 0..100 {
+            s.items.push(ChatItem {
+                display_name: "System".into(),
+                peer_id: "".into(),
+                icon: Icon::None,
+                payload: i.to_string(),
+            });
         }
+
+        s
     }
 }
 
@@ -106,7 +117,7 @@ impl ChatDataCollection {
             selecting_sender_idx: 0,
             inputing_message: "".into(),
             skip: 0,
-            take: 50,
+            take: 40,
             senders: vec![ChatSender::Player],
             tabs: vec![ChatTab::new("メイン"), ChatTab::new("サブ")],
         }
@@ -327,6 +338,7 @@ pub enum Msg {
     SetChatSender(usize),
     AddChatSender(ChatSender),
     RemoveChatSender(ChatSender),
+    SetChatSkip(usize),
 
     // リソース管理
     LoadFromFileList(web_sys::FileList),
@@ -1185,6 +1197,10 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         Msg::RemoveChatSender(sender) => {
             let old_senders = state.chat_data.senders.drain(..);
             state.chat_data.senders = old_senders.into_iter().filter(|s| *s != sender).collect();
+            state.cmd_queue.dequeue()
+        }
+        Msg::SetChatSkip(skip) => {
+            state.chat_data.skip = skip;
             state.cmd_queue.dequeue()
         }
 

@@ -38,6 +38,7 @@ features = [
     "CanvasRenderingContext2d",
     "Crypto",
     "DataTransfer",
+    "DomRect",
     "DragEvent",
     "Event",
     "File",

@@ -320,6 +320,7 @@ pub fn chat(
     let selecting_tab = &chat_data.tabs[selecting_tab_idx];
     let skip = chat_data.skip;
     let take = chat_data.take;
+    let chat_item_len = selecting_tab.items.len();
 
     frame(
         modeless_idx,
@@ -349,7 +350,71 @@ pub fn chat(
                                 Attributes::new()
                                     .style("align-self", "stretch")
                                     .class("scroll-v"),
-                                Events::new().on_mousedown(stop_propagation!()),
+                                Events::new().on_mousedown(stop_propagation!()).on(
+                                    "scroll",
+                                    move |e| {
+                                        let mut remove_bottom = false;
+                                        let mut remove_top = false;
+                                        let n = 5;
+
+                                        if let Some(target) = e
+                                            .current_target()
+                                            .and_then(|t| t.dyn_into::<web_sys::Element>().ok())
+                                        {
+                                            let client_rect = target.get_bounding_client_rect();
+                                            let top = client_rect.top();
+                                            let bottom = client_rect.bottom();
+                                            let children = target.children();
+                                            let children_len = children.length();
+
+                                            if let Some(b) = children
+                                                .item((children_len as i64 - n * 2).max(0) as u32)
+                                            {
+                                                remove_bottom =
+                                                    b.get_bounding_client_rect().top() > bottom;
+                                            }
+
+                                            if let Some(t) = children.item(n as u32 * 2) {
+                                                remove_top =
+                                                    (t.get_bounding_client_rect().bottom() < top)
+                                                        && (chat_item_len as i32 - skip as i32
+                                                            > take as i32);
+                                            }
+
+                                            if remove_bottom && !remove_top && skip as i64 > n {
+                                                let mut height = 0;
+                                                for i in 0..n {
+                                                    if let Some(el) =
+                                                        children
+                                                            .item((children_len as i64 - i).max(0)
+                                                                as u32)
+                                                    {
+                                                        height += el.client_height();
+                                                    }
+                                                }
+                                                let scroll_top = target.scroll_top();
+                                                target.set_scroll_top(scroll_top + height);
+                                            } else if !remove_bottom && remove_top {
+                                                let mut height = 0;
+                                                for i in 0..(n - 1) {
+                                                    if let Some(el) = children.item(i as u32) {
+                                                        height += el.client_height();
+                                                    }
+                                                }
+                                                let scroll_top = target.scroll_top();
+                                                target.set_scroll_top(scroll_top - height);
+                                            }
+                                        }
+
+                                        if remove_bottom && !remove_top {
+                                            Msg::SetChatSkip((skip as i64 - n).max(0) as usize)
+                                        } else if !remove_bottom && remove_top {
+                                            Msg::SetChatSkip(skip + n as usize)
+                                        } else {
+                                            Msg::NoOp
+                                        }
+                                    },
+                                ),
                                 selecting_tab
                                     .items
                                     .iter()
