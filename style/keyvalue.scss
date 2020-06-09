@@ -9,4 +9,8 @@
     &-rev {
         grid-template-columns: 1fr max-content;
     }
+
+    &-align-start {
+        align-items: start;
+    }
 }

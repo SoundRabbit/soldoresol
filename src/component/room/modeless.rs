@@ -68,127 +68,157 @@ fn object_character(character: &Character, character_id: u128, resource: &Resour
                     ],
                 ),
                 Html::div(
-                    Attributes::new().class("flex-h"),
+                    Attributes::new()
+                        .class("keyvalue")
+                        .class("keyvalue-align-start"),
                     Events::new(),
-                    vec![Html::div(
-                        Attributes::new()
-                            .class("container-a")
-                            .class("centering")
-                            .class("centering-a"),
-                        Events::new(),
-                        vec![
-                            character
-                                .texture_id()
-                                .and_then(|data_id| resource.get_as_image_url(&data_id))
-                                .map(|img_url| {
-                                    Html::img(
-                                        Attributes::new()
-                                            .class("pure-img")
-                                            .string("src", img_url.as_str()),
+                    vec![
+                        Html::div(
+                            Attributes::new()
+                                .class("container-a")
+                                .class("centering")
+                                .class("centering-a"),
+                            Events::new(),
+                            vec![
+                                character
+                                    .texture_id()
+                                    .and_then(|data_id| resource.get_as_image_url(&data_id))
+                                    .map(|img_url| {
+                                        Html::img(
+                                            Attributes::new()
+                                                .class("pure-img")
+                                                .string("src", img_url.as_str()),
+                                            Events::new(),
+                                            vec![],
+                                        )
+                                    })
+                                    .unwrap_or(Html::none()),
+                                btn::primary(
+                                    Attributes::new(),
+                                    Events::new().on_click({
+                                        move |_| {
+                                            Msg::OpenModal(Modal::SelectImage(
+                                                SelectImageModal::Character(character_id),
+                                            ))
+                                        }
+                                    }),
+                                    vec![Html::text("画像を選択")],
+                                ),
+                            ],
+                        ),
+                        Html::div(
+                            Attributes::new().class("container-a"),
+                            Events::new(),
+                            vec![
+                                Html::div(
+                                    Attributes::new()
+                                        .class("keyvalueoption")
+                                        .class("container-a"),
+                                    Events::new(),
+                                    vec![
+                                        Html::label(
+                                            Attributes::new(),
+                                            Events::new(),
+                                            vec![Html::text("幅")],
+                                        ),
+                                        Html::input(
+                                            Attributes::new()
+                                                .type_("number")
+                                                .value(width.to_string()),
+                                            Events::new().on_input(move |width| {
+                                                width
+                                                    .parse()
+                                                    .map(|width| {
+                                                        Msg::SetCharacterSize(
+                                                            character_id,
+                                                            Some(width),
+                                                            Some(height),
+                                                        )
+                                                    })
+                                                    .unwrap_or(Msg::NoOp)
+                                            }),
+                                            vec![],
+                                        ),
+                                        btn::secondary(
+                                            Attributes::new(),
+                                            Events::new().on_click(move |_| {
+                                                Msg::SetCharacterSize(
+                                                    character_id,
+                                                    None,
+                                                    Some(height),
+                                                )
+                                            }),
+                                            vec![Html::text("画像に合わせる")],
+                                        ),
+                                        Html::label(
+                                            Attributes::new(),
+                                            Events::new(),
+                                            vec![Html::text("高さ")],
+                                        ),
+                                        Html::input(
+                                            Attributes::new()
+                                                .type_("number")
+                                                .value(height.to_string()),
+                                            Events::new().on_input(move |height| {
+                                                height
+                                                    .parse()
+                                                    .map(|height| {
+                                                        Msg::SetCharacterSize(
+                                                            character_id,
+                                                            Some(width),
+                                                            Some(height),
+                                                        )
+                                                    })
+                                                    .unwrap_or(Msg::NoOp)
+                                            }),
+                                            vec![],
+                                        ),
+                                        btn::secondary(
+                                            Attributes::new(),
+                                            Events::new().on_click(move |_| {
+                                                Msg::SetCharacterSize(
+                                                    character_id,
+                                                    Some(width),
+                                                    None,
+                                                )
+                                            }),
+                                            vec![Html::text("画像に合わせる")],
+                                        ),
+                                    ],
+                                ),
+                                Html::div(
+                                    Attributes::new().class("container-a"),
+                                    Events::new(),
+                                    vec![Html::div(
+                                        Attributes::new().class("keyvalue"),
                                         Events::new(),
-                                        vec![],
-                                    )
-                                })
-                                .unwrap_or(Html::none()),
-                            btn::primary(
-                                Attributes::new(),
-                                Events::new().on_click({
-                                    move |_| {
-                                        Msg::OpenModal(Modal::SelectImage(
-                                            SelectImageModal::Character(character_id),
-                                        ))
-                                    }
-                                }),
-                                vec![Html::text("画像を選択")],
-                            ),
-                            Html::div(
-                                Attributes::new()
-                                    .class("keyvalueoption")
-                                    .class("container-a"),
-                                Events::new(),
-                                vec![
-                                    Html::label(
-                                        Attributes::new(),
-                                        Events::new(),
-                                        vec![Html::text("幅")],
-                                    ),
-                                    Html::input(
-                                        Attributes::new().type_("number").value(width.to_string()),
-                                        Events::new().on_input(move |width| {
-                                            width
-                                                .parse()
-                                                .map(|width| {
-                                                    Msg::SetCharacterSize(
-                                                        character_id,
-                                                        Some(width),
-                                                        Some(height),
-                                                    )
-                                                })
-                                                .unwrap_or(Msg::NoOp)
-                                        }),
-                                        vec![],
-                                    ),
-                                    btn::secondary(
-                                        Attributes::new(),
-                                        Events::new().on_click(move |_| {
-                                            Msg::SetCharacterSize(character_id, None, Some(height))
-                                        }),
-                                        vec![Html::text("画像に合わせる")],
-                                    ),
-                                    Html::label(
-                                        Attributes::new(),
-                                        Events::new(),
-                                        vec![Html::text("高さ")],
-                                    ),
-                                    Html::input(
-                                        Attributes::new().type_("number").value(height.to_string()),
-                                        Events::new().on_input(move |height| {
-                                            height
-                                                .parse()
-                                                .map(|height| {
-                                                    Msg::SetCharacterSize(
-                                                        character_id,
-                                                        Some(width),
-                                                        Some(height),
-                                                    )
-                                                })
-                                                .unwrap_or(Msg::NoOp)
-                                        }),
-                                        vec![],
-                                    ),
-                                    btn::secondary(
-                                        Attributes::new(),
-                                        Events::new().on_click(move |_| {
-                                            Msg::SetCharacterSize(character_id, Some(width), None)
-                                        }),
-                                        vec![Html::text("画像に合わせる")],
-                                    ),
-                                ],
-                            ),
-                        ],
-                    )],
-                ),
-                Html::div(
-                    Attributes::new().class("container-a"),
-                    Events::new(),
-                    vec![Html::div(
-                        Attributes::new().class("keyvalue"),
-                        Events::new(),
-                        vec![
-                            Html::span(Attributes::new(), Events::new(), vec![Html::text("HP")]),
-                            Html::input(
-                                Attributes::new().value("").type_("number"),
-                                Events::new(),
-                                vec![],
-                            ),
-                            Html::span(Attributes::new(), Events::new(), vec![Html::text("MP")]),
-                            Html::input(
-                                Attributes::new().value("").type_("number"),
-                                Events::new(),
-                                vec![],
-                            ),
-                        ],
-                    )],
+                                        vec![
+                                            Html::span(
+                                                Attributes::new(),
+                                                Events::new(),
+                                                vec![Html::text("HP")],
+                                            ),
+                                            Html::input(
+                                                Attributes::new().value("").type_("number"),
+                                                Events::new(),
+                                                vec![],
+                                            ),
+                                            Html::span(
+                                                Attributes::new(),
+                                                Events::new(),
+                                                vec![Html::text("MP")],
+                                            ),
+                                            Html::input(
+                                                Attributes::new().value("").type_("number"),
+                                                Events::new(),
+                                                vec![],
+                                            ),
+                                        ],
+                                    )],
+                                ),
+                            ],
+                        ),
+                    ],
                 ),
             ],
         )],

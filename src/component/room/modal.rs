@@ -313,7 +313,7 @@ pub fn character_selecter(
         Attributes::new(),
         Events::new(),
         vec![modal::frame(
-            12,
+            6,
             Attributes::new(),
             Events::new(),
             vec![

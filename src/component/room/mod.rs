@@ -176,8 +176,8 @@ impl ModelessState {
         Self {
             z_index: 0,
             grubbed: None,
-            loc_a: [18, 2],
-            loc_b: [24, 6],
+            loc_a: [16, 2],
+            loc_b: [24, 9],
         }
     }
 }
