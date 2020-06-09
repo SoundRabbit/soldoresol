@@ -4,7 +4,7 @@
     display: grid;
     grid-template-columns: 1fr;
     grid-template-rows: max-content 1fr max-content;
-    box-shadow: 0 0 0.1rem 0 $gray-900;
+    box-shadow: 0 0 0.1rem 0.1rem $gray-900;
     color: $gray-000;
     position: relative;
     overflow: visible;

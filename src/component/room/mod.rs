@@ -2301,7 +2301,7 @@ fn render_modals(
     Html::div(
         Attributes::new()
             .style("position", "fixied")
-            .style("z-index", "0"),
+            .style("z-index", "1"),
         Events::new(),
         children,
     )
