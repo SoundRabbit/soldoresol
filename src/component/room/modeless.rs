@@ -517,28 +517,31 @@ pub fn chat(
                                                             )
                                                         }
                                                         ChatSender::Character(character_id) => {
-                                                            let character =
-                                                                world.character(character_id);
-                                                            let icon = character
-                                                                .and_then(|c| c.texture_id())
-                                                                .map(|r_id| Icon::Resource(r_id))
-                                                                .unwrap_or(Icon::DefaultUser);
-                                                            let name = character
-                                                                .map(|c| c.name().as_str())
-                                                                .unwrap_or("");
-                                                            chat_icon(
-                                                                attrs
-                                                                    .class("clickable")
-                                                                    .class("icon-small")
-                                                                    .string(
-                                                                        "data-sender-idx",
-                                                                        idx.to_string(),
-                                                                    )
-                                                                    .title(name),
-                                                                &icon,
-                                                                name,
-                                                                resource,
-                                                            )
+                                                            if let Some(character) =
+                                                                world.character(character_id)
+                                                            {
+                                                                let icon = character
+                                                                    .texture_id()
+                                                                    .map(|r_id| {
+                                                                        Icon::Resource(r_id)
+                                                                    })
+                                                                    .unwrap_or(Icon::DefaultUser);
+                                                                chat_icon(
+                                                                    attrs
+                                                                        .class("clickable")
+                                                                        .class("icon-small")
+                                                                        .string(
+                                                                            "data-sender-idx",
+                                                                            idx.to_string(),
+                                                                        )
+                                                                        .title(character.name()),
+                                                                    &icon,
+                                                                    character.name(),
+                                                                    resource,
+                                                                )
+                                                            } else {
+                                                                Html::none()
+                                                            }
                                                         }
                                                     }
                                                 })
