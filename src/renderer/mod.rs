@@ -56,9 +56,14 @@ impl Renderer {
             ModelMatrix::new().with_movement(&movement).into()
         };
         let mvp_matrix = model_matrix.dot(&vp_matrix);
-        let screen_position = mvp_matrix.t().dot(&arr1(&[vertex[0], vertex[1], vertex[2], 1.0]));
+        let screen_position = mvp_matrix
+            .t()
+            .dot(&arr1(&[vertex[0], vertex[1], vertex[2], 1.0]));
 
-        [screen_position[0] / screen_position[3], screen_position[1] / screen_position[3]]
+        [
+            screen_position[0] / screen_position[3],
+            screen_position[1] / screen_position[3],
+        ]
     }
 
     pub fn render(

@@ -1179,7 +1179,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                             );
                             let dpr = get_device_pixel_ratio(state.pixel_ratio);
                             let x = (position[0] + 1.0) / 2.0 * state.canvas_size[0] / dpr;
-                            let y = - (position[1] - 1.0) / 2.0 * state.canvas_size[1] / dpr;
+                            let y = -(position[1] - 1.0) / 2.0 * state.canvas_size[1] / dpr;
                             let speech_bubble = SpeechBubble {
                                 texture_id: character.texture_id(),
                                 position: [x, y],
@@ -1738,11 +1738,16 @@ fn render_speech_bubble_queue(speech_bubble_queue: &VecDeque<SpeechBubble>) -> H
             .map(|speech_bubble| {
                 Html::div(
                     Attributes::new()
+                        .class("speechbubble")
                         .style("position", "absolute")
                         .style("left", format!("{}px", speech_bubble.position[0]))
                         .style("top", format!("{}px", speech_bubble.position[1])),
                     Events::new(),
-                    vec![Html::text(&speech_bubble.message)],
+                    vec![Html::pre(
+                        Attributes::new().class("speechbubble-message"),
+                        Events::new(),
+                        vec![Html::text(&speech_bubble.message)],
+                    )],
                 )
             })
             .collect(),

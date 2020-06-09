@@ -1,0 +1,28 @@
+@import "color";
+
+.speechbubble {
+    transform: translate(-3em, -100%);
+    max-width: 20vw;
+
+    &-message {
+        position: relative;
+        box-sizing: border-box;
+        line-height: 1.15;
+        padding: .5em .6em;
+        border-radius: 1em;
+        background-color: $gray-000;
+        border: 0.1em solid $gray-900;
+        overflow: visible;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+
+        &::before {
+            content: "";
+            position: absolute;
+            top: calc(100% + 0.1em);
+            left: 2em;
+            border: 1em solid transparent;
+            border-top: 1em solid $gray-900;
+        }
+    }
+}
