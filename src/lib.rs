@@ -10,10 +10,10 @@ extern crate toml;
 extern crate wasm_bindgen;
 extern crate web_sys;
 
-mod component;
-mod config;
 #[macro_use]
 mod js_object;
+mod component;
+mod config;
 mod model;
 mod random_id;
 mod renderer;

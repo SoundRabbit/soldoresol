@@ -42,7 +42,7 @@ impl Renderer {
         camera: &Camera,
         canvas_size: &[f64; 2],
         is_billboard: bool,
-    ) -> Array1<f64> {
+    ) -> [f64; 2] {
         let vp_matrix = camera
             .view_matrix()
             .dot(&camera.perspective_matrix(&canvas_size));
@@ -56,8 +56,9 @@ impl Renderer {
             ModelMatrix::new().with_movement(&movement).into()
         };
         let mvp_matrix = model_matrix.dot(&vp_matrix);
-        let screen_position = mvp_matrix.dot(&arr1(&[vertex[0], vertex[1], vertex[2], 1.0]));
-        screen_position
+        let screen_position = mvp_matrix.t().dot(&arr1(&[vertex[0], vertex[1], vertex[2], 1.0]));
+
+        [screen_position[0] / screen_position[3], screen_position[1] / screen_position[3]]
     }
 
     pub fn render(

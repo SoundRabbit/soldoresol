@@ -147,7 +147,7 @@ impl CharacterCollectionRenderer {
                 .into();
             let mvp_matrix = model_matrix.dot(vp_matrix);
 
-            let s = mvp_matrix.dot(&arr1(&[0.0, 0.0, 0.0, 1.0]));
+            let s = mvp_matrix.t().dot(&arr1(&[0.0, 0.0, 0.0, 1.0]));
             let key = Total(-s[2] / s[3]);
             let value = (mvp_matrix, character);
             if let Some(v) = z_index.get_mut(&key) {

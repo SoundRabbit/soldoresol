@@ -1169,16 +1169,17 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     ),
                     ChatSender::Character(character_id) => {
                         if let Some(character) = state.world.character(&character_id) {
-                            let vertex = [0.0, 0.0, character.size()[1]];
+                            let vertex = [0.0, character.size()[1], 0.0];
                             let position = Renderer::table_position(
                                 &vertex,
                                 character.position(),
                                 &state.camera,
                                 &state.canvas_size,
-                                true,
+                                false,
                             );
-                            let x = (position[0] + 1.0) / 2.0 * state.canvas_size[0];
-                            let y = -(position[1] - 1.0) / 2.0 * state.canvas_size[1];
+                            let dpr = get_device_pixel_ratio(state.pixel_ratio);
+                            let x = (position[0] + 1.0) / 2.0 * state.canvas_size[0] / dpr;
+                            let y = - (position[1] - 1.0) / 2.0 * state.canvas_size[1] / dpr;
                             let speech_bubble = SpeechBubble {
                                 texture_id: character.texture_id(),
                                 position: [x, y],
@@ -1690,6 +1691,7 @@ fn render_canvas_container(state: &State) -> Html<Msg> {
         Events::new(),
         vec![
             render_canvas(),
+            render_speech_bubble_queue(&state.speech_bubble_queue),
             render_measure_length(&state.table_state.measure_length),
             render_hint(),
             render_canvas_overlaper(
@@ -1724,6 +1726,26 @@ fn render_canvas() -> Html<Msg> {
         Attributes::new().id("table").class("cover cover-a"),
         Events::new(),
         vec![],
+    )
+}
+
+fn render_speech_bubble_queue(speech_bubble_queue: &VecDeque<SpeechBubble>) -> Html<Msg> {
+    modeless_container(
+        Attributes::new().class("cover cover-a"),
+        Events::new(),
+        speech_bubble_queue
+            .iter()
+            .map(|speech_bubble| {
+                Html::div(
+                    Attributes::new()
+                        .style("position", "absolute")
+                        .style("left", format!("{}px", speech_bubble.position[0]))
+                        .style("top", format!("{}px", speech_bubble.position[1])),
+                    Events::new(),
+                    vec![Html::text(&speech_bubble.message)],
+                )
+            })
+            .collect(),
     )
 }
 
