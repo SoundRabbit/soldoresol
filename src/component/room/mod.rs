@@ -1090,6 +1090,11 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         Msg::SetCharacterImage(character_id, data_id, transport) => {
             if let Some(character) = state.world.character_mut(&character_id) {
                 character.set_image_id(data_id);
+                if let Some(img) = state.resource.get_as_image(&data_id) {
+                    let width = character.size()[0];
+                    let height = width * img.height() as f64 / img.width() as f64;
+                    character.set_size([width, height]);
+                }
                 if transport {
                     let room = &state.room;
                     room.send(&skyway::Msg::SetCharacterImage(character_id, data_id));
