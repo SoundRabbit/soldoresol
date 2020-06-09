@@ -213,6 +213,13 @@ impl From<JsObject> for Msg {
 
                     Self::SetConnection(connection)
                 }
+                "InsertChatItem" => {
+                    let args = Array::from(&payload);
+                    Self::InsertChatItem(
+                        args.get(0).as_f64().unwrap() as u32,
+                        args.get(1).dyn_into::<JsObject>().unwrap(),
+                    )
+                }
                 "RemoveObject" => Self::RemoveObject(payload.as_string().unwrap().parse().unwrap()),
                 _ => Self::None,
             }
