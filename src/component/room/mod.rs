@@ -5,7 +5,8 @@ use super::{awesome, btn, contextmenu, modeless::container as modeless_container
 use crate::{
     model::{
         resource::{Data, ResourceData},
-        Camera, Character, Color, ColorSystem, Resource, Tablemask, World,
+        Camera, Character, Chat, ChatItem, ChatTab, Color, ColorSystem, Icon, Resource, Tablemask,
+        World,
     },
     random_id,
     renderer::Renderer,
@@ -40,40 +41,6 @@ impl PersonalData {
     }
 }
 
-enum Icon {
-    None,
-    Resource(u128),
-    DefaultUser,
-}
-
-struct ChatItem {
-    display_name: String,
-    peer_id: String,
-    icon: Icon,
-    payload: String,
-}
-
-struct ChatTab {
-    name: String,
-    items: Vec<ChatItem>,
-}
-
-impl ChatTab {
-    fn new(name: impl Into<String>) -> Self {
-        Self {
-            name: name.into(),
-            items: vec![ChatItem {
-                display_name: "System".into(),
-                peer_id: "".into(),
-                icon: Icon::None,
-                payload:
-                    "チャット機能は開発途中のため、他のクライアントとの通信には対応していません。また、タブの作成や消去にも対応していません。"
-                        .into(),
-            }],
-        }
-    }
-}
-
 #[derive(PartialEq, Eq)]
 pub enum ChatSender {
     Player,
@@ -95,7 +62,7 @@ pub struct ChatDataCollection {
     inputing_message: String,
     take: usize,
     senders: Vec<ChatSender>,
-    tabs: Vec<ChatTab>,
+    tabs: Chat,
 }
 
 impl ChatDataCollection {
@@ -106,7 +73,7 @@ impl ChatDataCollection {
             inputing_message: "".into(),
             take: 50,
             senders: vec![ChatSender::Player],
-            tabs: vec![ChatTab::new("メイン"), ChatTab::new("サブ")],
+            tabs: Chat::new(vec![ChatTab::new("メイン"), ChatTab::new("サブ")]),
         }
     }
 }
@@ -1234,14 +1201,9 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 if let Some((display_name, icon)) = sender {
                     let tab_idx = state.chat_data.selecting_tab_idx;
 
-                    let chat_item = ChatItem {
-                        display_name: display_name,
-                        peer_id: state.peer.id(),
-                        icon: icon,
-                        payload: message,
-                    };
+                    let chat_item = ChatItem::new(display_name, state.peer.id(), icon, message);
 
-                    state.chat_data.tabs[tab_idx].items.push(chat_item);
+                    state.chat_data.tabs[tab_idx].push(chat_item);
                 }
 
                 if let Some(speech_bubble) = speech_bubble {

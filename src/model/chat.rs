@@ -7,6 +7,10 @@ use wasm_bindgen::{prelude::*, JsCast};
 pub struct Chat(Vec<ChatTab>);
 
 impl Chat {
+    pub fn new(tabs: Vec<ChatTab>) -> Self {
+        Self(tabs)
+    }
+
     pub fn as_object(&self) -> JsObject {
         let tabs = Array::new();
 
@@ -22,7 +26,7 @@ impl Chat {
 impl Deref for Chat {
     type Target = Vec<ChatTab>;
 
-    fn deref(&self) -> &Vec<ChatTab> {
+    fn deref(&self) -> &Self::Target {
         &self.0
     }
 }

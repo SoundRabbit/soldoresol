@@ -371,7 +371,6 @@ pub fn chat(
                                     .class("scroll-v"),
                                 Events::new(),
                                 selecting_tab
-                                    .items
                                     .iter()
                                     .rev()
                                     .take(take)
@@ -385,8 +384,8 @@ pub fn chat(
                                                     Attributes::new()
                                                         .class("icon-medium")
                                                         .class("chat-icon"),
-                                                    &item.icon,
-                                                    &item.display_name,
+                                                    item.icon(),
+                                                    item.display_name(),
                                                     resource,
                                                 ),
                                                 Html::div(
@@ -394,9 +393,9 @@ pub fn chat(
                                                     Events::new(),
                                                     vec![Html::text(
                                                         String::from("")
-                                                            + &item.display_name
+                                                            + item.display_name()
                                                             + "@"
-                                                            + &item.peer_id,
+                                                            + item.peer_id(),
                                                     )],
                                                 ),
                                                 Html::div(
@@ -406,13 +405,13 @@ pub fn chat(
                                                         Html::pre(
                                                             Attributes::new().class("text-wrap"),
                                                             Events::new(),
-                                                            vec![Html::text(&item.payload)],
+                                                            vec![Html::text(item.payload())],
                                                         ),
                                                         Html::textarea(
                                                             Attributes::new()
                                                                 .class("text-wrap")
                                                                 .flag("readonly")
-                                                                .value(&item.payload),
+                                                                .value(item.payload()),
                                                             Events::new(),
                                                             vec![],
                                                         ),
@@ -437,7 +436,7 @@ pub fn chat(
                                             Events::new().on_click(move |_| {
                                                 Msg::SetSelectingChatTabIdx(tab_idx)
                                             }),
-                                            &tab.name,
+                                            tab.name(),
                                         )
                                     })
                                     .collect(),

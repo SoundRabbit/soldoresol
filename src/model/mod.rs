@@ -14,6 +14,7 @@ mod world;
 
 pub use camera::Camera;
 pub use character::Character;
+pub use chat::Chat;
 pub use chat_item::ChatItem;
 pub use chat_tab::ChatTab;
 pub use color::Color;

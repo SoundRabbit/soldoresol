@@ -18,6 +18,22 @@ impl ChatItem {
         }
     }
 
+    pub fn display_name(&self) -> &String {
+        &self.display_name
+    }
+
+    pub fn peer_id(&self) -> &String {
+        &self.peer_id
+    }
+
+    pub fn icon(&self) -> &Icon {
+        &self.icon
+    }
+
+    pub fn payload(&self) -> &String {
+        &self.payload
+    }
+
     pub fn as_object(&self) -> JsObject {
         object! {
             display_name: &self.display_name,

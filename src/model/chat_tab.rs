@@ -1,6 +1,7 @@
-use super::{ChatItem, Icon};
+use super::ChatItem;
 use crate::JsObject;
 use js_sys::Array;
+use std::ops::{Deref, DerefMut};
 use wasm_bindgen::JsCast;
 
 pub struct ChatTab {
@@ -16,6 +17,10 @@ impl ChatTab {
         }
     }
 
+    pub fn name(&self) -> &String {
+        &self.name
+    }
+
     pub fn as_object(&self) -> JsObject {
         let items = Array::new();
 
@@ -27,6 +32,20 @@ impl ChatTab {
             name: &self.name,
             items: items
         }
+    }
+}
+
+impl Deref for ChatTab {
+    type Target = Vec<ChatItem>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.items
+    }
+}
+
+impl DerefMut for ChatTab {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.items
     }
 }
 
