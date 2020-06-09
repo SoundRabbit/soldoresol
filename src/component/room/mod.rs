@@ -165,16 +165,16 @@ struct Contextmenu {
 }
 
 pub struct ModelessState {
-    is_showing: bool,
+    z_index: i32,
     grubbed: Option<[bool; 4]>,
     loc_a: [i32; 2],
     loc_b: [i32; 2],
 }
 
 impl ModelessState {
-    pub fn new(is_showing: bool) -> Self {
+    pub fn new() -> Self {
         Self {
-            is_showing,
+            z_index: 0,
             grubbed: None,
             loc_a: [18, 2],
             loc_b: [24, 6],
@@ -187,7 +187,7 @@ enum Modeless {
     Chat,
 }
 
-type ModelessCollection = Vec<(ModelessState, Modeless)>;
+type ModelessCollection = HashMap<u128, (ModelessState, Modeless)>;
 
 #[derive(Clone)]
 pub enum SelectImageModal {
@@ -250,10 +250,12 @@ pub struct State {
     is_2d_mode: bool,
     speech_bubble_queue: VecDeque<SpeechBubble>,
     modelesses: ModelessCollection,
+    modeless_dom: Vec<Option<u128>>,
+    modeless_max_z_index: i32,
     modals: Vec<Modal>,
-    editing_modeless: Option<(usize, Rc<RefCell<modeless_modal::State>>)>,
-    object_modeless_address: HashMap<u128, usize>,
-    chat_modeless_address: Option<usize>,
+    editing_modeless: Option<(u128, Rc<RefCell<modeless_modal::State>>)>,
+    object_id_to_modeless_id_map: HashMap<u128, u128>, //object_id -> modeless_id
+    chat_to_modeless_id_map: Option<u128>,
     pixel_ratio: f64,
     is_low_loading_mode: bool,
     loading_state: i64,
@@ -298,10 +300,10 @@ pub enum Msg {
     // モードレス
     OpenObjectModeless(u128),
     OpenChatModeless,
-    CloseModeless(usize),
-    GrubModeless(usize, Option<[bool; 4]>),
-    FocusModeless(usize),
-    OpenModelessModal(usize),
+    CloseModeless(u128),
+    GrubModeless(u128, Option<[bool; 4]>),
+    FocusModeless(u128),
+    OpenModelessModal(u128),
     CloseModelessModal,
     ReflectModelessModal(modeless_modal::Props),
     CloseModelessModalWithProps(modeless_modal::Props),
@@ -385,11 +387,13 @@ pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
                 },
                 is_2d_mode: false,
                 speech_bubble_queue: VecDeque::new(),
-                modelesses: vec![],
+                modelesses: HashMap::new(),
+                modeless_dom: vec![],
+                modeless_max_z_index: 0,
                 modals: vec![],
                 editing_modeless: None,
-                object_modeless_address: HashMap::new(),
-                chat_modeless_address: None,
+                object_id_to_modeless_id_map: HashMap::new(),
+                chat_to_modeless_id_map: None,
                 focused_object_id: None,
                 pixel_ratio: 1.0,
                 is_low_loading_mode: false,
@@ -936,65 +940,85 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
         // モードレス
         Msg::OpenObjectModeless(object_id) => {
-            if let Some(address) = state.object_modeless_address.get(&object_id).map(|a| *a) {
-                state.modelesses[address].0.is_showing = true;
-                update(state, Msg::FocusModeless(address))
-            } else {
-                state.modelesses.push((
-                    ModelessState::new(true),
-                    Modeless::Object {
-                        tabs: vec![object_id],
-                        focused: 0,
-                    },
-                ));
+            let modeless_id = state
+                .object_id_to_modeless_id_map
+                .get(&object_id)
+                .map(|modeless_id| *modeless_id)
+                .unwrap_or(random_id::u128val());
+
+            if !state.modelesses.contains_key(&modeless_id) {
+                state.modelesses.insert(
+                    modeless_id,
+                    (
+                        ModelessState::new(),
+                        Modeless::Object {
+                            tabs: vec![object_id],
+                            focused: 0,
+                        },
+                    ),
+                );
                 state
-                    .object_modeless_address
-                    .insert(object_id, state.modelesses.len() - 1);
-                state.cmd_queue.dequeue()
+                    .object_id_to_modeless_id_map
+                    .insert(object_id, modeless_id);
             }
+
+            if let Some(insert_point) = state.modeless_dom.iter().position(|x| x.is_none()) {
+                state.modeless_dom[insert_point] = Some(modeless_id);
+            } else {
+                state.modeless_dom.push(Some(modeless_id));
+            }
+
+            update(state, Msg::FocusModeless(modeless_id))
         }
         Msg::OpenChatModeless => {
-            if let Some(address) = state.chat_modeless_address {
-                state.modelesses[address].0.is_showing = true;
-                update(state, Msg::FocusModeless(address))
-            } else {
-                let mut modeless_state = ModelessState::new(true);
+            let modeless_id = state
+                .chat_to_modeless_id_map
+                .unwrap_or(random_id::u128val());
+
+            if !state.modelesses.contains_key(&modeless_id) {
+                let mut modeless_state = ModelessState::new();
                 modeless_state.loc_a = [2, 2];
                 modeless_state.loc_b = [8, 14];
-                state.modelesses.push((modeless_state, Modeless::Chat));
-                state.chat_modeless_address = Some(state.modelesses.len() - 1);
-                state.cmd_queue.dequeue()
+                state
+                    .modelesses
+                    .insert(modeless_id, (modeless_state, Modeless::Chat));
+                state.chat_to_modeless_id_map = Some(modeless_id);
             }
+
+            if let Some(insert_point) = state.modeless_dom.iter().position(|x| x.is_none()) {
+                state.modeless_dom[insert_point] = Some(modeless_id);
+            } else {
+                state.modeless_dom.push(Some(modeless_id));
+            }
+            update(state, Msg::FocusModeless(modeless_id))
         }
-        Msg::CloseModeless(modeless_idx) => {
-            state.modelesses[modeless_idx].0.is_showing = false;
-            state.cmd_queue.dequeue()
-        }
-        Msg::GrubModeless(modeless_idx, grubbed) => {
-            state.modelesses[modeless_idx].0.grubbed = grubbed;
-            update(state, Msg::FocusModeless(modeless_idx))
-        }
-        Msg::FocusModeless(modeless_idx) => {
-            let modeless = state.modelesses.remove(modeless_idx);
-            state.modelesses.push(modeless);
-            let mut idx = 0;
-            for modeless in &state.modelesses {
-                match &modeless.1 {
-                    Modeless::Object { tabs, .. } => {
-                        for object_id in tabs {
-                            state.object_modeless_address.insert(*object_id, idx);
-                        }
-                    }
-                    Modeless::Chat => {
-                        state.chat_modeless_address = Some(idx);
-                    }
-                }
-                idx += 1;
+        Msg::CloseModeless(modeless_id) => {
+            if let Some(close_point) = state
+                .modeless_dom
+                .iter()
+                .position(|x| x.map(|x| x == modeless_id).unwrap_or(false))
+            {
+                state.modeless_dom[close_point] = None;
             }
             state.cmd_queue.dequeue()
         }
-        Msg::OpenModelessModal(modeless_idx) => {
-            if let Some((modeless, ..)) = state.modelesses.get_mut(modeless_idx) {
+        Msg::GrubModeless(modeless_id, grubbed) => {
+            state
+                .modelesses
+                .get_mut(&modeless_id)
+                .map(|modeless| modeless.0.grubbed = grubbed);
+            update(state, Msg::FocusModeless(modeless_id))
+        }
+        Msg::FocusModeless(modeless_id) => {
+            if let Some(modeless) = state.modelesses.get_mut(&modeless_id) {
+                state.modeless_max_z_index += 1;
+                modeless.0.z_index = state.modeless_max_z_index;
+            }
+
+            state.cmd_queue.dequeue()
+        }
+        Msg::OpenModelessModal(modeless_id) => {
+            if let Some((modeless, ..)) = state.modelesses.get_mut(&modeless_id) {
                 if let Some(resizable) = modeless.grubbed {
                     let props = modeless_modal::Props {
                         origin: modeless.loc_a.clone(),
@@ -1002,7 +1026,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                         resizable: resizable.clone(),
                     };
                     state.editing_modeless = Some((
-                        modeless_idx,
+                        modeless_id,
                         Rc::new(RefCell::new(modeless_modal::State::new(&props))),
                     ));
                 }
@@ -1010,11 +1034,12 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.cmd_queue.dequeue()
         }
         Msg::CloseModelessModal => {
-            let modeless = state
-                .editing_modeless
+            let editing_modeless = &state.editing_modeless;
+            let modelesses = &mut state.modelesses;
+
+            let modeless = editing_modeless
                 .as_ref()
-                .map(|(idx, ..)| *idx)
-                .and_then(|idx| state.modelesses.get_mut(idx));
+                .and_then(|(modeless_id, ..)| modelesses.get_mut(modeless_id));
             if let Some((modeless, ..)) = modeless {
                 modeless.grubbed = None;
             }
@@ -1022,11 +1047,12 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.cmd_queue.dequeue()
         }
         Msg::ReflectModelessModal(props) => {
-            let modeless = state
-                .editing_modeless
+            let editing_modeless = &state.editing_modeless;
+            let modelesses = &mut state.modelesses;
+
+            let modeless = editing_modeless
                 .as_ref()
-                .map(|(idx, ..)| *idx)
-                .and_then(|idx| state.modelesses.get_mut(idx));
+                .and_then(|(modeless_id, ..)| modelesses.get_mut(modeless_id));
             if let Some((modeless, ..)) = modeless {
                 modeless.loc_a = props.origin;
                 modeless.loc_b = props.corner;
@@ -1472,19 +1498,17 @@ fn render(state: &State) -> Html<Msg> {
             Msg::NoOp
         }),
         vec![
-            vec![
-                render_header_menu(
-                    &state.room.id,
-                    &state.table_state.selecting_tool,
-                    state.world.table().is_bind_to_grid(),
-                    state.is_2d_mode,
-                    state.is_low_loading_mode,
-                ),
-                render_side_menu(),
-                render_canvas_container(&state),
-                render_loading_state(state.loading_resource_num, state.loaded_resource_num),
-                render_context_menu(&state.contextmenu, &state.focused_object_id, &state.world),
-            ],
+            render_header_menu(
+                &state.room.id,
+                &state.table_state.selecting_tool,
+                state.world.table().is_bind_to_grid(),
+                state.is_2d_mode,
+                state.is_low_loading_mode,
+            ),
+            render_side_menu(),
+            render_canvas_container(&state),
+            render_loading_state(state.loading_resource_num, state.loaded_resource_num),
+            render_context_menu(&state.contextmenu, &state.focused_object_id, &state.world),
             render_modals(
                 &state.modals,
                 &state.world,
@@ -1492,10 +1516,7 @@ fn render(state: &State) -> Html<Msg> {
                 &state.chat_data,
                 &state.resource,
             ),
-        ]
-        .into_iter()
-        .flatten()
-        .collect(),
+        ],
     )
 }
 
@@ -1687,7 +1708,8 @@ fn render_canvas_container(state: &State) -> Html<Msg> {
     Html::div(
         Attributes::new()
             .class("cover")
-            .style("position", "relative"),
+            .style("position", "relative")
+            .style("z-index", "0"),
         Events::new(),
         vec![
             render_canvas(),
@@ -1703,6 +1725,7 @@ fn render_canvas_container(state: &State) -> Html<Msg> {
                 &state.chat_data,
                 &state.personal_data,
                 &state.modelesses,
+                &state.modeless_dom,
             ),
             state
                 .editing_modeless
@@ -1782,9 +1805,12 @@ fn render_canvas_overlaper(
     chat_tabs: &ChatDataCollection,
     personal_data: &PersonalData,
     modelesses: &ModelessCollection,
+    modeless_dom: &Vec<Option<u128>>,
 ) -> Html<Msg> {
     modeless_container(
-        Attributes::new().class("cover cover-a"),
+        Attributes::new()
+            .class("cover cover-a")
+            .style("z-index", "0"),
         Events::new()
             .on_mousemove({
                 let selecting_tool = table_state.selecting_tool.clone();
@@ -1862,21 +1888,32 @@ fn render_canvas_overlaper(
                 e.stop_propagation();
                 Msg::OpenContextMenu(page_mouse_coord, offset_mouse_coord)
             }),
-        modelesses
+        modeless_dom
             .iter()
-            .enumerate()
-            .map(|(idx, (state, modeless))| {
-                if !state.is_showing {
-                    Html::none()
-                } else {
+            .map(|modeless_id| {
+                if let Some((state, modeless)) =
+                    modeless_id.and_then(|modeless_id| modelesses.get(&modeless_id))
+                {
                     match modeless {
-                        Modeless::Object { focused, tabs } => {
-                            modeless::object(idx, state, tabs, *focused, world, resource)
-                        }
-                        Modeless::Chat => {
-                            modeless::chat(idx, state, chat_tabs, personal_data, world, resource)
-                        }
+                        Modeless::Object { focused, tabs } => modeless::object(
+                            modeless_id.unwrap(),
+                            state,
+                            tabs,
+                            *focused,
+                            world,
+                            resource,
+                        ),
+                        Modeless::Chat => modeless::chat(
+                            modeless_id.unwrap(),
+                            state,
+                            chat_tabs,
+                            personal_data,
+                            world,
+                            resource,
+                        ),
                     }
+                } else {
+                    Html::div(Attributes::new(), Events::new(), vec![])
                 }
             })
             .collect(),
@@ -2238,7 +2275,7 @@ fn render_modals(
     personal_data: &PersonalData,
     chat_data: &ChatDataCollection,
     resource: &Resource,
-) -> Vec<Html<Msg>> {
+) -> Html<Msg> {
     let mut children = vec![];
     for modal in modals {
         let child = match modal {
@@ -2261,5 +2298,11 @@ fn render_modals(
         };
         children.push(child);
     }
-    children
+    Html::div(
+        Attributes::new()
+            .style("position", "fixied")
+            .style("z-index", "0"),
+        Events::new(),
+        children,
+    )
 }

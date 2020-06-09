@@ -48,7 +48,7 @@ pub fn render<M: 'static>(
         return Html::none();
     }
     Html::div(
-        Attributes::new().class("fullscreen"),
+        Attributes::new().class("fullscreen").style("z-index", "0"),
         Events::new()
             .on_click({
                 let m = messenger_gen()();

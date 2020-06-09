@@ -11,7 +11,7 @@ use kagura::prelude::*;
 use wasm_bindgen::JsCast;
 
 pub fn object(
-    modeless_idx: usize,
+    modeless_id: u128,
     state: &ModelessState,
     tabs: &Vec<u128>,
     focused: usize,
@@ -20,13 +20,13 @@ pub fn object(
 ) -> Html<Msg> {
     let focused_id = tabs[focused];
     frame(
-        modeless_idx,
+        modeless_id,
         state,
         Attributes::new(),
         Events::new(),
         vec![
             header(
-                modeless_idx,
+                modeless_id,
                 Html::div(Attributes::new(), Events::new(), vec![]),
             ),
             if let Some(character) = world.character(&focused_id) {
@@ -300,7 +300,7 @@ fn object_tablemask(tablemask: &Tablemask, tablemask_id: u128) -> Html<Msg> {
 }
 
 pub fn chat(
-    modeless_idx: usize,
+    modeless_id: u128,
     state: &ModelessState,
     chat_data: &ChatDataCollection,
     personal_data: &PersonalData,
@@ -312,13 +312,13 @@ pub fn chat(
     let take = chat_data.take;
 
     frame(
-        modeless_idx,
+        modeless_id,
         state,
         Attributes::new(),
         Events::new(),
         vec![
             header(
-                modeless_idx,
+                modeless_id,
                 Html::div(Attributes::new(), Events::new(), vec![]),
             ),
             modeless::body(
@@ -544,7 +544,7 @@ pub fn chat(
 }
 
 fn frame(
-    modeless_idx: usize,
+    modeless_id: u128,
     state: &ModelessState,
     attributes: Attributes,
     events: Events<Msg>,
@@ -559,6 +559,7 @@ fn frame(
     } else {
         attributes
     };
+    let attributes = attributes.style("z-index", state.z_index.to_string());
     modeless::frame(
         &state.loc_a,
         &state.loc_b,
@@ -574,14 +575,14 @@ fn frame(
             })
             .on_mouseup(move |e| {
                 e.stop_propagation();
-                Msg::GrubModeless(modeless_idx, None)
+                Msg::GrubModeless(modeless_id, None)
             })
             .on_mousemove({
                 let grubbed = state.grubbed.is_some();
                 move |e| {
                     e.stop_propagation();
                     if grubbed {
-                        Msg::OpenModelessModal(modeless_idx)
+                        Msg::OpenModelessModal(modeless_id)
                     } else {
                         Msg::NoOp
                     }
@@ -592,7 +593,7 @@ fn frame(
                 move |e| {
                     e.stop_propagation();
                     if grubbed {
-                        Msg::OpenModelessModal(modeless_idx)
+                        Msg::OpenModelessModal(modeless_id)
                     } else {
                         Msg::NoOp
                     }
@@ -609,28 +610,28 @@ fn frame(
                         .and_then(|t| t.get_attribute("data-position"))
                         .map(|pos| match pos.as_str() {
                             "top" => {
-                                Msg::GrubModeless(modeless_idx, Some([true, false, false, false]))
+                                Msg::GrubModeless(modeless_id, Some([true, false, false, false]))
                             }
                             "left" => {
-                                Msg::GrubModeless(modeless_idx, Some([false, true, false, false]))
+                                Msg::GrubModeless(modeless_id, Some([false, true, false, false]))
                             }
                             "bottom" => {
-                                Msg::GrubModeless(modeless_idx, Some([false, false, true, false]))
+                                Msg::GrubModeless(modeless_id, Some([false, false, true, false]))
                             }
                             "right" => {
-                                Msg::GrubModeless(modeless_idx, Some([false, false, false, true]))
+                                Msg::GrubModeless(modeless_id, Some([false, false, false, true]))
                             }
                             "top_left" => {
-                                Msg::GrubModeless(modeless_idx, Some([true, true, false, false]))
+                                Msg::GrubModeless(modeless_id, Some([true, true, false, false]))
                             }
                             "bottom_left" => {
-                                Msg::GrubModeless(modeless_idx, Some([false, true, true, false]))
+                                Msg::GrubModeless(modeless_id, Some([false, true, true, false]))
                             }
                             "bottom_right" => {
-                                Msg::GrubModeless(modeless_idx, Some([false, false, true, true]))
+                                Msg::GrubModeless(modeless_id, Some([false, false, true, true]))
                             }
                             "top_right" => {
-                                Msg::GrubModeless(modeless_idx, Some([true, false, false, true]))
+                                Msg::GrubModeless(modeless_id, Some([true, false, false, true]))
                             }
                             _ => Msg::NoOp,
                         })
@@ -658,14 +659,14 @@ fn resizers() -> Vec<Html<Msg>> {
     ]
 }
 
-fn header(modeless_idx: usize, header: Html<Msg>) -> Html<Msg> {
+fn header(modeless_id: u128, header: Html<Msg>) -> Html<Msg> {
     modeless::header(
         Attributes::new()
             .style("display", "grid")
             .style("grid-template-columns", "1fr max-content"),
         Events::new().on_mousedown(move |e| {
             e.stop_propagation();
-            Msg::GrubModeless(modeless_idx, Some([true, true, true, true]))
+            Msg::GrubModeless(modeless_id, Some([true, true, true, true]))
         }),
         vec![
             header,
@@ -674,7 +675,7 @@ fn header(modeless_idx: usize, header: Html<Msg>) -> Html<Msg> {
                 Events::new(),
                 vec![btn::close(
                     Attributes::new(),
-                    Events::new().on_click(move |_| Msg::CloseModeless(modeless_idx)),
+                    Events::new().on_click(move |_| Msg::CloseModeless(modeless_id)),
                 )],
             ),
         ],
