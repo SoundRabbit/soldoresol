@@ -1,7 +1,11 @@
 mod camera;
 mod character;
+mod chat;
+mod chat_item;
+mod chat_tab;
 mod color;
 mod color_system;
+mod icon;
 pub mod resource;
 mod table;
 mod tablemask;
@@ -10,8 +14,11 @@ mod world;
 
 pub use camera::Camera;
 pub use character::Character;
+pub use chat_item::ChatItem;
+pub use chat_tab::ChatTab;
 pub use color::Color;
 pub use color_system::ColorSystem;
+pub use icon::Icon;
 pub use resource::{Resource, ResourceData};
 pub use table::Table;
 pub use tablemask::Tablemask;
