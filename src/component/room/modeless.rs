@@ -62,7 +62,8 @@ fn object_character(character: &Character, character_id: u128, resource: &Resour
                         Html::span(Attributes::new(), Events::new(), vec![Html::text("Name")]),
                         Html::input(
                             Attributes::new().value(character.name()).type_("text"),
-                            Events::new().on_input(move |s| Msg::SetCharacterName(character_id, s)),
+                            Events::new()
+                                .on_input(move |s| Msg::SetCharacterName(character_id, s, true)),
                             vec![],
                         ),
                     ],
@@ -133,6 +134,7 @@ fn object_character(character: &Character, character_id: u128, resource: &Resour
                                                             character_id,
                                                             Some(width),
                                                             Some(height),
+                                                            true,
                                                         )
                                                     })
                                                     .unwrap_or(Msg::NoOp)
@@ -146,6 +148,7 @@ fn object_character(character: &Character, character_id: u128, resource: &Resour
                                                     character_id,
                                                     None,
                                                     Some(height),
+                                                    true,
                                                 )
                                             }),
                                             vec![Html::text("画像に合わせる")],
@@ -167,6 +170,7 @@ fn object_character(character: &Character, character_id: u128, resource: &Resour
                                                             character_id,
                                                             Some(width),
                                                             Some(height),
+                                                            true,
                                                         )
                                                     })
                                                     .unwrap_or(Msg::NoOp)
@@ -180,6 +184,7 @@ fn object_character(character: &Character, character_id: u128, resource: &Resour
                                                     character_id,
                                                     Some(width),
                                                     None,
+                                                    true,
                                                 )
                                             }),
                                             vec![Html::text("画像に合わせる")],

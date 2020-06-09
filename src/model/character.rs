@@ -1,5 +1,5 @@
 use super::{Color, ColorSystem};
-use crate::{random_id, JsObject};
+use crate::JsObject;
 
 pub struct Character {
     size: [f64; 2],
@@ -23,7 +23,7 @@ impl Character {
             position: [0.0, 0.0, 0.0],
             image_id: None,
             background_color: Color::from(0),
-            name: format!("キャラクター{}", random_id::hex(2).to_uppercase()),
+            name: "キャラクター".into(),
         }
     }
 
@@ -138,17 +138,11 @@ impl CharacterData {
 impl From<JsObject> for CharacterData {
     fn from(obj: JsObject) -> Self {
         use js_sys::Array;
-        use wasm_bindgen::{prelude::*, JsCast};
-
-        web_sys::console::log_1(&JsValue::from("A"));
+        use wasm_bindgen::JsCast;
 
         let size = obj.get("size").unwrap().dyn_into::<Array>().ok().unwrap();
 
-        web_sys::console::log_1(&JsValue::from("B"));
-
         let size = [size.get(0).as_f64().unwrap(), size.get(1).as_f64().unwrap()];
-
-        web_sys::console::log_1(&JsValue::from("C"));
 
         let position = obj
             .get("position")
@@ -162,18 +156,12 @@ impl From<JsObject> for CharacterData {
             position.get(2).as_f64().unwrap(),
         ];
 
-        web_sys::console::log_1(&JsValue::from("D"));
-
         let image_id = obj
             .get("image_id")
             .and_then(|image_id| image_id.as_string())
             .and_then(|image_id| image_id.parse().ok());
 
-        web_sys::console::log_1(&JsValue::from("E"));
-
         let name = obj.get("name").unwrap().as_string().unwrap();
-
-        web_sys::console::log_1(&JsValue::from("F"));
 
         Self {
             size,

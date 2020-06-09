@@ -285,8 +285,8 @@ pub enum Msg {
 
     // Worldに対する操作
     SetCharacterImage(u128, u128, bool),
-    SetCharacterSize(u128, Option<f64>, Option<f64>),
-    SetCharacterName(u128, String),
+    SetCharacterSize(u128, Option<f64>, Option<f64>, bool),
+    SetCharacterName(u128, String, bool),
     AddChracater(Character),
     AddTablemask(Tablemask),
     SetTablemaskSizeWithStyle(u128, [f64; 2], bool),
@@ -1068,7 +1068,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 state.cmd_queue.dequeue()
             }
         }
-        Msg::SetCharacterSize(character_id, width, height) => {
+        Msg::SetCharacterSize(character_id, width, height, transport) => {
             let world = &mut state.world;
             let resource = &state.resource;
             if let Some(character) = world.character_mut(&character_id) {
@@ -1091,12 +1091,27 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                         character.set_size([width, height]);
                     }
                 }
+
+                if transport {
+                    state.room.send(skyway::Msg::SetCharacterSize(
+                        character_id,
+                        character.size().clone(),
+                    ));
+                }
             }
+
             update(state, Msg::Render)
         }
-        Msg::SetCharacterName(character_id, name) => {
+        Msg::SetCharacterName(character_id, name, transport) => {
             if let Some(character) = state.world.character_mut(&character_id) {
                 character.set_name(name);
+
+                if transport {
+                    state.room.send(skyway::Msg::SetCharacterName(
+                        character_id,
+                        character.name().clone(),
+                    ));
+                }
             }
             state.cmd_queue.dequeue()
         }
@@ -1363,10 +1378,10 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             }
             skyway::Msg::SetCharacterSize(character_id, size) => update(
                 state,
-                Msg::SetCharacterSize(character_id, Some(size[0]), Some(size[0])),
+                Msg::SetCharacterSize(character_id, Some(size[0]), Some(size[0]), false),
             ),
             skyway::Msg::SetCharacterName(character_id, name) => {
-                update(state, Msg::SetCharacterName(character_id, name))
+                update(state, Msg::SetCharacterName(character_id, name, false))
             }
             skyway::Msg::SetObjectPosition(object_id, position) => {
                 if let Some(character) = state.world.character_mut(&object_id) {
