@@ -1361,6 +1361,13 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             skyway::Msg::SetCharacterImage(character_id, data_id) => {
                 update(state, Msg::SetCharacterImage(character_id, data_id, false))
             }
+            skyway::Msg::SetCharacterSize(character_id, size) => update(
+                state,
+                Msg::SetCharacterSize(character_id, Some(size[0]), Some(size[0])),
+            ),
+            skyway::Msg::SetCharacterName(character_id, name) => {
+                update(state, Msg::SetCharacterName(character_id, name))
+            }
             skyway::Msg::SetObjectPosition(object_id, position) => {
                 if let Some(character) = state.world.character_mut(&object_id) {
                     character.set_position(position);

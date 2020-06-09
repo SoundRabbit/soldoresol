@@ -83,6 +83,8 @@ pub enum Msg {
     EraceLineToTable([f64; 2], [f64; 2]),
     CreateCharacterToTable(u128, [f64; 3]),
     SetCharacterImage(u128, u128),
+    SetCharacterSize(u128, [f64; 2]),
+    SetCharacterName(u128, String),
     SetObjectPosition(u128, [f64; 3]),
     SetIsBindToGrid(bool),
     SetWorld(WorldData),
@@ -100,6 +102,8 @@ impl Msg {
             Self::EraceLineToTable(..) => "EraceLineToTable",
             Self::CreateCharacterToTable(..) => "CreateCharacterToTable",
             Self::SetCharacterImage(..) => "SetCharacterImage",
+            Self::SetCharacterSize(..) => "SetCharacterSize",
+            Self::SetCharacterName(..) => "SetCharacterName",
             Self::SetObjectPosition(..) => "SetObjectPosition",
             Self::SetIsBindToGrid(..) => "SetIsBindToGrid",
             Self::SetWorld(..) => "SetWorld",
@@ -125,6 +129,8 @@ impl Into<JsObject> for Msg {
             Self::SetCharacterImage(c_id, d_id) => {
                 array![c_id.to_string(), d_id.to_string()].into()
             }
+            Self::SetCharacterSize(c_id, sz) => array![c_id.to_string(), sz[0], sz[1]].into(),
+            Self::SetCharacterName(c_id, name) => array![c_id.to_string(), name].into(),
             Self::SetIsBindToGrid(f) => JsValue::from(f),
             Self::SetWorld(world_data) => world_data.as_object().into(),
             Self::SetResource(resource_data) => resource_data.as_object().into(),
@@ -194,6 +200,20 @@ impl From<JsObject> for Msg {
                     Self::SetCharacterImage(
                         args[0].as_string().unwrap().parse().unwrap(),
                         args[1].as_string().unwrap().parse().unwrap(),
+                    )
+                }
+                "SetCharacterSize" => {
+                    let args = Array::from(&payload);
+                    Self::SetCharacterSize(
+                        args.get(0).as_string().unwrap().parse().unwrap(),
+                        [args.get(1).as_f64().unwrap(), args.get(2).as_f64().unwrap()],
+                    )
+                }
+                "SetCharacterName" => {
+                    let args = Array::from(&payload);
+                    Self::SetCharacterName(
+                        args.get(0).as_string().unwrap().parse().unwrap(),
+                        args.get(1).as_string().unwrap(),
                     )
                 }
                 "SetIsBindToGrid" => Self::SetIsBindToGrid(payload.as_bool().unwrap()),
