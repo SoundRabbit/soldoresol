@@ -1169,7 +1169,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     ),
                     ChatSender::Character(character_id) => {
                         if let Some(character) = state.world.character(&character_id) {
-                            let vertex = [0.0, character.size()[1], 0.0];
+                            let vertex = [0.0, 0.0, character.size()[1]];
                             let position = Renderer::table_position(
                                 &vertex,
                                 character.position(),
