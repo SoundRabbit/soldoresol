@@ -1,8 +1,12 @@
 @import "color";
 
 .speechbubble {
-    transform: translate(-3em, -100%);
+    transform: translate(-3em, calc(-100% - 1em));
     max-width: 20vw;
+
+    &-img {
+        max-height: 20vh;
+    }
 
     &-message {
         position: relative;

@@ -1691,7 +1691,7 @@ fn render_canvas_container(state: &State) -> Html<Msg> {
         Events::new(),
         vec![
             render_canvas(),
-            render_speech_bubble_queue(&state.speech_bubble_queue),
+            render_speech_bubble_queue(&state.speech_bubble_queue, &state.resource),
             render_measure_length(&state.table_state.measure_length),
             render_hint(),
             render_canvas_overlaper(
@@ -1729,7 +1729,10 @@ fn render_canvas() -> Html<Msg> {
     )
 }
 
-fn render_speech_bubble_queue(speech_bubble_queue: &VecDeque<SpeechBubble>) -> Html<Msg> {
+fn render_speech_bubble_queue(
+    speech_bubble_queue: &VecDeque<SpeechBubble>,
+    resource: &Resource,
+) -> Html<Msg> {
     modeless_container(
         Attributes::new().class("cover cover-a"),
         Events::new(),
@@ -1743,11 +1746,27 @@ fn render_speech_bubble_queue(speech_bubble_queue: &VecDeque<SpeechBubble>) -> H
                         .style("left", format!("{}px", speech_bubble.position[0]))
                         .style("top", format!("{}px", speech_bubble.position[1])),
                     Events::new(),
-                    vec![Html::pre(
-                        Attributes::new().class("speechbubble-message"),
-                        Events::new(),
-                        vec![Html::text(&speech_bubble.message)],
-                    )],
+                    vec![
+                        speech_bubble
+                            .texture_id
+                            .and_then(|texture_id| resource.get_as_image_url(&texture_id))
+                            .map(|image_url| {
+                                Html::img(
+                                    Attributes::new()
+                                        .class("pure-img")
+                                        .class("speechbubble-img")
+                                        .string("src", image_url.as_str()),
+                                    Events::new(),
+                                    vec![],
+                                )
+                            })
+                            .unwrap_or(Html::none()),
+                        Html::pre(
+                            Attributes::new().class("speechbubble-message"),
+                            Events::new(),
+                            vec![Html::text(&speech_bubble.message)],
+                        ),
+                    ],
                 )
             })
             .collect(),
