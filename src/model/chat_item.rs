@@ -4,15 +4,23 @@ use crate::JsObject;
 pub struct ChatItem {
     display_name: String,
     peer_id: String,
+    character_id: Option<u128>,
     icon: Icon,
     payload: String,
 }
 
 impl ChatItem {
-    pub fn new(display_name: String, peer_id: String, icon: Icon, payload: String) -> Self {
+    pub fn new(
+        display_name: String,
+        peer_id: String,
+        character_id: Option<u128>,
+        icon: Icon,
+        payload: String,
+    ) -> Self {
         Self {
             display_name: display_name,
             peer_id: peer_id,
+            character_id,
             icon: icon,
             payload: payload,
         }
@@ -24,6 +32,10 @@ impl ChatItem {
 
     pub fn peer_id(&self) -> &String {
         &self.peer_id
+    }
+
+    pub fn character_id(&self) -> Option<u128> {
+        self.character_id.clone()
     }
 
     pub fn icon(&self) -> &Icon {
@@ -38,6 +50,7 @@ impl ChatItem {
         object! {
             display_name: &self.display_name,
             peer_id: &self.peer_id,
+            character_id: self.character_id.map(|x| x.to_string()),
             icon: self.icon.as_object(),
             payload: &self.payload
         }
@@ -54,6 +67,10 @@ impl From<JsObject> for ChatItem {
             .get("peer_id")
             .and_then(|x| x.as_string())
             .unwrap_or(String::from(""));
+        let character_id = object
+            .get("character_id")
+            .and_then(|x| x.as_string())
+            .and_then(|x| x.parse().ok());
         let icon = object
             .get("icon")
             .map(|x| Icon::from(x))
@@ -66,6 +83,7 @@ impl From<JsObject> for ChatItem {
         Self {
             display_name,
             peer_id,
+            character_id,
             icon,
             payload,
         }

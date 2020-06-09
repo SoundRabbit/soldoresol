@@ -297,6 +297,7 @@ pub enum Msg {
     SetSelectingChatTabIdx(usize),
     InputChatMessage(String),
     SendChatItem,
+    InsertChatItem(usize, ChatItem),
     SetChatSender(usize),
     AddChatSender(ChatSender),
     RemoveChatSender(ChatSender),
@@ -464,11 +465,6 @@ pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
                                     });
                                 if let Some(msg) = msg {
                                     received_msg_num.set(received_msg_num.get() + 1);
-                                    web_sys::console::log_1(&JsValue::from(format!(
-                                        "Receive:{}, {}",
-                                        &msg,
-                                        received_msg_num.get()
-                                    )));
                                     let h = handler.borrow_mut().take();
                                     if let Some(mut h) = h {
                                         h(Msg::ReceiveMsg(msg));
@@ -684,7 +680,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         Msg::RemoveObjectWithObjectId(object_id, transport) => {
             state.world.remove_object(&object_id);
             if transport {
-                state.room.send(&skyway::Msg::RemoveObject(object_id));
+                state.room.send(skyway::Msg::RemoveObject(object_id));
             }
             update(state, Msg::Render)
         }
@@ -793,7 +789,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.world.table_mut().set_is_bind_to_grid(is_bind_to_grid);
             state
                 .room
-                .send(&skyway::Msg::SetIsBindToGrid(is_bind_to_grid));
+                .send(skyway::Msg::SetIsBindToGrid(is_bind_to_grid));
             state.cmd_queue.dequeue()
         }
         Msg::DrawLineWithMouseCoord(mouse_coord) => {
@@ -813,7 +809,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             );
             state
                 .room
-                .send(&skyway::Msg::DrawLineToTable(start_point, end_point));
+                .send(skyway::Msg::DrawLineToTable(start_point, end_point));
             update(state, Msg::SetCursorWithMouseCoord(mouse_coord))
         }
         Msg::EraceLineWithMouseCoord(mouse_coord) => {
@@ -831,7 +827,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 .erace_line(&start_point, &end_point, 1.0);
             state
                 .room
-                .send(&skyway::Msg::EraceLineToTable(start_point, end_point));
+                .send(skyway::Msg::EraceLineToTable(start_point, end_point));
             update(state, Msg::SetCursorWithMouseCoord(mouse_coord))
         }
         Msg::SetMeasureStartPointAndEndPointWithMouseCoord(start_point, mouse_coord) => {
@@ -863,7 +859,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 let p = [p[0] + movement[0], p[1] + movement[1], p[2]];
                 state
                     .room
-                    .send(&skyway::Msg::SetObjectPosition(object_id, p.clone()));
+                    .send(skyway::Msg::SetObjectPosition(object_id, p.clone()));
                 character.set_position(p);
             }
             if let Some(tablemask) = state.world.tablemask_mut(&object_id) {
@@ -871,7 +867,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 let p = [p[0] + movement[0], p[1] + movement[1], p[2]];
                 state
                     .room
-                    .send(&skyway::Msg::SetObjectPosition(object_id, p.clone()));
+                    .send(skyway::Msg::SetObjectPosition(object_id, p.clone()));
                 tablemask.set_position(p);
             }
             state.table_state.last_mouse_coord = mouse_coord;
@@ -881,14 +877,14 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             if state.world.table().is_bind_to_grid() {
                 if let Some(character) = state.world.character_mut(&object_id) {
                     character.bind_to_grid();
-                    state.room.send(&skyway::Msg::SetObjectPosition(
+                    state.room.send(skyway::Msg::SetObjectPosition(
                         object_id,
                         character.position().clone(),
                     ));
                 }
                 if let Some(tablemask) = state.world.tablemask_mut(&object_id) {
                     tablemask.bind_to_grid();
-                    state.room.send(&skyway::Msg::SetObjectPosition(
+                    state.room.send(skyway::Msg::SetObjectPosition(
                         object_id,
                         tablemask.position().clone(),
                     ));
@@ -1064,7 +1060,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 }
                 if transport {
                     let room = &state.room;
-                    room.send(&skyway::Msg::SetCharacterImage(character_id, data_id));
+                    room.send(skyway::Msg::SetCharacterImage(character_id, data_id));
                 }
                 state.cmd_queue.enqueue(Cmd::task(|r| r(Msg::Render)));
                 update(state, Msg::CloseModal)
@@ -1110,7 +1106,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
             state
                 .room
-                .send(&skyway::Msg::CreateCharacterToTable(character_id, position));
+                .send(skyway::Msg::CreateCharacterToTable(character_id, position));
             update(state, Msg::Render)
         }
         Msg::AddTablemask(tablemask) => {
@@ -1152,66 +1148,80 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             let message: String = message.as_str().trim_end().into();
 
             if message.as_str().len() > 0 {
-                let (sender, speech_bubble) = match sender {
-                    ChatSender::Player => (
-                        Some((
-                            state.personal_data.name.clone(),
-                            state
-                                .personal_data
-                                .icon
-                                .map(|r_id| Icon::Resource(r_id))
-                                .unwrap_or(Icon::DefaultUser),
-                        )),
+                let sender = match sender {
+                    ChatSender::Player => Some((
+                        state.personal_data.name.clone(),
                         None,
-                    ),
+                        state
+                            .personal_data
+                            .icon
+                            .map(|r_id| Icon::Resource(r_id))
+                            .unwrap_or(Icon::DefaultUser),
+                    )),
                     ChatSender::Character(character_id) => {
-                        if let Some(character) = state.world.character(&character_id) {
-                            let vertex = [0.0, character.size()[1], 0.0];
-                            let position = Renderer::table_position(
-                                &vertex,
-                                character.position(),
-                                &state.camera,
-                                &state.canvas_size,
-                                true,
-                            );
-                            let dpr = get_device_pixel_ratio(state.pixel_ratio);
-                            let x = (position[0] + 1.0) / 2.0 * state.canvas_size[0] / dpr;
-                            let y = -(position[1] - 1.0) / 2.0 * state.canvas_size[1] / dpr;
-                            let speech_bubble = SpeechBubble {
-                                texture_id: character.texture_id(),
-                                position: [x, y],
-                                message: message.clone(),
-                            };
-                            (
-                                Some((
-                                    character.name().clone(),
-                                    character
-                                        .texture_id()
-                                        .map(|r_id| Icon::Resource(r_id))
-                                        .unwrap_or(Icon::DefaultUser),
-                                )),
-                                Some(speech_bubble),
-                            )
+                        if let Some(character) = state.world.character(character_id) {
+                            Some((
+                                character.name().clone(),
+                                Some(*character_id),
+                                character
+                                    .texture_id()
+                                    .map(|r_id| Icon::Resource(r_id))
+                                    .unwrap_or(Icon::DefaultUser),
+                            ))
                         } else {
-                            (None, None)
+                            None
                         }
                     }
                 };
 
-                if let Some((display_name, icon)) = sender {
+                if let Some((display_name, character_id, icon)) = sender {
                     let tab_idx = state.chat_data.selecting_tab_idx;
 
-                    let chat_item = ChatItem::new(display_name, state.peer.id(), icon, message);
+                    let chat_item =
+                        ChatItem::new(display_name, state.peer.id(), character_id, icon, message);
 
-                    state.chat_data.tabs[tab_idx].push(chat_item);
-                }
-
-                if let Some(speech_bubble) = speech_bubble {
-                    let cmd = update(state, Msg::EnqueueSpeechBubble(speech_bubble));
+                    let cmd = update(state, Msg::InsertChatItem(tab_idx, chat_item));
                     state.cmd_queue.enqueue(cmd);
                 }
             }
             state.cmd_queue.dequeue()
+        }
+        Msg::InsertChatItem(tab_idx, chat_item) => {
+            let tabs = &mut state.chat_data.tabs;
+            let world = &state.world;
+            let canvas_size = &state.canvas_size;
+            let camera = &state.camera;
+            let pixel_ratio = state.pixel_ratio;
+
+            if let Some(speech_bubble) = tabs.get_mut(tab_idx).and_then(|tab| {
+                let speech_bubble = chat_item
+                    .character_id()
+                    .and_then(|character_id| world.character(&character_id))
+                    .map(|character| {
+                        let vertex = [0.0, character.size()[1], 0.0];
+                        let position = Renderer::table_position(
+                            &vertex,
+                            character.position(),
+                            camera,
+                            canvas_size,
+                            true,
+                        );
+                        let dpr = get_device_pixel_ratio(pixel_ratio);
+                        let x = (position[0] + 1.0) / 2.0 * canvas_size[0] / dpr;
+                        let y = -(position[1] - 1.0) / 2.0 * canvas_size[1] / dpr;
+                        SpeechBubble {
+                            texture_id: character.texture_id(),
+                            position: [x, y],
+                            message: chat_item.payload().clone(),
+                        }
+                    });
+                tab.push(chat_item);
+                speech_bubble
+            }) {
+                update(state, Msg::EnqueueSpeechBubble(speech_bubble))
+            } else {
+                state.cmd_queue.dequeue()
+            }
         }
         Msg::SetChatSender(sender_idx) => {
             if sender_idx < state.chat_data.senders.len() {
@@ -1303,9 +1313,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             if transport {
                 state
                     .room
-                    .send(&skyway::Msg::SetResource(ResourceData::from(
-                        transport_data,
-                    )));
+                    .send(skyway::Msg::SetResource(ResourceData::from(transport_data)));
             }
             state.cmd_queue.dequeue()
         }
@@ -1377,6 +1385,10 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             skyway::Msg::RemoveObject(object_id) => {
                 update(state, Msg::RemoveObjectWithObjectId(object_id, false))
             }
+            skyway::Msg::InsertChatItem(tab_idx, item) => update(
+                state,
+                Msg::InsertChatItem(tab_idx as usize, ChatItem::from(item)),
+            ),
             skyway::Msg::None => state.cmd_queue.dequeue(),
         },
         Msg::PeerJoin(peer_id) => {
@@ -1412,7 +1424,8 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     let data_connect = Rc::clone(&data_connect);
                     move || {
                         web_sys::console::log_1(&JsValue::from("send resource data"));
-                        data_connect.send(&skyway::Msg::SetResource(resource_data).as_object());
+                        let msg: JsObject = skyway::Msg::SetResource(resource_data).into();
+                        data_connect.send(&msg);
                     }
                 }) as Box<dyn FnOnce()>);
                 data_connect.on("open", Some(a.as_ref().unchecked_ref()));
@@ -1423,8 +1436,10 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     let peers = state.peers.clone();
                     move || {
                         web_sys::console::log_1(&JsValue::from("send world data"));
-                        data_connect.send(&skyway::Msg::SetWorld(world_data).as_object());
-                        data_connect.send(&skyway::Msg::SetConnection(peers).as_object());
+                        let msg: JsObject = skyway::Msg::SetWorld(world_data).into();
+                        data_connect.send(&msg);
+                        let msg: JsObject = skyway::Msg::SetConnection(peers).into();
+                        data_connect.send(&msg);
                     }
                 }) as Box<dyn FnOnce()>);
                 data_connect.on("data", Some(a.as_ref().unchecked_ref()));
