@@ -7,7 +7,7 @@ mod webgl;
 use crate::model::{Camera, Resource, World};
 use mask_renderer::MaskRenderer;
 use model_matrix::ModelMatrix;
-use ndarray::{arr1, Array1, Array2};
+use ndarray::{arr1, Array2};
 use std::rc::Rc;
 use view_renderer::ViewRenderer;
 use wasm_bindgen::prelude::*;
