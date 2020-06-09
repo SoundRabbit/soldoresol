@@ -1180,6 +1180,11 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     let chat_item =
                         ChatItem::new(display_name, state.peer.id(), character_id, icon, message);
 
+                    state.room.send(skyway::Msg::InsertChatItem(
+                        tab_idx as u32,
+                        chat_item.as_object(),
+                    ));
+
                     let cmd = update(state, Msg::InsertChatItem(tab_idx, chat_item));
                     state.cmd_queue.enqueue(cmd);
                 }
