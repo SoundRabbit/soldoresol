@@ -111,6 +111,12 @@ impl ChatDataCollection {
     }
 }
 
+pub struct SpeechBubble {
+    texture_id: Option<u128>,
+    message: String,
+    position: [f64; 2],
+}
+
 #[derive(Clone)]
 pub enum TableTool {
     Selector,
@@ -242,6 +248,7 @@ pub struct State {
     contextmenu: Contextmenu,
     focused_object_id: Option<u128>,
     is_2d_mode: bool,
+    speech_bubble_queue: VecDeque<SpeechBubble>,
     modelesses: ModelessCollection,
     modals: Vec<Modal>,
     editing_modeless: Option<(usize, Rc<RefCell<modeless_modal::State>>)>,
@@ -324,6 +331,8 @@ pub enum Msg {
     SetChatSender(usize),
     AddChatSender(ChatSender),
     RemoveChatSender(ChatSender),
+    EnqueueSpeechBubble(SpeechBubble),
+    DequeueSpeechBubble,
 
     // リソース管理
     LoadFromFileList(web_sys::FileList),
@@ -375,6 +384,7 @@ pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
                     grobal_position: [0.0, 0.0],
                 },
                 is_2d_mode: false,
+                speech_bubble_queue: VecDeque::new(),
                 modelesses: vec![],
                 modals: vec![],
                 editing_modeless: None,
@@ -586,11 +596,8 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 .unwrap()
                 .dyn_into::<web_sys::WebGlRenderingContext>()
                 .unwrap();
-            let mut renderer = Renderer::new(gl);
-
-            renderer.render(&mut state.world, &state.camera, &state.resource);
-            state.renderer = Some(renderer);
-            state.cmd_queue.dequeue()
+            state.renderer = Some(Renderer::new(gl));
+            update(state, Msg::Render)
         }
         Msg::WindowResized => {
             let canvas = get_table_canvas_element();
@@ -606,7 +613,12 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
         Msg::Render => {
             if let Some(renderer) = &mut state.renderer {
-                renderer.render(&mut state.world, &state.camera, &state.resource);
+                renderer.render(
+                    &mut state.world,
+                    &state.camera,
+                    &state.resource,
+                    &state.canvas_size,
+                );
             }
             state.cmd_queue.dequeue()
         }
@@ -708,7 +720,6 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
         //テーブル操作の制御
         Msg::SetCursorWithMouseCoord(mouse_coord) => {
-            let camera = &state.camera;
             let table_coord = get_table_position(&state, &mouse_coord, state.pixel_ratio);
             let table_coord = [table_coord[0], table_coord[1]];
             let table = state.world.table_mut();
@@ -741,7 +752,6 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             }
             state.table_state.last_mouse_coord = mouse_coord;
             if let Some(renderer) = &mut state.renderer {
-                renderer.render(&mut state.world, &camera, &state.resource);
                 let dpr = get_device_pixel_ratio(state.pixel_ratio);
                 let focused_id = renderer.table_object_id(&[
                     mouse_coord[0] * dpr,
@@ -756,7 +766,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     state.focused_object_id = None;
                 }
             }
-            state.cmd_queue.dequeue()
+            update(state, Msg::Render)
         }
         Msg::SetCameraRotationWithMouseCoord(mouse_coord) => {
             let x_movement = mouse_coord[0] - state.table_state.last_mouse_coord[0];
@@ -1141,37 +1151,58 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
         Msg::SendChatItem => {
             let sender = &state.chat_data.senders[state.chat_data.selecting_sender_idx];
+            let message: String = state.chat_data.inputing_message.drain(..).collect();
+            let message: String = message.as_str().trim_end().into();
 
-            let sender = match sender {
-                ChatSender::Player => Some((
-                    state.personal_data.name.clone(),
-                    state
-                        .personal_data
-                        .icon
-                        .map(|r_id| Icon::Resource(r_id))
-                        .unwrap_or(Icon::DefaultUser),
-                )),
-                ChatSender::Character(character_id) => {
-                    if let Some(character) = state.world.character(&character_id) {
+            if message.as_str().len() > 0 {
+                let (sender, speech_bubble) = match sender {
+                    ChatSender::Player => (
                         Some((
-                            character.name().clone(),
-                            character
-                                .texture_id()
+                            state.personal_data.name.clone(),
+                            state
+                                .personal_data
+                                .icon
                                 .map(|r_id| Icon::Resource(r_id))
                                 .unwrap_or(Icon::DefaultUser),
-                        ))
-                    } else {
-                        None
+                        )),
+                        None,
+                    ),
+                    ChatSender::Character(character_id) => {
+                        if let Some(character) = state.world.character(&character_id) {
+                            let vertex = [0.0, 0.0, character.size()[1]];
+                            let position = Renderer::table_position(
+                                &vertex,
+                                character.position(),
+                                &state.camera,
+                                &state.canvas_size,
+                                true,
+                            );
+                            let x = (position[0] + 1.0) / 2.0 * state.canvas_size[0];
+                            let y = -(position[1] - 1.0) / 2.0 * state.canvas_size[1];
+                            let speech_bubble = SpeechBubble {
+                                texture_id: character.texture_id(),
+                                position: [x, y],
+                                message: message.clone(),
+                            };
+                            (
+                                Some((
+                                    character.name().clone(),
+                                    character
+                                        .texture_id()
+                                        .map(|r_id| Icon::Resource(r_id))
+                                        .unwrap_or(Icon::DefaultUser),
+                                )),
+                                Some(speech_bubble),
+                            )
+                        } else {
+                            (None, None)
+                        }
                     }
-                }
-            };
+                };
 
-            if let Some((display_name, icon)) = sender {
-                let tab_idx = state.chat_data.selecting_tab_idx;
-                let message: String = state.chat_data.inputing_message.drain(..).collect();
-                let message: String = message.as_str().trim_end().into();
+                if let Some((display_name, icon)) = sender {
+                    let tab_idx = state.chat_data.selecting_tab_idx;
 
-                if message.as_str().len() > 0 {
                     let chat_item = ChatItem {
                         display_name: display_name,
                         peer_id: state.peer.id(),
@@ -1180,6 +1211,11 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     };
 
                     state.chat_data.tabs[tab_idx].items.push(chat_item);
+                }
+
+                if let Some(speech_bubble) = speech_bubble {
+                    let cmd = update(state, Msg::EnqueueSpeechBubble(speech_bubble));
+                    state.cmd_queue.enqueue(cmd);
                 }
             }
             state.cmd_queue.dequeue()
@@ -1197,6 +1233,25 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         Msg::RemoveChatSender(sender) => {
             let old_senders = state.chat_data.senders.drain(..);
             state.chat_data.senders = old_senders.into_iter().filter(|s| *s != sender).collect();
+            state.cmd_queue.dequeue()
+        }
+        Msg::EnqueueSpeechBubble(sppech_bubble) => {
+            state.speech_bubble_queue.push_back(sppech_bubble);
+            Cmd::task(|resolve| {
+                let a = Closure::once(
+                    Box::new(|| resolve(Msg::DequeueSpeechBubble)) as Box<dyn FnOnce()>
+                );
+                let _ = web_sys::window()
+                    .unwrap()
+                    .set_timeout_with_callback_and_timeout_and_arguments_0(
+                        a.as_ref().unchecked_ref(),
+                        5000,
+                    );
+                a.forget();
+            })
+        }
+        Msg::DequeueSpeechBubble => {
+            state.speech_bubble_queue.pop_front();
             state.cmd_queue.dequeue()
         }
 

@@ -7,6 +7,7 @@ mod webgl;
 use crate::model::{Camera, Resource, World};
 use mask_renderer::MaskRenderer;
 use model_matrix::ModelMatrix;
+use ndarray::{arr1, Array1, Array2};
 use std::rc::Rc;
 use view_renderer::ViewRenderer;
 use wasm_bindgen::prelude::*;
@@ -35,16 +36,38 @@ impl Renderer {
         self.mask_renderer.table_object_id(position)
     }
 
-    pub fn render(&mut self, world: &mut World, camera: &Camera, resource: &Resource) {
-        if Rc::strong_count(&self.gl) < 3 {
-            let canvas = self
-                .gl
-                .canvas()
-                .unwrap()
-                .dyn_into::<web_sys::HtmlCanvasElement>()
-                .unwrap();
-            let canvas_size = [canvas.width() as f64, canvas.height() as f64];
+    pub fn table_position(
+        vertex: &[f64; 3],
+        movement: &[f64; 3],
+        camera: &Camera,
+        canvas_size: &[f64; 2],
+        is_billboard: bool,
+    ) -> Array1<f64> {
+        let vp_matrix = camera
+            .view_matrix()
+            .dot(&camera.perspective_matrix(&canvas_size));
+        let model_matrix: Array2<f64> = if is_billboard {
+            ModelMatrix::new()
+                .with_x_axis_rotation(camera.x_axis_rotation())
+                .with_z_axis_rotation(camera.z_axis_rotation())
+                .with_movement(&movement)
+                .into()
+        } else {
+            ModelMatrix::new().with_movement(&movement).into()
+        };
+        let mvp_matrix = model_matrix.dot(&vp_matrix);
+        let screen_position = mvp_matrix.dot(&arr1(&[vertex[0], vertex[1], vertex[2], 1.0]));
+        screen_position
+    }
 
+    pub fn render(
+        &mut self,
+        world: &mut World,
+        camera: &Camera,
+        resource: &Resource,
+        canvas_size: &[f64; 2],
+    ) {
+        if Rc::strong_count(&self.gl) < 3 {
             self.view_renderer
                 .render(&self.gl, &canvas_size, &camera, world, resource);
 
