@@ -1169,13 +1169,13 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     ),
                     ChatSender::Character(character_id) => {
                         if let Some(character) = state.world.character(&character_id) {
-                            let vertex = [0.0, 0.0, character.size()[1]];
+                            let vertex = [0.0, character.size()[1], 0.0];
                             let position = Renderer::table_position(
                                 &vertex,
                                 character.position(),
                                 &state.camera,
                                 &state.canvas_size,
-                                false,
+                                true,
                             );
                             let dpr = get_device_pixel_ratio(state.pixel_ratio);
                             let x = (position[0] + 1.0) / 2.0 * state.canvas_size[0] / dpr;
