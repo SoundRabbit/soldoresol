@@ -1091,9 +1091,8 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             if let Some(character) = state.world.character_mut(&character_id) {
                 character.set_image_id(data_id);
                 if transport {
-                    state
-                        .room
-                        .send(&skyway::Msg::SetCharacterImage(character_id, data_id));
+                    let room = &state.room;
+                    room.send(&skyway::Msg::SetCharacterImage(character_id, data_id));
                 }
                 state.cmd_queue.enqueue(Cmd::task(|r| r(Msg::Render)));
                 update(state, Msg::CloseModal)
