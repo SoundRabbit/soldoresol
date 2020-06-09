@@ -1,21 +1,19 @@
 use super::{Color, ColorSystem};
-use crate::JsObject;
+use crate::{random_id, JsObject};
 
 pub struct Character {
     size: [f64; 2],
     position: [f64; 3],
     image_id: Option<u128>,
     background_color: Color,
-    hp: i32,
-    mp: i32,
+    name: String,
 }
 
 pub struct CharacterData {
     pub size: [f64; 2],
     pub position: [f64; 3],
     pub image_id: Option<u128>,
-    pub hp: i32,
-    pub mp: i32,
+    pub name: String,
 }
 
 impl Character {
@@ -25,8 +23,7 @@ impl Character {
             position: [0.0, 0.0, 0.0],
             image_id: None,
             background_color: Color::from(0),
-            hp: 0,
-            mp: 0,
+            name: format!("キャラクター{}", random_id::hex(2).to_uppercase()),
         }
     }
 
@@ -46,20 +43,12 @@ impl Character {
         &self.position
     }
 
-    pub fn set_hp(&mut self, hp: i32) {
-        self.hp = hp;
+    pub fn set_name(&mut self, name: String) {
+        self.name = name;
     }
 
-    pub fn hp(&self) -> i32 {
-        self.hp
-    }
-
-    pub fn set_mp(&mut self, mp: i32) {
-        self.mp = mp;
-    }
-
-    pub fn mp(&self) -> i32 {
-        self.mp
+    pub fn name(&self) -> &String {
+        &self.name
     }
 
     pub fn bind_to_grid(&mut self) {
@@ -101,8 +90,7 @@ impl Character {
             size: self.size.clone(),
             position: self.position.clone(),
             image_id: self.texture_id(),
-            hp: self.hp,
-            mp: self.mp,
+            name: self.name.clone(),
         }
     }
 }
@@ -128,8 +116,7 @@ impl From<CharacterData> for Character {
             position: character_data.position,
             image_id: character_data.image_id,
             background_color: Color::from(0),
-            hp: character_data.hp,
-            mp: character_data.mp,
+            name: character_data.name,
         }
     }
 }
@@ -137,15 +124,13 @@ impl From<CharacterData> for Character {
 impl CharacterData {
     pub fn as_object(&self) -> JsObject {
         let image_id = self.image_id.map(|id| id.to_string());
-        let hp: i32 = self.hp;
-        let mp: i32 = self.mp;
+        let name = self.name.clone();
 
         object! {
             size: array![self.size[0], self.size[1]],
             position: array![self.position[0], self.position[1], self.position[2]],
             image_id: image_id,
-            hp: hp,
-            mp: mp
+            name: name
         }
     }
 }
@@ -186,8 +171,7 @@ impl From<JsObject> for CharacterData {
 
         web_sys::console::log_1(&JsValue::from("E"));
 
-        let hp = obj.get("hp").unwrap().as_f64().unwrap() as i32;
-        let mp = obj.get("mp").unwrap().as_f64().unwrap() as i32;
+        let name = obj.get("name").unwrap().as_string().unwrap();
 
         web_sys::console::log_1(&JsValue::from("F"));
 
@@ -195,8 +179,7 @@ impl From<JsObject> for CharacterData {
             size,
             position,
             image_id,
-            hp,
-            mp,
+            name,
         }
     }
 }

@@ -310,8 +310,7 @@ pub enum Msg {
     // Worldに対する操作
     SetCharacterImage(u128, u128, bool),
     SetCharacterSize(u128, Option<f64>, Option<f64>),
-    SetCharacterHp(u128, i32),
-    SetCharacterMp(u128, i32),
+    SetCharacterName(u128, String),
     AddChracater(Character),
     AddTablemask(Tablemask),
     SetTablemaskSizeWithStyle(u128, [f64; 2], bool),
@@ -1092,21 +1091,11 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             }
             update(state, Msg::Render)
         }
-        Msg::SetCharacterHp(character_id, hp) => {
+        Msg::SetCharacterName(character_id, name) => {
             if let Some(character) = state.world.character_mut(&character_id) {
-                character.set_hp(hp);
-                state.cmd_queue.dequeue()
-            } else {
-                state.cmd_queue.dequeue()
+                character.set_name(name);
             }
-        }
-        Msg::SetCharacterMp(character_id, mp) => {
-            if let Some(character) = state.world.character_mut(&character_id) {
-                character.set_mp(mp);
-                state.cmd_queue.dequeue()
-            } else {
-                state.cmd_queue.dequeue()
-            }
+            state.cmd_queue.dequeue()
         }
         Msg::AddChracater(character) => {
             let position = character.position().clone();
@@ -1165,7 +1154,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 ChatSender::Character(character_id) => {
                     if let Some(character) = state.world.character(&character_id) {
                         Some((
-                            "".into(),
+                            character.name().clone(),
                             character
                                 .texture_id()
                                 .map(|r_id| Icon::Resource(r_id))

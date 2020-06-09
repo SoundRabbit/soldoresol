@@ -389,14 +389,14 @@ pub fn character_selecter(
                                                     "data-character-id",
                                                     character_id.to_string(),
                                                 ),
-                                            "",
+                                            character.name(),
                                         )),
                                     Html::div(
                                         Attributes::new()
                                             .class("clickable")
                                             .string("data-character-id", character_id.to_string()),
                                         Events::new(),
-                                        vec![Html::text("")],
+                                        vec![Html::text(character.name())],
                                     ),
                                     btn::check(
                                         selected_character_id.contains(&character_id),

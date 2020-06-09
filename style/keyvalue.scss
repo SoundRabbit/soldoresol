@@ -5,4 +5,8 @@
     column-gap: .25em;
     row-gap: .35em;
     align-items: center;
+
+    &-rev {
+        grid-template-columns: 1fr max-content;
+    }
 }
