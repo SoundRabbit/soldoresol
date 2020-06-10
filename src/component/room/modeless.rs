@@ -62,8 +62,9 @@ fn object_character(character: &Character, character_id: u128, resource: &Resour
                         Html::span(Attributes::new(), Events::new(), vec![Html::text("Name")]),
                         Html::input(
                             Attributes::new().value(character.name()).type_("text"),
-                            Events::new()
-                                .on_input(move |s| Msg::SetCharacterName(character_id, s, true)),
+                            Events::new().on_input(move |s| {
+                                Msg::SetCharacterNameToTransport(character_id, s)
+                            }),
                             vec![],
                         ),
                     ],
@@ -130,11 +131,10 @@ fn object_character(character: &Character, character_id: u128, resource: &Resour
                                                 width
                                                     .parse()
                                                     .map(|width| {
-                                                        Msg::SetCharacterSize(
+                                                        Msg::SetCharacterSizeToTransport(
                                                             character_id,
                                                             Some(width),
                                                             Some(height),
-                                                            true,
                                                         )
                                                     })
                                                     .unwrap_or(Msg::NoOp)
@@ -144,11 +144,10 @@ fn object_character(character: &Character, character_id: u128, resource: &Resour
                                         btn::secondary(
                                             Attributes::new(),
                                             Events::new().on_click(move |_| {
-                                                Msg::SetCharacterSize(
+                                                Msg::SetCharacterSizeToTransport(
                                                     character_id,
                                                     None,
                                                     Some(height),
-                                                    true,
                                                 )
                                             }),
                                             vec![Html::text("画像に合わせる")],
@@ -166,11 +165,10 @@ fn object_character(character: &Character, character_id: u128, resource: &Resour
                                                 height
                                                     .parse()
                                                     .map(|height| {
-                                                        Msg::SetCharacterSize(
+                                                        Msg::SetCharacterSizeToTransport(
                                                             character_id,
                                                             Some(width),
                                                             Some(height),
-                                                            true,
                                                         )
                                                     })
                                                     .unwrap_or(Msg::NoOp)
@@ -180,11 +178,10 @@ fn object_character(character: &Character, character_id: u128, resource: &Resour
                                         btn::secondary(
                                             Attributes::new(),
                                             Events::new().on_click(move |_| {
-                                                Msg::SetCharacterSize(
+                                                Msg::SetCharacterSizeToTransport(
                                                     character_id,
                                                     Some(width),
                                                     None,
-                                                    true,
                                                 )
                                             }),
                                             vec![Html::text("画像に合わせる")],
@@ -567,7 +564,7 @@ pub fn chat(
                                 Events::new(),
                                 vec![btn::info(
                                     Attributes::new(),
-                                    Events::new().on_click(|_| Msg::SendChatItem),
+                                    Events::new().on_click(|_| Msg::SendChatItemToTransport),
                                     vec![awesome::i("fa-paper-plane"), Html::text(" 送信")],
                                 )],
                             ),

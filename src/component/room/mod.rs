@@ -263,8 +263,9 @@ pub enum Msg {
     EraceLineWithMouseCoord([f64; 2]),
     SetMeasureStartPointAndEndPointWithMouseCoord([f64; 2], [f64; 2]),
     SetObjectPositionWithMouseCoord(u128, [f64; 2]),
-    BindObjectToTableGridToTransport(bool),
-    BindObjectToTableGrid(bool),
+    SetObjectPositionToTransport(u128, [f64; 3]),
+    SetObjectPosition(u128, [f64; 3]),
+    BindObjectToTableGrid(u128),
     SetIs2dMode(bool),
 
     // モードレス
@@ -318,7 +319,7 @@ pub enum Msg {
     // リソース管理
     LoadFromFileListToTransport(web_sys::FileList),
     LoadFromBlobsToTransport(HashMap<u128, Rc<web_sys::Blob>>),
-    LoadFromBlobs(HashMap<u128, Rc<web_sys::Blob>>, bool),
+    LoadFromBlobs(HashMap<u128, Rc<web_sys::Blob>>),
     LoadReasource(u128, Data),
 
     // 接続に関する操作
@@ -689,11 +690,12 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 state.cmd_queue.dequeue()
             }
         }
-        Msg::RemoveObjectWithObjectId(object_id, transport) => {
+        Msg::RemoveObjectWithObjectIdToTransport(object_id) => {
+            state.room.send(skyway::Msg::RemoveObject(object_id));
+            update(state, Msg::RemoveObjectWithObjectId(object_id))
+        }
+        Msg::RemoveObjectWithObjectId(object_id) => {
             state.world.remove_object(&object_id);
-            if transport {
-                state.room.send(skyway::Msg::RemoveObject(object_id));
-            }
             update(state, Msg::Render)
         }
 
@@ -885,25 +887,6 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.table_state.last_mouse_coord = mouse_coord;
             update(state, Msg::Render)
         }
-        Msg::BindObjectToTableGrid(object_id) => {
-            if state.world.table().is_bind_to_grid() {
-                if let Some(character) = state.world.character_mut(&object_id) {
-                    character.bind_to_grid();
-                    state.room.send(skyway::Msg::SetObjectPosition(
-                        object_id,
-                        character.position().clone(),
-                    ));
-                }
-                if let Some(tablemask) = state.world.tablemask_mut(&object_id) {
-                    tablemask.bind_to_grid();
-                    state.room.send(skyway::Msg::SetObjectPosition(
-                        object_id,
-                        tablemask.position().clone(),
-                    ));
-                }
-            }
-            update(state, Msg::Render)
-        }
         Msg::SetIs2dMode(is_2d_mode) => {
             if is_2d_mode {
                 state.camera.set_x_axis_rotation(0.0);
@@ -1062,7 +1045,15 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
 
         // Worldに対する操作
-        Msg::SetCharacterImage(character_id, data_id, transport) => {
+        Msg::SetCharacterImageToTransport(character_id, data_id) => {
+            if state.world.character(&character_id).is_some() {
+                let room = &state.room;
+                room.send(skyway::Msg::SetCharacterImage(character_id, data_id));
+                state.cmd_queue.enqueue(Cmd::task(|r| r(Msg::CloseModal)));
+            }
+            update(state, Msg::SetCharacterImage(character_id, data_id))
+        }
+        Msg::SetCharacterImage(character_id, data_id) => {
             if let Some(character) = state.world.character_mut(&character_id) {
                 character.set_image_id(data_id);
                 if let Some(img) = state.resource.get_as_image(&data_id) {
@@ -1070,17 +1061,22 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     let height = width * img.height() as f64 / img.width() as f64;
                     character.set_size([width, height]);
                 }
-                if transport {
-                    let room = &state.room;
-                    room.send(skyway::Msg::SetCharacterImage(character_id, data_id));
-                    state.cmd_queue.enqueue(Cmd::task(|r| r(Msg::CloseModal)));
-                }
                 update(state, Msg::Render)
             } else {
                 state.cmd_queue.dequeue()
             }
         }
-        Msg::SetCharacterSize(character_id, width, height, transport) => {
+        Msg::SetCharacterSizeToTransport(character_id, width, height) => {
+            let cmd = update(state, Msg::SetCharacterSize(character_id, width, height));
+            if let Some(character) = state.world.character(&character_id) {
+                state.room.send(skyway::Msg::SetCharacterSize(
+                    character_id,
+                    character.size().clone(),
+                ));
+            }
+            cmd
+        }
+        Msg::SetCharacterSize(character_id, width, height) => {
             let world = &mut state.world;
             let resource = &state.resource;
             if let Some(character) = world.character_mut(&character_id) {
@@ -1103,27 +1099,20 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                         character.set_size([width, height]);
                     }
                 }
-
-                if transport {
-                    state.room.send(skyway::Msg::SetCharacterSize(
-                        character_id,
-                        character.size().clone(),
-                    ));
-                }
             }
 
             update(state, Msg::Render)
         }
-        Msg::SetCharacterName(character_id, name, transport) => {
+        Msg::SetCharacterNameToTransport(character_id, name) => {
+            if state.world.character(&character_id).is_some() {
+                let room = &state.room;
+                room.send(skyway::Msg::SetCharacterName(character_id, name.clone()));
+            }
+            update(state, Msg::SetCharacterName(character_id, name))
+        }
+        Msg::SetCharacterName(character_id, name) => {
             if let Some(character) = state.world.character_mut(&character_id) {
                 character.set_name(name);
-
-                if transport {
-                    state.room.send(skyway::Msg::SetCharacterName(
-                        character_id,
-                        character.name().clone(),
-                    ));
-                }
             }
             state.cmd_queue.dequeue()
         }
@@ -1169,7 +1158,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.chat_data.inputing_message = message;
             state.cmd_queue.dequeue()
         }
-        Msg::SendChatItem => {
+        Msg::SendChatItemToTransport => {
             let sender = &state.chat_data.senders[state.chat_data.selecting_sender_idx];
             let message: String = state.chat_data.inputing_message.drain(..).collect();
             let message: String = message.as_str().trim_end().into();
@@ -1291,7 +1280,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
 
         // リソース
-        Msg::LoadFromFileList(file_list) => {
+        Msg::LoadFromFileListToTransport(file_list) => {
             let len = file_list.length();
             let mut blobs = HashMap::new();
             for i in 0..len {
@@ -1301,10 +1290,24 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     blobs.insert(data_id, Rc::new(blob));
                 }
             }
-            update(state, Msg::LoadFromBlobs(blobs, true))
+            update(state, Msg::LoadFromBlobsToTransport(blobs))
         }
-        Msg::LoadFromBlobs(blobs, transport) => {
+        Msg::LoadFromBlobsToTransport(blobs) => {
             let mut transport_data = HashMap::new();
+            for (data_id, blob) in &blobs {
+                let data_id = *data_id;
+                let blob = Rc::clone(blob);
+                transport_data.insert(data_id, blob);
+            }
+            if !transport_data.is_empty() {
+                let room = &state.room;
+                room.send(skyway::Msg::SetResource(ResourceData::from(transport_data)));
+                update(state, Msg::LoadFromBlobs(blobs))
+            } else {
+                Cmd::none()
+            }
+        }
+        Msg::LoadFromBlobs(blobs) => {
             for (data_id, blob) in blobs {
                 let cmd = Cmd::task({
                     let blob = Rc::clone(&blob);
@@ -1338,14 +1341,6 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 });
                 state.cmd_queue.enqueue(cmd);
                 state.loading_resource_num += 1;
-                if transport {
-                    transport_data.insert(data_id, blob);
-                }
-            }
-            if transport {
-                state
-                    .room
-                    .send(skyway::Msg::SetResource(ResourceData::from(transport_data)));
             }
             state.cmd_queue.dequeue()
         }
@@ -1386,36 +1381,27 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 update(state, Msg::Render)
             }
             skyway::Msg::SetCharacterImage(character_id, data_id) => {
-                update(state, Msg::SetCharacterImage(character_id, data_id, false))
+                update(state, Msg::SetCharacterImage(character_id, data_id))
             }
             skyway::Msg::SetCharacterSize(character_id, size) => update(
                 state,
-                Msg::SetCharacterSize(character_id, Some(size[0]), Some(size[0]), false),
+                Msg::SetCharacterSize(character_id, Some(size[0]), Some(size[0])),
             ),
             skyway::Msg::SetCharacterName(character_id, name) => {
-                update(state, Msg::SetCharacterName(character_id, name, false))
+                update(state, Msg::SetCharacterName(character_id, name))
             }
             skyway::Msg::SetObjectPosition(object_id, position) => {
-                if let Some(character) = state.world.character_mut(&object_id) {
-                    character.set_position(position);
-                    update(state, Msg::Render)
-                } else if let Some(tablemask) = state.world.tablemask_mut(&object_id) {
-                    tablemask.set_position(position);
-                    update(state, Msg::Render)
-                } else {
-                    state.cmd_queue.dequeue()
-                }
+                update(state, Msg::SetObjectPosition(object_id, position))
             }
             skyway::Msg::SetIsBindToGrid(is_bind_to_grid) => {
-                state.world.table_mut().set_is_bind_to_grid(is_bind_to_grid);
-                update(state, Msg::Render)
+                update(state, Msg::SetIsBindToGrid(is_bind_to_grid))
             }
             skyway::Msg::SetWorld(world_data) => {
                 state.world = World::from(world_data);
                 update(state, Msg::Render)
             }
             skyway::Msg::SetResource(resource_data) => {
-                update(state, Msg::LoadFromBlobs(resource_data.into(), false))
+                update(state, Msg::LoadFromBlobs(resource_data.into()))
             }
             skyway::Msg::SetChat(chat) => {
                 state.chat_data.tabs = Chat::from(chat);
@@ -1426,7 +1412,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 state.cmd_queue.dequeue()
             }
             skyway::Msg::RemoveObject(object_id) => {
-                update(state, Msg::RemoveObjectWithObjectId(object_id, false))
+                update(state, Msg::RemoveObjectWithObjectId(object_id))
             }
             skyway::Msg::InsertChatItem(tab_idx, item) => update(
                 state,
@@ -2010,12 +1996,14 @@ fn render_context_menu_character(contextmenu: &Contextmenu, object_id: u128) -> 
                 ),
                 btn::contextmenu_text(
                     Attributes::new(),
-                    Events::new().on_click(move |_| Msg::CloneObjectWithObjectId(object_id)),
+                    Events::new()
+                        .on_click(move |_| Msg::CloneObjectWithObjectIdToTransport(object_id)),
                     "コピーを作成",
                 ),
                 btn::contextmenu_text(
                     Attributes::new(),
-                    Events::new().on_click(move |_| Msg::RemoveObjectWithObjectId(object_id, true)),
+                    Events::new()
+                        .on_click(move |_| Msg::RemoveObjectWithObjectIdToTransport(object_id)),
                     "削除",
                 ),
             ],
@@ -2058,7 +2046,7 @@ fn render_context_menu_tablemask(contextmenu: &Contextmenu, object_id: u128) -> 
                                             btn::contextmenu_text(
                                                 Attributes::new(),
                                                 Events::new().on_click(move |_| {
-                                                    Msg::SetTablemaskSizeWithStyle(
+                                                    Msg::SetTablemaskSizeWithStyleToTransport(
                                                         object_id,
                                                         [2., 2.],
                                                         true,
@@ -2069,7 +2057,7 @@ fn render_context_menu_tablemask(contextmenu: &Contextmenu, object_id: u128) -> 
                                             btn::contextmenu_text(
                                                 Attributes::new(),
                                                 Events::new().on_click(move |_| {
-                                                    Msg::SetTablemaskSizeWithStyle(
+                                                    Msg::SetTablemaskSizeWithStyleToTransport(
                                                         object_id,
                                                         [4., 4.],
                                                         true,
@@ -2080,7 +2068,7 @@ fn render_context_menu_tablemask(contextmenu: &Contextmenu, object_id: u128) -> 
                                             btn::contextmenu_text(
                                                 Attributes::new(),
                                                 Events::new().on_click(move |_| {
-                                                    Msg::SetTablemaskSizeWithStyle(
+                                                    Msg::SetTablemaskSizeWithStyleToTransport(
                                                         object_id,
                                                         [6., 6.],
                                                         true,
@@ -2091,7 +2079,7 @@ fn render_context_menu_tablemask(contextmenu: &Contextmenu, object_id: u128) -> 
                                             btn::contextmenu_text(
                                                 Attributes::new(),
                                                 Events::new().on_click(move |_| {
-                                                    Msg::SetTablemaskSizeWithStyle(
+                                                    Msg::SetTablemaskSizeWithStyleToTransport(
                                                         object_id,
                                                         [8., 8.],
                                                         true,
@@ -2102,7 +2090,7 @@ fn render_context_menu_tablemask(contextmenu: &Contextmenu, object_id: u128) -> 
                                             btn::contextmenu_text(
                                                 Attributes::new(),
                                                 Events::new().on_click(move |_| {
-                                                    Msg::SetTablemaskSizeWithStyle(
+                                                    Msg::SetTablemaskSizeWithStyleToTransport(
                                                         object_id,
                                                         [10., 10.],
                                                         true,
@@ -2113,7 +2101,7 @@ fn render_context_menu_tablemask(contextmenu: &Contextmenu, object_id: u128) -> 
                                             btn::contextmenu_text(
                                                 Attributes::new(),
                                                 Events::new().on_click(move |_| {
-                                                    Msg::SetTablemaskSizeWithStyle(
+                                                    Msg::SetTablemaskSizeWithStyleToTransport(
                                                         object_id,
                                                         [12., 12.],
                                                         true,
@@ -2124,7 +2112,7 @@ fn render_context_menu_tablemask(contextmenu: &Contextmenu, object_id: u128) -> 
                                             btn::contextmenu_text(
                                                 Attributes::new(),
                                                 Events::new().on_click(move |_| {
-                                                    Msg::SetTablemaskSizeWithStyle(
+                                                    Msg::SetTablemaskSizeWithStyleToTransport(
                                                         object_id,
                                                         [14., 14.],
                                                         true,
@@ -2141,7 +2129,7 @@ fn render_context_menu_tablemask(contextmenu: &Contextmenu, object_id: u128) -> 
                                             btn::contextmenu_text(
                                                 Attributes::new(),
                                                 Events::new().on_click(move |_| {
-                                                    Msg::SetTablemaskSizeWithStyle(
+                                                    Msg::SetTablemaskSizeWithStyleToTransport(
                                                         object_id,
                                                         [1., 1.],
                                                         false,
@@ -2152,7 +2140,7 @@ fn render_context_menu_tablemask(contextmenu: &Contextmenu, object_id: u128) -> 
                                             btn::contextmenu_text(
                                                 Attributes::new(),
                                                 Events::new().on_click(move |_| {
-                                                    Msg::SetTablemaskSizeWithStyle(
+                                                    Msg::SetTablemaskSizeWithStyleToTransport(
                                                         object_id,
                                                         [2., 2.],
                                                         false,
@@ -2163,7 +2151,7 @@ fn render_context_menu_tablemask(contextmenu: &Contextmenu, object_id: u128) -> 
                                             btn::contextmenu_text(
                                                 Attributes::new(),
                                                 Events::new().on_click(move |_| {
-                                                    Msg::SetTablemaskSizeWithStyle(
+                                                    Msg::SetTablemaskSizeWithStyleToTransport(
                                                         object_id,
                                                         [3., 3.],
                                                         false,
@@ -2174,7 +2162,7 @@ fn render_context_menu_tablemask(contextmenu: &Contextmenu, object_id: u128) -> 
                                             btn::contextmenu_text(
                                                 Attributes::new(),
                                                 Events::new().on_click(move |_| {
-                                                    Msg::SetTablemaskSizeWithStyle(
+                                                    Msg::SetTablemaskSizeWithStyleToTransport(
                                                         object_id,
                                                         [4., 4.],
                                                         false,
@@ -2185,7 +2173,7 @@ fn render_context_menu_tablemask(contextmenu: &Contextmenu, object_id: u128) -> 
                                             btn::contextmenu_text(
                                                 Attributes::new(),
                                                 Events::new().on_click(move |_| {
-                                                    Msg::SetTablemaskSizeWithStyle(
+                                                    Msg::SetTablemaskSizeWithStyleToTransport(
                                                         object_id,
                                                         [5., 5.],
                                                         false,
@@ -2196,7 +2184,7 @@ fn render_context_menu_tablemask(contextmenu: &Contextmenu, object_id: u128) -> 
                                             btn::contextmenu_text(
                                                 Attributes::new(),
                                                 Events::new().on_click(move |_| {
-                                                    Msg::SetTablemaskSizeWithStyle(
+                                                    Msg::SetTablemaskSizeWithStyleToTransport(
                                                         object_id,
                                                         [6., 6.],
                                                         false,
@@ -2207,7 +2195,7 @@ fn render_context_menu_tablemask(contextmenu: &Contextmenu, object_id: u128) -> 
                                             btn::contextmenu_text(
                                                 Attributes::new(),
                                                 Events::new().on_click(move |_| {
-                                                    Msg::SetTablemaskSizeWithStyle(
+                                                    Msg::SetTablemaskSizeWithStyleToTransport(
                                                         object_id,
                                                         [7., 7.],
                                                         false,
@@ -2233,12 +2221,14 @@ fn render_context_menu_tablemask(contextmenu: &Contextmenu, object_id: u128) -> 
                 ),
                 btn::contextmenu_text(
                     Attributes::new(),
-                    Events::new().on_click(move |_| Msg::CloneObjectWithObjectId(object_id)),
+                    Events::new()
+                        .on_click(move |_| Msg::CloneObjectWithObjectIdToTransport(object_id)),
                     "コピーを作成",
                 ),
                 btn::contextmenu_text(
                     Attributes::new(),
-                    Events::new().on_click(move |_| Msg::RemoveObjectWithObjectId(object_id, true)),
+                    Events::new()
+                        .on_click(move |_| Msg::RemoveObjectWithObjectIdToTransport(object_id)),
                     "削除",
                 ),
             ],

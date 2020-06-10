@@ -21,7 +21,7 @@ pub fn resource(resource: &Resource) -> Html<Msg> {
                 e.data_transfer()
                     .unwrap()
                     .files()
-                    .map(|files| Msg::LoadFromFileList(files))
+                    .map(|files| Msg::LoadFromFileListToTransport(files))
                     .unwrap_or(Msg::NoOp)
             }),
         vec![modal::frame(
@@ -90,7 +90,7 @@ pub fn select_image(resource: &Resource, modal_type: &SelectImageModal) -> Html<
                 e.data_transfer()
                     .unwrap()
                     .files()
-                    .map(|files| Msg::LoadFromFileList(files))
+                    .map(|files| Msg::LoadFromFileListToTransport(files))
                     .unwrap_or(Msg::NoOp)
             }),
         vec![modal::frame(
@@ -130,7 +130,7 @@ pub fn select_image(resource: &Resource, modal_type: &SelectImageModal) -> Html<
                                     let modal_type = modal_type.clone();
                                     move |_| match modal_type {
                                         SelectImageModal::Character(c_id) => {
-                                            Msg::SetCharacterImage(c_id, data_id, true)
+                                            Msg::SetCharacterImageToTransport(c_id, data_id)
                                         }
                                         SelectImageModal::Player => {
                                             Msg::SetPersonalDataWithIconImage(data_id)
