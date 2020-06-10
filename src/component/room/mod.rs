@@ -490,7 +490,7 @@ pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
                                     ));
                                 }
 
-                                if received_msg_num.get() >= 3 {
+                                if received_msg_num.get() >= 4 {
                                     data_connection.close(false);
                                     let h = handler.borrow_mut().take();
                                     if let Some(mut h) = h {
@@ -513,7 +513,7 @@ pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
                                 if cn == 0 {
                                     data_connection.send(&JsString::from("FirstConnection"));
                                 } else {
-                                    received_msg_num.set(received_msg_num.get() + 2);
+                                    received_msg_num.set(received_msg_num.get() + 3);
                                 }
                                 connection_num.set(cn + 1);
                             }
@@ -1500,6 +1500,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             } else {
                 let data_connect = Rc::new(state.peer.connect(&peer_id));
                 let world_data = state.world.to_data();
+                let chat = state.chat_data.tabs.as_object();
 
                 let my_peer_id = state.peer.id();
 
@@ -1539,6 +1540,8 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                         let msg: JsObject = skyway::Msg::SetWorld(world_data).into();
                         data_connect.send(&msg);
                         let msg: JsObject = skyway::Msg::SetConnection(peers).into();
+                        data_connect.send(&msg);
+                        let msg: JsObject = skyway::Msg::SetChat(chat).into();
                         data_connect.send(&msg);
                     }
                 }) as Box<dyn FnOnce()>);
