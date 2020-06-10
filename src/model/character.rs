@@ -1,4 +1,4 @@
-use super::{Color, ColorSystem};
+use super::{Color, ColorSystem, Property};
 use crate::JsObject;
 
 pub struct Character {
