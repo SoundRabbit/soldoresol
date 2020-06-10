@@ -43,8 +43,8 @@ impl World {
         &self.table
     }
 
-    pub fn table_mut(&mut self) -> &mut Table {
-        Rc::get_mut(&mut self.table).unwrap()
+    pub fn table_mut(&mut self) -> Option<&mut Table> {
+        Rc::get_mut(&mut self.table)
     }
 
     pub fn characters(&self) -> hash_map::Iter<u128, Character> {

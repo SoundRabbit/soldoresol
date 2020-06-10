@@ -713,33 +713,34 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         Msg::SetCursorWithMouseCoord(mouse_coord) => {
             let table_coord = get_table_position(&state, &mouse_coord, state.pixel_ratio);
             let table_coord = [table_coord[0], table_coord[1]];
-            let table = state.world.table_mut();
-            match state.table_state.selecting_tool {
-                TableTool::Pen => {
-                    table.draw_cursor(
-                        &table_coord,
-                        0.25,
-                        ColorSystem::gray(255, 9),
-                        ColorSystem::gray(255, 9),
-                    );
+            if let Some(table) = state.world.table_mut() {
+                match state.table_state.selecting_tool {
+                    TableTool::Pen => {
+                        table.draw_cursor(
+                            &table_coord,
+                            0.25,
+                            ColorSystem::gray(255, 9),
+                            ColorSystem::gray(255, 9),
+                        );
+                    }
+                    TableTool::Eracer => {
+                        table.draw_cursor(
+                            &table_coord,
+                            0.5,
+                            ColorSystem::gray(255, 9),
+                            ColorSystem::gray(255, 1),
+                        );
+                    }
+                    TableTool::Measure(_) => {
+                        table.draw_cursor(
+                            &table_coord,
+                            0.125,
+                            ColorSystem::red(255, 5),
+                            ColorSystem::red(255, 5),
+                        );
+                    }
+                    _ => {}
                 }
-                TableTool::Eracer => {
-                    table.draw_cursor(
-                        &table_coord,
-                        0.5,
-                        ColorSystem::gray(255, 9),
-                        ColorSystem::gray(255, 1),
-                    );
-                }
-                TableTool::Measure(_) => {
-                    table.draw_cursor(
-                        &table_coord,
-                        0.125,
-                        ColorSystem::red(255, 5),
-                        ColorSystem::red(255, 5),
-                    );
-                }
-                _ => {}
             }
             state.table_state.last_mouse_coord = mouse_coord;
             if let Some(renderer) = &mut state.renderer {
@@ -802,7 +803,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             match &table_tool {
                 TableTool::Measure(Option::None) => {
                     state.table_state.measure_length = None;
-                    state.world.table_mut().clear_measure();
+                    state.world.table_mut().map(|table| table.clear_measure());
                 }
                 _ => {}
             }
@@ -815,7 +816,10 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             update(state, Msg::SetIsBindToGrid(is_bind_to_grid))
         }
         Msg::SetIsBindToGrid(is_bind_to_grid) => {
-            state.world.table_mut().set_is_bind_to_grid(is_bind_to_grid);
+            state
+                .world
+                .table_mut()
+                .map(|table| table.set_is_bind_to_grid(is_bind_to_grid));
             state.cmd_queue.dequeue()
         }
         Msg::DrawLineWithMouseCoord(mouse_coord) => {
@@ -827,12 +831,9 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             let start_point = [start_point[0], start_point[1]];
             let end_point = get_table_position(&state, &mouse_coord, state.pixel_ratio);
             let end_point = [end_point[0], end_point[1]];
-            state.world.table_mut().draw_line(
-                &start_point,
-                &end_point,
-                ColorSystem::gray(255, 9),
-                0.5,
-            );
+            state.world.table_mut().map(|table| {
+                table.draw_line(&start_point, &end_point, ColorSystem::gray(255, 9), 0.5)
+            });
             state
                 .room
                 .send(skyway::Msg::DrawLineToTable(start_point, end_point));
@@ -850,7 +851,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state
                 .world
                 .table_mut()
-                .erace_line(&start_point, &end_point, 1.0);
+                .map(|table| table.erace_line(&start_point, &end_point, 1.0));
             state
                 .room
                 .send(skyway::Msg::EraceLineToTable(start_point, end_point));
@@ -861,13 +862,10 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             let start_point = [start_point[0], start_point[1]];
             let end_point = get_table_position(&state, &mouse_coord, state.pixel_ratio);
             let end_point = [end_point[0], end_point[1]];
-            let measure_length = state.world.table_mut().draw_measure(
-                &start_point,
-                &end_point,
-                ColorSystem::red(255, 5),
-                0.2,
-            );
-            state.table_state.measure_length = Some(measure_length);
+            let measure_length = state.world.table_mut().map(|table| {
+                table.draw_measure(&start_point, &end_point, ColorSystem::red(255, 5), 0.2)
+            });
+            state.table_state.measure_length = Some(measure_length.unwrap_or(0.0));
             update(state, Msg::SetCursorWithMouseCoord(mouse_coord))
         }
         Msg::SetObjectPositionWithMouseCoord(object_id, mouse_coord) => {
@@ -892,7 +890,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
         Msg::SetTableSizeToTransport(size) => update(state, Msg::SetTableSize(size)),
         Msg::SetTableSize(size) => {
-            state.world.table_mut().set_size(size);
+            state.world.table_mut().map(|table| table.set_size(size));
             update(state, Msg::Render)
         }
 
@@ -1437,19 +1435,15 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 update(state, Msg::Render)
             }
             skyway::Msg::DrawLineToTable(start_point, end_point) => {
-                state.world.table_mut().draw_line(
-                    &start_point,
-                    &end_point,
-                    ColorSystem::gray(255, 9),
-                    0.5,
-                );
+                if let Some(table) = state.world.table_mut() {
+                    table.draw_line(&start_point, &end_point, ColorSystem::gray(255, 9), 0.5);
+                }
                 update(state, Msg::Render)
             }
             skyway::Msg::EraceLineToTable(start_point, end_point) => {
-                state
-                    .world
-                    .table_mut()
-                    .erace_line(&start_point, &end_point, 1.0);
+                if let Some(table) = state.world.table_mut() {
+                    table.erace_line(&start_point, &end_point, 1.0);
+                }
                 update(state, Msg::Render)
             }
             skyway::Msg::SetCharacterImage(character_id, data_id) => {

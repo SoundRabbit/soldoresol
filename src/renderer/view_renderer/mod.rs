@@ -52,8 +52,9 @@ impl ViewRenderer {
                 | web_sys::WebGlRenderingContext::DEPTH_BUFFER_BIT,
         );
         gl.depth_func(web_sys::WebGlRenderingContext::ALWAYS);
-        self.table_renderer
-            .render(gl, camera, &vp_matrix, world.table_mut());
+        if let Some(table) = world.table_mut() {
+            self.table_renderer.render(gl, camera, &vp_matrix, table);
+        }
         self.tablemask_collection_renderer
             .render(gl, camera, &vp_matrix, world.tablemasks());
         self.character_collection_renderer.render(
