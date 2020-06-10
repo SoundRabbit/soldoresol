@@ -258,6 +258,7 @@ pub enum Msg {
     SetCameraMovementWithMouseCoord([f64; 2]),
     SetCameraMovementWithMouseWheel(f64),
     SetSelectingTableTool(TableTool),
+    SetIsBindToGridToTransport(bool),
     SetIsBindToGrid(bool),
     SetCursorWithMouseCoord([f64; 2]),
     DrawLineWithMouseCoord([f64; 2]),
@@ -808,11 +809,13 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.table_state.selecting_tool = table_tool;
             update(state, Msg::Render)
         }
+        Msg::SetIsBindToGridToTransport(is_bind_to_grid) => {
+            let room = &state.room;
+            room.send(skyway::Msg::SetIsBindToGrid(is_bind_to_grid));
+            update(state, Msg::SetIsBindToGrid(is_bind_to_grid))
+        }
         Msg::SetIsBindToGrid(is_bind_to_grid) => {
             state.world.table_mut().set_is_bind_to_grid(is_bind_to_grid);
-            state
-                .room
-                .send(skyway::Msg::SetIsBindToGrid(is_bind_to_grid));
             state.cmd_queue.dequeue()
         }
         Msg::DrawLineWithMouseCoord(mouse_coord) => {
@@ -1715,8 +1718,9 @@ fn render_header_menu(
                             btn::toggle(
                                 is_bind_to_grid,
                                 Attributes::new(),
-                                Events::new()
-                                    .on_click(move |_| Msg::SetIsBindToGrid(!is_bind_to_grid)),
+                                Events::new().on_click(move |_| {
+                                    Msg::SetIsBindToGridToTransport(!is_bind_to_grid)
+                                }),
                             ),
                         ],
                     ),
