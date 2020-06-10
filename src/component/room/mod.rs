@@ -1724,24 +1724,6 @@ fn render_header_menu(
                             .on_click(|_| Msg::SetSelectingTableTool(TableTool::Measure(None))),
                         vec![awesome::i("fa-ruler"), Html::text(" 計測")],
                     ),
-                    Html::div(
-                        Attributes::new().class("keyvalue").title(""),
-                        Events::new(),
-                        vec![
-                            Html::span(
-                                Attributes::new().class("text-label"),
-                                Events::new(),
-                                vec![Html::text("グリッドにスナップ")],
-                            ),
-                            btn::toggle(
-                                is_bind_to_grid,
-                                Attributes::new(),
-                                Events::new().on_click(move |_| {
-                                    Msg::SetIsBindToGridToTransport(!is_bind_to_grid)
-                                }),
-                            ),
-                        ],
-                    ),
                 ],
             ),
             Html::div(
