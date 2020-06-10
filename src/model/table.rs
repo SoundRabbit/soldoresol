@@ -5,7 +5,7 @@ use wasm_bindgen::prelude::*;
 
 pub struct Table {
     size: [f64; 2],
-    pixel_ratio: f64,
+    pixel_ratio: [f64; 2],
     is_bind_to_grid: bool,
     drawing_texture: TexstureLayer,
     drawing_texture_is_changed: bool,
@@ -17,13 +17,15 @@ pub struct TableData {
     pub size: [f64; 2],
     pub is_bind_to_grid: bool,
     pub drawing_texture: String,
-    pub pixel_ratio: f64,
 }
 
 impl Table {
-    pub fn new(size: [f64; 2], pixel_ratio: f64) -> Self {
-        let texture_width = (size[0] * pixel_ratio) as u32;
-        let texture_height = (size[1] * pixel_ratio) as u32;
+    pub fn new() -> Self {
+        let texture_width = 4096;
+        let texture_height = 4096;
+
+        let size = [1.0, 1.0];
+        let pixel_ratio = [1.0, 1.0];
         Self {
             size,
             pixel_ratio,
@@ -36,6 +38,19 @@ impl Table {
     }
 
     pub fn set_size(&mut self, size: [f64; 2]) {
+        let new_pixel_ratio = [4096.0 / size[0], 4096.0 / size[1]];
+
+        let _ = self.drawing_texture.context().scale(
+            new_pixel_ratio[0] / self.pixel_ratio[0],
+            new_pixel_ratio[1] / self.pixel_ratio[1],
+        );
+
+        let _ = self.measure_texture.context().scale(
+            new_pixel_ratio[0] / self.pixel_ratio[0],
+            new_pixel_ratio[1] / self.pixel_ratio[1],
+        );
+
+        self.pixel_ratio = new_pixel_ratio;
         self.size = size;
     }
 
@@ -81,10 +96,7 @@ impl Table {
             [p[0], p[1]]
         };
 
-        [
-            (p[0] + self.size[0] / 2.0) * self.pixel_ratio,
-            (p[1] + self.size[1] / 2.0) * self.pixel_ratio,
-        ]
+        [(p[0] + self.size[0] / 2.0), (p[1] + self.size[1] / 2.0)]
     }
 
     pub fn draw_cursor(
@@ -105,7 +117,7 @@ impl Table {
         let [bx, by] = self.get_texture_position(begin);
         let [ex, ey] = self.get_texture_position(end);
 
-        context.set_line_width(line_width * self.pixel_ratio);
+        context.set_line_width(line_width);
         context.set_line_cap("round");
         context.set_stroke_style(&color.to_jsvalue());
         context
@@ -129,7 +141,7 @@ impl Table {
         context
             .set_global_composite_operation("destination-out")
             .unwrap();
-        context.set_line_width(line_width * self.pixel_ratio);
+        context.set_line_width(line_width);
         context.set_line_cap("round");
         context.begin_path();
         context.move_to(bx, by);
@@ -157,7 +169,7 @@ impl Table {
 
         let radious = ((ex - bx).powi(2) + (ey - by).powi(2)).sqrt();
 
-        context.set_line_width(line_width * self.pixel_ratio);
+        context.set_line_width(line_width);
         context.set_line_cap("round");
         context.set_stroke_style(&color.to_jsvalue());
         context.set_fill_style(&JsValue::from("transparent"));
@@ -174,18 +186,13 @@ impl Table {
 
         self.measure_texture_is_changed = true;
 
-        radious / self.pixel_ratio
+        radious
     }
 
     pub fn clear_measure(&mut self) {
         let context = self.measure_texture.context();
 
-        context.clear_rect(
-            0.0,
-            0.0,
-            self.size[0] * self.pixel_ratio,
-            self.size[1] * self.pixel_ratio,
-        );
+        context.clear_rect(0.0, 0.0, self.size[0], self.size[1]);
 
         self.measure_texture_is_changed = true;
     }
@@ -195,7 +202,6 @@ impl Table {
             size: self.size.clone(),
             is_bind_to_grid: self.is_bind_to_grid.clone(),
             drawing_texture: self.drawing_texture.element().to_data_url().unwrap(),
-            pixel_ratio: self.pixel_ratio,
         }
     }
 }
@@ -203,34 +209,34 @@ impl Table {
 impl From<TableData> for Rc<Table> {
     fn from(table_data: TableData) -> Self {
         let size = table_data.size;
-        let pixel_ratio = table_data.pixel_ratio;
-        let texture_width = (size[0] * pixel_ratio) as u32;
-        let texture_height = (size[1] * pixel_ratio) as u32;
-        let table = Rc::new(Table {
-            size: size,
-            pixel_ratio: pixel_ratio,
+        let texture_width = 4096;
+        let texture_height = 4096;
+
+        let mut table = Table {
+            size: [1.0, 1.0],
+            pixel_ratio: [1.0, 1.0],
             is_bind_to_grid: table_data.is_bind_to_grid,
             drawing_texture: TexstureLayer::new(&[texture_width, texture_height]),
             drawing_texture_is_changed: true,
             measure_texture: TexstureLayer::new(&[texture_width, texture_height]),
             measure_texture_is_changed: true,
-        });
+        };
 
-        table
+        table.set_size(size);
+
+        Rc::new(table)
     }
 }
 
 impl TableData {
     pub fn as_object(&self) -> JsObject {
         let is_bind_to_grid: bool = self.is_bind_to_grid;
-        let pixel_ratio: f64 = self.pixel_ratio;
         let drawing_texture = &self.drawing_texture;
 
         object! {
             size: array![self.size[0], self.size[1]],
             is_bind_to_grid: is_bind_to_grid,
-            drawing_texture: drawing_texture,
-            pixel_ratio: pixel_ratio
+            drawing_texture: drawing_texture
         }
     }
 }
@@ -243,14 +249,11 @@ impl From<JsObject> for TableData {
         let size = obj.get("size").unwrap().dyn_into::<Array>().ok().unwrap();
         let size = [size.get(0).as_f64().unwrap(), size.get(1).as_f64().unwrap()];
 
-        let pixel_ratio = obj.get("pixel_ratio").unwrap().as_f64().unwrap();
-
         let drawing_texture = obj.get("drawing_texture").unwrap().as_string().unwrap();
         let is_bind_to_grid = obj.get("is_bind_to_grid").unwrap().as_bool().unwrap();
 
         Self {
             size,
-            pixel_ratio,
             drawing_texture,
             is_bind_to_grid,
         }

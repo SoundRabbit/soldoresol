@@ -25,9 +25,11 @@ pub struct WorldData {
 
 impl World {
     pub fn new(table_size: [f64; 2]) -> Self {
+        let mut table = Table::new();
+        table.set_size(table_size);
         Self {
             table_id: random_id::u128val(),
-            table: Rc::new(Table::new(table_size, 64.0)),
+            table: Rc::new(table),
             characters: HashMap::new(),
             tablemasks: HashMap::new(),
         }

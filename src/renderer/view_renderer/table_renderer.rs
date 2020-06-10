@@ -175,7 +175,7 @@ impl TableRenderer {
         }
         gl.active_texture(web_sys::WebGlRenderingContext::TEXTURE0);
 
-        let model_matrix: Array2<f64> = ModelMatrix::new().with_scale(&[width, height, 1.0]).into();
+        let model_matrix: Array2<f64> = ModelMatrix::new().with_scale(&[height, width, 1.0]).into();
         let mvp_matrix = model_matrix.dot(vp_matrix);
 
         gl.uniform_matrix4fv_with_f32_array(
