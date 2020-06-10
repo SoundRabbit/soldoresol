@@ -135,6 +135,9 @@ pub fn select_image(resource: &Resource, modal_type: &SelectImageModal) -> Html<
                                         SelectImageModal::Player => {
                                             Msg::SetPersonalDataWithIconImage(data_id)
                                         }
+                                        SelectImageModal::Table => {
+                                            Msg::SetTableImageToTransport(data_id)
+                                        }
                                     }
                                 }),
                                 vec![Html::img(
@@ -416,7 +419,7 @@ pub fn character_selecter(
     )
 }
 
-pub fn table_setting(table: &Table) -> Html<Msg> {
+pub fn table_setting(table: &Table, resource: &Resource) -> Html<Msg> {
     let [width, height] = table.size();
     let (width, height) = (*width, *height);
 
@@ -454,34 +457,88 @@ pub fn table_setting(table: &Table) -> Html<Msg> {
                     Events::new(),
                     vec![Html::div(
                         Attributes::new()
-                            .class("container-a")
                             .class("keyvalue")
-                            .class("pure-form"),
+                            .class("editormodeless")
+                            .class("pure-form")
+                            .class("keyvalue-align-start"),
                         Events::new(),
                         vec![
-                            Html::span(Attributes::new(), Events::new(), vec![Html::text("幅")]),
-                            Html::input(
-                                Attributes::new().type_("number").value(width.to_string()),
-                                Events::new().on_input(move |width| {
-                                    if let Ok(width) = width.parse::<f64>() {
-                                        Msg::SetTableSizeToTransport([width.floor(), height])
-                                    } else {
-                                        Msg::NoOp
-                                    }
-                                }),
-                                vec![],
+                            Html::div(
+                                Attributes::new()
+                                    .class("container-a")
+                                    .class("centering")
+                                    .class("centering-a"),
+                                Events::new(),
+                                vec![
+                                    table
+                                        .image_texture_id()
+                                        .and_then(|data_id| resource.get_as_image_url(&data_id))
+                                        .map(|img_url| {
+                                            Html::img(
+                                                Attributes::new()
+                                                    .class("pure-img")
+                                                    .string("src", img_url.as_str()),
+                                                Events::new(),
+                                                vec![],
+                                            )
+                                        })
+                                        .unwrap_or(Html::none()),
+                                    btn::primary(
+                                        Attributes::new(),
+                                        Events::new().on_click({
+                                            move |_| {
+                                                Msg::OpenModal(Modal::SelectImage(
+                                                    SelectImageModal::Table,
+                                                ))
+                                            }
+                                        }),
+                                        vec![Html::text("画像を選択")],
+                                    ),
+                                ],
                             ),
-                            Html::span(Attributes::new(), Events::new(), vec![Html::text("高さ")]),
-                            Html::input(
-                                Attributes::new().type_("number").value(height.to_string()),
-                                Events::new().on_input(move |height| {
-                                    if let Ok(height) = height.parse::<f64>() {
-                                        Msg::SetTableSizeToTransport([width, height.floor()])
-                                    } else {
-                                        Msg::NoOp
-                                    }
-                                }),
-                                vec![],
+                            Html::div(
+                                Attributes::new().class("container-a").class("keyvalue"),
+                                Events::new(),
+                                vec![
+                                    Html::span(
+                                        Attributes::new(),
+                                        Events::new(),
+                                        vec![Html::text("幅")],
+                                    ),
+                                    Html::input(
+                                        Attributes::new().type_("number").value(width.to_string()),
+                                        Events::new().on_input(move |width| {
+                                            if let Ok(width) = width.parse::<f64>() {
+                                                Msg::SetTableSizeToTransport([
+                                                    width.floor(),
+                                                    height,
+                                                ])
+                                            } else {
+                                                Msg::NoOp
+                                            }
+                                        }),
+                                        vec![],
+                                    ),
+                                    Html::span(
+                                        Attributes::new(),
+                                        Events::new(),
+                                        vec![Html::text("高さ")],
+                                    ),
+                                    Html::input(
+                                        Attributes::new().type_("number").value(height.to_string()),
+                                        Events::new().on_input(move |height| {
+                                            if let Ok(height) = height.parse::<f64>() {
+                                                Msg::SetTableSizeToTransport([
+                                                    width,
+                                                    height.floor(),
+                                                ])
+                                            } else {
+                                                Msg::NoOp
+                                            }
+                                        }),
+                                        vec![],
+                                    ),
+                                ],
                             ),
                         ],
                     )],

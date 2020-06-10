@@ -35,7 +35,7 @@ impl TableRenderer {
             .concat(),
         );
         let polygon_texture_coord_buffer =
-            gl.create_vbo_with_f32array(&[[1.0, 1.0], [0.0, 1.0], [1.0, 0.0], [0.0, 0.0]].concat());
+            gl.create_vbo_with_f32array(&[[1.0, 0.0], [0.0, 0.0], [1.0, 1.0], [0.0, 1.0]].concat());
         let polygon_index_buffer = gl.create_ibo_with_i16array(&[0, 1, 2, 3, 2, 1]);
         let polygon_texture_buffer_0 = gl.create_texture().unwrap();
         let polygon_texture_buffer_1 = gl.create_texture().unwrap();

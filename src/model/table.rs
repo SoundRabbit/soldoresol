@@ -89,6 +89,10 @@ impl Table {
         self.image_texture_id.as_ref()
     }
 
+    pub fn set_image_texture_id(&mut self, data_id: u128) {
+        self.image_texture_id = Some(data_id);
+    }
+
     pub fn rendered(&mut self) {
         self.clear_measure();
         self.drawing_texture_is_changed = false;
@@ -103,7 +107,7 @@ impl Table {
             [p[0], p[1]]
         };
 
-        [(p[0] + self.size[0] / 2.0), (p[1] + self.size[1] / 2.0)]
+        [(p[0] + self.size[0] / 2.0), -(p[1] - self.size[1] / 2.0)]
     }
 
     pub fn draw_cursor(

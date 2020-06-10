@@ -159,6 +159,7 @@ type ModelessCollection = HashMap<u128, (ModelessState, Modeless)>;
 #[derive(Clone)]
 pub enum SelectImageModal {
     Player,
+    Table,
     Character(u128),
 }
 
@@ -272,6 +273,8 @@ pub enum Msg {
     SetIs2dMode(bool),
     SetTableSizeToTransport([f64; 2]),
     SetTableSize([f64; 2]),
+    SetTableImageToTransport(u128),
+    SetTableImage(u128),
 
     // モードレス
     OpenObjectModeless(u128),
@@ -892,6 +895,17 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         Msg::SetTableSize(size) => {
             state.world.table_mut().map(|table| table.set_size(size));
             update(state, Msg::Render)
+        }
+        Msg::SetTableImageToTransport(resource_id) => {
+            update(state, Msg::SetTableImage(resource_id))
+        }
+        Msg::SetTableImage(resource_id) => {
+            if let Some(table) = state.world.table_mut() {
+                table.set_image_texture_id(resource_id);
+                update(state, Msg::Render)
+            } else {
+                state.cmd_queue.dequeue()
+            }
         }
 
         // モードレス
@@ -2377,7 +2391,7 @@ fn render_modals(
             Modal::Resource => modal::resource(resource),
             Modal::SelectImage(modal_type) => modal::select_image(resource, modal_type),
             Modal::PersonalSetting => modal::personal_setting(personal_data, resource),
-            Modal::TableSetting => modal::table_setting(&world.table()),
+            Modal::TableSetting => modal::table_setting(&world.table(), &resource),
             Modal::ColorPicker(color_picker_type) => modal::color_picker(color_picker_type.clone()),
             Modal::CharacterSelecter(character_selecter_type) => match character_selecter_type {
                 CharacterSelecterType::ChatSender => modal::character_selecter(

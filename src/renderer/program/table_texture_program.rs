@@ -35,9 +35,9 @@ const FRAGMENT_SHADER: &str = r#"
         vec4 smpColor0 = texture2D(u_texture0, v_textureCoord);
         vec4 smpColor1 = texture2D(u_texture1, v_textureCoord);
         vec4 smpColor2 = u_flagTexture2 != 0 ? texture2D(u_texture2, v_textureCoord) : vec4(0.0,0.0,0.0,0.0);
-        vec4 color_a = blend(u_bgColor, smpColor0);
-        vec4 color_b = blend(color_a, smpColor1);
-        vec4 color_c = blend(color_b, smpColor2);
+        vec4 color_a = blend(u_bgColor, smpColor2);
+        vec4 color_b = blend(color_a, smpColor0);
+        vec4 color_c = blend(color_b, smpColor1);
         gl_FragColor = color_c;
     }
 "#;
