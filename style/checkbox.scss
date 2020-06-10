@@ -7,13 +7,14 @@
     background-color: $gray-000;
     border-radius: 0.25em;
     text-align: center;
+    line-height: 1;
 
     &:hover {
         cursor: pointer;
     }
 
     &-checked {
-        background-color: $green-500;
+        background-color: $blue-500;
         color: $gray-000;
     }
 }
