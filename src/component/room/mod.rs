@@ -265,6 +265,7 @@ pub enum Msg {
     SetObjectPositionWithMouseCoord(u128, [f64; 2]),
     SetObjectPositionToTransport(u128, [f64; 3]),
     SetObjectPosition(u128, [f64; 3]),
+    BindObjectToTableGridToTransport(u128),
     BindObjectToTableGrid(u128),
     SetIs2dMode(bool),
 
@@ -674,6 +675,21 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 tablemask.bind_to_grid();
             }
             update(state, Msg::AddTablemask(tablemask))
+        }
+        Msg::CloneObjectWithObjectIdToTransport(object_id) => {
+            if let Some(character) = state.world.character(&object_id) {
+                let mut character = character.clone();
+                let p = character.position().clone();
+                character.set_position([p[0] + 1.0, p[1] + 1.0, p[2]]);
+                update(state, Msg::AddChracaterToTransport(character))
+            } else if let Some(tablemask) = state.world.tablemask(&object_id) {
+                let mut tablemask = tablemask.clone();
+                let p = tablemask.position().clone();
+                tablemask.set_position([p[0] + 1.0, p[1] + 1.0, p[2]]);
+                update(state, Msg::AddTablemaskToTransport(tablemask))
+            } else {
+                state.cmd_queue.dequeue()
+            }
         }
         Msg::CloneObjectWithObjectId(object_id) => {
             if let Some(character) = state.world.character(&object_id) {
@@ -1116,18 +1132,41 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             }
             state.cmd_queue.dequeue()
         }
-        Msg::AddChracater(character) => {
+        Msg::AddChracaterToTransport(character) => {
             let position = character.position().clone();
             let character_id = state.world.add_character(character);
-
-            state
-                .room
-                .send(skyway::Msg::CreateCharacterToTable(character_id, position));
+            let room = &state.room;
+            room.send(skyway::Msg::CreateCharacterToTable(character_id, position));
+            update(state, Msg::Render)
+        }
+        Msg::AddChracater(character) => {
+            state.world.add_character(character);
+            update(state, Msg::Render)
+        }
+        Msg::AddTablemaskToTransport(tablemask) => {
+            let position = tablemask.position().clone();
+            let tablemask_id = state.world.add_tablemask(tablemask);
+            let room = &state.room;
+            room.send(skyway::Msg::CreateTablemaskToTable(tablemask_id, position));
             update(state, Msg::Render)
         }
         Msg::AddTablemask(tablemask) => {
             state.world.add_tablemask(tablemask);
             update(state, Msg::Render)
+        }
+        Msg::SetTablemaskSizeWithStyleToTransport(tablemask_id, size, is_rounded) => {
+            if state.world.tablemask(&tablemask_id).is_some() {
+                let room = &state.room;
+                room.send(skyway::Msg::SetTablemaskSizeWithStyle(
+                    tablemask_id,
+                    size.clone(),
+                    is_rounded,
+                ));
+            }
+            update(
+                state,
+                Msg::SetTablemaskSizeWithStyle(tablemask_id, size, is_rounded),
+            )
         }
         Msg::SetTablemaskSizeWithStyle(tablemask_id, size, is_rounded) => {
             if let Some(tablemask) = state.world.tablemask_mut(&tablemask_id) {
@@ -1136,15 +1175,54 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             }
             update(state, Msg::Render)
         }
+        Msg::SetTablemaskSizeIsBindedToTransport(tablemask_id, is_binded) => update(
+            state,
+            Msg::SetTablemaskSizeIsBinded(tablemask_id, is_binded),
+        ),
         Msg::SetTablemaskSizeIsBinded(tablemask_id, is_binded) => {
             if let Some(tablemask) = state.world.tablemask_mut(&tablemask_id) {
                 tablemask.set_size_is_binded(is_binded);
             }
             update(state, Msg::Render)
         }
+        Msg::SetTablemaskColorToTransport(tablemask_id, color) => {
+            if state.world.tablemask(&tablemask_id).is_some() {
+                let room = &state.room;
+                room.send(skyway::Msg::SetTablemaskColor(tablemask_id, color.to_u32()));
+            }
+            update(state, Msg::SetTablemaskColor(tablemask_id, color))
+        }
         Msg::SetTablemaskColor(tablemask_id, color) => {
             if let Some(tablemask) = state.world.tablemask_mut(&tablemask_id) {
                 tablemask.set_background_color(color);
+            }
+            update(state, Msg::Render)
+        }
+        Msg::SetObjectPositionToTransport(object_id, position) => {
+            let room = &state.room;
+            room.send(skyway::Msg::SetObjectPosition(object_id, position.clone()));
+            update(state, Msg::SetObjectPosition(object_id, position))
+        }
+        Msg::SetObjectPosition(object_id, position) => {
+            if let Some(character) = state.world.character_mut(&object_id) {
+                character.set_position(position);
+            }
+            if let Some(tablemask) = state.world.tablemask_mut(&object_id) {
+                tablemask.set_position(position);
+            }
+            update(state, Msg::Render)
+        }
+        Msg::BindObjectToTableGridToTransport(object_id) => {
+            let room = &state.room;
+            room.send(skyway::Msg::BindObjectToTableGrid(object_id));
+            update(state, Msg::BindObjectToTableGrid(object_id))
+        }
+        Msg::BindObjectToTableGrid(object_id) => {
+            if let Some(character) = state.world.character_mut(&object_id) {
+                character.bind_to_grid();
+            }
+            if let Some(tablemask) = state.world.tablemask_mut(&object_id) {
+                tablemask.bind_to_grid();
             }
             update(state, Msg::Render)
         }
@@ -1364,6 +1442,12 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 state.world.add_character_with_id(character_id, character);
                 update(state, Msg::Render)
             }
+            skyway::Msg::CreateTablemaskToTable(tablemask_id, position) => {
+                let mut tablemask = Tablemask::new();
+                tablemask.set_position(position);
+                state.world.add_tablemask_with_id(tablemask_id, tablemask);
+                update(state, Msg::Render)
+            }
             skyway::Msg::DrawLineToTable(start_point, end_point) => {
                 state.world.table_mut().draw_line(
                     &start_point,
@@ -1390,8 +1474,19 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             skyway::Msg::SetCharacterName(character_id, name) => {
                 update(state, Msg::SetCharacterName(character_id, name))
             }
+            skyway::Msg::SetTablemaskSizeWithStyle(tablemask_id, size, is_rounded) => update(
+                state,
+                Msg::SetTablemaskSizeWithStyle(tablemask_id, size, is_rounded),
+            ),
+            skyway::Msg::SetTablemaskColor(tablemask_id, color) => update(
+                state,
+                Msg::SetTablemaskColor(tablemask_id, Color::from(color)),
+            ),
             skyway::Msg::SetObjectPosition(object_id, position) => {
                 update(state, Msg::SetObjectPosition(object_id, position))
+            }
+            skyway::Msg::BindObjectToTableGrid(object_id) => {
+                update(state, Msg::BindObjectToTableGrid(object_id))
             }
             skyway::Msg::SetIsBindToGrid(is_bind_to_grid) => {
                 update(state, Msg::SetIsBindToGrid(is_bind_to_grid))

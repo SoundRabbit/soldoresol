@@ -82,10 +82,14 @@ pub enum Msg {
     DrawLineToTable([f64; 2], [f64; 2]),
     EraceLineToTable([f64; 2], [f64; 2]),
     CreateCharacterToTable(u128, [f64; 3]),
+    CreateTablemaskToTable(u128, [f64; 3]),
     SetCharacterImage(u128, u128),
     SetCharacterSize(u128, [f64; 2]),
     SetCharacterName(u128, String),
+    SetTablemaskSizeWithStyle(u128, [f64; 2], bool),
+    SetTablemaskColor(u128, u32),
     SetObjectPosition(u128, [f64; 3]),
+    BindObjectToTableGrid(u128),
     SetIsBindToGrid(bool),
     SetWorld(WorldData),
     SetResource(ResourceData),
@@ -102,10 +106,14 @@ impl Msg {
             Self::DrawLineToTable(..) => "DrawLineToTable",
             Self::EraceLineToTable(..) => "EraceLineToTable",
             Self::CreateCharacterToTable(..) => "CreateCharacterToTable",
+            Self::CreateTablemaskToTable(..) => "CreateTablemaskToTable",
             Self::SetCharacterImage(..) => "SetCharacterImage",
             Self::SetCharacterSize(..) => "SetCharacterSize",
             Self::SetCharacterName(..) => "SetCharacterName",
+            Self::SetTablemaskSizeWithStyle(..) => "SetTablemaskSizeWithStyle",
+            Self::SetTablemaskColor(..) => "SetTablemaskColor",
             Self::SetObjectPosition(..) => "SetObjectPosition",
+            Self::BindObjectToTableGrid(..) => "BindObjectToTableGrid",
             Self::SetIsBindToGrid(..) => "SetIsBindToGrid",
             Self::SetWorld(..) => "SetWorld",
             Self::SetResource(..) => "SetResource",
@@ -125,7 +133,9 @@ impl Into<JsObject> for Msg {
             Self::DrawLineToTable(b, e) | Self::EraceLineToTable(b, e) => {
                 array![b[0], b[1], e[0], e[1]].into()
             }
-            Self::CreateCharacterToTable(id, pos) | Self::SetObjectPosition(id, pos) => {
+            Self::CreateCharacterToTable(id, pos)
+            | Self::CreateTablemaskToTable(id, pos)
+            | Self::SetObjectPosition(id, pos) => {
                 array![id.to_string(), pos[0], pos[1], pos[2]].into()
             }
             Self::SetCharacterImage(c_id, d_id) => {
@@ -133,6 +143,13 @@ impl Into<JsObject> for Msg {
             }
             Self::SetCharacterSize(c_id, sz) => array![c_id.to_string(), sz[0], sz[1]].into(),
             Self::SetCharacterName(c_id, name) => array![c_id.to_string(), name].into(),
+            Self::SetTablemaskSizeWithStyle(t_id, sz, r) => {
+                array![t_id.to_string(), sz[0], sz[1], r].into()
+            }
+            Self::SetTablemaskColor(t_id, color) => array![t_id.to_string(), color].into(),
+            Self::BindObjectToTableGrid(id) | Self::RemoveObject(id) => {
+                JsValue::from(id.to_string())
+            }
             Self::SetIsBindToGrid(f) => JsValue::from(f),
             Self::SetWorld(world_data) => world_data.as_object().into(),
             Self::SetChat(chat) => chat.into(),
@@ -144,7 +161,6 @@ impl Into<JsObject> for Msg {
                 }
                 payload.into()
             }
-            Self::RemoveObject(id) => JsValue::from(id.to_string()),
             Self::InsertChatItem(tab_idx, chat_item) => array![tab_idx, chat_item].into(),
             Self::None => JsValue::NULL,
         };
@@ -187,6 +203,17 @@ impl From<JsObject> for Msg {
                         ],
                     )
                 }
+                "CreateTablemaskToTable" => {
+                    let args = payload.dyn_ref::<Array>().unwrap().to_vec();
+                    Self::CreateTablemaskToTable(
+                        args[0].as_string().unwrap().parse().unwrap(),
+                        [
+                            args[1].as_f64().unwrap(),
+                            args[2].as_f64().unwrap(),
+                            args[3].as_f64().unwrap(),
+                        ],
+                    )
+                }
                 "SetObjectPosition" => {
                     let args = payload.dyn_ref::<Array>().unwrap().to_vec();
                     Self::SetObjectPosition(
@@ -218,6 +245,9 @@ impl From<JsObject> for Msg {
                         args.get(0).as_string().unwrap().parse().unwrap(),
                         args.get(1).as_string().unwrap(),
                     )
+                }
+                "BindObjectToTableGrid" => {
+                    Self::BindObjectToTableGrid(payload.as_string().unwrap().parse().unwrap())
                 }
                 "SetIsBindToGrid" => Self::SetIsBindToGrid(payload.as_bool().unwrap()),
                 "SetWorld" => Self::SetWorld(WorldData::from(payload)),

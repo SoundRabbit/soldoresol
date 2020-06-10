@@ -89,6 +89,10 @@ impl World {
         return tablemask_id;
     }
 
+    pub fn add_tablemask_with_id(&mut self, tablemask_id: u128, tablemask: Tablemask) {
+        self.tablemasks.insert(tablemask_id, tablemask);
+    }
+
     pub fn to_data(&self) -> WorldData {
         let mut character_data = HashMap::new();
         for (id, character) in self.characters() {
