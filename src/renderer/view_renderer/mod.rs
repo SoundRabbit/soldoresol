@@ -5,13 +5,31 @@ mod tablemask_collection_renderer;
 use super::webgl::WebGlRenderingContext;
 use crate::model::{Camera, Resource, World};
 use character_collection_renderer::CharacterCollectionRenderer;
+use std::collections::HashMap;
+use std::ops::{Deref, DerefMut};
 use table_renderer::TableRenderer;
 use tablemask_collection_renderer::TablemaskCollectionRenderer;
+
+pub struct TextureCollection(HashMap<u128, web_sys::WebGlTexture>);
+
+impl Deref for TextureCollection {
+    type Target = HashMap<u128, web_sys::WebGlTexture>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for TextureCollection {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
 
 pub struct ViewRenderer {
     character_collection_renderer: CharacterCollectionRenderer,
     table_renderer: TableRenderer,
     tablemask_collection_renderer: TablemaskCollectionRenderer,
+    img_texture_buffer: TextureCollection,
 }
 
 impl ViewRenderer {
@@ -31,6 +49,7 @@ impl ViewRenderer {
             character_collection_renderer,
             table_renderer,
             tablemask_collection_renderer,
+            img_texture_buffer: TextureCollection(HashMap::new()),
         }
     }
 
@@ -62,7 +81,54 @@ impl ViewRenderer {
             camera,
             &vp_matrix,
             world.characters_mut(),
+            &mut self.img_texture_buffer,
             resource,
         );
+    }
+}
+
+impl TextureCollection {
+    fn insert(
+        &mut self,
+        gl: &WebGlRenderingContext,
+        texture_id: u128,
+        texture_data: &web_sys::HtmlImageElement,
+    ) {
+        let texture_buffer = gl.create_texture().unwrap();
+        gl.bind_texture(
+            web_sys::WebGlRenderingContext::TEXTURE_2D,
+            Some(&texture_buffer),
+        );
+        gl.pixel_storei(web_sys::WebGlRenderingContext::PACK_ALIGNMENT, 1);
+        gl.tex_parameteri(
+            web_sys::WebGlRenderingContext::TEXTURE_2D,
+            web_sys::WebGlRenderingContext::TEXTURE_MIN_FILTER,
+            web_sys::WebGlRenderingContext::LINEAR as i32,
+        );
+        gl.tex_parameteri(
+            web_sys::WebGlRenderingContext::TEXTURE_2D,
+            web_sys::WebGlRenderingContext::TEXTURE_MAG_FILTER,
+            web_sys::WebGlRenderingContext::LINEAR as i32,
+        );
+        gl.tex_parameteri(
+            web_sys::WebGlRenderingContext::TEXTURE_2D,
+            web_sys::WebGlRenderingContext::TEXTURE_WRAP_S,
+            web_sys::WebGlRenderingContext::CLAMP_TO_EDGE as i32,
+        );
+        gl.tex_parameteri(
+            web_sys::WebGlRenderingContext::TEXTURE_2D,
+            web_sys::WebGlRenderingContext::TEXTURE_WRAP_T,
+            web_sys::WebGlRenderingContext::CLAMP_TO_EDGE as i32,
+        );
+        gl.tex_image_2d_with_u32_and_u32_and_image(
+            web_sys::WebGlRenderingContext::TEXTURE_2D,
+            0,
+            web_sys::WebGlRenderingContext::RGBA as i32,
+            web_sys::WebGlRenderingContext::RGBA,
+            web_sys::WebGlRenderingContext::UNSIGNED_BYTE,
+            texture_data,
+        )
+        .unwrap();
+        self.0.insert(texture_id, texture_buffer);
     }
 }

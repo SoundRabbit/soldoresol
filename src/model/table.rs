@@ -11,12 +11,14 @@ pub struct Table {
     drawing_texture_is_changed: bool,
     measure_texture: TexstureLayer,
     measure_texture_is_changed: bool,
+    image_texture_id: Option<u128>,
 }
 
 pub struct TableData {
     pub size: [f64; 2],
     pub is_bind_to_grid: bool,
     pub drawing_texture: String,
+    pub image_texture_id: Option<u128>,
 }
 
 impl Table {
@@ -34,6 +36,7 @@ impl Table {
             drawing_texture_is_changed: true,
             measure_texture: TexstureLayer::new(&[texture_width, texture_height]),
             measure_texture_is_changed: true,
+            image_texture_id: None,
         }
     }
 
@@ -202,6 +205,7 @@ impl Table {
             size: self.size.clone(),
             is_bind_to_grid: self.is_bind_to_grid.clone(),
             drawing_texture: self.drawing_texture.element().to_data_url().unwrap(),
+            image_texture_id: self.image_texture_id.clone(),
         }
     }
 }
@@ -220,6 +224,7 @@ impl From<TableData> for Rc<Table> {
             drawing_texture_is_changed: true,
             measure_texture: TexstureLayer::new(&[texture_width, texture_height]),
             measure_texture_is_changed: true,
+            image_texture_id: table_data.image_texture_id,
         };
 
         table.set_size(size);
@@ -236,7 +241,8 @@ impl TableData {
         object! {
             size: array![self.size[0], self.size[1]],
             is_bind_to_grid: is_bind_to_grid,
-            drawing_texture: drawing_texture
+            drawing_texture: drawing_texture,
+            image_texture_id: self.image_texture_id.map(|x| x.to_string())
         }
     }
 }
@@ -251,11 +257,16 @@ impl From<JsObject> for TableData {
 
         let drawing_texture = obj.get("drawing_texture").unwrap().as_string().unwrap();
         let is_bind_to_grid = obj.get("is_bind_to_grid").unwrap().as_bool().unwrap();
+        let image_texture_id = obj
+            .get("image_texture_id")
+            .and_then(|x| x.as_string())
+            .and_then(|x| x.parse().ok());
 
         Self {
             size,
             drawing_texture,
             is_bind_to_grid,
+            image_texture_id,
         }
     }
 }

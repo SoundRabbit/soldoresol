@@ -5,7 +5,7 @@ use super::super::{
 };
 use crate::model::{Camera, Character, Color, Resource};
 use ndarray::{arr1, Array2};
-use std::collections::{hash_map, BTreeMap, HashMap};
+use std::collections::{hash_map, BTreeMap};
 
 #[derive(PartialEq, PartialOrd)]
 pub struct Total<T>(pub T);
@@ -18,15 +18,10 @@ impl<T: PartialOrd> Ord for Total<T> {
     }
 }
 
-struct Texture {
-    payload: web_sys::WebGlTexture,
-}
-
 pub struct CharacterCollectionRenderer {
     img_vertexis_buffer: WebGlF32Vbo,
     img_texture_coord_buffer: WebGlF32Vbo,
     img_index_buffer: WebGlI16Ibo,
-    img_texture_buffer: HashMap<u128, Texture>,
     mask_vertexis_buffer: WebGlF32Vbo,
     mask_texture_coord_buffer: WebGlF32Vbo,
     mask_index_buffer: WebGlI16Ibo,
@@ -69,7 +64,6 @@ impl CharacterCollectionRenderer {
             img_vertexis_buffer,
             img_texture_coord_buffer,
             img_index_buffer,
-            img_texture_buffer: HashMap::new(),
             mask_vertexis_buffer,
             mask_texture_coord_buffer,
             mask_index_buffer,
@@ -84,6 +78,7 @@ impl CharacterCollectionRenderer {
         camera: &Camera,
         vp_matrix: &Array2<f64>,
         characters: hash_map::IterMut<u128, Character>,
+        textures: &mut super::TextureCollection,
         resource: &Resource,
     ) {
         self.mask_program.use_program(gl);
@@ -182,62 +177,19 @@ impl CharacterCollectionRenderer {
             for (mvp_matrix, character) in character_list {
                 let texture_id = character.texture_id();
                 if let Some(texture_id) = texture_id {
-                    if let (None, Some(texture)) = (
-                        self.img_texture_buffer.get(&texture_id),
+                    if let (None, Some(texture_data)) = (
+                        textures.get(&texture_id),
                         resource.get_as_image(&texture_id),
                     ) {
-                        let texture_buffer = gl.create_texture().unwrap();
-                        gl.bind_texture(
-                            web_sys::WebGlRenderingContext::TEXTURE_2D,
-                            Some(&texture_buffer),
-                        );
-                        gl.pixel_storei(web_sys::WebGlRenderingContext::PACK_ALIGNMENT, 1);
-                        gl.tex_parameteri(
-                            web_sys::WebGlRenderingContext::TEXTURE_2D,
-                            web_sys::WebGlRenderingContext::TEXTURE_MIN_FILTER,
-                            web_sys::WebGlRenderingContext::LINEAR as i32,
-                        );
-                        gl.tex_parameteri(
-                            web_sys::WebGlRenderingContext::TEXTURE_2D,
-                            web_sys::WebGlRenderingContext::TEXTURE_MAG_FILTER,
-                            web_sys::WebGlRenderingContext::LINEAR as i32,
-                        );
-                        gl.tex_parameteri(
-                            web_sys::WebGlRenderingContext::TEXTURE_2D,
-                            web_sys::WebGlRenderingContext::TEXTURE_WRAP_S,
-                            web_sys::WebGlRenderingContext::CLAMP_TO_EDGE as i32,
-                        );
-                        gl.tex_parameteri(
-                            web_sys::WebGlRenderingContext::TEXTURE_2D,
-                            web_sys::WebGlRenderingContext::TEXTURE_WRAP_T,
-                            web_sys::WebGlRenderingContext::CLAMP_TO_EDGE as i32,
-                        );
-                        gl.tex_image_2d_with_u32_and_u32_and_image(
-                            web_sys::WebGlRenderingContext::TEXTURE_2D,
-                            0,
-                            web_sys::WebGlRenderingContext::RGBA as i32,
-                            web_sys::WebGlRenderingContext::RGBA,
-                            web_sys::WebGlRenderingContext::UNSIGNED_BYTE,
-                            &texture,
-                        )
-                        .unwrap();
-                        self.img_texture_buffer.insert(
-                            texture_id,
-                            Texture {
-                                payload: texture_buffer,
-                            },
-                        );
+                        textures.insert(gl, texture_id, &texture_data);
                     }
-                    if let Some(texture) = self.img_texture_buffer.get(&texture_id) {
+                    if let Some(texture) = textures.get(&texture_id) {
                         let s = character.size();
                         let model_matrix: Array2<f64> =
                             ModelMatrix::new().with_scale(&[s[0], s[1], 1.0]).into();
                         let mvp_matrix = model_matrix.dot(&mvp_matrix);
 
-                        gl.bind_texture(
-                            web_sys::WebGlRenderingContext::TEXTURE_2D,
-                            Some(&texture.payload),
-                        );
+                        gl.bind_texture(web_sys::WebGlRenderingContext::TEXTURE_2D, Some(&texture));
                         gl.uniform_matrix4fv_with_f32_array(
                             Some(&self.character_program.u_translate_location),
                             false,
