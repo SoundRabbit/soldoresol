@@ -624,7 +624,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
         Msg::PickColor(color, color_picker_type) => match color_picker_type {
             ColorPickerType::TablemaskColor(obj_id) => {
-                update(state, Msg::SetTablemaskColor(obj_id, color))
+                update(state, Msg::SetTablemaskColorToTransport(obj_id, color))
             }
         },
         Msg::SelectCharacter(character_id, is_selected, character_selecter_type) => {
@@ -875,33 +875,16 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             update(state, Msg::SetCursorWithMouseCoord(mouse_coord))
         }
         Msg::SetObjectPositionWithMouseCoord(object_id, mouse_coord) => {
-            let movement = {
-                let a = get_table_position(
-                    &state,
-                    &state.table_state.last_mouse_coord,
-                    state.pixel_ratio,
-                );
-                let b = get_table_position(&state, &mouse_coord, state.pixel_ratio);
-                [b[0] - a[0], b[1] - a[1]]
-            };
-            if let Some(character) = state.world.character_mut(&object_id) {
-                let p = character.position();
-                let p = [p[0] + movement[0], p[1] + movement[1], p[2]];
-                state
-                    .room
-                    .send(skyway::Msg::SetObjectPosition(object_id, p.clone()));
-                character.set_position(p);
-            }
-            if let Some(tablemask) = state.world.tablemask_mut(&object_id) {
-                let p = tablemask.position();
-                let p = [p[0] + movement[0], p[1] + movement[1], p[2]];
-                state
-                    .room
-                    .send(skyway::Msg::SetObjectPosition(object_id, p.clone()));
-                tablemask.set_position(p);
-            }
+            let position = get_table_position(
+                &state,
+                &state.table_state.last_mouse_coord,
+                state.pixel_ratio,
+            );
             state.table_state.last_mouse_coord = mouse_coord;
-            update(state, Msg::Render)
+            update(
+                state,
+                Msg::SetObjectPositionToTransport(object_id, [position[0], position[1], 0.0]),
+            )
         }
         Msg::SetIs2dMode(is_2d_mode) => {
             if is_2d_mode {
@@ -1485,6 +1468,9 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             skyway::Msg::SetObjectPosition(object_id, position) => {
                 update(state, Msg::SetObjectPosition(object_id, position))
             }
+            skyway::Msg::CloneObject(object_id) => {
+                update(state, Msg::CloneObjectWithObjectId(object_id))
+            }
             skyway::Msg::BindObjectToTableGrid(object_id) => {
                 update(state, Msg::BindObjectToTableGrid(object_id))
             }
@@ -1976,7 +1962,7 @@ fn render_canvas_overlaper(
                     e.stop_propagation();
                     match selecting_tool {
                         TableTool::Selector => match focused_object_id {
-                            Some(object_id) => Msg::BindObjectToTableGrid(object_id),
+                            Some(object_id) => Msg::BindObjectToTableGridToTransport(object_id),
                             None => Msg::NoOp,
                         },
                         TableTool::Measure(_) => {

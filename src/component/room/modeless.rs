@@ -279,15 +279,17 @@ fn object_tablemask(tablemask: &Tablemask, tablemask_id: u128) -> Html<Msg> {
                 vec![if tablemask.size_is_binded() {
                     btn::transparent(
                         Attributes::new().class("text-color-light"),
-                        Events::new()
-                            .on_click(move |_| Msg::SetTablemaskSizeIsBinded(tablemask_id, false)),
+                        Events::new().on_click(move |_| {
+                            Msg::SetTablemaskSizeIsBindedToTransport(tablemask_id, false)
+                        }),
                         vec![awesome::i("fa-link")],
                     )
                 } else {
                     btn::transparent(
                         Attributes::new().class("text-color-gray"),
-                        Events::new()
-                            .on_click(move |_| Msg::SetTablemaskSizeIsBinded(tablemask_id, true)),
+                        Events::new().on_click(move |_| {
+                            Msg::SetTablemaskSizeIsBindedToTransport(tablemask_id, true)
+                        }),
                         vec![awesome::i("fa-link")],
                     )
                 }],
