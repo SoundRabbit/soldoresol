@@ -1776,11 +1776,9 @@ fn render_side_menu() -> Html<Msg> {
                 vec![awesome::i("fa-comments"), Html::text("チャット")],
             ),
             btn::light(
-                Attributes::new()
-                    .class("pure-button-sidemenu")
-                    .title("画像データや音楽データなどの管理"),
+                Attributes::new().class("pure-button-sidemenu"),
                 Events::new().on_click(|_| Msg::OpenModal(Modal::Resource)),
-                vec![awesome::i("fa-folder"), Html::text("リソース")],
+                vec![awesome::i("fa-folder"), Html::text("画像")],
             ),
         ],
     )
