@@ -191,32 +191,39 @@ fn object_character(character: &Character, character_id: u128, resource: &Resour
                                 Html::div(
                                     Attributes::new().class("container-a"),
                                     Events::new(),
-                                    vec![Html::div(
-                                        Attributes::new().class("keyvalue"),
-                                        Events::new(),
-                                        vec![
-                                            Html::span(
-                                                Attributes::new(),
-                                                Events::new(),
-                                                vec![Html::text("HP")],
-                                            ),
-                                            Html::input(
-                                                Attributes::new().value("").type_("number"),
-                                                Events::new(),
-                                                vec![],
-                                            ),
-                                            Html::span(
-                                                Attributes::new(),
-                                                Events::new(),
-                                                vec![Html::text("MP")],
-                                            ),
-                                            Html::input(
-                                                Attributes::new().value("").type_("number"),
-                                                Events::new(),
-                                                vec![],
-                                            ),
-                                        ],
-                                    )],
+                                    vec![
+                                        Html::div(
+                                            Attributes::new(),
+                                            Events::new(),
+                                            vec![Html::text("基本情報")],
+                                        ),
+                                        Html::div(
+                                            Attributes::new().class("keyvalue"),
+                                            Events::new(),
+                                            vec![
+                                                Html::span(
+                                                    Attributes::new(),
+                                                    Events::new(),
+                                                    vec![Html::text("HP")],
+                                                ),
+                                                Html::input(
+                                                    Attributes::new().value("").type_("number"),
+                                                    Events::new(),
+                                                    vec![],
+                                                ),
+                                                Html::span(
+                                                    Attributes::new(),
+                                                    Events::new(),
+                                                    vec![Html::text("MP")],
+                                                ),
+                                                Html::input(
+                                                    Attributes::new().value("").type_("number"),
+                                                    Events::new(),
+                                                    vec![],
+                                                ),
+                                            ],
+                                        ),
+                                    ],
                                 ),
                             ],
                         ),
