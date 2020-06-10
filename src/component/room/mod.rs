@@ -247,8 +247,10 @@ pub enum Msg {
     OpenContextMenu([f64; 2], [f64; 2]),
     AddChracaterWithMouseCoord([f64; 2]),
     AddTablemaskWithMouseCoord([f64; 2]),
+    CloneObjectWithObjectIdToTransport(u128),
     CloneObjectWithObjectId(u128),
-    RemoveObjectWithObjectId(u128, bool),
+    RemoveObjectWithObjectIdToTransport(u128),
+    RemoveObjectWithObjectId(u128),
 
     // テーブル操作の制御
     SetCameraRotationWithMouseCoord([f64; 2]),
@@ -261,7 +263,8 @@ pub enum Msg {
     EraceLineWithMouseCoord([f64; 2]),
     SetMeasureStartPointAndEndPointWithMouseCoord([f64; 2], [f64; 2]),
     SetObjectPositionWithMouseCoord(u128, [f64; 2]),
-    BindObjectToTableGrid(u128),
+    BindObjectToTableGridToTransport(bool),
+    BindObjectToTableGrid(bool),
     SetIs2dMode(bool),
 
     // モードレス
@@ -284,19 +287,27 @@ pub enum Msg {
     SetPersonalDataWithIconImage(u128),
 
     // Worldに対する操作
-    SetCharacterImage(u128, u128, bool),
-    SetCharacterSize(u128, Option<f64>, Option<f64>, bool),
-    SetCharacterName(u128, String, bool),
+    SetCharacterImageToTransport(u128, u128),
+    SetCharacterImage(u128, u128),
+    SetCharacterSizeToTransport(u128, Option<f64>, Option<f64>),
+    SetCharacterSize(u128, Option<f64>, Option<f64>),
+    SetCharacterNameToTransport(u128, String),
+    SetCharacterName(u128, String),
+    AddChracaterToTransport(Character),
     AddChracater(Character),
+    AddTablemaskToTransport(Tablemask),
     AddTablemask(Tablemask),
+    SetTablemaskSizeWithStyleToTransport(u128, [f64; 2], bool),
     SetTablemaskSizeWithStyle(u128, [f64; 2], bool),
+    SetTablemaskSizeIsBindedToTransport(u128, bool),
     SetTablemaskSizeIsBinded(u128, bool),
+    SetTablemaskColorToTransport(u128, Color),
     SetTablemaskColor(u128, Color),
 
     // チャット関係
     SetSelectingChatTabIdx(usize),
     InputChatMessage(String),
-    SendChatItem,
+    SendChatItemToTransport,
     InsertChatItem(usize, ChatItem),
     SetChatSender(usize),
     AddChatSender(ChatSender),
@@ -305,7 +316,8 @@ pub enum Msg {
     DequeueSpeechBubble,
 
     // リソース管理
-    LoadFromFileList(web_sys::FileList),
+    LoadFromFileListToTransport(web_sys::FileList),
+    LoadFromBlobsToTransport(HashMap<u128, Rc<web_sys::Blob>>),
     LoadFromBlobs(HashMap<u128, Rc<web_sys::Blob>>, bool),
     LoadReasource(u128, Data),
 
