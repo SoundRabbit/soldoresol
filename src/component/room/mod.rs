@@ -269,6 +269,8 @@ pub enum Msg {
     BindObjectToTableGridToTransport(u128),
     BindObjectToTableGrid(u128),
     SetIs2dMode(bool),
+    SetTableSizeToTransport([f64; 2]),
+    SetTableSize([f64; 2]),
 
     // モードレス
     OpenObjectModeless(u128),
@@ -883,6 +885,11 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 state.camera.set_z_axis_rotation(0.0);
             }
             state.is_2d_mode = is_2d_mode;
+            update(state, Msg::Render)
+        }
+        Msg::SetTableSizeToTransport(size) => update(state, Msg::SetTableSize(size)),
+        Msg::SetTableSize(size) => {
+            state.world.table_mut().set_size(size);
             update(state, Msg::Render)
         }
 

@@ -462,13 +462,25 @@ pub fn table_setting(table: &Table) -> Html<Msg> {
                             Html::span(Attributes::new(), Events::new(), vec![Html::text("幅")]),
                             Html::input(
                                 Attributes::new().type_("number").value(width.to_string()),
-                                Events::new(),
+                                Events::new().on_input(move |width| {
+                                    if let Ok(width) = width.parse::<f64>() {
+                                        Msg::SetTableSizeToTransport([width.floor(), height])
+                                    } else {
+                                        Msg::NoOp
+                                    }
+                                }),
                                 vec![],
                             ),
                             Html::span(Attributes::new(), Events::new(), vec![Html::text("高さ")]),
                             Html::input(
                                 Attributes::new().type_("number").value(height.to_string()),
-                                Events::new(),
+                                Events::new().on_input(move |height| {
+                                    if let Ok(height) = height.parse::<f64>() {
+                                        Msg::SetTableSizeToTransport([width, height.floor()])
+                                    } else {
+                                        Msg::NoOp
+                                    }
+                                }),
                                 vec![],
                             ),
                         ],
