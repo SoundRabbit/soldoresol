@@ -61,13 +61,13 @@ pub fn success<Msg>(
     )
 }
 
-pub fn dark<Msg>(
+pub fn light<Msg>(
     attributes: Attributes,
     events: Events<Msg>,
     children: Vec<Html<Msg>>,
 ) -> Html<Msg> {
     Html::button(
-        attributes.class("pure-button pure-button-dark"),
+        attributes.class("pure-button").class("pure-button-light"),
         events,
         children,
     )
@@ -81,13 +81,15 @@ pub fn selectable<Msg>(
 ) -> Html<Msg> {
     if is_selected {
         Html::button(
-            attributes.class("pure-button pure-button-primary"),
+            attributes.class("pure-button").class("pure-button-primary"),
             events,
             children,
         )
     } else {
         Html::button(
-            attributes.class("pure-button pure-button-secondary"),
+            attributes
+                .class("pure-button")
+                .class("pure-button-secondary"),
             events,
             children,
         )
@@ -100,14 +102,6 @@ pub fn toggle<Msg>(is_toggled: bool, attributes: Attributes, events: Events<Msg>
     } else {
         Html::span(attributes.class("toggle toggle-off"), events, vec![])
     }
-}
-
-pub fn allocate<Msg>(attributes: Attributes, events: Events<Msg>) -> Html<Msg> {
-    Html::button(
-        attributes.class("pure-button pure-button-light allocate fab fa-buromobelexperte"),
-        events,
-        vec![],
-    )
 }
 
 pub fn close<Msg>(attributes: Attributes, events: Events<Msg>) -> Html<Msg> {
@@ -159,13 +153,19 @@ pub fn tab<Msg>(
 ) -> Html<Msg> {
     if is_selected {
         Html::button(
-            attributes.class("pure-button pure-button-tab pure-button-primary"),
+            attributes
+                .class("pure-button")
+                .class("pure-button-tab")
+                .class("pure-button-primary"),
             events,
             vec![Html::text(name)],
         )
     } else {
         Html::button(
-            attributes.class("pure-button pure-button-tab pure-button-secondary"),
+            attributes
+                .class("pure-button")
+                .class("pure-button-tab")
+                .class("pure-button-secondary"),
             events,
             vec![Html::text(name)],
         )

@@ -1651,11 +1651,6 @@ fn render_header_menu(
                     Events::new(),
                     vec![
                         btn::primary(
-                            Attributes::new().title("画像データや音楽データなどの管理"),
-                            Events::new().on_click(|_| Msg::OpenModal(Modal::Resource)),
-                            vec![awesome::i("fa-layer-group"), Html::text(" リソース")],
-                        ),
-                        btn::primary(
                             Attributes::new().title("プレイヤー名やアイコンなどの管理"),
                             Events::new().on_click(|_| Msg::OpenModal(Modal::PersonalSetting)),
                             vec![awesome::i("fa-user-cog"), Html::text(" 個人設定")],
@@ -1672,7 +1667,6 @@ fn render_header_menu(
                 Attributes::new()
                     .class("grid-w-12")
                     .class("linear-h")
-                    .class("container-a")
                     .class("centering-v-i"),
                 Events::new(),
                 vec![
@@ -1775,20 +1769,20 @@ fn render_side_menu() -> Html<Msg> {
     Html::div(
         Attributes::new().class("panel linear-v"),
         Events::new(),
-        vec![btn::primary(
-            Attributes::new()
-                .class("linear-v")
-                .style("font-size", "0.8em"),
-            Events::new().on_click(|_| Msg::OpenChatModeless),
-            vec![
-                Html::span(
-                    Attributes::new().style("font-size", "2em"),
-                    Events::new(),
-                    vec![awesome::i("fa-comment")],
-                ),
-                Html::text("チャット"),
-            ],
-        )],
+        vec![
+            btn::light(
+                Attributes::new().class("pure-button-sidemenu"),
+                Events::new().on_click(|_| Msg::OpenChatModeless),
+                vec![awesome::i("fa-comments"), Html::text("チャット")],
+            ),
+            btn::light(
+                Attributes::new()
+                    .class("pure-button-sidemenu")
+                    .title("画像データや音楽データなどの管理"),
+                Events::new().on_click(|_| Msg::OpenModal(Modal::Resource)),
+                vec![awesome::i("fa-folder"), Html::text("リソース")],
+            ),
+        ],
     )
 }
 
