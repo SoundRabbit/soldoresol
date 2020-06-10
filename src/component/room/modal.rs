@@ -2,7 +2,7 @@ use super::{
     super::{btn, color_picker, icon, modal},
     CharacterSelecterType, ColorPickerType, Modal, Msg, PersonalData, SelectImageModal,
 };
-use crate::model::{Resource, World};
+use crate::model::{Resource, Table, World};
 use kagura::prelude::*;
 use std::collections::HashSet;
 use wasm_bindgen::JsCast;
@@ -408,6 +408,70 @@ pub fn character_selecter(
                             })
                             .flatten()
                             .collect(),
+                    )],
+                ),
+                modal::footer(Attributes::new(), Events::new(), vec![]),
+            ],
+        )],
+    )
+}
+
+pub fn table_setting(table: &Table) -> Html<Msg> {
+    let [width, height] = table.size();
+    let (width, height) = (*width, *height);
+
+    modal::container(
+        Attributes::new(),
+        Events::new(),
+        vec![modal::frame(
+            12,
+            Attributes::new(),
+            Events::new(),
+            vec![
+                modal::header(
+                    Attributes::new()
+                        .style("display", "grid")
+                        .style("grid-template-columns", "1fr max-content"),
+                    Events::new(),
+                    vec![
+                        Html::div(
+                            Attributes::new().class("text-label"),
+                            Events::new(),
+                            vec![Html::text("テーブル設定")],
+                        ),
+                        Html::div(
+                            Attributes::new().class("linear-h"),
+                            Events::new(),
+                            vec![btn::close(
+                                Attributes::new(),
+                                Events::new().on_click(move |_| Msg::CloseModal),
+                            )],
+                        ),
+                    ],
+                ),
+                modal::body(
+                    Attributes::new().class("scroll-v"),
+                    Events::new(),
+                    vec![Html::div(
+                        Attributes::new()
+                            .class("container-a")
+                            .class("keyvalue")
+                            .class("pure-form"),
+                        Events::new(),
+                        vec![
+                            Html::span(Attributes::new(), Events::new(), vec![Html::text("幅")]),
+                            Html::input(
+                                Attributes::new().type_("number").value(width.to_string()),
+                                Events::new(),
+                                vec![],
+                            ),
+                            Html::span(Attributes::new(), Events::new(), vec![Html::text("高さ")]),
+                            Html::input(
+                                Attributes::new().type_("number").value(height.to_string()),
+                                Events::new(),
+                                vec![],
+                            ),
+                        ],
                     )],
                 ),
                 modal::footer(Attributes::new(), Events::new(), vec![]),

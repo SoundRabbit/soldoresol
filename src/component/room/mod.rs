@@ -178,6 +178,7 @@ pub enum Modal {
     PersonalSetting,
     ColorPicker(ColorPickerType),
     CharacterSelecter(CharacterSelecterType),
+    TableSetting,
 }
 
 struct CmdQueue<M, S> {
@@ -1777,6 +1778,11 @@ fn render_side_menu() -> Html<Msg> {
             ),
             btn::light(
                 Attributes::new().class("pure-button-sidemenu"),
+                Events::new().on_click(|_| Msg::OpenModal(Modal::TableSetting)),
+                vec![awesome::i("fa-layer-group"), Html::text("テーブル設定")],
+            ),
+            btn::light(
+                Attributes::new().class("pure-button-sidemenu"),
                 Events::new().on_click(|_| Msg::OpenModal(Modal::Resource)),
                 vec![awesome::i("fa-folder"), Html::text("画像")],
             ),
@@ -2366,6 +2372,7 @@ fn render_modals(
             Modal::Resource => modal::resource(resource),
             Modal::SelectImage(modal_type) => modal::select_image(resource, modal_type),
             Modal::PersonalSetting => modal::personal_setting(personal_data, resource),
+            Modal::TableSetting => modal::table_setting(&world.table()),
             Modal::ColorPicker(color_picker_type) => modal::color_picker(color_picker_type.clone()),
             Modal::CharacterSelecter(character_selecter_type) => match character_selecter_type {
                 CharacterSelecterType::ChatSender => modal::character_selecter(
