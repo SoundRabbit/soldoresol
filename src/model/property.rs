@@ -73,6 +73,11 @@ impl Property {
         }
     }
 
+    pub fn with_name(mut self, name: impl Into<String>) -> Self {
+        self.name = name.into();
+        self
+    }
+
     pub fn get(&self, idx: usize) -> Option<&Self> {
         if let PropertyValue::Children(children) = &self.value {
             children.get(idx)
@@ -120,6 +125,12 @@ impl Property {
             }
         } else {
             self.get_mut(child_pos)
+        }
+    }
+
+    pub fn push(&mut self, prop: Property) {
+        if let PropertyValue::Children(children) = &mut self.value {
+            children.push(prop)
         }
     }
 

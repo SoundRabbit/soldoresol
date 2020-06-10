@@ -7,6 +7,7 @@ pub struct Character {
     image_id: Option<u128>,
     background_color: Color,
     name: String,
+    pub property: Property,
 }
 
 pub struct CharacterData {
@@ -14,16 +15,21 @@ pub struct CharacterData {
     pub position: [f64; 3],
     pub image_id: Option<u128>,
     pub name: String,
+    pub property: JsObject,
 }
 
 impl Character {
     pub fn new() -> Self {
+        let mut property = Property::new_as_parent();
+        property.push(Property::new_as_num().with_name("HP"));
+        property.push(Property::new_as_num().with_name("MP"));
         Self {
             size: [1.0, 0.0],
             position: [0.0, 0.0, 0.0],
             image_id: None,
             background_color: Color::from(0),
             name: "キャラクター".into(),
+            property,
         }
     }
 
@@ -91,6 +97,7 @@ impl Character {
             position: self.position.clone(),
             image_id: self.texture_id(),
             name: self.name.clone(),
+            property: self.property.as_object(),
         }
     }
 }
@@ -117,6 +124,7 @@ impl From<CharacterData> for Character {
             image_id: character_data.image_id,
             background_color: Color::from(0),
             name: character_data.name,
+            property: Property::from(character_data.property),
         }
     }
 }
@@ -130,7 +138,8 @@ impl CharacterData {
             size: array![self.size[0], self.size[1]],
             position: array![self.position[0], self.position[1], self.position[2]],
             image_id: image_id,
-            name: name
+            name: name,
+            property: &self.property
         }
     }
 }
@@ -163,11 +172,14 @@ impl From<JsObject> for CharacterData {
 
         let name = obj.get("name").unwrap().as_string().unwrap();
 
+        let property = obj.get("property").unwrap();
+
         Self {
             size,
             position,
             image_id,
             name,
+            property,
         }
     }
 }
