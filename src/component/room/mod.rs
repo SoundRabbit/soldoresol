@@ -664,7 +664,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             if state.world.table().is_bind_to_grid() {
                 character.bind_to_grid();
             }
-            update(state, Msg::AddChracater(character))
+            update(state, Msg::AddChracaterToTransport(character))
         }
         Msg::AddTablemaskWithMouseCoord(mouse_coord) => {
             let position = get_table_position(&state, &mouse_coord, state.pixel_ratio);
@@ -674,22 +674,12 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             if state.world.table().is_bind_to_grid() {
                 tablemask.bind_to_grid();
             }
-            update(state, Msg::AddTablemask(tablemask))
+            update(state, Msg::AddTablemaskToTransport(tablemask))
         }
         Msg::CloneObjectWithObjectIdToTransport(object_id) => {
-            if let Some(character) = state.world.character(&object_id) {
-                let mut character = character.clone();
-                let p = character.position().clone();
-                character.set_position([p[0] + 1.0, p[1] + 1.0, p[2]]);
-                update(state, Msg::AddChracaterToTransport(character))
-            } else if let Some(tablemask) = state.world.tablemask(&object_id) {
-                let mut tablemask = tablemask.clone();
-                let p = tablemask.position().clone();
-                tablemask.set_position([p[0] + 1.0, p[1] + 1.0, p[2]]);
-                update(state, Msg::AddTablemaskToTransport(tablemask))
-            } else {
-                state.cmd_queue.dequeue()
-            }
+            let room = &state.room;
+            room.send(skyway::Msg::CloneObject(object_id));
+            update(state, Msg::CloneObjectWithObjectId(object_id))
         }
         Msg::CloneObjectWithObjectId(object_id) => {
             if let Some(character) = state.world.character(&object_id) {

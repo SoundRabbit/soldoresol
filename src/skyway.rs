@@ -248,6 +248,22 @@ impl From<JsObject> for Msg {
                         args.get(1).as_string().unwrap(),
                     )
                 }
+                "SetTablemaskSizeWithStyle" => {
+                    let args = payload.dyn_ref::<Array>().unwrap().to_vec();
+                    Self::SetTablemaskSizeWithStyle(
+                        args[0].as_string().unwrap().parse().unwrap(),
+                        [args[1].as_f64().unwrap(), args[2].as_f64().unwrap()],
+                        args[3].as_bool().unwrap(),
+                    )
+                }
+                "SetTablemaskColor" => {
+                    let args = Array::from(&payload);
+                    Self::SetTablemaskColor(
+                        args.get(0).as_string().unwrap().parse().unwrap(),
+                        args.get(1).as_f64().unwrap() as u32,
+                    )
+                }
+                "CloneObject" => Self::CloneObject(payload.as_string().unwrap().parse().unwrap()),
                 "BindObjectToTableGrid" => {
                     Self::BindObjectToTableGrid(payload.as_string().unwrap().parse().unwrap())
                 }
