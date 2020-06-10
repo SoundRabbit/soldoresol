@@ -1442,7 +1442,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             }
             skyway::Msg::SetCharacterSize(character_id, size) => update(
                 state,
-                Msg::SetCharacterSize(character_id, Some(size[0]), Some(size[0])),
+                Msg::SetCharacterSize(character_id, Some(size[0]), Some(size[1])),
             ),
             skyway::Msg::SetCharacterName(character_id, name) => {
                 update(state, Msg::SetCharacterName(character_id, name))
