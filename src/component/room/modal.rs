@@ -10,20 +10,7 @@ use wasm_bindgen::JsCast;
 pub fn resource(resource: &Resource) -> Html<Msg> {
     modal::container(
         Attributes::new(),
-        Events::new()
-            .on("dragover", |e| {
-                e.prevent_default();
-                Msg::NoOp
-            })
-            .on("drop", |e| {
-                e.prevent_default();
-                let e = e.dyn_into::<web_sys::DragEvent>().unwrap();
-                e.data_transfer()
-                    .unwrap()
-                    .files()
-                    .map(|files| Msg::LoadFromFileListToTransport(files))
-                    .unwrap_or(Msg::NoOp)
-            }),
+        Events::new(),
         vec![modal::frame(
             12,
             Attributes::new(),
@@ -79,20 +66,7 @@ pub fn resource(resource: &Resource) -> Html<Msg> {
 pub fn select_image(resource: &Resource, modal_type: &SelectImageModal) -> Html<Msg> {
     modal::container(
         Attributes::new(),
-        Events::new()
-            .on("dragover", |e| {
-                e.prevent_default();
-                Msg::NoOp
-            })
-            .on("drop", |e| {
-                e.prevent_default();
-                let e = e.dyn_into::<web_sys::DragEvent>().unwrap();
-                e.data_transfer()
-                    .unwrap()
-                    .files()
-                    .map(|files| Msg::LoadFromFileListToTransport(files))
-                    .unwrap_or(Msg::NoOp)
-            }),
+        Events::new(),
         vec![modal::frame(
             12,
             Attributes::new(),

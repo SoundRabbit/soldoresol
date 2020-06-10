@@ -1599,11 +1599,21 @@ fn render(state: &State) -> Html<Msg> {
             .style("display", "grid")
             .style("grid-template-rows", "max-content 1fr")
             .style("grid-template-columns", "max-content 1fr"),
-        Events::new().on("drop", |e| {
-            e.prevent_default();
-            e.stop_propagation();
-            Msg::NoOp
-        }),
+        Events::new()
+            .on("dragover", |e| {
+                e.prevent_default();
+                Msg::NoOp
+            })
+            .on("drop", |e| {
+                e.prevent_default();
+                e.stop_propagation();
+                let e = e.dyn_into::<web_sys::DragEvent>().unwrap();
+                e.data_transfer()
+                    .unwrap()
+                    .files()
+                    .map(|files| Msg::LoadFromFileListToTransport(files))
+                    .unwrap_or(Msg::NoOp)
+            }),
         vec![
             render_header_menu(
                 &state.room.id,
