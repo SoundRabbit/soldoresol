@@ -558,16 +558,33 @@ pub fn chat(
                                     .style("resize", "none")
                                     .class("text-wrap")
                                     .value(&chat_data.inputing_message),
-                                Events::new().on_input(|m| Msg::InputChatMessage(m)),
+                                Events::new()
+                                    .on_input(|m| Msg::InputChatMessage(m))
+                                    .on_keydown(|e| {
+                                        if e.key_code() == 13
+                                            && !e.shift_key()
+                                            && !e.ctrl_key()
+                                            && !e.alt_key()
+                                        {
+                                            e.prevent_default();
+                                            Msg::SendChatItemToTransport
+                                        } else {
+                                            Msg::NoOp
+                                        }
+                                    }),
                                 vec![],
                             ),
                             Html::div(
                                 Attributes::new().class("justify-r"),
                                 Events::new(),
-                                vec![btn::info(
-                                    Attributes::new(),
-                                    Events::new().on_click(|_| Msg::SendChatItemToTransport),
-                                    vec![awesome::i("fa-paper-plane"), Html::text(" 送信")],
+                                vec![Html::div(
+                                    Attributes::new().class("linear-h"),
+                                    Events::new(),
+                                    vec![btn::info(
+                                        Attributes::new(),
+                                        Events::new().on_click(|_| Msg::SendChatItemToTransport),
+                                        vec![awesome::i("fa-paper-plane"), Html::text(" 送信")],
+                                    )],
                                 )],
                             ),
                         ],
