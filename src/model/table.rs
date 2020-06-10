@@ -85,6 +85,10 @@ impl Table {
         }
     }
 
+    pub fn image_texture_id(&self) -> Option<&u128> {
+        self.image_texture_id.as_ref()
+    }
+
     pub fn rendered(&mut self) {
         self.clear_measure();
         self.drawing_texture_is_changed = false;

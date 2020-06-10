@@ -1,7 +1,7 @@
 use super::super::program::{TableGridProgram, TableTextureProgram};
 use super::super::webgl::{WebGlF32Vbo, WebGlI16Ibo, WebGlRenderingContext};
 use super::super::ModelMatrix;
-use crate::model::{Camera, Color, Table};
+use crate::model::{Camera, Color, Resource, Table};
 use ndarray::Array2;
 
 pub struct TableRenderer {
@@ -115,6 +115,8 @@ impl TableRenderer {
         _camera: &Camera,
         vp_matrix: &Array2<f64>,
         table: &mut Table,
+        textures: &mut super::TextureCollection,
+        resource: &Resource,
     ) {
         let [height, width] = table.size();
         let (height, width) = (*height, *width);
@@ -173,6 +175,33 @@ impl TableRenderer {
             )
             .unwrap();
         }
+
+        gl.active_texture(web_sys::WebGlRenderingContext::TEXTURE2);
+        let mut texture_2_is_active = false;
+        if let Some(texture_id) = table.image_texture_id() {
+            if let (None, Some(texture_data)) =
+                (textures.get(texture_id), resource.get_as_image(texture_id))
+            {
+                textures.insert(gl, *texture_id, &texture_data);
+            }
+            if let Some(texture) = textures.get(&texture_id) {
+                gl.bind_texture(web_sys::WebGlRenderingContext::TEXTURE_2D, Some(&texture));
+                texture_2_is_active = true;
+            }
+        }
+        if texture_2_is_active {
+            gl.uniform1i(Some(&self.table_texture_program.u_texture_2_location), 2);
+            gl.uniform1i(
+                Some(&self.table_texture_program.u_flag_texture_2_location),
+                1,
+            );
+        } else {
+            gl.uniform1i(
+                Some(&self.table_texture_program.u_flag_texture_2_location),
+                0,
+            );
+        }
+
         gl.active_texture(web_sys::WebGlRenderingContext::TEXTURE0);
 
         let model_matrix: Array2<f64> = ModelMatrix::new().with_scale(&[height, width, 1.0]).into();

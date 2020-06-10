@@ -72,7 +72,14 @@ impl ViewRenderer {
         );
         gl.depth_func(web_sys::WebGlRenderingContext::ALWAYS);
         if let Some(table) = world.table_mut() {
-            self.table_renderer.render(gl, camera, &vp_matrix, table);
+            self.table_renderer.render(
+                gl,
+                camera,
+                &vp_matrix,
+                table,
+                &mut self.img_texture_buffer,
+                resource,
+            );
         }
         self.tablemask_collection_renderer
             .render(gl, camera, &vp_matrix, world.tablemasks());
