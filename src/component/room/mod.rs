@@ -1186,16 +1186,20 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             update(state, Msg::Render)
         }
         Msg::BindObjectToTableGridToTransport(object_id) => {
-            let room = &state.room;
-            room.send(skyway::Msg::BindObjectToTableGrid(object_id));
+            if state.world.table().is_bind_to_grid() {
+                let room = &state.room;
+                room.send(skyway::Msg::BindObjectToTableGrid(object_id));
+            }
             update(state, Msg::BindObjectToTableGrid(object_id))
         }
         Msg::BindObjectToTableGrid(object_id) => {
-            if let Some(character) = state.world.character_mut(&object_id) {
-                character.bind_to_grid();
-            }
-            if let Some(tablemask) = state.world.tablemask_mut(&object_id) {
-                tablemask.bind_to_grid();
+            if state.world.table().is_bind_to_grid() {
+                if let Some(character) = state.world.character_mut(&object_id) {
+                    character.bind_to_grid();
+                }
+                if let Some(tablemask) = state.world.tablemask_mut(&object_id) {
+                    tablemask.bind_to_grid();
+                }
             }
             update(state, Msg::Render)
         }
