@@ -1405,6 +1405,10 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             skyway::Msg::SetResource(resource_data) => {
                 update(state, Msg::LoadFromBlobs(resource_data.into(), false))
             }
+            skyway::Msg::SetChat(chat) => {
+                state.chat_data.tabs = Chat::from(chat);
+                Cmd::none()
+            }
             skyway::Msg::SetConnection(peers) => {
                 state.peers = peers;
                 state.cmd_queue.dequeue()

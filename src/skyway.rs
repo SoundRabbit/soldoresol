@@ -89,6 +89,7 @@ pub enum Msg {
     SetIsBindToGrid(bool),
     SetWorld(WorldData),
     SetResource(ResourceData),
+    SetChat(JsObject),
     SetConnection(BTreeSet<String>),
     RemoveObject(u128),
     InsertChatItem(u32, JsObject),
@@ -108,6 +109,7 @@ impl Msg {
             Self::SetIsBindToGrid(..) => "SetIsBindToGrid",
             Self::SetWorld(..) => "SetWorld",
             Self::SetResource(..) => "SetResource",
+            Self::SetChat(..) => "SetChat",
             Self::SetConnection(..) => "SetConnection",
             Self::RemoveObject(..) => "RemoveObject",
             Self::InsertChatItem(..) => "InsertChatItem",
@@ -133,6 +135,7 @@ impl Into<JsObject> for Msg {
             Self::SetCharacterName(c_id, name) => array![c_id.to_string(), name].into(),
             Self::SetIsBindToGrid(f) => JsValue::from(f),
             Self::SetWorld(world_data) => world_data.as_object().into(),
+            Self::SetChat(chat) => chat.into(),
             Self::SetResource(resource_data) => resource_data.as_object().into(),
             Self::SetConnection(connection) => {
                 let payload = array![];
@@ -219,6 +222,7 @@ impl From<JsObject> for Msg {
                 "SetIsBindToGrid" => Self::SetIsBindToGrid(payload.as_bool().unwrap()),
                 "SetWorld" => Self::SetWorld(WorldData::from(payload)),
                 "SetResource" => Self::SetResource(ResourceData::from(payload)),
+                "SetChat" => Self::SetChat(payload),
                 "SetConnection" => {
                     let args = payload.dyn_ref::<Array>().unwrap().to_vec();
                     let peer_ids = args
