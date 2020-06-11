@@ -4,8 +4,22 @@ use kagura::prelude::*;
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 
-pub fn new(is_dev_mode: bool) -> Component<Msg, State, Sub> {
-    Component::new(init(is_dev_mode), update, render)
+pub fn new() -> Component<Msg, State, Sub> {
+    let is_dev_mode = web_sys::window().unwrap().location().hostname().unwrap() == "localhost";
+
+    let init = move || {
+        let state = State { config: None };
+        let config_url = if is_dev_mode {
+            "/config.dev.toml"
+        } else {
+            "./config.toml"
+        };
+        let task = Cmd::task(task::http::get(config_url, task::http::Props::new(), |r| {
+            Msg::SetConfig(r)
+        }));
+        (state, task)
+    };
+    Component::new(init, update, render)
 }
 
 pub struct State {
@@ -17,21 +31,6 @@ pub enum Msg {
 }
 
 pub enum Sub {}
-
-fn init(is_dev_mode: bool) -> impl FnOnce() -> (State, Cmd<Msg, Sub>) {
-    move || {
-        let state = State { config: None };
-        let config_url = if is_dev_mode {
-            "/config.dev.toml"
-        } else {
-            "./config.toml"
-        };
-        let task = Cmd::task(task::http::get(config_url, task::http::Props::new(), |r| {
-            Msg::SetConfig(r)
-        }));
-        (state, task)
-    }
-}
 
 fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
     match msg {
