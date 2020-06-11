@@ -92,12 +92,12 @@ impl World {
     }
 
     pub fn as_data(&self) -> WorldData {
-        let mut character_data = JsObject::new();
+        let character_data = object! {};
         for (id, character) in self.characters() {
             character_data.set(&id.to_string(), &character.as_data());
         }
 
-        let mut tablemask_data = JsObject::new();
+        let tablemask_data = object! {};
         for (id, tablemask) in self.tablemasks() {
             tablemask_data.set(&id.to_string(), &tablemask.as_data());
         }
@@ -144,7 +144,7 @@ impl Into<World> for WorldData {
         }
 
         let mut tablemasks = HashMap::new();
-        for t in Object::entries(&obj.get("tablemask_data").unwrap()).to_vec() {
+        for t in Object::entries(&obj.get("tablemask").unwrap()).to_vec() {
             let t = t.dyn_into::<Array>().unwrap();
             let id = t.get(0).as_string().unwrap().parse().unwrap();
             let data: Tablemask =
