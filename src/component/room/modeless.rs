@@ -877,7 +877,12 @@ fn header(modeless_id: u128, header: Html<Msg>) -> Html<Msg> {
                 Events::new(),
                 vec![btn::close(
                     Attributes::new(),
-                    Events::new().on_click(move |_| Msg::CloseModeless(modeless_id)),
+                    Events::new()
+                        .on_click(move |_| Msg::CloseModeless(modeless_id))
+                        .on_mousedown(|e| {
+                            e.stop_propagation();
+                            Msg::NoOp
+                        }),
                 )],
             ),
         ],
