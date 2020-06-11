@@ -306,7 +306,7 @@ fn character_property(character_id: u128, property: &Property) -> Vec<Html<Msg>>
                 vec![],
             ),
             Html::input(
-                Attributes::new().value(s).type_("text"),
+                Attributes::new().value(s),
                 Events::new().on_input(move |s| {
                     Msg::SetCharacterPropertyToTransport(
                         character_id,
@@ -353,7 +353,8 @@ fn character_property(character_id: u128, property: &Property) -> Vec<Html<Msg>>
 fn btn_remove_character_property(character_id: u128, property_id: u128) -> Html<Msg> {
     btn::danger(
         Attributes::new(),
-        Events::new(),
+        Events::new()
+            .on_click(move |_| Msg::RemoveCharacterPropertyToTransport(character_id, property_id)),
         vec![awesome::i("fa-times")],
     )
 }

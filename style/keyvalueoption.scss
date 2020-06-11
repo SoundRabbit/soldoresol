@@ -6,6 +6,10 @@
     row-gap: .35em;
     align-items: center;
 
+    &-align-start {
+        align-items: start;
+    }
+
     &>&-banner {
         grid-column: span 3;
     }

@@ -115,6 +115,25 @@ impl Property {
         }
     }
 
+    pub fn remove(&mut self, id: u128) {
+        if let PropertyValue::Children(children) = &mut self.value {
+            let remove_position = children.iter().position(|x| {
+                web_sys::console::log_2(
+                    &JsValue::from(x.id.to_string()),
+                    &JsValue::from(id.to_string()),
+                );
+                *x.id() == id
+            });
+            if let Some(remove_position) = remove_position {
+                children.remove(remove_position);
+            } else {
+                for i in 0..children.len() {
+                    children[i].remove(id);
+                }
+            }
+        }
+    }
+
     pub fn id(&self) -> &u128 {
         &self.id
     }

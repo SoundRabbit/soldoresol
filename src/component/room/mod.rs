@@ -316,6 +316,8 @@ pub enum Msg {
     SetCharacterProperty(u128, u128, PropertyValue),
     AddChildToCharacterPropertyToTransport(u128, u128, Property),
     AddChildToCharacterProperty(u128, u128, Property),
+    RemoveCharacterPropertyToTransport(u128, u128),
+    RemoveCharacterProperty(u128, u128),
 
     // チャット関係
     SetSelectingChatTabIdx(usize),
@@ -1257,6 +1259,16 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 .and_then(|c| c.property.get_mut(&property_id))
             {
                 property.push(child_property);
+            }
+            state.cmd_queue.dequeue()
+        }
+        Msg::RemoveCharacterPropertyToTransport(character_id, property_id) => update(
+            state,
+            Msg::RemoveCharacterProperty(character_id, property_id),
+        ),
+        Msg::RemoveCharacterProperty(character_id, property_id) => {
+            if let Some(character) = state.world.character_mut(&character_id) {
+                character.property.remove(property_id);
             }
             state.cmd_queue.dequeue()
         }
