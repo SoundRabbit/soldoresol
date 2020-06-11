@@ -143,7 +143,7 @@ impl ModelessState {
         Self {
             z_index: 0,
             grubbed: None,
-            loc_a: [16, 2],
+            loc_a: [11, 2],
             loc_b: [24, 9],
         }
     }
@@ -1618,7 +1618,6 @@ fn render(state: &State) -> Html<Msg> {
             render_header_menu(
                 &state.room.id,
                 &state.table_state.selecting_tool,
-                state.world.table().is_bind_to_grid(),
                 state.is_2d_mode,
                 state.is_low_loading_mode,
             ),
@@ -1640,7 +1639,6 @@ fn render(state: &State) -> Html<Msg> {
 fn render_header_menu(
     room_id: &String,
     selecting_tool: &TableTool,
-    is_bind_to_grid: bool,
     is_2d_mode: bool,
     is_low_loading_mode: bool,
 ) -> Html<Msg> {

@@ -4,7 +4,7 @@ use super::{
     PersonalData, SelectImageModal,
 };
 use crate::{
-    model::{Character, Resource, Tablemask, World},
+    model::{Character, Property, PropertyValue, Resource, Tablemask, World},
     random_id,
 };
 use kagura::prelude::*;
@@ -189,41 +189,24 @@ fn object_character(character: &Character, character_id: u128, resource: &Resour
                                     ],
                                 ),
                                 Html::div(
-                                    Attributes::new().class("container-a"),
+                                    Attributes::new()
+                                        .class("container-a")
+                                        .class("keyvalueoption"),
                                     Events::new(),
                                     vec![
-                                        Html::div(
-                                            Attributes::new(),
-                                            Events::new(),
-                                            vec![Html::text("基本情報")],
-                                        ),
-                                        Html::div(
-                                            Attributes::new().class("keyvalue"),
-                                            Events::new(),
-                                            vec![
-                                                Html::span(
-                                                    Attributes::new(),
-                                                    Events::new(),
-                                                    vec![Html::text("HP")],
-                                                ),
-                                                Html::input(
-                                                    Attributes::new().value("").type_("number"),
-                                                    Events::new(),
-                                                    vec![],
-                                                ),
-                                                Html::span(
-                                                    Attributes::new(),
-                                                    Events::new(),
-                                                    vec![Html::text("MP")],
-                                                ),
-                                                Html::input(
-                                                    Attributes::new().value("").type_("number"),
-                                                    Events::new(),
-                                                    vec![],
-                                                ),
-                                            ],
-                                        ),
-                                    ],
+                                        character_property(&character.property),
+                                        vec![
+                                            btn::secondary(
+                                                Attributes::new().class("keyvalueoption-banner-2"),
+                                                Events::new(),
+                                                vec![awesome::i("fa-plus")],
+                                            ),
+                                            Html::span(Attributes::new(), Events::new(), vec![]),
+                                        ],
+                                    ]
+                                    .into_iter()
+                                    .flatten()
+                                    .collect(),
                                 ),
                             ],
                         ),
@@ -232,6 +215,100 @@ fn object_character(character: &Character, character_id: u128, resource: &Resour
             ],
         )],
     )
+}
+
+fn character_property(property: &Property) -> Vec<Html<Msg>> {
+    match property.value() {
+        PropertyValue::None => vec![
+            Html::input(
+                Attributes::new()
+                    .class("keyvalueoption-banner-2")
+                    .value(property.name())
+                    .type_("text"),
+                Events::new(),
+                vec![],
+            ),
+            btn::transparent(
+                Attributes::new(),
+                Events::new(),
+                vec![awesome::i("fa-ellipsis-v")],
+            ),
+        ],
+        PropertyValue::Num(n) => vec![
+            Html::input(
+                Attributes::new().value(property.name()).type_("text"),
+                Events::new(),
+                vec![],
+            ),
+            Html::input(
+                Attributes::new().value(n.to_string()).type_("number"),
+                Events::new(),
+                vec![],
+            ),
+            btn::transparent(
+                Attributes::new(),
+                Events::new(),
+                vec![awesome::i("fa-ellipsis-v")],
+            ),
+        ],
+        PropertyValue::Str(s) => vec![
+            Html::input(
+                Attributes::new().value(property.name()).type_("text"),
+                Events::new(),
+                vec![],
+            ),
+            Html::input(
+                Attributes::new().value(s).type_("text"),
+                Events::new(),
+                vec![],
+            ),
+            btn::transparent(
+                Attributes::new(),
+                Events::new(),
+                vec![awesome::i("fa-ellipsis-v")],
+            ),
+        ],
+        PropertyValue::Children(children) => vec![
+            Html::input(
+                Attributes::new()
+                    .class("keyvalueoption-banner-2")
+                    .value(property.name())
+                    .type_("text"),
+                Events::new(),
+                vec![],
+            ),
+            btn::transparent(
+                Attributes::new(),
+                Events::new(),
+                vec![awesome::i("fa-ellipsis-v")],
+            ),
+            Html::div(
+                Attributes::new()
+                    .class("container-indent")
+                    .class("keyvalueoption")
+                    .class("keyvalueoption-banner"),
+                Events::new(),
+                vec![
+                    children
+                        .iter()
+                        .map(|property| character_property(property))
+                        .flatten()
+                        .collect(),
+                    vec![
+                        btn::secondary(
+                            Attributes::new().class("keyvalueoption-banner-2"),
+                            Events::new(),
+                            vec![awesome::i("fa-plus")],
+                        ),
+                        Html::span(Attributes::new(), Events::new(), vec![]),
+                    ],
+                ]
+                .into_iter()
+                .flatten()
+                .collect(),
+            ),
+        ],
+    }
 }
 
 fn object_tablemask(tablemask: &Tablemask, tablemask_id: u128) -> Html<Msg> {

@@ -13,4 +13,8 @@
     &-align-start {
         align-items: start;
     }
+
+    &>&-banner {
+        grid-column: span 2;
+    }
 }

@@ -5,4 +5,12 @@
     column-gap: .25em;
     row-gap: .35em;
     align-items: center;
+
+    &>&-banner {
+        grid-column: span 3;
+    }
+
+    &>&-banner-2 {
+        grid-column: span 2;
+    }
 }

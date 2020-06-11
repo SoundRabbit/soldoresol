@@ -20,7 +20,7 @@ pub struct CharacterData {
 
 impl Character {
     pub fn new() -> Self {
-        let mut property = Property::new_as_parent();
+        let mut property = Property::new_as_parent().with_name("基本情報");
         property.push(Property::new_as_num().with_name("HP"));
         property.push(Property::new_as_num().with_name("MP"));
         Self {

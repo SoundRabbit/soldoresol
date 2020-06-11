@@ -1,4 +1,4 @@
-use crate::JsObject;
+use crate::{random_id, JsObject};
 use js_sys::Array;
 use wasm_bindgen::{prelude::*, JsCast};
 
@@ -10,6 +10,7 @@ pub enum PropertyValue {
 }
 
 pub struct Property {
+    id: u128,
     name: String,
     value: PropertyValue,
 }
@@ -47,6 +48,7 @@ impl PropertyValue {
 impl Property {
     pub fn new_as_none() -> Self {
         Self {
+            id: random_id::u128val(),
             name: "".into(),
             value: PropertyValue::None,
         }
@@ -54,6 +56,7 @@ impl Property {
 
     pub fn new_as_num() -> Self {
         Self {
+            id: random_id::u128val(),
             name: "".into(),
             value: PropertyValue::Num(0.0),
         }
@@ -61,6 +64,7 @@ impl Property {
 
     pub fn new_as_str() -> Self {
         Self {
+            id: random_id::u128val(),
             name: "".into(),
             value: PropertyValue::Str("".into()),
         }
@@ -68,6 +72,7 @@ impl Property {
 
     pub fn new_as_parent() -> Self {
         Self {
+            id: random_id::u128val(),
             name: "".into(),
             value: PropertyValue::Children(vec![]),
         }
@@ -78,64 +83,43 @@ impl Property {
         self
     }
 
-    pub fn get(&self, idx: usize) -> Option<&Self> {
-        if let PropertyValue::Children(children) = &self.value {
-            children.get(idx)
-        } else {
-            None
-        }
-    }
-
-    pub fn get_mut(&mut self, idx: usize) -> Option<&mut Self> {
-        if let PropertyValue::Children(children) = &mut self.value {
-            children.get_mut(idx)
-        } else {
-            None
-        }
-    }
-
-    pub fn get_with_address(&self, address: &Vec<usize>) -> Option<&Self> {
-        self.impl_get_with_address(address, 0)
-    }
-
-    fn impl_get_with_address(&self, address: &Vec<usize>, idx: usize) -> Option<&Self> {
-        let child_pos = address[idx];
-        if idx < address.len() - 1 {
-            if let Some(child) = self.get(child_pos) {
-                child.impl_get_with_address(address, idx + 1)
-            } else {
-                None
-            }
-        } else {
-            self.get(child_pos)
-        }
-    }
-
-    pub fn get_mut_with_address(&mut self, address: &Vec<usize>) -> Option<&mut Self> {
-        self.impl_get_mut_with_address(address, 0)
-    }
-
-    fn impl_get_mut_with_address(&mut self, address: &Vec<usize>, idx: usize) -> Option<&mut Self> {
-        let child_pos = address[idx];
-        if idx < address.len() - 1 {
-            if let Some(child) = self.get_mut(child_pos) {
-                child.impl_get_mut_with_address(address, idx + 1)
-            } else {
-                None
-            }
-        } else {
-            self.get_mut(child_pos)
-        }
-    }
-
     pub fn push(&mut self, prop: Property) {
         if let PropertyValue::Children(children) = &mut self.value {
             children.push(prop)
         }
     }
 
+    pub fn get(&self, id: u128) -> Option<&Self> {
+        if self.id == id {
+            Some(self)
+        } else if let PropertyValue::Children(children) = &self.value {
+            children.iter().find_map(|x| x.get(id))
+        } else {
+            None
+        }
+    }
+
+    pub fn get_mut(&mut self, id: u128) -> Option<&mut Self> {
+        if self.id == id {
+            Some(self)
+        } else if let PropertyValue::Children(children) = &mut self.value {
+            children.iter_mut().find_map(|x| x.get_mut(id))
+        } else {
+            None
+        }
+    }
+
+    pub fn name(&self) -> &String {
+        &self.name
+    }
+
+    pub fn value(&self) -> &PropertyValue {
+        &self.value
+    }
+
     pub fn as_object(&self) -> JsObject {
         object! {
+            id: self.id.to_string(),
             name: &self.name,
             value: self.value.as_object()
         }
@@ -183,6 +167,11 @@ impl From<JsObject> for PropertyValue {
 
 impl From<JsObject> for Property {
     fn from(object: JsObject) -> Self {
+        let id = object
+            .get("id")
+            .and_then(|x| x.as_string())
+            .and_then(|x| x.parse().ok())
+            .unwrap_or(0);
         let name = object
             .get("name")
             .and_then(|x| x.as_string())
@@ -191,6 +180,6 @@ impl From<JsObject> for Property {
             .get("value")
             .map(|x| PropertyValue::from(x))
             .unwrap_or(PropertyValue::None);
-        Self { name, value }
+        Self { id, name, value }
     }
 }
