@@ -1942,6 +1942,32 @@ fn table_tool_option(selecting_tool: &TableTool) -> Vec<Html<Msg>> {
                         ),
                     ],
                 ),
+                Html::div(
+                    Attributes::new().class("keyvalue"),
+                    Events::new(),
+                    vec![
+                        Html::span(
+                            Attributes::new().class("text-label"),
+                            Events::new(),
+                            vec![Html::text("マップマスクを生成")],
+                        ),
+                        btn::toggle(
+                            with_table_mask,
+                            Attributes::new(),
+                            Events::new().on_click({
+                                let start_point = start_point.clone();
+                                move |_| {
+                                    Msg::SetSelectingTableTool(TableTool::Measure(
+                                        line_width,
+                                        rounded,
+                                        start_point,
+                                        !with_table_mask,
+                                    ))
+                                }
+                            }),
+                        ),
+                    ],
+                ),
             ]
         }
     }
