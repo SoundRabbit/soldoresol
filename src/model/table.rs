@@ -216,7 +216,7 @@ impl Table {
             size: array![self.size[0], self.size[1]],
             is_bind_to_grid: self.is_bind_to_grid,
             drawing_texture: self.drawing_texture.element().to_data_url().unwrap(),
-            image_texture_id: self.image_texture_id.map(|x| x.to_string().as_str())
+            image_texture_id: self.image_texture_id.map(|x| x.to_string())
         })
     }
 }

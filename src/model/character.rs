@@ -92,7 +92,7 @@ impl Character {
         let payload = object! {
             size: array![self.size[0],self.size[1]],
             position: array![self.position[0],self.position[1],self.position[2]],
-            image_id: self.texture_id().map(|x| x.to_string().as_str()),
+            image_id: self.texture_id().map(|x| x.to_string()),
             name: &self.name,
             property: self.property.as_object()
         };

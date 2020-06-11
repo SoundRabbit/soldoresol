@@ -1176,9 +1176,13 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
         Msg::AddChracaterToTransport(character) => {
             let position = character.position().clone();
+            let character_data = character.as_data();
             let character_id = state.world.add_character(character);
             let room = &state.room;
-            room.send(skyway::Msg::CreateCharacterToTable(character_id, position));
+            room.send(skyway::Msg::CreateCharacterToTable(
+                character_id,
+                character_data,
+            ));
             update(state, Msg::Render)
         }
         Msg::AddChracater(character) => {
@@ -1187,9 +1191,13 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
         Msg::AddTablemaskToTransport(tablemask) => {
             let position = tablemask.position().clone();
+            let tablemask_data = tablemask.as_data();
             let tablemask_id = state.world.add_tablemask(tablemask);
             let room = &state.room;
-            room.send(skyway::Msg::CreateTablemaskToTable(tablemask_id, position));
+            room.send(skyway::Msg::CreateTablemaskToTable(
+                tablemask_id,
+                tablemask_data,
+            ));
             update(state, Msg::Render)
         }
         Msg::AddTablemask(tablemask) => {
@@ -1523,14 +1531,12 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         // 接続に関する操作
         Msg::ReceiveMsg(msg) => match msg {
             skyway::Msg::CreateCharacterToTable(character_id, character) => {
-                crate::model::CharacterData::from(character);
-                character.set_position(position);
+                let character: Character = character.into();
                 state.world.add_character_with_id(character_id, character);
                 update(state, Msg::Render)
             }
-            skyway::Msg::CreateTablemaskToTable(tablemask_id, position) => {
-                let mut tablemask = Tablemask::new();
-                tablemask.set_position(position);
+            skyway::Msg::CreateTablemaskToTable(tablemask_id, tablemask) => {
+                let tablemask: Tablemask = tablemask.into();
                 state.world.add_tablemask_with_id(tablemask_id, tablemask);
                 update(state, Msg::Render)
             }
@@ -1577,7 +1583,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 update(state, Msg::SetIsBindToGrid(is_bind_to_grid))
             }
             skyway::Msg::SetWorld(world_data) => {
-                state.world = World::from(world_data);
+                state.world = world_data.into();
                 update(state, Msg::Render)
             }
             skyway::Msg::SetResource(resource_data) => {
@@ -1608,7 +1614,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 Cmd::none()
             } else {
                 let data_connect = Rc::new(state.peer.connect(&peer_id));
-                let world_data = state.world.to_data();
+                let world_data = state.world.as_data();
                 let chat = state.chat_data.tabs.as_object();
 
                 let my_peer_id = state.peer.id();

@@ -206,17 +206,17 @@ impl From<JsObject> for Msg {
                     )
                 }
                 "CreateCharacterToTable" => {
-                    let args = payload.dyn_ref::<Array>().unwrap().to_vec();
+                    let args = Array::from(&payload);
                     Self::CreateCharacterToTable(
-                        args[0].as_string().unwrap().parse().unwrap(),
-                        CharacterData::from(args[1].dyn_into::<JsObject>().unwrap()),
+                        args.get(0).as_string().unwrap().parse().unwrap(),
+                        CharacterData::from(args.get(1).dyn_into::<JsObject>().unwrap()),
                     )
                 }
                 "CreateTablemaskToTable" => {
-                    let args = payload.dyn_ref::<Array>().unwrap().to_vec();
+                    let args = Array::from(&payload);
                     Self::CreateTablemaskToTable(
-                        args[0].as_string().unwrap().parse().unwrap(),
-                        TablemaskData::from(args[1].dyn_into::<JsObject>().unwrap()),
+                        args.get(0).as_string().unwrap().parse().unwrap(),
+                        TablemaskData::from(args.get(0).dyn_into::<JsObject>().unwrap()),
                     )
                 }
                 "SetObjectPosition" => {
