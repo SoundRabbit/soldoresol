@@ -1175,7 +1175,6 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.cmd_queue.dequeue()
         }
         Msg::AddChracaterToTransport(character) => {
-            let position = character.position().clone();
             let character_data = character.as_data();
             let character_id = state.world.add_character(character);
             let room = &state.room;
@@ -1190,7 +1189,6 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             update(state, Msg::Render)
         }
         Msg::AddTablemaskToTransport(tablemask) => {
-            let position = tablemask.position().clone();
             let tablemask_data = tablemask.as_data();
             let tablemask_id = state.world.add_tablemask(tablemask);
             let room = &state.room;
