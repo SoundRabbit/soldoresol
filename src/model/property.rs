@@ -84,8 +84,14 @@ impl Property {
     }
 
     pub fn push(&mut self, prop: Property) {
-        if let PropertyValue::Children(children) = &mut self.value {
-            children.push(prop)
+        match &mut self.value {
+            PropertyValue::Children(children) => {
+                children.push(prop);
+            }
+            PropertyValue::None => {
+                self.value = PropertyValue::Children(vec![prop]);
+            }
+            _ => {}
         }
     }
 

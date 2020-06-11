@@ -212,14 +212,7 @@ fn character_root_property(character_id: u128, property: &Property) -> Html<Msg>
                     .map(|property| character_property(character_id, property))
                     .flatten()
                     .collect(),
-                vec![
-                    btn::secondary(
-                        Attributes::new().class("keyvalueoption-banner-2"),
-                        Events::new(),
-                        vec![awesome::i("fa-plus")],
-                    ),
-                    Html::span(Attributes::new(), Events::new(), vec![]),
-                ],
+                btn_add_child_to_character_property(character_id, property_id),
             ]
             .into_iter()
             .flatten()
@@ -329,14 +322,7 @@ fn character_property(character_id: u128, property: &Property) -> Vec<Html<Msg>>
                         .map(|property| character_property(character_id, property))
                         .flatten()
                         .collect(),
-                    vec![
-                        btn::secondary(
-                            Attributes::new().class("keyvalueoption-banner-2"),
-                            Events::new(),
-                            vec![awesome::i("fa-plus")],
-                        ),
-                        Html::span(Attributes::new(), Events::new(), vec![]),
-                    ],
+                    btn_add_child_to_character_property(character_id, property_id),
                 ]
                 .into_iter()
                 .flatten()
@@ -344,6 +330,23 @@ fn character_property(character_id: u128, property: &Property) -> Vec<Html<Msg>>
             ),
         ],
     }
+}
+
+fn btn_add_child_to_character_property(character_id: u128, property_id: u128) -> Vec<Html<Msg>> {
+    vec![
+        btn::secondary(
+            Attributes::new().class("keyvalueoption-banner-2"),
+            Events::new().on_click(move |_| {
+                Msg::AddChildToCharacterPropertyToTransport(
+                    character_id,
+                    property_id,
+                    Property::new_as_none(),
+                )
+            }),
+            vec![awesome::i("fa-plus")],
+        ),
+        Html::span(Attributes::new(), Events::new(), vec![]),
+    ]
 }
 
 fn object_tablemask(tablemask: &Tablemask, tablemask_id: u128) -> Html<Msg> {

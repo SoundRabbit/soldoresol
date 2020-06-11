@@ -5,8 +5,8 @@ use super::{awesome, btn, contextmenu, modeless::container as modeless_container
 use crate::{
     model::{
         resource::{Data, ResourceData},
-        Camera, Character, Chat, ChatItem, ChatTab, Color, ColorSystem, Icon, PropertyValue,
-        Resource, Tablemask, World,
+        Camera, Character, Chat, ChatItem, ChatTab, Color, ColorSystem, Icon, Property,
+        PropertyValue, Resource, Tablemask, World,
     },
     random_id,
     renderer::Renderer,
@@ -314,6 +314,8 @@ pub enum Msg {
     SetTablemaskColor(u128, Color),
     SetCharacterPropertyToTransport(u128, u128, PropertyValue),
     SetCharacterProperty(u128, u128, PropertyValue),
+    AddChildToCharacterPropertyToTransport(u128, u128, Property),
+    AddChildToCharacterProperty(u128, u128, Property),
 
     // チャット関係
     SetSelectingChatTabIdx(usize),
@@ -1239,6 +1241,22 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 .and_then(|c| c.property.get_mut(&property_id))
             {
                 property.set_value(property_value);
+            }
+            state.cmd_queue.dequeue()
+        }
+        Msg::AddChildToCharacterPropertyToTransport(character_id, property_id, child_property) => {
+            update(
+                state,
+                Msg::AddChildToCharacterProperty(character_id, property_id, child_property),
+            )
+        }
+        Msg::AddChildToCharacterProperty(character_id, property_id, child_property) => {
+            if let Some(property) = state
+                .world
+                .character_mut(&character_id)
+                .and_then(|c| c.property.get_mut(&property_id))
+            {
+                property.push(child_property);
             }
             state.cmd_queue.dequeue()
         }
