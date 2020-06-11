@@ -200,7 +200,7 @@ impl From<JsObject> for Msg {
                 }
                 "EraceLineToTable" => {
                     let args = payload.dyn_ref::<Array>().unwrap().to_vec();
-                    Self::DrawLineToTable(
+                    Self::EraceLineToTable(
                         [args[0].as_f64().unwrap(), args[1].as_f64().unwrap()],
                         [args[2].as_f64().unwrap(), args[3].as_f64().unwrap()],
                     )
