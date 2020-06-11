@@ -1,6 +1,6 @@
 use super::{Color, ColorSystem};
 use crate::JsObject;
-use serde::{Deserialize, Serialize};
+use std::ops::Deref;
 
 pub struct Tablemask {
     size: [f64; 2],
@@ -11,15 +11,7 @@ pub struct Tablemask {
     is_rounded: bool,
 }
 
-#[derive(Deserialize, Serialize)]
-pub struct TablemaskData {
-    pub size: [f64; 2],
-    pub position: [f64; 3],
-    pub z_rotation: f64,
-    pub background_color: u32,
-    pub size_is_binded: bool,
-    pub is_rounded: bool,
-}
+pub struct TablemaskData(JsObject);
 
 impl Tablemask {
     pub fn new() -> Self {
@@ -86,15 +78,15 @@ impl Tablemask {
         &self.background_color
     }
 
-    pub fn to_data(&self) -> TablemaskData {
-        TablemaskData {
-            size: self.size.clone(),
-            position: self.position.clone(),
+    pub fn as_data(&self) -> TablemaskData {
+        TablemaskData(object! {
+            size: array![self.size[0], self.size[1]],
+            position: array![self.position[0],self.position[1],self.position[2]],
             z_rotation: self.z_rotation,
             background_color: self.background_color.to_u32(),
             size_is_binded: self.size_is_binded,
-            is_rounded: self.is_rounded,
-        }
+            is_rounded: self.is_rounded
+        })
     }
 }
 
@@ -112,50 +104,16 @@ impl Clone for Tablemask {
     }
 }
 
-impl From<TablemaskData> for Tablemask {
-    fn from(tablemask_data: TablemaskData) -> Self {
-        Self {
-            size: tablemask_data.size,
-            position: tablemask_data.position,
-            z_rotation: tablemask_data.z_rotation,
-            background_color: Color::from(tablemask_data.background_color),
-            size_is_binded: tablemask_data.size_is_binded,
-            is_rounded: tablemask_data.is_rounded,
-        }
-    }
-}
-
-impl TablemaskData {
-    pub fn as_object(&self) -> JsObject {
-        let background_color: u32 = self.background_color;
-        let size_is_binded: bool = self.size_is_binded;
-        let is_rounded: bool = self.is_rounded;
-
-        object! {
-            size: array![self.size[0], self.size[1]],
-            position: array![self.position[0], self.position[1], self.position[2]],
-            z_rotation: self.z_rotation,
-            background_color: background_color,
-            size_is_binded: size_is_binded,
-            is_rounded: is_rounded
-        }
-    }
-}
-
-impl From<JsObject> for TablemaskData {
-    fn from(obj: JsObject) -> Self {
+impl Into<Tablemask> for TablemaskData {
+    fn into(self) -> Tablemask {
         use js_sys::Array;
-        use wasm_bindgen::JsCast;
 
-        let size = obj.get("size").unwrap().dyn_into::<Array>().ok().unwrap();
+        let obj = self.0;
+
+        let size = Array::from(&obj.get("size").unwrap());
         let size = [size.get(0).as_f64().unwrap(), size.get(1).as_f64().unwrap()];
 
-        let position = obj
-            .get("position")
-            .unwrap()
-            .dyn_into::<Array>()
-            .ok()
-            .unwrap();
+        let position = Array::from(&obj.get("position").unwrap());
         let position = [
             position.get(0).as_f64().unwrap(),
             position.get(1).as_f64().unwrap(),
@@ -166,6 +124,7 @@ impl From<JsObject> for TablemaskData {
             .get("background_color")
             .and_then(|x| x.as_f64().map(|x| x as u32))
             .unwrap_or(0xFF000000);
+        let background_color = Color::from(background_color);
         let size_is_binded = obj
             .get("size_is_binded")
             .and_then(|x| x.as_bool())
@@ -179,7 +138,7 @@ impl From<JsObject> for TablemaskData {
             .and_then(|x| x.as_f64())
             .unwrap_or(0.0);
 
-        Self {
+        Tablemask {
             size,
             position,
             z_rotation,
@@ -187,5 +146,24 @@ impl From<JsObject> for TablemaskData {
             size_is_binded,
             is_rounded,
         }
+    }
+}
+
+impl Into<JsObject> for TablemaskData {
+    fn into(self) -> JsObject {
+        self.0
+    }
+}
+
+impl From<JsObject> for TablemaskData {
+    fn from(obj: JsObject) -> Self {
+        Self(obj)
+    }
+}
+
+impl Deref for TablemaskData {
+    type Target = JsObject;
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }

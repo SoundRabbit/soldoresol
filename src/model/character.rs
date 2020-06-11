@@ -1,5 +1,6 @@
 use super::{Color, ColorSystem, Property};
 use crate::JsObject;
+use std::ops::Deref;
 
 pub struct Character {
     size: [f64; 2],
@@ -10,13 +11,7 @@ pub struct Character {
     pub property: Property,
 }
 
-pub struct CharacterData {
-    pub size: [f64; 2],
-    pub position: [f64; 3],
-    pub image_id: Option<u128>,
-    pub name: String,
-    pub property: JsObject,
-}
+pub struct CharacterData(JsObject);
 
 impl Character {
     pub fn new() -> Self {
@@ -93,14 +88,15 @@ impl Character {
         self.set_is_focused(false);
     }
 
-    pub fn to_data(&self) -> CharacterData {
-        CharacterData {
-            size: self.size.clone(),
-            position: self.position.clone(),
-            image_id: self.texture_id(),
-            name: self.name.clone(),
-            property: self.property.as_object(),
-        }
+    pub fn as_data(&self) -> CharacterData {
+        let payload = object! {
+            size: array![self.size[0],self.size[1]],
+            position: array![self.position[0],self.position[1],self.position[2]],
+            image_id: self.texture_id().map(|x| x.to_string().as_str()),
+            name: &self.name,
+            property: self.property.as_object()
+        };
+        CharacterData(payload)
     }
 }
 
@@ -118,40 +114,14 @@ impl Clone for Character {
     }
 }
 
-impl From<CharacterData> for Character {
-    fn from(character_data: CharacterData) -> Self {
-        Self {
-            size: character_data.size,
-            position: character_data.position,
-            image_id: character_data.image_id,
-            background_color: Color::from(0),
-            name: character_data.name,
-            property: Property::from(character_data.property),
-        }
-    }
-}
-
-impl CharacterData {
-    pub fn as_object(&self) -> JsObject {
-        let image_id = self.image_id.map(|id| id.to_string());
-        let name = self.name.clone();
-
-        object! {
-            size: array![self.size[0], self.size[1]],
-            position: array![self.position[0], self.position[1], self.position[2]],
-            image_id: image_id,
-            name: name,
-            property: &self.property
-        }
-    }
-}
-
-impl From<JsObject> for CharacterData {
-    fn from(obj: JsObject) -> Self {
+impl Into<Character> for CharacterData {
+    fn into(self) -> Character {
         use js_sys::Array;
         use wasm_bindgen::JsCast;
 
-        let size = obj.get("size").unwrap().dyn_into::<Array>().ok().unwrap();
+        let obj = self.0;
+
+        let size = Array::from(&obj.get("size").unwrap());
 
         let size = [size.get(0).as_f64().unwrap(), size.get(1).as_f64().unwrap()];
 
@@ -174,14 +144,34 @@ impl From<JsObject> for CharacterData {
 
         let name = obj.get("name").unwrap().as_string().unwrap();
 
-        let property = obj.get("property").unwrap();
+        let property = Property::from(obj.get("property").unwrap());
 
-        Self {
+        Character {
             size,
             position,
             image_id,
             name,
+            background_color: Color::from(0),
             property,
         }
+    }
+}
+
+impl Into<JsObject> for CharacterData {
+    fn into(self) -> JsObject {
+        self.0
+    }
+}
+
+impl From<JsObject> for CharacterData {
+    fn from(obj: JsObject) -> Self {
+        Self(obj)
+    }
+}
+
+impl Deref for CharacterData {
+    type Target = JsObject;
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }

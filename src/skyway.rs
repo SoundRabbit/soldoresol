@@ -81,8 +81,8 @@ impl Room {
 pub enum Msg {
     DrawLineToTable([f64; 2], [f64; 2]),
     EraceLineToTable([f64; 2], [f64; 2]),
-    CreateCharacterToTable(u128, [f64; 3]),
-    CreateTablemaskToTable(u128, [f64; 3]),
+    CreateCharacterToTable(u128, JsObject),
+    CreateTablemaskToTable(u128, JsObject),
     SetCharacterImage(u128, u128),
     SetCharacterSize(u128, [f64; 2]),
     SetCharacterName(u128, String),

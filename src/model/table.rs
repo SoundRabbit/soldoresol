@@ -1,6 +1,6 @@
 use super::{color::Color, TexstureLayer};
 use crate::JsObject;
-use std::rc::Rc;
+use std::{ops::Deref, rc::Rc};
 use wasm_bindgen::prelude::*;
 
 pub struct Table {
@@ -14,12 +14,7 @@ pub struct Table {
     image_texture_id: Option<u128>,
 }
 
-pub struct TableData {
-    pub size: [f64; 2],
-    pub is_bind_to_grid: bool,
-    pub drawing_texture: String,
-    pub image_texture_id: Option<u128>,
-}
+pub struct TableData(JsObject);
 
 impl Table {
     pub fn new() -> Self {
@@ -97,6 +92,11 @@ impl Table {
         self.clear_measure();
         self.drawing_texture_is_changed = false;
         self.measure_texture_is_changed = false;
+    }
+
+    fn set_img(&self, img: &web_sys::HtmlImageElement) {
+        let context = self.drawing_texture.context();
+        let _ = context.draw_image_with_html_image_element(img, 0.0, 0.0);
     }
 
     fn get_texture_position(&self, position: &[f64; 2]) -> [f64; 2] {
@@ -211,59 +211,24 @@ impl Table {
         self.measure_texture_is_changed = true;
     }
 
-    pub fn to_data(&self) -> TableData {
-        TableData {
-            size: self.size.clone(),
-            is_bind_to_grid: self.is_bind_to_grid.clone(),
-            drawing_texture: self.drawing_texture.element().to_data_url().unwrap(),
-            image_texture_id: self.image_texture_id.clone(),
-        }
-    }
-}
-
-impl From<TableData> for Rc<Table> {
-    fn from(table_data: TableData) -> Self {
-        let size = table_data.size;
-        let texture_width = 4096;
-        let texture_height = 4096;
-
-        let mut table = Table {
-            size: [1.0, 1.0],
-            pixel_ratio: [1.0, 1.0],
-            is_bind_to_grid: table_data.is_bind_to_grid,
-            drawing_texture: TexstureLayer::new(&[texture_width, texture_height]),
-            drawing_texture_is_changed: true,
-            measure_texture: TexstureLayer::new(&[texture_width, texture_height]),
-            measure_texture_is_changed: true,
-            image_texture_id: table_data.image_texture_id,
-        };
-
-        table.set_size(size);
-
-        Rc::new(table)
-    }
-}
-
-impl TableData {
-    pub fn as_object(&self) -> JsObject {
-        let is_bind_to_grid: bool = self.is_bind_to_grid;
-        let drawing_texture = &self.drawing_texture;
-
-        object! {
+    pub fn as_data(&self) -> TableData {
+        TableData(object! {
             size: array![self.size[0], self.size[1]],
-            is_bind_to_grid: is_bind_to_grid,
-            drawing_texture: drawing_texture,
-            image_texture_id: self.image_texture_id.map(|x| x.to_string())
-        }
+            is_bind_to_grid: self.is_bind_to_grid,
+            drawing_texture: self.drawing_texture.element().to_data_url().unwrap(),
+            image_texture_id: self.image_texture_id.map(|x| x.to_string().as_str())
+        })
     }
 }
 
-impl From<JsObject> for TableData {
-    fn from(obj: JsObject) -> Self {
+impl Into<Rc<Table>> for TableData {
+    fn into(self) -> Rc<Table> {
         use js_sys::Array;
         use wasm_bindgen::JsCast;
 
-        let size = obj.get("size").unwrap().dyn_into::<Array>().ok().unwrap();
+        let obj = self.0;
+
+        let size = Array::from(&obj.get("size").unwrap());
         let size = [size.get(0).as_f64().unwrap(), size.get(1).as_f64().unwrap()];
 
         let drawing_texture = obj.get("drawing_texture").unwrap().as_string().unwrap();
@@ -273,11 +238,58 @@ impl From<JsObject> for TableData {
             .and_then(|x| x.as_string())
             .and_then(|x| x.parse().ok());
 
-        Self {
-            size,
-            drawing_texture,
-            is_bind_to_grid,
-            image_texture_id,
-        }
+        let texture_width = 4096;
+        let texture_height = 4096;
+
+        let mut table = Table {
+            size: [1.0, 1.0],
+            pixel_ratio: [1.0, 1.0],
+            is_bind_to_grid: is_bind_to_grid,
+            drawing_texture: TexstureLayer::new(&[texture_width, texture_height]),
+            drawing_texture_is_changed: true,
+            measure_texture: TexstureLayer::new(&[texture_width, texture_height]),
+            measure_texture_is_changed: true,
+            image_texture_id: image_texture_id,
+        };
+
+        table.set_size(size);
+
+        let table = Rc::new(table);
+        let img = Rc::new(crate::util::html_image_element());
+
+        let a = {
+            let table = Rc::clone(&table);
+            let img = Rc::clone(&img);
+            Closure::once(Box::new(move || {
+                table.set_img(&img);
+            }))
+        };
+
+        img.set_onload(Some(&a.as_ref().unchecked_ref()));
+        a.forget();
+
+        img.set_src(&drawing_texture);
+
+        table
+    }
+}
+
+impl Into<JsObject> for TableData {
+    fn into(self) -> JsObject {
+        self.0
+    }
+}
+
+impl From<JsObject> for TableData {
+    fn from(obj: JsObject) -> Self {
+        Self(obj)
+    }
+}
+
+impl Deref for TableData {
+    type Target = JsObject;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }

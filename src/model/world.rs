@@ -6,6 +6,7 @@ use super::{
 use crate::{random_id, JsObject};
 use std::{
     collections::{hash_map, HashMap},
+    ops::Deref,
     rc::Rc,
 };
 
@@ -16,12 +17,7 @@ pub struct World {
     tablemasks: HashMap<u128, Tablemask>,
 }
 
-pub struct WorldData {
-    pub table_id: u128,
-    pub table_data: TableData,
-    pub character_data: HashMap<u128, CharacterData>,
-    pub tablemask_data: HashMap<u128, TablemaskData>,
-}
+pub struct WorldData(JsObject);
 
 impl World {
     pub fn new(table_size: [f64; 2]) -> Self {
@@ -95,23 +91,25 @@ impl World {
         self.tablemasks.insert(tablemask_id, tablemask);
     }
 
-    pub fn to_data(&self) -> WorldData {
-        let mut character_data = HashMap::new();
+    pub fn as_data(&self) -> WorldData {
+        let mut character_data = JsObject::new();
         for (id, character) in self.characters() {
-            character_data.insert(*id, character.to_data());
+            character_data.set(&id.to_string(), &character.as_data());
         }
 
-        let mut tablemask_data = HashMap::new();
+        let mut tablemask_data = JsObject::new();
         for (id, tablemask) in self.tablemasks() {
-            tablemask_data.insert(*id, tablemask.to_data());
+            tablemask_data.set(&id.to_string(), &tablemask.as_data());
         }
 
-        WorldData {
-            table_id: self.table_id(),
-            table_data: self.table().to_data(),
-            character_data,
-            tablemask_data,
-        }
+        let table_data: JsObject = self.table().as_data().into();
+
+        WorldData(object! {
+            table_id: self.table_id().to_string(),
+            table: table_data,
+            character: character_data,
+            tablemask: tablemask_data
+        })
     }
 
     pub fn remove_object(&mut self, object_id: &u128) {
@@ -120,54 +118,12 @@ impl World {
     }
 }
 
-impl From<WorldData> for World {
-    fn from(world_data: WorldData) -> Self {
-        let mut characters = HashMap::new();
-        for (id, character_data) in world_data.character_data {
-            characters.insert(id, Character::from(character_data));
-        }
-
-        let mut tablemasks = HashMap::new();
-        for (id, tablemask_data) in world_data.tablemask_data {
-            tablemasks.insert(id, Tablemask::from(tablemask_data));
-        }
-
-        Self {
-            table_id: world_data.table_id,
-            table: Rc::from(world_data.table_data),
-            characters,
-            tablemasks,
-        }
-    }
-}
-
-impl WorldData {
-    pub fn as_object(&self) -> JsObject {
-        let obj = object! {
-            table_id: self.table_id.to_string(),
-            table_data: self.table_data.as_object()
-        };
-
-        let character_data = object! {};
-        for (id, data) in &self.character_data {
-            character_data.set(&id.to_string(), &data.as_object());
-        }
-        obj.set("character_data", &character_data);
-
-        let tablemask_data = object! {};
-        for (id, data) in &self.tablemask_data {
-            tablemask_data.set(&id.to_string(), &data.as_object());
-        }
-        obj.set("tablemask_data", &tablemask_data);
-
-        obj
-    }
-}
-
-impl From<JsObject> for WorldData {
-    fn from(obj: JsObject) -> Self {
+impl Into<World> for WorldData {
+    fn into(self) -> World {
         use js_sys::{Array, Object};
         use wasm_bindgen::JsCast;
+
+        let obj = self.0;
 
         let table_id = obj
             .get("table_id")
@@ -176,29 +132,44 @@ impl From<JsObject> for WorldData {
             .unwrap()
             .parse()
             .unwrap();
-        let table_data = TableData::from(obj.get("table_data").unwrap());
+        let table: Rc<Table> = TableData::from(obj.get("table").unwrap()).into();
 
-        let mut character_data = HashMap::new();
-        for c in Object::entries(&obj.get("character_data").unwrap()).to_vec() {
+        let mut characters = HashMap::new();
+        for c in Object::entries(&obj.get("character").unwrap()).to_vec() {
             let c = c.dyn_into::<Array>().unwrap();
             let id = c.get(0).as_string().unwrap().parse().unwrap();
-            let data = CharacterData::from(c.get(1).dyn_into::<JsObject>().unwrap());
-            character_data.insert(id, data);
+            let data: Character =
+                CharacterData::from(c.get(1).dyn_into::<JsObject>().unwrap()).into();
+            characters.insert(id, data);
         }
 
-        let mut tablemask_data = HashMap::new();
+        let mut tablemasks = HashMap::new();
         for t in Object::entries(&obj.get("tablemask_data").unwrap()).to_vec() {
             let t = t.dyn_into::<Array>().unwrap();
             let id = t.get(0).as_string().unwrap().parse().unwrap();
-            let data = TablemaskData::from(t.get(1).dyn_into::<JsObject>().unwrap());
-            tablemask_data.insert(id, data);
+            let data: Tablemask =
+                TablemaskData::from(t.get(1).dyn_into::<JsObject>().unwrap()).into();
+            tablemasks.insert(id, data);
         }
 
-        Self {
+        World {
             table_id,
-            table_data,
-            character_data,
-            tablemask_data,
+            table,
+            characters,
+            tablemasks,
         }
+    }
+}
+
+impl Into<JsObject> for WorldData {
+    fn into(self) -> JsObject {
+        self.0
+    }
+}
+
+impl Deref for WorldData {
+    type Target = JsObject;
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }

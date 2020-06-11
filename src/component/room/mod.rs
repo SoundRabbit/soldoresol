@@ -1522,8 +1522,8 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
         // 接続に関する操作
         Msg::ReceiveMsg(msg) => match msg {
-            skyway::Msg::CreateCharacterToTable(character_id, position) => {
-                let mut character = Character::new();
+            skyway::Msg::CreateCharacterToTable(character_id, character) => {
+                crate::model::CharacterData::from(character);
                 character.set_position(position);
                 state.world.add_character_with_id(character_id, character);
                 update(state, Msg::Render)

@@ -5,6 +5,9 @@ extern "C" {
     #[wasm_bindgen(extends=js_sys::Object, js_name=Object)]
     pub type JsObject;
 
+    #[wasm_bindgen(constructor)]
+    pub fn new() -> JsObject;
+
     #[wasm_bindgen(method, indexing_getter)]
     pub fn get(this: &JsObject, name: &str) -> Option<JsObject>;
 
