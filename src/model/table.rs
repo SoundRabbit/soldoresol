@@ -182,7 +182,7 @@ impl Table {
         let radious = ((ex - bx).powi(2) + (ey - by).powi(2)).sqrt();
 
         context.set_line_width(line_width);
-        context.set_line_cap("round");
+        context.set_line_cap("butt");
         context.set_stroke_style(&color.to_jsvalue());
         context.set_fill_style(&JsValue::from("transparent"));
         context
