@@ -188,26 +188,7 @@ fn object_character(character: &Character, character_id: u128, resource: &Resour
                                         ),
                                     ],
                                 ),
-                                Html::div(
-                                    Attributes::new()
-                                        .class("container-a")
-                                        .class("keyvalueoption"),
-                                    Events::new(),
-                                    vec![
-                                        character_property(character_id, &character.property),
-                                        vec![
-                                            btn::secondary(
-                                                Attributes::new().class("keyvalueoption-banner-2"),
-                                                Events::new(),
-                                                vec![awesome::i("fa-plus")],
-                                            ),
-                                            Html::span(Attributes::new(), Events::new(), vec![]),
-                                        ],
-                                    ]
-                                    .into_iter()
-                                    .flatten()
-                                    .collect(),
-                                ),
+                                character_root_property(character_id, &character.property),
                             ],
                         ),
                     ],
@@ -215,6 +196,43 @@ fn object_character(character: &Character, character_id: u128, resource: &Resour
             ],
         )],
     )
+}
+
+fn character_root_property(character_id: u128, property: &Property) -> Html<Msg> {
+    let property_id = *property.id();
+    match property.value() {
+        PropertyValue::Children(children) => Html::div(
+            Attributes::new()
+                .class("container-a")
+                .class("keyvalueoption"),
+            Events::new(),
+            vec![
+                children
+                    .iter()
+                    .map(|property| character_property(character_id, property))
+                    .flatten()
+                    .collect(),
+                vec![
+                    btn::secondary(
+                        Attributes::new().class("keyvalueoption-banner-2"),
+                        Events::new(),
+                        vec![awesome::i("fa-plus")],
+                    ),
+                    Html::span(Attributes::new(), Events::new(), vec![]),
+                ],
+            ]
+            .into_iter()
+            .flatten()
+            .collect(),
+        ),
+        _ => Html::div(
+            Attributes::new()
+                .class("container-a")
+                .class("keyvalueoption"),
+            Events::new(),
+            vec![],
+        ),
+    }
 }
 
 fn character_property(character_id: u128, property: &Property) -> Vec<Html<Msg>> {
