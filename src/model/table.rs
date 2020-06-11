@@ -96,7 +96,13 @@ impl Table {
 
     fn set_img(&self, img: &web_sys::HtmlImageElement) {
         let context = self.drawing_texture.context();
-        let _ = context.draw_image_with_html_image_element(img, 0.0, 0.0);
+        let _ = context.draw_image_with_html_image_element_and_dw_and_dh(
+            img,
+            0.0,
+            0.0,
+            4096.0 / self.pixel_ratio[0],
+            4096.0 / self.pixel_ratio[1],
+        );
     }
 
     fn get_texture_position(&self, position: &[f64; 2]) -> [f64; 2] {
