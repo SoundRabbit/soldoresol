@@ -71,7 +71,7 @@ impl ChatDataCollection {
             selecting_tab_idx: 0,
             selecting_sender_idx: 0,
             inputing_message: "".into(),
-            take: 50,
+            take: 64,
             senders: vec![ChatSender::Player],
             tabs: Chat::new(vec![ChatTab::new("メイン"), ChatTab::new("サブ")]),
         }

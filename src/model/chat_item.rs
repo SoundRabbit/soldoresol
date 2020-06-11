@@ -11,18 +11,18 @@ pub struct ChatItem {
 
 impl ChatItem {
     pub fn new(
-        display_name: String,
-        peer_id: String,
+        display_name: impl Into<String>,
+        peer_id: impl Into<String>,
         character_id: Option<u128>,
         icon: Icon,
-        payload: String,
+        payload: impl Into<String>,
     ) -> Self {
         Self {
-            display_name: display_name,
-            peer_id: peer_id,
+            display_name: display_name.into(),
+            peer_id: peer_id.into(),
             character_id,
             icon: icon,
-            payload: payload,
+            payload: payload.into(),
         }
     }
 
