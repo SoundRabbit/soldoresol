@@ -232,19 +232,49 @@ fn character_property(character_id: u128, property: &Property) -> Vec<Html<Msg>>
     let property_id = *property.id();
     match property.value() {
         PropertyValue::None => vec![
-            Html::input(
+            Html::div(
                 Attributes::new()
                     .class("keyvalueoption-banner-2")
-                    .value(property.name())
-                    .type_("text"),
+                    .class("linear-h")
+                    .style("grid-auto-columns", "1fr"),
                 Events::new(),
-                vec![],
+                vec![
+                    btn::primary(
+                        Attributes::new(),
+                        Events::new().on_click(move |_| {
+                            Msg::SetCharacterPropertyToTransport(
+                                character_id,
+                                property_id,
+                                PropertyValue::Children(vec![Property::new_as_none()]),
+                            )
+                        }),
+                        vec![Html::text(" グループ")],
+                    ),
+                    btn::primary(
+                        Attributes::new(),
+                        Events::new().on_click(move |_| {
+                            Msg::SetCharacterPropertyToTransport(
+                                character_id,
+                                property_id,
+                                PropertyValue::Num(0.0),
+                            )
+                        }),
+                        vec![Html::text("数値")],
+                    ),
+                    btn::primary(
+                        Attributes::new(),
+                        Events::new().on_click(move |_| {
+                            Msg::SetCharacterPropertyToTransport(
+                                character_id,
+                                property_id,
+                                PropertyValue::Str("".into()),
+                            )
+                        }),
+                        vec![Html::text("テキスト")],
+                    ),
+                ],
             ),
-            btn::transparent(
-                Attributes::new(),
-                Events::new(),
-                vec![awesome::i("fa-ellipsis-v")],
-            ),
+            btn_remove_character_property(character_id, property_id),
         ],
         PropertyValue::Num(n) => vec![
             Html::input(
@@ -267,11 +297,7 @@ fn character_property(character_id: u128, property: &Property) -> Vec<Html<Msg>>
                 }),
                 vec![],
             ),
-            btn::transparent(
-                Attributes::new(),
-                Events::new(),
-                vec![awesome::i("fa-ellipsis-v")],
-            ),
+            btn_remove_character_property(character_id, property_id),
         ],
         PropertyValue::Str(s) => vec![
             Html::input(
@@ -290,11 +316,7 @@ fn character_property(character_id: u128, property: &Property) -> Vec<Html<Msg>>
                 }),
                 vec![],
             ),
-            btn::transparent(
-                Attributes::new(),
-                Events::new(),
-                vec![awesome::i("fa-ellipsis-v")],
-            ),
+            btn_remove_character_property(character_id, property_id),
         ],
         PropertyValue::Children(children) => vec![
             Html::input(
@@ -305,11 +327,7 @@ fn character_property(character_id: u128, property: &Property) -> Vec<Html<Msg>>
                 Events::new(),
                 vec![],
             ),
-            btn::transparent(
-                Attributes::new(),
-                Events::new(),
-                vec![awesome::i("fa-ellipsis-v")],
-            ),
+            btn_remove_character_property(character_id, property_id),
             Html::div(
                 Attributes::new()
                     .class("container-indent")
@@ -330,6 +348,14 @@ fn character_property(character_id: u128, property: &Property) -> Vec<Html<Msg>>
             ),
         ],
     }
+}
+
+fn btn_remove_character_property(character_id: u128, property_id: u128) -> Html<Msg> {
+    btn::danger(
+        Attributes::new(),
+        Events::new(),
+        vec![awesome::i("fa-times")],
+    )
 }
 
 fn btn_add_child_to_character_property(character_id: u128, property_id: u128) -> Vec<Html<Msg>> {
