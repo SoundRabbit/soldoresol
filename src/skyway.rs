@@ -81,11 +81,14 @@ impl Room {
 pub enum Msg {
     DrawLineToTable([f64; 2], [f64; 2]),
     EraceLineToTable([f64; 2], [f64; 2]),
+    SetTableSize([f64; 2]),
+    SetTableImage(u128),
     CreateCharacterToTable(u128, CharacterData),
     CreateTablemaskToTable(u128, TablemaskData),
     SetCharacterImage(u128, u128),
     SetCharacterSize(u128, [f64; 2]),
     SetCharacterName(u128, String),
+    SetCharacterProperty(u128, JsObject),
     SetTablemaskSizeWithStyle(u128, [f64; 2], bool),
     SetTablemaskColor(u128, u32),
     SetObjectPosition(u128, [f64; 3]),
@@ -106,11 +109,14 @@ impl Msg {
         match self {
             Self::DrawLineToTable(..) => "DrawLineToTable",
             Self::EraceLineToTable(..) => "EraceLineToTable",
+            Self::SetTableSize(..) => "SetTableSize",
+            Self::SetTableImage(..) => "SetTableImage",
             Self::CreateCharacterToTable(..) => "CreateCharacterToTable",
             Self::CreateTablemaskToTable(..) => "CreateTablemaskToTable",
             Self::SetCharacterImage(..) => "SetCharacterImage",
             Self::SetCharacterSize(..) => "SetCharacterSize",
             Self::SetCharacterName(..) => "SetCharacterName",
+            Self::SetCharacterProperty(..) => "SetCharacterProperty",
             Self::SetTablemaskSizeWithStyle(..) => "SetTablemaskSizeWithStyle",
             Self::SetTablemaskColor(..) => "SetTablemaskColor",
             Self::SetObjectPosition(..) => "SetObjectPosition",
@@ -135,6 +141,8 @@ impl Into<JsObject> for Msg {
             Self::DrawLineToTable(b, e) | Self::EraceLineToTable(b, e) => {
                 array![b[0], b[1], e[0], e[1]].into()
             }
+            Self::SetTableSize(sz) => array![sz[0], sz[1]].into(),
+            Self::SetTableImage(id) => JsValue::from(id.to_string()),
             Self::CreateCharacterToTable(id, character) => {
                 let character: JsObject = character.into();
                 let character: JsValue = character.into();
@@ -153,6 +161,7 @@ impl Into<JsObject> for Msg {
             }
             Self::SetCharacterSize(c_id, sz) => array![c_id.to_string(), sz[0], sz[1]].into(),
             Self::SetCharacterName(c_id, name) => array![c_id.to_string(), name].into(),
+            Self::SetCharacterProperty(c_id, prop) => array![c_id.to_string(), prop].into(),
             Self::SetTablemaskSizeWithStyle(t_id, sz, r) => {
                 array![t_id.to_string(), sz[0], sz[1], r].into()
             }
@@ -205,6 +214,16 @@ impl From<JsObject> for Msg {
                         [args[2].as_f64().unwrap(), args[3].as_f64().unwrap()],
                     )
                 }
+                "SetTableSize" => {
+                    let args = Array::from(&payload);
+                    Self::SetTableSize([
+                        args.get(0).as_f64().unwrap(),
+                        args.get(1).as_f64().unwrap(),
+                    ])
+                }
+                "SetTableImage" => {
+                    Self::SetTableImage(payload.as_string().unwrap().parse().unwrap())
+                }
                 "CreateCharacterToTable" => {
                     let args = Array::from(&payload);
                     Self::CreateCharacterToTable(
@@ -249,6 +268,13 @@ impl From<JsObject> for Msg {
                     Self::SetCharacterName(
                         args.get(0).as_string().unwrap().parse().unwrap(),
                         args.get(1).as_string().unwrap(),
+                    )
+                }
+                "SetCharacterProperty" => {
+                    let args = Array::from(&payload);
+                    Self::SetCharacterProperty(
+                        args.get(0).as_string().unwrap().parse().unwrap(),
+                        args.get(1).dyn_into::<JsObject>().unwrap(),
                     )
                 }
                 "SetTablemaskSizeWithStyle" => {

@@ -909,12 +909,18 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.is_2d_mode = is_2d_mode;
             update(state, Msg::Render)
         }
-        Msg::SetTableSizeToTransport(size) => update(state, Msg::SetTableSize(size)),
+        Msg::SetTableSizeToTransport(size) => {
+            let room = &state.room;
+            room.send(skyway::Msg::SetTableSize(size.clone()));
+            update(state, Msg::SetTableSize(size))
+        }
         Msg::SetTableSize(size) => {
             state.world.table_mut().map(|table| table.set_size(size));
             update(state, Msg::Render)
         }
         Msg::SetTableImageToTransport(resource_id) => {
+            let room = &state.room;
+            room.send(skyway::Msg::SetTableImage(resource_id));
             update(state, Msg::SetTableImage(resource_id))
         }
         Msg::SetTableImage(resource_id) => {
@@ -1223,10 +1229,13 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             }
             update(state, Msg::Render)
         }
-        Msg::SetTablemaskSizeIsBindedToTransport(tablemask_id, is_binded) => update(
-            state,
-            Msg::SetTablemaskSizeIsBinded(tablemask_id, is_binded),
-        ),
+        Msg::SetTablemaskSizeIsBindedToTransport(tablemask_id, is_binded) => {
+            update(
+                state,
+                Msg::SetTablemaskSizeIsBinded(tablemask_id, is_binded),
+            );
+            todo!();
+        }
         Msg::SetTablemaskSizeIsBinded(tablemask_id, is_binded) => {
             if let Some(tablemask) = state.world.tablemask_mut(&tablemask_id) {
                 tablemask.set_size_is_binded(is_binded);
@@ -1278,10 +1287,20 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             }
             update(state, Msg::Render)
         }
-        Msg::SetCharacterPropertyToTransport(character_id, property_id, property_value) => update(
-            state,
-            Msg::SetCharacterProperty(character_id, property_id, property_value),
-        ),
+        Msg::SetCharacterPropertyToTransport(character_id, property_id, property_value) => {
+            update(
+                state,
+                Msg::SetCharacterProperty(character_id, property_id, property_value),
+            );
+            if let Some(character) = state.world.character(&character_id) {
+                let room = &state.room;
+                room.send(skyway::Msg::SetCharacterProperty(
+                    character_id,
+                    character.property.as_object(),
+                ));
+            }
+            state.cmd_queue.dequeue()
+        }
         Msg::SetCharacterProperty(character_id, property_id, property_value) => {
             if let Some(property) = state
                 .world
@@ -1296,7 +1315,15 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             update(
                 state,
                 Msg::AddChildToCharacterProperty(character_id, property_id, child_property),
-            )
+            );
+            if let Some(character) = state.world.character(&character_id) {
+                let room = &state.room;
+                room.send(skyway::Msg::SetCharacterProperty(
+                    character_id,
+                    character.property.as_object(),
+                ));
+            }
+            state.cmd_queue.dequeue()
         }
         Msg::AddChildToCharacterProperty(character_id, property_id, child_property) => {
             if let Some(property) = state
@@ -1308,10 +1335,20 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             }
             state.cmd_queue.dequeue()
         }
-        Msg::RemoveCharacterPropertyToTransport(character_id, property_id) => update(
-            state,
-            Msg::RemoveCharacterProperty(character_id, property_id),
-        ),
+        Msg::RemoveCharacterPropertyToTransport(character_id, property_id) => {
+            update(
+                state,
+                Msg::RemoveCharacterProperty(character_id, property_id),
+            );
+            if let Some(character) = state.world.character(&character_id) {
+                let room = &state.room;
+                room.send(skyway::Msg::SetCharacterProperty(
+                    character_id,
+                    character.property.as_object(),
+                ));
+            }
+            state.cmd_queue.dequeue()
+        }
         Msg::RemoveCharacterProperty(character_id, property_id) => {
             if let Some(character) = state.world.character_mut(&character_id) {
                 character.property.remove(property_id);
@@ -1538,6 +1575,8 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 state.world.add_tablemask_with_id(tablemask_id, tablemask);
                 update(state, Msg::Render)
             }
+            skyway::Msg::SetTableSize(size) => update(state, Msg::SetTableSize(size)),
+            skyway::Msg::SetTableImage(data_id) => update(state, Msg::SetTableImage(data_id)),
             skyway::Msg::DrawLineToTable(start_point, end_point) => {
                 if let Some(table) = state.world.table_mut() {
                     table.draw_line(&start_point, &end_point, ColorSystem::gray(255, 9), 0.5);
@@ -1559,6 +1598,13 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             ),
             skyway::Msg::SetCharacterName(character_id, name) => {
                 update(state, Msg::SetCharacterName(character_id, name))
+            }
+            skyway::Msg::SetCharacterProperty(character_id, prop) => {
+                let prop = Property::from(prop);
+                if let Some(character) = state.world.character_mut(&character_id) {
+                    character.property = prop;
+                }
+                state.cmd_queue.dequeue()
             }
             skyway::Msg::SetTablemaskSizeWithStyle(tablemask_id, size, is_rounded) => update(
                 state,
