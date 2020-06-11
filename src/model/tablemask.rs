@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 pub struct Tablemask {
     size: [f64; 2],
     position: [f64; 3],
+    z_rotation: f64,
     background_color: Color,
     size_is_binded: bool,
     is_rounded: bool,
@@ -14,6 +15,7 @@ pub struct Tablemask {
 pub struct TablemaskData {
     pub size: [f64; 2],
     pub position: [f64; 3],
+    pub z_rotation: f64,
     pub background_color: u32,
     pub size_is_binded: bool,
     pub is_rounded: bool,
@@ -24,6 +26,7 @@ impl Tablemask {
         Self {
             size: [8.0, 8.0],
             position: [0.0, 0.0, 0.0],
+            z_rotation: 0.0,
             background_color: ColorSystem::red(127, 5),
             size_is_binded: true,
             is_rounded: true,
@@ -61,6 +64,14 @@ impl Tablemask {
         &self.position
     }
 
+    pub fn set_z_rotation(&mut self, z_rotation: f64) {
+        self.z_rotation = z_rotation;
+    }
+
+    pub fn z_rotation(&self) -> f64 {
+        self.z_rotation
+    }
+
     pub fn bind_to_grid(&mut self) {
         let p = self.position;
         let p = [(p[0] * 2.0).round() / 2.0, (p[1] * 2.0).round() / 2.0];
@@ -79,6 +90,7 @@ impl Tablemask {
         TablemaskData {
             size: self.size.clone(),
             position: self.position.clone(),
+            z_rotation: self.z_rotation,
             background_color: self.background_color.to_u32(),
             size_is_binded: self.size_is_binded,
             is_rounded: self.is_rounded,
@@ -92,6 +104,7 @@ impl Clone for Tablemask {
 
         clone.set_size(self.size.clone());
         clone.set_position(self.position.clone());
+        clone.set_z_rotation(self.z_rotation);
         clone.set_background_color(Color::from(self.background_color().to_u32()));
         clone.set_is_rounded(self.is_rounded());
 
@@ -104,6 +117,7 @@ impl From<TablemaskData> for Tablemask {
         Self {
             size: tablemask_data.size,
             position: tablemask_data.position,
+            z_rotation: tablemask_data.z_rotation,
             background_color: Color::from(tablemask_data.background_color),
             size_is_binded: tablemask_data.size_is_binded,
             is_rounded: tablemask_data.is_rounded,
@@ -120,6 +134,7 @@ impl TablemaskData {
         object! {
             size: array![self.size[0], self.size[1]],
             position: array![self.position[0], self.position[1], self.position[2]],
+            z_rotation: self.z_rotation,
             background_color: background_color,
             size_is_binded: size_is_binded,
             is_rounded: is_rounded
@@ -159,10 +174,15 @@ impl From<JsObject> for TablemaskData {
             .get("is_rounded")
             .and_then(|x| x.as_bool())
             .unwrap_or(false);
+        let z_rotation = obj
+            .get("z_rotation")
+            .and_then(|x| x.as_f64())
+            .unwrap_or(0.0);
 
         Self {
             size,
             position,
+            z_rotation,
             background_color,
             size_is_binded,
             is_rounded,
