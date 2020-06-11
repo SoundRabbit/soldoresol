@@ -14,7 +14,7 @@ mod texturelayer;
 mod world;
 
 pub use camera::Camera;
-pub use character::Character;
+pub use character::{Character, CharacterData};
 pub use chat::Chat;
 pub use chat_item::ChatItem;
 pub use chat_tab::ChatTab;
@@ -23,7 +23,7 @@ pub use color_system::ColorSystem;
 pub use icon::Icon;
 pub use property::{Property, PropertyValue};
 pub use resource::{Resource, ResourceData};
-pub use table::Table;
-pub use tablemask::Tablemask;
+pub use table::{Table, TableData};
+pub use tablemask::{Tablemask, TablemaskData};
 pub use texturelayer::TexstureLayer;
 pub use world::{World, WorldData};

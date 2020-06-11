@@ -1,5 +1,5 @@
 use crate::{
-    model::{ResourceData, WorldData},
+    model::{CharacterData, ResourceData, TablemaskData, WorldData},
     JsObject,
 };
 use js_sys::Array;
@@ -81,8 +81,8 @@ impl Room {
 pub enum Msg {
     DrawLineToTable([f64; 2], [f64; 2]),
     EraceLineToTable([f64; 2], [f64; 2]),
-    CreateCharacterToTable(u128, JsObject),
-    CreateTablemaskToTable(u128, JsObject),
+    CreateCharacterToTable(u128, CharacterData),
+    CreateTablemaskToTable(u128, TablemaskData),
     SetCharacterImage(u128, u128),
     SetCharacterSize(u128, [f64; 2]),
     SetCharacterName(u128, String),
@@ -135,9 +135,17 @@ impl Into<JsObject> for Msg {
             Self::DrawLineToTable(b, e) | Self::EraceLineToTable(b, e) => {
                 array![b[0], b[1], e[0], e[1]].into()
             }
-            Self::CreateCharacterToTable(id, pos)
-            | Self::CreateTablemaskToTable(id, pos)
-            | Self::SetObjectPosition(id, pos) => {
+            Self::CreateCharacterToTable(id, character) => {
+                let character: JsObject = character.into();
+                let character: JsValue = character.into();
+                array![id.to_string(), character].into()
+            }
+            Self::CreateTablemaskToTable(id, tablemask) => {
+                let tablemask: JsObject = tablemask.into();
+                let tablemask: JsValue = tablemask.into();
+                array![id.to_string(), tablemask].into()
+            }
+            Self::SetObjectPosition(id, pos) => {
                 array![id.to_string(), pos[0], pos[1], pos[2]].into()
             }
             Self::SetCharacterImage(c_id, d_id) => {
@@ -153,7 +161,10 @@ impl Into<JsObject> for Msg {
                 JsValue::from(id.to_string())
             }
             Self::SetIsBindToGrid(f) => JsValue::from(f),
-            Self::SetWorld(world_data) => world_data.as_object().into(),
+            Self::SetWorld(world_data) => {
+                let world_data: JsObject = world_data.into();
+                world_data.into()
+            }
             Self::SetChat(chat) => chat.into(),
             Self::SetResource(resource_data) => resource_data.as_object().into(),
             Self::SetConnection(connection) => {
@@ -198,22 +209,14 @@ impl From<JsObject> for Msg {
                     let args = payload.dyn_ref::<Array>().unwrap().to_vec();
                     Self::CreateCharacterToTable(
                         args[0].as_string().unwrap().parse().unwrap(),
-                        [
-                            args[1].as_f64().unwrap(),
-                            args[2].as_f64().unwrap(),
-                            args[3].as_f64().unwrap(),
-                        ],
+                        CharacterData::from(args[1].dyn_into::<JsObject>().unwrap()),
                     )
                 }
                 "CreateTablemaskToTable" => {
                     let args = payload.dyn_ref::<Array>().unwrap().to_vec();
                     Self::CreateTablemaskToTable(
                         args[0].as_string().unwrap().parse().unwrap(),
-                        [
-                            args[1].as_f64().unwrap(),
-                            args[2].as_f64().unwrap(),
-                            args[3].as_f64().unwrap(),
-                        ],
+                        TablemaskData::from(args[1].dyn_into::<JsObject>().unwrap()),
                     )
                 }
                 "SetObjectPosition" => {

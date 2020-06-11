@@ -167,6 +167,12 @@ impl Into<JsObject> for WorldData {
     }
 }
 
+impl From<JsObject> for WorldData {
+    fn from(obj: JsObject) -> Self {
+        Self(obj)
+    }
+}
+
 impl Deref for WorldData {
     type Target = JsObject;
     fn deref(&self) -> &Self::Target {
