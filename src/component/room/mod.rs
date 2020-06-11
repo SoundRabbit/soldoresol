@@ -1860,7 +1860,8 @@ fn table_tool_option(selecting_tool: &TableTool) -> Vec<Html<Msg>> {
                     Html::input(
                         Attributes::new()
                             .value(line_width.to_string())
-                            .type_("number"),
+                            .type_("number")
+                            .string("step", "0.1"),
                         Events::new().on_input({
                             let start_point = start_point.clone();
                             let rounded = *rounded;
