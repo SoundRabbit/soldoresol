@@ -933,9 +933,20 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
         Msg::AddTablemaskWithPointABToTransport(line_width, begin, end, is_rounded) => {
             let begin = get_table_position(&state, &begin, state.pixel_ratio);
-            let begin = [begin[0], begin[1]];
+            let begin = if state.world.table().is_bind_to_grid() {
+                [
+                    (2.0 * begin[0]).round() / 2.0,
+                    (2.0 * begin[1]).round() / 2.0,
+                ]
+            } else {
+                [begin[0], begin[1]]
+            };
             let end = get_table_position(&state, &end, state.pixel_ratio);
-            let end = [end[0], end[1]];
+            let end = if state.world.table().is_bind_to_grid() {
+                [(2.0 * end[0]).round() / 2.0, (2.0 * end[1]).round() / 2.0]
+            } else {
+                [end[0], end[1]]
+            };
             let r = ((end[0] - begin[0]).powi(2) + (end[1] - begin[1]).powi(2)).sqrt();
             let mut table_mask = Tablemask::new();
             if is_rounded {
