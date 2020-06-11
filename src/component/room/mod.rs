@@ -1810,7 +1810,7 @@ fn render_header_menu(
                             Attributes::new(),
                             Events::new().on_click(|_| {
                                 Msg::SetSelectingTableTool(TableTool::Measure(
-                                    0.2, false, None, true,
+                                    0.2, false, None, false,
                                 ))
                             }),
                             vec![awesome::i("fa-ruler"), Html::text(" 計測")],
