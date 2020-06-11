@@ -89,7 +89,7 @@ pub enum TableTool {
     Selector,
     Pen,
     Eracer,
-    Measure(Option<[f64; 2]>),
+    Measure(f64, bool, Option<[f64; 2]>),
 }
 
 impl TableTool {
@@ -113,7 +113,7 @@ impl TableTool {
     }
     fn is_measure(&self) -> bool {
         match self {
-            Self::Measure(_) => true,
+            Self::Measure(..) => true,
             _ => false,
         }
     }
@@ -264,7 +264,7 @@ pub enum Msg {
     SetCursorWithMouseCoord([f64; 2]),
     DrawLineWithMouseCoord([f64; 2]),
     EraceLineWithMouseCoord([f64; 2]),
-    SetMeasureStartPointAndEndPointWithMouseCoord([f64; 2], [f64; 2]),
+    SetMeasureStartPointAndEndPointWithMouseCoord(f64, bool, [f64; 2], [f64; 2]),
     SetObjectPositionWithMouseCoord(u128, [f64; 2]),
     SetObjectPositionToTransport(u128, [f64; 3]),
     SetObjectPosition(u128, [f64; 3]),
@@ -740,7 +740,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                             ColorSystem::gray(255, 1),
                         );
                     }
-                    TableTool::Measure(_) => {
+                    TableTool::Measure(..) => {
                         table.draw_cursor(
                             &table_coord,
                             0.125,
@@ -810,7 +810,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
         Msg::SetSelectingTableTool(table_tool) => {
             match &table_tool {
-                TableTool::Measure(Option::None) => {
+                TableTool::Measure(.., Option::None) => {
                     state.table_state.measure_length = None;
                     state.world.table_mut().map(|table| table.clear_measure());
                 }
@@ -866,13 +866,24 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 .send(skyway::Msg::EraceLineToTable(start_point, end_point));
             update(state, Msg::SetCursorWithMouseCoord(mouse_coord))
         }
-        Msg::SetMeasureStartPointAndEndPointWithMouseCoord(start_point, mouse_coord) => {
+        Msg::SetMeasureStartPointAndEndPointWithMouseCoord(
+            line_width,
+            rounded,
+            start_point,
+            mouse_coord,
+        ) => {
             let start_point = get_table_position(&state, &start_point, state.pixel_ratio);
             let start_point = [start_point[0], start_point[1]];
             let end_point = get_table_position(&state, &mouse_coord, state.pixel_ratio);
             let end_point = [end_point[0], end_point[1]];
             let measure_length = state.world.table_mut().map(|table| {
-                table.draw_measure(&start_point, &end_point, ColorSystem::red(255, 5), 0.2)
+                table.draw_measure(
+                    &start_point,
+                    &end_point,
+                    ColorSystem::red(255, 5),
+                    line_width,
+                    rounded,
+                )
             });
             state.table_state.measure_length = Some(measure_length.unwrap_or(0.0));
             update(state, Msg::SetCursorWithMouseCoord(mouse_coord))
@@ -1740,35 +1751,45 @@ fn render_header_menu(
                 Attributes::new()
                     .class("grid-w-12")
                     .class("linear-h")
-                    .class("centering-v-i"),
+                    .class("centering-v-i")
+                    .class("pure-form"),
                 Events::new(),
                 vec![
-                    btn::selectable(
-                        selecting_tool.is_selector(),
-                        Attributes::new(),
-                        Events::new().on_click(|_| Msg::SetSelectingTableTool(TableTool::Selector)),
-                        vec![awesome::i("fa-mouse-pointer"), Html::text(" 選択")],
-                    ),
-                    btn::selectable(
-                        selecting_tool.is_pen(),
-                        Attributes::new(),
-                        Events::new().on_click(|_| Msg::SetSelectingTableTool(TableTool::Pen)),
-                        vec![awesome::i("fa-pen"), Html::text(" ペン")],
-                    ),
-                    btn::selectable(
-                        selecting_tool.is_eracer(),
-                        Attributes::new(),
-                        Events::new().on_click(|_| Msg::SetSelectingTableTool(TableTool::Eracer)),
-                        vec![awesome::i("fa-eraser"), Html::text(" 消しゴム")],
-                    ),
-                    btn::selectable(
-                        selecting_tool.is_measure(),
-                        Attributes::new(),
-                        Events::new()
-                            .on_click(|_| Msg::SetSelectingTableTool(TableTool::Measure(None))),
-                        vec![awesome::i("fa-ruler"), Html::text(" 計測")],
-                    ),
-                ],
+                    vec![
+                        btn::selectable(
+                            selecting_tool.is_selector(),
+                            Attributes::new(),
+                            Events::new()
+                                .on_click(|_| Msg::SetSelectingTableTool(TableTool::Selector)),
+                            vec![awesome::i("fa-mouse-pointer"), Html::text(" 選択")],
+                        ),
+                        btn::selectable(
+                            selecting_tool.is_pen(),
+                            Attributes::new(),
+                            Events::new().on_click(|_| Msg::SetSelectingTableTool(TableTool::Pen)),
+                            vec![awesome::i("fa-pen"), Html::text(" ペン")],
+                        ),
+                        btn::selectable(
+                            selecting_tool.is_eracer(),
+                            Attributes::new(),
+                            Events::new()
+                                .on_click(|_| Msg::SetSelectingTableTool(TableTool::Eracer)),
+                            vec![awesome::i("fa-eraser"), Html::text(" 消しゴム")],
+                        ),
+                        btn::selectable(
+                            selecting_tool.is_measure(),
+                            Attributes::new(),
+                            Events::new().on_click(|_| {
+                                Msg::SetSelectingTableTool(TableTool::Measure(0.2, false, None))
+                            }),
+                            vec![awesome::i("fa-ruler"), Html::text(" 計測")],
+                        ),
+                    ],
+                    table_tool_option(selecting_tool),
+                ]
+                .into_iter()
+                .flatten()
+                .collect(),
             ),
             Html::div(
                 Attributes::new()
@@ -1819,6 +1840,75 @@ fn render_header_menu(
             ),
         ],
     )
+}
+
+fn table_tool_option(selecting_tool: &TableTool) -> Vec<Html<Msg>> {
+    match selecting_tool {
+        TableTool::Selector => vec![],
+        TableTool::Pen => vec![],
+        TableTool::Eracer => vec![],
+        TableTool::Measure(line_width, rounded, start_point) => vec![
+            Html::div(
+                Attributes::new().class("keyvalue"),
+                Events::new(),
+                vec![
+                    Html::span(
+                        Attributes::new().class("text-label"),
+                        Events::new(),
+                        vec![Html::text("太さ")],
+                    ),
+                    Html::input(
+                        Attributes::new()
+                            .value(line_width.to_string())
+                            .type_("number"),
+                        Events::new().on_input({
+                            let start_point = start_point.clone();
+                            let rounded = *rounded;
+                            move |w| {
+                                w.parse()
+                                    .map(|w| {
+                                        Msg::SetSelectingTableTool(TableTool::Measure(
+                                            w,
+                                            rounded,
+                                            start_point,
+                                        ))
+                                    })
+                                    .unwrap_or(Msg::NoOp)
+                            }
+                        }),
+                        vec![],
+                    ),
+                ],
+            ),
+            Html::div(
+                Attributes::new().class("keyvalue"),
+                Events::new(),
+                vec![
+                    Html::span(
+                        Attributes::new().class("text-label"),
+                        Events::new(),
+                        vec![Html::text("円弧")],
+                    ),
+                    btn::toggle(
+                        *rounded,
+                        Attributes::new(),
+                        Events::new().on_click({
+                            let start_point = start_point.clone();
+                            let rounded = *rounded;
+                            let line_width = *line_width;
+                            move |_| {
+                                Msg::SetSelectingTableTool(TableTool::Measure(
+                                    line_width,
+                                    !rounded,
+                                    start_point,
+                                ))
+                            }
+                        }),
+                    ),
+                ],
+            ),
+        ],
+    }
 }
 
 fn render_side_menu() -> Html<Msg> {
@@ -1973,8 +2063,10 @@ fn render_canvas_overlaper(
                             },
                             TableTool::Pen => Msg::DrawLineWithMouseCoord(mouse_coord),
                             TableTool::Eracer => Msg::EraceLineWithMouseCoord(mouse_coord),
-                            TableTool::Measure(Some(start_point)) => {
+                            TableTool::Measure(line_width, rounded, Some(start_point)) => {
                                 Msg::SetMeasureStartPointAndEndPointWithMouseCoord(
+                                    line_width,
+                                    rounded,
                                     start_point,
                                     mouse_coord,
                                 )
@@ -1997,9 +2089,13 @@ fn render_canvas_overlaper(
                 move |e| {
                     e.stop_propagation();
                     match selecting_tool {
-                        TableTool::Measure(_) => {
+                        TableTool::Measure(line_width, rounded, ..) => {
                             let mouse_coord = [e.offset_x() as f64, e.offset_y() as f64];
-                            Msg::SetSelectingTableTool(TableTool::Measure(Some(mouse_coord)))
+                            Msg::SetSelectingTableTool(TableTool::Measure(
+                                line_width,
+                                rounded,
+                                Some(mouse_coord),
+                            ))
                         }
                         _ => Msg::NoOp,
                     }
@@ -2015,9 +2111,9 @@ fn render_canvas_overlaper(
                             Some(object_id) => Msg::BindObjectToTableGridToTransport(object_id),
                             None => Msg::NoOp,
                         },
-                        TableTool::Measure(_) => {
-                            Msg::SetSelectingTableTool(TableTool::Measure(None))
-                        }
+                        TableTool::Measure(line_width, rounded, ..) => Msg::SetSelectingTableTool(
+                            TableTool::Measure(line_width, rounded, None),
+                        ),
                         _ => Msg::NoOp,
                     }
                 }

@@ -172,6 +172,7 @@ impl Table {
         end: &[f64; 2],
         color: Color,
         line_width: f64,
+        with_cirlce: bool,
     ) -> f64 {
         let context = self.measure_texture.context();
 
@@ -191,7 +192,9 @@ impl Table {
         context.move_to(bx, by);
         context.line_to(ex, ey);
         context.move_to(bx + radious, by);
-        let _ = context.arc(bx, by, radious, 0.0, 2.0 * std::f64::consts::PI);
+        if with_cirlce {
+            let _ = context.arc(bx, by, radious, 0.0, 2.0 * std::f64::consts::PI);
+        }
         context.fill();
         context.stroke();
 
