@@ -89,8 +89,8 @@ impl Property {
         }
     }
 
-    pub fn get(&self, id: u128) -> Option<&Self> {
-        if self.id == id {
+    pub fn get(&self, id: &u128) -> Option<&Self> {
+        if self.id == *id {
             Some(self)
         } else if let PropertyValue::Children(children) = &self.value {
             children.iter().find_map(|x| x.get(id))
@@ -99,8 +99,8 @@ impl Property {
         }
     }
 
-    pub fn get_mut(&mut self, id: u128) -> Option<&mut Self> {
-        if self.id == id {
+    pub fn get_mut(&mut self, id: &u128) -> Option<&mut Self> {
+        if self.id == *id {
             Some(self)
         } else if let PropertyValue::Children(children) = &mut self.value {
             children.iter_mut().find_map(|x| x.get_mut(id))
@@ -109,8 +109,16 @@ impl Property {
         }
     }
 
+    pub fn id(&self) -> &u128 {
+        &self.id
+    }
+
     pub fn name(&self) -> &String {
         &self.name
+    }
+
+    pub fn set_value(&mut self, value: PropertyValue) {
+        self.value = value;
     }
 
     pub fn value(&self) -> &PropertyValue {

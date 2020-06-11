@@ -194,7 +194,7 @@ fn object_character(character: &Character, character_id: u128, resource: &Resour
                                         .class("keyvalueoption"),
                                     Events::new(),
                                     vec![
-                                        character_property(&character.property),
+                                        character_property(character_id, &character.property),
                                         vec![
                                             btn::secondary(
                                                 Attributes::new().class("keyvalueoption-banner-2"),
@@ -217,7 +217,8 @@ fn object_character(character: &Character, character_id: u128, resource: &Resour
     )
 }
 
-fn character_property(property: &Property) -> Vec<Html<Msg>> {
+fn character_property(character_id: u128, property: &Property) -> Vec<Html<Msg>> {
+    let property_id = *property.id();
     match property.value() {
         PropertyValue::None => vec![
             Html::input(
@@ -242,7 +243,17 @@ fn character_property(property: &Property) -> Vec<Html<Msg>> {
             ),
             Html::input(
                 Attributes::new().value(n.to_string()).type_("number"),
-                Events::new(),
+                Events::new().on_input(move |s| {
+                    s.parse()
+                        .map(|n| {
+                            Msg::SetCharacterPropertyToTransport(
+                                character_id,
+                                property_id,
+                                PropertyValue::Num(n),
+                            )
+                        })
+                        .unwrap_or(Msg::NoOp)
+                }),
                 vec![],
             ),
             btn::transparent(
@@ -259,7 +270,13 @@ fn character_property(property: &Property) -> Vec<Html<Msg>> {
             ),
             Html::input(
                 Attributes::new().value(s).type_("text"),
-                Events::new(),
+                Events::new().on_input(move |s| {
+                    Msg::SetCharacterPropertyToTransport(
+                        character_id,
+                        property_id,
+                        PropertyValue::Str(s),
+                    )
+                }),
                 vec![],
             ),
             btn::transparent(
@@ -291,7 +308,7 @@ fn character_property(property: &Property) -> Vec<Html<Msg>> {
                 vec![
                     children
                         .iter()
-                        .map(|property| character_property(property))
+                        .map(|property| character_property(character_id, property))
                         .flatten()
                         .collect(),
                     vec![

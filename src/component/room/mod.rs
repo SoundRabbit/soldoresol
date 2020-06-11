@@ -5,8 +5,8 @@ use super::{awesome, btn, contextmenu, modeless::container as modeless_container
 use crate::{
     model::{
         resource::{Data, ResourceData},
-        Camera, Character, Chat, ChatItem, ChatTab, Color, ColorSystem, Icon, Resource, Tablemask,
-        World,
+        Camera, Character, Chat, ChatItem, ChatTab, Color, ColorSystem, Icon, PropertyValue,
+        Resource, Tablemask, World,
     },
     random_id,
     renderer::Renderer,
@@ -312,6 +312,8 @@ pub enum Msg {
     SetTablemaskSizeIsBinded(u128, bool),
     SetTablemaskColorToTransport(u128, Color),
     SetTablemaskColor(u128, Color),
+    SetCharacterPropertyToTransport(u128, u128, PropertyValue),
+    SetCharacterProperty(u128, u128, PropertyValue),
 
     // チャット関係
     SetSelectingChatTabIdx(usize),
@@ -1225,6 +1227,20 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 }
             }
             update(state, Msg::Render)
+        }
+        Msg::SetCharacterPropertyToTransport(character_id, property_id, property_value) => update(
+            state,
+            Msg::SetCharacterProperty(character_id, property_id, property_value),
+        ),
+        Msg::SetCharacterProperty(character_id, property_id, property_value) => {
+            if let Some(property) = state
+                .world
+                .character_mut(&character_id)
+                .and_then(|c| c.property.get_mut(&property_id))
+            {
+                property.set_value(property_value);
+            }
+            state.cmd_queue.dequeue()
         }
 
         // チャット周り
