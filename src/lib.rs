@@ -4,6 +4,7 @@ extern crate hex;
 extern crate kagura;
 extern crate ndarray;
 extern crate regex;
+extern crate sainome;
 extern crate serde;
 extern crate serde_json;
 extern crate toml;
