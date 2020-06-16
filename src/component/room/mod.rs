@@ -3,6 +3,7 @@ mod modeless;
 
 use super::{awesome, btn, contextmenu, modeless::container as modeless_container, modeless_modal};
 use crate::{
+    dice_bot,
     model::{
         resource::{Data, ResourceData},
         Camera, Character, Chat, ChatItem, ChatTab, Color, ColorSystem, Icon, Property,
@@ -230,6 +231,7 @@ pub struct State {
     loading_state: i64,
     loading_resource_num: u64,
     loaded_resource_num: u64,
+    dice_bot: dice_bot::RunTime,
     cmd_queue: CmdQueue<Msg, Sub>,
 }
 
@@ -396,6 +398,7 @@ pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
                 loading_state: 0,
                 loading_resource_num: 0,
                 loaded_resource_num: 0,
+                dice_bot: dice_bot::new(),
                 cmd_queue: CmdQueue::new(),
             };
             let task = Cmd::task(|handler| {
