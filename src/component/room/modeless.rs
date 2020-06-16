@@ -554,21 +554,11 @@ pub fn chat(
                                                 Html::div(
                                                     Attributes::new().class("chat-payload"),
                                                     Events::new(),
-                                                    vec![
-                                                        Html::pre(
-                                                            Attributes::new().class("text-wrap"),
-                                                            Events::new(),
-                                                            vec![Html::text(item.payload())],
-                                                        ),
-                                                        Html::textarea(
-                                                            Attributes::new()
-                                                                .class("text-wrap")
-                                                                .flag("readonly")
-                                                                .value(item.payload()),
-                                                            Events::new(),
-                                                            vec![],
-                                                        ),
-                                                    ],
+                                                    vec![Html::pre(
+                                                        Attributes::new().class("text-wrap"),
+                                                        Events::new(),
+                                                        vec![Html::text(item.payload())],
+                                                    )],
                                                 ),
                                             ],
                                         )
