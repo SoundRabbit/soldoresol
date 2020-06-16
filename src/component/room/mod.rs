@@ -1415,6 +1415,24 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 if let Some((display_name, character_id, icon)) = sender {
                     let tab_idx = state.chat_data.selecting_tab_idx;
 
+                    let dice_bot = &mut state.dice_bot;
+                    let chat_cmd = message.as_str().split_whitespace().collect::<Vec<&str>>();
+                    let chat_cmd = chat_cmd.get(0).map(|x| x.to_string());
+                    let chat_cmd_result = chat_cmd.as_ref().and_then(|x| dice_bot.exec(x));
+
+                    let bot_msg = if let Some(result) = chat_cmd_result {
+                        match result {
+                            sainome::ExecResult::Bool(x) => Some(format!("{:?}", x)),
+                            sainome::ExecResult::List(x) => Some(format!("{:?}", x)),
+                            sainome::ExecResult::None => Some("".into()),
+                            sainome::ExecResult::Num(x) => Some(format!("{:?}", x)),
+                            sainome::ExecResult::Str(x) => Some(format!("{:?}", x)),
+                            _ => None,
+                        }
+                    } else {
+                        None
+                    };
+
                     let chat_item =
                         ChatItem::new(display_name, state.peer.id(), character_id, icon, message);
 
@@ -1424,6 +1442,17 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     ));
 
                     cmd = update(state, Msg::InsertChatItem(tab_idx, chat_item));
+
+                    if let (Some(chat_cmd), Some(bot_msg)) = (chat_cmd, bot_msg) {
+                        let chat_item = ChatItem::new(
+                            "DiceBot",
+                            state.peer.id(),
+                            None,
+                            Icon::None,
+                            chat_cmd + " → " + &bot_msg,
+                        );
+                        cmd = update(state, Msg::InsertChatItem(tab_idx, chat_item));
+                    }
                 }
             }
             cmd
