@@ -1380,6 +1380,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             let sender = &state.chat_data.senders[state.chat_data.selecting_sender_idx];
             let message: String = state.chat_data.inputing_message.drain(..).collect();
             let message: String = message.as_str().trim_end().into();
+            let mut cmd = Cmd::none();
 
             if message.as_str().len() > 0 {
                 let sender = match sender {
@@ -1419,11 +1420,10 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                         chat_item.as_object(),
                     ));
 
-                    let cmd = update(state, Msg::InsertChatItem(tab_idx, chat_item));
-                    state.cmd_queue.enqueue(cmd);
+                    cmd = update(state, Msg::InsertChatItem(tab_idx, chat_item));
                 }
             }
-            state.cmd_queue.dequeue()
+            cmd
         }
         Msg::InsertChatItem(tab_idx, chat_item) => {
             let tabs = &mut state.chat_data.tabs;
