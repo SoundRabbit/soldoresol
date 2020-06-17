@@ -1,14 +1,12 @@
 use sainome;
+use std::rc::Rc;
+
+thread_local! { static RUN_TIME: Rc<sainome::RunTime<'static>> = Rc::new(sainome::RunTime::new(rand)); }
 
 pub type RunTime = sainome::RunTime<'static>;
-pub type ExecEnv<'a> = sainome::ExecEnv<'a>;
 
 pub fn new_run_time() -> RunTime {
     RunTime::new(rand)
-}
-
-pub fn new_exec_env<'a>() -> ExecEnv<'a> {
-    ExecEnv::new()
 }
 
 fn rand(n: u32) -> u32 {

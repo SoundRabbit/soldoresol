@@ -1417,17 +1417,20 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
                     let (bot_msg, chat_cmd) = {
                         let dice_bot = &state.dice_bot;
-                        let dice_bot_env = dice_bot::new_exec_env();
                         let chat_cmd = message.as_str().split_whitespace().collect::<Vec<&str>>();
                         let chat_cmd = chat_cmd.get(0).map(|x| x.to_string());
                         let chat_cmd_result = chat_cmd
                             .as_ref()
-                            .and_then(|x| dice_bot.exec(x, &dice_bot_env));
+                            .and_then(move |x| sainome::exec(x, &dice_bot));
 
                         let bot_msg = if let Some(result) = chat_cmd_result {
                             match result {
                                 sainome::ExecResult::Err(..) => None,
-                                _ => Some(format!("{}", result)),
+                                _ => {
+                                    let mut msgs = dice_bot.log();
+                                    msgs.push(format!("{}", result));
+                                    Some(msgs.join(" → "))
+                                }
                             }
                         } else {
                             None
