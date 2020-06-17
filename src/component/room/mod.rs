@@ -398,7 +398,7 @@ pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
                 loading_state: 0,
                 loading_resource_num: 0,
                 loaded_resource_num: 0,
-                dice_bot: dice_bot::new(),
+                dice_bot: dice_bot::new_run_time(),
                 cmd_queue: CmdQueue::new(),
             };
             let task = Cmd::task(|handler| {
@@ -1415,22 +1415,25 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 if let Some((display_name, character_id, icon)) = sender {
                     let tab_idx = state.chat_data.selecting_tab_idx;
 
-                    let dice_bot = &mut state.dice_bot;
-                    let chat_cmd = message.as_str().split_whitespace().collect::<Vec<&str>>();
-                    let chat_cmd = chat_cmd.get(0).map(|x| x.to_string());
-                    let chat_cmd_result = chat_cmd.as_ref().and_then(|x| dice_bot.exec(x));
+                    let (bot_msg, chat_cmd) = {
+                        let dice_bot = &state.dice_bot;
+                        let dice_bot_env = dice_bot::new_exec_env();
+                        let chat_cmd = message.as_str().split_whitespace().collect::<Vec<&str>>();
+                        let chat_cmd = chat_cmd.get(0).map(|x| x.to_string());
+                        let chat_cmd_result = chat_cmd
+                            .as_ref()
+                            .and_then(|x| dice_bot.exec(x, &dice_bot_env));
 
-                    let bot_msg = if let Some(result) = chat_cmd_result {
-                        match result {
-                            sainome::ExecResult::Bool(x) => Some(format!("{:?}", x)),
-                            sainome::ExecResult::List(x) => Some(format!("{:?}", x)),
-                            sainome::ExecResult::None => Some("".into()),
-                            sainome::ExecResult::Num(x) => Some(format!("{:?}", x)),
-                            sainome::ExecResult::Str(x) => Some(format!("{:?}", x)),
-                            _ => None,
-                        }
-                    } else {
-                        None
+                        let bot_msg = if let Some(result) = chat_cmd_result {
+                            match result {
+                                sainome::ExecResult::Err(..) => None,
+                                _ => Some(format!("{}", result)),
+                            }
+                        } else {
+                            None
+                        };
+
+                        (bot_msg, chat_cmd)
                     };
 
                     let chat_item =
@@ -1451,6 +1454,10 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                             Icon::None,
                             chat_cmd + " → " + &bot_msg,
                         );
+                        state.room.send(skyway::Msg::InsertChatItem(
+                            tab_idx as u32,
+                            chat_item.as_object(),
+                        ));
                         cmd = update(state, Msg::InsertChatItem(tab_idx, chat_item));
                     }
                 }

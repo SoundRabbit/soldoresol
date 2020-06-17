@@ -1,9 +1,14 @@
 use sainome;
 
 pub type RunTime = sainome::RunTime<'static>;
+pub type ExecEnv<'a> = sainome::ExecEnv<'a>;
 
-pub fn new() -> RunTime {
+pub fn new_run_time() -> RunTime {
     RunTime::new(rand)
+}
+
+pub fn new_exec_env<'a>() -> ExecEnv<'a> {
+    ExecEnv::new()
 }
 
 fn rand(n: u32) -> u32 {
