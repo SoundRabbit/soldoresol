@@ -554,7 +554,7 @@ pub fn chat(
                                                 Html::div(
                                                     Attributes::new().class("chat-payload"),
                                                     Events::new(),
-                                                    vec![Html::pre(
+                                                    vec![Html::div(
                                                         Attributes::new().class("text-wrap"),
                                                         Events::new(),
                                                         vec![Html::text(item.payload())],
