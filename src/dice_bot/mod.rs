@@ -1,19 +1,49 @@
 use sainome;
+use serde::Deserialize;
+use std::collections::HashMap;
 use std::rc::Rc;
 
 thread_local! { static RUN_TIME: Rc<sainome::RunTime<'static>> = Rc::new(sainome::RunTime::new(rand)); }
 
 pub type RunTime = sainome::RunTime<'static>;
 
+#[derive(Deserialize)]
+struct Config {
+    def: Vec<HashMap<String, String>>,
+}
+
 pub fn new_run_time() -> RunTime {
-    RunTime::new(rand)
+    let damage_rate = include!("damage_rate.txt");
+    let mut run_time = RunTime::new(rand);
+
+    let mut damage = String::from("[");
+
+    let i = damage_rate.len() - 1;
+    for i in 0..i {
+        damage = damage + "[";
+        let j = damage_rate[i].len() - 1;
+        for j in 0..j {
+            damage = damage + &damage_rate[i][j].to_string() + ",";
+        }
+        damage = damage + &damage_rate[i][j].to_string() + "],";
+    }
+    damage = damage + "[";
+    let j = damage_rate[i].len() - 1;
+    for j in 0..j {
+        damage = damage + &damage_rate[i][j].to_string() + ",";
+    }
+    damage = damage + &damage_rate[i][j].to_string() + "]]";
+
+    sainome::exec_mut((String::from("k:=") + &damage).as_str(), &mut run_time);
+
+    run_time
 }
 
 fn rand(n: u32) -> u32 {
     (js_sys::Math::random() * n as f64).floor() as u32
 }
 
-pub mod bc_dice_bot {
+pub mod bc_dice {
     use serde::Deserialize;
     use std::ops::Deref;
 
