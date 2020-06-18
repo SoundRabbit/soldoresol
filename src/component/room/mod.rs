@@ -1416,6 +1416,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     let tab_idx = state.chat_data.selecting_tab_idx;
 
                     let (bot_msg, chat_cmd) = {
+                        state.dice_bot.clear_log();
                         let dice_bot = &state.dice_bot;
                         let chat_cmd = message.as_str().split_whitespace().collect::<Vec<&str>>();
                         let chat_cmd = chat_cmd.get(0).map(|x| x.to_string());
@@ -1427,8 +1428,18 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                             match result {
                                 sainome::ExecResult::Err(..) => None,
                                 _ => {
-                                    let mut msgs = dice_bot.log();
+                                    let mut msgs = dice_bot.log().clone();
                                     msgs.push(format!("{}", result));
+                                    for msg in &mut msgs {
+                                        let mut chars = msg.chars().collect::<VecDeque<char>>();
+                                        if chars.len() >= 2 {
+                                            if chars[0] == '"' && chars[chars.len() - 1] == '"' {
+                                                chars.pop_front();
+                                                chars.pop_back();
+                                                *msg = chars.into_iter().collect();
+                                            }
+                                        }
+                                    }
                                     Some(msgs.join(" → "))
                                 }
                             }
