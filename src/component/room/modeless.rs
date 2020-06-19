@@ -515,9 +515,18 @@ pub fn chat(
                         Attributes::new()
                             .class("container-a linear-v")
                             .style("align-self", "stretch")
-                            .style("grid-template-rows", "1fr"),
+                            .style("grid-template-rows", "max-content 1fr"),
                         Events::new(),
                         vec![
+                            if selecting_tab.len() > take {
+                                btn::secondary(
+                                    Attributes::new(),
+                                    Events::new(),
+                                    vec![Html::text("全履歴を表示")],
+                                )
+                            } else {
+                                Html::div(Attributes::new(), Events::new(), vec![])
+                            },
                             Html::div(
                                 Attributes::new()
                                     .style("align-self", "stretch")

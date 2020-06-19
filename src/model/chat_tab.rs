@@ -11,9 +11,19 @@ pub struct ChatTab {
 
 impl ChatTab {
     pub fn new(name: impl Into<String>) -> Self {
+        let mut items = vec![];
+        for i in 0..1024 {
+            items.push(ChatItem::new(
+                i.to_string(),
+                0.to_string(),
+                None,
+                super::Icon::None,
+                i.to_string(),
+            ));
+        }
         Self {
             name: name.into(),
-            items: vec![],
+            items: items,
         }
     }
 
