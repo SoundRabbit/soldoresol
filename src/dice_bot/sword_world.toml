@@ -116,6 +116,8 @@ kTable = '''
     ]
 '''
 
+grTable = '["器用度", "俊敏度", "筋力", "生命力", "知力", "精神力"]'
+
 [[def]]
 sw = '''
 \c.\u.\a.(
@@ -131,19 +133,23 @@ sw = '''
     )
 )
 '''
-max = '\x.\y.(if x > y => x else y)'
-min = '\x.\y.(if x < y => x else y)'
 
 [[def]]
 k = '''
 \d.\c.\u.\a.\du.(
     roll := sw.c.u.a;
-    (len.roll - 1 |> str) + "回転" |> log;
+    rot := len.roll - 1;
+    if rot > 1 => str.rot + "回転" |> log else 0;
     count := ([]#>roll).(\p.\c.p+[len.p]);
-    roll := pack.[count, roll];
-    roll.(\r.kTable.(min.(d+du*r.0).(100)).(r.1)) |> sum
+    if (roll.0 == 2) => (
+        "自動失敗"
+    ) else (
+        roll := pack.[count, roll];
+        roll.(\r.kTable.(min.[d+du*r.0, 100]).(r.1)) |> sum
+    )
 )
 '''
+gr = '\n.n.((2b6).(\r.grTable.(r-1)))'
 
 [[pattern]]
 capture = '^k(?P<d>\d+)(?P<x>.*)@(?P<c>\d+)(\$(?P<u>[+-]?\d+)|#(?P<a>[+-]?\d+)|r(?P<du>[+-]?\d+))*$'
@@ -152,3 +158,7 @@ replace = '(k.($d).($c).($u+0).($a+0).($du+0))$x'
 [[pattern]]
 capture = 'k(?P<d>\d+)\[(?P<c>\d+)\]'
 replace = '(k.($d).($c))'
+
+[[pattern]]
+capture = '(gr|Gr|gR|GR)'
+replace = '(gr.1)'
