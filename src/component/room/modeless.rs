@@ -1,6 +1,6 @@
 use super::{
-    super::{awesome, btn, icon, modeless},
-    CharacterSelecterType, ChatDataCollection, ChatSender, Icon, Modal, ModelessState, Msg,
+    super::{awesome, btn, modeless},
+    common, CharacterSelecterType, ChatDataCollection, ChatSender, Icon, Modal, ModelessState, Msg,
     PersonalData, SelectImageModal,
 };
 use crate::{
@@ -521,7 +521,7 @@ pub fn chat(
                             if selecting_tab.len() > take {
                                 btn::secondary(
                                     Attributes::new(),
-                                    Events::new(),
+                                    Events::new().on_click(|_| Msg::OpenModal(Modal::ChatLog)),
                                     vec![Html::text("全履歴を表示")],
                                 )
                             } else {
@@ -543,7 +543,7 @@ pub fn chat(
                                             Attributes::new().class("pure-form chat-item"),
                                             Events::new(),
                                             vec![
-                                                chat_icon(
+                                                common::chat_icon(
                                                     Attributes::new()
                                                         .class("icon-medium")
                                                         .class("chat-icon"),
@@ -654,7 +654,7 @@ pub fn chat(
                                                                     Icon::Resource(icon_id)
                                                                 })
                                                                 .unwrap_or(Icon::DefaultUser);
-                                                            chat_icon(
+                                                            common::chat_icon(
                                                                 attrs
                                                                     .class("clickable")
                                                                     .class("icon-small")
@@ -678,7 +678,7 @@ pub fn chat(
                                                                         Icon::Resource(r_id)
                                                                     })
                                                                     .unwrap_or(Icon::DefaultUser);
-                                                                chat_icon(
+                                                                common::chat_icon(
                                                                     attrs
                                                                         .class("clickable")
                                                                         .class("icon-small")
@@ -887,18 +887,4 @@ fn header(modeless_id: u128, header: Html<Msg>) -> Html<Msg> {
             ),
         ],
     )
-}
-
-fn chat_icon(attrs: Attributes, icon: &Icon, alt: &str, resource: &Resource) -> Html<Msg> {
-    match icon {
-        Icon::None => icon::none(attrs),
-        Icon::Resource(r_id) => {
-            if let Some(img_url) = resource.get_as_image_url(&r_id) {
-                icon::from_img(attrs, img_url.as_str())
-            } else {
-                icon::from_str(attrs, alt)
-            }
-        }
-        _ => icon::from_str(attrs, &alt),
-    }
 }

@@ -1,3 +1,4 @@
+mod common;
 mod modal;
 mod modeless;
 
@@ -181,6 +182,7 @@ pub enum Modal {
     ColorPicker(ColorPickerType),
     CharacterSelecter(CharacterSelecterType),
     TableSetting,
+    ChatLog,
 }
 
 struct CmdQueue<M, S> {
@@ -2745,6 +2747,7 @@ fn render_modals(
                     resource,
                 ),
             },
+            Modal::ChatLog => modal::chat_log(chat_data, resource),
         };
         children.push(child);
     }
