@@ -210,10 +210,10 @@ struct DiceBot {
 
 impl DiceBot {
     fn new() -> Self {
-        Self {
-            run_time: dice_bot::new_run_time(),
-            config: dice_bot::config(),
-        }
+        let mut run_time = dice_bot::new_run_time();
+        let config = dice_bot::config();
+        dice_bot::set_env(&config, &mut run_time);
+        Self { run_time, config }
     }
 }
 
@@ -1432,8 +1432,11 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     let (bot_msg, chat_cmd) = {
                         state.dice_bot.run_time.clear_log();
                         let run_time = &state.dice_bot.run_time;
+                        let config = &state.dice_bot.config;
                         let chat_cmd = message.as_str().split_whitespace().collect::<Vec<&str>>();
-                        let chat_cmd = chat_cmd.get(0).map(|x| x.to_string());
+                        let chat_cmd = chat_cmd
+                            .get(0)
+                            .map(|x| dice_bot::cmd_with_config(x.to_string(), &config));
                         let chat_cmd_result = chat_cmd
                             .as_ref()
                             .and_then(move |x| sainome::exec(x, &run_time));
@@ -1444,16 +1447,6 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                                 _ => {
                                     let mut msgs = run_time.log().clone();
                                     msgs.push(format!("{}", result));
-                                    for msg in &mut msgs {
-                                        let mut chars = msg.chars().collect::<VecDeque<char>>();
-                                        if chars.len() >= 2 {
-                                            if chars[0] == '"' && chars[chars.len() - 1] == '"' {
-                                                chars.pop_front();
-                                                chars.pop_back();
-                                                *msg = chars.into_iter().collect();
-                                            }
-                                        }
-                                    }
                                     Some(msgs.join(" → "))
                                 }
                             }

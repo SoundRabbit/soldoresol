@@ -117,11 +117,38 @@ kTable = '''
 '''
 
 [[def]]
-sw = '\c.(if c > 2 => ((2b6>>log>>sum)@c) else [])'
+sw = '''
+\c.\u.\a.(
+    if c > 2 => (
+        roll := (2b6 |> log |> sum |> \x. x + a + u);
+        if roll >= c => (
+            [roll] + ((2b6 |> log |> sum |> \x. x + a) @ c)
+        ) else (
+            [roll]
+        )
+    ) else ( 
+        []
+    )
+)
+'''
+max = '\x.\y.(if x > y => x else y)'
+min = '\x.\y.(if x < y => x else y)'
 
 [[def]]
-k = '\d.\c.(dice := sw.c; (len.dice - 1 >> str) + "回転" >> log; dice.(\n.kTable.d.n) >> sum)'
+k = '''
+\d.\c.\u.\a.\du.(
+    roll := sw.c.u.a;
+    (len.roll - 1 |> str) + "回転" |> log;
+    count := ([]#>roll).(\p.\c.p+[len.p]);
+    roll := pack.[count, roll];
+    roll.(\r.kTable.(min.(d+du*r.0).(100)).(r.1)) |> sum
+)
+'''
 
 [[pattern]]
-capture = '^k(\d+)(.*)@(\d+)$'
-replace = '(k.($0).($2))$1'
+capture = '^k(?P<d>\d+)(?P<x>.*)@(?P<c>\d+)(\$(?P<u>[+-]?\d+)|#(?P<a>[+-]?\d+)|r(?P<du>[+-]?\d+))*$'
+replace = '(k.($d).($c).($u+0).($a+0).($du+0))$x'
+
+[[pattern]]
+capture = 'k(?P<d>\d+)\[(?P<c>\d+)\]'
+replace = '(k.($d).($c))'

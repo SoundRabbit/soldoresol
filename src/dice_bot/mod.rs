@@ -1,3 +1,4 @@
+use regex::Regex;
 use sainome;
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -10,14 +11,14 @@ pub type RunTime = sainome::RunTime<'static>;
 
 #[derive(Deserialize)]
 pub struct Config {
-    pub def: Vec<HashMap<String, String>>,
-    pub pattern: Vec<Pattern>,
+    def: Vec<HashMap<String, String>>,
+    pattern: Vec<Pattern>,
 }
 
 #[derive(Deserialize)]
 pub struct Pattern {
-    pub capture: String,
-    pub replace: String,
+    capture: String,
+    replace: String,
 }
 
 pub fn new_run_time() -> RunTime {
@@ -34,9 +35,22 @@ pub fn set_env(config: &Config, run_time: &mut RunTime) {
             let mut def = def.clone();
             def.retain(|c| c != '\n');
             let code = name.clone() + ":=" + def.as_str();
-            sainome::exec_mut(code.as_str(), run_time);
+            sainome::exec_mut(code.as_str(), run_time).unwrap();
         }
     }
+}
+
+pub fn cmd_with_config(cmd: String, config: &Config) -> String {
+    for pattern in &config.pattern {
+        if let Ok(capture) = Regex::new(&pattern.capture) {
+            if capture.is_match(cmd.as_str()) {
+                return capture
+                    .replace_all(cmd.as_str(), pattern.replace.as_str())
+                    .to_string();
+            }
+        }
+    }
+    cmd
 }
 
 fn rand(n: u32) -> u32 {
