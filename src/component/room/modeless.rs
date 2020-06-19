@@ -521,7 +521,8 @@ pub fn chat(
                             Html::div(
                                 Attributes::new()
                                     .style("align-self", "stretch")
-                                    .class("scroll-v"),
+                                    .class("scroll-v")
+                                    .id("chat-area"),
                                 Events::new(),
                                 selecting_tab
                                     .iter()

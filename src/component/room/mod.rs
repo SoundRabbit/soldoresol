@@ -1397,7 +1397,6 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             let sender = &state.chat_data.senders[state.chat_data.selecting_sender_idx];
             let message: String = state.chat_data.inputing_message.drain(..).collect();
             let message: String = message.as_str().trim_end().into();
-            let mut cmd = Cmd::none();
 
             if message.as_str().len() > 0 {
                 let sender = match sender {
@@ -1465,7 +1464,8 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                         chat_item.as_object(),
                     ));
 
-                    cmd = update(state, Msg::InsertChatItem(tab_idx, chat_item));
+                    let cmd = update(state, Msg::InsertChatItem(tab_idx, chat_item));
+                    state.cmd_queue.enqueue(cmd);
 
                     if let (Some(chat_cmd), Some(bot_msg)) = (chat_cmd, bot_msg) {
                         let chat_item = ChatItem::new(
@@ -1479,11 +1479,21 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                             tab_idx as u32,
                             chat_item.as_object(),
                         ));
-                        cmd = update(state, Msg::InsertChatItem(tab_idx, chat_item));
+                        let cmd = update(state, Msg::InsertChatItem(tab_idx, chat_item));
+                        state.cmd_queue.enqueue(cmd);
                     }
                 }
             }
-            cmd
+            Cmd::task(|_| {
+                if let Some(el) = web_sys::window()
+                    .unwrap()
+                    .document()
+                    .unwrap()
+                    .get_element_by_id("chat-area")
+                {
+                    el.set_scroll_top(el.scroll_height());
+                }
+            })
         }
         Msg::InsertChatItem(tab_idx, chat_item) => {
             let tabs = &mut state.chat_data.tabs;
