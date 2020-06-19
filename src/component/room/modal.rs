@@ -3,7 +3,7 @@ use super::{
     common, CharacterSelecterType, ChatDataCollection, ColorPickerType, Modal, Msg, PersonalData,
     SelectImageModal,
 };
-use crate::model::{Resource, Table, World};
+use crate::model::{Icon, Resource, Table, World};
 use kagura::prelude::*;
 use std::collections::HashSet;
 use wasm_bindgen::JsCast;
@@ -179,22 +179,18 @@ pub fn personal_setting(personal_data: &PersonalData, resource: &Resource) -> Ht
                                     .style("justify-items", "center"),
                                 Events::new(),
                                 vec![
-                                    personal_data
-                                        .icon
-                                        .and_then(|r_id| resource.get_as_image_url(&r_id))
-                                        .map(|img_url| {
-                                            Html::img(
-                                                Attributes::new()
-                                                    .class("pure-img")
-                                                    .string("src", img_url.as_str()),
-                                                Events::new(),
-                                                vec![],
-                                            )
-                                        })
-                                        .unwrap_or(icon::from_str(
-                                            Attributes::new(),
+                                    {
+                                        let icon = personal_data
+                                            .icon
+                                            .map(|r_id| Icon::Resource(r_id))
+                                            .unwrap_or(Icon::DefaultUser);
+                                        common::chat_icon(
+                                            Attributes::new().class("icon-large"),
+                                            &icon,
                                             &personal_data.name,
-                                        )),
+                                            resource,
+                                        )
+                                    },
                                     btn::primary(
                                         Attributes::new(),
                                         Events::new().on_click(|_| {
@@ -344,22 +340,12 @@ pub fn character_selecter(
                             .characters()
                             .map(|(character_id, character)| {
                                 vec![
-                                    character
-                                        .texture_id()
-                                        .and_then(|t_id| resource.get_as_image_url(&t_id))
-                                        .map(|img_url| {
-                                            icon::from_img(
-                                                Attributes::new()
-                                                    .class("icon-medium")
-                                                    .class("clickable")
-                                                    .string(
-                                                        "data-character-id",
-                                                        character_id.to_string(),
-                                                    ),
-                                                img_url.as_str(),
-                                            )
-                                        })
-                                        .unwrap_or(icon::from_str(
+                                    {
+                                        let icon = character
+                                            .texture_id()
+                                            .map(|r_id| Icon::Resource(r_id))
+                                            .unwrap_or(Icon::DefaultUser);
+                                        common::chat_icon(
                                             Attributes::new()
                                                 .class("icon-medium")
                                                 .class("clickable")
@@ -367,8 +353,11 @@ pub fn character_selecter(
                                                     "data-character-id",
                                                     character_id.to_string(),
                                                 ),
+                                            &icon,
                                             character.name(),
-                                        )),
+                                            resource,
+                                        )
+                                    },
                                     Html::div(
                                         Attributes::new()
                                             .class("clickable")
