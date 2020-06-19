@@ -203,6 +203,20 @@ impl<M, S> CmdQueue<M, S> {
     }
 }
 
+struct DiceBot {
+    run_time: dice_bot::RunTime,
+    config: dice_bot::Config,
+}
+
+impl DiceBot {
+    fn new() -> Self {
+        Self {
+            run_time: dice_bot::new_run_time(),
+            config: dice_bot::config(),
+        }
+    }
+}
+
 pub struct State {
     peer: Rc<Peer>,
     peers: BTreeSet<String>,
@@ -231,7 +245,7 @@ pub struct State {
     loading_state: i64,
     loading_resource_num: u64,
     loaded_resource_num: u64,
-    dice_bot: dice_bot::RunTime,
+    dice_bot: DiceBot,
     cmd_queue: CmdQueue<Msg, Sub>,
 }
 
@@ -398,7 +412,7 @@ pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
                 loading_state: 0,
                 loading_resource_num: 0,
                 loaded_resource_num: 0,
-                dice_bot: dice_bot::new_run_time(),
+                dice_bot: DiceBot::new(),
                 cmd_queue: CmdQueue::new(),
             };
             let task = Cmd::task(|handler| {
@@ -1416,19 +1430,19 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     let tab_idx = state.chat_data.selecting_tab_idx;
 
                     let (bot_msg, chat_cmd) = {
-                        state.dice_bot.clear_log();
-                        let dice_bot = &state.dice_bot;
+                        state.dice_bot.run_time.clear_log();
+                        let run_time = &state.dice_bot.run_time;
                         let chat_cmd = message.as_str().split_whitespace().collect::<Vec<&str>>();
                         let chat_cmd = chat_cmd.get(0).map(|x| x.to_string());
                         let chat_cmd_result = chat_cmd
                             .as_ref()
-                            .and_then(move |x| sainome::exec(x, &dice_bot));
+                            .and_then(move |x| sainome::exec(x, &run_time));
 
                         let bot_msg = if let Some(result) = chat_cmd_result {
                             match result {
                                 sainome::ExecResult::Err(..) => None,
                                 _ => {
-                                    let mut msgs = dice_bot.log().clone();
+                                    let mut msgs = run_time.log().clone();
                                     msgs.push(format!("{}", result));
                                     for msg in &mut msgs {
                                         let mut chars = msg.chars().collect::<VecDeque<char>>();

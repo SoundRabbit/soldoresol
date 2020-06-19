@@ -2,41 +2,41 @@ use sainome;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::rc::Rc;
+use wasm_bindgen::prelude::*;
 
 thread_local! { static RUN_TIME: Rc<sainome::RunTime<'static>> = Rc::new(sainome::RunTime::new(rand)); }
 
 pub type RunTime = sainome::RunTime<'static>;
 
 #[derive(Deserialize)]
-struct Config {
-    def: Vec<HashMap<String, String>>,
+pub struct Config {
+    pub def: Vec<HashMap<String, String>>,
+    pub pattern: Vec<Pattern>,
+}
+
+#[derive(Deserialize)]
+pub struct Pattern {
+    pub capture: String,
+    pub replace: String,
 }
 
 pub fn new_run_time() -> RunTime {
-    let damage_rate = include!("damage_rate.txt");
-    let mut run_time = RunTime::new(rand);
+    RunTime::new(rand)
+}
 
-    let mut damage = String::from("[");
+pub fn config() -> Config {
+    toml::from_str(include_str!("sword_world.toml")).unwrap()
+}
 
-    let i = damage_rate.len() - 1;
-    for i in 0..i {
-        damage = damage + "[";
-        let j = damage_rate[i].len() - 1;
-        for j in 0..j {
-            damage = damage + &damage_rate[i][j].to_string() + ",";
+pub fn set_env(config: &Config, run_time: &mut RunTime) {
+    for defs in &config.def {
+        for (name, def) in defs {
+            let mut def = def.clone();
+            def.retain(|c| c != '\n');
+            let code = name.clone() + ":=" + def.as_str();
+            sainome::exec_mut(code.as_str(), run_time);
         }
-        damage = damage + &damage_rate[i][j].to_string() + "],";
     }
-    damage = damage + "[";
-    let j = damage_rate[i].len() - 1;
-    for j in 0..j {
-        damage = damage + &damage_rate[i][j].to_string() + ",";
-    }
-    damage = damage + &damage_rate[i][j].to_string() + "]]";
-
-    sainome::exec_mut((String::from("k:=") + &damage).as_str(), &mut run_time);
-
-    run_time
 }
 
 fn rand(n: u32) -> u32 {
