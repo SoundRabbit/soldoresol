@@ -141,6 +141,7 @@ impl TableRenderer {
             Some(&self.polygon_index_buffer),
         );
 
+        gl.active_texture(web_sys::WebGlRenderingContext::TEXTURE0);
         gl.uniform1i(Some(&self.table_texture_program.u_texture_0_location), 0);
         gl.bind_texture(
             web_sys::WebGlRenderingContext::TEXTURE_2D,
@@ -275,7 +276,7 @@ impl TableRenderer {
         );
         gl.uniform4fv_with_f32_array(
             Some(&self.table_grid_program.u_mask_color_location),
-            &Color::from([0, 0, 0, 255]).to_f32array(),
+            &Color::from([0, 0, 0, 191]).to_f32array(),
         );
         gl.draw_elements_with_i32(
             web_sys::WebGlRenderingContext::LINES,
