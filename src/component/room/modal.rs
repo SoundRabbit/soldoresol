@@ -194,8 +194,7 @@ pub fn color_picker(color_picker_type: ColorPickerType) -> Html<Msg> {
                         .class("centering")
                         .class("centering-a"),
                     Events::new(),
-                    vec![color_picker::picker(Msg::NoOp, move |mut color| {
-                        color.alpha = 127;
+                    vec![color_picker::picker(Msg::NoOp, move |color| {
                         Msg::PickColor(color, color_picker_type)
                     })],
                 ),

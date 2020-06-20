@@ -19,7 +19,7 @@ impl Tablemask {
             size: [8.0, 8.0],
             position: [0.0, 0.0, 0.0],
             z_rotation: 0.0,
-            background_color: ColorSystem::red(127, 5),
+            background_color: ColorSystem::red((255.0 * 0.6) as u8, 5),
             size_is_binded: true,
             is_rounded: true,
         }

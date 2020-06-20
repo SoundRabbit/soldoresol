@@ -167,7 +167,7 @@ pub enum SelectImageModal {
 
 #[derive(Clone)]
 pub enum ColorPickerType {
-    TablemaskColor(u128),
+    TablemaskColor(u128, u8),
 }
 
 #[derive(Clone)]
@@ -332,6 +332,7 @@ pub enum Msg {
     SetTablemaskSizeIsBinded(u128, bool),
     SetTablemaskColorToTransport(u128, Color),
     SetTablemaskColor(u128, Color),
+    SetTablemaskTransparentToTransport(u128, f64),
     SetCharacterPropertyToTransport(u128, u128, PropertyValue),
     SetCharacterProperty(u128, u128, PropertyValue),
     AddChildToCharacterPropertyToTransport(u128, u128, Property),
@@ -662,8 +663,9 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             contextmenu::update(&mut state.contextmenu.state, msg);
             state.cmd_queue.dequeue()
         }
-        Msg::PickColor(color, color_picker_type) => match color_picker_type {
-            ColorPickerType::TablemaskColor(obj_id) => {
+        Msg::PickColor(mut color, color_picker_type) => match color_picker_type {
+            ColorPickerType::TablemaskColor(obj_id, alpha) => {
+                color.alpha = alpha;
                 update(state, Msg::SetTablemaskColorToTransport(obj_id, color))
             }
         },
@@ -1291,6 +1293,16 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 tablemask.set_background_color(color);
             }
             update(state, Msg::Render)
+        }
+        Msg::SetTablemaskTransparentToTransport(tablemask_id, tranparent) => {
+            if let Some(tablemask) = state.world.tablemask(&tablemask_id) {
+                let mut color = Color::from(tablemask.background_color().to_u32());
+                color.alpha = (255.0 * tranparent) as u8;
+                let msg = Msg::SetTablemaskColorToTransport(tablemask_id, color);
+                update(state, msg)
+            } else {
+                state.cmd_queue.dequeue()
+            }
         }
         Msg::SetObjectPositionToTransport(object_id, position) => {
             let room = &state.room;
@@ -2428,8 +2440,8 @@ fn render_context_menu(
     world: &World,
 ) -> Html<Msg> {
     if let Some(focused_object_id) = focused_object_id {
-        if world.tablemask(focused_object_id).is_some() {
-            render_context_menu_tablemask(contextmenu, *focused_object_id)
+        if let Some(tablemask) = world.tablemask(focused_object_id) {
+            render_context_menu_tablemask(contextmenu, *focused_object_id, tablemask)
         } else {
             render_context_menu_character(contextmenu, *focused_object_id)
         }
@@ -2503,7 +2515,11 @@ fn render_context_menu_character(contextmenu: &Contextmenu, object_id: u128) -> 
     )
 }
 
-fn render_context_menu_tablemask(contextmenu: &Contextmenu, object_id: u128) -> Html<Msg> {
+fn render_context_menu_tablemask(
+    contextmenu: &Contextmenu,
+    object_id: u128,
+    tablemask: &Tablemask,
+) -> Html<Msg> {
     contextmenu::render(
         false,
         &contextmenu.state,
@@ -2702,12 +2718,58 @@ fn render_context_menu_tablemask(contextmenu: &Contextmenu, object_id: u128) -> 
                         ),
                     ],
                 ),
+                Html::li(
+                    Attributes::new()
+                        .class("pure-menu-item")
+                        .class("pure-menu-has-children"),
+                    Events::new(),
+                    vec![
+                        btn::contextmenu_text(Attributes::new(), Events::new(), "不透明度"),
+                        Html::ul(
+                            Attributes::new().class("pure-menu-children"),
+                            Events::new(),
+                            vec![
+                                btn::contextmenu_text(
+                                    Attributes::new(),
+                                    Events::new().on_click(move |_| {
+                                        Msg::SetTablemaskTransparentToTransport(object_id, 1.0)
+                                    }),
+                                    "100%",
+                                ),
+                                btn::contextmenu_text(
+                                    Attributes::new(),
+                                    Events::new().on_click(move |_| {
+                                        Msg::SetTablemaskTransparentToTransport(object_id, 0.8)
+                                    }),
+                                    "80%",
+                                ),
+                                btn::contextmenu_text(
+                                    Attributes::new(),
+                                    Events::new().on_click(move |_| {
+                                        Msg::SetTablemaskTransparentToTransport(object_id, 0.6)
+                                    }),
+                                    "60%",
+                                ),
+                                btn::contextmenu_text(
+                                    Attributes::new(),
+                                    Events::new().on_click(move |_| {
+                                        Msg::SetTablemaskTransparentToTransport(object_id, 0.4)
+                                    }),
+                                    "40%",
+                                ),
+                            ],
+                        ),
+                    ],
+                ),
                 btn::contextmenu_text(
                     Attributes::new(),
-                    Events::new().on_click(move |_| {
-                        Msg::OpenModal(Modal::ColorPicker(ColorPickerType::TablemaskColor(
-                            object_id,
-                        )))
+                    Events::new().on_click({
+                        let alpha = tablemask.background_color().alpha;
+                        move |_| {
+                            Msg::OpenModal(Modal::ColorPicker(ColorPickerType::TablemaskColor(
+                                object_id, alpha,
+                            )))
+                        }
                     }),
                     "色を変更",
                 ),
