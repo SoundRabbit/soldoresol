@@ -1565,7 +1565,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     .unwrap()
                     .set_timeout_with_callback_and_timeout_and_arguments_0(
                         a.as_ref().unchecked_ref(),
-                        5000,
+                        2500,
                     );
                 a.forget();
             })
