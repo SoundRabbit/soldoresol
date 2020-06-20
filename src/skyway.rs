@@ -190,7 +190,7 @@ impl Into<JsObject> for Msg {
                 payload.into()
             }
             Self::InsertChatItem(tab_idx, chat_item) => array![tab_idx, chat_item].into(),
-            Self::AddChatTab => JsValue::NULL,
+            Self::AddChatTab => js_sys::Object::new().into(),
             Self::SetChatTabName(tab_idx, name) => array![tab_idx, name].into(),
             Self::RemoveChatTab(tab_idx) => JsValue::from(tab_idx),
             Self::None => JsValue::NULL,
