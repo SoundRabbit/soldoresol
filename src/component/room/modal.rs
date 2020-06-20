@@ -1,5 +1,5 @@
 use super::{
-    super::{btn, color_picker, icon, modal},
+    super::{awesome, btn, color_picker, icon, modal},
     common, CharacterSelecterType, ChatDataCollection, ColorPickerType, Modal, Msg, PersonalData,
     SelectImageModal,
 };
@@ -17,23 +17,7 @@ pub fn resource(resource: &Resource) -> Html<Msg> {
             Attributes::new(),
             Events::new(),
             vec![
-                modal::header(
-                    Attributes::new()
-                        .style("display", "grid")
-                        .style("grid-template-columns", "1fr max-content"),
-                    Events::new(),
-                    vec![
-                        Html::div(Attributes::new(), Events::new(), vec![]),
-                        Html::div(
-                            Attributes::new().class("linear-h"),
-                            Events::new(),
-                            vec![btn::close(
-                                Attributes::new(),
-                                Events::new().on_click(move |_| Msg::CloseModal),
-                            )],
-                        ),
-                    ],
-                ),
+                header("画像"),
                 modal::body(
                     Attributes::new()
                         .class("scroll-v grid container")
@@ -73,23 +57,7 @@ pub fn select_image(resource: &Resource, modal_type: &SelectImageModal) -> Html<
             Attributes::new(),
             Events::new(),
             vec![
-                modal::header(
-                    Attributes::new()
-                        .style("display", "grid")
-                        .style("grid-template-columns", "1fr max-content"),
-                    Events::new(),
-                    vec![
-                        Html::div(Attributes::new(), Events::new(), vec![]),
-                        Html::div(
-                            Attributes::new().class("linear-h"),
-                            Events::new(),
-                            vec![btn::close(
-                                Attributes::new(),
-                                Events::new().on_click(move |_| Msg::CloseModal),
-                            )],
-                        ),
-                    ],
-                ),
+                header("画像を選択"),
                 modal::body(
                     Attributes::new()
                         .class("scroll-v grid container")
@@ -145,27 +113,7 @@ pub fn personal_setting(personal_data: &PersonalData, resource: &Resource) -> Ht
             Attributes::new(),
             Events::new(),
             vec![
-                modal::header(
-                    Attributes::new()
-                        .style("display", "grid")
-                        .style("grid-template-columns", "1fr max-content"),
-                    Events::new(),
-                    vec![
-                        Html::div(
-                            Attributes::new().class("text-label"),
-                            Events::new(),
-                            vec![Html::text("個人設定")],
-                        ),
-                        Html::div(
-                            Attributes::new().class("linear-h"),
-                            Events::new(),
-                            vec![btn::close(
-                                Attributes::new(),
-                                Events::new().on_click(move |_| Msg::CloseModal),
-                            )],
-                        ),
-                    ],
-                ),
+                header("個人設定"),
                 modal::body(
                     Attributes::new().class("scroll-v pure-form"),
                     Events::new(),
@@ -239,27 +187,7 @@ pub fn color_picker(color_picker_type: ColorPickerType) -> Html<Msg> {
             Attributes::new(),
             Events::new(),
             vec![
-                modal::header(
-                    Attributes::new()
-                        .style("display", "grid")
-                        .style("grid-template-columns", "1fr max-content"),
-                    Events::new(),
-                    vec![
-                        Html::div(
-                            Attributes::new().class("text-label"),
-                            Events::new(),
-                            vec![Html::text("色の選択")],
-                        ),
-                        Html::div(
-                            Attributes::new().class("linear-h"),
-                            Events::new(),
-                            vec![btn::close(
-                                Attributes::new(),
-                                Events::new().on_click(move |_| Msg::CloseModal),
-                            )],
-                        ),
-                    ],
-                ),
+                header("色の選択"),
                 modal::body(
                     Attributes::new()
                         .class("scroll-v")
@@ -291,27 +219,7 @@ pub fn character_selecter(
             Attributes::new(),
             Events::new(),
             vec![
-                modal::header(
-                    Attributes::new()
-                        .style("display", "grid")
-                        .style("grid-template-columns", "1fr max-content"),
-                    Events::new(),
-                    vec![
-                        Html::div(
-                            Attributes::new().class("text-label"),
-                            Events::new(),
-                            vec![Html::text("キャラクターの選択")],
-                        ),
-                        Html::div(
-                            Attributes::new().class("linear-h"),
-                            Events::new(),
-                            vec![btn::close(
-                                Attributes::new(),
-                                Events::new().on_click(move |_| Msg::CloseModal),
-                            )],
-                        ),
-                    ],
-                ),
+                header("キャラクターの選択"),
                 modal::body(
                     Attributes::new().class("scroll-v"),
                     Events::new(),
@@ -396,27 +304,7 @@ pub fn table_setting(table: &Table, resource: &Resource) -> Html<Msg> {
             Attributes::new(),
             Events::new(),
             vec![
-                modal::header(
-                    Attributes::new()
-                        .style("display", "grid")
-                        .style("grid-template-columns", "1fr max-content"),
-                    Events::new(),
-                    vec![
-                        Html::div(
-                            Attributes::new().class("text-label"),
-                            Events::new(),
-                            vec![Html::text("テーブル設定")],
-                        ),
-                        Html::div(
-                            Attributes::new().class("linear-h"),
-                            Events::new(),
-                            vec![btn::close(
-                                Attributes::new(),
-                                Events::new().on_click(move |_| Msg::CloseModal),
-                            )],
-                        ),
-                    ],
-                ),
+                header("テーブル設定"),
                 modal::body(
                     Attributes::new().class("scroll-v"),
                     Events::new(),
@@ -556,27 +444,7 @@ pub fn chat_log(chat_data: &ChatDataCollection, resource: &Resource) -> Html<Msg
             Attributes::new(),
             Events::new(),
             vec![
-                modal::header(
-                    Attributes::new()
-                        .style("display", "grid")
-                        .style("grid-template-columns", "1fr max-content"),
-                    Events::new(),
-                    vec![
-                        Html::div(
-                            Attributes::new().class("text-label"),
-                            Events::new(),
-                            vec![Html::text("チャット履歴")],
-                        ),
-                        Html::div(
-                            Attributes::new().class("linear-h"),
-                            Events::new(),
-                            vec![btn::close(
-                                Attributes::new(),
-                                Events::new().on_click(move |_| Msg::CloseModal),
-                            )],
-                        ),
-                    ],
-                ),
+                header("チャット履歴"),
                 modal::body(
                     Attributes::new().class("scroll-v"),
                     Events::new(),
@@ -622,5 +490,82 @@ pub fn chat_log(chat_data: &ChatDataCollection, resource: &Resource) -> Html<Msg
                 modal::footer(Attributes::new(), Events::new(), vec![]),
             ],
         )],
+    )
+}
+
+pub fn chat_tab_editor(chat_data: &ChatDataCollection) -> Html<Msg> {
+    modal::container(
+        Attributes::new(),
+        Events::new(),
+        vec![modal::frame(
+            6,
+            Attributes::new(),
+            Events::new(),
+            vec![
+                header("チャット履歴"),
+                modal::body(
+                    Attributes::new()
+                        .class("scroll-v")
+                        .class("pure-form")
+                        .class("keyvalue")
+                        .class("keyvalue-rev"),
+                    Events::new(),
+                    vec![
+                        chat_data
+                            .tabs
+                            .iter()
+                            .map(|tab| {
+                                vec![
+                                    Html::input(
+                                        Attributes::new().value(tab.name()),
+                                        Events::new(),
+                                        vec![],
+                                    ),
+                                    btn::danger(
+                                        Attributes::new(),
+                                        Events::new(),
+                                        vec![awesome::i("fa-times")],
+                                    ),
+                                ]
+                            })
+                            .flatten()
+                            .collect(),
+                        vec![btn::secondary(
+                            Attributes::new(),
+                            Events::new(),
+                            vec![awesome::i("fa-plus")],
+                        )],
+                    ]
+                    .into_iter()
+                    .flatten()
+                    .collect(),
+                ),
+                modal::footer(Attributes::new(), Events::new(), vec![]),
+            ],
+        )],
+    )
+}
+
+fn header(name: impl Into<String>) -> Html<Msg> {
+    modal::header(
+        Attributes::new()
+            .style("display", "grid")
+            .style("grid-template-columns", "1fr max-content"),
+        Events::new(),
+        vec![
+            Html::div(
+                Attributes::new().class("text-label"),
+                Events::new(),
+                vec![Html::text(name)],
+            ),
+            Html::div(
+                Attributes::new().class("linear-h"),
+                Events::new(),
+                vec![btn::close(
+                    Attributes::new(),
+                    Events::new().on_click(move |_| Msg::CloseModal),
+                )],
+            ),
+        ],
     )
 }

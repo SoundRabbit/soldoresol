@@ -183,6 +183,7 @@ pub enum Modal {
     CharacterSelecter(CharacterSelecterType),
     TableSetting,
     ChatLog,
+    ChatTabEditor,
 }
 
 struct CmdQueue<M, S> {
@@ -2754,6 +2755,7 @@ fn render_modals(
                 ),
             },
             Modal::ChatLog => modal::chat_log(chat_data, resource),
+            Modal::ChatTabEditor => modal::chat_tab_editor(chat_data),
         };
         children.push(child);
     }

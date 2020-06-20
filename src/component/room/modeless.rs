@@ -578,21 +578,32 @@ pub fn chat(
                             Html::div(
                                 Attributes::new(),
                                 Events::new(),
-                                chat_data
-                                    .tabs
-                                    .iter()
-                                    .enumerate()
-                                    .map(|(tab_idx, tab)| {
-                                        btn::tab(
-                                            tab_idx == selecting_tab_idx,
-                                            Attributes::new(),
-                                            Events::new().on_click(move |_| {
-                                                Msg::SetSelectingChatTabIdx(tab_idx)
-                                            }),
-                                            tab.name(),
-                                        )
-                                    })
-                                    .collect(),
+                                vec![
+                                    chat_data
+                                        .tabs
+                                        .iter()
+                                        .enumerate()
+                                        .map(|(tab_idx, tab)| {
+                                            btn::tab(
+                                                tab_idx == selecting_tab_idx,
+                                                Attributes::new(),
+                                                Events::new().on_click(move |_| {
+                                                    Msg::SetSelectingChatTabIdx(tab_idx)
+                                                }),
+                                                tab.name(),
+                                            )
+                                        })
+                                        .collect(),
+                                    vec![btn::like_tab(
+                                        Attributes::new().class("pure-button-success"),
+                                        Events::new()
+                                            .on_click(|_| Msg::OpenModal(Modal::ChatTabEditor)),
+                                        "設定",
+                                    )],
+                                ]
+                                .into_iter()
+                                .flatten()
+                                .collect(),
                             ),
                         ],
                     ),

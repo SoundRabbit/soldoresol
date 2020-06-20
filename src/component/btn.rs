@@ -172,6 +172,18 @@ pub fn tab<Msg>(
     }
 }
 
+pub fn like_tab<Msg>(
+    attributes: Attributes,
+    events: Events<Msg>,
+    name: impl Into<String>,
+) -> Html<Msg> {
+    Html::button(
+        attributes.class("pure-button").class("pure-button-tab"),
+        events,
+        vec![Html::text(name)],
+    )
+}
+
 #[allow(dead_code)]
 pub fn contextmenu_text<Msg>(
     attributes: Attributes,
