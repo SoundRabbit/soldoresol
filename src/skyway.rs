@@ -101,6 +101,9 @@ pub enum Msg {
     SetConnection(BTreeSet<String>),
     RemoveObject(u128),
     InsertChatItem(u32, JsObject),
+    AddChatTab,
+    SetChatTabName(u32, String),
+    RemoveChatTab(u32),
     None,
 }
 
@@ -129,6 +132,9 @@ impl Msg {
             Self::SetConnection(..) => "SetConnection",
             Self::RemoveObject(..) => "RemoveObject",
             Self::InsertChatItem(..) => "InsertChatItem",
+            Self::AddChatTab => "AddChatTab",
+            Self::SetChatTabName(..) => "SetChatTabName",
+            Self::RemoveChatTab(..) => "RemoveChatTab",
             Self::None => "None",
         }
     }
@@ -184,6 +190,9 @@ impl Into<JsObject> for Msg {
                 payload.into()
             }
             Self::InsertChatItem(tab_idx, chat_item) => array![tab_idx, chat_item].into(),
+            Self::AddChatTab => JsValue::NULL,
+            Self::SetChatTabName(tab_idx, name) => array![tab_idx, name].into(),
+            Self::RemoveChatTab(tab_idx) => JsValue::from(tab_idx),
             Self::None => JsValue::NULL,
         };
         object! {
@@ -321,6 +330,15 @@ impl From<JsObject> for Msg {
                         args.get(1).dyn_into::<JsObject>().unwrap(),
                     )
                 }
+                "AddChatTab" => Self::AddChatTab,
+                "SetChatTabName" => {
+                    let args = Array::from(&payload);
+                    Self::SetChatTabName(
+                        args.get(0).as_f64().unwrap() as u32,
+                        args.get(1).as_string().unwrap(),
+                    )
+                }
+                "RemoveChatTab" => Self::RemoveChatTab(payload.as_f64().unwrap() as u32),
                 "RemoveObject" => Self::RemoveObject(payload.as_string().unwrap().parse().unwrap()),
                 _ => Self::None,
             }

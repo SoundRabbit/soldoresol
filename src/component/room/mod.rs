@@ -1583,15 +1583,17 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
         Msg::AddChatTabTotransport => {
             let room = &state.room;
+            room.send(skyway::Msg::AddChatTab);
             update(state, Msg::AddChatTab)
         }
         Msg::AddChatTab => {
-            let chat_tab = ChatTab::new("");
+            let chat_tab = ChatTab::new("タブ");
             state.chat_data.tabs.push(chat_tab);
             state.cmd_queue.dequeue()
         }
         Msg::SetChatTabNameToTransport(idx, name) => {
             let room = &state.room;
+            room.send(skyway::Msg::SetChatTabName(idx as u32, name.clone()));
             update(state, Msg::SetChatTabName(idx, name))
         }
         Msg::SetChatTabName(idx, name) => {
@@ -1602,6 +1604,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
         Msg::RemoveChatTabToTransport(idx) => {
             let room = &state.room;
+            room.send(skyway::Msg::RemoveChatTab(idx as u32));
             update(state, Msg::RemoveChatTab(idx))
         }
         Msg::RemoveChatTab(idx) => {
@@ -1776,6 +1779,13 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 state,
                 Msg::InsertChatItem(tab_idx as usize, ChatItem::from(item)),
             ),
+            skyway::Msg::AddChatTab => update(state, Msg::AddChatTab),
+            skyway::Msg::SetChatTabName(tab_idx, name) => {
+                update(state, Msg::SetChatTabName(tab_idx as usize, name))
+            }
+            skyway::Msg::RemoveChatTab(tab_idx) => {
+                update(state, Msg::RemoveChatTab(tab_idx as usize))
+            }
             skyway::Msg::None => state.cmd_queue.dequeue(),
         },
         Msg::PeerJoin(peer_id) => {
