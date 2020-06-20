@@ -35,7 +35,7 @@ pub fn set_env(config: &Config, run_time: &mut RunTime) {
             let mut def = def.clone();
             def.retain(|c| c != '\n');
             let code = name.clone() + ":=" + def.as_str();
-            sainome::exec_mut(code.as_str(), run_time).unwrap();
+            sainome::exec_mut(code.as_str(), run_time);
         }
     }
 }

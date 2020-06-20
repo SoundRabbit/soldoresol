@@ -1,5 +1,6 @@
 use crate::{random_id, JsObject};
 use js_sys::Array;
+use sainome::Ref;
 use wasm_bindgen::{prelude::*, JsCast};
 
 pub enum PropertyValue {
@@ -41,6 +42,15 @@ impl PropertyValue {
         object! {
             type: self.type_name(),
             payload: payload
+        }
+    }
+
+    pub fn as_option_string(&self) -> Option<String> {
+        match &self {
+            Self::None => None,
+            Self::Children(..) => None,
+            Self::Num(x) => Some(x.to_string()),
+            Self::Str(x) => Some(x.to_string()),
         }
     }
 }
@@ -156,6 +166,17 @@ impl Property {
             name: &self.name,
             value: self.value.as_object()
         }
+    }
+
+    pub fn as_sainome_ref(&self) -> Ref {
+        let mut r = Ref::new(self.value.as_option_string());
+        if let PropertyValue::Children(children) = &self.value {
+            for child in children {
+                let name = child.name.to_string();
+                r.insert(name, child.as_sainome_ref());
+            }
+        }
+        r
     }
 }
 

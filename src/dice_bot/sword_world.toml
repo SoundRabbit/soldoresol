@@ -121,10 +121,10 @@ grTable = '["器用度", "俊敏度", "筋力", "生命力", "知力", "精神�
 [[def]]
 sw = '''
 \c.\u.\a.(
-    dice := \x.(roll := 2b6 |> log |> sum; if roll > x => roll else 0);
-    if c > 2 => (
+    dice := \x.(roll := 2b6 |> log |> sum; if roll > x then roll else 0);
+    if c > 2 then (
         roll := dice.2 |> \x. min.[x, 1] * (x + a + u);
-        if roll >= c => (
+        if roll >= c then (
             [roll] + ((dice.2 |> \x. min.[x, 1] * (x + a)) @ c)
         ) else (
             [roll]
@@ -140,9 +140,9 @@ k = '''
 \d.\c.\u.\a.\du.(
     roll := sw.c.u.a;
     rot := len.roll - 1;
-    if rot > 1 => str.rot + "回転" |> log else 0;
+    if rot > 1 then str.rot + "回転" |> log else 0;
     count := ([]#>roll).(\p.\c.p+[len.p]);
-    if (roll.0 == 0) => (
+    if (roll.0 == 0) then (
         "自動失敗"
     ) else (
         roll := pack.[count, roll];

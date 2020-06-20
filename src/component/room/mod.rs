@@ -1402,17 +1402,22 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
             if message.as_str().len() > 0 {
                 let sender = match sender {
-                    ChatSender::Player => Some((
-                        state.personal_data.name.clone(),
-                        None,
-                        state
-                            .personal_data
-                            .icon
-                            .map(|r_id| Icon::Resource(r_id))
-                            .unwrap_or(Icon::DefaultUser),
-                    )),
+                    ChatSender::Player => {
+                        state.dice_bot.run_time.set_ref(sainome::Ref::new(None));
+                        Some((
+                            state.personal_data.name.clone(),
+                            None,
+                            state
+                                .personal_data
+                                .icon
+                                .map(|r_id| Icon::Resource(r_id))
+                                .unwrap_or(Icon::DefaultUser),
+                        ))
+                    }
                     ChatSender::Character(character_id) => {
                         if let Some(character) = state.world.character(character_id) {
+                            let r = character.property.as_sainome_ref();
+                            state.dice_bot.run_time.set_ref(r);
                             Some((
                                 character.name().clone(),
                                 Some(*character_id),
@@ -1432,6 +1437,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
                     let (bot_msg, chat_cmd) = {
                         state.dice_bot.run_time.clear_log();
+
                         let run_time = &state.dice_bot.run_time;
                         let config = &state.dice_bot.config;
                         let chat_cmd = message.as_str().split_whitespace().collect::<Vec<&str>>();
@@ -1440,7 +1446,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                             .map(|x| dice_bot::cmd_with_config(x.to_string(), &config));
                         let chat_cmd_result = chat_cmd
                             .as_ref()
-                            .and_then(move |x| sainome::exec(x, &run_time));
+                            .and_then(move |x| sainome::exec(x, &run_time).0);
 
                         let bot_msg = if let Some(result) = chat_cmd_result {
                             match result {
