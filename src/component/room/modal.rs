@@ -514,16 +514,20 @@ pub fn chat_tab_editor(chat_data: &ChatDataCollection) -> Html<Msg> {
                         chat_data
                             .tabs
                             .iter()
-                            .map(|tab| {
+                            .enumerate()
+                            .map(|(idx, tab)| {
                                 vec![
                                     Html::input(
                                         Attributes::new().value(tab.name()),
-                                        Events::new(),
+                                        Events::new().on_input(move |name| {
+                                            Msg::SetChatTabNameToTransport(idx, name)
+                                        }),
                                         vec![],
                                     ),
                                     btn::danger(
                                         Attributes::new(),
-                                        Events::new(),
+                                        Events::new()
+                                            .on_click(move |_| Msg::RemoveChatTabToTransport(idx)),
                                         vec![awesome::i("fa-times")],
                                     ),
                                 ]
@@ -532,7 +536,7 @@ pub fn chat_tab_editor(chat_data: &ChatDataCollection) -> Html<Msg> {
                             .collect(),
                         vec![btn::secondary(
                             Attributes::new(),
-                            Events::new(),
+                            Events::new().on_click(|_| Msg::AddChatTabTotransport),
                             vec![awesome::i("fa-plus")],
                         )],
                     ]

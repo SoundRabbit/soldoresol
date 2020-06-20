@@ -349,6 +349,12 @@ pub enum Msg {
     RemoveChatSender(ChatSender),
     EnqueueSpeechBubble(SpeechBubble),
     DequeueSpeechBubble,
+    AddChatTabTotransport,
+    AddChatTab,
+    SetChatTabNameToTransport(usize, String),
+    SetChatTabName(usize, String),
+    RemoveChatTabToTransport(usize),
+    RemoveChatTab(usize),
 
     // リソース管理
     LoadFromFileListToTransport(web_sys::FileList),
@@ -1573,6 +1579,38 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
         Msg::DequeueSpeechBubble => {
             state.speech_bubble_queue.pop_front();
+            state.cmd_queue.dequeue()
+        }
+        Msg::AddChatTabTotransport => {
+            let room = &state.room;
+            update(state, Msg::AddChatTab)
+        }
+        Msg::AddChatTab => {
+            let chat_tab = ChatTab::new("");
+            state.chat_data.tabs.push(chat_tab);
+            state.cmd_queue.dequeue()
+        }
+        Msg::SetChatTabNameToTransport(idx, name) => {
+            let room = &state.room;
+            update(state, Msg::SetChatTabName(idx, name))
+        }
+        Msg::SetChatTabName(idx, name) => {
+            if let Some(tab) = state.chat_data.tabs.get_mut(idx) {
+                tab.set_name(name);
+            }
+            state.cmd_queue.dequeue()
+        }
+        Msg::RemoveChatTabToTransport(idx) => {
+            let room = &state.room;
+            update(state, Msg::RemoveChatTab(idx))
+        }
+        Msg::RemoveChatTab(idx) => {
+            if state.chat_data.tabs.len() > 1 {
+                if state.chat_data.selecting_tab_idx == state.chat_data.tabs.len() - 1 {
+                    state.chat_data.selecting_tab_idx -= 1;
+                }
+                state.chat_data.tabs.remove(idx);
+            }
             state.cmd_queue.dequeue()
         }
 

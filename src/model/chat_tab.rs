@@ -17,6 +17,10 @@ impl ChatTab {
         }
     }
 
+    pub fn set_name(&mut self, name: String) {
+        self.name = name;
+    }
+
     pub fn name(&self) -> &String {
         &self.name
     }
