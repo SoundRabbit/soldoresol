@@ -333,8 +333,10 @@ pub enum Msg {
     SetTablemaskColorToTransport(u128, Color),
     SetTablemaskColor(u128, Color),
     SetTablemaskTransparentToTransport(u128, f64),
-    SetCharacterPropertyToTransport(u128, u128, PropertyValue),
-    SetCharacterProperty(u128, u128, PropertyValue),
+    SetCharacterPropertyNameToTransport(u128, u128, String),
+    SetCharacterPropertyName(u128, u128, String),
+    SetCharacterPropertyValueToTransport(u128, u128, PropertyValue),
+    SetCharacterPropertyValue(u128, u128, PropertyValue),
     AddChildToCharacterPropertyToTransport(u128, u128, Property),
     AddChildToCharacterProperty(u128, u128, Property),
     RemoveCharacterPropertyToTransport(u128, u128),
@@ -1336,10 +1338,10 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             }
             update(state, Msg::Render)
         }
-        Msg::SetCharacterPropertyToTransport(character_id, property_id, property_value) => {
-            update(
+        Msg::SetCharacterPropertyNameToTransport(character_id, property_id, property_name) => {
+            let cmd = update(
                 state,
-                Msg::SetCharacterProperty(character_id, property_id, property_value),
+                Msg::SetCharacterPropertyName(character_id, property_id, property_name),
             );
             if let Some(character) = state.world.character(&character_id) {
                 let room = &state.room;
@@ -1348,9 +1350,33 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     character.property.as_object(),
                 ));
             }
+            cmd
+        }
+        Msg::SetCharacterPropertyName(character_id, property_id, property_name) => {
+            if let Some(property) = state
+                .world
+                .character_mut(&character_id)
+                .and_then(|c| c.property.get_mut(&property_id))
+            {
+                property.set_name(property_name);
+            }
             state.cmd_queue.dequeue()
         }
-        Msg::SetCharacterProperty(character_id, property_id, property_value) => {
+        Msg::SetCharacterPropertyValueToTransport(character_id, property_id, property_value) => {
+            let cmd = update(
+                state,
+                Msg::SetCharacterPropertyValue(character_id, property_id, property_value),
+            );
+            if let Some(character) = state.world.character(&character_id) {
+                let room = &state.room;
+                room.send(skyway::Msg::SetCharacterProperty(
+                    character_id,
+                    character.property.as_object(),
+                ));
+            }
+            cmd
+        }
+        Msg::SetCharacterPropertyValue(character_id, property_id, property_value) => {
             if let Some(property) = state
                 .world
                 .character_mut(&character_id)
