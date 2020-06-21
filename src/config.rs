@@ -13,5 +13,5 @@ pub struct SkywayConfig {
 
 #[derive(Deserialize)]
 pub struct ClientConfig {
-    pub database: String,
+    pub db_prefix: String,
 }
