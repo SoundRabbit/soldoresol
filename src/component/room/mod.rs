@@ -1827,7 +1827,8 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
                 web_sys::console::log_2(&JsValue::from(stride as u32), &JsValue::from(n as u32));
 
-                let resource_data = state.resource.to_data_with_n_and_stride(n, stride);
+                // let resource_data = state.resource.to_data_with_n_and_stride(n, stride);
+                let resource_data = state.resource.to_data();
                 state.peers.insert(peer_id);
 
                 let a = Closure::once(Box::new({
