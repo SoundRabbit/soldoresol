@@ -102,7 +102,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
 fn render(state: &State) -> Html<Msg> {
     if let (Some(config), Some(database)) = (&state.config, &state.common_database) {
-        Html::component(peer_connection::new(Rc::clone(config)))
+        Html::component(peer_connection::new(Rc::clone(config), Rc::clone(database)))
     } else {
         Html::div(
             Attributes::new()

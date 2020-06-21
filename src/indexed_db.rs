@@ -1,5 +1,5 @@
 use kagura::prelude::*;
-use std::rc::Rc;
+use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::{prelude::*, JsCast};
 
 pub fn open_db<Msg: 'static, Sub>(
@@ -62,6 +62,74 @@ pub fn create_object_strage<Msg: 'static, Sub>(
                 }
             }));
             request.set_onupgradeneeded(Some(a.as_ref().unchecked_ref()));
+            a.forget();
+        }
+    })
+}
+
+pub enum Query<'a> {
+    Get(&'a JsValue),
+    Add(&'a JsValue, &'a JsValue),
+    Put(&'a JsValue, &'a JsValue),
+}
+
+pub fn query<Msg: 'static, Sub>(
+    database: &web_sys::IdbDatabase,
+    object_name: &str,
+    query: Query,
+    on_success: impl FnOnce(JsValue) -> Msg + 'static,
+    on_error: impl FnOnce(JsValue) -> Msg + 'static,
+) -> Cmd<Msg, Sub> {
+    Cmd::task({
+        let mode = match &query {
+            Query::Get(..) => web_sys::IdbTransactionMode::Readonly,
+            Query::Add(..) => web_sys::IdbTransactionMode::Readwrite,
+            Query::Put(..) => web_sys::IdbTransactionMode::Readwrite,
+        };
+        let object_store = database
+            .transaction_with_str_and_mode(object_name, mode)
+            .unwrap()
+            .object_store(object_name)
+            .unwrap();
+        let request = match query {
+            Query::Get(key) => object_store.get(key).unwrap(),
+            Query::Add(key, val) => object_store.add_with_key(val, key).unwrap(),
+            Query::Put(key, val) => object_store.put_with_key(val, key).unwrap(),
+        };
+        let request = Rc::new(request);
+        move |resolve| {
+            let resolve = Rc::new(RefCell::new(Some(resolve)));
+
+            let a = Closure::once(Box::new({
+                let resolve = Rc::clone(&resolve);
+                let request = Rc::clone(&request);
+                move || {
+                    let result = match request.result() {
+                        Ok(x) => x,
+                        Err(..) => JsValue::null(),
+                    };
+                    if let Some(resolve) = resolve.borrow_mut().take() {
+                        resolve(on_success(result));
+                    }
+                }
+            }));
+            request.set_onsuccess(Some(a.as_ref().unchecked_ref()));
+            a.forget();
+
+            let a = Closure::once(Box::new({
+                let resolve = Rc::clone(&resolve);
+                let request = Rc::clone(&request);
+                move || {
+                    let result = match request.result() {
+                        Ok(..) => JsValue::null(),
+                        Err(x) => x,
+                    };
+                    if let Some(resolve) = resolve.borrow_mut().take() {
+                        resolve(on_error(result));
+                    }
+                }
+            }));
+            request.set_onerror(Some(a.as_ref().unchecked_ref()));
             a.forget();
         }
     })

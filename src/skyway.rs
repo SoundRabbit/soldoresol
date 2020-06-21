@@ -3,7 +3,7 @@ use crate::{
     JsObject,
 };
 use js_sys::Array;
-use std::collections::BTreeSet;
+use std::{collections::BTreeSet, rc::Rc};
 use wasm_bindgen::{prelude::*, JsCast};
 
 #[wasm_bindgen(raw_module = "../src/skyway.js")]
@@ -63,12 +63,12 @@ extern "C" {
 }
 
 pub struct Room {
-    pub id: String,
+    pub id: Rc<String>,
     pub payload: MeshRoom,
 }
 
 impl Room {
-    pub fn new(payload: MeshRoom, id: String) -> Self {
+    pub fn new(payload: MeshRoom, id: Rc<String>) -> Self {
         Self { id, payload }
     }
 

@@ -1,6 +1,6 @@
 use super::{awesome, btn, room_connection};
 use crate::{
-    random_id,
+    indexed_db, random_id,
     skyway::{Peer, Room},
     Config,
 };
@@ -9,9 +9,27 @@ use regex::Regex;
 use std::rc::Rc;
 use wasm_bindgen::{prelude::*, JsCast};
 
-pub fn new(config: Rc<Config>) -> Component<Msg, State, Sub> {
+pub fn new(
+    config: Rc<Config>,
+    common_database: Rc<web_sys::IdbDatabase>,
+) -> Component<Msg, State, Sub> {
     let peer = Rc::new(Peer::new(&config.skyway.key));
-    Component::new(init(Rc::clone(&peer)), update, render).batch({
+    let init = {
+        let peer = Rc::clone(&peer);
+        move || {
+            let state = State {
+                peer_id: None,
+                room: None,
+                peer: peer,
+                inputing_room_id: "".into(),
+                error_message: None,
+                room_id_regex: Regex::new(r"^[A-Za-z0-9@#]{20}$").unwrap(),
+                common_database: common_database,
+            };
+            (state, Cmd::none())
+        }
+    };
+    Component::new(init, update, render).batch({
         let peer = Rc::clone(&peer);
         move |mut handler| {
             let a = Closure::wrap(Box::new({
@@ -31,33 +49,33 @@ pub struct State {
     inputing_room_id: String,
     error_message: Option<String>,
     room_id_regex: Regex,
+    common_database: Rc<web_sys::IdbDatabase>,
 }
 
 pub enum Msg {
+    NoOp,
     SetPeerId(String),
     SetRoomId(String),
-    ConnectToRoom(String),
+    TryToConnectToRoom(String),
     DisconnectFromRoom,
+    ConnectToRoomAndPutDatabase(Rc<String>),
+    ConnectToRoomAndAddDatabase(Rc<String>),
+    ConnectToRoom(Rc<String>),
 }
 
 pub enum Sub {}
 
-fn init(peer: Rc<Peer>) -> impl FnOnce() -> (State, Cmd<Msg, Sub>) {
-    || {
-        let state = State {
-            peer_id: None,
-            room: None,
-            peer: peer,
-            inputing_room_id: "".into(),
-            error_message: None,
-            room_id_regex: Regex::new(r"^[A-Za-z0-9@#]{20}$").unwrap(),
-        };
-        (state, Cmd::none())
-    }
+fn basic_room_data_object() -> JsValue {
+    let obj = object! {
+        last_access_time: js_sys::Date::now()
+    };
+    let obj: js_sys::Object = obj.into();
+    obj.into()
 }
 
 fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
     match msg {
+        Msg::NoOp => Cmd::none(),
         Msg::SetPeerId(peer_id) => {
             state.peer_id = Some(peer_id);
             Cmd::none()
@@ -66,25 +84,58 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.inputing_room_id = room_id;
             Cmd::none()
         }
-        Msg::ConnectToRoom(room_id) => {
+        Msg::TryToConnectToRoom(room_id) => {
             if state.room_id_regex.is_match(&room_id) {
-                state.room = Some(Rc::new(Room::new(state.peer.join_room(&room_id), room_id)));
-                state.inputing_room_id = "".into();
+                let room_id = Rc::new(room_id);
+                indexed_db::query(
+                    &state.common_database,
+                    "rooms",
+                    indexed_db::Query::Get(&JsValue::from(room_id.as_str())),
+                    {
+                        let room_id = Rc::clone(&room_id);
+                        move |_| Msg::ConnectToRoomAndPutDatabase(room_id)
+                    },
+                    {
+                        let room_id = Rc::clone(&room_id);
+                        move |_| Msg::ConnectToRoomAndAddDatabase(room_id)
+                    },
+                )
             } else if room_id.len() > 20 {
                 state.error_message = Some("ルームIDの文字数が多すぎます。".into());
+                Cmd::none()
             } else if room_id.len() < 20 {
                 state.error_message = Some("ルームIDの文字数が少なすぎます。".into());
+                Cmd::none()
             } else {
                 state.error_message = Some("ルームIDに不正な文字が含まれています。".into());
+                Cmd::none()
             }
-            Cmd::none()
         }
         Msg::DisconnectFromRoom => {
             if let Some(room) = &mut state.room {
                 room.payload.close();
-                state.inputing_room_id = room.id.clone();
+                state.inputing_room_id = room.id.as_ref().clone();
             }
             state.room = None;
+            Cmd::none()
+        }
+        Msg::ConnectToRoomAndPutDatabase(room_id) => indexed_db::query(
+            &state.common_database,
+            "rooms",
+            indexed_db::Query::Put(&JsValue::from(room_id.as_str()), &basic_room_data_object()),
+            |_| Msg::ConnectToRoom(room_id),
+            |_| Msg::NoOp,
+        ),
+        Msg::ConnectToRoomAndAddDatabase(room_id) => indexed_db::query(
+            &state.common_database,
+            "rooms",
+            indexed_db::Query::Add(&JsValue::from(room_id.as_str()), &basic_room_data_object()),
+            |_| Msg::ConnectToRoom(room_id),
+            |_| Msg::NoOp,
+        ),
+        Msg::ConnectToRoom(room_id) => {
+            state.room = Some(Rc::new(Room::new(state.peer.join_room(&room_id), room_id)));
+            state.inputing_room_id = "".into();
             Cmd::none()
         }
     }
@@ -114,7 +165,7 @@ fn render_header(room_id: &String) -> Html<Msg> {
         Events::new(),
         vec![
             Html::div(
-                Attributes::new().class("grid-w-6 keyvalueoption pure-form"),
+                Attributes::new().class("grid-w-12 keyvalueoption pure-form"),
                 Events::new(),
                 vec![
                     Html::label(
@@ -124,14 +175,14 @@ fn render_header(room_id: &String) -> Html<Msg> {
                     ),
                     Html::input(
                         Attributes::new().value(room_id).id("roomid"),
-                        Events::new(),
+                        Events::new().on_input(|x| Msg::SetRoomId(x)),
                         vec![],
                     ),
                     btn::primary(
                         Attributes::new(),
                         Events::new().on_click({
                             let room_id = room_id.clone();
-                            move |_| Msg::ConnectToRoom(room_id)
+                            move |_| Msg::TryToConnectToRoom(room_id)
                         }),
                         vec![Html::text("接続")],
                     ),
@@ -139,7 +190,7 @@ fn render_header(room_id: &String) -> Html<Msg> {
             ),
             Html::div(
                 Attributes::new()
-                    .class("grid-w-18")
+                    .class("grid-w-12")
                     .class("justify-r")
                     .class("centering-h"),
                 Events::new(),
@@ -150,7 +201,7 @@ fn render_header(room_id: &String) -> Html<Msg> {
                         Attributes::new(),
                         Events::new().on_click(|_| {
                             let room_id = random_id::base64url();
-                            Msg::ConnectToRoom(room_id)
+                            Msg::TryToConnectToRoom(room_id)
                         }),
                         vec![Html::text("新規ルームを作成")],
                     )],
