@@ -244,7 +244,7 @@ impl From<JsObject> for Msg {
                     let args = Array::from(&payload);
                     Self::CreateTablemaskToTable(
                         args.get(0).as_string().unwrap().parse().unwrap(),
-                        TablemaskData::from(args.get(0).dyn_into::<JsObject>().unwrap()),
+                        TablemaskData::from(args.get(1).dyn_into::<JsObject>().unwrap()),
                     )
                 }
                 "SetObjectPosition" => {
