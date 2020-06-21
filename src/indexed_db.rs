@@ -90,11 +90,13 @@ pub fn query<Msg: 'static, Sub>(
             Query::GetAll => web_sys::IdbTransactionMode::Readonly,
             Query::GetAllKeys => web_sys::IdbTransactionMode::Readonly,
         };
+        web_sys::console::log_1(&JsValue::from("a"));
         let object_store = database
             .transaction_with_str_and_mode(object_name, mode)
             .unwrap()
             .object_store(object_name)
             .unwrap();
+        web_sys::console::log_1(&JsValue::from("b"));
         let request = match query {
             Query::Get(key) => object_store.get(key).unwrap(),
             Query::Add(key, val) => object_store.add_with_key(val, key).unwrap(),
@@ -102,6 +104,7 @@ pub fn query<Msg: 'static, Sub>(
             Query::GetAll => object_store.get_all().unwrap(),
             Query::GetAllKeys => object_store.get_all_keys().unwrap(),
         };
+        web_sys::console::log_1(&JsValue::from("c"));
         let request = Rc::new(request);
         move |resolve| {
             let resolve = Rc::new(RefCell::new(Some(resolve)));

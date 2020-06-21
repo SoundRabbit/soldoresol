@@ -13,6 +13,7 @@ pub fn new() -> Component<Msg, State, Sub> {
             hostname: hostname,
             config: None,
             common_database: None,
+            client_id: "".into(),
         };
         let config_url = if is_dev_mode {
             "/config.dev.toml"
@@ -31,17 +32,23 @@ pub struct State {
     hostname: String,
     config: Option<Rc<Config>>,
     common_database: Option<Rc<web_sys::IdbDatabase>>,
+    client_id: String,
 }
 
 pub enum Msg {
+    NoOp,
     SetConfig(Result<task::http::Response, JsValue>),
-    SetCommonDatabase(web_sys::IdbDatabase),
+    TryToSetCommonDatabase(Rc<web_sys::IdbDatabase>),
+    SetCommonDatabaseWithClientId(Rc<web_sys::IdbDatabase>, String),
+    AddClientId(Rc<web_sys::IdbDatabase>),
+    PutClientId(Rc<web_sys::IdbDatabase>),
 }
 
 pub enum Sub {}
 
 fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
     match msg {
+        Msg::NoOp => Cmd::none(),
         Msg::SetConfig(Ok(response)) => {
             if let Some(config) = response
                 .text
@@ -50,13 +57,13 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 let common_db_name = String::from("") + &config.client.db_prefix + ".common";
                 state.config = Some(Rc::new(config));
                 indexed_db::open_db(common_db_name.as_str(), |database| {
-                    Msg::SetCommonDatabase(database)
+                    Msg::TryToSetCommonDatabase(Rc::new(database))
                 })
             } else {
                 Cmd::none()
             }
         }
-        Msg::SetCommonDatabase(common_database) => {
+        Msg::TryToSetCommonDatabase(common_database) => {
             let names = common_database.object_store_names();
             let mut has_client = false;
             let mut has_rooms = false;
@@ -71,31 +78,65 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             }
             if !has_client {
                 indexed_db::create_object_strage(&common_database, "client", |database| {
-                    let object_store = database
-                        .transaction_with_str_and_mode(
-                            "client",
-                            web_sys::IdbTransactionMode::Readwrite,
-                        )
-                        .unwrap()
-                        .object_store("client")
-                        .unwrap();
-                    object_store
-                        .add_with_key(
-                            &JsValue::from(random_id::u128val().to_string()),
-                            &JsValue::from("client_id"),
-                        )
-                        .unwrap();
-                    Msg::SetCommonDatabase(database)
+                    Msg::TryToSetCommonDatabase(Rc::new(database))
                 })
             } else if !has_rooms {
                 indexed_db::create_object_strage(&common_database, "rooms", |database| {
-                    Msg::SetCommonDatabase(database)
+                    Msg::TryToSetCommonDatabase(Rc::new(database))
                 })
             } else {
-                state.common_database = Some(Rc::new(common_database));
-                Cmd::none()
+                indexed_db::query(
+                    &common_database,
+                    "client",
+                    indexed_db::Query::Get(&JsValue::from("client_id")),
+                    {
+                        let common_database = Rc::clone(&common_database);
+                        move |client_id| {
+                            if let Some(client_id) = client_id.as_string() {
+                                Msg::SetCommonDatabaseWithClientId(common_database, client_id)
+                            } else {
+                                Msg::PutClientId(common_database)
+                            }
+                        }
+                    },
+                    {
+                        let common_database = Rc::clone(&common_database);
+                        |_| Msg::AddClientId(common_database)
+                    },
+                )
             }
         }
+        Msg::SetCommonDatabaseWithClientId(common_database, client_id) => {
+            state.common_database = Some(common_database);
+            state.client_id = client_id;
+            Cmd::none()
+        }
+        Msg::AddClientId(common_database) => indexed_db::query(
+            &common_database,
+            "client",
+            indexed_db::Query::Add(
+                &JsValue::from("client_id"),
+                &JsValue::from(random_id::base64url()),
+            ),
+            {
+                let common_database = Rc::clone(&common_database);
+                move |_| Msg::TryToSetCommonDatabase(common_database)
+            },
+            |_| Msg::NoOp,
+        ),
+        Msg::PutClientId(common_database) => indexed_db::query(
+            &common_database,
+            "client",
+            indexed_db::Query::Put(
+                &JsValue::from("client_id"),
+                &JsValue::from(random_id::base64url()),
+            ),
+            {
+                let common_database = Rc::clone(&common_database);
+                move |_| Msg::TryToSetCommonDatabase(common_database)
+            },
+            |_| Msg::NoOp,
+        ),
         _ => Cmd::none(),
     }
 }
