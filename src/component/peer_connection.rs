@@ -24,9 +24,11 @@ pub fn new(
                 inputing_room_id: "".into(),
                 error_message: None,
                 room_id_regex: Regex::new(r"^[A-Za-z0-9@#]{20}$").unwrap(),
-                common_database: common_database,
+                common_database: Rc::clone(&common_database),
+                rooms: vec![],
             };
-            (state, Cmd::none())
+            let task = request_rooms_task(&common_database);
+            (state, task)
         }
     };
     Component::new(init, update, render).batch({
@@ -50,6 +52,7 @@ pub struct State {
     error_message: Option<String>,
     room_id_regex: Regex,
     common_database: Rc<web_sys::IdbDatabase>,
+    rooms: Vec<String>,
 }
 
 pub enum Msg {
@@ -61,6 +64,7 @@ pub enum Msg {
     ConnectToRoomAndPutDatabase(Rc<String>),
     ConnectToRoomAndAddDatabase(Rc<String>),
     ConnectToRoom(Rc<String>),
+    SetRoomsWithJsValue(JsValue),
 }
 
 pub enum Sub {}
@@ -71,6 +75,16 @@ fn basic_room_data_object() -> JsValue {
     };
     let obj: js_sys::Object = obj.into();
     obj.into()
+}
+
+fn request_rooms_task(database: &web_sys::IdbDatabase) -> Cmd<Msg, Sub> {
+    indexed_db::query(
+        &database,
+        "rooms",
+        indexed_db::Query::GetAllKeys,
+        |x| Msg::SetRoomsWithJsValue(x),
+        |_| Msg::NoOp,
+    )
 }
 
 fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
@@ -117,7 +131,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 state.inputing_room_id = room.id.as_ref().clone();
             }
             state.room = None;
-            Cmd::none()
+            request_rooms_task(&state.common_database)
         }
         Msg::ConnectToRoomAndPutDatabase(room_id) => indexed_db::query(
             &state.common_database,
@@ -138,6 +152,20 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.inputing_room_id = "".into();
             Cmd::none()
         }
+        Msg::SetRoomsWithJsValue(rooms) => {
+            let raw_rooms = js_sys::Array::from(&rooms).to_vec();
+            let mut rooms = vec![];
+
+            for raw_room in raw_rooms {
+                if let Some(room) = raw_room.as_string() {
+                    rooms.push(room);
+                }
+            }
+
+            state.rooms = rooms;
+
+            Cmd::none()
+        }
     }
 }
 
@@ -154,7 +182,10 @@ fn render(state: &State) -> Html<Msg> {
         Html::div(
             Attributes::new().id("app").class("fullscreen").class("app"),
             Events::new(),
-            vec![render_header(&state.inputing_room_id), render_body()],
+            vec![
+                render_header(&state.inputing_room_id),
+                render_body(&state.rooms),
+            ],
         )
     }
 }
@@ -211,6 +242,39 @@ fn render_header(room_id: &String) -> Html<Msg> {
     )
 }
 
-fn render_body() -> Html<Msg> {
-    Html::div(Attributes::new().class("container"), Events::new(), vec![])
+fn render_body(rooms: &Vec<String>) -> Html<Msg> {
+    Html::div(
+        Attributes::new()
+            .class("container")
+            .class("grid")
+            .class("scroll-v"),
+        Events::new(),
+        vec![Html::div(
+            Attributes::new()
+                .class("grid-cc-2x6")
+                .class("pure-form")
+                .class("linear-v"),
+            Events::new(),
+            vec![
+                vec![Html::h3(
+                    Attributes::new(),
+                    Events::new(),
+                    vec![Html::text("接続履歴")],
+                )],
+                rooms
+                    .iter()
+                    .map(|room_id| {
+                        Html::input(
+                            Attributes::new().value(room_id).flag("readonly"),
+                            Events::new(),
+                            vec![],
+                        )
+                    })
+                    .collect(),
+            ]
+            .into_iter()
+            .flatten()
+            .collect(),
+        )],
+    )
 }

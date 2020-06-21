@@ -71,6 +71,8 @@ pub enum Query<'a> {
     Get(&'a JsValue),
     Add(&'a JsValue, &'a JsValue),
     Put(&'a JsValue, &'a JsValue),
+    GetAll,
+    GetAllKeys,
 }
 
 pub fn query<Msg: 'static, Sub>(
@@ -85,6 +87,8 @@ pub fn query<Msg: 'static, Sub>(
             Query::Get(..) => web_sys::IdbTransactionMode::Readonly,
             Query::Add(..) => web_sys::IdbTransactionMode::Readwrite,
             Query::Put(..) => web_sys::IdbTransactionMode::Readwrite,
+            Query::GetAll => web_sys::IdbTransactionMode::Readonly,
+            Query::GetAllKeys => web_sys::IdbTransactionMode::Readonly,
         };
         let object_store = database
             .transaction_with_str_and_mode(object_name, mode)
@@ -95,6 +99,8 @@ pub fn query<Msg: 'static, Sub>(
             Query::Get(key) => object_store.get(key).unwrap(),
             Query::Add(key, val) => object_store.add_with_key(val, key).unwrap(),
             Query::Put(key, val) => object_store.put_with_key(val, key).unwrap(),
+            Query::GetAll => object_store.get_all().unwrap(),
+            Query::GetAllKeys => object_store.get_all_keys().unwrap(),
         };
         let request = Rc::new(request);
         move |resolve| {
