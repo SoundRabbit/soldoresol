@@ -1881,9 +1881,9 @@ fn render(state: &State) -> Html<Msg> {
     Html::div(
         Attributes::new()
             .id("app")
-            .class("fullscreen unselectable")
-            .style("display", "grid")
-            .style("grid-template-rows", "max-content 1fr")
+            .class("fullscreen")
+            .class("unselectable")
+            .class("app")
             .style("grid-template-columns", "max-content 1fr"),
         Events::new()
             .on("dragover", |e| {

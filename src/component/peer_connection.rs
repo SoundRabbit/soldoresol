@@ -101,91 +101,65 @@ fn render(state: &State) -> Html<Msg> {
         )
     } else {
         Html::div(
-            Attributes::new()
-                .id("app")
-                .class("fullscreen centering-v grid"),
+            Attributes::new().id("app").class("fullscreen").class("app"),
             Events::new(),
-            vec![Html::div(
-                Attributes::new().class("grid-cc-2x5 frame"),
-                Events::new(),
-                vec![
-                    Html::div(
-                        Attributes::new().class("frame-header"),
-                        Events::new(),
-                        vec![Html::text("Soldoresol")],
-                    ),
-                    Html::div(
-                        Attributes::new().class("frame-body grid"),
-                        Events::new(),
-                        vec![
-                            if let Some(error_message) = &state.error_message {
-                                Html::div(
-                                    Attributes::new()
-                                        .class("grid-w-f").class("container-a").class("text-color-danger-l"),
-                                    Events::new(),
-                                    vec![Html::text(error_message)],
-                                )
-                            } else {
-                                Html::none()
-                            },
-                            Html::div(
-                                Attributes::new().class("grid-w-10").class("centering").class("centering-a").class("pure-form"),
-                                Events::new(),
-                                vec![
-                                    Html::fieldset(
-                                        Attributes::new(),
-                                        Events::new(),
-                                        vec![Html::input(
-                                            Attributes::new()
-                                                .type_("text")
-                                                .value(&state.inputing_room_id)
-                                                .class("pure-input-1")
-                                                .placeholder("ルームID"),
-                                            Events::new().on_input(|s| Msg::SetRoomId(s)),
-                                            vec![],
-                                        )],
-                                    ),
-                                    btn::primary(
-                                        Attributes::new(),
-                                        Events::new().on_click({
-                                            let room_id = state.inputing_room_id.clone();
-                                            move |_| Msg::ConnectToRoom(room_id)
-                                        }),
-                                        vec![Html::text("接続")],
-                                    ),
-                                ],
-                            ),
-                            Html::div(
-                                Attributes::new().class("grid-w-4").class("centering").class("centering-a"),
-                                Events::new(),
-                                vec![Html::text("または")],
-                            ),
-                            Html::div(
-                                Attributes::new().class("grid-w-10").class("centering").class("centering-a").class("pure-form"),
-                                Events::new(),
-                                vec![btn::primary(
-                                    Attributes::new(),
-                                    Events::new().on_click({
-                                        let room_id = random_id::base64url();
-                                        move |_| Msg::ConnectToRoom(room_id)
-                                    }),
-                                    vec![Html::text("新規ルームを開く")],
-                                )],
-                            ),
-                            Html::div(
-                                Attributes::new().class("grid-w-f").class("container-a").class("text-wrap"),
-                                Events::new(),
-                                vec![awesome::i("fa-info-circle"), Html::text("接続したいルームのルームIDを入力して「接続」を押すか、「新規ルームを開く」を押して新しくルームを作成してください。新しく作成したルームには、そのルームIDを知っている人でなければ接続できません。また1人以上が接続していないルームのデータは消滅します。")],
-                            ),
-                        ],
-                    ),
-                    Html::div(
-                        Attributes::new().class("frame-footer"),
-                        Events::new(),
-                        vec![Html::text("開発者twitter：@SoundRabbit_")],
-                    ),
-                ],
-            )],
+            vec![render_header(&state.inputing_room_id), render_body()],
         )
     }
+}
+
+fn render_header(room_id: &String) -> Html<Msg> {
+    Html::div(
+        Attributes::new().class("panel grid"),
+        Events::new(),
+        vec![
+            Html::div(
+                Attributes::new().class("grid-w-6 keyvalueoption pure-form"),
+                Events::new(),
+                vec![
+                    Html::label(
+                        Attributes::new().string("for", "roomid"),
+                        Events::new(),
+                        vec![Html::text("接続先のルームID")],
+                    ),
+                    Html::input(
+                        Attributes::new().value(room_id).id("roomid"),
+                        Events::new(),
+                        vec![],
+                    ),
+                    btn::primary(
+                        Attributes::new(),
+                        Events::new().on_click({
+                            let room_id = room_id.clone();
+                            move |_| Msg::ConnectToRoom(room_id)
+                        }),
+                        vec![Html::text("接続")],
+                    ),
+                ],
+            ),
+            Html::div(
+                Attributes::new()
+                    .class("grid-w-18")
+                    .class("justify-r")
+                    .class("centering-h"),
+                Events::new(),
+                vec![Html::div(
+                    Attributes::new().class("linear-h"),
+                    Events::new(),
+                    vec![btn::primary(
+                        Attributes::new(),
+                        Events::new().on_click(|_| {
+                            let room_id = random_id::base64url();
+                            Msg::ConnectToRoom(room_id)
+                        }),
+                        vec![Html::text("新規ルームを作成")],
+                    )],
+                )],
+            ),
+        ],
+    )
+}
+
+fn render_body() -> Html<Msg> {
+    Html::div(Attributes::new().class("container"), Events::new(), vec![])
 }

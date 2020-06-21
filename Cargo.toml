@@ -51,6 +51,8 @@ features = [
     "HtmlImageElement",
     "HtmlInputElement",
     "HtmlTextAreaElement",
+    "IdbFactory",
+    "IdbOpenDbRequest",
     "ImageData",
     "Location",
     "MediaSource",

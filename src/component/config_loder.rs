@@ -5,10 +5,14 @@ use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 
 pub fn new() -> Component<Msg, State, Sub> {
-    let is_dev_mode = web_sys::window().unwrap().location().hostname().unwrap() == "localhost";
+    let hostname = web_sys::window().unwrap().location().hostname().unwrap();
+    let is_dev_mode = hostname == "localhost";
 
     let init = move || {
-        let state = State { config: None };
+        let state = State {
+            hostname: hostname,
+            config: None,
+        };
         let config_url = if is_dev_mode {
             "/config.dev.toml"
         } else {
@@ -23,6 +27,7 @@ pub fn new() -> Component<Msg, State, Sub> {
 }
 
 pub struct State {
+    hostname: String,
     config: Option<Rc<Config>>,
 }
 
@@ -52,9 +57,13 @@ fn render(state: &State) -> Html<Msg> {
         Html::component(peer_connection::new(Rc::clone(config)))
     } else {
         Html::div(
-            Attributes::new().class("app").id("app"),
+            Attributes::new()
+                .id("app")
+                .class("centering")
+                .class("fullscreen")
+                .class("centering-a"),
             Events::new(),
-            vec![],
+            vec![Html::text("Loading...")],
         )
     }
 }
