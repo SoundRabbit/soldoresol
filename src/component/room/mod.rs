@@ -259,6 +259,9 @@ pub enum Msg {
     Render,
     SetLowLoadingMode(bool),
 
+    // Tick
+    Tick1000ms,
+
     // メッセージの伝搬
     TransportContextMenuMsg(contextmenu::Msg),
     PickColor(Color, ColorPickerType),
@@ -440,6 +443,7 @@ pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
                 .set_onresize(Some(a.as_ref().unchecked_ref()));
             a.forget();
         })
+        .batch(batch::time::tick(1000, || Msg::Tick1000ms))
         .batch({
             let room = Rc::clone(&room);
             move |mut handler| {
@@ -650,6 +654,15 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 update(state, Msg::WindowResized)
             } else {
                 state.cmd_queue.dequeue()
+            }
+        }
+
+        // Tick
+        Msg::Tick1000ms => {
+            if state.world.table().drawing_texture_element().is_some() {
+                update(state, Msg::Render)
+            } else {
+                Cmd::none()
             }
         }
 

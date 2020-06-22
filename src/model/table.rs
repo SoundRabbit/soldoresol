@@ -1,6 +1,6 @@
 use super::{color::Color, TexstureLayer};
 use crate::JsObject;
-use std::{ops::Deref, rc::Rc};
+use std::{cell::Cell, ops::Deref, rc::Rc};
 use wasm_bindgen::prelude::*;
 
 pub struct Table {
@@ -8,7 +8,7 @@ pub struct Table {
     pixel_ratio: [f64; 2],
     is_bind_to_grid: bool,
     drawing_texture: TexstureLayer,
-    drawing_texture_is_changed: bool,
+    drawing_texture_is_changed: Cell<bool>,
     measure_texture: TexstureLayer,
     measure_texture_is_changed: bool,
     image_texture_id: Option<u128>,
@@ -28,7 +28,7 @@ impl Table {
             pixel_ratio,
             is_bind_to_grid: false,
             drawing_texture: TexstureLayer::new(&[texture_width, texture_height]),
-            drawing_texture_is_changed: true,
+            drawing_texture_is_changed: Cell::new(true),
             measure_texture: TexstureLayer::new(&[texture_width, texture_height]),
             measure_texture_is_changed: true,
             image_texture_id: None,
@@ -65,7 +65,7 @@ impl Table {
     }
 
     pub fn drawing_texture_element(&self) -> Option<&web_sys::HtmlCanvasElement> {
-        if self.drawing_texture_is_changed {
+        if self.drawing_texture_is_changed.get() {
             Some(self.drawing_texture.element())
         } else {
             None
@@ -90,7 +90,7 @@ impl Table {
 
     pub fn rendered(&mut self) {
         self.clear_measure();
-        self.drawing_texture_is_changed = false;
+        self.drawing_texture_is_changed.set(false);
         self.measure_texture_is_changed = false;
     }
 
@@ -103,6 +103,7 @@ impl Table {
             4096.0 / self.pixel_ratio[0],
             4096.0 / self.pixel_ratio[1],
         );
+        self.drawing_texture_is_changed.set(true);
     }
 
     fn get_texture_position(&self, position: &[f64; 2]) -> [f64; 2] {
@@ -146,7 +147,7 @@ impl Table {
         context.fill();
         context.stroke();
 
-        self.drawing_texture_is_changed = true;
+        self.drawing_texture_is_changed.set(true);
     }
 
     pub fn erace_line(&mut self, begin: &[f64; 2], end: &[f64; 2], line_width: f64) {
@@ -169,7 +170,7 @@ impl Table {
             .set_global_composite_operation("source-over")
             .unwrap();
 
-        self.drawing_texture_is_changed = true;
+        self.drawing_texture_is_changed.set(true);
     }
 
     pub fn draw_measure(
@@ -252,7 +253,7 @@ impl Into<Rc<Table>> for TableData {
             pixel_ratio: [1.0, 1.0],
             is_bind_to_grid: is_bind_to_grid,
             drawing_texture: TexstureLayer::new(&[texture_width, texture_height]),
-            drawing_texture_is_changed: true,
+            drawing_texture_is_changed: Cell::new(true),
             measure_texture: TexstureLayer::new(&[texture_width, texture_height]),
             measure_texture_is_changed: true,
             image_texture_id: image_texture_id,
