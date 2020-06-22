@@ -535,7 +535,7 @@ pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
                                 }
 
                                 if received_msg_num.get() >= 4 {
-                                    data_connection.close(false);
+                                    data_connection.close(true);
                                     if let Ok(mut h) = handler.try_borrow_mut() {
                                         (&mut *h)(Msg::SetLoadingState(false));
                                     }

@@ -68,9 +68,13 @@ fn render(state: &State) -> Html<Msg> {
         )
     } else {
         Html::div(
-            Attributes::new().id("app").class("fullscreen"),
+            Attributes::new()
+                .id("app")
+                .class("centering")
+                .class("fullscreen")
+                .class("centering-a"),
             Events::new(),
-            vec![],
+            vec![Html::text("Loading...")],
         )
     }
 }

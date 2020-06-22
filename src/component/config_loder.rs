@@ -143,7 +143,13 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
 fn render(state: &State) -> Html<Msg> {
     if let (Some(config), Some(database)) = (&state.config, &state.common_database) {
-        Html::component(peer_connection::new(Rc::clone(config), Rc::clone(database)))
+        Html::component(
+            peer_connection::new(Rc::clone(config), Rc::clone(database)).subscribe(
+                |sub| match sub {
+                    peer_connection::Sub::Reconnect => Msg::NoOp,
+                },
+            ),
+        )
     } else {
         Html::div(
             Attributes::new()
