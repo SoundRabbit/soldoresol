@@ -459,6 +459,7 @@ pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
                                 }
                             });
                         if let Some(msg) = msg {
+                            web_sys::console::log_1(&JsValue::from(msg.type_name()));
                             handler(Msg::ReceiveMsg(msg));
                         } else {
                             web_sys::console::log_1(&JsValue::from("faild to deserialize message"));
@@ -494,7 +495,7 @@ pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
         .batch({
             let peer = Rc::clone(&peer);
             move |handler| {
-                let handler = Rc::new(RefCell::new(Some(handler)));
+                let handler = Rc::new(RefCell::new(handler));
                 let connection_num = Rc::new(Cell::new(0));
 
                 // 接続済みユーザーからの接続が発生するごとに発火
@@ -521,11 +522,10 @@ pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
                                         }
                                     });
                                 if let Some(msg) = msg {
+                                    web_sys::console::log_1(&JsValue::from(msg.type_name()));
                                     received_msg_num.set(received_msg_num.get() + 1);
-                                    let h = handler.borrow_mut().take();
-                                    if let Some(mut h) = h {
-                                        h(Msg::ReceiveMsg(msg));
-                                        let _ = handler.replace(Some(h));
+                                    if let Ok(mut h) = handler.try_borrow_mut() {
+                                        (&mut *h)(Msg::ReceiveMsg(msg));
                                     }
                                 } else {
                                     web_sys::console::log_1(&JsValue::from(
@@ -535,10 +535,8 @@ pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
 
                                 if received_msg_num.get() >= 4 {
                                     data_connection.close(false);
-                                    let h = handler.borrow_mut().take();
-                                    if let Some(mut h) = h {
-                                        h(Msg::SetLoadingState(false));
-                                        let _ = handler.replace(Some(h));
+                                    if let Ok(mut h) = handler.try_borrow_mut() {
+                                        (&mut *h)(Msg::SetLoadingState(false));
                                     }
                                 }
                             }
@@ -564,10 +562,8 @@ pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
                         data_connection.on("open", Some(a.as_ref().unchecked_ref()));
                         a.forget();
 
-                        let h = handler.borrow_mut().take();
-                        if let Some(mut h) = h {
-                            h(Msg::SetLoadingState(true));
-                            let _ = handler.replace(Some(h));
+                        if let Ok(mut h) = handler.try_borrow_mut() {
+                            (&mut *h)(Msg::SetLoadingState(true));
                         }
                     }
                 }) as Box<dyn FnMut(DataConnection)>);
@@ -1857,18 +1853,23 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 let resource_data = state.resource.to_data();
                 state.peers.insert(peer_id);
 
-                let a = Closure::once(Box::new({
+                let a = RefCell::new(Some(Box::new({
                     let data_connect = Rc::clone(&data_connect);
                     move || {
                         web_sys::console::log_1(&JsValue::from("send resource data"));
                         let msg: JsObject = skyway::Msg::SetResource(resource_data).into();
                         data_connect.send(&msg);
                     }
-                }) as Box<dyn FnOnce()>);
+                }) as Box<dyn FnOnce()>));
+                let a = Closure::wrap(Box::new(move || {
+                    if let Some(a) = a.borrow_mut().take() {
+                        a();
+                    }
+                }) as Box<dyn FnMut()>);
                 data_connect.on("open", Some(a.as_ref().unchecked_ref()));
                 a.forget();
 
-                let a = Closure::once(Box::new({
+                let a = RefCell::new(Some(Box::new({
                     let data_connect = Rc::clone(&data_connect);
                     let peers = state.peers.clone();
                     move || {
@@ -1880,7 +1881,12 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                         let msg: JsObject = skyway::Msg::SetChat(chat).into();
                         data_connect.send(&msg);
                     }
-                }) as Box<dyn FnOnce()>);
+                }) as Box<dyn FnOnce()>));
+                let a = Closure::wrap(Box::new(move || {
+                    if let Some(a) = a.borrow_mut().take() {
+                        a();
+                    }
+                }) as Box<dyn FnMut()>);
                 data_connect.on("data", Some(a.as_ref().unchecked_ref()));
                 a.forget();
 

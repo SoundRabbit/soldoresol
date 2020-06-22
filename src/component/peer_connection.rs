@@ -131,6 +131,8 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 state.inputing_room_id = room.id.as_ref().clone();
             }
             state.room = None;
+            state.peer.destroy();
+            state.peer.reconnect();
             request_rooms_task(&state.common_database)
         }
         Msg::ConnectToRoomAndPutDatabase(room_id) => indexed_db::query(

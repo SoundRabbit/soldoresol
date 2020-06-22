@@ -24,6 +24,12 @@ extern "C" {
 
     #[wasm_bindgen(method, js_name = "joinRoom")]
     pub fn join_room(this: &Peer, room_id: &str) -> MeshRoom;
+
+    #[wasm_bindgen(method)]
+    pub fn destroy(this: &Peer);
+
+    #[wasm_bindgen(method)]
+    pub fn reconnect(this: &Peer);
 }
 
 #[wasm_bindgen]
