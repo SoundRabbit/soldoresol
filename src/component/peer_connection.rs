@@ -2,7 +2,7 @@ use super::{awesome, btn, room_connection};
 use crate::{
     indexed_db, random_id,
     skyway::{Peer, Room},
-    Config,
+    Config, JsObject,
 };
 use kagura::prelude::*;
 use regex::Regex;
@@ -25,9 +25,10 @@ pub fn new(
                 error_message: None,
                 room_id_regex: Regex::new(r"^[A-Za-z0-9@#]{20}$").unwrap(),
                 common_database: Rc::clone(&common_database),
+                room_ids_buf: vec![],
                 rooms: vec![],
             };
-            let task = request_rooms_task(&common_database);
+            let task = request_room_ids_task(&common_database);
             (state, task)
         }
     };
@@ -52,7 +53,13 @@ pub struct State {
     error_message: Option<String>,
     room_id_regex: Regex,
     common_database: Rc<web_sys::IdbDatabase>,
-    rooms: Vec<String>,
+    room_ids_buf: Vec<String>,
+    rooms: Vec<RoomData>,
+}
+
+struct RoomData {
+    room_id: String,
+    last_access_time: js_sys::Date,
 }
 
 pub enum Msg {
@@ -64,7 +71,8 @@ pub enum Msg {
     ConnectToRoomAndPutDatabase(Rc<String>),
     ConnectToRoomAndAddDatabase(Rc<String>),
     ConnectToRoom(Rc<String>),
-    SetRoomsWithJsValue(JsValue),
+    SetRoomIdsWithJsValue(JsValue),
+    SetRoomWithJsValue(String, JsValue),
 }
 
 pub enum Sub {
@@ -79,14 +87,28 @@ fn basic_room_data_object() -> JsValue {
     obj.into()
 }
 
-fn request_rooms_task(database: &web_sys::IdbDatabase) -> Cmd<Msg, Sub> {
+fn request_room_ids_task(database: &web_sys::IdbDatabase) -> Cmd<Msg, Sub> {
     indexed_db::query(
         &database,
         "rooms",
         indexed_db::Query::GetAllKeys,
-        |x| Msg::SetRoomsWithJsValue(x),
+        |x| Msg::SetRoomIdsWithJsValue(x),
         |_| Msg::NoOp,
     )
+}
+
+fn request_room_task(database: &web_sys::IdbDatabase, room_id: Option<String>) -> Cmd<Msg, Sub> {
+    if let Some(room_id) = room_id {
+        indexed_db::query(
+            &database,
+            "rooms",
+            indexed_db::Query::Get(&JsValue::from(&room_id)),
+            |x| Msg::SetRoomWithJsValue(room_id, x),
+            |_| Msg::NoOp,
+        )
+    } else {
+        Cmd::none()
+    }
 }
 
 fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
@@ -154,19 +176,29 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.inputing_room_id = "".into();
             Cmd::none()
         }
-        Msg::SetRoomsWithJsValue(rooms) => {
+        Msg::SetRoomIdsWithJsValue(rooms) => {
             let raw_rooms = js_sys::Array::from(&rooms).to_vec();
-            let mut rooms = vec![];
+            let mut room_ids = vec![];
 
             for raw_room in raw_rooms {
                 if let Some(room) = raw_room.as_string() {
-                    rooms.push(room);
+                    room_ids.push(room);
                 }
             }
 
-            state.rooms = rooms;
-
-            Cmd::none()
+            state.room_ids_buf = room_ids;
+            request_room_task(&state.common_database, state.room_ids_buf.pop())
+        }
+        Msg::SetRoomWithJsValue(room_id, room) => {
+            if let Ok(room) = room.dyn_into::<JsObject>() {
+                let last_access_time = room.get("last_access_time").unwrap().as_f64().unwrap();
+                let last_access_time = js_sys::Date::new(&JsValue::from(last_access_time));
+                state.rooms.push(RoomData {
+                    room_id: room_id,
+                    last_access_time: last_access_time,
+                });
+            }
+            request_room_task(&state.common_database, state.room_ids_buf.pop())
         }
     }
 }
@@ -244,39 +276,54 @@ fn render_header(room_id: &String) -> Html<Msg> {
     )
 }
 
-fn render_body(rooms: &Vec<String>) -> Html<Msg> {
+fn render_body(rooms: &Vec<RoomData>) -> Html<Msg> {
     Html::div(
         Attributes::new()
-            .class("container")
+            .class("scroll-v")
             .class("grid")
-            .class("scroll-v"),
+            .class("scroll-v")
+            .class("container"),
         Events::new(),
         vec![Html::div(
-            Attributes::new()
-                .class("grid-cc-2x6")
-                .class("pure-form")
-                .class("linear-v"),
+            Attributes::new().class("grid-cc-2x6").class("linear-v"),
             Events::new(),
             vec![
-                vec![Html::h3(
+                Html::h3(
                     Attributes::new(),
                     Events::new(),
                     vec![Html::text("接続履歴")],
-                )],
-                rooms
-                    .iter()
-                    .map(|room_id| {
-                        Html::input(
-                            Attributes::new().value(room_id).flag("readonly"),
-                            Events::new(),
-                            vec![],
-                        )
-                    })
-                    .collect(),
-            ]
-            .into_iter()
-            .flatten()
-            .collect(),
+                ),
+                Html::div(
+                    Attributes::new()
+                        .class("pure-form")
+                        .class("keyvalue")
+                        .class("keyvalue-rev"),
+                    Events::new(),
+                    rooms
+                        .iter()
+                        .map(|room| {
+                            vec![
+                                Html::input(
+                                    Attributes::new().value(&room.room_id).flag("readonly"),
+                                    Events::new(),
+                                    vec![],
+                                ),
+                                Html::div(
+                                    Attributes::new(),
+                                    Events::new(),
+                                    vec![Html::text(
+                                        room.last_access_time
+                                            .to_locale_string("ja-JP", object! {}.as_ref())
+                                            .as_string()
+                                            .unwrap_or(String::from("")),
+                                    )],
+                                ),
+                            ]
+                        })
+                        .flatten()
+                        .collect(),
+                ),
+            ],
         )],
     )
 }
