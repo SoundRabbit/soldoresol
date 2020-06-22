@@ -2,7 +2,7 @@ use super::peer_connection;
 use crate::{indexed_db, random_id, Config};
 use kagura::prelude::*;
 use std::rc::Rc;
-use wasm_bindgen::{prelude::*, JsCast};
+use wasm_bindgen::prelude::*;
 
 pub fn new() -> Component<Msg, State, Sub> {
     let hostname = web_sys::window().unwrap().location().hostname().unwrap();

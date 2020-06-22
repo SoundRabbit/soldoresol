@@ -1,5 +1,5 @@
 use super::{
-    super::{awesome, btn, color_picker, icon, modal},
+    super::{awesome, btn, color_picker, modal},
     common, CharacterSelecterType, ChatDataCollection, ColorPickerType, Modal, Msg, PersonalData,
     SelectImageModal,
 };

@@ -98,7 +98,6 @@ pub enum Msg {
     SetTablemaskSizeWithStyle(u128, [f64; 2], bool),
     SetTablemaskColor(u128, u32),
     SetObjectPosition(u128, [f64; 3]),
-    CloneObject(u128),
     BindObjectToTableGrid(u128),
     SetIsBindToGrid(bool),
     SetWorld(WorldData),
@@ -129,7 +128,6 @@ impl Msg {
             Self::SetTablemaskSizeWithStyle(..) => "SetTablemaskSizeWithStyle",
             Self::SetTablemaskColor(..) => "SetTablemaskColor",
             Self::SetObjectPosition(..) => "SetObjectPosition",
-            Self::CloneObject(..) => "CloneObject",
             Self::BindObjectToTableGrid(..) => "BindObjectToTableGrid",
             Self::SetIsBindToGrid(..) => "SetIsBindToGrid",
             Self::SetWorld(..) => "SetWorld",
@@ -178,7 +176,7 @@ impl Into<JsObject> for Msg {
                 array![t_id.to_string(), sz[0], sz[1], r].into()
             }
             Self::SetTablemaskColor(t_id, color) => array![t_id.to_string(), color].into(),
-            Self::BindObjectToTableGrid(id) | Self::RemoveObject(id) | Self::CloneObject(id) => {
+            Self::BindObjectToTableGrid(id) | Self::RemoveObject(id) => {
                 JsValue::from(id.to_string())
             }
             Self::SetIsBindToGrid(f) => JsValue::from(f),
@@ -307,7 +305,6 @@ impl From<JsObject> for Msg {
                         args.get(1).as_f64().unwrap() as u32,
                     )
                 }
-                "CloneObject" => Self::CloneObject(payload.as_string().unwrap().parse().unwrap()),
                 "BindObjectToTableGrid" => {
                     Self::BindObjectToTableGrid(payload.as_string().unwrap().parse().unwrap())
                 }
