@@ -3,10 +3,7 @@ use super::super::{
     webgl::{WebGlF32Vbo, WebGlI16Ibo, WebGlRenderingContext},
     ModelMatrix,
 };
-use crate::{
-    model::{Camera, Color, Tablemask},
-    random_id,
-};
+use crate::model::{Camera, Color, Tablemask};
 use ndarray::Array2;
 use std::collections::{hash_map, HashMap};
 
@@ -82,7 +79,7 @@ impl TablemaskCollectionRenderer {
                 .map(|a| a as f32)
                 .collect::<Vec<f32>>(),
             );
-            let color = Color::from(random_id::u32val());
+            let color = Color::from(id_map.len() as u32 | 0xFF000000);
             gl.uniform4fv_with_f32_array(
                 Some(&program.u_mask_color_location),
                 &color.to_f32array(),

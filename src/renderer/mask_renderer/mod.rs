@@ -32,8 +32,8 @@ impl MaskRenderer {
         gl.depth_func(web_sys::WebGlRenderingContext::ALWAYS);
         gl.enable(web_sys::WebGlRenderingContext::BLEND);
         gl.blend_func(
-            web_sys::WebGlRenderingContext::ONE,
-            web_sys::WebGlRenderingContext::ZERO,
+            web_sys::WebGlRenderingContext::SRC_ALPHA,
+            web_sys::WebGlRenderingContext::ONE_MINUS_SRC_ALPHA,
         );
 
         let character_collection_renderer = CharacterCollectionRenderer::new(&gl);
@@ -91,7 +91,7 @@ impl MaskRenderer {
 
         self.id_map.clear();
 
-        self.id_map.insert(0, world.table_id());
+        self.id_map.insert(0xFF000000, world.table_id());
 
         gl.depth_func(web_sys::WebGlRenderingContext::ALWAYS);
 

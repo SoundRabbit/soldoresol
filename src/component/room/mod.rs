@@ -798,6 +798,8 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     } else {
                         state.focused_object_id = None;
                     }
+                } else {
+                    state.focused_object_id = None;
                 }
             }
             update(state, Msg::Render)

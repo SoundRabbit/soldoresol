@@ -38,9 +38,11 @@ pub struct ViewRenderer {
 impl ViewRenderer {
     pub fn new(gl: &WebGlRenderingContext) -> Self {
         gl.enable(web_sys::WebGlRenderingContext::BLEND);
-        gl.blend_func(
+        gl.blend_func_separate(
             web_sys::WebGlRenderingContext::SRC_ALPHA,
             web_sys::WebGlRenderingContext::ONE_MINUS_SRC_ALPHA,
+            web_sys::WebGlRenderingContext::ONE,
+            web_sys::WebGlRenderingContext::ONE,
         );
         gl.enable(web_sys::WebGlRenderingContext::DEPTH_TEST);
 

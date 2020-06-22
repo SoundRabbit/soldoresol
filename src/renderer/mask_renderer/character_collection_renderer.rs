@@ -3,10 +3,7 @@ use super::super::{
     webgl::{WebGlF32Vbo, WebGlI16Ibo, WebGlRenderingContext},
     ModelMatrix,
 };
-use crate::{
-    model::{Camera, Character, Color},
-    random_id,
-};
+use crate::model::{Camera, Character, Color};
 use ndarray::Array2;
 use std::collections::{hash_map, HashMap};
 
@@ -79,7 +76,7 @@ impl CharacterCollectionRenderer {
                 .with_movement(&[p[0], (p[1] - 0.5 * s[0]), p[2]])
                 .into();
             let mvp_matrix = model_matrix.dot(vp_matrix);
-            let color = Color::from(random_id::u32val());
+            let color = Color::from(id_map.len() as u32 | 0xFF000000);
 
             gl.uniform_matrix4fv_with_f32_array(
                 Some(&program.u_translate_location),
