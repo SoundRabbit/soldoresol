@@ -786,17 +786,18 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.table_state.last_mouse_coord = mouse_coord;
             if let Some(renderer) = &mut state.renderer {
                 let dpr = get_device_pixel_ratio(state.pixel_ratio);
-                let focused_id = renderer.table_object_id(&[
+                if let Some(focused_id) = renderer.table_object_id(&[
                     mouse_coord[0] * dpr,
                     state.canvas_size[1] - mouse_coord[1] * dpr,
-                ]);
-                if let Some(character) = state.world.character_mut(&focused_id) {
-                    character.set_is_focused(true);
-                    state.focused_object_id = Some(focused_id);
-                } else if let Some(_) = state.world.tablemask(&focused_id) {
-                    state.focused_object_id = Some(focused_id);
-                } else {
-                    state.focused_object_id = None;
+                ]) {
+                    if let Some(character) = state.world.character_mut(focused_id) {
+                        character.set_is_focused(true);
+                        state.focused_object_id = Some(*focused_id);
+                    } else if let Some(_) = state.world.tablemask(focused_id) {
+                        state.focused_object_id = Some(*focused_id);
+                    } else {
+                        state.focused_object_id = None;
+                    }
                 }
             }
             update(state, Msg::Render)

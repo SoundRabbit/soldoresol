@@ -3,9 +3,12 @@ use super::super::{
     webgl::{WebGlF32Vbo, WebGlI16Ibo, WebGlRenderingContext},
     ModelMatrix,
 };
-use crate::model::{Camera, Color, Tablemask};
+use crate::{
+    model::{Camera, Color, Tablemask},
+    random_id,
+};
 use ndarray::Array2;
-use std::collections::hash_map;
+use std::collections::{hash_map, HashMap};
 
 pub struct TablemaskCollectionRenderer {
     vertexis_buffer: WebGlF32Vbo,
@@ -42,7 +45,7 @@ impl TablemaskCollectionRenderer {
         _camera: &Camera,
         vp_matrix: &Array2<f64>,
         tablemasks: hash_map::Iter<u128, Tablemask>,
-        id_map: &mut Vec<u128>,
+        id_map: &mut HashMap<u32, u128>,
     ) {
         gl.set_attribute(&self.vertexis_buffer, &program.a_vertex_location, 3, 0);
         gl.set_attribute(
@@ -79,9 +82,10 @@ impl TablemaskCollectionRenderer {
                 .map(|a| a as f32)
                 .collect::<Vec<f32>>(),
             );
+            let color = Color::from(random_id::u32val());
             gl.uniform4fv_with_f32_array(
                 Some(&program.u_mask_color_location),
-                &Color::from(id_map.len() as u32).to_f32array(),
+                &color.to_f32array(),
             );
             gl.uniform1i(Some(&program.u_flag_round_location), 1);
             gl.draw_elements_with_i32(
@@ -91,7 +95,7 @@ impl TablemaskCollectionRenderer {
                 0,
             );
 
-            id_map.push(*tablemask_id);
+            id_map.insert(color.to_u32(), *tablemask_id);
         }
     }
 }

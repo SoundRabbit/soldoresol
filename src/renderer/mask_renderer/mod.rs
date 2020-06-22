@@ -4,7 +4,7 @@ mod tablemask_collection_renderer;
 use super::{program::MaskProgram, webgl::WebGlRenderingContext};
 use crate::model::{Camera, World};
 pub use character_collection_renderer::CharacterCollectionRenderer;
-use std::rc::Rc;
+use std::{collections::HashMap, rc::Rc};
 use tablemask_collection_renderer::TablemaskCollectionRenderer;
 use wasm_bindgen::JsCast;
 
@@ -14,7 +14,7 @@ pub struct MaskRenderer {
     mask_program: MaskProgram,
     character_collection_renderer: CharacterCollectionRenderer,
     tablemask_collection_renderer: TablemaskCollectionRenderer,
-    id_map: Vec<u128>,
+    id_map: HashMap<u32, u128>,
 }
 
 impl MaskRenderer {
@@ -48,7 +48,7 @@ impl MaskRenderer {
             mask_program,
             character_collection_renderer,
             tablemask_collection_renderer,
-            id_map: Vec::new(),
+            id_map: HashMap::new(),
         }
     }
 
@@ -56,7 +56,7 @@ impl MaskRenderer {
         Rc::clone(&self.gl)
     }
 
-    pub fn table_object_id(&self, position: &[f64; 2]) -> u128 {
+    pub fn table_object_id(&self, position: &[f64; 2]) -> Option<&u128> {
         let mut pixel = [0, 0, 0, 0];
         self.gl
             .read_pixels_with_opt_u8_array(
@@ -69,7 +69,9 @@ impl MaskRenderer {
                 Some(&mut pixel),
             )
             .unwrap();
-        self.id_map[u32::from_be_bytes([pixel[3], pixel[0], pixel[1], pixel[2]]) as usize]
+        self.id_map.get(&u32::from_be_bytes([
+            pixel[3], pixel[0], pixel[1], pixel[2],
+        ]))
     }
 
     pub fn render(&mut self, canvas_size: &[f64; 2], camera: &Camera, world: &mut World) {
@@ -89,7 +91,7 @@ impl MaskRenderer {
 
         self.id_map.clear();
 
-        self.id_map.push(world.table_id());
+        self.id_map.insert(0, world.table_id());
 
         gl.depth_func(web_sys::WebGlRenderingContext::ALWAYS);
 

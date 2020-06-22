@@ -3,9 +3,12 @@ use super::super::{
     webgl::{WebGlF32Vbo, WebGlI16Ibo, WebGlRenderingContext},
     ModelMatrix,
 };
-use crate::model::{Camera, Character, Color};
+use crate::{
+    model::{Camera, Character, Color},
+    random_id,
+};
 use ndarray::Array2;
-use std::collections::hash_map;
+use std::collections::{hash_map, HashMap};
 
 #[derive(PartialEq, PartialOrd)]
 pub struct Total<T>(pub T);
@@ -52,7 +55,7 @@ impl CharacterCollectionRenderer {
         camera: &Camera,
         vp_matrix: &Array2<f64>,
         characters: hash_map::Iter<u128, Character>,
-        id_map: &mut Vec<u128>,
+        id_map: &mut HashMap<u32, u128>,
     ) {
         gl.set_attribute(&self.vertexis_buffer, &program.a_vertex_location, 3, 0);
         gl.set_attribute(
@@ -76,7 +79,7 @@ impl CharacterCollectionRenderer {
                 .with_movement(&[p[0], (p[1] - 0.5 * s[0]), p[2]])
                 .into();
             let mvp_matrix = model_matrix.dot(vp_matrix);
-            let color = Color::from(id_map.len() as u32).to_f32array();
+            let color = Color::from(random_id::u32val());
 
             gl.uniform_matrix4fv_with_f32_array(
                 Some(&program.u_translate_location),
@@ -93,7 +96,10 @@ impl CharacterCollectionRenderer {
                 .collect::<Vec<f32>>(),
             );
             gl.uniform1i(Some(&program.u_flag_round_location), 1);
-            gl.uniform4fv_with_f32_array(Some(&program.u_mask_color_location), &color);
+            gl.uniform4fv_with_f32_array(
+                Some(&program.u_mask_color_location),
+                &color.to_f32array(),
+            );
 
             gl.draw_elements_with_i32(
                 web_sys::WebGlRenderingContext::TRIANGLES,
@@ -110,9 +116,9 @@ impl CharacterCollectionRenderer {
                 .into();
             let mvp_matrix = model_matrix.dot(vp_matrix);
 
-            mvp_matrixies.push((mvp_matrix, color));
+            mvp_matrixies.push((mvp_matrix, color.to_f32array()));
 
-            id_map.push(*character_id);
+            id_map.insert(color.to_u32(), *character_id);
         }
 
         gl.depth_func(web_sys::WebGlRenderingContext::LEQUAL);
