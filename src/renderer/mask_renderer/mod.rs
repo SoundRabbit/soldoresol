@@ -29,7 +29,7 @@ impl MaskRenderer {
         let gl = Rc::new(WebGlRenderingContext(gl));
 
         gl.enable(web_sys::WebGlRenderingContext::DEPTH_TEST);
-        gl.depth_func(web_sys::WebGlRenderingContext::LEQUAL);
+        gl.depth_func(web_sys::WebGlRenderingContext::ALWAYS);
         gl.enable(web_sys::WebGlRenderingContext::BLEND);
         gl.blend_func(
             web_sys::WebGlRenderingContext::ONE,
