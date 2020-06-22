@@ -1,5 +1,6 @@
 mod character_collection_renderer;
-mod table_renderer;
+mod table_grid_renderer;
+mod table_texture_renderer;
 mod tablemask_collection_renderer;
 
 use super::webgl::WebGlRenderingContext;
@@ -7,7 +8,8 @@ use crate::model::{Camera, Resource, World};
 use character_collection_renderer::CharacterCollectionRenderer;
 use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
-use table_renderer::TableRenderer;
+use table_grid_renderer::TableGridRenderer;
+use table_texture_renderer::TableTextureRenderer;
 use tablemask_collection_renderer::TablemaskCollectionRenderer;
 
 pub struct TextureCollection(HashMap<u128, web_sys::WebGlTexture>);
@@ -27,7 +29,8 @@ impl DerefMut for TextureCollection {
 
 pub struct ViewRenderer {
     character_collection_renderer: CharacterCollectionRenderer,
-    table_renderer: TableRenderer,
+    table_texture_renderer: TableTextureRenderer,
+    table_grid_renderer: TableGridRenderer,
     tablemask_collection_renderer: TablemaskCollectionRenderer,
     img_texture_buffer: TextureCollection,
 }
@@ -42,12 +45,14 @@ impl ViewRenderer {
         gl.enable(web_sys::WebGlRenderingContext::DEPTH_TEST);
 
         let character_collection_renderer = CharacterCollectionRenderer::new(gl);
-        let table_renderer = TableRenderer::new(gl);
+        let table_texture_renderer = TableTextureRenderer::new(gl);
+        let table_grid_renderer = TableGridRenderer::new(gl);
         let tablemask_collection_renderer = TablemaskCollectionRenderer::new(gl);
 
         Self {
             character_collection_renderer,
-            table_renderer,
+            table_texture_renderer,
+            table_grid_renderer,
             tablemask_collection_renderer,
             img_texture_buffer: TextureCollection(HashMap::new()),
         }
@@ -72,7 +77,7 @@ impl ViewRenderer {
         );
         gl.depth_func(web_sys::WebGlRenderingContext::ALWAYS);
         if let Some(table) = world.table_mut() {
-            self.table_renderer.render(
+            self.table_texture_renderer.render(
                 gl,
                 camera,
                 &vp_matrix,
@@ -83,6 +88,11 @@ impl ViewRenderer {
         }
         self.tablemask_collection_renderer
             .render(gl, camera, &vp_matrix, world.tablemasks());
+        if let Some(table) = world.table_mut() {
+            self.table_grid_renderer
+                .render(gl, camera, &vp_matrix, table);
+            table.rendered();
+        }
         self.character_collection_renderer.render(
             gl,
             camera,
