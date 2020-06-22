@@ -73,7 +73,7 @@ impl CharacterCollectionRenderer {
             let p = character.position();
             let model_matrix: Array2<f64> = ModelMatrix::new()
                 .with_scale(&[s[0], s[0], 1.0])
-                .with_movement(&[p[0], p[1] - 0.5, p[2]])
+                .with_movement(&[p[0], (p[1] - 0.5 * s[0]), p[2]])
                 .into();
             let mvp_matrix = model_matrix.dot(vp_matrix);
             let color = Color::from(id_map.len() as u32).to_f32array();

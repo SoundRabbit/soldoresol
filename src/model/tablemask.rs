@@ -9,6 +9,7 @@ pub struct Tablemask {
     background_color: Color,
     size_is_binded: bool,
     is_rounded: bool,
+    is_fixed: bool,
 }
 
 pub struct TablemaskData(JsObject);
@@ -22,6 +23,7 @@ impl Tablemask {
             background_color: ColorSystem::red((255.0 * 0.6) as u8, 5),
             size_is_binded: true,
             is_rounded: true,
+            is_fixed: false,
         }
     }
 
@@ -78,6 +80,14 @@ impl Tablemask {
         &self.background_color
     }
 
+    pub fn set_is_fixed(&mut self, is_fixed: bool) {
+        self.is_fixed = is_fixed
+    }
+
+    pub fn is_fixed(&self) -> bool {
+        self.is_fixed
+    }
+
     pub fn as_data(&self) -> TablemaskData {
         TablemaskData(object! {
             size: array![self.size[0], self.size[1]],
@@ -85,7 +95,8 @@ impl Tablemask {
             z_rotation: self.z_rotation,
             background_color: self.background_color.to_u32(),
             size_is_binded: self.size_is_binded,
-            is_rounded: self.is_rounded
+            is_rounded: self.is_rounded,
+            is_fixed: self.is_fixed
         })
     }
 }
@@ -137,6 +148,10 @@ impl Into<Tablemask> for TablemaskData {
             .get("z_rotation")
             .and_then(|x| x.as_f64())
             .unwrap_or(0.0);
+        let is_fixed = obj
+            .get("is_fixed")
+            .and_then(|x| x.as_bool())
+            .unwrap_or(false);
 
         Tablemask {
             size,
@@ -145,6 +160,7 @@ impl Into<Tablemask> for TablemaskData {
             background_color,
             size_is_binded,
             is_rounded,
+            is_fixed,
         }
     }
 }

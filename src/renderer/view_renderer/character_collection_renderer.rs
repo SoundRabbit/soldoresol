@@ -5,18 +5,8 @@ use super::super::{
 };
 use crate::model::{Camera, Character, Color, Resource};
 use ndarray::{arr1, Array2};
+use ordered_float::OrderedFloat;
 use std::collections::{hash_map, BTreeMap};
-
-#[derive(PartialEq, PartialOrd)]
-pub struct Total<T>(pub T);
-
-impl<T: PartialEq> Eq for Total<T> {}
-
-impl<T: PartialOrd> Ord for Total<T> {
-    fn cmp(&self, other: &Total<T>) -> std::cmp::Ordering {
-        self.0.partial_cmp(&other.0).unwrap()
-    }
-}
 
 pub struct CharacterCollectionRenderer {
     img_vertexis_buffer: WebGlF32Vbo,
@@ -100,7 +90,8 @@ impl CharacterCollectionRenderer {
             Some(&self.mask_index_buffer),
         );
 
-        let mut z_index: BTreeMap<Total<f64>, Vec<(Array2<f64>, &mut Character)>> = BTreeMap::new();
+        let mut z_index: BTreeMap<OrderedFloat<f64>, Vec<(Array2<f64>, &mut Character)>> =
+            BTreeMap::new();
         for (_, character) in characters {
             let s = character.size();
             let p = character.position();
@@ -143,7 +134,7 @@ impl CharacterCollectionRenderer {
             let mvp_matrix = model_matrix.dot(vp_matrix);
 
             let s = mvp_matrix.t().dot(&arr1(&[0.0, 0.0, 0.0, 1.0]));
-            let key = Total(-s[2] / s[3]);
+            let key = OrderedFloat(-s[2] / s[3]);
             let value = (mvp_matrix, character);
             if let Some(v) = z_index.get_mut(&key) {
                 v.push(value);

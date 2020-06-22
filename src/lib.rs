@@ -1,8 +1,10 @@
 extern crate base64;
 extern crate bincode;
 extern crate hex;
+extern crate indexmap;
 extern crate kagura;
 extern crate ndarray;
+extern crate ordered_float;
 extern crate regex;
 extern crate sainome;
 extern crate serde;
