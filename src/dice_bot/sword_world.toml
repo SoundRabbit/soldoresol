@@ -153,7 +153,7 @@ k = '''
 gr = '\n.n.((2b6).(\r.grTable.(r-1)))'
 
 [[pattern]]
-capture = '^k(?P<d>\d+)(?P<x>.*)@(?P<c>\d+)(\$(?P<u>[+-]?\d+)|#(?P<a>[+-]?\d+)|r(?P<du>[+-]?\d+))*$'
+capture = '^[kK](?P<d>\d+)(?P<x>.*)@(?P<c>\d+)(\$(?P<u>[+-]?\d+)|#(?P<a>[+-]?\d+)|r(?P<du>[+-]?\d+))*$'
 replace = '(k.($d).($c).($u+0).($a+0).($du+0))$x'
 
 [[pattern]]
