@@ -277,13 +277,7 @@ fn character_property(character_id: u128, property: &Property) -> Vec<Html<Msg>>
             btn_remove_character_property(character_id, property_id),
         ],
         PropertyValue::Num(n) => vec![
-            Html::input(
-                Attributes::new().value(property.name()).type_("text"),
-                Events::new().on_input(move |s| {
-                    Msg::SetCharacterPropertyNameToTransport(character_id, property_id, s)
-                }),
-                vec![],
-            ),
+            character_property_key(false, character_id, property_id, property),
             Html::input(
                 Attributes::new().value(n.to_string()).type_("number"),
                 Events::new().on_input(move |s| {
@@ -302,13 +296,7 @@ fn character_property(character_id: u128, property: &Property) -> Vec<Html<Msg>>
             btn_remove_character_property(character_id, property_id),
         ],
         PropertyValue::Str(s) => vec![
-            Html::input(
-                Attributes::new().value(property.name()).type_("text"),
-                Events::new().on_input(move |s| {
-                    Msg::SetCharacterPropertyNameToTransport(character_id, property_id, s)
-                }),
-                vec![],
-            ),
+            character_property_key(false, character_id, property_id, property),
             Html::input(
                 Attributes::new().value(s),
                 Events::new().on_input(move |s| {
@@ -323,16 +311,7 @@ fn character_property(character_id: u128, property: &Property) -> Vec<Html<Msg>>
             btn_remove_character_property(character_id, property_id),
         ],
         PropertyValue::Children(children) => vec![
-            Html::input(
-                Attributes::new()
-                    .class("keyvalueoption-banner-2")
-                    .value(property.name())
-                    .type_("text"),
-                Events::new().on_input(move |s| {
-                    Msg::SetCharacterPropertyNameToTransport(character_id, property_id, s)
-                }),
-                vec![],
-            ),
+            character_property_key(true, character_id, property_id, property),
             btn_remove_character_property(character_id, property_id),
             Html::div(
                 Attributes::new()
@@ -354,6 +333,47 @@ fn character_property(character_id: u128, property: &Property) -> Vec<Html<Msg>>
             ),
         ],
     }
+}
+
+fn character_property_key(
+    is_banner: bool,
+    character_id: u128,
+    property_id: u128,
+    property: &Property,
+) -> Html<Msg> {
+    let attributes = Attributes::new().class("centering-v-i");
+    let attributes = if is_banner {
+        attributes
+            .class("keyvalueoption-banner-2")
+            .class("keyvalue")
+    } else {
+        attributes.class("linear-h")
+    };
+    let is_selected_to_show = property.is_selected_to_show();
+    Html::div(
+        attributes,
+        Events::new(),
+        vec![
+            btn::check(
+                is_selected_to_show,
+                Attributes::new(),
+                Events::new().on_click(move |_| {
+                    Msg::SetCharacterPropertyIsSelectedToShowToTransport(
+                        character_id,
+                        property_id,
+                        !is_selected_to_show,
+                    )
+                }),
+            ),
+            Html::input(
+                Attributes::new().value(property.name()).type_("text"),
+                Events::new().on_input(move |s| {
+                    Msg::SetCharacterPropertyNameToTransport(character_id, property_id, s)
+                }),
+                vec![],
+            ),
+        ],
+    )
 }
 
 fn btn_remove_character_property(character_id: u128, property_id: u128) -> Html<Msg> {

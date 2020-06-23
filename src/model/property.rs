@@ -188,6 +188,14 @@ impl Property {
         &self.value
     }
 
+    pub fn is_selected_to_show(&self) -> bool {
+        self.is_selected_to_show
+    }
+
+    pub fn set_is_selected_to_show(&mut self, is_selected_to_show: bool) {
+        self.is_selected_to_show = is_selected_to_show;
+    }
+
     pub fn as_object(&self) -> JsObject {
         object! {
             id: self.id.to_string(),

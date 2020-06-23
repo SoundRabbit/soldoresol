@@ -243,7 +243,6 @@ pub struct State {
     editing_modeless: Option<(u128, Rc<RefCell<modeless_modal::State>>)>,
     object_id_to_modeless_id_map: HashMap<u128, u128>, //object_id -> modeless_id
     chat_to_modeless_id_map: Option<u128>,
-    inventory_to_modeless_id_map: Option<u128>,
     pixel_ratio: f64,
     is_low_loading_mode: bool,
     loading_state: i64,
@@ -342,6 +341,8 @@ pub enum Msg {
     AddChildToCharacterProperty(u128, u128, Property),
     RemoveCharacterPropertyToTransport(u128, u128),
     RemoveCharacterProperty(u128, u128),
+    SetCharacterPropertyIsSelectedToShowToTransport(u128, u128, bool),
+    SetCharacterPropertyIsSelectedToShow(u128, u128, bool),
 
     // チャット関係
     SetSelectingChatTabIdx(usize),
@@ -419,7 +420,6 @@ pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
                 editing_modeless: None,
                 object_id_to_modeless_id_map: HashMap::new(),
                 chat_to_modeless_id_map: None,
-                inventory_to_modeless_id_map: None,
                 focused_object_id: None,
                 pixel_ratio: 1.0,
                 is_low_loading_mode: false,
@@ -1425,6 +1425,40 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         Msg::RemoveCharacterProperty(character_id, property_id) => {
             if let Some(character) = state.world.character_mut(&character_id) {
                 character.property.remove(property_id);
+            }
+            state.cmd_queue.dequeue()
+        }
+        Msg::SetCharacterPropertyIsSelectedToShowToTransport(
+            character_id,
+            property_id,
+            is_selected_to_show,
+        ) => {
+            update(
+                state,
+                Msg::SetCharacterPropertyIsSelectedToShow(
+                    character_id,
+                    property_id,
+                    is_selected_to_show,
+                ),
+            );
+            if let Some(character) = state.world.character(&character_id) {
+                let room = &state.room;
+                room.send(skyway::Msg::SetCharacterProperty(
+                    character_id,
+                    character.property.as_object(),
+                ));
+            }
+            state.cmd_queue.dequeue()
+        }
+        Msg::SetCharacterPropertyIsSelectedToShow(
+            character_id,
+            property_id,
+            is_selected_to_show,
+        ) => {
+            if let Some(character) = state.world.character_mut(&character_id) {
+                if let Some(property) = character.property.get_mut(&property_id) {
+                    property.set_is_selected_to_show(is_selected_to_show);
+                }
             }
             state.cmd_queue.dequeue()
         }
