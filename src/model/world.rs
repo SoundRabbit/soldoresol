@@ -35,12 +35,18 @@ impl World {
         }
     }
 
+    pub fn set_selecting_table_id(&mut self, table_id: u128) {
+        if self.tables.contains_key(&table_id) {
+            self.selecting_table_id = table_id;
+        }
+    }
+
     pub fn selecting_table_id(&self) -> u128 {
         self.selecting_table_id
     }
 
-    pub fn tables(&self) -> impl Iterator<Item = (u128, &Table)> {
-        self.tables.iter().map(|(i, t)| (*i, t.as_ref()))
+    pub fn tables(&self) -> impl Iterator<Item = (&u128, &Table)> {
+        self.tables.iter().map(|(i, t)| (i, t.as_ref()))
     }
 
     pub fn table(&self, table_id: &u128) -> Option<&Table> {

@@ -5,7 +5,7 @@ use super::{
 };
 use crate::model::{Icon, Resource, Table, World};
 use kagura::prelude::*;
-use std::collections::HashSet;
+use std::{collections::HashSet, iter::Iterator};
 use wasm_bindgen::JsCast;
 
 pub fn resource(resource: &Resource) -> Html<Msg> {
@@ -290,7 +290,11 @@ pub fn character_selecter(
     )
 }
 
-pub fn table_setting(table: &Table, resource: &Resource) -> Html<Msg> {
+pub fn table_setting<'a>(
+    table: &Table,
+    tables: impl Iterator<Item = (&'a u128, &'a Table)>,
+    resource: &Resource,
+) -> Html<Msg> {
     let [width, height] = table.size();
     let (width, height) = (*width, *height);
     let is_bind_to_grid = table.is_bind_to_grid();
@@ -305,125 +309,133 @@ pub fn table_setting(table: &Table, resource: &Resource) -> Html<Msg> {
             vec![
                 header("テーブル設定"),
                 modal::body(
-                    Attributes::new().class("scroll-v"),
+                    Attributes::new()
+                        .class("keyvalue")
+                        .class("keyvalue-align-stretch"),
                     Events::new(),
-                    vec![Html::div(
-                        Attributes::new()
-                            .class("keyvalue")
-                            .class("editormodeless")
-                            .class("pure-form")
-                            .class("keyvalue-align-start"),
-                        Events::new(),
-                        vec![
-                            Html::div(
-                                Attributes::new()
-                                    .class("container-a")
-                                    .class("centering")
-                                    .class("centering-a"),
-                                Events::new(),
-                                vec![
-                                    table
-                                        .image_texture_id()
-                                        .and_then(|data_id| resource.get_as_image_url(&data_id))
-                                        .map(|img_url| {
-                                            Html::img(
-                                                Attributes::new()
-                                                    .class("pure-img")
-                                                    .string("src", img_url.as_str()),
-                                                Events::new(),
-                                                vec![],
-                                            )
-                                        })
-                                        .unwrap_or(Html::none()),
-                                    btn::primary(
-                                        Attributes::new(),
-                                        Events::new().on_click({
-                                            move |_| {
-                                                Msg::OpenModal(Modal::SelectImage(
-                                                    SelectImageModal::Table,
-                                                ))
-                                            }
-                                        }),
-                                        vec![Html::text("画像を選択")],
-                                    ),
-                                ],
-                            ),
-                            Html::div(
-                                Attributes::new().class("container-a"),
-                                Events::new(),
-                                vec![
-                                    Html::div(
-                                        Attributes::new().class("container-a").class("keyvalue"),
-                                        Events::new(),
-                                        vec![
-                                            Html::span(
-                                                Attributes::new(),
-                                                Events::new(),
-                                                vec![Html::text("幅")],
-                                            ),
-                                            Html::input(
-                                                Attributes::new()
-                                                    .type_("number")
-                                                    .value(width.to_string()),
-                                                Events::new().on_input(move |width| {
-                                                    if let Ok(width) = width.parse::<f64>() {
-                                                        Msg::SetTableSizeToTransport([
-                                                            width.floor(),
-                                                            height,
-                                                        ])
-                                                    } else {
-                                                        Msg::NoOp
-                                                    }
-                                                }),
-                                                vec![],
-                                            ),
-                                            Html::span(
-                                                Attributes::new(),
-                                                Events::new(),
-                                                vec![Html::text("高さ")],
-                                            ),
-                                            Html::input(
-                                                Attributes::new()
-                                                    .type_("number")
-                                                    .value(height.to_string()),
-                                                Events::new().on_input(move |height| {
-                                                    if let Ok(height) = height.parse::<f64>() {
-                                                        Msg::SetTableSizeToTransport([
-                                                            width,
-                                                            height.floor(),
-                                                        ])
-                                                    } else {
-                                                        Msg::NoOp
-                                                    }
-                                                }),
-                                                vec![],
-                                            ),
-                                        ],
-                                    ),
-                                    Html::div(
-                                        Attributes::new().class("keyvalue").title(""),
-                                        Events::new(),
-                                        vec![
-                                            Html::span(
-                                                Attributes::new().class("text-label"),
-                                                Events::new(),
-                                                vec![Html::text("グリッドにスナップ")],
-                                            ),
-                                            btn::toggle(
-                                                is_bind_to_grid,
-                                                Attributes::new(),
-                                                Events::new().on_click(move |_| {
-                                                    Msg::SetIsBindToGridToTransport(
-                                                        !is_bind_to_grid,
-                                                    )
-                                                }),
-                                            ),
-                                        ],
-                                    ),
-                                ],
-                            ),
-                        ],
-                    )],
+                    vec![
+                        Html::div(Attributes::new().class("scroll-v"), Events::new(), vec![]),
+                        Html::div(
+                            Attributes::new()
+                                .class("scroll-v")
+                                .class("keyvalue")
+                                .class("editormodeless")
+                                .class("pure-form")
+                                .class("keyvalue-align-start"),
+                            Events::new(),
+                            vec![
+                                Html::div(
+                                    Attributes::new()
+                                        .class("container-a")
+                                        .class("centering")
+                                        .class("centering-a"),
+                                    Events::new(),
+                                    vec![
+                                        table
+                                            .image_texture_id()
+                                            .and_then(|data_id| resource.get_as_image_url(&data_id))
+                                            .map(|img_url| {
+                                                Html::img(
+                                                    Attributes::new()
+                                                        .class("pure-img")
+                                                        .string("src", img_url.as_str()),
+                                                    Events::new(),
+                                                    vec![],
+                                                )
+                                            })
+                                            .unwrap_or(Html::none()),
+                                        btn::primary(
+                                            Attributes::new(),
+                                            Events::new().on_click({
+                                                move |_| {
+                                                    Msg::OpenModal(Modal::SelectImage(
+                                                        SelectImageModal::Table,
+                                                    ))
+                                                }
+                                            }),
+                                            vec![Html::text("画像を選択")],
+                                        ),
+                                    ],
+                                ),
+                                Html::div(
+                                    Attributes::new().class("container-a"),
+                                    Events::new(),
+                                    vec![
+                                        Html::div(
+                                            Attributes::new()
+                                                .class("container-a")
+                                                .class("keyvalue"),
+                                            Events::new(),
+                                            vec![
+                                                Html::span(
+                                                    Attributes::new(),
+                                                    Events::new(),
+                                                    vec![Html::text("幅")],
+                                                ),
+                                                Html::input(
+                                                    Attributes::new()
+                                                        .type_("number")
+                                                        .value(width.to_string()),
+                                                    Events::new().on_input(move |width| {
+                                                        if let Ok(width) = width.parse::<f64>() {
+                                                            Msg::SetTableSizeToTransport([
+                                                                width.floor(),
+                                                                height,
+                                                            ])
+                                                        } else {
+                                                            Msg::NoOp
+                                                        }
+                                                    }),
+                                                    vec![],
+                                                ),
+                                                Html::span(
+                                                    Attributes::new(),
+                                                    Events::new(),
+                                                    vec![Html::text("高さ")],
+                                                ),
+                                                Html::input(
+                                                    Attributes::new()
+                                                        .type_("number")
+                                                        .value(height.to_string()),
+                                                    Events::new().on_input(move |height| {
+                                                        if let Ok(height) = height.parse::<f64>() {
+                                                            Msg::SetTableSizeToTransport([
+                                                                width,
+                                                                height.floor(),
+                                                            ])
+                                                        } else {
+                                                            Msg::NoOp
+                                                        }
+                                                    }),
+                                                    vec![],
+                                                ),
+                                            ],
+                                        ),
+                                        Html::div(
+                                            Attributes::new().class("keyvalue").title(""),
+                                            Events::new(),
+                                            vec![
+                                                Html::span(
+                                                    Attributes::new().class("text-label"),
+                                                    Events::new(),
+                                                    vec![Html::text("グリッドにスナップ")],
+                                                ),
+                                                btn::toggle(
+                                                    is_bind_to_grid,
+                                                    Attributes::new(),
+                                                    Events::new().on_click(move |_| {
+                                                        Msg::SetIsBindToGridToTransport(
+                                                            !is_bind_to_grid,
+                                                        )
+                                                    }),
+                                                ),
+                                            ],
+                                        ),
+                                    ],
+                                ),
+                            ],
+                        ),
+                    ],
                 ),
                 modal::footer(Attributes::new(), Events::new(), vec![]),
             ],

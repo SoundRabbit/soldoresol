@@ -343,6 +343,10 @@ pub enum Msg {
     RemoveCharacterProperty(u128, u128),
     SetCharacterPropertyIsSelectedToShowToTransport(u128, u128, bool),
     SetCharacterPropertyIsSelectedToShow(u128, u128, bool),
+    SetSelectingTableToTransport(u128),
+    SetSelectingTable(u128),
+    SetTableNameToTransport(u128, String),
+    SetTableName(u128, String),
 
     // チャット関係
     SetSelectingChatTabIdx(usize),
@@ -1477,6 +1481,26 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             }
             state.cmd_queue.dequeue()
         }
+        Msg::SetSelectingTableToTransport(table_id) => {
+            let room = &state.room;
+            room.send(skyway::Msg::SetSelectingTable(table_id));
+            update(state, Msg::SetSelectingTable(table_id))
+        }
+        Msg::SetSelectingTable(table_id) => {
+            state.world.set_selecting_table_id(table_id);
+            update(state, Msg::Render)
+        }
+        Msg::SetTableNameToTransport(table_id, name) => {
+            let room = &state.room;
+            room.send(skyway::Msg::SetTableName(table_id, name.clone()));
+            update(state, Msg::SetTableName(table_id, name))
+        }
+        Msg::SetTableName(table_id, name) => {
+            if let Some(table) = state.world.table_mut(&table_id) {
+                table.set_name(name);
+            }
+            state.cmd_queue.dequeue()
+        }
 
         // チャット周り
         Msg::SetSelectingChatTabIdx(tab_idx) => {
@@ -1781,6 +1805,12 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
         // 接続に関する操作
         Msg::ReceiveMsg(msg) => match msg {
+            skyway::Msg::SetSelectingTable(table_id) => {
+                update(state, Msg::SetSelectingTable(table_id))
+            }
+            skyway::Msg::SetTableName(table_id, name) => {
+                update(state, Msg::SetTableName(table_id, name))
+            }
             skyway::Msg::CreateCharacterToTable(character_id, character) => {
                 let character: Character = character.into();
                 state.world.add_character_with_id(character_id, character);
@@ -3031,7 +3061,9 @@ fn render_modals(
             Modal::Resource => modal::resource(resource),
             Modal::SelectImage(modal_type) => modal::select_image(resource, modal_type),
             Modal::PersonalSetting => modal::personal_setting(personal_data, resource),
-            Modal::TableSetting => modal::table_setting(&world.selecting_table(), &resource),
+            Modal::TableSetting => {
+                modal::table_setting(&world.selecting_table(), world.tables(), &resource)
+            }
             Modal::ColorPicker(color_picker_type) => modal::color_picker(color_picker_type.clone()),
             Modal::CharacterSelecter(character_selecter_type) => match character_selecter_type {
                 CharacterSelecterType::ChatSender => modal::character_selecter(

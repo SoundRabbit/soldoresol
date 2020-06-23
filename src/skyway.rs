@@ -85,6 +85,8 @@ impl Room {
 }
 
 pub enum Msg {
+    SetSelectingTable(u128),
+    SetTableName(u128, String),
     DrawLineToTable([f64; 2], [f64; 2]),
     EraceLineToTable([f64; 2], [f64; 2]),
     SetTableSize([f64; 2]),
@@ -115,6 +117,8 @@ pub enum Msg {
 impl Msg {
     pub fn type_name(&self) -> &'static str {
         match self {
+            Self::SetSelectingTable(..) => "SetSelectingTable",
+            Self::SetTableName(..) => "SetTableName",
             Self::DrawLineToTable(..) => "DrawLineToTable",
             Self::EraceLineToTable(..) => "EraceLineToTable",
             Self::SetTableSize(..) => "SetTableSize",
@@ -148,6 +152,10 @@ impl Into<JsObject> for Msg {
     fn into(self) -> JsObject {
         let type_name = self.type_name();
         let payload: JsValue = match self {
+            Self::SetSelectingTable(t_id) => JsValue::from(t_id.to_string()),
+            Self::SetTableName(id, name) | Self::SetCharacterName(id, name) => {
+                array![id.to_string(), name].into()
+            }
             Self::DrawLineToTable(b, e) | Self::EraceLineToTable(b, e) => {
                 array![b[0], b[1], e[0], e[1]].into()
             }
@@ -170,7 +178,6 @@ impl Into<JsObject> for Msg {
                 array![c_id.to_string(), d_id.to_string()].into()
             }
             Self::SetCharacterSize(c_id, sz) => array![c_id.to_string(), sz[0], sz[1]].into(),
-            Self::SetCharacterName(c_id, name) => array![c_id.to_string(), name].into(),
             Self::SetCharacterProperty(c_id, prop) => array![c_id.to_string(), prop].into(),
             Self::SetTablemaskSizeWithStyle(t_id, sz, r, is_fixed) => {
                 array![t_id.to_string(), sz[0], sz[1], r, is_fixed].into()
@@ -213,6 +220,16 @@ impl From<JsObject> for Msg {
             obj.get("payload"),
         ) {
             match msg_type.as_str() {
+                "SetSelectingTable" => {
+                    Self::SetSelectingTable(payload.as_string().unwrap().parse().unwrap())
+                }
+                "SetTableName" => {
+                    let args = Array::from(&payload);
+                    Self::SetTableName(
+                        args.get(0).as_string().unwrap().parse().unwrap(),
+                        args.get(1).as_string().unwrap(),
+                    )
+                }
                 "DrawLineToTable" => {
                     let args = payload.dyn_ref::<Array>().unwrap().to_vec();
                     Self::DrawLineToTable(

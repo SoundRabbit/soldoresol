@@ -4,6 +4,7 @@ use std::{cell::Cell, ops::Deref, rc::Rc};
 use wasm_bindgen::prelude::*;
 
 pub struct Table {
+    name: String,
     size: [f64; 2],
     pixel_ratio: [f64; 2],
     is_bind_to_grid: bool,
@@ -24,6 +25,7 @@ impl Table {
         let size = [1.0, 1.0];
         let pixel_ratio = [1.0, 1.0];
         Self {
+            name: "テーブル".into(),
             size,
             pixel_ratio,
             is_bind_to_grid: true,
@@ -33,6 +35,14 @@ impl Table {
             measure_texture_is_changed: true,
             image_texture_id: None,
         }
+    }
+
+    pub fn set_name(&mut self, name: String) {
+        self.name = name;
+    }
+
+    pub fn name(&self) -> &String {
+        &self.name
     }
 
     pub fn set_size(&mut self, size: [f64; 2]) {
@@ -220,6 +230,7 @@ impl Table {
 
     pub fn as_data(&self) -> TableData {
         TableData(object! {
+            name: &self.name,
             size: array![self.size[0], self.size[1]],
             is_bind_to_grid: self.is_bind_to_grid,
             drawing_texture: self.drawing_texture.element().to_data_url().unwrap(),
@@ -235,6 +246,10 @@ impl Into<Rc<Table>> for TableData {
 
         let obj = self.0;
 
+        let name = obj
+            .get("name")
+            .and_then(|x| x.as_string())
+            .unwrap_or(String::from(""));
         let size = Array::from(&obj.get("size").unwrap());
         let size = [size.get(0).as_f64().unwrap(), size.get(1).as_f64().unwrap()];
 
@@ -249,6 +264,7 @@ impl Into<Rc<Table>> for TableData {
         let texture_height = 4096;
 
         let mut table = Table {
+            name,
             size: [1.0, 1.0],
             pixel_ratio: [1.0, 1.0],
             is_bind_to_grid: is_bind_to_grid,

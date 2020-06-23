@@ -14,6 +14,10 @@
         align-items: start;
     }
 
+    &-align-stretch {
+        align-items: stretch;
+    }
+
     &>&-banner {
         grid-column: span 2;
     }
