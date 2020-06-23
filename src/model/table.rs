@@ -26,7 +26,7 @@ impl Table {
         Self {
             size,
             pixel_ratio,
-            is_bind_to_grid: false,
+            is_bind_to_grid: true,
             drawing_texture: TexstureLayer::new(&[texture_width, texture_height]),
             drawing_texture_is_changed: Cell::new(true),
             measure_texture: TexstureLayer::new(&[texture_width, texture_height]),
@@ -106,9 +106,9 @@ impl Table {
         self.drawing_texture_is_changed.set(true);
     }
 
-    fn get_texture_position(&self, position: &[f64; 2]) -> [f64; 2] {
+    fn get_texture_position(&self, position: &[f64; 2], ignore_binding: bool) -> [f64; 2] {
         let p = position;
-        let p = if self.is_bind_to_grid {
+        let p = if self.is_bind_to_grid && !ignore_binding {
             [(p[0] * 2.0).round() / 2.0, (p[1] * 2.0).round() / 2.0]
         } else {
             [p[0], p[1]]
@@ -126,14 +126,14 @@ impl Table {
     ) {
         let _context = self.drawing_texture.context();
 
-        let [_px, _py] = self.get_texture_position(position);
+        let [_px, _py] = self.get_texture_position(position, false);
     }
 
     pub fn draw_line(&mut self, begin: &[f64; 2], end: &[f64; 2], color: Color, line_width: f64) {
         let context = self.drawing_texture.context();
 
-        let [bx, by] = self.get_texture_position(begin);
-        let [ex, ey] = self.get_texture_position(end);
+        let [bx, by] = self.get_texture_position(begin, true);
+        let [ex, ey] = self.get_texture_position(end, true);
 
         context.set_line_width(line_width);
         context.set_line_cap("round");
@@ -153,8 +153,8 @@ impl Table {
     pub fn erace_line(&mut self, begin: &[f64; 2], end: &[f64; 2], line_width: f64) {
         let context = self.drawing_texture.context();
 
-        let [bx, by] = self.get_texture_position(begin);
-        let [ex, ey] = self.get_texture_position(end);
+        let [bx, by] = self.get_texture_position(begin, true);
+        let [ex, ey] = self.get_texture_position(end, true);
 
         context
             .set_global_composite_operation("destination-out")
@@ -183,8 +183,8 @@ impl Table {
     ) -> f64 {
         let context = self.measure_texture.context();
 
-        let [bx, by] = self.get_texture_position(begin);
-        let [ex, ey] = self.get_texture_position(end);
+        let [bx, by] = self.get_texture_position(begin, false);
+        let [ex, ey] = self.get_texture_position(end, false);
 
         let radious = ((ex - bx).powi(2) + (ey - by).powi(2)).sqrt();
 
