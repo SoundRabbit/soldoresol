@@ -243,6 +243,7 @@ pub struct State {
     editing_modeless: Option<(u128, Rc<RefCell<modeless_modal::State>>)>,
     object_id_to_modeless_id_map: HashMap<u128, u128>, //object_id -> modeless_id
     chat_to_modeless_id_map: Option<u128>,
+    inventory_to_modeless_id_map: Option<u128>,
     pixel_ratio: f64,
     is_low_loading_mode: bool,
     loading_state: i64,
@@ -418,6 +419,7 @@ pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
                 editing_modeless: None,
                 object_id_to_modeless_id_map: HashMap::new(),
                 chat_to_modeless_id_map: None,
+                inventory_to_modeless_id_map: None,
                 focused_object_id: None,
                 pixel_ratio: 1.0,
                 is_low_loading_mode: false,
@@ -2239,6 +2241,10 @@ fn render_canvas_container(state: &State) -> Html<Msg> {
             render_speech_bubble_queue(&state.speech_bubble_queue, &state.resource),
             render_measure_length(&state.table_state.measure_length),
             render_hint(),
+            render_table_character_list(
+                state.world.characters().map(|(_, x)| x).collect(),
+                &state.resource,
+            ),
             render_canvas_overlaper(
                 &state.table_state,
                 &state.focused_object_id,
@@ -2316,6 +2322,68 @@ fn render_speech_bubble_queue(
                 )
             })
             .collect(),
+    )
+}
+
+fn render_table_character_list(characters: Vec<&Character>, resource: &Resource) -> Html<Msg> {
+    Html::div(
+        Attributes::new()
+            .class("cover")
+            .class("cover-a")
+            .class("container-a")
+            .class("linear-v"),
+        Events::new(),
+        characters
+            .into_iter()
+            .map(|character| render_table_character_list_item(character, resource))
+            .collect(),
+    )
+}
+
+fn render_table_character_list_item(character: &Character, resource: &Resource) -> Html<Msg> {
+    Html::div(
+        Attributes::new().class("chat-item"),
+        Events::new(),
+        vec![
+            Html::div(
+                Attributes::new()
+                    .class("chat-icon linear-v")
+                    .style("justify-items", "center"),
+                Events::new(),
+                vec![{
+                    let icon = character
+                        .texture_id()
+                        .map(|r_id| Icon::Resource(r_id))
+                        .unwrap_or(Icon::DefaultUser);
+                    common::chat_icon(
+                        Attributes::new().class("icon-medium"),
+                        &icon,
+                        character.name(),
+                        resource,
+                    )
+                }],
+            ),
+            Html::div(
+                Attributes::new().class("chat-args"),
+                Events::new(),
+                vec![Html::text(character.name())],
+            ),
+            Html::div(
+                Attributes::new().class("chat-payload"),
+                Events::new(),
+                vec![Html::span(
+                    Attributes::new(),
+                    Events::new(),
+                    vec![Html::text(
+                        character
+                            .property
+                            .value()
+                            .as_option_string()
+                            .unwrap_or(String::new()),
+                    )],
+                )],
+            ),
+        ],
     )
 }
 
