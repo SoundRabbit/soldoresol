@@ -3,6 +3,7 @@ use js_sys::Array;
 use sainome::Ref;
 use wasm_bindgen::{prelude::*, JsCast};
 
+#[derive(Clone)]
 pub enum PropertyValue {
     None,
     Num(f64),
@@ -10,6 +11,7 @@ pub enum PropertyValue {
     Children(Vec<Property>),
 }
 
+#[derive(Clone)]
 pub struct Property {
     id: u128,
     name: String,

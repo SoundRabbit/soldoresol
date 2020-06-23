@@ -123,6 +123,7 @@ impl Clone for Character {
         if let Some(image_id) = self.image_id {
             clone.set_image_id(image_id);
         }
+        clone.property = self.property.clone();
 
         clone
     }
