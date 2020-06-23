@@ -31,8 +31,6 @@ pub fn object(
             ),
             if let Some(character) = world.character(&focused_id) {
                 object_character(character, focused_id, resource)
-            } else if let Some(tablemask) = world.tablemask(&focused_id) {
-                object_tablemask(tablemask, focused_id)
             } else {
                 Html::none()
             },
@@ -400,112 +398,6 @@ fn btn_add_child_to_character_property(character_id: u128, property_id: u128) ->
         ),
         Html::span(Attributes::new(), Events::new(), vec![]),
     ]
-}
-
-fn object_tablemask(tablemask: &Tablemask, tablemask_id: u128) -> Html<Msg> {
-    let input_width_id = random_id::hex(4);
-    let input_height_id = random_id::hex(4);
-    let width = tablemask.size()[0];
-    let height = tablemask.size()[1];
-    let is_rounded = tablemask.is_rounded();
-
-    modeless::body(
-        Attributes::new().class("container-a grid pure-form"),
-        Events::new(),
-        vec![
-            Html::fieldset(
-                Attributes::new().class("grid-w-11 keyvalue"),
-                Events::new(),
-                vec![
-                    Html::label(
-                        Attributes::new()
-                            .class("text-label")
-                            .string("for", &input_width_id),
-                        Events::new(),
-                        vec![Html::text("width")],
-                    ),
-                    Html::input(
-                        Attributes::new()
-                            .type_("number")
-                            .value(width.to_string())
-                            .class("pure-input-1")
-                            .id(input_width_id),
-                        Events::new().on_input({
-                            let size_is_binded = tablemask.size_is_binded();
-                            move |w| {
-                                if let Ok(w) = w.parse() {
-                                    Msg::SetTablemaskSizeWithStyle(
-                                        tablemask_id,
-                                        [w, if size_is_binded { w } else { height }],
-                                        is_rounded,
-                                    )
-                                } else {
-                                    Msg::NoOp
-                                }
-                            }
-                        }),
-                        vec![],
-                    ),
-                ],
-            ),
-            Html::div(
-                Attributes::new().class("grid-w-2 centering-a"),
-                Events::new(),
-                vec![if tablemask.size_is_binded() {
-                    btn::transparent(
-                        Attributes::new().class("text-color-light"),
-                        Events::new().on_click(move |_| {
-                            Msg::SetTablemaskSizeIsBindedToTransport(tablemask_id, false)
-                        }),
-                        vec![awesome::i("fa-link")],
-                    )
-                } else {
-                    btn::transparent(
-                        Attributes::new().class("text-color-gray"),
-                        Events::new().on_click(move |_| {
-                            Msg::SetTablemaskSizeIsBindedToTransport(tablemask_id, true)
-                        }),
-                        vec![awesome::i("fa-link")],
-                    )
-                }],
-            ),
-            Html::fieldset(
-                Attributes::new().class("grid-w-11 keyvalue"),
-                Events::new(),
-                vec![
-                    Html::label(
-                        Attributes::new()
-                            .class("text-label")
-                            .string("for", &input_height_id),
-                        Events::new(),
-                        vec![Html::text("height")],
-                    ),
-                    Html::input(
-                        Attributes::new()
-                            .type_("number")
-                            .value(height.to_string())
-                            .class("pure-input-1")
-                            .id(input_height_id),
-                        Events::new().on_input({
-                            let size_is_binded = tablemask.size_is_binded();
-                            move |h| {
-                                if let Ok(h) = h.parse() {
-                                    Msg::SetTablemaskSizeWithStyle(
-                                        tablemask_id,
-                                        [if size_is_binded { h } else { width }, h],
-                                        is_rounded,
-                                    )
-                                } else {
-                                    Msg::NoOp
-                                }
-                            }
-                        }),
-                        vec![],
-                    ),
-                ],
-            ),
-        ],
-    )
 }
 
 pub fn chat(

@@ -110,6 +110,7 @@ impl Clone for Tablemask {
         clone.set_z_rotation(self.z_rotation);
         clone.set_background_color(Color::from(self.background_color().to_u32()));
         clone.set_is_rounded(self.is_rounded());
+        clone.set_is_fixed(self.is_fixed());
 
         clone
     }

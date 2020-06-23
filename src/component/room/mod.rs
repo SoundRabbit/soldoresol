@@ -326,8 +326,8 @@ pub enum Msg {
     SetCharacterName(u128, String),
     AddChracaterToTransport(Character),
     AddTablemaskToTransport(Tablemask),
-    SetTablemaskSizeWithStyleToTransport(u128, [f64; 2], bool),
-    SetTablemaskSizeWithStyle(u128, [f64; 2], bool),
+    SetTablemaskSizeWithStyleToTransport(u128, [f64; 2], bool, bool),
+    SetTablemaskSizeWithStyle(u128, [f64; 2], bool, bool),
     SetTablemaskSizeIsBindedToTransport(u128, bool),
     SetTablemaskSizeIsBinded(u128, bool),
     SetTablemaskColorToTransport(u128, Color),
@@ -1247,24 +1247,26 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             ));
             update(state, Msg::Render)
         }
-        Msg::SetTablemaskSizeWithStyleToTransport(tablemask_id, size, is_rounded) => {
+        Msg::SetTablemaskSizeWithStyleToTransport(tablemask_id, size, is_rounded, is_fixed) => {
             if state.world.tablemask(&tablemask_id).is_some() {
                 let room = &state.room;
                 room.send(skyway::Msg::SetTablemaskSizeWithStyle(
                     tablemask_id,
                     size.clone(),
                     is_rounded,
+                    is_fixed,
                 ));
             }
             update(
                 state,
-                Msg::SetTablemaskSizeWithStyle(tablemask_id, size, is_rounded),
+                Msg::SetTablemaskSizeWithStyle(tablemask_id, size, is_rounded, is_fixed),
             )
         }
-        Msg::SetTablemaskSizeWithStyle(tablemask_id, size, is_rounded) => {
+        Msg::SetTablemaskSizeWithStyle(tablemask_id, size, is_rounded, is_fixed) => {
             if let Some(tablemask) = state.world.tablemask_mut(&tablemask_id) {
                 tablemask.set_is_rounded(is_rounded);
                 tablemask.set_size(size);
+                tablemask.set_is_fixed(is_fixed);
             }
             update(state, Msg::Render)
         }
@@ -1314,7 +1316,9 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 character.set_position(position);
             }
             if let Some(tablemask) = state.world.tablemask_mut(&object_id) {
-                tablemask.set_position(position);
+                if !tablemask.is_fixed() {
+                    tablemask.set_position(position)
+                }
             }
             update(state, Msg::Render)
         }
@@ -1807,10 +1811,12 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 }
                 state.cmd_queue.dequeue()
             }
-            skyway::Msg::SetTablemaskSizeWithStyle(tablemask_id, size, is_rounded) => update(
-                state,
-                Msg::SetTablemaskSizeWithStyle(tablemask_id, size, is_rounded),
-            ),
+            skyway::Msg::SetTablemaskSizeWithStyle(tablemask_id, size, is_rounded, is_fixed) => {
+                update(
+                    state,
+                    Msg::SetTablemaskSizeWithStyle(tablemask_id, size, is_rounded, is_fixed),
+                )
+            }
             skyway::Msg::SetTablemaskColor(tablemask_id, color) => update(
                 state,
                 Msg::SetTablemaskColor(tablemask_id, Color::from(color)),
@@ -2478,6 +2484,19 @@ fn render_canvas_overlaper(
     modelesses: &ModelessCollection,
     modeless_dom: &Vec<Option<u128>>,
 ) -> Html<Msg> {
+    let focused_object_id = focused_object_id.clone().and_then(|o_id| {
+        if world.character(&o_id).is_some() {
+            Some(o_id)
+        } else if world
+            .tablemask(&o_id)
+            .map(|t| !t.is_fixed())
+            .unwrap_or(false)
+        {
+            Some(o_id)
+        } else {
+            None
+        }
+    });
     modeless_container(
         Attributes::new()
             .class("cover cover-a")
@@ -2485,7 +2504,6 @@ fn render_canvas_overlaper(
         Events::new()
             .on_mousemove({
                 let selecting_tool = table_state.selecting_tool.clone();
-                let focused_object_id = focused_object_id.clone();
                 move |e| {
                     e.stop_propagation();
                     let mouse_coord = [e.offset_x() as f64, e.offset_y() as f64];
@@ -2698,6 +2716,7 @@ fn render_context_menu_tablemask(
     object_id: u128,
     tablemask: &Tablemask,
 ) -> Html<Msg> {
+    let is_fixed = tablemask.is_fixed();
     contextmenu::render(
         false,
         &contextmenu.state,
@@ -2729,81 +2748,53 @@ fn render_context_menu_tablemask(
                                         Attributes::new().class("pure-menu-list"),
                                         Events::new(),
                                         vec![
-                                            btn::contextmenu_text(
-                                                Attributes::new(),
-                                                Events::new().on_click(move |_| {
-                                                    Msg::SetTablemaskSizeWithStyleToTransport(
-                                                        object_id,
-                                                        [2., 2.],
-                                                        true,
-                                                    )
-                                                }),
+                                            render_context_menu_tablemask_resizer(
+                                                object_id,
+                                                [2., 2.],
+                                                true,
+                                                is_fixed,
                                                 "半径1",
                                             ),
-                                            btn::contextmenu_text(
-                                                Attributes::new(),
-                                                Events::new().on_click(move |_| {
-                                                    Msg::SetTablemaskSizeWithStyleToTransport(
-                                                        object_id,
-                                                        [4., 4.],
-                                                        true,
-                                                    )
-                                                }),
+                                            render_context_menu_tablemask_resizer(
+                                                object_id,
+                                                [4., 4.],
+                                                true,
+                                                is_fixed,
                                                 "半径2",
                                             ),
-                                            btn::contextmenu_text(
-                                                Attributes::new(),
-                                                Events::new().on_click(move |_| {
-                                                    Msg::SetTablemaskSizeWithStyleToTransport(
-                                                        object_id,
-                                                        [6., 6.],
-                                                        true,
-                                                    )
-                                                }),
+                                            render_context_menu_tablemask_resizer(
+                                                object_id,
+                                                [6., 6.],
+                                                true,
+                                                is_fixed,
                                                 "半径3",
                                             ),
-                                            btn::contextmenu_text(
-                                                Attributes::new(),
-                                                Events::new().on_click(move |_| {
-                                                    Msg::SetTablemaskSizeWithStyleToTransport(
-                                                        object_id,
-                                                        [8., 8.],
-                                                        true,
-                                                    )
-                                                }),
+                                            render_context_menu_tablemask_resizer(
+                                                object_id,
+                                                [8., 8.],
+                                                true,
+                                                is_fixed,
                                                 "半径4",
                                             ),
-                                            btn::contextmenu_text(
-                                                Attributes::new(),
-                                                Events::new().on_click(move |_| {
-                                                    Msg::SetTablemaskSizeWithStyleToTransport(
-                                                        object_id,
-                                                        [10., 10.],
-                                                        true,
-                                                    )
-                                                }),
+                                            render_context_menu_tablemask_resizer(
+                                                object_id,
+                                                [10., 10.],
+                                                true,
+                                                is_fixed,
                                                 "半径5",
                                             ),
-                                            btn::contextmenu_text(
-                                                Attributes::new(),
-                                                Events::new().on_click(move |_| {
-                                                    Msg::SetTablemaskSizeWithStyleToTransport(
-                                                        object_id,
-                                                        [12., 12.],
-                                                        true,
-                                                    )
-                                                }),
+                                            render_context_menu_tablemask_resizer(
+                                                object_id,
+                                                [12., 12.],
+                                                true,
+                                                is_fixed,
                                                 "半径6",
                                             ),
-                                            btn::contextmenu_text(
-                                                Attributes::new(),
-                                                Events::new().on_click(move |_| {
-                                                    Msg::SetTablemaskSizeWithStyleToTransport(
-                                                        object_id,
-                                                        [14., 14.],
-                                                        true,
-                                                    )
-                                                }),
+                                            render_context_menu_tablemask_resizer(
+                                                object_id,
+                                                [14., 14.],
+                                                true,
+                                                is_fixed,
                                                 "半径7",
                                             ),
                                         ],
@@ -2812,81 +2803,53 @@ fn render_context_menu_tablemask(
                                         Attributes::new().class("pure-menu-list"),
                                         Events::new(),
                                         vec![
-                                            btn::contextmenu_text(
-                                                Attributes::new(),
-                                                Events::new().on_click(move |_| {
-                                                    Msg::SetTablemaskSizeWithStyleToTransport(
-                                                        object_id,
-                                                        [1., 1.],
-                                                        false,
-                                                    )
-                                                }),
+                                            render_context_menu_tablemask_resizer(
+                                                object_id,
+                                                [1., 1.],
+                                                false,
+                                                is_fixed,
                                                 "矩形1×1",
                                             ),
-                                            btn::contextmenu_text(
-                                                Attributes::new(),
-                                                Events::new().on_click(move |_| {
-                                                    Msg::SetTablemaskSizeWithStyleToTransport(
-                                                        object_id,
-                                                        [2., 2.],
-                                                        false,
-                                                    )
-                                                }),
+                                            render_context_menu_tablemask_resizer(
+                                                object_id,
+                                                [2., 2.],
+                                                false,
+                                                is_fixed,
                                                 "矩形2×2",
                                             ),
-                                            btn::contextmenu_text(
-                                                Attributes::new(),
-                                                Events::new().on_click(move |_| {
-                                                    Msg::SetTablemaskSizeWithStyleToTransport(
-                                                        object_id,
-                                                        [3., 3.],
-                                                        false,
-                                                    )
-                                                }),
+                                            render_context_menu_tablemask_resizer(
+                                                object_id,
+                                                [3., 3.],
+                                                false,
+                                                is_fixed,
                                                 "矩形3×3",
                                             ),
-                                            btn::contextmenu_text(
-                                                Attributes::new(),
-                                                Events::new().on_click(move |_| {
-                                                    Msg::SetTablemaskSizeWithStyleToTransport(
-                                                        object_id,
-                                                        [4., 4.],
-                                                        false,
-                                                    )
-                                                }),
+                                            render_context_menu_tablemask_resizer(
+                                                object_id,
+                                                [4., 4.],
+                                                false,
+                                                is_fixed,
                                                 "矩形4×4",
                                             ),
-                                            btn::contextmenu_text(
-                                                Attributes::new(),
-                                                Events::new().on_click(move |_| {
-                                                    Msg::SetTablemaskSizeWithStyleToTransport(
-                                                        object_id,
-                                                        [5., 5.],
-                                                        false,
-                                                    )
-                                                }),
+                                            render_context_menu_tablemask_resizer(
+                                                object_id,
+                                                [5., 5.],
+                                                false,
+                                                is_fixed,
                                                 "矩形5×5",
                                             ),
-                                            btn::contextmenu_text(
-                                                Attributes::new(),
-                                                Events::new().on_click(move |_| {
-                                                    Msg::SetTablemaskSizeWithStyleToTransport(
-                                                        object_id,
-                                                        [6., 6.],
-                                                        false,
-                                                    )
-                                                }),
+                                            render_context_menu_tablemask_resizer(
+                                                object_id,
+                                                [6., 6.],
+                                                false,
+                                                is_fixed,
                                                 "矩形6×6",
                                             ),
-                                            btn::contextmenu_text(
-                                                Attributes::new(),
-                                                Events::new().on_click(move |_| {
-                                                    Msg::SetTablemaskSizeWithStyleToTransport(
-                                                        object_id,
-                                                        [7., 7.],
-                                                        false,
-                                                    )
-                                                }),
+                                            render_context_menu_tablemask_resizer(
+                                                object_id,
+                                                [7., 7.],
+                                                false,
+                                                is_fixed,
                                                 "矩形7×7",
                                             ),
                                         ],
@@ -2953,6 +2916,19 @@ fn render_context_menu_tablemask(
                 ),
                 btn::contextmenu_text(
                     Attributes::new(),
+                    Events::new().on_click({
+                        let size = tablemask.size().clone();
+                        let is_rounded = tablemask.is_rounded();
+                        move |_| {
+                            Msg::SetTablemaskSizeWithStyleToTransport(
+                                object_id, size, is_rounded, !is_fixed,
+                            )
+                        }
+                    }),
+                    String::from("固定") + if is_fixed { "解除" } else { "する" },
+                ),
+                btn::contextmenu_text(
+                    Attributes::new(),
                     Events::new()
                         .on_click(move |_| Msg::CloneObjectWithObjectIdToTransport(object_id)),
                     "コピーを作成",
@@ -2965,6 +2941,22 @@ fn render_context_menu_tablemask(
                 ),
             ],
         )],
+    )
+}
+
+fn render_context_menu_tablemask_resizer(
+    object_id: u128,
+    size: [f64; 2],
+    is_rounded: bool,
+    is_fixed: bool,
+    text: impl Into<String>,
+) -> Html<Msg> {
+    btn::contextmenu_text(
+        Attributes::new(),
+        Events::new().on_click(move |_| {
+            Msg::SetTablemaskSizeWithStyleToTransport(object_id, size, is_rounded, is_fixed)
+        }),
+        text,
     )
 }
 

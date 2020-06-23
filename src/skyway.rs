@@ -95,7 +95,7 @@ pub enum Msg {
     SetCharacterSize(u128, [f64; 2]),
     SetCharacterName(u128, String),
     SetCharacterProperty(u128, JsObject),
-    SetTablemaskSizeWithStyle(u128, [f64; 2], bool),
+    SetTablemaskSizeWithStyle(u128, [f64; 2], bool, bool),
     SetTablemaskColor(u128, u32),
     SetObjectPosition(u128, [f64; 3]),
     BindObjectToTableGrid(u128),
@@ -172,8 +172,8 @@ impl Into<JsObject> for Msg {
             Self::SetCharacterSize(c_id, sz) => array![c_id.to_string(), sz[0], sz[1]].into(),
             Self::SetCharacterName(c_id, name) => array![c_id.to_string(), name].into(),
             Self::SetCharacterProperty(c_id, prop) => array![c_id.to_string(), prop].into(),
-            Self::SetTablemaskSizeWithStyle(t_id, sz, r) => {
-                array![t_id.to_string(), sz[0], sz[1], r].into()
+            Self::SetTablemaskSizeWithStyle(t_id, sz, r, is_fixed) => {
+                array![t_id.to_string(), sz[0], sz[1], r, is_fixed].into()
             }
             Self::SetTablemaskColor(t_id, color) => array![t_id.to_string(), color].into(),
             Self::BindObjectToTableGrid(id) | Self::RemoveObject(id) => {
@@ -296,6 +296,7 @@ impl From<JsObject> for Msg {
                         args[0].as_string().unwrap().parse().unwrap(),
                         [args[1].as_f64().unwrap(), args[2].as_f64().unwrap()],
                         args[3].as_bool().unwrap(),
+                        args[4].as_bool().unwrap(),
                     )
                 }
                 "SetTablemaskColor" => {
