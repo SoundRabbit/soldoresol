@@ -1006,6 +1006,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 table_mask.set_is_rounded(true);
                 table_mask.set_position([begin[0], begin[1], 0.0]);
                 table_mask.set_size([2.0 * r, 2.0 * r]);
+                table_mask.set_is_fixed(true);
             } else {
                 let z_rotation = (end[1] - begin[1]).atan2(end[0] - begin[0]);
                 let width = r;
@@ -1015,6 +1016,8 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 table_mask.set_position(position);
                 table_mask.set_size([width, height]);
                 table_mask.set_z_rotation(z_rotation);
+                table_mask.set_is_fixed(true);
+                table_mask.set_background_color(ColorSystem::red(255, 5));
             }
             let cmd = update(state, Msg::AddTablemaskToTransport(table_mask));
             state.cmd_queue.enqueue(cmd);
