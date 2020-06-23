@@ -3061,9 +3061,12 @@ fn render_modals(
             Modal::Resource => modal::resource(resource),
             Modal::SelectImage(modal_type) => modal::select_image(resource, modal_type),
             Modal::PersonalSetting => modal::personal_setting(personal_data, resource),
-            Modal::TableSetting => {
-                modal::table_setting(&world.selecting_table(), world.tables(), &resource)
-            }
+            Modal::TableSetting => modal::table_setting(
+                world.selecting_table_id(),
+                &world.selecting_table(),
+                world.tables(),
+                &resource,
+            ),
             Modal::ColorPicker(color_picker_type) => modal::color_picker(color_picker_type.clone()),
             Modal::CharacterSelecter(character_selecter_type) => match character_selecter_type {
                 CharacterSelecterType::ChatSender => modal::character_selecter(

@@ -291,6 +291,7 @@ pub fn character_selecter(
 }
 
 pub fn table_setting<'a>(
+    selecting_table_id: u128,
     table: &Table,
     tables: impl Iterator<Item = (&'a u128, &'a Table)>,
     resource: &Resource,
@@ -311,123 +312,182 @@ pub fn table_setting<'a>(
                 modal::body(
                     Attributes::new()
                         .class("keyvalue")
-                        .class("keyvalue-align-stretch"),
+                        .class("keyvalue-align-stretch")
+                        .class("editormodeless"),
                     Events::new(),
                     vec![
-                        Html::div(Attributes::new().class("scroll-v"), Events::new(), vec![]),
+                        Html::div(
+                            Attributes::new()
+                                .class("linear-v")
+                                .style("grid-template-rows", "1fr"),
+                            Events::new(),
+                            vec![
+                                Html::div(
+                                    Attributes::new().class("scroll-v").class("linear-v"),
+                                    Events::new(),
+                                    tables
+                                        .map(|(table_id, table)| {
+                                            let table_id = *table_id;
+                                            btn::selectable(
+                                                table_id == selecting_table_id,
+                                                Attributes::new(),
+                                                Events::new(),
+                                                vec![Html::text(table.name())],
+                                            )
+                                        })
+                                        .collect(),
+                                ),
+                                btn::primary(
+                                    Attributes::new(),
+                                    Events::new(),
+                                    vec![Html::text("追加")],
+                                ),
+                            ],
+                        ),
                         Html::div(
                             Attributes::new()
                                 .class("scroll-v")
-                                .class("keyvalue")
-                                .class("editormodeless")
                                 .class("pure-form")
+                                .class("linear-v")
                                 .class("keyvalue-align-start"),
                             Events::new(),
                             vec![
                                 Html::div(
-                                    Attributes::new()
-                                        .class("container-a")
-                                        .class("centering")
-                                        .class("centering-a"),
+                                    Attributes::new().class("keyvalue"),
                                     Events::new(),
                                     vec![
-                                        table
-                                            .image_texture_id()
-                                            .and_then(|data_id| resource.get_as_image_url(&data_id))
-                                            .map(|img_url| {
-                                                Html::img(
-                                                    Attributes::new()
-                                                        .class("pure-img")
-                                                        .string("src", img_url.as_str()),
-                                                    Events::new(),
-                                                    vec![],
-                                                )
-                                            })
-                                            .unwrap_or(Html::none()),
-                                        btn::primary(
+                                        Html::span(
                                             Attributes::new(),
-                                            Events::new().on_click({
-                                                move |_| {
-                                                    Msg::OpenModal(Modal::SelectImage(
-                                                        SelectImageModal::Table,
-                                                    ))
-                                                }
+                                            Events::new(),
+                                            vec![Html::text("Name")],
+                                        ),
+                                        Html::input(
+                                            Attributes::new().value(table.name()).type_("text"),
+                                            Events::new().on_input(move |s| {
+                                                Msg::SetTableNameToTransport(selecting_table_id, s)
                                             }),
-                                            vec![Html::text("画像を選択")],
+                                            vec![],
                                         ),
                                     ],
                                 ),
                                 Html::div(
-                                    Attributes::new().class("container-a"),
+                                    Attributes::new()
+                                        .class("keyvalue")
+                                        .class("keyvalue-align-start"),
                                     Events::new(),
                                     vec![
                                         Html::div(
                                             Attributes::new()
                                                 .class("container-a")
-                                                .class("keyvalue"),
+                                                .class("centering")
+                                                .class("centering-a"),
                                             Events::new(),
                                             vec![
-                                                Html::span(
+                                                table
+                                                    .image_texture_id()
+                                                    .and_then(|data_id| {
+                                                        resource.get_as_image_url(&data_id)
+                                                    })
+                                                    .map(|img_url| {
+                                                        Html::img(
+                                                            Attributes::new()
+                                                                .class("pure-img")
+                                                                .string("src", img_url.as_str()),
+                                                            Events::new(),
+                                                            vec![],
+                                                        )
+                                                    })
+                                                    .unwrap_or(Html::none()),
+                                                btn::primary(
                                                     Attributes::new(),
-                                                    Events::new(),
-                                                    vec![Html::text("幅")],
-                                                ),
-                                                Html::input(
-                                                    Attributes::new()
-                                                        .type_("number")
-                                                        .value(width.to_string()),
-                                                    Events::new().on_input(move |width| {
-                                                        if let Ok(width) = width.parse::<f64>() {
-                                                            Msg::SetTableSizeToTransport([
-                                                                width.floor(),
-                                                                height,
-                                                            ])
-                                                        } else {
-                                                            Msg::NoOp
+                                                    Events::new().on_click({
+                                                        move |_| {
+                                                            Msg::OpenModal(Modal::SelectImage(
+                                                                SelectImageModal::Table,
+                                                            ))
                                                         }
                                                     }),
-                                                    vec![],
-                                                ),
-                                                Html::span(
-                                                    Attributes::new(),
-                                                    Events::new(),
-                                                    vec![Html::text("高さ")],
-                                                ),
-                                                Html::input(
-                                                    Attributes::new()
-                                                        .type_("number")
-                                                        .value(height.to_string()),
-                                                    Events::new().on_input(move |height| {
-                                                        if let Ok(height) = height.parse::<f64>() {
-                                                            Msg::SetTableSizeToTransport([
-                                                                width,
-                                                                height.floor(),
-                                                            ])
-                                                        } else {
-                                                            Msg::NoOp
-                                                        }
-                                                    }),
-                                                    vec![],
+                                                    vec![Html::text("画像を選択")],
                                                 ),
                                             ],
                                         ),
                                         Html::div(
-                                            Attributes::new().class("keyvalue").title(""),
+                                            Attributes::new().class("container-a"),
                                             Events::new(),
                                             vec![
-                                                Html::span(
-                                                    Attributes::new().class("text-label"),
+                                                Html::div(
+                                                    Attributes::new()
+                                                        .class("container-a")
+                                                        .class("keyvalue"),
                                                     Events::new(),
-                                                    vec![Html::text("グリッドにスナップ")],
+                                                    vec![
+                                                        Html::span(
+                                                            Attributes::new(),
+                                                            Events::new(),
+                                                            vec![Html::text("幅")],
+                                                        ),
+                                                        Html::input(
+                                                            Attributes::new()
+                                                                .type_("number")
+                                                                .value(width.to_string()),
+                                                            Events::new().on_input(move |width| {
+                                                                if let Ok(width) =
+                                                                    width.parse::<f64>()
+                                                                {
+                                                                    Msg::SetTableSizeToTransport([
+                                                                        width.floor(),
+                                                                        height,
+                                                                    ])
+                                                                } else {
+                                                                    Msg::NoOp
+                                                                }
+                                                            }),
+                                                            vec![],
+                                                        ),
+                                                        Html::span(
+                                                            Attributes::new(),
+                                                            Events::new(),
+                                                            vec![Html::text("高さ")],
+                                                        ),
+                                                        Html::input(
+                                                            Attributes::new()
+                                                                .type_("number")
+                                                                .value(height.to_string()),
+                                                            Events::new().on_input(move |height| {
+                                                                if let Ok(height) =
+                                                                    height.parse::<f64>()
+                                                                {
+                                                                    Msg::SetTableSizeToTransport([
+                                                                        width,
+                                                                        height.floor(),
+                                                                    ])
+                                                                } else {
+                                                                    Msg::NoOp
+                                                                }
+                                                            }),
+                                                            vec![],
+                                                        ),
+                                                    ],
                                                 ),
-                                                btn::toggle(
-                                                    is_bind_to_grid,
-                                                    Attributes::new(),
-                                                    Events::new().on_click(move |_| {
-                                                        Msg::SetIsBindToGridToTransport(
-                                                            !is_bind_to_grid,
-                                                        )
-                                                    }),
+                                                Html::div(
+                                                    Attributes::new().class("keyvalue").title(""),
+                                                    Events::new(),
+                                                    vec![
+                                                        Html::span(
+                                                            Attributes::new().class("text-label"),
+                                                            Events::new(),
+                                                            vec![Html::text("グリッドにスナップ")],
+                                                        ),
+                                                        btn::toggle(
+                                                            is_bind_to_grid,
+                                                            Attributes::new(),
+                                                            Events::new().on_click(move |_| {
+                                                                Msg::SetIsBindToGridToTransport(
+                                                                    !is_bind_to_grid,
+                                                                )
+                                                            }),
+                                                        ),
+                                                    ],
                                                 ),
                                             ],
                                         ),
