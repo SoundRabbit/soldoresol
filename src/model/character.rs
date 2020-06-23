@@ -16,9 +16,23 @@ pub struct CharacterData(JsObject);
 impl Character {
     pub fn new() -> Self {
         let mut root_property = Property::new_as_parent();
-        let mut property = Property::new_as_parent().with_name("基本情報");
-        property.push(Property::new_as_num().with_name("HP"));
-        property.push(Property::new_as_num().with_name("MP"));
+        root_property.push(
+            Property::new_as_num()
+                .with_name("HP")
+                .with_selected_to_show(),
+        );
+        root_property.push(
+            Property::new_as_num()
+                .with_name("MP")
+                .with_selected_to_show(),
+        );
+        let mut property = Property::new_as_parent().with_name("能力値");
+        property.push(Property::new_as_num().with_name("器用度"));
+        property.push(Property::new_as_num().with_name("俊敏度"));
+        property.push(Property::new_as_num().with_name("筋力"));
+        property.push(Property::new_as_num().with_name("生命力"));
+        property.push(Property::new_as_num().with_name("知力"));
+        property.push(Property::new_as_num().with_name("精神力"));
         root_property.push(property);
         Self {
             size: [1.0, 0.0],

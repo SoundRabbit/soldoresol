@@ -13,6 +13,7 @@ pub enum PropertyValue {
 pub struct Property {
     id: u128,
     name: String,
+    is_selected_to_show: bool,
     value: PropertyValue,
 }
 
@@ -60,6 +61,7 @@ impl Property {
         Self {
             id: random_id::u128val(),
             name: "".into(),
+            is_selected_to_show: false,
             value: PropertyValue::None,
         }
     }
@@ -68,6 +70,7 @@ impl Property {
         Self {
             id: random_id::u128val(),
             name: "".into(),
+            is_selected_to_show: false,
             value: PropertyValue::Num(0.0),
         }
     }
@@ -76,6 +79,7 @@ impl Property {
         Self {
             id: random_id::u128val(),
             name: "".into(),
+            is_selected_to_show: false,
             value: PropertyValue::Str("".into()),
         }
     }
@@ -84,12 +88,18 @@ impl Property {
         Self {
             id: random_id::u128val(),
             name: "".into(),
+            is_selected_to_show: false,
             value: PropertyValue::Children(vec![]),
         }
     }
 
     pub fn with_name(mut self, name: impl Into<String>) -> Self {
         self.name = name.into();
+        self
+    }
+
+    pub fn with_selected_to_show(mut self) -> Self {
+        self.is_selected_to_show = true;
         self
     }
 
@@ -122,6 +132,20 @@ impl Property {
             children.iter_mut().find_map(|x| x.get_mut(id))
         } else {
             None
+        }
+    }
+
+    pub fn selecteds(&self) -> Vec<&Self> {
+        if self.is_selected_to_show {
+            vec![self]
+        } else if let PropertyValue::Children(children) = &self.value {
+            let mut selecteds = vec![];
+            for child in children {
+                selecteds.append(&mut child.selecteds());
+            }
+            selecteds
+        } else {
+            vec![]
         }
     }
 
@@ -168,6 +192,7 @@ impl Property {
         object! {
             id: self.id.to_string(),
             name: &self.name,
+            is_selected_to_show: self.is_selected_to_show,
             value: self.value.as_object()
         }
     }
@@ -238,6 +263,15 @@ impl From<JsObject> for Property {
             .get("value")
             .map(|x| PropertyValue::from(x))
             .unwrap_or(PropertyValue::None);
-        Self { id, name, value }
+        let is_selected_to_show = object
+            .get("is_selected_to_show")
+            .and_then(|x| x.as_bool())
+            .unwrap_or(false);
+        Self {
+            id,
+            name,
+            is_selected_to_show,
+            value,
+        }
     }
 }

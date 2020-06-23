@@ -5,6 +5,13 @@
         flex-wrap: wrap;
     }
 
+    &-v {
+        display: flex;
+        align-content: start;
+        flex-wrap: wrap;
+        flex-direction: column;
+    }
+
     &-padding {
         &>* {
             padding: 0.15em;

@@ -2330,8 +2330,7 @@ fn render_table_character_list(characters: Vec<&Character>, resource: &Resource)
         Attributes::new()
             .class("cover")
             .class("cover-a")
-            .class("container-a")
-            .class("linear-v"),
+            .class("flex-v"),
         Events::new(),
         characters
             .into_iter()
@@ -2342,7 +2341,10 @@ fn render_table_character_list(characters: Vec<&Character>, resource: &Resource)
 
 fn render_table_character_list_item(character: &Character, resource: &Resource) -> Html<Msg> {
     Html::div(
-        Attributes::new().class("chat-item"),
+        Attributes::new()
+            .class("chat-item")
+            .class("bg-color-light-t")
+            .class("container-a"),
         Events::new(),
         vec![
             Html::div(
@@ -2369,22 +2371,66 @@ fn render_table_character_list_item(character: &Character, resource: &Resource) 
                 vec![Html::text(character.name())],
             ),
             Html::div(
-                Attributes::new().class("chat-payload"),
+                Attributes::new()
+                    .class("chat-payload")
+                    .class("keyvalue")
+                    .class("keyvalue-align-start"),
                 Events::new(),
-                vec![Html::span(
-                    Attributes::new(),
-                    Events::new(),
-                    vec![Html::text(
-                        character
-                            .property
-                            .value()
-                            .as_option_string()
-                            .unwrap_or(String::new()),
-                    )],
-                )],
+                render_table_character_list_item_payload(character.property.selecteds()),
             ),
         ],
     )
+}
+
+fn render_table_character_list_item_payload(props: Vec<&Property>) -> Vec<Html<Msg>> {
+    props
+        .into_iter()
+        .map(|prop| match prop.value() {
+            PropertyValue::Children(children) => vec![
+                Html::span(
+                    Attributes::new(),
+                    Events::new(),
+                    vec![Html::text(prop.name())],
+                ),
+                Html::span(
+                    Attributes::new()
+                        .class("keyvalue")
+                        .class("keyvalue-align-start"),
+                    Events::new(),
+                    render_table_character_list_item_payload(children.iter().collect()),
+                ),
+            ],
+            PropertyValue::None => vec![
+                Html::span(
+                    Attributes::new(),
+                    Events::new(),
+                    vec![Html::text(prop.name())],
+                ),
+                Html::span(Attributes::new(), Events::new(), vec![]),
+            ],
+            PropertyValue::Num(x) => vec![
+                Html::span(
+                    Attributes::new(),
+                    Events::new(),
+                    vec![Html::text(prop.name())],
+                ),
+                Html::span(
+                    Attributes::new(),
+                    Events::new(),
+                    vec![Html::text(x.to_string())],
+                ),
+            ],
+            PropertyValue::Str(x) => vec![
+                Html::span(
+                    Attributes::new(),
+                    Events::new(),
+                    vec![Html::text(prop.name())],
+                ),
+                Html::span(Attributes::new(), Events::new(), vec![Html::text(x)]),
+            ],
+        })
+        .flatten()
+        .collect()
 }
 
 fn render_canvas_overlaper(
