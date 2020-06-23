@@ -1,6 +1,6 @@
 use super::{awesome, btn, room_connection};
 use crate::{
-    indexed_db, random_id,
+    idb, random_id,
     skyway::{Peer, Room},
     Config, JsObject,
 };
@@ -23,10 +23,11 @@ pub fn new(
                 peer: peer,
                 inputing_room_id: "".into(),
                 error_message: None,
-                room_id_regex: Regex::new(r"^[A-Za-z0-9@#]{20}$").unwrap(),
+                room_id_regex: Regex::new(r"^[A-Za-z0-9@#]{24}$").unwrap(),
                 common_database: Rc::clone(&common_database),
                 room_ids_buf: vec![],
                 rooms: vec![],
+                config: config,
             };
             let task = request_room_ids_task(&common_database);
             (state, task)
@@ -55,6 +56,7 @@ pub struct State {
     common_database: Rc<web_sys::IdbDatabase>,
     room_ids_buf: Vec<String>,
     rooms: Vec<RoomData>,
+    config: Rc<Config>,
 }
 
 struct RoomData {
@@ -88,10 +90,10 @@ fn basic_room_data_object() -> JsValue {
 }
 
 fn request_room_ids_task(database: &web_sys::IdbDatabase) -> Cmd<Msg, Sub> {
-    indexed_db::query(
+    idb::query(
         &database,
         "rooms",
-        indexed_db::Query::GetAllKeys,
+        idb::Query::GetAllKeys,
         |x| Msg::SetRoomIdsWithJsValue(x),
         |_| Msg::NoOp,
     )
@@ -99,10 +101,10 @@ fn request_room_ids_task(database: &web_sys::IdbDatabase) -> Cmd<Msg, Sub> {
 
 fn request_room_task(database: &web_sys::IdbDatabase, room_id: Option<String>) -> Cmd<Msg, Sub> {
     if let Some(room_id) = room_id {
-        indexed_db::query(
+        idb::query(
             &database,
             "rooms",
-            indexed_db::Query::Get(&JsValue::from(&room_id)),
+            idb::Query::Get(&JsValue::from(&room_id)),
             |x| Msg::SetRoomWithJsValue(room_id, x),
             |_| Msg::NoOp,
         )
@@ -125,10 +127,10 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         Msg::TryToConnectToRoom(room_id) => {
             if state.room_id_regex.is_match(&room_id) {
                 let room_id = Rc::new(room_id);
-                indexed_db::query(
+                idb::query(
                     &state.common_database,
                     "rooms",
-                    indexed_db::Query::Get(&JsValue::from(room_id.as_str())),
+                    idb::Query::Get(&JsValue::from(room_id.as_str())),
                     {
                         let room_id = Rc::clone(&room_id);
                         move |_| Msg::ConnectToRoomAndPutDatabase(room_id)
@@ -157,17 +159,17 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.room = None;
             Cmd::sub(Sub::Reconnect)
         }
-        Msg::ConnectToRoomAndPutDatabase(room_id) => indexed_db::query(
+        Msg::ConnectToRoomAndPutDatabase(room_id) => idb::query(
             &state.common_database,
             "rooms",
-            indexed_db::Query::Put(&JsValue::from(room_id.as_str()), &basic_room_data_object()),
+            idb::Query::Put(&JsValue::from(room_id.as_str()), &basic_room_data_object()),
             |_| Msg::ConnectToRoom(room_id),
             |_| Msg::NoOp,
         ),
-        Msg::ConnectToRoomAndAddDatabase(room_id) => indexed_db::query(
+        Msg::ConnectToRoomAndAddDatabase(room_id) => idb::query(
             &state.common_database,
             "rooms",
-            indexed_db::Query::Add(&JsValue::from(room_id.as_str()), &basic_room_data_object()),
+            idb::Query::Add(&JsValue::from(room_id.as_str()), &basic_room_data_object()),
             |_| Msg::ConnectToRoom(room_id),
             |_| Msg::NoOp,
         ),
@@ -206,11 +208,14 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 fn render(state: &State) -> Html<Msg> {
     if let Some(room) = &state.room {
         Html::component(
-            room_connection::new(Rc::clone(&state.peer), Rc::clone(room)).subscribe(
-                |sub| match sub {
-                    room_connection::Sub::DisconnectFromRoom => Msg::DisconnectFromRoom,
-                },
-            ),
+            room_connection::new(
+                Rc::clone(&state.config),
+                Rc::clone(&state.peer),
+                Rc::clone(room),
+            )
+            .subscribe(|sub| match sub {
+                room_connection::Sub::DisconnectFromRoom => Msg::DisconnectFromRoom,
+            }),
         )
     } else {
         Html::div(

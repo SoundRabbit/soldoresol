@@ -15,7 +15,7 @@ pub fn hex(len: usize) -> String {
 }
 
 pub fn base64url() -> String {
-    base64::encode(&u8vec(3 * 5))
+    base64::encode(&u8vec(3 * 6))
         .replace("+", r"@")
         .replace("/", r"#")
 }

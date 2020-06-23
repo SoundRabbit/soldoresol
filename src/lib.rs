@@ -18,7 +18,7 @@ mod js_object;
 mod component;
 mod config;
 mod dice_bot;
-mod indexed_db;
+mod idb;
 mod model;
 mod random_id;
 mod renderer;

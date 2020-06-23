@@ -139,8 +139,6 @@ impl From<JsObject> for ResourceData {
                             array![&data].as_ref(),
                             web_sys::BlobPropertyBag::new().type_(data_type.as_str()),
                         ) {
-                            use wasm_bindgen::prelude::*;
-                            web_sys::console::log_1(&JsValue::from(key.to_string().as_str()));
                             payload.insert(key, Rc::new(data));
                         }
                     }

@@ -1,7 +1,11 @@
 use super::room;
-use crate::skyway::{Peer, Room};
+use crate::{
+    config::Config,
+    idb,
+    skyway::{Peer, Room},
+};
 use kagura::prelude::*;
-use std::rc::Rc;
+use std::{ops::Deref, rc::Rc};
 use wasm_bindgen::{prelude::*, JsCast};
 
 enum RoomConnection {
@@ -9,12 +13,25 @@ enum RoomConnection {
     Opened(Rc<Room>),
 }
 
+impl Deref for RoomConnection {
+    type Target = Rc<Room>;
+    fn deref(&self) -> &Self::Target {
+        match self {
+            Self::Opened(x) => &x,
+            Self::UnOpened(x) => &x,
+        }
+    }
+}
+
 pub struct State {
     peer: Rc<Peer>,
     room: RoomConnection,
+    config: Rc<Config>,
+    room_database: Option<Rc<web_sys::IdbDatabase>>,
 }
 
 pub enum Msg {
+    TryToSetRoomDatabase(Rc<web_sys::IdbDatabase>),
     SetConnectionAsOpened,
     DisconnectFromRoom,
 }
@@ -23,16 +40,23 @@ pub enum Sub {
     DisconnectFromRoom,
 }
 
-pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
+pub fn new(config: Rc<Config>, peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
     let init = {
         let peer = Rc::clone(&peer);
         let room = Rc::clone(&room);
         move || {
+            let room_db_name = String::from("") + &config.client.db_prefix + ".room";
+
             let state = State {
                 peer,
                 room: RoomConnection::UnOpened(room),
+                config: config,
+                room_database: None,
             };
-            (state, Cmd::none())
+            let task = idb::open_db(&room_db_name, |database| {
+                Msg::TryToSetRoomDatabase(Rc::new(database))
+            });
+            (state, task)
         }
     };
     Component::new(init, update, render).batch({
@@ -49,6 +73,25 @@ pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
 
 fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
     match msg {
+        Msg::TryToSetRoomDatabase(room_database) => {
+            let names = room_database.object_store_names();
+            let mut has_room = false;
+            for i in 0..names.length() {
+                if let Some(name) = names.item(i) {
+                    if name == state.room.id.as_str() {
+                        has_room = true;
+                    }
+                }
+            }
+            if !has_room {
+                idb::create_object_strage(&room_database, state.room.id.as_str(), |database| {
+                    Msg::TryToSetRoomDatabase(Rc::new(database))
+                })
+            } else {
+                state.room_database = Some(room_database);
+                Cmd::none()
+            }
+        }
         Msg::SetConnectionAsOpened => {
             if let RoomConnection::UnOpened(room) = &state.room {
                 state.room = RoomConnection::Opened(Rc::clone(room));

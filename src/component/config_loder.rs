@@ -1,5 +1,5 @@
 use super::peer_connection;
-use crate::{indexed_db, random_id, Config};
+use crate::{idb, random_id, Config};
 use kagura::prelude::*;
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
@@ -56,7 +56,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             {
                 let common_db_name = String::from("") + &config.client.db_prefix + ".common";
                 state.config = Some(Rc::new(config));
-                indexed_db::open_db(common_db_name.as_str(), |database| {
+                idb::open_db(common_db_name.as_str(), |database| {
                     Msg::TryToSetCommonDatabase(Rc::new(database))
                 })
             } else {
@@ -77,18 +77,18 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 }
             }
             if !has_client {
-                indexed_db::create_object_strage(&common_database, "client", |database| {
+                idb::create_object_strage(&common_database, "client", |database| {
                     Msg::TryToSetCommonDatabase(Rc::new(database))
                 })
             } else if !has_rooms {
-                indexed_db::create_object_strage(&common_database, "rooms", |database| {
+                idb::create_object_strage(&common_database, "rooms", |database| {
                     Msg::TryToSetCommonDatabase(Rc::new(database))
                 })
             } else {
-                indexed_db::query(
+                idb::query(
                     &common_database,
                     "client",
-                    indexed_db::Query::Get(&JsValue::from("client_id")),
+                    idb::Query::Get(&JsValue::from("client_id")),
                     {
                         let common_database = Rc::clone(&common_database);
                         move |client_id| {
@@ -111,10 +111,10 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.client_id = client_id;
             Cmd::none()
         }
-        Msg::AddClientId(common_database) => indexed_db::query(
+        Msg::AddClientId(common_database) => idb::query(
             &common_database,
             "client",
-            indexed_db::Query::Add(
+            idb::Query::Add(
                 &JsValue::from("client_id"),
                 &JsValue::from(random_id::base64url()),
             ),
@@ -124,10 +124,10 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             },
             |_| Msg::NoOp,
         ),
-        Msg::PutClientId(common_database) => indexed_db::query(
+        Msg::PutClientId(common_database) => idb::query(
             &common_database,
             "client",
-            indexed_db::Query::Put(
+            idb::Query::Put(
                 &JsValue::from("client_id"),
                 &JsValue::from(random_id::base64url()),
             ),
