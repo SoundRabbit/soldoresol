@@ -317,32 +317,31 @@ pub fn table_setting<'a>(
                     Events::new(),
                     vec![
                         Html::div(
-                            Attributes::new()
-                                .class("linear-v")
-                                .style("grid-template-rows", "1fr"),
+                            Attributes::new().class("linear-v").class("scroll-v"),
                             Events::new(),
                             vec![
-                                Html::div(
-                                    Attributes::new().class("scroll-v").class("linear-v"),
-                                    Events::new(),
-                                    tables
-                                        .map(|(table_id, table)| {
-                                            let table_id = *table_id;
-                                            btn::selectable(
-                                                table_id == selecting_table_id,
-                                                Attributes::new(),
-                                                Events::new(),
-                                                vec![Html::text(table.name())],
-                                            )
-                                        })
-                                        .collect(),
-                                ),
-                                btn::primary(
+                                tables
+                                    .map(|(table_id, table)| {
+                                        let table_id = *table_id;
+                                        btn::selectable(
+                                            table_id == selecting_table_id,
+                                            Attributes::new(),
+                                            Events::new().on_click(move |_| {
+                                                Msg::SetSelectingTableToTransport(table_id)
+                                            }),
+                                            vec![Html::text(table.name())],
+                                        )
+                                    })
+                                    .collect(),
+                                vec![btn::primary(
                                     Attributes::new(),
-                                    Events::new(),
+                                    Events::new().on_click(|_| Msg::AddTableToTransport),
                                     vec![Html::text("追加")],
-                                ),
-                            ],
+                                )],
+                            ]
+                            .into_iter()
+                            .flatten()
+                            .collect(),
                         ),
                         Html::div(
                             Attributes::new()

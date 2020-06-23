@@ -347,6 +347,8 @@ pub enum Msg {
     SetSelectingTable(u128),
     SetTableNameToTransport(u128, String),
     SetTableName(u128, String),
+    AddTableToTransport,
+    AddTable(u128),
 
     // チャット関係
     SetSelectingChatTabIdx(usize),
@@ -1501,6 +1503,16 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             }
             state.cmd_queue.dequeue()
         }
+        Msg::AddTableToTransport => {
+            let table_id = random_id::u128val();
+            let room = &state.room;
+            room.send(skyway::Msg::CreateTable(table_id));
+            update(state, Msg::AddTable(table_id))
+        }
+        Msg::AddTable(table_id) => {
+            state.world.add_table_with_id(table_id);
+            state.cmd_queue.dequeue()
+        }
 
         // チャット周り
         Msg::SetSelectingChatTabIdx(tab_idx) => {
@@ -1811,6 +1823,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             skyway::Msg::SetTableName(table_id, name) => {
                 update(state, Msg::SetTableName(table_id, name))
             }
+            skyway::Msg::CreateTable(table_id) => update(state, Msg::AddTable(table_id)),
             skyway::Msg::CreateCharacterToTable(character_id, character) => {
                 let character: Character = character.into();
                 state.world.add_character_with_id(character_id, character);

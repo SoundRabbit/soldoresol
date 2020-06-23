@@ -71,6 +71,12 @@ impl World {
             .unwrap()
     }
 
+    pub fn add_table_with_id(&mut self, table_id: u128) {
+        let mut table = Table::new();
+        table.set_size([20., 20.]);
+        self.tables.insert(table_id, Rc::new(table));
+    }
+
     pub fn characters(&self) -> hash_map::Iter<u128, Character> {
         self.characters.iter()
     }

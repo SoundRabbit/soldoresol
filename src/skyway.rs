@@ -87,6 +87,7 @@ impl Room {
 pub enum Msg {
     SetSelectingTable(u128),
     SetTableName(u128, String),
+    CreateTable(u128),
     DrawLineToTable([f64; 2], [f64; 2]),
     EraceLineToTable([f64; 2], [f64; 2]),
     SetTableSize([f64; 2]),
@@ -119,6 +120,7 @@ impl Msg {
         match self {
             Self::SetSelectingTable(..) => "SetSelectingTable",
             Self::SetTableName(..) => "SetTableName",
+            Self::CreateTable(..) => "CreateTable",
             Self::DrawLineToTable(..) => "DrawLineToTable",
             Self::EraceLineToTable(..) => "EraceLineToTable",
             Self::SetTableSize(..) => "SetTableSize",
@@ -152,7 +154,9 @@ impl Into<JsObject> for Msg {
     fn into(self) -> JsObject {
         let type_name = self.type_name();
         let payload: JsValue = match self {
-            Self::SetSelectingTable(t_id) => JsValue::from(t_id.to_string()),
+            Self::SetSelectingTable(t_id) | Self::CreateTable(t_id) => {
+                JsValue::from(t_id.to_string())
+            }
             Self::SetTableName(id, name) | Self::SetCharacterName(id, name) => {
                 array![id.to_string(), name].into()
             }
@@ -230,6 +234,7 @@ impl From<JsObject> for Msg {
                         args.get(1).as_string().unwrap(),
                     )
                 }
+                "CreateTable" => Self::CreateTable(payload.as_string().unwrap().parse().unwrap()),
                 "DrawLineToTable" => {
                     let args = payload.dyn_ref::<Array>().unwrap().to_vec();
                     Self::DrawLineToTable(
