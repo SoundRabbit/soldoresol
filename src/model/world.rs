@@ -6,13 +6,14 @@ use super::{
 use crate::{random_id, JsObject};
 use std::{
     collections::{hash_map, HashMap},
+    iter::Iterator,
     ops::Deref,
     rc::Rc,
 };
 
 pub struct World {
-    table_id: u128,
-    table: Rc<Table>,
+    selecting_table_id: u128,
+    tables: HashMap<u128, Rc<Table>>,
     characters: HashMap<u128, Character>,
     tablemasks: HashMap<u128, Tablemask>,
 }
@@ -23,24 +24,45 @@ impl World {
     pub fn new(table_size: [f64; 2]) -> Self {
         let mut table = Table::new();
         table.set_size(table_size);
+        let mut tables = HashMap::new();
+        let selecting_table_id = random_id::u128val();
+        tables.insert(selecting_table_id, Rc::new(table));
         Self {
-            table_id: random_id::u128val(),
-            table: Rc::new(table),
+            selecting_table_id,
+            tables: tables,
             characters: HashMap::new(),
             tablemasks: HashMap::new(),
         }
     }
 
-    pub fn table_id(&self) -> u128 {
-        self.table_id
+    pub fn selecting_table_id(&self) -> u128 {
+        self.selecting_table_id
     }
 
-    pub fn table(&self) -> &Table {
-        &self.table
+    pub fn tables(&self) -> impl Iterator<Item = (u128, &Table)> {
+        self.tables.iter().map(|(i, t)| (*i, t.as_ref()))
     }
 
-    pub fn table_mut(&mut self) -> Option<&mut Table> {
-        Rc::get_mut(&mut self.table)
+    pub fn table(&self, table_id: &u128) -> Option<&Table> {
+        self.tables.get(table_id).map(|x| x.as_ref())
+    }
+
+    pub fn table_mut(&mut self, table_id: &u128) -> Option<&mut Table> {
+        self.tables.get_mut(table_id).and_then(|x| Rc::get_mut(x))
+    }
+
+    pub fn selecting_table(&self) -> &Table {
+        self.tables
+            .get(&self.selecting_table_id)
+            .map(|x| x.as_ref())
+            .unwrap()
+    }
+
+    pub fn selecting_table_mut(&mut self) -> Option<&mut Table> {
+        self.tables
+            .get_mut(&self.selecting_table_id)
+            .map(|x| Rc::get_mut(x))
+            .unwrap()
     }
 
     pub fn characters(&self) -> hash_map::Iter<u128, Character> {
@@ -102,11 +124,14 @@ impl World {
             tablemask_data.set(&id.to_string(), &tablemask.as_data());
         }
 
-        let table_data: JsObject = self.table().as_data().into();
+        let table_data = object! {};
+        for (id, table) in self.tables() {
+            table_data.set(&id.to_string(), &table.as_data());
+        }
 
         WorldData(object! {
-            table_id: self.table_id().to_string(),
-            table: table_data,
+            selecting_table_id: self.selecting_table_id().to_string(),
+            tables: table_data,
             character: character_data,
             tablemask: tablemask_data
         })
@@ -125,15 +150,13 @@ impl Into<World> for WorldData {
 
         let obj = self.0;
 
-        let table_id = obj
-            .get("table_id")
+        let selecting_table_id = obj
+            .get("selecting_table_id")
             .unwrap()
             .as_string()
             .unwrap()
             .parse()
             .unwrap();
-        let table: Rc<Table> = TableData::from(obj.get("table").unwrap()).into();
-
         let mut characters = HashMap::new();
         for c in Object::entries(&obj.get("character").unwrap()).to_vec() {
             let c = c.dyn_into::<Array>().unwrap();
@@ -152,9 +175,17 @@ impl Into<World> for WorldData {
             tablemasks.insert(id, data);
         }
 
+        let mut tables = HashMap::new();
+        for t in Object::entries(&obj.get("tables").unwrap()).to_vec() {
+            let t = t.dyn_into::<Array>().unwrap();
+            let id = t.get(0).as_string().unwrap().parse().unwrap();
+            let data: Rc<Table> = TableData::from(t.get(1).dyn_into::<JsObject>().unwrap()).into();
+            tables.insert(id, data);
+        }
+
         World {
-            table_id,
-            table,
+            selecting_table_id,
+            tables,
             characters,
             tablemasks,
         }

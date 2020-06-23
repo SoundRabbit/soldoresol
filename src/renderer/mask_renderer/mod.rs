@@ -91,7 +91,7 @@ impl MaskRenderer {
 
         self.id_map.clear();
 
-        self.id_map.insert(0xFF000000, world.table_id());
+        self.id_map.insert(0xFF000000, world.selecting_table_id());
 
         gl.depth_func(web_sys::WebGlRenderingContext::ALWAYS);
 

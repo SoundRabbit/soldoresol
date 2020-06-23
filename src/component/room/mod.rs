@@ -661,7 +661,12 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
         // Tick
         Msg::Tick1000ms => {
-            if state.world.table().drawing_texture_element().is_some() {
+            if state
+                .world
+                .selecting_table()
+                .drawing_texture_element()
+                .is_some()
+            {
                 update(state, Msg::Render)
             } else {
                 Cmd::none()
@@ -713,7 +718,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             let position = [position[0], position[1], 0.0];
             let mut character = Character::new();
             character.set_position(position);
-            if state.world.table().is_bind_to_grid() {
+            if state.world.selecting_table().is_bind_to_grid() {
                 character.bind_to_grid();
             }
             update(state, Msg::AddChracaterToTransport(character))
@@ -723,7 +728,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             let position = [position[0], position[1], 0.0];
             let mut tablemask = Tablemask::new();
             tablemask.set_position(position);
-            if state.world.table().is_bind_to_grid() {
+            if state.world.selecting_table().is_bind_to_grid() {
                 tablemask.bind_to_grid();
             }
             update(state, Msg::AddTablemaskToTransport(tablemask))
@@ -756,7 +761,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         Msg::SetCursorWithMouseCoord(mouse_coord) => {
             let table_coord = get_table_position(&state, &mouse_coord, state.pixel_ratio);
             let table_coord = [table_coord[0], table_coord[1]];
-            if let Some(table) = state.world.table_mut() {
+            if let Some(table) = state.world.selecting_table_mut() {
                 match state.table_state.selecting_tool {
                     TableTool::Pen => {
                         table.draw_cursor(
@@ -849,7 +854,10 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             match &table_tool {
                 TableTool::Measure(.., Option::None, _) => {
                     state.table_state.measure_length = None;
-                    state.world.table_mut().map(|table| table.clear_measure());
+                    state
+                        .world
+                        .selecting_table_mut()
+                        .map(|table| table.clear_measure());
                 }
                 _ => {}
             }
@@ -864,7 +872,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         Msg::SetIsBindToGrid(is_bind_to_grid) => {
             state
                 .world
-                .table_mut()
+                .selecting_table_mut()
                 .map(|table| table.set_is_bind_to_grid(is_bind_to_grid));
             state.cmd_queue.dequeue()
         }
@@ -877,7 +885,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             let start_point = [start_point[0], start_point[1]];
             let end_point = get_table_position(&state, &mouse_coord, state.pixel_ratio);
             let end_point = [end_point[0], end_point[1]];
-            state.world.table_mut().map(|table| {
+            state.world.selecting_table_mut().map(|table| {
                 table.draw_line(&start_point, &end_point, ColorSystem::gray(255, 9), 0.5)
             });
             state
@@ -896,7 +904,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             let end_point = [end_point[0], end_point[1]];
             state
                 .world
-                .table_mut()
+                .selecting_table_mut()
                 .map(|table| table.erace_line(&start_point, &end_point, 1.0));
             state
                 .room
@@ -913,7 +921,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             let start_point = [start_point[0], start_point[1]];
             let end_point = get_table_position(&state, &mouse_coord, state.pixel_ratio);
             let end_point = [end_point[0], end_point[1]];
-            let measure_length = state.world.table_mut().map(|table| {
+            let measure_length = state.world.selecting_table_mut().map(|table| {
                 table.draw_measure(
                     &start_point,
                     &end_point,
@@ -951,7 +959,10 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             update(state, Msg::SetTableSize(size))
         }
         Msg::SetTableSize(size) => {
-            state.world.table_mut().map(|table| table.set_size(size));
+            state
+                .world
+                .selecting_table_mut()
+                .map(|table| table.set_size(size));
             update(state, Msg::Render)
         }
         Msg::SetTableImageToTransport(resource_id) => {
@@ -960,7 +971,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             update(state, Msg::SetTableImage(resource_id))
         }
         Msg::SetTableImage(resource_id) => {
-            if let Some(table) = state.world.table_mut() {
+            if let Some(table) = state.world.selecting_table_mut() {
                 table.set_image_texture_id(resource_id);
                 update(state, Msg::Render)
             } else {
@@ -969,7 +980,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
         Msg::AddTablemaskWithPointABToTransport(line_width, begin, end, is_rounded) => {
             let begin = get_table_position(&state, &begin, state.pixel_ratio);
-            let begin = if state.world.table().is_bind_to_grid() {
+            let begin = if state.world.selecting_table().is_bind_to_grid() {
                 [
                     (2.0 * begin[0]).round() / 2.0,
                     (2.0 * begin[1]).round() / 2.0,
@@ -978,7 +989,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 [begin[0], begin[1]]
             };
             let end = get_table_position(&state, &end, state.pixel_ratio);
-            let end = if state.world.table().is_bind_to_grid() {
+            let end = if state.world.selecting_table().is_bind_to_grid() {
                 [(2.0 * end[0]).round() / 2.0, (2.0 * end[1]).round() / 2.0]
             } else {
                 [end[0], end[1]]
@@ -1323,14 +1334,14 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             update(state, Msg::Render)
         }
         Msg::BindObjectToTableGridToTransport(object_id) => {
-            if state.world.table().is_bind_to_grid() {
+            if state.world.selecting_table().is_bind_to_grid() {
                 let room = &state.room;
                 room.send(skyway::Msg::BindObjectToTableGrid(object_id));
             }
             update(state, Msg::BindObjectToTableGrid(object_id))
         }
         Msg::BindObjectToTableGrid(object_id) => {
-            if state.world.table().is_bind_to_grid() {
+            if state.world.selecting_table().is_bind_to_grid() {
                 if let Some(character) = state.world.character_mut(&object_id) {
                     character.bind_to_grid();
                 }
@@ -1783,13 +1794,13 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             skyway::Msg::SetTableSize(size) => update(state, Msg::SetTableSize(size)),
             skyway::Msg::SetTableImage(data_id) => update(state, Msg::SetTableImage(data_id)),
             skyway::Msg::DrawLineToTable(start_point, end_point) => {
-                if let Some(table) = state.world.table_mut() {
+                if let Some(table) = state.world.selecting_table_mut() {
                     table.draw_line(&start_point, &end_point, ColorSystem::gray(255, 9), 0.5);
                 }
                 update(state, Msg::Render)
             }
             skyway::Msg::EraceLineToTable(start_point, end_point) => {
-                if let Some(table) = state.world.table_mut() {
+                if let Some(table) = state.world.selecting_table_mut() {
                     table.erace_line(&start_point, &end_point, 1.0);
                 }
                 update(state, Msg::Render)
@@ -3020,7 +3031,7 @@ fn render_modals(
             Modal::Resource => modal::resource(resource),
             Modal::SelectImage(modal_type) => modal::select_image(resource, modal_type),
             Modal::PersonalSetting => modal::personal_setting(personal_data, resource),
-            Modal::TableSetting => modal::table_setting(&world.table(), &resource),
+            Modal::TableSetting => modal::table_setting(&world.selecting_table(), &resource),
             Modal::ColorPicker(color_picker_type) => modal::color_picker(color_picker_type.clone()),
             Modal::CharacterSelecter(character_selecter_type) => match character_selecter_type {
                 CharacterSelecterType::ChatSender => modal::character_selecter(

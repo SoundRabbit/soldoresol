@@ -78,7 +78,7 @@ impl ViewRenderer {
                 | web_sys::WebGlRenderingContext::DEPTH_BUFFER_BIT,
         );
         gl.depth_func(web_sys::WebGlRenderingContext::ALWAYS);
-        if let Some(table) = world.table_mut() {
+        if let Some(table) = world.selecting_table_mut() {
             self.table_texture_renderer.render(
                 gl,
                 camera,
@@ -90,7 +90,7 @@ impl ViewRenderer {
         }
         self.tablemask_collection_renderer
             .render(gl, camera, &vp_matrix, world.tablemasks());
-        if let Some(table) = world.table_mut() {
+        if let Some(table) = world.selecting_table_mut() {
             self.table_grid_renderer
                 .render(gl, camera, &vp_matrix, table);
             table.rendered();
