@@ -118,10 +118,12 @@ kTable = '''
 
 grTable = '["器用度", "俊敏度", "筋力", "生命力", "知力", "精神力"]'
 
+d = '\n.(n)b6>>log>>sum'
+
 [[def]]
 sw = '''
 \c.\u.\a.(
-    dice := \x.(roll := 2b6 |> log |> sum; if roll > x then roll else 0);
+    dice := \x.(roll := d.2; if roll > x then roll else 0);
     if c > 2 then (
         roll := dice.2 |> \x. min.[x, 1] * (x + a + u);
         if roll >= c then (
@@ -150,16 +152,37 @@ k = '''
     )
 )
 '''
+
 gr = '\n.n.((2b6).(\r.grTable.(r-1)))'
+
+r = '''
+\n.(
+    dice := d.2;
+    if dice > 2 then (
+        dice + n
+    ) else (
+        log."自動失敗";
+        0
+    )
+)
+'''
 
 [[pattern]]
 capture = '^[kK](?P<d>\d+)(?P<x>.*)@(?P<c>\d+)(\$(?P<u>[+-]?\d+)|#(?P<a>[+-]?\d+)|r(?P<du>[+-]?\d+))*$'
 replace = '(k.($d).($c).($u+0).($a+0).($du+0))$x'
 
 [[pattern]]
-capture = 'k(?P<d>\d+)\[(?P<c>\d+)\]'
+capture = '[kK](?P<d>\d+)\[(?P<c>\d+)\]'
 replace = '(k.($d).($c))'
 
 [[pattern]]
-capture = '(gr|Gr|gR|GR)'
+capture = '[gG][rR]'
 replace = '(gr.1)'
+
+[[pattern]]
+capture = '^2[dD](?P<e>([+-].+))$'
+replace = 'r.($e)'
+
+[[pattern]]
+capture = '2[dD]'
+replace = '(d.2)'
