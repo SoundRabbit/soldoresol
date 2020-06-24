@@ -1,4 +1,4 @@
-use super::{awesome, btn, room_connection};
+use super::{btn, room_connection};
 use crate::{
     idb, random_id,
     skyway::{Peer, Room},
@@ -212,6 +212,7 @@ fn render(state: &State) -> Html<Msg> {
                 Rc::clone(&state.config),
                 Rc::clone(&state.peer),
                 Rc::clone(room),
+                Rc::clone(&state.common_database),
             )
             .subscribe(|sub| match sub {
                 room_connection::Sub::DisconnectFromRoom => Msg::DisconnectFromRoom,

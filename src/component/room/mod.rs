@@ -250,6 +250,8 @@ pub struct State {
     loaded_resource_num: u64,
     dice_bot: DiceBot,
     cmd_queue: CmdQueue<Msg, Sub>,
+    common_database: Rc<web_sys::IdbDatabase>,
+    room_database: Rc<web_sys::IdbDatabase>,
 }
 
 pub enum Msg {
@@ -385,7 +387,12 @@ pub enum Sub {
     DisconnectFromRoom,
 }
 
-pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
+pub fn new(
+    peer: Rc<Peer>,
+    room: Rc<Room>,
+    common_database: Rc<web_sys::IdbDatabase>,
+    room_database: Rc<web_sys::IdbDatabase>,
+) -> Component<Msg, State, Sub> {
     let init = {
         let peer = Rc::clone(&peer);
         let room = Rc::clone(&room);
@@ -434,6 +441,8 @@ pub fn new(peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
                 loaded_resource_num: 0,
                 dice_bot: DiceBot::new(),
                 cmd_queue: CmdQueue::new(),
+                common_database: common_database,
+                room_database: room_database,
             };
             let task = Cmd::task(|handler| {
                 handler(Msg::SetTableContext);

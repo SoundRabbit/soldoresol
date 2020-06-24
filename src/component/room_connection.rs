@@ -27,6 +27,7 @@ pub struct State {
     peer: Rc<Peer>,
     room: RoomConnection,
     config: Rc<Config>,
+    common_database: Rc<web_sys::IdbDatabase>,
     room_database: Option<Rc<web_sys::IdbDatabase>>,
 }
 
@@ -40,7 +41,12 @@ pub enum Sub {
     DisconnectFromRoom,
 }
 
-pub fn new(config: Rc<Config>, peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg, State, Sub> {
+pub fn new(
+    config: Rc<Config>,
+    peer: Rc<Peer>,
+    room: Rc<Room>,
+    common_database: Rc<web_sys::IdbDatabase>,
+) -> Component<Msg, State, Sub> {
     let init = {
         let peer = Rc::clone(&peer);
         let room = Rc::clone(&room);
@@ -52,6 +58,7 @@ pub fn new(config: Rc<Config>, peer: Rc<Peer>, room: Rc<Room>) -> Component<Msg,
                 room: RoomConnection::UnOpened(room),
                 config: config,
                 room_database: None,
+                common_database: common_database,
             };
             let task = idb::open_db(&room_db_name, |database| {
                 Msg::TryToSetRoomDatabase(Rc::new(database))
@@ -103,9 +110,16 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 }
 
 fn render(state: &State) -> Html<Msg> {
-    if let RoomConnection::Opened(room) = &state.room {
+    if let (RoomConnection::Opened(room), Some(room_database)) = (&state.room, &state.room_database)
+    {
         Html::component(
-            room::new(Rc::clone(&state.peer), Rc::clone(room)).subscribe(|sub| match sub {
+            room::new(
+                Rc::clone(&state.peer),
+                Rc::clone(room),
+                Rc::clone(&state.common_database),
+                Rc::clone(room_database),
+            )
+            .subscribe(|sub| match sub {
                 room::Sub::DisconnectFromRoom => Msg::DisconnectFromRoom,
             }),
         )
