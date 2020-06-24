@@ -6,6 +6,7 @@ use super::{awesome, btn, contextmenu, modeless::container as modeless_container
 use crate::{
     dice_bot, idb,
     model::{
+        self,
         resource::{Data, ResourceData},
         Camera, Character, Chat, ChatItem, ChatTab, Color, ColorSystem, Icon, Property,
         PropertyValue, Resource, Tablemask, World,
@@ -252,6 +253,8 @@ pub struct State {
     cmd_queue: CmdQueue<Msg, Sub>,
     common_database: Rc<web_sys::IdbDatabase>,
     room_database: Rc<web_sys::IdbDatabase>,
+    loading_character_keys: Vec<u128>,
+    loading_characters: Vec<Character>,
 }
 
 pub enum Msg {
@@ -380,6 +383,9 @@ pub enum Msg {
     PutCharacterToDb(u128, js_sys::Object, Option<u128>),
     AddResourceToDb(u128),
     PutResourceToDb(u128, js_sys::Object),
+    GetCharacterListFromDbToOpenModal,
+    FinishToGetCharacterListFromDbToOpenModal(JsValue),
+    FinishToGetCharacterWithKeyFromDbToOpenModal(JsValue),
 
     // 接続に関する操作
     ReceiveMsg(skyway::Msg),
@@ -449,6 +455,8 @@ pub fn new(
                 cmd_queue: CmdQueue::new(),
                 common_database: common_database,
                 room_database: room_database,
+                loading_character_keys: vec![],
+                loading_characters: vec![],
             };
             let task = Cmd::task(|handler| {
                 handler(Msg::SetTableContext);
@@ -619,6 +627,23 @@ fn get_table_position(state: &State, mouse_coord: &[f64; 2], pixel_ratio: f64) -
         .camera
         .collision_point_on_xy_plane(&state.canvas_size, &mouse_coord);
     [p[0], p[1]]
+}
+
+fn get_character_with_key_from_db_to_open_modal(
+    database: &web_sys::IdbDatabase,
+    key: Option<u128>,
+) -> Cmd<Msg, Sub> {
+    if let Some(key) = key {
+        idb::query(
+            database,
+            "characters",
+            idb::Query::Get(&JsValue::from(key.to_string())),
+            |x| Msg::FinishToGetCharacterListFromDbToOpenModal(x),
+            |_| Msg::NoOp,
+        )
+    } else {
+        Cmd::none()
+    }
 }
 
 fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
@@ -1904,6 +1929,40 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             |_| Msg::NoOp,
             |_| Msg::NoOp,
         ),
+        Msg::GetCharacterListFromDbToOpenModal => idb::query(
+            &state.common_database,
+            "characters",
+            idb::Query::GetAllKeys,
+            move |x| Msg::FinishToGetCharacterListFromDbToOpenModal(x),
+            |_| Msg::NoOp,
+        ),
+        Msg::FinishToGetCharacterListFromDbToOpenModal(keys) => {
+            let raw_keys = js_sys::Array::from(&keys).to_vec();
+            let mut keys = vec![];
+
+            for raw_key in raw_keys {
+                if let Some(key) = raw_key.as_string().and_then(|x| x.parse().ok()) {
+                    keys.push(key);
+                }
+            }
+
+            state.loading_character_keys = keys;
+            get_character_with_key_from_db_to_open_modal(
+                &state.common_database,
+                state.loading_character_keys.pop(),
+            )
+        }
+        Msg::FinishToGetCharacterWithKeyFromDbToOpenModal(x) => {
+            if let Ok(x) = x.dyn_into::<JsObject>() {
+                let character = model::CharacterData::from(x);
+                let character: Character = character.into();
+                state.loading_characters.push(character);
+            }
+            get_character_with_key_from_db_to_open_modal(
+                &state.common_database,
+                state.loading_character_keys.pop(),
+            )
+        }
 
         // 接続に関する操作
         Msg::ReceiveMsg(msg) => match msg {
