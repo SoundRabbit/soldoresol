@@ -4,7 +4,7 @@ mod modeless;
 
 use super::{awesome, btn, contextmenu, modeless::container as modeless_container, modeless_modal};
 use crate::{
-    dice_bot,
+    dice_bot, idb,
     model::{
         resource::{Data, ResourceData},
         Camera, Character, Chat, ChatItem, ChatTab, Color, ColorSystem, Icon, Property,
@@ -374,6 +374,12 @@ pub enum Msg {
     LoadFromBlobsToTransport(HashMap<u128, Rc<web_sys::Blob>>),
     LoadFromBlobs(HashMap<u128, Rc<web_sys::Blob>>),
     LoadReasource(u128, Data),
+
+    // IndexedDB
+    AddCharacterToDb(u128),
+    PutCharacterToDb(u128, js_sys::Object, Option<u128>),
+    AddResourceToDb(u128),
+    PutResourceToDb(u128, js_sys::Object),
 
     // 接続に関する操作
     ReceiveMsg(skyway::Msg),
@@ -1826,6 +1832,78 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             }
             state.cmd_queue.dequeue()
         }
+
+        // IndexedDB
+        Msg::AddCharacterToDb(character_id) => {
+            if let Some(character) = state.world.character(&character_id) {
+                let texture_id = character.texture_id();
+                let character: JsObject = character.as_data().into();
+                let character: js_sys::Object = character.into();
+                idb::query(
+                    &state.common_database,
+                    "characters",
+                    idb::Query::Add(
+                        &JsValue::from(character_id.to_string()),
+                        &JsValue::from(&character),
+                    ),
+                    {
+                        let texture_id = texture_id.clone();
+                        move |_| {
+                            texture_id
+                                .map(|texture_id| Msg::AddResourceToDb(texture_id))
+                                .unwrap_or(Msg::NoOp)
+                        }
+                    },
+                    move |_| Msg::PutCharacterToDb(character_id, character, texture_id),
+                )
+            } else {
+                Cmd::none()
+            }
+        }
+        Msg::PutCharacterToDb(character_id, character, texture_id) => idb::query(
+            &state.common_database,
+            "characters",
+            idb::Query::Put(
+                &JsValue::from(character_id.to_string()),
+                &JsValue::from(character),
+            ),
+            {
+                let texture_id = texture_id.clone();
+                move |_| {
+                    texture_id
+                        .map(|texture_id| Msg::AddResourceToDb(texture_id))
+                        .unwrap_or(Msg::NoOp)
+                }
+            },
+            |_| Msg::NoOp,
+        ),
+        Msg::AddResourceToDb(resource_id) => {
+            if let Some(data) = state.resource.get_blob(&resource_id) {
+                let data = data.as_ref().clone().dyn_into::<js_sys::Object>().unwrap();
+                idb::query(
+                    &state.common_database,
+                    "resources",
+                    idb::Query::Add(
+                        &JsValue::from(resource_id.to_string()),
+                        &JsValue::from(&data),
+                    ),
+                    |_| Msg::NoOp,
+                    move |_| Msg::PutResourceToDb(resource_id, data),
+                )
+            } else {
+                Cmd::none()
+            }
+        }
+        Msg::PutResourceToDb(resource_id, data) => idb::query(
+            &state.common_database,
+            "resources",
+            idb::Query::Put(
+                &JsValue::from(resource_id.to_string()),
+                &JsValue::from(data),
+            ),
+            |_| Msg::NoOp,
+            |_| Msg::NoOp,
+        ),
 
         // 接続に関する操作
         Msg::ReceiveMsg(msg) => match msg {

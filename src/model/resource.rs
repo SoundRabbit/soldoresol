@@ -27,8 +27,14 @@ impl Resource {
         self.data.insert(data_id, data);
     }
 
-    pub fn get(&self, data_id: u128) -> Option<&Data> {
+    pub fn get(&self, data_id: &u128) -> Option<&Data> {
         self.data.get(&data_id)
+    }
+
+    pub fn get_blob(&self, data_id: &u128) -> Option<Rc<web_sys::Blob>> {
+        self.get(data_id).and_then(|data| match data {
+            Data::Image(_, x, ..) => Some(Rc::clone(x)),
+        })
     }
 
     pub fn get_as_image(&self, data_id: &u128) -> Option<Rc<web_sys::HtmlImageElement>> {
