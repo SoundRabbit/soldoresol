@@ -67,12 +67,18 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             let names = common_database.object_store_names();
             let mut has_client = false;
             let mut has_rooms = false;
+            let mut has_resources = false;
+            let mut has_characters = false;
             for i in 0..names.length() {
                 if let Some(name) = names.item(i) {
                     if name == "client" {
                         has_client = true;
                     } else if name == "rooms" {
                         has_rooms = true;
+                    } else if name == "resources" {
+                        has_resources = true;
+                    } else if name == "characters" {
+                        has_characters = true;
                     }
                 }
             }
@@ -82,6 +88,14 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 })
             } else if !has_rooms {
                 idb::create_object_strage(&common_database, "rooms", |database| {
+                    Msg::TryToSetCommonDatabase(Rc::new(database))
+                })
+            } else if !has_resources {
+                idb::create_object_strage(&common_database, "resources", |database| {
+                    Msg::TryToSetCommonDatabase(Rc::new(database))
+                })
+            } else if !has_characters {
+                idb::create_object_strage(&common_database, "characters", |database| {
                     Msg::TryToSetCommonDatabase(Rc::new(database))
                 })
             } else {
