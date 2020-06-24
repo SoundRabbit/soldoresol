@@ -638,7 +638,7 @@ fn get_character_with_key_from_db_to_open_modal(
             database,
             "characters",
             idb::Query::Get(&JsValue::from(key.to_string())),
-            |x| Msg::FinishToGetCharacterListFromDbToOpenModal(x),
+            |x| Msg::FinishToGetCharacterWithKeyFromDbToOpenModal(x),
             |_| Msg::NoOp,
         )
     } else {
