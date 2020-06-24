@@ -54,7 +54,7 @@ fn object_character(character: &Character, character_id: u128, resource: &Resour
             Events::new(),
             vec![
                 Html::div(
-                    Attributes::new().class("keyvalue"),
+                    Attributes::new().class("keyvalueoption"),
                     Events::new(),
                     vec![
                         Html::span(Attributes::new(), Events::new(), vec![Html::text("Name")]),
@@ -64,6 +64,11 @@ fn object_character(character: &Character, character_id: u128, resource: &Resour
                                 Msg::SetCharacterNameToTransport(character_id, s)
                             }),
                             vec![],
+                        ),
+                        btn::primary(
+                            Attributes::new(),
+                            Events::new().on_click(move |_| Msg::AddCharacterToDb(character_id)),
+                            vec![Html::text("保存")],
                         ),
                     ],
                 ),
