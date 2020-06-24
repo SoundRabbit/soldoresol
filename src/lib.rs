@@ -17,6 +17,7 @@ extern crate web_sys;
 mod js_object;
 mod component;
 mod config;
+mod data_block;
 mod dice_bot;
 mod idb;
 mod model;
