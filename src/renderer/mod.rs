@@ -1,3 +1,4 @@
+mod camera;
 mod mask_renderer;
 mod model_matrix;
 mod program;

@@ -4,14 +4,7 @@ mod modeless;
 
 use super::{awesome, btn, contextmenu, modeless::container as modeless_container, modeless_modal};
 use crate::{
-    dice_bot, idb,
-    model::{
-        self,
-        resource::{Data, ResourceData},
-        Camera, Character, Chat, ChatItem, ChatTab, Color, ColorSystem, Icon, Property,
-        PropertyValue, Resource, Tablemask, World,
-    },
-    random_id,
+    data_block as block, dice_bot, idb, random_id,
     renderer::Renderer,
     skyway::{self, DataConnection, Peer, ReceiveData, Room},
     JsObject,
@@ -65,18 +58,21 @@ pub struct ChatDataCollection {
     inputing_message: String,
     take: usize,
     senders: Vec<ChatSender>,
-    tabs: Chat,
+    tabs: block::Chat,
 }
 
 impl ChatDataCollection {
-    fn new() -> Self {
+    fn new(block_field: &mut block::Field) -> Self {
+        let main_tab = block_field.add(block::chat::Tab::new("メイン"));
+        let sub_tab = block_field.add(block::chat::Tab::new("サブ"));
+
         Self {
             selecting_tab_idx: 0,
             selecting_sender_idx: 0,
             inputing_message: "".into(),
             take: 64,
             senders: vec![ChatSender::Player],
-            tabs: Chat::new(vec![ChatTab::new("メイン"), ChatTab::new("サブ")]),
+            tabs: block::Chat::new(vec![main_tab, sub_tab]),
         }
     }
 }
