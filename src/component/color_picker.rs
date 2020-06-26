@@ -1,4 +1,4 @@
-use crate::model::{Color, ColorSystem};
+use crate::{color_system, Color};
 use kagura::prelude::*;
 use wasm_bindgen::JsCast;
 
@@ -13,8 +13,8 @@ macro_rules! color_column {
                         Attributes::new()
                             .class("cell")
                             .class("cell-medium")
-                            .style("background-color", ColorSystem::$cn(255, idx).to_string())
-                            .nut("data-color", ColorSystem::$cn(255, idx).to_u32() as u64),
+                            .style("background-color", color_system::$cn(255, idx).to_string())
+                            .nut("data-color", color_system::$cn(255, idx).to_u32() as u64),
                         Events::new(),
                         vec![],
                     )

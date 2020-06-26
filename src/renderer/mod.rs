@@ -5,7 +5,8 @@ mod program;
 mod view_renderer;
 mod webgl;
 
-use crate::model::{Camera, Resource, World};
+use crate::model::{Resource, World};
+pub use camera::Camera;
 use mask_renderer::MaskRenderer;
 use model_matrix::ModelMatrix;
 use ndarray::{arr1, Array2};

@@ -1,7 +1,7 @@
-use super::Block;
-use super::BlockId;
+use super::{Block, BlockId, Field};
 use wasm_bindgen::prelude::*;
 
+#[derive(Clone)]
 pub struct Tab {
     name: String,
     items: Vec<BlockId>,
@@ -18,5 +18,5 @@ impl Tab {
 
 impl Block for Tab {
     fn pack(&self, resolve: impl FnOnce(JsValue) + 'static) {}
-    fn unpack(val: JsValue, resolve: impl FnOnce(Option<Box<Self>>) + 'static) {}
+    fn unpack(field: &Field, val: JsValue, resolve: impl FnOnce(Option<Box<Self>>) + 'static) {}
 }

@@ -1,5 +1,4 @@
-use super::Block;
-use super::BlockId;
+use super::{Block, BlockId, Field};
 use wasm_bindgen::prelude::*;
 
 pub mod item;
@@ -8,6 +7,7 @@ pub mod tab;
 pub use item::Item;
 pub use tab::Tab;
 
+#[derive(Clone)]
 pub struct Chat {
     tabs: Vec<BlockId>,
 }
@@ -26,12 +26,12 @@ impl Block for Chat {
         }
         resolve(val.into());
     }
-    fn unpack(val: JsValue, resolve: impl FnOnce(Option<Box<Self>>) + 'static) {
+    fn unpack(field: &Field, val: JsValue, resolve: impl FnOnce(Option<Box<Self>>) + 'static) {
         let val = js_sys::Array::from(&val).to_vec();
         let mut tabs = vec![];
         for tab in val {
             if let Some(tab_id) = tab.as_string().and_then(|x| x.parse().ok()) {
-                tabs.push(tab_id);
+                tabs.push(field.block_id(tab_id));
             }
         }
         let chat = Self { tabs };

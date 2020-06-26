@@ -1,10 +1,8 @@
-use super::Block;
-use super::BlockId;
-use super::Field;
+use super::{Block, BlockId, Field};
 use wasm_bindgen::prelude::*;
 
 #[derive(Clone)]
-pub enum PropertyValue {
+pub enum Value {
     None,
     Num(f64),
     Str(String),
@@ -13,13 +11,12 @@ pub enum PropertyValue {
 
 #[derive(Clone)]
 pub struct Property {
-    id: u128,
     name: String,
     is_selected_to_show: bool,
-    value: PropertyValue,
+    value: Value,
 }
 
-impl PropertyValue {
+impl Value {
     pub fn as_option_string(&self) -> Option<String> {
         match &self {
             Self::None => None,
@@ -30,18 +27,26 @@ impl PropertyValue {
     }
 }
 
-impl Property {}
+impl Property {
+    pub fn new(name: impl Into<String>) -> Self {
+        Self {
+            name: name.into(),
+            is_selected_to_show: false,
+            value: Value::None,
+        }
+    }
+}
 
 impl Block for Property {
     fn pack(&self, resolve: impl FnOnce(JsValue)) {}
-    fn unpack(val: JsValue, resolve: impl FnOnce(Option<Box<Self>>)) {}
+    fn unpack(field: &Field, val: JsValue, resolve: impl FnOnce(Option<Box<Self>>)) {}
 }
 
 impl Field {
     pub fn sainome_ref_of(&self, block_id: &BlockId) -> Option<sainome::Ref> {
         if let Some(prop) = self.get::<Property>(block_id) {
             let mut r = sainome::Ref::new(prop.value.as_option_string());
-            if let PropertyValue::Children(children) = &prop.value {
+            if let Value::Children(children) = &prop.value {
                 let children = self.listed::<Property>(children);
                 for (child_id, child) in children {
                     let name = child.name.to_string();

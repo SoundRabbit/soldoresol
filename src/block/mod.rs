@@ -1,6 +1,13 @@
 use crate::{js_object::JsObject, random_id};
 use js_sys::Date;
-use std::{any::Any, collections::HashMap, iter::Iterator};
+use std::{
+    any::Any,
+    cell::RefCell,
+    collections::HashMap,
+    hash::{Hash, Hasher},
+    iter::Iterator,
+    rc::Rc,
+};
 use wasm_bindgen::{prelude::*, JsCast};
 
 pub mod chat;
@@ -8,31 +15,98 @@ pub mod property;
 pub mod resource;
 pub mod table;
 pub mod table_object;
+pub mod world;
 
 pub use chat::Chat;
 pub use property::Property;
 pub use resource::Resource;
 pub use table::Table;
+pub use world::World;
 
 trait Block {
     fn pack(&self, resolve: impl FnOnce(JsValue) + 'static);
-    fn unpack(val: JsValue, resolve: impl FnOnce(Option<Box<Self>>) + 'static);
+    fn unpack(field: &Field, val: JsValue, resolve: impl FnOnce(Option<Box<Self>>) + 'static);
 }
 
 type Timestamp = u32;
 
+type BlockTable = Rc<RefCell<HashMap<BlockId, FieldBlock>>>;
+
+pub struct BlockId {
+    table: BlockTable,
+    internal_id: u128,
+}
+
 struct FieldBlock {
+    count: usize,
     timestamp: Timestamp,
     payload: Box<dyn Any>,
 }
 
-type BlockId = u128;
-
 pub struct Field {
-    blocks: HashMap<BlockId, FieldBlock>,
+    table: BlockTable,
+}
+
+impl BlockId {
+    fn new(table: BlockTable, internal_id: u128) -> Self {
+        Self { table, internal_id }
+    }
+
+    pub fn to_string(&self) -> String {
+        self.internal_id.to_string()
+    }
+
+    pub fn to_u128(&self) -> u128 {
+        self.internal_id
+    }
+}
+
+impl Clone for BlockId {
+    fn clone(&self) -> Self {
+        if let Some(block) = self.table.borrow_mut().get_mut(&self) {
+            block.count += 1;
+        }
+        let table = Rc::clone(&self.table);
+        let internal_id = self.internal_id;
+        Self { table, internal_id }
+    }
+}
+
+impl Drop for BlockId {
+    fn drop(&mut self) {
+        if let Some(block) = self.table.borrow_mut().get_mut(&self) {
+            if block.count > 1 {
+                block.count -= 1;
+            } else {
+                self.table.borrow_mut().remove(&self);
+            }
+        }
+    }
+}
+
+impl PartialEq for BlockId {
+    fn eq(&self, other: &Self) -> bool {
+        self.internal_id == other.internal_id
+    }
+}
+
+impl Eq for BlockId {}
+
+impl Hash for BlockId {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.internal_id.hash(state);
+    }
 }
 
 impl FieldBlock {
+    fn new<T: Block + 'static>(timestamp: u32, block: T) -> Self {
+        Self {
+            count: 0,
+            timestamp: timestamp,
+            payload: Box::new(block),
+        }
+    }
+
     pub fn pack(&self, resolve: impl FnOnce(JsValue) + 'static) {
         if let Some(payload) = self.payload.downcast_ref::<Chat>() {
         } else if let Some(payload) = self.payload.downcast_ref::<chat::Item>() {
@@ -69,54 +143,57 @@ impl FieldBlock {
 }
 
 impl Field {
+    pub fn block_id(&self, internal_id: u128) -> BlockId {
+        BlockId::new(Rc::clone(&self.table), internal_id)
+    }
+
     pub fn new() -> Self {
         Self {
-            blocks: HashMap::new(),
+            table: Rc::new(RefCell::new(HashMap::new())),
         }
     }
 
     pub fn add<T: Block + 'static>(&mut self, block: T) -> BlockId {
-        let block_id = random_id::u128val();
-        if !self.blocks.contains_key(&block_id) {
-            self.assign(block_id, Date::now() as u32, block);
+        let block_id = self.block_id(random_id::u128val());
+        if !self.table.borrow().contains_key(&block_id) {
+            self.assign(block_id.to_u128(), Date::now() as u32, block);
         }
         block_id
     }
 
-    pub fn assign<T: Block + 'static>(
-        &mut self,
-        block_id: BlockId,
-        timestamp: Timestamp,
-        block: T,
-    ) {
+    pub fn assign<T: Block + 'static>(&mut self, block_id: u128, timestamp: Timestamp, block: T) {
+        let block_id = self.block_id(block_id);
         if self
-            .blocks
+            .table
+            .borrow()
             .get(&block_id)
             .map(|b| b.timestamp < timestamp)
             .unwrap_or(true)
         {
-            let block = FieldBlock {
-                timestamp: timestamp,
-                payload: Box::new(block),
-            };
-            self.blocks.insert(block_id, block);
+            let block = FieldBlock::new(timestamp, block);
+            self.table.borrow_mut().insert(block_id, block);
         }
     }
 
     pub fn get<T: Block + 'static>(&self, block_id: &BlockId) -> Option<&T> {
-        self.blocks
-            .get(block_id)
+        self.table
+            .borrow()
+            .get(&block_id)
             .and_then(|fb| fb.payload.downcast_ref::<T>())
     }
 
-    pub fn all<T: Block + 'static>(&self) -> impl Iterator<Item = (&BlockId, &T)> {
-        self.blocks.iter().filter_map(|(id, fb)| {
-            if let Some(b) = fb.payload.downcast_ref::<T>() {
-                Some((id, b))
-            } else {
-                None
-            }
-        })
+    pub fn all<T: Block + 'static>(&self) -> Vec<(&BlockId, &T)> {
+        self.table
+            .borrow()
+            .iter()
+            .filter_map(|(id, fb)| {
+                if let Some(b) = fb.payload.downcast_ref::<T>() {
+                    Some((id, b))
+                } else {
+                    None
+                }
+            })
+            .collect()
     }
 
     pub fn listed<T: Block + 'static>(
@@ -126,7 +203,7 @@ impl Field {
         let mut blocks = vec![];
         for block_id in block_ids {
             if let Some(block) = self.get(block_id) {
-                blocks.push((*block_id, block))
+                blocks.push((block_id.clone(), block))
             }
         }
         blocks.into_iter()
@@ -138,7 +215,8 @@ impl Field {
         timestamp: Timestamp,
         f: impl FnOnce(&mut T),
     ) -> bool {
-        self.blocks
+        self.table
+            .borrow_mut()
             .get_mut(block_id)
             .and_then(|fb| {
                 if fb.timestamp < timestamp {
@@ -155,6 +233,6 @@ impl Field {
     }
 
     pub fn timestamp(&self, block_id: &BlockId) -> Option<&Timestamp> {
-        self.blocks.get(block_id).map(|b| &b.timestamp)
+        self.table.borrow().get(block_id).map(|b| &b.timestamp)
     }
 }

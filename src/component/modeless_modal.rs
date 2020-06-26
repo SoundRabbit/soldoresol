@@ -1,4 +1,4 @@
-use crate::{model::Color, random_id};
+use crate::{random_id, Color};
 use kagura::prelude::*;
 use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::JsCast;

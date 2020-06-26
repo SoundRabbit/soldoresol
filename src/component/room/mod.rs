@@ -1,393 +1,103 @@
-mod common;
-mod modal;
-mod modeless;
+mod render;
+mod state;
 
-use super::{awesome, btn, contextmenu, modeless::container as modeless_container, modeless_modal};
 use crate::{
-    data_block as block, dice_bot, idb, random_id,
-    renderer::Renderer,
-    skyway::{self, DataConnection, Peer, ReceiveData, Room},
-    JsObject,
+    block::{self, BlockId},
+    model::modeless::ModelessId,
+    renderer::{Camera, Renderer},
+    skyway,
 };
-use js_sys::JsString;
 use kagura::prelude::*;
-use std::{
-    cell::{Cell, RefCell},
-    collections::{BTreeSet, HashMap, VecDeque},
-    rc::Rc,
-};
+use std::{collections::HashMap, rc::Rc};
 use wasm_bindgen::{prelude::*, JsCast};
 
-pub struct PersonalData {
-    name: String,
-    icon: Option<u128>,
-}
-
-impl PersonalData {
-    fn new() -> Self {
-        Self {
-            name: "Player".into(),
-            icon: None,
-        }
-    }
-
-    fn with_peer_id(mut self, peer_id: &str) -> Self {
-        self.name = self.name + "_" + peer_id;
-        self
-    }
-}
-
-#[derive(PartialEq, Eq)]
-pub enum ChatSender {
-    Player,
-    Character(u128),
-}
-
-impl ChatSender {
-    fn as_character(&self) -> Option<u128> {
-        match self {
-            Self::Character(c_id) => Some(*c_id),
-            _ => None,
-        }
-    }
-}
-
-pub struct ChatDataCollection {
-    selecting_tab_idx: usize,
-    selecting_sender_idx: usize,
-    inputing_message: String,
-    take: usize,
-    senders: Vec<ChatSender>,
-    tabs: block::Chat,
-}
-
-impl ChatDataCollection {
-    fn new(block_field: &mut block::Field) -> Self {
-        let main_tab = block_field.add(block::chat::Tab::new("メイン"));
-        let sub_tab = block_field.add(block::chat::Tab::new("サブ"));
-
-        Self {
-            selecting_tab_idx: 0,
-            selecting_sender_idx: 0,
-            inputing_message: "".into(),
-            take: 64,
-            senders: vec![ChatSender::Player],
-            tabs: block::Chat::new(vec![main_tab, sub_tab]),
-        }
-    }
-}
-
-pub struct SpeechBubble {
-    texture_id: Option<u128>,
-    message: String,
-    position: [f64; 2],
-}
-
-#[derive(Clone)]
-pub enum TableTool {
-    Selector,
-    Pen,
-    Eracer,
-    Measure(f64, bool, Option<[f64; 2]>, bool),
-}
-
-impl TableTool {
-    fn is_selector(&self) -> bool {
-        match self {
-            Self::Selector => true,
-            _ => false,
-        }
-    }
-    fn is_pen(&self) -> bool {
-        match self {
-            Self::Pen => true,
-            _ => false,
-        }
-    }
-    fn is_eracer(&self) -> bool {
-        match self {
-            Self::Eracer => true,
-            _ => false,
-        }
-    }
-    fn is_measure(&self) -> bool {
-        match self {
-            Self::Measure(..) => true,
-            _ => false,
-        }
-    }
-}
-
-struct TableState {
-    selecting_tool: TableTool,
-    measure_length: Option<f64>,
-    last_mouse_coord: [f64; 2],
-}
-
-struct Contextmenu {
-    state: contextmenu::State,
-    grobal_position: [f64; 2],
-    canvas_position: [f64; 2],
-}
-
-pub struct ModelessState {
-    z_index: i32,
-    grubbed: Option<[bool; 4]>,
-    loc_a: [i32; 2],
-    loc_b: [i32; 2],
-}
-
-impl ModelessState {
-    pub fn new() -> Self {
-        Self {
-            z_index: 0,
-            grubbed: None,
-            loc_a: [11, 2],
-            loc_b: [24, 9],
-        }
-    }
-}
-
-enum Modeless {
-    Object { tabs: Vec<u128>, focused: usize },
-    Chat,
-}
-
-type ModelessCollection = HashMap<u128, (ModelessState, Modeless)>;
-
-#[derive(Clone)]
-pub enum SelectImageModal {
-    Player,
-    Table,
-    Character(u128),
-}
-
-#[derive(Clone)]
-pub enum ColorPickerType {
-    TablemaskColor(u128, u8),
-}
-
-#[derive(Clone)]
-pub enum CharacterSelecterType {
-    ChatSender,
-}
-
-pub enum Modal {
-    Resource,
-    SelectImage(SelectImageModal),
-    PersonalSetting,
-    ColorPicker(ColorPickerType),
-    CharacterSelecter(CharacterSelecterType),
-    TableSetting,
-    ChatLog,
-    ChatTabEditor,
-}
-
-struct CmdQueue<M, S> {
-    payload: VecDeque<Cmd<M, S>>,
-}
-
-impl<M, S> CmdQueue<M, S> {
-    fn new() -> Self {
-        Self {
-            payload: VecDeque::new(),
-        }
-    }
-
-    fn enqueue(&mut self, cmd: Cmd<M, S>) {
-        self.payload.push_back(cmd);
-    }
-
-    fn dequeue(&mut self) -> Cmd<M, S> {
-        self.payload.pop_front().unwrap_or(Cmd::none())
-    }
-}
-
-struct DiceBot {
-    run_time: dice_bot::RunTime,
-    config: dice_bot::Config,
-}
-
-impl DiceBot {
-    fn new() -> Self {
-        let mut run_time = dice_bot::new_run_time();
-        let config = dice_bot::config();
-        dice_bot::set_env(&config, &mut run_time);
-        Self { run_time, config }
-    }
-}
-
-pub struct State {
-    peer: Rc<Peer>,
-    peers: BTreeSet<String>,
-    room: Rc<Room>,
-    personal_data: PersonalData,
-    world: World,
-    resource: Resource,
-    chat_data: ChatDataCollection,
-    camera: Camera,
-    renderer: Option<Renderer>,
-    canvas_size: [f64; 2],
-    table_state: TableState,
-    contextmenu: Contextmenu,
-    focused_object_id: Option<u128>,
-    is_2d_mode: bool,
-    speech_bubble_queue: VecDeque<SpeechBubble>,
-    modelesses: ModelessCollection,
-    modeless_dom: Vec<Option<u128>>,
-    modeless_max_z_index: i32,
-    modals: Vec<Modal>,
-    editing_modeless: Option<(u128, Rc<RefCell<modeless_modal::State>>)>,
-    object_id_to_modeless_id_map: HashMap<u128, u128>, //object_id -> modeless_id
-    chat_to_modeless_id_map: Option<u128>,
-    pixel_ratio: f64,
-    is_low_loading_mode: bool,
-    loading_state: i64,
-    loading_resource_num: u64,
-    loaded_resource_num: u64,
-    dice_bot: DiceBot,
-    cmd_queue: CmdQueue<Msg, Sub>,
-    common_database: Rc<web_sys::IdbDatabase>,
-    room_database: Rc<web_sys::IdbDatabase>,
-    loading_character_keys: Vec<u128>,
-    loading_characters: Vec<Character>,
-}
+pub type State = state::State<Msg, Sub>;
 
 pub enum Msg {
     NoOp,
     SetTableContext,
-    WindowResized,
-    Render,
-    SetLowLoadingMode(bool),
+    ResizeCanvas,
 
     // Tick
     Tick1000ms,
 
-    // メッセージの伝搬
-    TransportContextMenuMsg(contextmenu::Msg),
-    PickColor(Color, ColorPickerType),
-    SelectCharacter(u128, bool, CharacterSelecterType),
+    // Contextmenu
+    OpenContextmenu([f64; 2], [f64; 2], state::Contextmenu),
+    CloseContextmenu,
 
-    //コンテキストメニューの制御
-    OpenContextMenu([f64; 2], [f64; 2]),
-    AddChracaterWithMouseCoord([f64; 2]),
-    AddTablemaskWithMouseCoord([f64; 2]),
-    CloneObjectWithObjectIdToTransport(u128),
-    RemoveObjectWithObjectIdToTransport(u128),
-    RemoveObjectWithObjectId(u128),
+    // Modeless
+    OpenModeless(state::Modeless),
+    FocusModeless(ModelessId),
+    GrubModeless(ModelessId, [f64; 2], [bool; 4]),
+    DragModeless(ModelessId, [f64; 2]),
+    DropModeless(ModelessId),
+    CloseModeless(ModelessId),
+
+    // Modal
+    OpenModal(state::Modal),
+    CloseModal,
+
+    // UI for table object
+    AddChracaterWithMousePosition([f64; 2]),
+    AddTablemaskWithMousePosition([f64; 2]),
+    CloneTableObject(BlockId),
+    RemoveTableObject(BlockId),
+
+    // Mouse
+    SetLastMouseDownPosition([f64; 2]),
+    SetLastMouseUpPosition([f64; 2]),
+    SetCameraRotationWithMouseMovement([f64; 2]),
+    SetCameraMovementWithMouseMovement([f64; 2]),
+    SetCameraMovementWithMouseWheel(f64),
+    SetSelectingTableTool(state::table::Tool),
+    SetTableObjectPositionWithMousePosition(BlockId, [f64; 2]),
+    DrawLineWithMousePosition([f64; 2], [f64; 2]),
+    EraceLineWithMousePosition([f64; 2], [f64; 2]),
+
+    // World
+    AddTable,
+
+    // Table
+    SetTableSize(BlockId, [f64; 2]),
+    SetTableImage(BlockId, BlockId),
 
     // テーブル操作の制御
-    SetCameraRotationWithMouseCoord([f64; 2]),
-    SetCameraMovementWithMouseCoord([f64; 2]),
-    SetCameraMovementWithMouseWheel(f64),
-    SetSelectingTableTool(TableTool),
-    SetIsBindToGridToTransport(bool),
-    SetIsBindToGrid(bool),
     SetCursorWithMouseCoord([f64; 2]),
-    DrawLineWithMouseCoord([f64; 2]),
     EraceLineWithMouseCoord([f64; 2]),
     SetMeasureStartPointAndEndPointWithMouseCoord(f64, bool, [f64; 2], [f64; 2]),
     SetObjectPositionWithMouseCoord(u128, [f64; 2]),
-    SetObjectPositionToTransport(u128, [f64; 3]),
-    SetObjectPosition(u128, [f64; 3]),
-    BindObjectToTableGridToTransport(u128),
     BindObjectToTableGrid(u128),
     SetIs2dMode(bool),
-    SetTableSizeToTransport([f64; 2]),
-    SetTableSize([f64; 2]),
-    SetTableImageToTransport(u128),
-    SetTableImage(u128),
-    AddTablemaskWithPointABToTransport(f64, [f64; 2], [f64; 2], bool),
-
-    // モードレス
-    OpenObjectModeless(u128),
-    OpenChatModeless,
-    CloseModeless(u128),
-    GrubModeless(u128, Option<[bool; 4]>),
-    FocusModeless(u128),
-    OpenModelessModal(u128),
-    CloseModelessModal,
-    ReflectModelessModal(modeless_modal::Props),
-    CloseModelessModalWithProps(modeless_modal::Props),
-
-    // モーダル
-    OpenModal(Modal),
-    CloseModal,
 
     // PersonalData
     SetPersonalDataWithPlayerName(String),
     SetPersonalDataWithIconImage(u128),
 
-    // Worldに対する操作
-    SetCharacterImageToTransport(u128, u128),
-    SetCharacterImage(u128, u128),
-    SetCharacterSizeToTransport(u128, Option<f64>, Option<f64>),
-    SetCharacterSize(u128, Option<f64>, Option<f64>),
-    SetCharacterNameToTransport(u128, String),
-    SetCharacterName(u128, String),
-    AddChracaterToTransport(Character),
-    AddTablemaskToTransport(Tablemask),
-    SetTablemaskSizeWithStyleToTransport(u128, [f64; 2], bool, bool),
-    SetTablemaskSizeWithStyle(u128, [f64; 2], bool, bool),
-    SetTablemaskSizeIsBindedToTransport(u128, bool),
-    SetTablemaskSizeIsBinded(u128, bool),
-    SetTablemaskColorToTransport(u128, Color),
-    SetTablemaskColor(u128, Color),
-    SetTablemaskTransparentToTransport(u128, f64),
-    SetCharacterPropertyNameToTransport(u128, u128, String),
-    SetCharacterPropertyName(u128, u128, String),
-    SetCharacterPropertyValueToTransport(u128, u128, PropertyValue),
-    SetCharacterPropertyValue(u128, u128, PropertyValue),
-    AddChildToCharacterPropertyToTransport(u128, u128, Property),
-    AddChildToCharacterProperty(u128, u128, Property),
-    RemoveCharacterPropertyToTransport(u128, u128),
-    RemoveCharacterProperty(u128, u128),
-    SetCharacterPropertyIsSelectedToShowToTransport(u128, u128, bool),
-    SetCharacterPropertyIsSelectedToShow(u128, u128, bool),
-    SetSelectingTableToTransport(u128),
-    SetSelectingTable(u128),
-    SetTableNameToTransport(u128, String),
-    SetTableName(u128, String),
-    AddTableToTransport,
-    AddTable(u128),
+    // table object
+    SetCharacterName(BlockId, String),
+    SetCharacterSize([Option<f64>; 2]),
+
+    // property
 
     // チャット関係
-    SetSelectingChatTabIdx(usize),
-    InputChatMessage(String),
-    SendChatItemToTransport,
-    InsertChatItem(usize, ChatItem),
+    SetInputingChatMessage(String),
+    SendInputingChatMessage,
+    InsertChatItem(BlockId, block::chat::Item),
     SetChatSender(usize),
-    AddChatSender(ChatSender),
-    RemoveChatSender(ChatSender),
-    EnqueueSpeechBubble(SpeechBubble),
-    DequeueSpeechBubble,
-    AddChatTabTotransport,
     AddChatTab,
-    SetChatTabNameToTransport(usize, String),
-    SetChatTabName(usize, String),
-    RemoveChatTabToTransport(usize),
-    RemoveChatTab(usize),
+    SetChatTabName(BlockId, String),
+    RemoveChatTab(BlockId),
 
     // リソース管理
     LoadFromFileListToTransport(web_sys::FileList),
-    LoadFromBlobsToTransport(HashMap<u128, Rc<web_sys::Blob>>),
-    LoadFromBlobs(HashMap<u128, Rc<web_sys::Blob>>),
-    LoadReasource(u128, Data),
-
-    // IndexedDB
-    AddCharacterToDb(u128),
-    PutCharacterToDb(u128, js_sys::Object, Option<u128>),
-    AddResourceToDb(u128),
-    PutResourceToDb(u128, js_sys::Object),
-    GetCharacterListFromDbToOpenModal,
-    FinishToGetCharacterListFromDbToOpenModal(JsValue),
-    FinishToGetCharacterWithKeyFromDbToOpenModal(JsValue),
+    LoadFromBlobsToTransport(HashMap<BlockId, Rc<web_sys::Blob>>),
+    LoadFromBlobs(HashMap<BlockId, Rc<web_sys::Blob>>),
+    LoadReasource(BlockId, block::Resource),
 
     // 接続に関する操作
     ReceiveMsg(skyway::Msg),
     PeerJoin(String),
     PeerLeave(String),
-    SetLoadingState(bool),
     DisconnectFromRoom,
 }
 
@@ -396,8 +106,8 @@ pub enum Sub {
 }
 
 pub fn new(
-    peer: Rc<Peer>,
-    room: Rc<Room>,
+    peer: Rc<skyway::Peer>,
+    room: Rc<skyway::Room>,
     common_database: Rc<web_sys::IdbDatabase>,
     room_database: Rc<web_sys::IdbDatabase>,
 ) -> Component<Msg, State, Sub> {
@@ -405,55 +115,7 @@ pub fn new(
         let peer = Rc::clone(&peer);
         let room = Rc::clone(&room);
         move || {
-            let peers = {
-                let mut p = BTreeSet::new();
-                p.insert(peer.id());
-                p
-            };
-            let peer_id = peer.id();
-            let state = State {
-                peer: peer,
-                peers: peers,
-                room: room,
-                personal_data: PersonalData::new().with_peer_id(&peer_id),
-                world: World::new([20.0, 20.0]),
-                resource: Resource::new(),
-                chat_data: ChatDataCollection::new(),
-                camera: Camera::new(),
-                renderer: None,
-                canvas_size: [0.0, 0.0],
-                table_state: TableState {
-                    selecting_tool: TableTool::Selector,
-                    measure_length: None,
-                    last_mouse_coord: [0.0, 0.0],
-                },
-                contextmenu: Contextmenu {
-                    state: contextmenu::init(),
-                    canvas_position: [0.0, 0.0],
-                    grobal_position: [0.0, 0.0],
-                },
-                is_2d_mode: false,
-                speech_bubble_queue: VecDeque::new(),
-                modelesses: HashMap::new(),
-                modeless_dom: vec![],
-                modeless_max_z_index: 0,
-                modals: vec![],
-                editing_modeless: None,
-                object_id_to_modeless_id_map: HashMap::new(),
-                chat_to_modeless_id_map: None,
-                focused_object_id: None,
-                pixel_ratio: 1.0,
-                is_low_loading_mode: false,
-                loading_state: 0,
-                loading_resource_num: 0,
-                loaded_resource_num: 0,
-                dice_bot: DiceBot::new(),
-                cmd_queue: CmdQueue::new(),
-                common_database: common_database,
-                room_database: room_database,
-                loading_character_keys: vec![],
-                loading_characters: vec![],
-            };
+            let state = State::new(peer, room, common_database, room_database);
             let task = Cmd::task(|handler| {
                 handler(Msg::SetTableContext);
             });
@@ -463,7 +125,7 @@ pub fn new(
     Component::new(init, update, render)
         .batch(|mut handler| {
             let a = Closure::wrap(Box::new(move || {
-                handler(Msg::WindowResized);
+                handler(Msg::ResizeCanvas);
             }) as Box<dyn FnMut()>);
             web_sys::window()
                 .unwrap()
@@ -475,7 +137,7 @@ pub fn new(
             let room = Rc::clone(&room);
             move |mut handler| {
                 let a = Closure::wrap(Box::new({
-                    move |receive_data: Option<ReceiveData>| {
+                    move |receive_data: Option<skyway::ReceiveData>| {
                         let msg = receive_data
                             .and_then(|receive_data| receive_data.data())
                             .map(|receive_data| skyway::Msg::from(receive_data))
@@ -493,7 +155,8 @@ pub fn new(
                             web_sys::console::log_1(&JsValue::from("faild to deserialize message"));
                         }
                     }
-                }) as Box<dyn FnMut(Option<ReceiveData>)>);
+                })
+                    as Box<dyn FnMut(Option<skyway::ReceiveData>)>);
                 room.payload.on("data", Some(a.as_ref().unchecked_ref()));
                 a.forget();
             }
@@ -520,85 +183,6 @@ pub fn new(
                 a.forget();
             }
         })
-        .batch({
-            let peer = Rc::clone(&peer);
-            move |handler| {
-                let handler = Rc::new(RefCell::new(handler));
-                let connection_num = Rc::new(Cell::new(0));
-
-                // 接続済みユーザーからの接続が発生するごとに発火
-                let a = Closure::wrap(Box::new({
-                    let handler = Rc::clone(&handler);
-                    let connection_num = Rc::clone(&connection_num);
-                    move |data_connection: DataConnection| {
-                        let data_connection = Rc::new(data_connection);
-                        let received_msg_num = Rc::new(Cell::new(0));
-
-                        // それぞれのユーザーからデータが送られてくるごとに発生
-                        let a = Closure::wrap(Box::new({
-                            let handler = Rc::clone(&handler);
-                            let data_connection = Rc::clone(&data_connection);
-                            let received_msg_num = Rc::clone(&received_msg_num);
-                            move |receive_data: Option<JsObject>| {
-                                let msg = receive_data
-                                    .map(|receive_data| skyway::Msg::from(receive_data))
-                                    .and_then(|msg| {
-                                        if let skyway::Msg::None = msg {
-                                            None
-                                        } else {
-                                            Some(msg)
-                                        }
-                                    });
-                                if let Some(msg) = msg {
-                                    web_sys::console::log_1(&JsValue::from(msg.type_name()));
-                                    received_msg_num.set(received_msg_num.get() + 1);
-                                    if let Ok(mut h) = handler.try_borrow_mut() {
-                                        (&mut *h)(Msg::ReceiveMsg(msg));
-                                    }
-                                } else {
-                                    web_sys::console::log_1(&JsValue::from(
-                                        "faild to deserialize message",
-                                    ));
-                                }
-
-                                if received_msg_num.get() >= 4 {
-                                    data_connection.close(true);
-                                    if let Ok(mut h) = handler.try_borrow_mut() {
-                                        (&mut *h)(Msg::SetLoadingState(false));
-                                    }
-                                }
-                            }
-                        })
-                            as Box<dyn FnMut(Option<JsObject>)>);
-                        data_connection.on("data", Some(a.as_ref().unchecked_ref()));
-                        a.forget();
-
-                        let a = Closure::wrap(Box::new({
-                            let data_connection = Rc::clone(&data_connection);
-                            let connection_num = Rc::clone(&connection_num);
-                            let received_msg_num = Rc::clone(&received_msg_num);
-                            move || {
-                                let cn = connection_num.get();
-                                if cn == 0 {
-                                    data_connection.send(&JsString::from("FirstConnection"));
-                                } else {
-                                    received_msg_num.set(received_msg_num.get() + 3);
-                                }
-                                connection_num.set(cn + 1);
-                            }
-                        }) as Box<dyn FnMut()>);
-                        data_connection.on("open", Some(a.as_ref().unchecked_ref()));
-                        a.forget();
-
-                        if let Ok(mut h) = handler.try_borrow_mut() {
-                            (&mut *h)(Msg::SetLoadingState(true));
-                        }
-                    }
-                }) as Box<dyn FnMut(DataConnection)>);
-                peer.on("connection", Some(a.as_ref().unchecked_ref()));
-                a.forget();
-            }
-        })
 }
 
 fn get_table_canvas_element() -> web_sys::HtmlCanvasElement {
@@ -612,149 +196,98 @@ fn get_table_canvas_element() -> web_sys::HtmlCanvasElement {
         .unwrap()
 }
 
-fn get_device_pixel_ratio(pixel_ratio: f64) -> f64 {
+fn get_canvas_pixel_ratio(pixel_ratio: f64) -> f64 {
     web_sys::window().unwrap().device_pixel_ratio() * pixel_ratio
 }
 
-fn get_table_position(state: &State, mouse_coord: &[f64; 2], pixel_ratio: f64) -> [f64; 2] {
-    let dpr = get_device_pixel_ratio(pixel_ratio);
-    let mouse_coord = [mouse_coord[0] * dpr, mouse_coord[1] * dpr];
+fn reset_canvas_size(pixel_ratio: f64) -> [f64; 2] {
+    let canvas = get_table_canvas_element();
+    let dpr = get_canvas_pixel_ratio(pixel_ratio);
+    let canvas_size = [
+        canvas.client_width() as f64 * dpr,
+        canvas.client_height() as f64 * dpr,
+    ];
+    canvas.set_width(canvas_size[0] as u32);
+    canvas.set_height(canvas_size[1] as u32);
+    canvas_size
+}
+
+fn get_table_position(state: &State, screen_position: &[f64; 2], pixel_ratio: f64) -> [f64; 2] {
+    let dpr = get_canvas_pixel_ratio(pixel_ratio);
+    let mouse_coord = [screen_position[0] * dpr, screen_position[1] * dpr];
     let p = state
-        .camera
-        .collision_point_on_xy_plane(&state.canvas_size, &mouse_coord);
+        .camera()
+        .collision_point_on_xy_plane(state.canvas_size(), &screen_position);
     [p[0], p[1]]
 }
 
-fn get_character_with_key_from_db_to_open_modal(
-    database: &web_sys::IdbDatabase,
-    key: Option<u128>,
-) -> Cmd<Msg, Sub> {
-    if let Some(key) = key {
-        idb::query(
-            database,
-            "characters",
-            idb::Query::Get(&JsValue::from(key.to_string())),
-            |x| Msg::FinishToGetCharacterWithKeyFromDbToOpenModal(x),
-            |_| Msg::NoOp,
-        )
-    } else {
-        Cmd::none()
+fn render_canvas(state: &mut State) {
+    if let Some(renderer) = state.renderer_mut() {
+        renderer.render(
+            &mut state.world,
+            &state.camera,
+            &state.resource,
+            &state.canvas_size,
+        );
     }
 }
 
 fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
     match msg {
-        Msg::NoOp => state.cmd_queue.dequeue(),
+        Msg::NoOp => state.dequeue(),
         Msg::SetTableContext => {
+            state.set_canvas_size(reset_canvas_size(state.pixel_ratio()));
             let canvas = get_table_canvas_element();
-            let dpr = get_device_pixel_ratio(state.pixel_ratio);
-            let canvas_size = [
-                canvas.client_width() as f64 * dpr,
-                canvas.client_height() as f64 * dpr,
-            ];
-            canvas.set_width(canvas_size[0] as u32);
-            canvas.set_height(canvas_size[1] as u32);
-            state.canvas_size = canvas_size;
-            let gl = canvas
-                .get_context("webgl")
-                .unwrap()
-                .unwrap()
-                .dyn_into::<web_sys::WebGlRenderingContext>()
-                .unwrap();
-            state.renderer = Some(Renderer::new(gl));
-            update(state, Msg::Render)
+            let gl = canvas.get_context("webgl").unwrap().unwrap();
+            let gl = gl.dyn_into::<web_sys::WebGlRenderingContext>().unwrap();
+            state.set_renderer(Renderer::new(gl));
+            render_canvas(state);
+            state.dequeue()
         }
-        Msg::WindowResized => {
-            let canvas = get_table_canvas_element();
-            let dpr = get_device_pixel_ratio(state.pixel_ratio);
-            let canvas_size = [
-                canvas.client_width() as f64 * dpr,
-                canvas.client_height() as f64 * dpr,
-            ];
-            canvas.set_width(canvas_size[0] as u32);
-            canvas.set_height(canvas_size[1] as u32);
-            state.canvas_size = canvas_size;
-            update(state, Msg::Render)
-        }
-        Msg::Render => {
-            if let Some(renderer) = &mut state.renderer {
-                renderer.render(
-                    &mut state.world,
-                    &state.camera,
-                    &state.resource,
-                    &state.canvas_size,
-                );
-            }
-            state.cmd_queue.dequeue()
-        }
-        Msg::SetLowLoadingMode(flag) => {
-            if state.is_low_loading_mode != flag {
-                state.is_low_loading_mode = flag;
-                if flag {
-                    state.pixel_ratio = 0.5;
-                } else {
-                    state.pixel_ratio = 1.0;
-                }
-                update(state, Msg::WindowResized)
-            } else {
-                state.cmd_queue.dequeue()
-            }
+        Msg::ResizeCanvas => {
+            state.set_canvas_size(reset_canvas_size(state.pixel_ratio()));
+            state.dequeue()
         }
 
         // Tick
-        Msg::Tick1000ms => {
-            if state
-                .world
-                .selecting_table()
-                .drawing_texture_element()
-                .is_some()
-            {
-                update(state, Msg::Render)
-            } else {
-                Cmd::none()
-            }
+        Msg::Tick1000ms => state.dequeue(),
+
+        // Contextmenu
+        Msg::OpenContextmenu(page_mouse_position, offset_mouse_position, contextmenu) => {
+            state.open_contextmenu(page_mouse_position, offset_mouse_position, contextmenu);
+            state.dequeue()
+        }
+        Msg::CloseContextmenu => {
+            state.close_contextmenu();
+            state.dequeue()
         }
 
-        //メッセージの伝搬
-        Msg::TransportContextMenuMsg(msg) => {
-            contextmenu::update(&mut state.contextmenu.state, msg);
-            state.cmd_queue.dequeue()
+        // Modeless
+        Msg::OpenModeless(modeless) => {
+            state.open_modeless(modeless);
+            state.dequeue()
         }
-        Msg::PickColor(mut color, color_picker_type) => match color_picker_type {
-            ColorPickerType::TablemaskColor(obj_id, alpha) => {
-                color.alpha = alpha;
-                update(state, Msg::SetTablemaskColorToTransport(obj_id, color))
-            }
-        },
-        Msg::SelectCharacter(character_id, is_selected, character_selecter_type) => {
-            match character_selecter_type {
-                CharacterSelecterType::ChatSender => {
-                    if is_selected {
-                        update(
-                            state,
-                            Msg::AddChatSender(ChatSender::Character(character_id)),
-                        )
-                    } else {
-                        update(
-                            state,
-                            Msg::RemoveChatSender(ChatSender::Character(character_id)),
-                        )
-                    }
-                }
-            }
+        Msg::FocusModeless(modeless_id) => {
+            state.focus_modeless(modeless_id);
+            state.dequeue()
+        }
+        Msg::GrubModeless(modeless_id, mouse_position, movable) => {
+            state.grub_modeless(modeless_id, mouse_position, movable);
+            state.dequeue()
+        }
+        Msg::DragModeless(modeless_id, mouse_position) => {
+            state.drag_modeless(modeless_id, mouse_position);
+            state.dequeue()
+        }
+        Msg::DropModeless(modeless_id) => {
+            state.drop_modeless(modeless_id);
+            state.dequeue()
+        }
+        Msg::CloseModeless(modeless_id) => {
+            state.close_modeless(modeless_id);
+            state.dequeue()
         }
 
-        //コンテキストメニューの制御
-        Msg::OpenContextMenu(page_mouse_coord, offset_mouse_coord) => {
-            update(
-                state,
-                Msg::SetCursorWithMouseCoord(offset_mouse_coord.clone()),
-            );
-            state.contextmenu.grobal_position = page_mouse_coord.clone();
-            state.contextmenu.canvas_position = offset_mouse_coord;
-            contextmenu::open(&mut state.contextmenu.state, page_mouse_coord);
-            state.cmd_queue.dequeue()
-        }
         Msg::AddChracaterWithMouseCoord(mouse_coord) => {
             let position = get_table_position(&state, &mouse_coord, state.pixel_ratio);
             let position = [position[0], position[1], 0.0];

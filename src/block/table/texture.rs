@@ -1,10 +1,13 @@
-use super::Block;
+use super::{Block, Field};
 use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::{prelude::*, JsCast};
 
+#[derive(Clone)]
 pub struct Texture {
     element: web_sys::HtmlCanvasElement,
     context: web_sys::CanvasRenderingContext2d,
+    size: [f64; 2],
+    pixel_ratio: [f64; 2],
 }
 
 impl Texture {
@@ -19,7 +22,7 @@ impl Texture {
             .unwrap()
     }
 
-    pub fn new(size: &[u32; 2]) -> Self {
+    pub fn new(buffer_size: &[u32; 2], size: [f64; 2]) -> Self {
         let element = web_sys::window()
             .unwrap()
             .document()
@@ -28,20 +31,35 @@ impl Texture {
             .unwrap()
             .dyn_into::<web_sys::HtmlCanvasElement>()
             .unwrap();
-        element.set_width(size[0]);
-        element.set_height(size[1]);
+        element.set_width(buffer_size[0]);
+        element.set_height(buffer_size[1]);
         let context = Self::get_context2d_from_canvas(&element);
-        Self { element, context }
+
+        let mut me = Self {
+            element,
+            context,
+            pixel_ratio: [1.0, 1.0],
+            size: [1.0, 1.0],
+        };
+        me.set_size(size);
+        me
     }
 
-    pub fn reset_context(&mut self) {
-        self.context = Self::get_context2d_from_canvas(&self.element);
-    }
+    pub fn set_size(&mut self, size: [f64; 2]) {
+        let new_pixel_ratio = [4096.0 / size[0], 4096.0 / size[1]];
 
-    pub fn set_size(&mut self, size: &[u32; 2]) {
-        self.element.set_width(size[0]);
-        self.element.set_height(size[1]);
-        self.reset_context();
+        let _ = self.context.scale(
+            new_pixel_ratio[0] / self.pixel_ratio[0],
+            new_pixel_ratio[1] / self.pixel_ratio[1],
+        );
+
+        let _ = self.context.scale(
+            new_pixel_ratio[0] / self.pixel_ratio[0],
+            new_pixel_ratio[1] / self.pixel_ratio[1],
+        );
+
+        self.pixel_ratio = new_pixel_ratio;
+        self.size = size;
     }
 
     pub fn element(&self) -> &web_sys::HtmlCanvasElement {
@@ -58,15 +76,23 @@ impl Block for Texture {
         let resolve = RefCell::new(Some(Box::new(resolve)));
         let a = Closure::wrap(Box::new(move |blob: JsValue| {
             if let Some(resolve) = resolve.borrow_mut().take() {
-                resolve(blob.into());
+                resolve(object! {
+                    buffer: blob.into(),
+                    size: array![self.size[0],self.size[1]]
+                });
             }
         }) as Box<dyn FnMut(JsValue)>);
         let _ = self.element.to_blob(a.as_ref().unchecked_ref());
         a.forget();
     }
 
-    fn unpack(val: JsValue, resolve: impl FnOnce(Option<Box<Self>>) + 'static) {
+    fn unpack(field: &Field, val: JsValue, resolve: impl FnOnce(Option<Box<Self>>) + 'static) {
+        use crate::JsObject;
+
+        let val = val.dyn_into::<JsObject>().unwrap();
         let buffer = val
+            .get("buffer")
+            .unwrap()
             .dyn_into::<js_sys::ArrayBuffer>()
             .ok()
             .and_then(|buffer| {
@@ -76,12 +102,15 @@ impl Block for Texture {
                 )
                 .ok()
             });
+        let size = js_sys::Array::from(&val.get("size").unwrap()).to_vec();
+        let size = [size[0].as_f64().unwrap(), size[1].as_f64().unwrap()];
+
         if let Some(blob) = buffer {
             let image = Rc::new(crate::util::html_image_element());
             let a = {
                 let image = Rc::clone(&image);
                 Closure::once(Box::new(move || {
-                    let me = Self::new(&[image.width(), image.height()]);
+                    let me = Self::new(&[image.width(), image.height()], size);
                     let _ = me
                         .context()
                         .draw_image_with_html_image_element(&image, 0.0, 0.0);
@@ -91,6 +120,8 @@ impl Block for Texture {
             image.set_onload(Some(&a.as_ref().unchecked_ref()));
             if let Ok(object_url) = web_sys::Url::create_object_url_with_blob(&blob) {
                 image.set_src(&object_url);
+            } else {
+                resolve(None);
             }
             a.forget();
         } else {

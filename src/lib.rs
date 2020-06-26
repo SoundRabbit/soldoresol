@@ -15,16 +15,20 @@ extern crate web_sys;
 
 #[macro_use]
 mod js_object;
+#[macro_use]
+mod util;
+mod block;
+mod color;
+mod color_system;
 mod component;
 mod config;
-mod data_block;
 mod dice_bot;
 mod idb;
 mod model;
 mod random_id;
 mod renderer;
 mod skyway;
-mod util;
+use color::Color;
 use config::Config;
 use js_object::JsObject;
 use wasm_bindgen::prelude::*;
