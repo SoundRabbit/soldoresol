@@ -37,7 +37,7 @@ impl Renderer {
         }
     }
 
-    pub fn table_object_id(&self, position: &[f32; 2]) -> Option<&u128> {
+    pub fn table_object_id(&self, position: &[f32; 2]) -> Option<&BlockId> {
         self.mask_renderer.table_object_id(position)
     }
 
@@ -73,31 +73,40 @@ impl Renderer {
 
     pub fn render(
         &mut self,
-        block_field: &mut block::Field,
+        block_field: &block::Field,
         world: &BlockId,
         camera: &Camera,
         resource: &Resource,
         canvas_size: &[f32; 2],
     ) {
         if Rc::strong_count(&self.gl) < 3 {
-            self.view_renderer
-                .render(&self.gl, &canvas_size, &camera, world, resource);
+            if let Some(world) = block_field.get::<block::World>(world) {
+                self.view_renderer.render(
+                    &self.gl,
+                    &canvas_size,
+                    &camera,
+                    block_field,
+                    world,
+                    resource,
+                );
 
-            self.mask_renderer.render(&canvas_size, &camera, world);
+                self.mask_renderer
+                    .render(&canvas_size, &camera, block_field, world);
 
-            let view_gl = Rc::clone(&self.gl);
-            let mask_gl = self.mask_renderer.gl();
+                let view_gl = Rc::clone(&self.gl);
+                let mask_gl = self.mask_renderer.gl();
 
-            let a = Closure::once(Box::new(move || {
-                view_gl.flush();
-                mask_gl.flush();
-            }) as Box<dyn FnOnce()>);
+                let a = Closure::once(Box::new(move || {
+                    view_gl.flush();
+                    mask_gl.flush();
+                }) as Box<dyn FnOnce()>);
 
-            let _ = web_sys::window()
-                .unwrap()
-                .request_animation_frame(a.as_ref().unchecked_ref());
+                let _ = web_sys::window()
+                    .unwrap()
+                    .request_animation_frame(a.as_ref().unchecked_ref());
 
-            a.forget();
+                a.forget();
+            }
         }
     }
 }

@@ -3,9 +3,12 @@ use super::super::{
     webgl::{WebGlF32Vbo, WebGlI16Ibo, WebGlRenderingContext},
     ModelMatrix,
 };
-use crate::model::{Camera, Color, Tablemask};
+use crate::{
+    block::{self, BlockId},
+    Color,
+};
 use ndarray::Array2;
-use std::collections::{hash_map, HashMap};
+use std::collections::HashMap;
 
 pub struct TablemaskCollectionRenderer {
     vertexis_buffer: WebGlF32Vbo,
@@ -35,14 +38,14 @@ impl TablemaskCollectionRenderer {
         }
     }
 
-    pub fn render(
+    pub fn render<'a>(
         &self,
         gl: &WebGlRenderingContext,
         program: &MaskProgram,
-        _camera: &Camera,
-        vp_matrix: &Array2<f64>,
-        tablemasks: hash_map::Iter<u128, Tablemask>,
-        id_map: &mut HashMap<u32, u128>,
+        vp_matrix: &Array2<f32>,
+        block_field: &block::Field,
+        tablemasks: impl Iterator<Item = &'a BlockId>,
+        id_map: &mut HashMap<u32, BlockId>,
     ) {
         gl.set_attribute(&self.vertexis_buffer, &program.a_vertex_location, 3, 0);
         gl.set_attribute(
@@ -56,10 +59,12 @@ impl TablemaskCollectionRenderer {
             Some(&self.index_buffer),
         );
 
-        for (tablemask_id, tablemask) in tablemasks {
+        for (tablemask_id, tablemask) in
+            block_field.listed::<block::table_object::Tablemask>(tablemasks.collect())
+        {
             let s = tablemask.size();
             let p = tablemask.position();
-            let model_matrix: Array2<f64> = ModelMatrix::new()
+            let model_matrix: Array2<f32> = ModelMatrix::new()
                 .with_scale(&[s[0], s[1], 1.0])
                 .with_z_axis_rotation(-tablemask.z_rotation())
                 .with_movement(&p)
@@ -92,7 +97,7 @@ impl TablemaskCollectionRenderer {
                 0,
             );
 
-            id_map.insert(color.to_u32(), *tablemask_id);
+            id_map.insert(color.to_u32(), tablemask_id.clone());
         }
     }
 }

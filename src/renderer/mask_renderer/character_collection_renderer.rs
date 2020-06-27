@@ -3,9 +3,13 @@ use super::super::{
     webgl::{WebGlF32Vbo, WebGlI16Ibo, WebGlRenderingContext},
     ModelMatrix,
 };
-use crate::model::{Camera, Character, Color};
+use super::Camera;
+use crate::{
+    block::{self, BlockId},
+    Color,
+};
 use ndarray::Array2;
-use std::collections::{hash_map, HashMap};
+use std::collections::HashMap;
 
 #[derive(PartialEq, PartialOrd)]
 pub struct Total<T>(pub T);
@@ -45,14 +49,15 @@ impl CharacterCollectionRenderer {
         }
     }
 
-    pub fn render(
+    pub fn render<'a>(
         &self,
         gl: &WebGlRenderingContext,
         program: &MaskProgram,
         camera: &Camera,
-        vp_matrix: &Array2<f64>,
-        characters: hash_map::Iter<u128, Character>,
-        id_map: &mut HashMap<u32, u128>,
+        vp_matrix: &Array2<f32>,
+        block_field: &block::Field,
+        characters: impl Iterator<Item = &'a BlockId>,
+        id_map: &mut HashMap<u32, BlockId>,
     ) {
         gl.set_attribute(&self.vertexis_buffer, &program.a_vertex_location, 3, 0);
         gl.set_attribute(
@@ -66,12 +71,14 @@ impl CharacterCollectionRenderer {
             Some(&self.index_buffer),
         );
 
-        let mut mvp_matrixies: Vec<(Array2<f64>, [f32; 4])> = vec![];
+        let mut mvp_matrixies: Vec<(Array2<f32>, [f32; 4])> = vec![];
 
-        for (character_id, character) in characters {
+        for (character_id, character) in
+            block_field.listed::<block::Character>(characters.collect())
+        {
             let s = character.size();
             let p = character.position();
-            let model_matrix: Array2<f64> = ModelMatrix::new()
+            let model_matrix: Array2<f32> = ModelMatrix::new()
                 .with_scale(&[s[0], s[0], 1.0])
                 .with_movement(&[p[0], (p[1] - 0.5 * s[0]), p[2]])
                 .into();
@@ -105,7 +112,7 @@ impl CharacterCollectionRenderer {
                 0,
             );
 
-            let model_matrix: Array2<f64> = ModelMatrix::new()
+            let model_matrix: Array2<f32> = ModelMatrix::new()
                 .with_scale(&[s[0], s[1], 1.0])
                 .with_x_axis_rotation(camera.x_axis_rotation())
                 .with_z_axis_rotation(camera.z_axis_rotation())
@@ -115,7 +122,7 @@ impl CharacterCollectionRenderer {
 
             mvp_matrixies.push((mvp_matrix, color.to_f32array()));
 
-            id_map.insert(color.to_u32(), *character_id);
+            id_map.insert(color.to_u32(), character_id.clone());
         }
 
         gl.depth_func(web_sys::WebGlRenderingContext::LEQUAL);

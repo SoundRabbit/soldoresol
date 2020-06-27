@@ -1,8 +1,8 @@
 mod character_collection_renderer;
 mod tablemask_collection_renderer;
 
-use super::{program::MaskProgram, webgl::WebGlRenderingContext};
-use crate::model::{Camera, World};
+use super::{program::MaskProgram, webgl::WebGlRenderingContext, Camera};
+use crate::block::{self, BlockId};
 pub use character_collection_renderer::CharacterCollectionRenderer;
 use std::{collections::HashMap, rc::Rc};
 use tablemask_collection_renderer::TablemaskCollectionRenderer;
@@ -14,7 +14,7 @@ pub struct MaskRenderer {
     mask_program: MaskProgram,
     character_collection_renderer: CharacterCollectionRenderer,
     tablemask_collection_renderer: TablemaskCollectionRenderer,
-    id_map: HashMap<u32, u128>,
+    id_map: HashMap<u32, BlockId>,
 }
 
 impl MaskRenderer {
@@ -56,7 +56,7 @@ impl MaskRenderer {
         Rc::clone(&self.gl)
     }
 
-    pub fn table_object_id(&self, position: &[f64; 2]) -> Option<&u128> {
+    pub fn table_object_id(&self, position: &[f32; 2]) -> Option<&BlockId> {
         let mut pixel = [0, 0, 0, 0];
         self.gl
             .read_pixels_with_opt_u8_array(
@@ -74,7 +74,13 @@ impl MaskRenderer {
         ]))
     }
 
-    pub fn render(&mut self, canvas_size: &[f64; 2], camera: &Camera, world: &mut World) {
+    pub fn render(
+        &mut self,
+        canvas_size: &[f32; 2],
+        camera: &Camera,
+        block_field: &block::Field,
+        world: &block::World,
+    ) {
         let gl = &self.gl;
         let canvas = &self.canvas;
         canvas.set_width(canvas_size[0] as u32);
@@ -91,24 +97,28 @@ impl MaskRenderer {
 
         self.id_map.clear();
 
-        self.id_map.insert(0xFF000000, world.selecting_table_id());
+        self.id_map
+            .insert(0xFF000000, world.selecting_table().clone());
 
         gl.depth_func(web_sys::WebGlRenderingContext::ALWAYS);
 
-        self.tablemask_collection_renderer.render(
-            gl,
-            &self.mask_program,
-            camera,
-            &vp_matrix,
-            world.tablemasks(),
-            &mut self.id_map,
-        );
+        if let Some(table) = block_field.get::<block::Table>(world.selecting_table()) {
+            self.tablemask_collection_renderer.render(
+                gl,
+                &self.mask_program,
+                &vp_matrix,
+                block_field,
+                table.tablemasks(),
+                &mut self.id_map,
+            );
+        }
 
         self.character_collection_renderer.render(
             gl,
             &self.mask_program,
             camera,
             &vp_matrix,
+            block_field,
             world.characters(),
             &mut self.id_map,
         );
