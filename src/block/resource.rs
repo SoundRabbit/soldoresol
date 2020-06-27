@@ -1,4 +1,5 @@
 use super::{Block, Field};
+use crate::Promise;
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 
@@ -8,6 +9,10 @@ pub enum Resource {
 }
 
 impl Block for Resource {
-    fn pack(&self, resolve: impl FnOnce(JsValue) + 'static) {}
-    fn unpack(field: &Field, val: JsValue, resolve: impl FnOnce(Option<Box<Self>>) + 'static) {}
+    fn pack(&self) -> Promise<JsValue, ()> {
+        unimplemented!();
+    }
+    fn unpack(field: &Field, val: JsValue) -> Promise<Box<Self>, ()> {
+        unimplemented!();
+    }
 }

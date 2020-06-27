@@ -1,4 +1,5 @@
 use super::{Block, BlockId, Field};
+use crate::Promise;
 use std::collections::HashSet;
 use wasm_bindgen::prelude::*;
 
@@ -18,9 +19,25 @@ impl World {
             characters: HashSet::new(),
         }
     }
+
+    pub fn selecting_table(&self) -> &BlockId {
+        &self.selecting_table
+    }
+
+    pub fn add_character(&mut self, character: BlockId) {
+        self.characters.insert(character);
+    }
+
+    pub fn remove_character(&mut self, character: &BlockId) {
+        self.characters.remove(character);
+    }
 }
 
 impl Block for World {
-    fn pack(&self, resolve: impl FnOnce(JsValue) + 'static) {}
-    fn unpack(field: &Field, val: JsValue, resolve: impl FnOnce(Option<Box<Self>>) + 'static) {}
+    fn pack(&self) -> Promise<JsValue, ()> {
+        unimplemented!();
+    }
+    fn unpack(field: &Field, val: JsValue) -> Promise<Box<Self>, ()> {
+        unimplemented!();
+    }
 }

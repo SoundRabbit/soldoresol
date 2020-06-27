@@ -48,7 +48,7 @@ macro_rules! hash_set {
 
             let mut tmp = HashSet::new();
             $(
-                tmp.set($n);
+                tmp.insert($n);
             )*
             tmp
         }

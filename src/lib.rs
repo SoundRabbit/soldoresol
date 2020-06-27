@@ -25,12 +25,15 @@ mod config;
 mod dice_bot;
 mod idb;
 mod model;
+mod promise;
 mod random_id;
 mod renderer;
 mod skyway;
+
 use color::Color;
 use config::Config;
 use js_object::JsObject;
+use promise::Promise;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen(start)]

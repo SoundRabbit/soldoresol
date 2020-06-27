@@ -1,4 +1,6 @@
 use super::{Block, BlockId, Field};
+use crate::Promise;
+use wasm_bindgen::prelude::*;
 
 #[derive(Clone)]
 pub enum Icon {
@@ -14,4 +16,13 @@ pub struct Item {
     character_id: Option<BlockId>,
     icon: Icon,
     payload: String,
+}
+
+impl Block for Item {
+    fn pack(&self) -> Promise<JsValue, ()> {
+        unimplemented!();
+    }
+    fn unpack(field: &Field, val: JsValue) -> Promise<Box<Self>, ()> {
+        unimplemented!();
+    }
 }

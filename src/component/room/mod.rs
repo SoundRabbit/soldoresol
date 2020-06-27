@@ -8,7 +8,10 @@ use crate::{
     skyway,
 };
 use kagura::prelude::*;
-use std::{collections::HashMap, rc::Rc};
+use std::{
+    collections::{HashMap, HashSet},
+    rc::Rc,
+};
 use wasm_bindgen::{prelude::*, JsCast};
 
 pub type State = state::State<Msg, Sub>;
@@ -37,22 +40,25 @@ pub enum Msg {
     OpenModal(state::Modal),
     CloseModal,
 
-    // UI for table object
-    AddChracaterWithMousePosition([f64; 2]),
-    AddTablemaskWithMousePosition([f64; 2]),
-    CloneTableObject(BlockId),
-    RemoveTableObject(BlockId),
+    // UI for table
+    AddChracaterWithMousePositionToCloseContextmenu([f32; 2]),
+    AddTablemaskWithMousePositionToCloseContextmenu([f32; 2]),
+    CloneCharacterToCloseContextmenu(BlockId),
+    CloneTablemaskToCloseContextmenu(BlockId),
+    RemoveCharacterToCloseContextmenu(BlockId),
+    RemoveTablemaskToCloseContextmenu(BlockId),
 
     // Mouse
-    SetLastMouseDownPosition([f64; 2]),
-    SetLastMouseUpPosition([f64; 2]),
-    SetCameraRotationWithMouseMovement([f64; 2]),
-    SetCameraMovementWithMouseMovement([f64; 2]),
-    SetCameraMovementWithMouseWheel(f64),
+    SetLastMousePosition([f32; 2]),
+    SetLastMouseDownPosition([f32; 2]),
+    SetLastMouseUpPosition([f32; 2]),
+    SetCameraRotationWithMouseMovement([f32; 2]),
+    SetCameraMovementWithMouseMovement([f32; 2]),
+    SetCameraMovementWithMouseWheel(f32),
     SetSelectingTableTool(state::table::Tool),
-    SetTableObjectPositionWithMousePosition(BlockId, [f64; 2]),
-    DrawLineWithMousePosition([f64; 2], [f64; 2]),
-    EraceLineWithMousePosition([f64; 2], [f64; 2]),
+    SetTableObjectPositionWithMousePosition(BlockId, [f32; 2]),
+    DrawLineWithMousePosition([f32; 2], [f32; 2]),
+    EraceLineWithMousePosition([f32; 2], [f32; 2]),
 
     // World
     AddTable,
@@ -95,6 +101,7 @@ pub enum Msg {
     LoadReasource(BlockId, block::Resource),
 
     // 接続に関する操作
+    SendPacks(HashMap<BlockId, JsValue>),
     ReceiveMsg(skyway::Msg),
     PeerJoin(String),
     PeerLeave(String),
@@ -196,23 +203,23 @@ fn get_table_canvas_element() -> web_sys::HtmlCanvasElement {
         .unwrap()
 }
 
-fn get_canvas_pixel_ratio(pixel_ratio: f64) -> f64 {
-    web_sys::window().unwrap().device_pixel_ratio() * pixel_ratio
+fn get_canvas_pixel_ratio(pixel_ratio: f32) -> f32 {
+    web_sys::window().unwrap().device_pixel_ratio() as f32 * pixel_ratio
 }
 
-fn reset_canvas_size(pixel_ratio: f64) -> [f64; 2] {
+fn reset_canvas_size(pixel_ratio: f32) -> [f32; 2] {
     let canvas = get_table_canvas_element();
     let dpr = get_canvas_pixel_ratio(pixel_ratio);
     let canvas_size = [
-        canvas.client_width() as f64 * dpr,
-        canvas.client_height() as f64 * dpr,
+        canvas.client_width() as f32 * dpr,
+        canvas.client_height() as f32 * dpr,
     ];
     canvas.set_width(canvas_size[0] as u32);
     canvas.set_height(canvas_size[1] as u32);
     canvas_size
 }
 
-fn get_table_position(state: &State, screen_position: &[f64; 2], pixel_ratio: f64) -> [f64; 2] {
+fn get_table_position(state: &State, screen_position: &[f32; 2], pixel_ratio: f32) -> [f32; 2] {
     let dpr = get_canvas_pixel_ratio(pixel_ratio);
     let mouse_coord = [screen_position[0] * dpr, screen_position[1] * dpr];
     let p = state
@@ -230,6 +237,55 @@ fn render_canvas(state: &mut State) {
             &state.canvas_size,
         );
     }
+}
+
+fn send_pack_cmd(block_field: &block::Field, packs: Vec<&BlockId>) -> Cmd<Msg, Sub> {
+    let packs = block_field.pack_listed(packs);
+
+    Cmd::task(move |resolve| {
+        packs.then(|packs| {
+            if let Ok(packs) = packs {
+                resolve(Msg::SendPacks(packs.into_iter().collect()));
+            }
+        })
+    })
+}
+
+fn clone_prop(block_field: &mut block::Field, prop: &block::Property) -> block::Property {
+    let mut prop = prop.clone();
+
+    if let block::property::Value::Children(children) = prop.value() {
+        let mut new_children = vec![];
+
+        for child in children {
+            if let Some(child) = block_field.get::<block::Property>(child) {
+                let child = clone_prop(block_field, child);
+                let child = block_field.add(child);
+                new_children.push(child);
+            }
+        }
+
+        prop.set_value(block::property::Value::Children(new_children));
+    }
+
+    prop
+}
+
+fn trace_prop_id(block_field: &block::Field, prop: &BlockId) -> Vec<BlockId> {
+    let mut prop_ids = vec![prop.clone()];
+
+    if let Some(block::property::Value::Children(children)) =
+        block_field.get::<block::Property>(&prop).map(|p| p.value())
+    {
+        for child in children {
+            let child_children = trace_prop_id(block_field, child);
+            for child_child in child_children {
+                prop_ids.push(child_child);
+            }
+        }
+    }
+
+    prop_ids
 }
 
 fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
@@ -288,143 +344,257 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.dequeue()
         }
 
-        Msg::AddChracaterWithMouseCoord(mouse_coord) => {
-            let position = get_table_position(&state, &mouse_coord, state.pixel_ratio);
-            let position = [position[0], position[1], 0.0];
-            let mut character = Character::new();
-            character.set_position(position);
-            if state.world.selecting_table().is_bind_to_grid() {
-                character.bind_to_grid();
-            }
-            update(state, Msg::AddChracaterToTransport(character))
+        // Modal
+        Msg::OpenModal(modal) => {
+            state.open_modal(modal);
+            state.dequeue()
         }
-        Msg::AddTablemaskWithMouseCoord(mouse_coord) => {
-            let position = get_table_position(&state, &mouse_coord, state.pixel_ratio);
-            let position = [position[0], position[1], 0.0];
-            let mut tablemask = Tablemask::new();
-            tablemask.set_position(position);
-            if state.world.selecting_table().is_bind_to_grid() {
-                tablemask.bind_to_grid();
-            }
-            update(state, Msg::AddTablemaskToTransport(tablemask))
+
+        Msg::CloseModal => {
+            state.close_modal();
+            state.dequeue()
         }
-        Msg::CloneObjectWithObjectIdToTransport(object_id) => {
-            if let Some(character) = state.world.character(&object_id) {
-                let mut character = character.clone();
-                let p = character.position().clone();
-                character.set_position([p[0] + 1.0, p[1] + 1.0, p[2]]);
-                update(state, Msg::AddChracaterToTransport(character))
-            } else if let Some(tablemask) = state.world.tablemask(&object_id) {
-                let mut tablemask = tablemask.clone();
-                let p = tablemask.position().clone();
-                tablemask.set_position([p[0] + 1.0, p[1] + 1.0, p[2]]);
-                update(state, Msg::AddTablemaskToTransport(tablemask))
+
+        // UI
+        Msg::AddChracaterWithMousePositionToCloseContextmenu(mouse_position) => {
+            state.close_contextmenu();
+
+            let [x, y] = get_table_position(state, &mouse_position, state.pixel_ratio());
+
+            let mut prop_hp = block::Property::new("HP");
+            prop_hp.set_value(block::property::Value::Num(0.0));
+            let prop_hp = state.block_field_mut().add(prop_hp);
+
+            let mut prop_mp = block::Property::new("MP");
+            prop_mp.set_value(block::property::Value::Num(0.0));
+            let prop_mp = state.block_field_mut().add(prop_mp);
+
+            let mut prop_root = block::Property::new("");
+            prop_root.set_value(block::property::Value::Children(vec![
+                prop_hp.clone(),
+                prop_mp.clone(),
+            ]));
+            let prop_root = state.block_field_mut().add(prop_root);
+
+            let mut character = block::Character::new(prop_root.clone(), "キャラクター");
+            character.set_position([x, y, 0.0]);
+            let character = state.block_field_mut().add(character);
+
+            let world = state.world();
+            state.block_field_mut().update(
+                world,
+                js_sys::Date::now() as u32,
+                |world: &mut block::World| {
+                    world.add_character(character.clone());
+                },
+            );
+
+            send_pack_cmd(
+                state.block_field(),
+                vec![&prop_hp, &prop_mp, &prop_root, &character, world],
+            )
+        }
+
+        Msg::AddTablemaskWithMousePositionToCloseContextmenu(mouse_position) => {
+            state.close_contextmenu();
+
+            if let Some(selecting_table) = state.selecting_table() {
+                let [x, y] = get_table_position(state, &mouse_position, state.pixel_ratio());
+
+                let mut prop_root = block::Property::new("");
+                let prop_root = state.block_field_mut().add(prop_root);
+
+                let tablemask = block::table_object::Tablemask::new(prop_root.clone());
+                tablemask.set_position([x, y]);
+                let tablemask = state.block_field_mut().add(tablemask);
+
+                state.block_field_mut().update(
+                    selecting_table,
+                    js_sys::Date::now() as u32,
+                    |table: &mut block::Table| {
+                        table.add_tablemask(tablemask.clone());
+                    },
+                );
+
+                send_pack_cmd(state.block_field(), vec![&tablemask, selecting_table])
             } else {
-                state.cmd_queue.dequeue()
+                state.dequeue()
             }
         }
-        Msg::RemoveObjectWithObjectIdToTransport(object_id) => {
-            state.room.send(skyway::Msg::RemoveObject(object_id));
-            update(state, Msg::RemoveObjectWithObjectId(object_id))
+
+        Msg::CloneCharacterToCloseContextmenu(character) => {
+            state.close_contextmenu();
+
+            if let Some(character) = state.block_field().get::<block::Character>(&character) {
+                let mut character = character.clone();
+                let prop = if let Some(prop) = state.block_field().get(character.property_id()) {
+                    clone_prop(state.block_field_mut(), prop)
+                } else {
+                    block::Property::new("")
+                };
+                let prop = state.block_field_mut().add(prop);
+
+                let mut props = trace_prop_id(state.block_field(), &prop);
+
+                character.set_property_id(prop);
+                let character = state.block_field_mut().add(character);
+
+                let world = state.world();
+                state.block_field_mut().update(
+                    world,
+                    js_sys::Date::now() as u32,
+                    |world: &mut block::World| {
+                        world.add_character(character.clone());
+                    },
+                );
+
+                props.push(character);
+                props.push(world.clone());
+
+                send_pack_cmd(state.block_field(), props.iter().collect())
+            } else {
+                state.dequeue()
+            }
         }
-        Msg::RemoveObjectWithObjectId(object_id) => {
-            state.world.remove_object(&object_id);
-            update(state, Msg::Render)
+
+        Msg::CloneTablemaskToCloseContextmenu(tablemask) => {
+            state.close_contextmenu();
+
+            if let (Some(tablemask), Some(selecting_table)) = (
+                state
+                    .block_field()
+                    .get::<block::table_object::Tablemask>(&tablemask),
+                state.selecting_table(),
+            ) {
+                let mut tablemask = tablemask.clone();
+                let prop = if let Some(prop) = state.block_field().get(tablemask.property_id()) {
+                    clone_prop(state.block_field_mut(), prop)
+                } else {
+                    block::Property::new("")
+                };
+                let prop = state.block_field_mut().add(prop);
+
+                let mut props = trace_prop_id(state.block_field(), &prop);
+
+                tablemask.set_property_id(prop);
+                let tablemask = state.block_field_mut().add(tablemask);
+
+                state.block_field_mut().update(
+                    selecting_table,
+                    js_sys::Date::now() as u32,
+                    |table: &mut block::Table| {
+                        table.add_tablemask(tablemask.clone());
+                    },
+                );
+
+                send_pack_cmd(state.block_field(), vec![&tablemask, selecting_table])
+            } else {
+                state.dequeue()
+            }
+        }
+
+        Msg::RemoveCharacterToCloseContextmenu(character) => {
+            state.close_contextmenu();
+
+            let world = state.world();
+            state.block_field_mut().update(
+                world,
+                js_sys::Date::now() as u32,
+                |world: &mut block::World| {
+                    world.remove_character(&character);
+                },
+            );
+
+            send_pack_cmd(state.block_field(), vec![world])
+        }
+
+        Msg::RemoveTablemaskToCloseContextmenu(tablemask) => {
+            state.close_contextmenu();
+
+            if let Some(selecting_table) = state.selecting_table() {
+                state.block_field_mut().update(
+                    selecting_table,
+                    js_sys::Date::now() as u32,
+                    |table: &mut block::Table| {
+                        table.remove_tablemask(&tablemask);
+                    },
+                );
+
+                send_pack_cmd(state.block_field(), vec![selecting_table])
+            } else {
+                state.dequeue()
+            }
+        }
+
+        // Mouse
+        Msg::SetLastMousePosition(mouse_position) => {
+            state.table_mut().set_last_mouse_position(mouse_position);
+            state.dequeue()
+        }
+
+        Msg::SetLastMouseDownPosition(mouse_position) => {
+            state
+                .table_mut()
+                .set_last_mouse_down_position(mouse_position);
+            state.dequeue()
+        }
+
+        Msg::SetLastMouseUpPosition(mouse_position) => {
+            state.table_mut().set_last_mouse_up_position(mouse_position);
+            state.dequeue()
+        }
+
+        Msg::SetCameraRotationWithMouseMovement(mouse_position) => {
+            let dx = mouse_position[0] - state.table().last_mouse_position()[0];
+            let dy = mouse_position[1] - state.table().last_mouse_position()[1];
+            let long_edge = state.canvas_size()[0].max(state.canvas_size()[1]);
+
+            let factor = 3.0 / long_edge * get_canvas_pixel_ratio(state.pixel_ratio());
+
+            let camera = state.camera_mut();
+
+            camera.set_x_axis_rotation(camera.x_axis_rotation() + dy * factor);
+            camera.set_z_axis_rotation(camera.z_axis_rotation() + dx * factor);
+
+            render_canvas(state);
+
+            state.dequeue()
+        }
+
+        Msg::SetCameraMovementWithMouseMovement(mouse_position) => {
+            let dx = mouse_position[0] - state.table().last_mouse_position()[0];
+            let dy = mouse_position[1] - state.table().last_mouse_position()[1];
+            let long_edge = state.canvas_size()[0].max(state.canvas_size()[1]);
+
+            let factor = 50.0 / long_edge * get_canvas_pixel_ratio(state.pixel_ratio());
+
+            let camera = state.camera_mut();
+
+            let mov = camera.movement();
+            let mov = [mov[0] + dx * factor, mov[1] - dy * factor, mov[2]];
+
+            camera.set_movement(mov);
+
+            render_canvas(state);
+
+            state.dequeue()
+        }
+
+        Msg::SetCameraMovementWithMouseWheel(delta_y) => {
+            let factor = 0.02;
+
+            let camera = state.camera_mut();
+            let mov = camera.movement();
+            let mov = [mov[0], mov[1], mov[2] - factor * delta_y];
+
+            camera.set_movement(mov);
+
+            render_canvas(state);
+
+            state.dequeue()
         }
 
         //テーブル操作の制御
-        Msg::SetCursorWithMouseCoord(mouse_coord) => {
-            let table_coord = get_table_position(&state, &mouse_coord, state.pixel_ratio);
-            let table_coord = [table_coord[0], table_coord[1]];
-            if let Some(table) = state.world.selecting_table_mut() {
-                match state.table_state.selecting_tool {
-                    TableTool::Pen => {
-                        table.draw_cursor(
-                            &table_coord,
-                            0.25,
-                            ColorSystem::gray(255, 9),
-                            ColorSystem::gray(255, 9),
-                        );
-                    }
-                    TableTool::Eracer => {
-                        table.draw_cursor(
-                            &table_coord,
-                            0.5,
-                            ColorSystem::gray(255, 9),
-                            ColorSystem::gray(255, 1),
-                        );
-                    }
-                    TableTool::Measure(..) => {
-                        table.draw_cursor(
-                            &table_coord,
-                            0.125,
-                            ColorSystem::red(255, 5),
-                            ColorSystem::red(255, 5),
-                        );
-                    }
-                    _ => {}
-                }
-            }
-            state.table_state.last_mouse_coord = mouse_coord;
-            if let Some(renderer) = &mut state.renderer {
-                let dpr = get_device_pixel_ratio(state.pixel_ratio);
-                if let Some(focused_id) = renderer.table_object_id(&[
-                    mouse_coord[0] * dpr,
-                    state.canvas_size[1] - mouse_coord[1] * dpr,
-                ]) {
-                    if let Some(character) = state.world.character_mut(focused_id) {
-                        character.set_is_focused(true);
-                        state.focused_object_id = Some(*focused_id);
-                    } else if let Some(_) = state.world.tablemask(focused_id) {
-                        state.focused_object_id = Some(*focused_id);
-                    } else {
-                        state.focused_object_id = None;
-                    }
-                } else {
-                    state.focused_object_id = None;
-                }
-            }
-            update(state, Msg::Render)
-        }
-        Msg::SetCameraRotationWithMouseCoord(mouse_coord) => {
-            let x_movement = mouse_coord[0] - state.table_state.last_mouse_coord[0];
-            let y_movement = mouse_coord[1] - state.table_state.last_mouse_coord[1];
-            let long_edge = state.canvas_size[0].max(state.canvas_size[1]);
-            let rotation_factor = 3.0 / long_edge * get_device_pixel_ratio(state.pixel_ratio);
-            let camera = &mut state.camera;
-            camera.set_x_axis_rotation(camera.x_axis_rotation() + y_movement * rotation_factor);
-            camera.set_z_axis_rotation(camera.z_axis_rotation() + x_movement * rotation_factor);
-            state.table_state.last_mouse_coord = mouse_coord;
-            update(state, Msg::Render)
-        }
-        Msg::SetCameraMovementWithMouseCoord(mouse_coord) => {
-            let x_movement = mouse_coord[0] - state.table_state.last_mouse_coord[0];
-            let y_movement = mouse_coord[1] - state.table_state.last_mouse_coord[1];
-            let long_edge = state.canvas_size[0].max(state.canvas_size[1]);
-            let movement_factor = 50.0 / long_edge * get_device_pixel_ratio(state.pixel_ratio);
-            let camera = &mut state.camera;
-            let movement = camera.movement();
-            let movement = [
-                movement[0] + x_movement * movement_factor,
-                movement[1] - y_movement * movement_factor,
-                movement[2],
-            ];
-            camera.set_movement(movement);
-            state.table_state.last_mouse_coord = mouse_coord;
-            update(state, Msg::Render)
-        }
-        Msg::SetCameraMovementWithMouseWheel(delta_y) => {
-            let camera = &mut state.camera;
-            let movement_factor = 0.02;
-            let movement = camera.movement();
-            let movement = [
-                movement[0],
-                movement[1],
-                movement[2] - movement_factor * delta_y,
-            ];
-            camera.set_movement(movement);
-            update(state, Msg::Render)
-        }
         Msg::SetSelectingTableTool(table_tool) => {
             match &table_tool {
                 TableTool::Measure(.., Option::None, _) => {

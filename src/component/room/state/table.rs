@@ -15,10 +15,10 @@ pub enum Tool {
 
 pub struct State {
     selecting_tool: Tool,
-    measure_length: Option<f64>,
-    last_mouse_position: [f64; 2],
-    last_mouse_down_position: [f64; 2],
-    last_mouse_up_position: [f64; 2],
+    measure_length: Option<f32>,
+    last_mouse_position: [f32; 2],
+    last_mouse_down_position: [f32; 2],
+    last_mouse_up_position: [f32; 2],
     is_2d_mode: bool,
 }
 
@@ -59,5 +59,21 @@ impl State {
             last_mouse_up_position: [0.0, 0.0],
             is_2d_mode: false,
         }
+    }
+
+    pub fn last_mouse_position(&self) -> &[f32; 2] {
+        &self.last_mouse_position
+    }
+
+    pub fn set_last_mouse_position(&mut self, pos: [f32; 2]) {
+        self.last_mouse_position = pos;
+    }
+
+    pub fn set_last_mouse_down_position(&mut self, pos: [f32; 2]) {
+        self.last_mouse_down_position = pos;
+    }
+
+    pub fn set_last_mouse_up_position(&mut self, pos: [f32; 2]) {
+        self.last_mouse_up_position = pos;
     }
 }

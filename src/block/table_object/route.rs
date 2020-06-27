@@ -1,4 +1,5 @@
 use super::{Block, BlockId, Field};
+use crate::Promise;
 use crate::{color_system, Color};
 use wasm_bindgen::prelude::*;
 
@@ -24,6 +25,10 @@ impl Route {
 }
 
 impl Block for Route {
-    fn pack(&self, resolve: impl FnOnce(JsValue)) {}
-    fn unpack(field: &Field, val: JsValue, resolve: impl FnOnce(Option<Box<Self>>)) {}
+    fn pack(&self) -> Promise<JsValue, ()> {
+        unimplemented!();
+    }
+    fn unpack(field: &Field, val: JsValue) -> Promise<Box<Self>, ()> {
+        unimplemented!();
+    }
 }

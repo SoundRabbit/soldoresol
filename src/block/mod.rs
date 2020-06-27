@@ -1,8 +1,8 @@
-use crate::{js_object::JsObject, random_id};
+use crate::{js_object::JsObject, random_id, Promise};
 use js_sys::Date;
 use std::{
     any::Any,
-    cell::RefCell,
+    cell::{Cell, RefCell},
     collections::HashMap,
     hash::{Hash, Hasher},
     iter::Iterator,
@@ -10,6 +10,7 @@ use std::{
 };
 use wasm_bindgen::{prelude::*, JsCast};
 
+pub mod character;
 pub mod chat;
 pub mod property;
 pub mod resource;
@@ -17,6 +18,7 @@ pub mod table;
 pub mod table_object;
 pub mod world;
 
+pub use character::Character;
 pub use chat::Chat;
 pub use property::Property;
 pub use resource::Resource;
@@ -24,8 +26,8 @@ pub use table::Table;
 pub use world::World;
 
 trait Block {
-    fn pack(&self, resolve: impl FnOnce(JsValue) + 'static);
-    fn unpack(field: &Field, val: JsValue, resolve: impl FnOnce(Option<Box<Self>>) + 'static);
+    fn pack(&self) -> Promise<JsValue, ()>;
+    fn unpack(field: &Field, val: JsValue) -> Promise<Box<Self>, ()>;
 }
 
 type Timestamp = u32;
@@ -49,7 +51,11 @@ pub struct Field {
 
 impl BlockId {
     fn new(table: BlockTable, internal_id: u128) -> Self {
-        Self { table, internal_id }
+        let me = Self { table, internal_id };
+        if let Some(block) = me.table.borrow_mut().get_mut(&me) {
+            block.count += 1;
+        }
+        me
     }
 
     pub fn to_string(&self) -> String {
@@ -107,15 +113,25 @@ impl FieldBlock {
         }
     }
 
-    pub fn pack(&self, resolve: impl FnOnce(JsValue) + 'static) {
+    pub fn pack(&self) -> Promise<JsValue, ()> {
         if let Some(payload) = self.payload.downcast_ref::<Chat>() {
+            payload.pack()
         } else if let Some(payload) = self.payload.downcast_ref::<chat::Item>() {
+            payload.pack()
         } else if let Some(payload) = self.payload.downcast_ref::<chat::Tab>() {
+            payload.pack()
         } else if let Some(payload) = self.payload.downcast_ref::<Table>() {
+            payload.pack()
         } else if let Some(payload) = self.payload.downcast_ref::<table::Texture>() {
-        } else if let Some(payload) = self.payload.downcast_ref::<table_object::Character>() {
+            payload.pack()
+        } else if let Some(payload) = self.payload.downcast_ref::<Character>() {
+            payload.pack()
         } else if let Some(payload) = self.payload.downcast_ref::<Property>() {
+            payload.pack()
         } else if let Some(payload) = self.payload.downcast_ref::<Resource>() {
+            payload.pack()
+        } else {
+            Promise::new(|resolve| resolve(Err(())))
         }
     }
 
@@ -156,13 +172,17 @@ impl Field {
     pub fn add<T: Block + 'static>(&mut self, block: T) -> BlockId {
         let block_id = self.block_id(random_id::u128val());
         if !self.table.borrow().contains_key(&block_id) {
-            self.assign(block_id.to_u128(), Date::now() as u32, block);
+            self.assign(block_id.clone(), Date::now() as u32, block);
         }
         block_id
     }
 
-    pub fn assign<T: Block + 'static>(&mut self, block_id: u128, timestamp: Timestamp, block: T) {
-        let block_id = self.block_id(block_id);
+    pub fn assign<T: Block + 'static>(
+        &mut self,
+        block_id: BlockId,
+        timestamp: Timestamp,
+        block: T,
+    ) {
         if self
             .table
             .borrow()
@@ -198,7 +218,7 @@ impl Field {
 
     pub fn listed<T: Block + 'static>(
         &self,
-        block_ids: &Vec<BlockId>,
+        block_ids: Vec<&BlockId>,
     ) -> impl Iterator<Item = (BlockId, &T)> {
         let mut blocks = vec![];
         for block_id in block_ids {
@@ -234,5 +254,17 @@ impl Field {
 
     pub fn timestamp(&self, block_id: &BlockId) -> Option<&Timestamp> {
         self.table.borrow().get(block_id).map(|b| &b.timestamp)
+    }
+
+    pub fn pack_listed(&self, block_ids: Vec<&BlockId>) -> Promise<Vec<(BlockId, JsValue)>, ()> {
+        let mut promises = vec![];
+        for block_id in block_ids {
+            if let Some(block) = self.table.borrow().get(block_id) {
+                let block_id = block_id.clone();
+                promises.push(block.pack().map(move |res| res.map(|val| (block_id, val))));
+            }
+        }
+        Promise::some(promises)
+            .map(|vals| vals.map(|vals| vals.into_iter().filter_map(|x| x).collect()))
     }
 }

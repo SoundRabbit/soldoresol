@@ -1,4 +1,5 @@
 use super::{Block, BlockId, Field};
+use crate::Promise;
 use wasm_bindgen::prelude::*;
 
 mod texture;
@@ -33,9 +34,23 @@ impl Table {
             tablemasks: vec![],
         }
     }
+
+    pub fn add_tablemask(&mut self, tablemask: BlockId) {
+        self.tablemasks.push(tablemask);
+    }
+
+    pub fn remove_tablemask(&mut self, tablemask: &BlockId) {
+        if let Some(idx) = self.tablemasks.iter().position(|x| x == tablemask) {
+            self.tablemasks.remove(idx);
+        }
+    }
 }
 
 impl Block for Table {
-    fn pack(&self, resolve: impl FnOnce(JsValue) + 'static) {}
-    fn unpack(field: &Field, val: JsValue, resolve: impl FnOnce(Option<Box<Self>>) + 'static) {}
+    fn pack(&self) -> Promise<JsValue, ()> {
+        unimplemented!();
+    }
+    fn unpack(field: &Field, val: JsValue) -> Promise<Box<Self>, ()> {
+        unimplemented!();
+    }
 }

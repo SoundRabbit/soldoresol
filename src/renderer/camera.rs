@@ -1,21 +1,21 @@
 use ndarray::{arr1, arr2, Array1, Array2};
 
 pub struct Camera {
-    x_axis_rotation: f64,
-    z_axis_rotation: f64,
-    movement: [f64; 3],
+    x_axis_rotation: f32,
+    z_axis_rotation: f32,
+    movement: [f32; 3],
 }
 
 impl Camera {
     pub fn new() -> Self {
         Self {
-            x_axis_rotation: -0.25 * std::f64::consts::PI,
-            z_axis_rotation: -0.03125 * std::f64::consts::PI,
+            x_axis_rotation: -0.25 * std::f32::consts::PI,
+            z_axis_rotation: -0.03125 * std::f32::consts::PI,
             movement: [0.0, 0.0, -20.0],
         }
     }
 
-    fn e() -> Array2<f64> {
+    fn e() -> Array2<f32> {
         arr2(&[
             [1.0, 0.0, 0.0, 0.0],
             [0.0, 1.0, 0.0, 0.0],
@@ -24,7 +24,7 @@ impl Camera {
         ])
     }
 
-    fn rotate_view_matrix_with_x_axis(view: Array2<f64>, x_axis_rotation: f64) -> Array2<f64> {
+    fn rotate_view_matrix_with_x_axis(view: Array2<f32>, x_axis_rotation: f32) -> Array2<f32> {
         let (s, c) = x_axis_rotation.sin_cos();
         let t = arr2(&[
             [1.0, 0.0, 0.0, 0.0],
@@ -35,7 +35,7 @@ impl Camera {
         view.dot(&t)
     }
 
-    fn rotate_view_matrix_with_z_axis(view: Array2<f64>, z_axis_rotation: f64) -> Array2<f64> {
+    fn rotate_view_matrix_with_z_axis(view: Array2<f32>, z_axis_rotation: f32) -> Array2<f32> {
         let (s, c) = z_axis_rotation.sin_cos();
         let t = arr2(&[
             [c, s, 0.0, 0.0],
@@ -46,7 +46,7 @@ impl Camera {
         view.dot(&t)
     }
 
-    fn move_view_matrix(view: Array2<f64>, m: &[f64; 3]) -> Array2<f64> {
+    fn move_view_matrix(view: Array2<f32>, m: &[f32; 3]) -> Array2<f32> {
         let t = arr2(&[
             [1.0, 0.0, 0.0, 0.0],
             [0.0, 1.0, 0.0, 0.0],
@@ -56,31 +56,31 @@ impl Camera {
         view.dot(&t)
     }
 
-    pub fn set_x_axis_rotation(&mut self, x_axis_rotation: f64) {
-        self.x_axis_rotation = x_axis_rotation.max(-0.5 * std::f64::consts::PI).min(0.0);
+    pub fn set_x_axis_rotation(&mut self, x_axis_rotation: f32) {
+        self.x_axis_rotation = x_axis_rotation.max(-0.5 * std::f32::consts::PI).min(0.0);
     }
 
-    pub fn x_axis_rotation(&self) -> f64 {
+    pub fn x_axis_rotation(&self) -> f32 {
         self.x_axis_rotation
     }
 
-    pub fn set_z_axis_rotation(&mut self, z_axis_rotation: f64) {
+    pub fn set_z_axis_rotation(&mut self, z_axis_rotation: f32) {
         self.z_axis_rotation = z_axis_rotation;
     }
 
-    pub fn z_axis_rotation(&self) -> f64 {
+    pub fn z_axis_rotation(&self) -> f32 {
         self.z_axis_rotation
     }
 
-    pub fn set_movement(&mut self, movement: [f64; 3]) {
+    pub fn set_movement(&mut self, movement: [f32; 3]) {
         self.movement = movement;
     }
 
-    pub fn movement(&self) -> &[f64; 3] {
+    pub fn movement(&self) -> &[f32; 3] {
         &self.movement
     }
 
-    pub fn view_matrix(&self) -> Array2<f64> {
+    pub fn view_matrix(&self) -> Array2<f32> {
         let view_matrix = Self::e();
         let view_matrix = Self::rotate_view_matrix_with_z_axis(view_matrix, self.z_axis_rotation);
         let view_matrix = Self::rotate_view_matrix_with_x_axis(view_matrix, self.x_axis_rotation);
@@ -88,14 +88,14 @@ impl Camera {
         view_matrix
     }
 
-    pub fn perspective_matrix(&self, canvas_size: &[f64; 2]) -> Array2<f64> {
+    pub fn perspective_matrix(&self, canvas_size: &[f32; 2]) -> Array2<f32> {
         let w = canvas_size[0];
         let h = canvas_size[1];
         let aspect = w / h;
-        let field_of_view = 60.0 * std::f64::consts::PI / 180.0;
+        let field_of_view = 60.0 * std::f32::consts::PI / 180.0;
         let near = 1.0;
         let far = 1000.0;
-        let f = (std::f64::consts::PI * 0.5 - field_of_view * 0.5).tan();
+        let f = (std::f32::consts::PI * 0.5 - field_of_view * 0.5).tan();
         let range_inv = 1.0 / (near - far);
         arr2(&[
             [f / aspect, 0.0, 0.0, 0.0],
@@ -105,7 +105,7 @@ impl Camera {
         ])
     }
 
-    pub fn inv_view_matrix(&self) -> Array2<f64> {
+    pub fn inv_view_matrix(&self) -> Array2<f32> {
         let t = self.view_matrix();
         arr2(&[
             [t.row(0)[0], t.row(1)[0], t.row(2)[0], 0.0],
@@ -120,7 +120,7 @@ impl Camera {
         ])
     }
 
-    pub fn inv_perspective_matrix(&self, canvas_size: &[f64; 2]) -> Array2<f64> {
+    pub fn inv_perspective_matrix(&self, canvas_size: &[f32; 2]) -> Array2<f32> {
         let p = self.perspective_matrix(canvas_size);
         arr2(&[
             [1.0 / p.row(0)[0], 0.0, 0.0, 0.0],
@@ -132,9 +132,9 @@ impl Camera {
 
     pub fn collision_point_on_xy_plane(
         &self,
-        canvas_size: &[f64; 2],
-        screen_position: &[f64; 2],
-    ) -> Array1<f64> {
+        canvas_size: &[f32; 2],
+        screen_position: &[f32; 2],
+    ) -> Array1<f32> {
         let inv_v = self.inv_view_matrix();
         let inv_p = self.inv_perspective_matrix(canvas_size);
         let inv = inv_p.dot(&inv_v);

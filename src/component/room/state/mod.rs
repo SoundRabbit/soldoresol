@@ -45,8 +45,8 @@ pub struct State<M, S> {
     world: BlockId,
     camera: Camera,
     renderer: Option<Renderer>,
-    pixel_ratio: f64,
-    canvas_size: [f64; 2],
+    pixel_ratio: f32,
+    canvas_size: [f32; 2],
     contextmenu: Option<contextmenu::State>,
     speech_bubble: speech_bubble::State,
     modeless: modeless::Collection<Modeless>,
@@ -92,8 +92,38 @@ impl<M, S> State<M, S> {
         }
     }
 
+    pub fn block_field(&self) -> &block::Field {
+        &self.block_field
+    }
+
+    pub fn block_field_mut(&mut self) -> &mut block::Field {
+        &mut self.block_field
+    }
+
+    pub fn world(&self) -> &BlockId {
+        &self.world
+    }
+
+    pub fn selecting_table(&self) -> Option<&BlockId> {
+        self.block_field
+            .get::<block::World>(&self.world)
+            .map(|world| world.selecting_table())
+    }
+
+    pub fn table(&self) -> &table::State {
+        &self.table
+    }
+
+    pub fn table_mut(&mut self) -> &mut table::State {
+        &mut self.table
+    }
+
     pub fn camera(&self) -> &Camera {
         &self.camera
+    }
+
+    pub fn camera_mut(&mut self) -> &mut Camera {
+        &mut self.camera
     }
 
     pub fn renderer_mut(&mut self) -> Option<&mut Renderer> {
@@ -104,15 +134,15 @@ impl<M, S> State<M, S> {
         self.renderer = Some(renderer);
     }
 
-    pub fn pixel_ratio(&self) -> f64 {
+    pub fn pixel_ratio(&self) -> f32 {
         self.pixel_ratio
     }
 
-    pub fn canvas_size(&self) -> &[f64; 2] {
+    pub fn canvas_size(&self) -> &[f32; 2] {
         &self.canvas_size
     }
 
-    pub fn set_canvas_size(&mut self, canvas_size: [f64; 2]) {
+    pub fn set_canvas_size(&mut self, canvas_size: [f32; 2]) {
         self.canvas_size = canvas_size;
     }
 
@@ -167,6 +197,14 @@ impl<M, S> State<M, S> {
 
     pub fn close_modeless(&mut self, modeless_id: ModelessId) {
         self.modeless.close(modeless_id);
+    }
+
+    pub fn open_modal(&mut self, modal: Modal) {
+        self.modal.push(modal);
+    }
+
+    pub fn close_modal(&mut self) {
+        self.modal.pop();
     }
 
     pub fn dequeue(&mut self) -> Cmd<M, S> {

@@ -1,30 +1,26 @@
 use super::{Block, BlockId, Field};
+use crate::Color;
 use crate::Promise;
-use crate::{color_system, Color};
 use wasm_bindgen::prelude::*;
 
 #[derive(Clone)]
-pub struct Tablemask {
+pub struct Character {
     size: [f32; 3],
     position: [f32; 3],
-    z_rotation: f32,
+    texture_id: Option<BlockId>,
     background_color: Color,
-    size_is_binded: bool,
-    is_rounded: bool,
-    is_fixed: bool,
+    name: String,
     property_id: BlockId,
 }
 
-impl Tablemask {
-    pub fn new(property_id: BlockId) -> Self {
+impl Character {
+    pub fn new(property_id: BlockId, name: impl Into<String>) -> Self {
         Self {
-            size: [8.0, 8.0, 0.0],
+            size: [1.0, 0.0, 1.0],
             position: [0.0, 0.0, 0.0],
-            z_rotation: 0.0,
-            background_color: color_system::red((255.0 * 0.6) as u8, 5),
-            size_is_binded: true,
-            is_rounded: true,
-            is_fixed: false,
+            texture_id: None,
+            background_color: Color::from(0),
+            name: name.into(),
             property_id: property_id,
         }
     }
@@ -33,16 +29,12 @@ impl Tablemask {
         &self.size
     }
 
-    pub fn set_size(&mut self, size: [f32; 2]) {
-        self.size = [size[0], size[1], 0.0];
-    }
-
     pub fn position(&self) -> &[f32; 3] {
         &self.position
     }
 
-    pub fn set_position(&mut self, position: [f32; 2]) {
-        self.position = [position[0], position[1], 0.0];
+    pub fn set_position(&mut self, position: [f32; 3]) {
+        self.position = position;
     }
 
     pub fn property_id(&self) -> &BlockId {
@@ -54,7 +46,7 @@ impl Tablemask {
     }
 }
 
-impl Block for Tablemask {
+impl Block for Character {
     fn pack(&self) -> Promise<JsValue, ()> {
         unimplemented!();
     }

@@ -1,4 +1,5 @@
 use super::{Block, BlockId, Field};
+use crate::Promise;
 use wasm_bindgen::prelude::*;
 
 #[derive(Clone)]
@@ -35,11 +36,23 @@ impl Property {
             value: Value::None,
         }
     }
+
+    pub fn value(&self) -> &Value {
+        &self.value
+    }
+
+    pub fn set_value(&mut self, value: Value) {
+        self.value = value
+    }
 }
 
 impl Block for Property {
-    fn pack(&self, resolve: impl FnOnce(JsValue)) {}
-    fn unpack(field: &Field, val: JsValue, resolve: impl FnOnce(Option<Box<Self>>)) {}
+    fn pack(&self) -> Promise<JsValue, ()> {
+        unimplemented!();
+    }
+    fn unpack(field: &Field, val: JsValue) -> Promise<Box<Self>, ()> {
+        unimplemented!();
+    }
 }
 
 impl Field {
@@ -47,7 +60,7 @@ impl Field {
         if let Some(prop) = self.get::<Property>(block_id) {
             let mut r = sainome::Ref::new(prop.value.as_option_string());
             if let Value::Children(children) = &prop.value {
-                let children = self.listed::<Property>(children);
+                let children = self.listed::<Property>(children.iter().collect());
                 for (child_id, child) in children {
                     let name = child.name.to_string();
                     r.insert(name, self.sainome_ref_of(&child_id).unwrap());

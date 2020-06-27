@@ -1,4 +1,5 @@
 use super::{Block, Field};
+use crate::Promise;
 use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::{prelude::*, JsCast};
 
@@ -72,21 +73,27 @@ impl Texture {
 }
 
 impl Block for Texture {
-    fn pack(&self, resolve: impl FnOnce(JsValue) + 'static) {
-        let resolve = RefCell::new(Some(Box::new(resolve)));
-        let a = Closure::wrap(Box::new(move |blob: JsValue| {
-            if let Some(resolve) = resolve.borrow_mut().take() {
-                resolve(object! {
-                    buffer: blob.into(),
-                    size: array![self.size[0],self.size[1]]
-                });
-            }
-        }) as Box<dyn FnMut(JsValue)>);
-        let _ = self.element.to_blob(a.as_ref().unchecked_ref());
-        a.forget();
+    fn pack(&self) -> Promise<JsValue, ()> {
+        let size = array![self.size[0], self.size[1]];
+        let element = self.element.clone();
+        Promise::new(move |resolve| {
+            let resolve = RefCell::new(Some(resolve));
+            let a = Closure::wrap(Box::new(move |blob| {
+                if let Some(resolve) = resolve.borrow_mut().take() {
+                    let obj: js_sys::Object = object! {
+                        buffer: blob,
+                        size: size
+                    }
+                    .into();
+                    resolve(Ok(obj.into()));
+                }
+            }) as Box<dyn FnMut(JsValue)>);
+            let _ = element.to_blob(a.as_ref().unchecked_ref());
+            a.forget();
+        })
     }
 
-    fn unpack(field: &Field, val: JsValue, resolve: impl FnOnce(Option<Box<Self>>) + 'static) {
+    fn unpack(field: &Field, val: JsValue) -> Promise<Box<Self>, ()> {
         use crate::JsObject;
 
         let val = val.dyn_into::<JsObject>().unwrap();
@@ -106,26 +113,28 @@ impl Block for Texture {
         let size = [size[0].as_f64().unwrap(), size[1].as_f64().unwrap()];
 
         if let Some(blob) = buffer {
-            let image = Rc::new(crate::util::html_image_element());
-            let a = {
-                let image = Rc::clone(&image);
-                Closure::once(Box::new(move || {
-                    let me = Self::new(&[image.width(), image.height()], size);
-                    let _ = me
-                        .context()
-                        .draw_image_with_html_image_element(&image, 0.0, 0.0);
-                    resolve(Some(Box::new(me)));
-                }))
-            };
-            image.set_onload(Some(&a.as_ref().unchecked_ref()));
-            if let Ok(object_url) = web_sys::Url::create_object_url_with_blob(&blob) {
-                image.set_src(&object_url);
-            } else {
-                resolve(None);
-            }
-            a.forget();
+            Promise::new(move |resolve| {
+                let image = Rc::new(crate::util::html_image_element());
+                let a = {
+                    let image = Rc::clone(&image);
+                    Closure::once(Box::new(move || {
+                        let me = Self::new(&[image.width(), image.height()], size);
+                        let _ = me
+                            .context()
+                            .draw_image_with_html_image_element(&image, 0.0, 0.0);
+                        resolve(Ok(Box::new(me)));
+                    }))
+                };
+                image.set_onload(Some(&a.as_ref().unchecked_ref()));
+                if let Ok(object_url) = web_sys::Url::create_object_url_with_blob(&blob) {
+                    image.set_src(&object_url);
+                } else {
+                    resolve(Err(()));
+                }
+                a.forget();
+            })
         } else {
-            resolve(None);
+            Promise::new(|resolve| resolve(Err(())))
         }
     }
 }

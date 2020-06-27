@@ -1,4 +1,5 @@
 use super::{Block, BlockId, Field};
+use crate::Promise;
 use wasm_bindgen::prelude::*;
 
 pub mod item;
@@ -19,14 +20,14 @@ impl Chat {
 }
 
 impl Block for Chat {
-    fn pack(&self, resolve: impl FnOnce(JsValue) + 'static) {
+    fn pack(&self) -> Promise<JsValue, ()> {
         let val = js_sys::Array::new();
         for tab_id in &self.tabs {
             val.push(&JsValue::from(tab_id.to_string()));
         }
-        resolve(val.into());
+        Promise::new(|resolve| resolve(Ok(val.into())))
     }
-    fn unpack(field: &Field, val: JsValue, resolve: impl FnOnce(Option<Box<Self>>) + 'static) {
+    fn unpack(field: &Field, val: JsValue) -> Promise<Box<Self>, ()> {
         let val = js_sys::Array::from(&val).to_vec();
         let mut tabs = vec![];
         for tab in val {
@@ -35,6 +36,6 @@ impl Block for Chat {
             }
         }
         let chat = Self { tabs };
-        resolve(Some(Box::new(chat)))
+        Promise::new(|resolve| resolve(Ok(Box::new(chat))))
     }
 }
