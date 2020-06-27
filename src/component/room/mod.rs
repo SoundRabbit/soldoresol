@@ -228,10 +228,11 @@ fn get_table_position(state: &State, screen_position: &[f32; 2], pixel_ratio: f3
 fn render_canvas(state: &mut State) {
     if let Some(renderer) = state.renderer_mut() {
         renderer.render(
-            &mut state.world,
-            &state.camera,
-            &state.resource,
-            &state.canvas_size,
+            state.block_field(),
+            state.world(),
+            state.camera(),
+            state.resource(),
+            state.canvas_size(),
         );
     }
 }
@@ -246,7 +247,7 @@ fn send_pack_cmd(block_field: &block::Field, packs: Vec<&BlockId>) -> Cmd<Msg, S
     Cmd::task(move |resolve| {
         packs.then(|packs| {
             if let Ok(packs) = packs {
-                resolve(Msg::SendPacks(packs.into_iter().collect()));
+                resolve(Msg::SendBlockPacks(packs.into_iter().collect()));
             }
         })
     })
@@ -540,8 +541,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 .renderer()
                 .and_then(|r| r.table_object_id(&mouse_position))
             {
-                let block_id = state.block_field().block_id(*block_id);
-                state.table_mut().set_focused(Some(block_id));
+                state.table_mut().set_focused(Some(block_id.clone()));
             } else {
                 state.table_mut().set_focused(None);
             }
