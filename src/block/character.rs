@@ -1,13 +1,12 @@
 use super::{Block, BlockId, Field};
-use crate::Color;
-use crate::Promise;
+use crate::{resource::ResourceId, Color, Promise};
 use wasm_bindgen::prelude::*;
 
 #[derive(Clone)]
 pub struct Character {
     size: [f32; 3],
     position: [f32; 3],
-    texture_id: Option<BlockId>,
+    texture_id: Option<ResourceId>,
     background_color: Color,
     name: String,
     property_id: BlockId,
@@ -29,12 +28,24 @@ impl Character {
         &self.size
     }
 
+    pub fn set_size(&mut self, size: [f32; 3]) {
+        self.size = size;
+    }
+
     pub fn position(&self) -> &[f32; 3] {
         &self.position
     }
 
     pub fn set_position(&mut self, position: [f32; 3]) {
         self.position = position;
+    }
+
+    pub fn texture_id(&self) -> Option<&ResourceId> {
+        self.texture_id.as_ref()
+    }
+
+    pub fn set_name(&mut self, name: String) {
+        self.name = name;
     }
 
     pub fn property_id(&self) -> &BlockId {

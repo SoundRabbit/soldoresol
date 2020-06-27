@@ -1,8 +1,8 @@
-use crate::data_block::BlockId;
+use crate::resource::ResourceId;
 
 pub struct PersonalData {
     name: String,
-    icon: Option<BlockId>,
+    icon: Option<ResourceId>,
 }
 
 impl PersonalData {
@@ -26,11 +26,11 @@ impl PersonalData {
         self.name = name;
     }
 
-    pub fn icon(&self) -> Option<&BlockId> {
+    pub fn icon(&self) -> Option<&ResourceId> {
         self.icon.as_ref()
     }
 
-    pub fn set_icon(&mut self, icon: Option<BlockId>) {
+    pub fn set_icon(&mut self, icon: Option<ResourceId>) {
         self.icon = icon;
     }
 }

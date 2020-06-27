@@ -1,9 +1,9 @@
-use crate::{
-    model::{CharacterData, ResourceData, TablemaskData, WorldData},
-    JsObject,
-};
+use crate::JsObject;
 use js_sys::Array;
-use std::{collections::BTreeSet, rc::Rc};
+use std::{
+    collections::{BTreeSet, HashMap},
+    rc::Rc,
+};
 use wasm_bindgen::{prelude::*, JsCast};
 
 #[wasm_bindgen(raw_module = "../src/skyway.js")]
@@ -85,67 +85,17 @@ impl Room {
 }
 
 pub enum Msg {
-    SetSelectingTable(u128),
-    SetTableName(u128, String),
-    CreateTable(u128),
-    DrawLineToTable([f64; 2], [f64; 2]),
-    EraceLineToTable([f64; 2], [f64; 2]),
-    SetTableSize([f64; 2]),
-    SetTableImage(u128),
-    CreateCharacterToTable(u128, CharacterData),
-    CreateTablemaskToTable(u128, TablemaskData),
-    SetCharacterImage(u128, u128),
-    SetCharacterSize(u128, [f64; 2]),
-    SetCharacterName(u128, String),
-    SetCharacterProperty(u128, JsObject),
-    SetTablemaskSizeWithStyle(u128, [f64; 2], bool, bool),
-    SetTablemaskColor(u128, u32),
-    SetObjectPosition(u128, [f64; 3]),
-    BindObjectToTableGrid(u128),
-    SetIsBindToGrid(bool),
-    SetWorld(WorldData),
-    SetResource(ResourceData),
-    SetChat(JsObject),
-    SetConnection(BTreeSet<String>),
-    RemoveObject(u128),
-    InsertChatItem(u32, JsObject),
-    AddChatTab,
-    SetChatTabName(u32, String),
-    RemoveChatTab(u32),
     None,
+    SetBlockPacks(HashMap<u128, JsValue>),
+    SetResourcePacks(HashMap<u128, JsValue>),
 }
 
 impl Msg {
     pub fn type_name(&self) -> &'static str {
         match self {
-            Self::SetSelectingTable(..) => "SetSelectingTable",
-            Self::SetTableName(..) => "SetTableName",
-            Self::CreateTable(..) => "CreateTable",
-            Self::DrawLineToTable(..) => "DrawLineToTable",
-            Self::EraceLineToTable(..) => "EraceLineToTable",
-            Self::SetTableSize(..) => "SetTableSize",
-            Self::SetTableImage(..) => "SetTableImage",
-            Self::CreateCharacterToTable(..) => "CreateCharacterToTable",
-            Self::CreateTablemaskToTable(..) => "CreateTablemaskToTable",
-            Self::SetCharacterImage(..) => "SetCharacterImage",
-            Self::SetCharacterSize(..) => "SetCharacterSize",
-            Self::SetCharacterName(..) => "SetCharacterName",
-            Self::SetCharacterProperty(..) => "SetCharacterProperty",
-            Self::SetTablemaskSizeWithStyle(..) => "SetTablemaskSizeWithStyle",
-            Self::SetTablemaskColor(..) => "SetTablemaskColor",
-            Self::SetObjectPosition(..) => "SetObjectPosition",
-            Self::BindObjectToTableGrid(..) => "BindObjectToTableGrid",
-            Self::SetIsBindToGrid(..) => "SetIsBindToGrid",
-            Self::SetWorld(..) => "SetWorld",
-            Self::SetResource(..) => "SetResource",
-            Self::SetChat(..) => "SetChat",
-            Self::SetConnection(..) => "SetConnection",
-            Self::RemoveObject(..) => "RemoveObject",
-            Self::InsertChatItem(..) => "InsertChatItem",
-            Self::AddChatTab => "AddChatTab",
-            Self::SetChatTabName(..) => "SetChatTabName",
-            Self::RemoveChatTab(..) => "RemoveChatTab",
             Self::None => "None",
+            Self::SetBlockPacks(..) => "SetBlockPacks",
+            Self::SetResourcePacks(..) => "SetResourcePacks",
         }
     }
 }
@@ -154,61 +104,14 @@ impl Into<JsObject> for Msg {
     fn into(self) -> JsObject {
         let type_name = self.type_name();
         let payload: JsValue = match self {
-            Self::SetSelectingTable(t_id) | Self::CreateTable(t_id) => {
-                JsValue::from(t_id.to_string())
-            }
-            Self::SetTableName(id, name) | Self::SetCharacterName(id, name) => {
-                array![id.to_string(), name].into()
-            }
-            Self::DrawLineToTable(b, e) | Self::EraceLineToTable(b, e) => {
-                array![b[0], b[1], e[0], e[1]].into()
-            }
-            Self::SetTableSize(sz) => array![sz[0], sz[1]].into(),
-            Self::SetTableImage(id) => JsValue::from(id.to_string()),
-            Self::CreateCharacterToTable(id, character) => {
-                let character: JsObject = character.into();
-                let character: JsValue = character.into();
-                array![id.to_string(), character].into()
-            }
-            Self::CreateTablemaskToTable(id, tablemask) => {
-                let tablemask: JsObject = tablemask.into();
-                let tablemask: JsValue = tablemask.into();
-                array![id.to_string(), tablemask].into()
-            }
-            Self::SetObjectPosition(id, pos) => {
-                array![id.to_string(), pos[0], pos[1], pos[2]].into()
-            }
-            Self::SetCharacterImage(c_id, d_id) => {
-                array![c_id.to_string(), d_id.to_string()].into()
-            }
-            Self::SetCharacterSize(c_id, sz) => array![c_id.to_string(), sz[0], sz[1]].into(),
-            Self::SetCharacterProperty(c_id, prop) => array![c_id.to_string(), prop].into(),
-            Self::SetTablemaskSizeWithStyle(t_id, sz, r, is_fixed) => {
-                array![t_id.to_string(), sz[0], sz[1], r, is_fixed].into()
-            }
-            Self::SetTablemaskColor(t_id, color) => array![t_id.to_string(), color].into(),
-            Self::BindObjectToTableGrid(id) | Self::RemoveObject(id) => {
-                JsValue::from(id.to_string())
-            }
-            Self::SetIsBindToGrid(f) => JsValue::from(f),
-            Self::SetWorld(world_data) => {
-                let world_data: JsObject = world_data.into();
-                world_data.into()
-            }
-            Self::SetChat(chat) => chat.into(),
-            Self::SetResource(resource_data) => resource_data.as_object().into(),
-            Self::SetConnection(connection) => {
-                let payload = array![];
-                for peer_id in connection {
-                    payload.push(&JsValue::from(peer_id));
+            Self::None => JsValue::NULL,
+            Self::SetBlockPacks(packs) | Self::SetResourcePacks(packs) => {
+                let payload = Array::new();
+                for (id, pack) in packs {
+                    payload.push(array![id.to_string(), pack].as_ref());
                 }
                 payload.into()
             }
-            Self::InsertChatItem(tab_idx, chat_item) => array![tab_idx, chat_item].into(),
-            Self::AddChatTab => js_sys::Object::new().into(),
-            Self::SetChatTabName(tab_idx, name) => array![tab_idx, name].into(),
-            Self::RemoveChatTab(tab_idx) => JsValue::from(tab_idx),
-            Self::None => JsValue::NULL,
         };
         object! {
             type: type_name,
@@ -224,148 +127,30 @@ impl From<JsObject> for Msg {
             obj.get("payload"),
         ) {
             match msg_type.as_str() {
-                "SetSelectingTable" => {
-                    Self::SetSelectingTable(payload.as_string().unwrap().parse().unwrap())
-                }
-                "SetTableName" => {
-                    let args = Array::from(&payload);
-                    Self::SetTableName(
-                        args.get(0).as_string().unwrap().parse().unwrap(),
-                        args.get(1).as_string().unwrap(),
-                    )
-                }
-                "CreateTable" => Self::CreateTable(payload.as_string().unwrap().parse().unwrap()),
-                "DrawLineToTable" => {
-                    let args = payload.dyn_ref::<Array>().unwrap().to_vec();
-                    Self::DrawLineToTable(
-                        [args[0].as_f64().unwrap(), args[1].as_f64().unwrap()],
-                        [args[2].as_f64().unwrap(), args[3].as_f64().unwrap()],
-                    )
-                }
-                "EraceLineToTable" => {
-                    let args = payload.dyn_ref::<Array>().unwrap().to_vec();
-                    Self::EraceLineToTable(
-                        [args[0].as_f64().unwrap(), args[1].as_f64().unwrap()],
-                        [args[2].as_f64().unwrap(), args[3].as_f64().unwrap()],
-                    )
-                }
-                "SetTableSize" => {
-                    let args = Array::from(&payload);
-                    Self::SetTableSize([
-                        args.get(0).as_f64().unwrap(),
-                        args.get(1).as_f64().unwrap(),
-                    ])
-                }
-                "SetTableImage" => {
-                    Self::SetTableImage(payload.as_string().unwrap().parse().unwrap())
-                }
-                "CreateCharacterToTable" => {
-                    let args = Array::from(&payload);
-                    Self::CreateCharacterToTable(
-                        args.get(0).as_string().unwrap().parse().unwrap(),
-                        CharacterData::from(args.get(1).dyn_into::<JsObject>().unwrap()),
-                    )
-                }
-                "CreateTablemaskToTable" => {
-                    let args = Array::from(&payload);
-                    Self::CreateTablemaskToTable(
-                        args.get(0).as_string().unwrap().parse().unwrap(),
-                        TablemaskData::from(args.get(1).dyn_into::<JsObject>().unwrap()),
-                    )
-                }
-                "SetObjectPosition" => {
-                    let args = payload.dyn_ref::<Array>().unwrap().to_vec();
-                    Self::SetObjectPosition(
-                        args[0].as_string().unwrap().parse().unwrap(),
-                        [
-                            args[1].as_f64().unwrap(),
-                            args[2].as_f64().unwrap(),
-                            args[3].as_f64().unwrap(),
-                        ],
-                    )
-                }
-                "SetCharacterImage" => {
-                    let args = payload.dyn_ref::<Array>().unwrap().to_vec();
-                    Self::SetCharacterImage(
-                        args[0].as_string().unwrap().parse().unwrap(),
-                        args[1].as_string().unwrap().parse().unwrap(),
-                    )
-                }
-                "SetCharacterSize" => {
-                    let args = Array::from(&payload);
-                    Self::SetCharacterSize(
-                        args.get(0).as_string().unwrap().parse().unwrap(),
-                        [args.get(1).as_f64().unwrap(), args.get(2).as_f64().unwrap()],
-                    )
-                }
-                "SetCharacterName" => {
-                    let args = Array::from(&payload);
-                    Self::SetCharacterName(
-                        args.get(0).as_string().unwrap().parse().unwrap(),
-                        args.get(1).as_string().unwrap(),
-                    )
-                }
-                "SetCharacterProperty" => {
-                    let args = Array::from(&payload);
-                    Self::SetCharacterProperty(
-                        args.get(0).as_string().unwrap().parse().unwrap(),
-                        args.get(1).dyn_into::<JsObject>().unwrap(),
-                    )
-                }
-                "SetTablemaskSizeWithStyle" => {
-                    let args = payload.dyn_ref::<Array>().unwrap().to_vec();
-                    Self::SetTablemaskSizeWithStyle(
-                        args[0].as_string().unwrap().parse().unwrap(),
-                        [args[1].as_f64().unwrap(), args[2].as_f64().unwrap()],
-                        args[3].as_bool().unwrap(),
-                        args[4].as_bool().unwrap(),
-                    )
-                }
-                "SetTablemaskColor" => {
-                    let args = Array::from(&payload);
-                    Self::SetTablemaskColor(
-                        args.get(0).as_string().unwrap().parse().unwrap(),
-                        args.get(1).as_f64().unwrap() as u32,
-                    )
-                }
-                "BindObjectToTableGrid" => {
-                    Self::BindObjectToTableGrid(payload.as_string().unwrap().parse().unwrap())
-                }
-                "SetIsBindToGrid" => Self::SetIsBindToGrid(payload.as_bool().unwrap()),
-                "SetWorld" => Self::SetWorld(WorldData::from(payload)),
-                "SetResource" => Self::SetResource(ResourceData::from(payload)),
-                "SetChat" => Self::SetChat(payload),
-                "SetConnection" => {
-                    let args = payload.dyn_ref::<Array>().unwrap().to_vec();
-                    let peer_ids = args
-                        .into_iter()
-                        .map(|a| a.as_string().unwrap().parse().unwrap());
-
-                    let mut connection = BTreeSet::new();
-
-                    for peer_id in peer_ids {
-                        connection.insert(peer_id);
+                "SetBlockPacks" => {
+                    let payload: js_sys::Object = payload.into();
+                    let payload = Array::from(payload.as_ref()).to_vec();
+                    let mut packs = HashMap::new();
+                    for row in payload {
+                        let cols = Array::from(row.as_ref()).to_vec();
+                        let id = cols[0].as_string().unwrap().parse().unwrap();
+                        let data = cols[1];
+                        packs.insert(id, data);
                     }
-
-                    Self::SetConnection(connection)
+                    Msg::SetBlockPacks(packs)
                 }
-                "InsertChatItem" => {
-                    let args = Array::from(&payload);
-                    Self::InsertChatItem(
-                        args.get(0).as_f64().unwrap() as u32,
-                        args.get(1).dyn_into::<JsObject>().unwrap(),
-                    )
+                "SetResourcePacks" => {
+                    let payload: js_sys::Object = payload.into();
+                    let payload = Array::from(payload.as_ref()).to_vec();
+                    let mut packs = HashMap::new();
+                    for row in payload {
+                        let cols = Array::from(row.as_ref()).to_vec();
+                        let id = cols[0].as_string().unwrap().parse().unwrap();
+                        let data = cols[1];
+                        packs.insert(id, data);
+                    }
+                    Msg::SetResourcePacks(packs)
                 }
-                "AddChatTab" => Self::AddChatTab,
-                "SetChatTabName" => {
-                    let args = Array::from(&payload);
-                    Self::SetChatTabName(
-                        args.get(0).as_f64().unwrap() as u32,
-                        args.get(1).as_string().unwrap(),
-                    )
-                }
-                "RemoveChatTab" => Self::RemoveChatTab(payload.as_f64().unwrap() as u32),
-                "RemoveObject" => Self::RemoveObject(payload.as_string().unwrap().parse().unwrap()),
                 _ => Self::None,
             }
         } else {

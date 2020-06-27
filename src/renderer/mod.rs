@@ -34,7 +34,7 @@ impl Renderer {
         }
     }
 
-    pub fn table_object_id(&self, position: &[f64; 2]) -> Option<&u128> {
+    pub fn table_object_id(&self, position: &[f32; 2]) -> Option<&u128> {
         self.mask_renderer.table_object_id(position)
     }
 

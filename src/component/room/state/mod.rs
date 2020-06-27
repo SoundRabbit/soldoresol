@@ -12,6 +12,7 @@ use crate::{
     model::modeless::{self, ModelessId},
     renderer::{Camera, Renderer},
     skyway::{Peer, Room},
+    Resource,
 };
 use kagura::prelude::*;
 use std::{collections::HashSet, rc::Rc};
@@ -39,6 +40,7 @@ pub struct State<M, S> {
     room: Rc<Room>,
     peers: HashSet<String>,
     personal_data: model::PersonalData,
+    resource: Resource,
     block_field: block::Field,
     chat: chat::State,
     table: table::State,
@@ -67,12 +69,15 @@ impl<M, S> State<M, S> {
         let peers = hash_set! {peer.id()};
         let mut block_field = block::Field::new();
         let chat = chat::State::new(&mut block_field);
-        let world = block_field.add(block::World::new(&mut block_field));
+        let texture = block_field.add(block::table::Texture::new(&[4096, 4096], [20.0, 20.0]));
+        let table = block_field.add(block::Table::new(texture, [20.0, 20.0], "テーブル"));
+        let world = block_field.add(block::World::new(table));
         Self {
             peer: peer,
             room: room,
             peers: hash_set! {},
             personal_data: model::PersonalData::new(),
+            resource: Resource::new(),
             block_field,
             chat,
             world,
@@ -92,12 +97,32 @@ impl<M, S> State<M, S> {
         }
     }
 
+    pub fn room(&self) -> Rc<Room> {
+        Rc::clone(&self.room)
+    }
+
+    pub fn personal_data_mut(&mut self) -> &mut model::PersonalData {
+        &mut self.personal_data
+    }
+
+    pub fn resource(&self) -> &Resource {
+        &self.resource
+    }
+
+    pub fn resource_mut(&mut self) -> &mut Resource {
+        &mut self.resource
+    }
+
     pub fn block_field(&self) -> &block::Field {
         &self.block_field
     }
 
     pub fn block_field_mut(&mut self) -> &mut block::Field {
         &mut self.block_field
+    }
+
+    pub fn chat_mut(&mut self) -> &mut chat::State {
+        &mut self.chat
     }
 
     pub fn world(&self) -> &BlockId {
@@ -124,6 +149,10 @@ impl<M, S> State<M, S> {
 
     pub fn camera_mut(&mut self) -> &mut Camera {
         &mut self.camera
+    }
+
+    pub fn renderer(&self) -> Option<&Renderer> {
+        self.renderer.as_ref()
     }
 
     pub fn renderer_mut(&mut self) -> Option<&mut Renderer> {

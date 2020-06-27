@@ -1,11 +1,11 @@
 use super::{Block, BlockId, Field};
-use crate::Promise;
+use crate::{resource::ResourceId, Promise};
 use wasm_bindgen::prelude::*;
 
 #[derive(Clone)]
 pub enum Icon {
     None,
-    Resource(u128),
+    Resource(ResourceId),
     DefaultUser,
 }
 

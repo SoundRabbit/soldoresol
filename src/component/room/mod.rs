@@ -3,9 +3,12 @@ mod state;
 
 use crate::{
     block::{self, BlockId},
+    color_system,
     model::modeless::ModelessId,
+    random_id,
     renderer::{Camera, Renderer},
-    skyway,
+    resource::{Data, ResourceId},
+    skyway, Promise,
 };
 use kagura::prelude::*;
 use std::{
@@ -59,29 +62,22 @@ pub enum Msg {
     SetTableObjectPositionWithMousePosition(BlockId, [f32; 2]),
     DrawLineWithMousePosition([f32; 2], [f32; 2]),
     EraceLineWithMousePosition([f32; 2], [f32; 2]),
+    MeasureLineWithMousePosition([f32; 2], [f32; 2]),
 
     // World
     AddTable,
 
     // Table
-    SetTableSize(BlockId, [f64; 2]),
-    SetTableImage(BlockId, BlockId),
-
-    // テーブル操作の制御
-    SetCursorWithMouseCoord([f64; 2]),
-    EraceLineWithMouseCoord([f64; 2]),
-    SetMeasureStartPointAndEndPointWithMouseCoord(f64, bool, [f64; 2], [f64; 2]),
-    SetObjectPositionWithMouseCoord(u128, [f64; 2]),
-    BindObjectToTableGrid(u128),
-    SetIs2dMode(bool),
+    SetTableSize(BlockId, [f32; 2]),
+    SetTableImage(BlockId, Option<ResourceId>),
 
     // PersonalData
     SetPersonalDataWithPlayerName(String),
-    SetPersonalDataWithIconImage(u128),
+    SetPersonalDataWithIconImageToCloseModal(u128),
 
     // table object
     SetCharacterName(BlockId, String),
-    SetCharacterSize([Option<f64>; 2]),
+    SetCharacterSize(BlockId, [Option<f32>; 2]),
 
     // property
 
@@ -95,13 +91,12 @@ pub enum Msg {
     RemoveChatTab(BlockId),
 
     // リソース管理
-    LoadFromFileListToTransport(web_sys::FileList),
-    LoadFromBlobsToTransport(HashMap<BlockId, Rc<web_sys::Blob>>),
-    LoadFromBlobs(HashMap<BlockId, Rc<web_sys::Blob>>),
-    LoadReasource(BlockId, block::Resource),
+    LoadFromFileList(web_sys::FileList),
+    LoadDataToResource(Data),
 
     // 接続に関する操作
-    SendPacks(HashMap<BlockId, JsValue>),
+    SendBlockPacks(HashMap<BlockId, JsValue>),
+    SendResourcePacks(HashMap<ResourceId, JsValue>),
     ReceiveMsg(skyway::Msg),
     PeerJoin(String),
     PeerLeave(String),
@@ -239,6 +234,10 @@ fn render_canvas(state: &mut State) {
     }
 }
 
+fn timestamp() -> Option<u32> {
+    Some(js_sys::Date::now() as u32)
+}
+
 fn send_pack_cmd(block_field: &block::Field, packs: Vec<&BlockId>) -> Cmd<Msg, Sub> {
     let packs = block_field.pack_listed(packs);
 
@@ -302,6 +301,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
         Msg::ResizeCanvas => {
             state.set_canvas_size(reset_canvas_size(state.pixel_ratio()));
+            render_canvas(state);
             state.dequeue()
         }
 
@@ -381,13 +381,13 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             let character = state.block_field_mut().add(character);
 
             let world = state.world();
-            state.block_field_mut().update(
-                world,
-                js_sys::Date::now() as u32,
-                |world: &mut block::World| {
+            state
+                .block_field_mut()
+                .update(world, timestamp(), |world: &mut block::World| {
                     world.add_character(character.clone());
-                },
-            );
+                });
+
+            render_canvas(state);
 
             send_pack_cmd(
                 state.block_field(),
@@ -410,11 +410,13 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
                 state.block_field_mut().update(
                     selecting_table,
-                    js_sys::Date::now() as u32,
+                    timestamp(),
                     |table: &mut block::Table| {
                         table.add_tablemask(tablemask.clone());
                     },
                 );
+
+                render_canvas(state);
 
                 send_pack_cmd(state.block_field(), vec![&tablemask, selecting_table])
             } else {
@@ -440,16 +442,16 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 let character = state.block_field_mut().add(character);
 
                 let world = state.world();
-                state.block_field_mut().update(
-                    world,
-                    js_sys::Date::now() as u32,
-                    |world: &mut block::World| {
+                state
+                    .block_field_mut()
+                    .update(world, timestamp(), |world: &mut block::World| {
                         world.add_character(character.clone());
-                    },
-                );
+                    });
 
                 props.push(character);
                 props.push(world.clone());
+
+                render_canvas(state);
 
                 send_pack_cmd(state.block_field(), props.iter().collect())
             } else {
@@ -481,11 +483,13 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
                 state.block_field_mut().update(
                     selecting_table,
-                    js_sys::Date::now() as u32,
+                    timestamp(),
                     |table: &mut block::Table| {
                         table.add_tablemask(tablemask.clone());
                     },
                 );
+
+                render_canvas(state);
 
                 send_pack_cmd(state.block_field(), vec![&tablemask, selecting_table])
             } else {
@@ -497,13 +501,13 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.close_contextmenu();
 
             let world = state.world();
-            state.block_field_mut().update(
-                world,
-                js_sys::Date::now() as u32,
-                |world: &mut block::World| {
+            state
+                .block_field_mut()
+                .update(world, timestamp(), |world: &mut block::World| {
                     world.remove_character(&character);
-                },
-            );
+                });
+
+            render_canvas(state);
 
             send_pack_cmd(state.block_field(), vec![world])
         }
@@ -514,11 +518,13 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             if let Some(selecting_table) = state.selecting_table() {
                 state.block_field_mut().update(
                     selecting_table,
-                    js_sys::Date::now() as u32,
+                    timestamp(),
                     |table: &mut block::Table| {
                         table.remove_tablemask(&tablemask);
                     },
                 );
+
+                render_canvas(state);
 
                 send_pack_cmd(state.block_field(), vec![selecting_table])
             } else {
@@ -528,7 +534,35 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
         // Mouse
         Msg::SetLastMousePosition(mouse_position) => {
+            if let Some(block_id) = state
+                .renderer()
+                .and_then(|r| r.table_object_id(&mouse_position))
+            {
+                let block_id = state.block_field().block_id(*block_id);
+                state.table_mut().set_focused(Some(block_id));
+            } else {
+                state.table_mut().set_focused(None);
+            }
+
+            if let Some(block_id) = state.table().focused() {
+                let bf = state.block_field_mut();
+                bf.update(block_id, None, |character: &mut block::Character| {})
+                    .and_then(|bf| {
+                        bf.update(
+                            block_id,
+                            None,
+                            |tablemask: &mut block::table_object::Tablemask| {},
+                        )
+                    })
+                    .and_then(|bf| {
+                        bf.update(block_id, None, |route: &mut block::table_object::Route| {})
+                    });
+            }
+
             state.table_mut().set_last_mouse_position(mouse_position);
+
+            render_canvas(state);
+
             state.dequeue()
         }
 
@@ -594,1174 +628,295 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.dequeue()
         }
 
-        //テーブル操作の制御
         Msg::SetSelectingTableTool(table_tool) => {
-            match &table_tool {
-                TableTool::Measure(.., Option::None, _) => {
-                    state.table_state.measure_length = None;
-                    state
-                        .world
-                        .selecting_table_mut()
-                        .map(|table| table.clear_measure());
-                }
-                _ => {}
-            }
-            state.table_state.selecting_tool = table_tool;
-            update(state, Msg::Render)
-        }
-        Msg::SetIsBindToGridToTransport(is_bind_to_grid) => {
-            let room = &state.room;
-            room.send(skyway::Msg::SetIsBindToGrid(is_bind_to_grid));
-            update(state, Msg::SetIsBindToGrid(is_bind_to_grid))
-        }
-        Msg::SetIsBindToGrid(is_bind_to_grid) => {
-            state
-                .world
-                .selecting_table_mut()
-                .map(|table| table.set_is_bind_to_grid(is_bind_to_grid));
-            state.cmd_queue.dequeue()
-        }
-        Msg::DrawLineWithMouseCoord(mouse_coord) => {
-            let start_point = get_table_position(
-                &state,
-                &state.table_state.last_mouse_coord,
-                state.pixel_ratio,
-            );
-            let start_point = [start_point[0], start_point[1]];
-            let end_point = get_table_position(&state, &mouse_coord, state.pixel_ratio);
-            let end_point = [end_point[0], end_point[1]];
-            state.world.selecting_table_mut().map(|table| {
-                table.draw_line(&start_point, &end_point, ColorSystem::gray(255, 9), 0.5)
-            });
-            state
-                .room
-                .send(skyway::Msg::DrawLineToTable(start_point, end_point));
-            update(state, Msg::SetCursorWithMouseCoord(mouse_coord))
-        }
-        Msg::EraceLineWithMouseCoord(mouse_coord) => {
-            let start_point = get_table_position(
-                &state,
-                &state.table_state.last_mouse_coord,
-                state.pixel_ratio,
-            );
-            let start_point = [start_point[0], start_point[1]];
-            let end_point = get_table_position(&state, &mouse_coord, state.pixel_ratio);
-            let end_point = [end_point[0], end_point[1]];
-            state
-                .world
-                .selecting_table_mut()
-                .map(|table| table.erace_line(&start_point, &end_point, 1.0));
-            state
-                .room
-                .send(skyway::Msg::EraceLineToTable(start_point, end_point));
-            update(state, Msg::SetCursorWithMouseCoord(mouse_coord))
-        }
-        Msg::SetMeasureStartPointAndEndPointWithMouseCoord(
-            line_width,
-            rounded,
-            start_point,
-            mouse_coord,
-        ) => {
-            let start_point = get_table_position(&state, &start_point, state.pixel_ratio);
-            let start_point = [start_point[0], start_point[1]];
-            let end_point = get_table_position(&state, &mouse_coord, state.pixel_ratio);
-            let end_point = [end_point[0], end_point[1]];
-            let measure_length = state.world.selecting_table_mut().map(|table| {
-                table.draw_measure(
-                    &start_point,
-                    &end_point,
-                    ColorSystem::red(255, 5),
-                    line_width,
-                    rounded,
-                )
-            });
-            state.table_state.measure_length = Some(measure_length.unwrap_or(0.0));
-            update(state, Msg::SetCursorWithMouseCoord(mouse_coord))
-        }
-        Msg::SetObjectPositionWithMouseCoord(object_id, mouse_coord) => {
-            let position = get_table_position(
-                &state,
-                &state.table_state.last_mouse_coord,
-                state.pixel_ratio,
-            );
-            state.table_state.last_mouse_coord = mouse_coord;
-            update(
-                state,
-                Msg::SetObjectPositionToTransport(object_id, [position[0], position[1], 0.0]),
-            )
-        }
-        Msg::SetIs2dMode(is_2d_mode) => {
-            if is_2d_mode {
-                state.camera.set_x_axis_rotation(0.0);
-                state.camera.set_z_axis_rotation(0.0);
-            }
-            state.is_2d_mode = is_2d_mode;
-            update(state, Msg::Render)
-        }
-        Msg::SetTableSizeToTransport(size) => {
-            let room = &state.room;
-            room.send(skyway::Msg::SetTableSize(size.clone()));
-            update(state, Msg::SetTableSize(size))
-        }
-        Msg::SetTableSize(size) => {
-            state
-                .world
-                .selecting_table_mut()
-                .map(|table| table.set_size(size));
-            update(state, Msg::Render)
-        }
-        Msg::SetTableImageToTransport(resource_id) => {
-            let room = &state.room;
-            room.send(skyway::Msg::SetTableImage(resource_id));
-            update(state, Msg::SetTableImage(resource_id))
-        }
-        Msg::SetTableImage(resource_id) => {
-            if let Some(table) = state.world.selecting_table_mut() {
-                table.set_image_texture_id(resource_id);
-                update(state, Msg::Render)
-            } else {
-                state.cmd_queue.dequeue()
-            }
-        }
-        Msg::AddTablemaskWithPointABToTransport(line_width, begin, end, is_rounded) => {
-            let begin = get_table_position(&state, &begin, state.pixel_ratio);
-            let begin = if state.world.selecting_table().is_bind_to_grid() {
-                [
-                    (2.0 * begin[0]).round() / 2.0,
-                    (2.0 * begin[1]).round() / 2.0,
-                ]
-            } else {
-                [begin[0], begin[1]]
-            };
-            let end = get_table_position(&state, &end, state.pixel_ratio);
-            let end = if state.world.selecting_table().is_bind_to_grid() {
-                [(2.0 * end[0]).round() / 2.0, (2.0 * end[1]).round() / 2.0]
-            } else {
-                [end[0], end[1]]
-            };
-            let r = ((end[0] - begin[0]).powi(2) + (end[1] - begin[1]).powi(2)).sqrt();
-            let mut table_mask = Tablemask::new();
-            if is_rounded {
-                table_mask.set_is_rounded(true);
-                table_mask.set_position([begin[0], begin[1], 0.0]);
-                table_mask.set_size([2.0 * r, 2.0 * r]);
-                table_mask.set_is_fixed(true);
-            } else {
-                let z_rotation = (end[1] - begin[1]).atan2(end[0] - begin[0]);
-                let width = r;
-                let height = line_width;
-                let position = [(end[0] + begin[0]) / 2.0, (end[1] + begin[1]) / 2.0, 0.0];
-                table_mask.set_is_rounded(false);
-                table_mask.set_position(position);
-                table_mask.set_size([width, height]);
-                table_mask.set_z_rotation(z_rotation);
-                table_mask.set_is_fixed(true);
-                table_mask.set_background_color(ColorSystem::red(255, 5));
-            }
-            let cmd = update(state, Msg::AddTablemaskToTransport(table_mask));
-            state.cmd_queue.enqueue(cmd);
-            update(
-                state,
-                Msg::SetSelectingTableTool(TableTool::Measure(line_width, is_rounded, None, true)),
-            )
+            state.table_mut().set_selecting_tool(table_tool);
+            state.dequeue()
         }
 
-        // モードレス
-        Msg::OpenObjectModeless(object_id) => {
-            let modeless_id = state
-                .object_id_to_modeless_id_map
-                .get(&object_id)
-                .map(|modeless_id| *modeless_id)
-                .unwrap_or(random_id::u128val());
+        Msg::SetTableObjectPositionWithMousePosition(block_id, mouse_position) => {
+            let [x, y] = get_table_position(state, &mouse_position, state.pixel_ratio());
+            let timestamp = timestamp();
 
-            if !state.modelesses.contains_key(&modeless_id) {
-                state.modelesses.insert(
-                    modeless_id,
-                    (
-                        ModelessState::new(),
-                        Modeless::Object {
-                            tabs: vec![object_id],
-                            focused: 0,
+            let updated = state
+                .block_field_mut()
+                .update(&block_id, timestamp, |character: &mut block::Character| {
+                    character.set_position([x, y, 0.0]);
+                })
+                .and_then(|bf| {
+                    bf.update(
+                        &block_id,
+                        timestamp,
+                        |tablemask: &mut block::table_object::Tablemask| {
+                            tablemask.set_position([x, y]);
                         },
-                    ),
-                );
-                state
-                    .object_id_to_modeless_id_map
-                    .insert(object_id, modeless_id);
-            }
+                    )
+                })
+                .is_none();
 
-            if let Some(insert_point) = state.modeless_dom.iter().position(|x| x.is_none()) {
-                state.modeless_dom[insert_point] = Some(modeless_id);
+            if updated {
+                render_canvas(state);
+                send_pack_cmd(state.block_field(), vec![&block_id])
             } else {
-                state.modeless_dom.push(Some(modeless_id));
+                state.dequeue()
             }
-
-            update(state, Msg::FocusModeless(modeless_id))
         }
-        Msg::OpenChatModeless => {
-            let modeless_id = state
-                .chat_to_modeless_id_map
-                .unwrap_or(random_id::u128val());
 
-            if !state.modelesses.contains_key(&modeless_id) {
-                let mut modeless_state = ModelessState::new();
-                modeless_state.loc_a = [2, 2];
-                modeless_state.loc_b = [8, 14];
-                state
-                    .modelesses
-                    .insert(modeless_id, (modeless_state, Modeless::Chat));
-                state.chat_to_modeless_id_map = Some(modeless_id);
-            }
-
-            if let Some(insert_point) = state.modeless_dom.iter().position(|x| x.is_none()) {
-                state.modeless_dom[insert_point] = Some(modeless_id);
-            } else {
-                state.modeless_dom.push(Some(modeless_id));
-            }
-            update(state, Msg::FocusModeless(modeless_id))
-        }
-        Msg::CloseModeless(modeless_id) => {
-            if let Some(close_point) = state
-                .modeless_dom
-                .iter()
-                .position(|x| x.map(|x| x == modeless_id).unwrap_or(false))
+        Msg::DrawLineWithMousePosition(a, b) => {
+            if let Some(texture_id) = state
+                .selecting_table()
+                .and_then(|table_id| state.block_field_mut().get::<block::Table>(&table_id))
+                .map(|table| table.drawing_texture_id())
             {
-                state.modeless_dom[close_point] = None;
+                let [ax, ay] = get_table_position(state, &a, state.pixel_ratio());
+                let [bx, by] = get_table_position(state, &b, state.pixel_ratio());
+
+                state.block_field_mut().update(
+                    texture_id,
+                    timestamp(),
+                    |texture: &mut block::table::Texture| {
+                        let [ax, ay] = texture.texture_position(&[ax as f64, ay as f64]);
+                        let [bx, by] = texture.texture_position(&[bx as f64, by as f64]);
+
+                        let context = texture.context();
+
+                        context.set_line_width(0.5);
+                        context.set_line_cap("round");
+                        context.set_stroke_style(&color_system::gray(0, 9).to_jsvalue());
+                        context
+                            .set_global_composite_operation("source-over")
+                            .unwrap();
+                        context.begin_path();
+                        context.move_to(ax, ay);
+                        context.line_to(bx, by);
+                        context.fill();
+                        context.stroke();
+                    },
+                );
+
+                render_canvas(state);
+
+                send_pack_cmd(state.block_field(), vec![&texture_id])
+            } else {
+                state.dequeue()
             }
-            state.cmd_queue.dequeue()
         }
-        Msg::GrubModeless(modeless_id, grubbed) => {
+
+        Msg::EraceLineWithMousePosition(a, b) => {
+            if let Some(texture_id) = state
+                .selecting_table()
+                .and_then(|table_id| state.block_field_mut().get::<block::Table>(&table_id))
+                .map(|table| table.drawing_texture_id())
+            {
+                let [ax, ay] = get_table_position(state, &a, state.pixel_ratio());
+                let [bx, by] = get_table_position(state, &b, state.pixel_ratio());
+
+                state.block_field_mut().update(
+                    texture_id,
+                    timestamp(),
+                    |texture: &mut block::table::Texture| {
+                        let [ax, ay] = texture.texture_position(&[ax as f64, ay as f64]);
+                        let [bx, by] = texture.texture_position(&[bx as f64, by as f64]);
+
+                        let context = texture.context();
+
+                        context.set_line_width(1.0);
+                        context.set_line_cap("round");
+                        context.set_stroke_style(&color_system::gray(0, 9).to_jsvalue());
+                        context
+                            .set_global_composite_operation("destination-out")
+                            .unwrap();
+                        context.begin_path();
+                        context.move_to(ax, ay);
+                        context.line_to(bx, by);
+                        context.fill();
+                        context.stroke();
+                    },
+                );
+
+                render_canvas(state);
+
+                send_pack_cmd(state.block_field(), vec![&texture_id])
+            } else {
+                state.dequeue()
+            }
+        }
+
+        // World
+        Msg::AddTable => {
+            let texture = block::table::Texture::new(&[4096, 4096], [20.0, 20.0]);
+            let texture = state.block_field_mut().add(texture);
+            let table = block::Table::new(texture.clone(), [20.0, 20.0], "テーブル");
+            let table = state.block_field_mut().add(table);
+
+            state.block_field_mut().update(
+                state.world(),
+                timestamp(),
+                |world: &mut block::World| world.add_table(table.clone()),
+            );
+
+            render_canvas(state);
+
+            send_pack_cmd(state.block_field(), vec![&texture, &table, state.world()])
+        }
+
+        // Table
+        Msg::SetTableSize(table, size) => {
             state
-                .modelesses
-                .get_mut(&modeless_id)
-                .map(|modeless| modeless.0.grubbed = grubbed);
-            update(state, Msg::FocusModeless(modeless_id))
-        }
-        Msg::FocusModeless(modeless_id) => {
-            if let Some(modeless) = state.modelesses.get_mut(&modeless_id) {
-                state.modeless_max_z_index += 1;
-                modeless.0.z_index = state.modeless_max_z_index;
-            }
+                .block_field_mut()
+                .update(&table, timestamp(), |table: &mut block::Table| {
+                    table.set_size(size);
+                });
 
-            state.cmd_queue.dequeue()
-        }
-        Msg::OpenModelessModal(modeless_id) => {
-            if let Some((modeless, ..)) = state.modelesses.get_mut(&modeless_id) {
-                if let Some(resizable) = modeless.grubbed {
-                    let props = modeless_modal::Props {
-                        origin: modeless.loc_a.clone(),
-                        corner: modeless.loc_b.clone(),
-                        resizable: resizable.clone(),
-                    };
-                    state.editing_modeless = Some((
-                        modeless_id,
-                        Rc::new(RefCell::new(modeless_modal::State::new(&props))),
-                    ));
-                }
-            }
-            state.cmd_queue.dequeue()
-        }
-        Msg::CloseModelessModal => {
-            let editing_modeless = &state.editing_modeless;
-            let modelesses = &mut state.modelesses;
-
-            let modeless = editing_modeless
-                .as_ref()
-                .and_then(|(modeless_id, ..)| modelesses.get_mut(modeless_id));
-            if let Some((modeless, ..)) = modeless {
-                modeless.grubbed = None;
-            }
-            state.editing_modeless = None;
-            state.cmd_queue.dequeue()
-        }
-        Msg::ReflectModelessModal(props) => {
-            let editing_modeless = &state.editing_modeless;
-            let modelesses = &mut state.modelesses;
-
-            let modeless = editing_modeless
-                .as_ref()
-                .and_then(|(modeless_id, ..)| modelesses.get_mut(modeless_id));
-            if let Some((modeless, ..)) = modeless {
-                modeless.loc_a = props.origin;
-                modeless.loc_b = props.corner;
-                modeless.grubbed = None;
-            }
-            state.cmd_queue.dequeue()
-        }
-        Msg::CloseModelessModalWithProps(props) => {
-            let cmd = update(state, Msg::ReflectModelessModal(props));
-            state.cmd_queue.enqueue(cmd);
-            update(state, Msg::CloseModelessModal)
+            send_pack_cmd(state.block_field(), vec![&table])
         }
 
-        // モーダル
-        Msg::OpenModal(modal) => {
-            state.modals.push(modal);
-            state.cmd_queue.dequeue()
-        }
-        Msg::CloseModal => {
-            state.modals.pop();
-            state.cmd_queue.dequeue()
+        Msg::SetTableImage(table, image) => {
+            state
+                .block_field_mut()
+                .update(&table, timestamp(), |table: &mut block::Table| {
+                    table.set_image_texture_id(image);
+                });
+
+            send_pack_cmd(state.block_field(), vec![&table])
         }
 
         // PersonalData
         Msg::SetPersonalDataWithPlayerName(player_name) => {
-            state.personal_data.name = player_name;
-            state.cmd_queue.dequeue()
+            state.personal_data_mut().set_name(player_name);
+            state.dequeue()
         }
-        Msg::SetPersonalDataWithIconImage(r_id) => {
-            state.personal_data.icon = Some(r_id);
-            update(state, Msg::CloseModal)
+        Msg::SetPersonalDataWithIconImageToCloseModal(r_id) => {
+            state.personal_data_mut().set_icon(Some(r_id));
+            state.close_modal();
+            state.dequeue()
         }
 
-        // Worldに対する操作
-        Msg::SetCharacterImageToTransport(character_id, data_id) => {
-            if state.world.character(&character_id).is_some() {
-                let room = &state.room;
-                room.send(skyway::Msg::SetCharacterImage(character_id, data_id));
-                state.cmd_queue.enqueue(Cmd::task(|r| r(Msg::CloseModal)));
-            }
-            update(state, Msg::SetCharacterImage(character_id, data_id))
-        }
-        Msg::SetCharacterImage(character_id, data_id) => {
-            if let Some(character) = state.world.character_mut(&character_id) {
-                character.set_image_id(data_id);
-                if let Some(img) = state.resource.get_as_image(&data_id) {
-                    let width = character.size()[0];
-                    let height = width * img.height() as f64 / img.width() as f64;
-                    character.set_size([width, height]);
-                }
-                update(state, Msg::Render)
-            } else {
-                state.cmd_queue.dequeue()
-            }
-        }
-        Msg::SetCharacterSizeToTransport(character_id, width, height) => {
-            let cmd = update(state, Msg::SetCharacterSize(character_id, width, height));
-            if let Some(character) = state.world.character(&character_id) {
-                state.room.send(skyway::Msg::SetCharacterSize(
-                    character_id,
-                    character.size().clone(),
-                ));
-            }
-            cmd
-        }
-        Msg::SetCharacterSize(character_id, width, height) => {
-            let world = &mut state.world;
-            let resource = &state.resource;
-            if let Some(character) = world.character_mut(&character_id) {
-                if let (Some(width), Some(height)) = (width, height) {
-                    character.set_size([width, height]);
-                } else if let Some(width) = width {
-                    if let Some(img) = character
-                        .texture_id()
-                        .and_then(|id| resource.get_as_image(&id))
-                    {
-                        let height = width * img.height() as f64 / img.width() as f64;
-                        character.set_size([width, height]);
-                    }
-                } else if let Some(height) = height {
-                    if let Some(img) = character
-                        .texture_id()
-                        .and_then(|id| resource.get_as_image(&id))
-                    {
-                        let width = height * img.width() as f64 / img.height() as f64;
-                        character.set_size([width, height]);
-                    }
-                }
-            }
-
-            update(state, Msg::Render)
-        }
-        Msg::SetCharacterNameToTransport(character_id, name) => {
-            if state.world.character(&character_id).is_some() {
-                let room = &state.room;
-                room.send(skyway::Msg::SetCharacterName(character_id, name.clone()));
-            }
-            update(state, Msg::SetCharacterName(character_id, name))
-        }
-        Msg::SetCharacterName(character_id, name) => {
-            if let Some(character) = state.world.character_mut(&character_id) {
-                character.set_name(name);
-            }
-            state.cmd_queue.dequeue()
-        }
-        Msg::AddChracaterToTransport(character) => {
-            let character_data = character.as_data();
-            let character_id = state.world.add_character(character);
-            let room = &state.room;
-            room.send(skyway::Msg::CreateCharacterToTable(
-                character_id,
-                character_data,
-            ));
-            update(state, Msg::Render)
-        }
-        Msg::AddTablemaskToTransport(tablemask) => {
-            let tablemask_data = tablemask.as_data();
-            let tablemask_id = state.world.add_tablemask(tablemask);
-            let room = &state.room;
-            room.send(skyway::Msg::CreateTablemaskToTable(
-                tablemask_id,
-                tablemask_data,
-            ));
-            update(state, Msg::Render)
-        }
-        Msg::SetTablemaskSizeWithStyleToTransport(tablemask_id, size, is_rounded, is_fixed) => {
-            if state.world.tablemask(&tablemask_id).is_some() {
-                let room = &state.room;
-                room.send(skyway::Msg::SetTablemaskSizeWithStyle(
-                    tablemask_id,
-                    size.clone(),
-                    is_rounded,
-                    is_fixed,
-                ));
-            }
-            update(
-                state,
-                Msg::SetTablemaskSizeWithStyle(tablemask_id, size, is_rounded, is_fixed),
-            )
-        }
-        Msg::SetTablemaskSizeWithStyle(tablemask_id, size, is_rounded, is_fixed) => {
-            if let Some(tablemask) = state.world.tablemask_mut(&tablemask_id) {
-                tablemask.set_is_rounded(is_rounded);
-                tablemask.set_size(size);
-                tablemask.set_is_fixed(is_fixed);
-            }
-            update(state, Msg::Render)
-        }
-        Msg::SetTablemaskSizeIsBindedToTransport(tablemask_id, is_binded) => {
-            update(
-                state,
-                Msg::SetTablemaskSizeIsBinded(tablemask_id, is_binded),
+        // Character
+        Msg::SetCharacterName(character, name) => {
+            state.block_field_mut().update(
+                &character,
+                timestamp(),
+                |character: &mut block::Character| {
+                    character.set_name(name);
+                },
             );
-            todo!();
-        }
-        Msg::SetTablemaskSizeIsBinded(tablemask_id, is_binded) => {
-            if let Some(tablemask) = state.world.tablemask_mut(&tablemask_id) {
-                tablemask.set_size_is_binded(is_binded);
-            }
-            update(state, Msg::Render)
-        }
-        Msg::SetTablemaskColorToTransport(tablemask_id, color) => {
-            if state.world.tablemask(&tablemask_id).is_some() {
-                let room = &state.room;
-                room.send(skyway::Msg::SetTablemaskColor(tablemask_id, color.to_u32()));
-            }
-            update(state, Msg::SetTablemaskColor(tablemask_id, color))
-        }
-        Msg::SetTablemaskColor(tablemask_id, color) => {
-            if let Some(tablemask) = state.world.tablemask_mut(&tablemask_id) {
-                tablemask.set_background_color(color);
-            }
-            update(state, Msg::Render)
-        }
-        Msg::SetTablemaskTransparentToTransport(tablemask_id, tranparent) => {
-            if let Some(tablemask) = state.world.tablemask(&tablemask_id) {
-                let mut color = Color::from(tablemask.background_color().to_u32());
-                color.alpha = (255.0 * tranparent) as u8;
-                let msg = Msg::SetTablemaskColorToTransport(tablemask_id, color);
-                update(state, msg)
-            } else {
-                state.cmd_queue.dequeue()
-            }
-        }
-        Msg::SetObjectPositionToTransport(object_id, position) => {
-            let room = &state.room;
-            room.send(skyway::Msg::SetObjectPosition(object_id, position.clone()));
-            update(state, Msg::SetObjectPosition(object_id, position))
-        }
-        Msg::SetObjectPosition(object_id, position) => {
-            if let Some(character) = state.world.character_mut(&object_id) {
-                character.set_position(position);
-            }
-            if let Some(tablemask) = state.world.tablemask_mut(&object_id) {
-                if !tablemask.is_fixed() {
-                    tablemask.set_position(position)
-                }
-            }
-            update(state, Msg::Render)
-        }
-        Msg::BindObjectToTableGridToTransport(object_id) => {
-            if state.world.selecting_table().is_bind_to_grid() {
-                let room = &state.room;
-                room.send(skyway::Msg::BindObjectToTableGrid(object_id));
-            }
-            update(state, Msg::BindObjectToTableGrid(object_id))
-        }
-        Msg::BindObjectToTableGrid(object_id) => {
-            if state.world.selecting_table().is_bind_to_grid() {
-                if let Some(character) = state.world.character_mut(&object_id) {
-                    character.bind_to_grid();
-                }
-                if let Some(tablemask) = state.world.tablemask_mut(&object_id) {
-                    tablemask.bind_to_grid();
-                }
-            }
-            update(state, Msg::Render)
-        }
-        Msg::SetCharacterPropertyNameToTransport(character_id, property_id, property_name) => {
-            let cmd = update(
-                state,
-                Msg::SetCharacterPropertyName(character_id, property_id, property_name),
-            );
-            if let Some(character) = state.world.character(&character_id) {
-                let room = &state.room;
-                room.send(skyway::Msg::SetCharacterProperty(
-                    character_id,
-                    character.property.as_object(),
-                ));
-            }
-            cmd
-        }
-        Msg::SetCharacterPropertyName(character_id, property_id, property_name) => {
-            if let Some(property) = state
-                .world
-                .character_mut(&character_id)
-                .and_then(|c| c.property.get_mut(&property_id))
-            {
-                property.set_name(property_name);
-            }
-            state.cmd_queue.dequeue()
-        }
-        Msg::SetCharacterPropertyValueToTransport(character_id, property_id, property_value) => {
-            let cmd = update(
-                state,
-                Msg::SetCharacterPropertyValue(character_id, property_id, property_value),
-            );
-            if let Some(character) = state.world.character(&character_id) {
-                let room = &state.room;
-                room.send(skyway::Msg::SetCharacterProperty(
-                    character_id,
-                    character.property.as_object(),
-                ));
-            }
-            cmd
-        }
-        Msg::SetCharacterPropertyValue(character_id, property_id, property_value) => {
-            if let Some(property) = state
-                .world
-                .character_mut(&character_id)
-                .and_then(|c| c.property.get_mut(&property_id))
-            {
-                property.set_value(property_value);
-            }
-            state.cmd_queue.dequeue()
-        }
-        Msg::AddChildToCharacterPropertyToTransport(character_id, property_id, child_property) => {
-            update(
-                state,
-                Msg::AddChildToCharacterProperty(character_id, property_id, child_property),
-            );
-            if let Some(character) = state.world.character(&character_id) {
-                let room = &state.room;
-                room.send(skyway::Msg::SetCharacterProperty(
-                    character_id,
-                    character.property.as_object(),
-                ));
-            }
-            state.cmd_queue.dequeue()
-        }
-        Msg::AddChildToCharacterProperty(character_id, property_id, child_property) => {
-            if let Some(property) = state
-                .world
-                .character_mut(&character_id)
-                .and_then(|c| c.property.get_mut(&property_id))
-            {
-                property.push(child_property);
-            }
-            state.cmd_queue.dequeue()
-        }
-        Msg::RemoveCharacterPropertyToTransport(character_id, property_id) => {
-            update(
-                state,
-                Msg::RemoveCharacterProperty(character_id, property_id),
-            );
-            if let Some(character) = state.world.character(&character_id) {
-                let room = &state.room;
-                room.send(skyway::Msg::SetCharacterProperty(
-                    character_id,
-                    character.property.as_object(),
-                ));
-            }
-            state.cmd_queue.dequeue()
-        }
-        Msg::RemoveCharacterProperty(character_id, property_id) => {
-            if let Some(character) = state.world.character_mut(&character_id) {
-                character.property.remove(property_id);
-            }
-            state.cmd_queue.dequeue()
-        }
-        Msg::SetCharacterPropertyIsSelectedToShowToTransport(
-            character_id,
-            property_id,
-            is_selected_to_show,
-        ) => {
-            update(
-                state,
-                Msg::SetCharacterPropertyIsSelectedToShow(
-                    character_id,
-                    property_id,
-                    is_selected_to_show,
-                ),
-            );
-            if let Some(character) = state.world.character(&character_id) {
-                let room = &state.room;
-                room.send(skyway::Msg::SetCharacterProperty(
-                    character_id,
-                    character.property.as_object(),
-                ));
-            }
-            state.cmd_queue.dequeue()
-        }
-        Msg::SetCharacterPropertyIsSelectedToShow(
-            character_id,
-            property_id,
-            is_selected_to_show,
-        ) => {
-            if let Some(character) = state.world.character_mut(&character_id) {
-                if let Some(property) = character.property.get_mut(&property_id) {
-                    property.set_is_selected_to_show(is_selected_to_show);
-                }
-            }
-            state.cmd_queue.dequeue()
-        }
-        Msg::SetSelectingTableToTransport(table_id) => {
-            let room = &state.room;
-            room.send(skyway::Msg::SetSelectingTable(table_id));
-            update(state, Msg::SetSelectingTable(table_id))
-        }
-        Msg::SetSelectingTable(table_id) => {
-            state.world.set_selecting_table_id(table_id);
-            update(state, Msg::Render)
-        }
-        Msg::SetTableNameToTransport(table_id, name) => {
-            let room = &state.room;
-            room.send(skyway::Msg::SetTableName(table_id, name.clone()));
-            update(state, Msg::SetTableName(table_id, name))
-        }
-        Msg::SetTableName(table_id, name) => {
-            if let Some(table) = state.world.table_mut(&table_id) {
-                table.set_name(name);
-            }
-            state.cmd_queue.dequeue()
-        }
-        Msg::AddTableToTransport => {
-            let table_id = random_id::u128val();
-            let room = &state.room;
-            room.send(skyway::Msg::CreateTable(table_id));
-            update(state, Msg::AddTable(table_id))
-        }
-        Msg::AddTable(table_id) => {
-            state.world.add_table_with_id(table_id);
-            state.cmd_queue.dequeue()
+
+            send_pack_cmd(state.block_field(), vec![&character])
         }
 
-        // チャット周り
-        Msg::SetSelectingChatTabIdx(tab_idx) => {
-            state.chat_data.selecting_tab_idx = tab_idx;
-            state.cmd_queue.dequeue()
-        }
-        Msg::InputChatMessage(message) => {
-            state.chat_data.inputing_message = message;
-            state.cmd_queue.dequeue()
-        }
-        Msg::SendChatItemToTransport => {
-            let sender = &state.chat_data.senders[state.chat_data.selecting_sender_idx];
-            let message: String = state.chat_data.inputing_message.drain(..).collect();
-            let message: String = message.as_str().trim_end().into();
-
-            if message.as_str().len() > 0 {
-                let sender = match sender {
-                    ChatSender::Player => {
-                        state.dice_bot.run_time.set_ref(sainome::Ref::new(None));
-                        Some((
-                            state.personal_data.name.clone(),
-                            None,
-                            state
-                                .personal_data
-                                .icon
-                                .map(|r_id| Icon::Resource(r_id))
-                                .unwrap_or(Icon::DefaultUser),
-                        ))
-                    }
-                    ChatSender::Character(character_id) => {
-                        if let Some(character) = state.world.character(character_id) {
-                            let r = character.property.as_sainome_ref();
-                            state.dice_bot.run_time.set_ref(r);
-                            Some((
-                                character.name().clone(),
-                                Some(*character_id),
-                                character
-                                    .texture_id()
-                                    .map(|r_id| Icon::Resource(r_id))
-                                    .unwrap_or(Icon::DefaultUser),
-                            ))
-                        } else {
-                            None
-                        }
-                    }
-                };
-
-                if let Some((display_name, character_id, icon)) = sender {
-                    let tab_idx = state.chat_data.selecting_tab_idx;
-
-                    let (bot_msg, chat_cmd) = {
-                        state.dice_bot.run_time.clear_log();
-
-                        let run_time = &state.dice_bot.run_time;
-                        let config = &state.dice_bot.config;
-                        let chat_cmd = message.as_str().split_whitespace().collect::<Vec<&str>>();
-                        let chat_cmd = chat_cmd
-                            .get(0)
-                            .map(|x| dice_bot::cmd_with_config(x.to_string(), &config));
-                        let chat_cmd_result = chat_cmd
-                            .as_ref()
-                            .and_then(move |x| sainome::exec(x, &run_time).0);
-
-                        let bot_msg = if let Some(result) = chat_cmd_result {
-                            match result {
-                                sainome::ExecResult::Err(..) => None,
-                                _ => {
-                                    let mut msgs = run_time.log().clone();
-                                    msgs.push(format!("{}", result));
-                                    Some(msgs.join(" → "))
-                                }
-                            }
-                        } else {
-                            None
-                        };
-
-                        (bot_msg, chat_cmd)
-                    };
-
-                    let chat_item =
-                        ChatItem::new(display_name, state.peer.id(), character_id, icon, message);
-
-                    state.room.send(skyway::Msg::InsertChatItem(
-                        tab_idx as u32,
-                        chat_item.as_object(),
-                    ));
-
-                    let cmd = update(state, Msg::InsertChatItem(tab_idx, chat_item));
-                    state.cmd_queue.enqueue(cmd);
-
-                    if let (Some(chat_cmd), Some(bot_msg)) = (chat_cmd, bot_msg) {
-                        let chat_item = ChatItem::new(
-                            "DiceBot",
-                            state.peer.id(),
-                            None,
-                            Icon::None,
-                            chat_cmd + " → " + &bot_msg,
-                        );
-                        state.room.send(skyway::Msg::InsertChatItem(
-                            tab_idx as u32,
-                            chat_item.as_object(),
-                        ));
-                        let cmd = update(state, Msg::InsertChatItem(tab_idx, chat_item));
-                        state.cmd_queue.enqueue(cmd);
-                    }
-                }
-            }
-            Cmd::task(|_| {
-                if let Some(el) = web_sys::window()
-                    .unwrap()
-                    .document()
-                    .unwrap()
-                    .get_element_by_id("chat-area")
-                {
-                    el.set_scroll_top(el.scroll_height());
-                }
-            })
-        }
-        Msg::InsertChatItem(tab_idx, chat_item) => {
-            let tabs = &mut state.chat_data.tabs;
-            let world = &state.world;
-            let canvas_size = &state.canvas_size;
-            let camera = &state.camera;
-            let pixel_ratio = state.pixel_ratio;
-
-            if let Some(speech_bubble) = tabs.get_mut(tab_idx).and_then(|tab| {
-                let speech_bubble = chat_item
-                    .character_id()
-                    .and_then(|character_id| world.character(&character_id))
-                    .map(|character| {
-                        let vertex = [0.0, character.size()[1], 0.0];
-                        let position = Renderer::table_position(
-                            &vertex,
-                            character.position(),
-                            camera,
-                            canvas_size,
-                            true,
-                        );
-                        let dpr = get_device_pixel_ratio(pixel_ratio);
-                        let x = (position[0] + 1.0) / 2.0 * canvas_size[0] / dpr;
-                        let y = -(position[1] - 1.0) / 2.0 * canvas_size[1] / dpr;
-                        SpeechBubble {
-                            texture_id: character.texture_id(),
-                            position: [x, y],
-                            message: chat_item.payload().clone(),
-                        }
-                    });
-                tab.push(chat_item);
-                speech_bubble
-            }) {
-                update(state, Msg::EnqueueSpeechBubble(speech_bubble))
-            } else {
-                state.cmd_queue.dequeue()
-            }
-        }
-        Msg::SetChatSender(sender_idx) => {
-            if sender_idx < state.chat_data.senders.len() {
-                state.chat_data.selecting_sender_idx = sender_idx;
-            }
-            state.cmd_queue.dequeue()
-        }
-        Msg::AddChatSender(sender) => {
-            state.chat_data.senders.push(sender);
-            state.cmd_queue.dequeue()
-        }
-        Msg::RemoveChatSender(sender) => {
-            let old_senders = state.chat_data.senders.drain(..);
-            state.chat_data.senders = old_senders.into_iter().filter(|s| *s != sender).collect();
-            state.cmd_queue.dequeue()
-        }
-        Msg::EnqueueSpeechBubble(sppech_bubble) => {
-            state.speech_bubble_queue.push_back(sppech_bubble);
-            Cmd::task(|resolve| {
-                let a = Closure::once(
-                    Box::new(|| resolve(Msg::DequeueSpeechBubble)) as Box<dyn FnOnce()>
+        Msg::SetCharacterSize(character, [w, h]) => {
+            if let (Some(w), Some(h)) = (w, h) {
+                state.block_field_mut().update(
+                    &character,
+                    timestamp(),
+                    |character: &mut block::Character| {
+                        character.set_size([w, 0.0, h]);
+                    },
                 );
-                let _ = web_sys::window()
-                    .unwrap()
-                    .set_timeout_with_callback_and_timeout_and_arguments_0(
-                        a.as_ref().unchecked_ref(),
-                        2500,
+            } else if let Some(Data::Image { element, .. }) = state
+                .block_field()
+                .get::<block::Character>(&character)
+                .and_then(|character| character.texture_id())
+                .and_then(|t_id| state.resource().get(t_id))
+            {
+                let iw = element.width() as f32;
+                let ih = element.height() as f32;
+                if let Some(w) = w {
+                    let h = w / iw * ih;
+                    state.block_field_mut().update(
+                        &character,
+                        timestamp(),
+                        |character: &mut block::Character| {
+                            character.set_size([w, 0.0, h]);
+                        },
                     );
-                a.forget();
-            })
-        }
-        Msg::DequeueSpeechBubble => {
-            state.speech_bubble_queue.pop_front();
-            state.cmd_queue.dequeue()
-        }
-        Msg::AddChatTabTotransport => {
-            let room = &state.room;
-            room.send(skyway::Msg::AddChatTab);
-            update(state, Msg::AddChatTab)
-        }
-        Msg::AddChatTab => {
-            let chat_tab = ChatTab::new("タブ");
-            state.chat_data.tabs.push(chat_tab);
-            state.cmd_queue.dequeue()
-        }
-        Msg::SetChatTabNameToTransport(idx, name) => {
-            let room = &state.room;
-            room.send(skyway::Msg::SetChatTabName(idx as u32, name.clone()));
-            update(state, Msg::SetChatTabName(idx, name))
-        }
-        Msg::SetChatTabName(idx, name) => {
-            if let Some(tab) = state.chat_data.tabs.get_mut(idx) {
-                tab.set_name(name);
-            }
-            state.cmd_queue.dequeue()
-        }
-        Msg::RemoveChatTabToTransport(idx) => {
-            let room = &state.room;
-            room.send(skyway::Msg::RemoveChatTab(idx as u32));
-            update(state, Msg::RemoveChatTab(idx))
-        }
-        Msg::RemoveChatTab(idx) => {
-            if state.chat_data.tabs.len() > 1 {
-                if state.chat_data.selecting_tab_idx == state.chat_data.tabs.len() - 1 {
-                    state.chat_data.selecting_tab_idx -= 1;
                 }
-                state.chat_data.tabs.remove(idx);
+                if let Some(h) = h {
+                    let w = h / ih * iw;
+                    state.block_field_mut().update(
+                        &character,
+                        timestamp(),
+                        |character: &mut block::Character| {
+                            character.set_size([w, 0.0, h]);
+                        },
+                    );
+                }
             }
-            state.cmd_queue.dequeue()
+
+            send_pack_cmd(state.block_field(), vec![&character])
         }
+
+        // Chat
+        Msg::SetInputingChatMessage(msg) => {
+            state.chat_mut().set_inputing_message(msg);
+            state.dequeue()
+        }
+
+        Msg::SendInputingChatMessage => state.dequeue(),
+
+        Msg::InsertChatItem(tab, item) => state.dequeue(),
+
+        Msg::SetChatSender(idx) => state.dequeue(),
+
+        Msg::AddChatTab => state.dequeue(),
+
+        Msg::SetChatTabName(tab, name) => state.dequeue(),
+
+        Msg::RemoveChatTab(tab) => state.dequeue(),
 
         // リソース
-        Msg::LoadFromFileListToTransport(file_list) => {
+        Msg::LoadFromFileList(file_list) => {
             let len = file_list.length();
-            let mut blobs = HashMap::new();
             for i in 0..len {
                 if let Some(file) = file_list.item(i) {
                     let blob: web_sys::Blob = file.into();
-                    let data_id = random_id::u128val();
-                    blobs.insert(data_id, Rc::new(blob));
-                }
-            }
-            update(state, Msg::LoadFromBlobsToTransport(blobs))
-        }
-        Msg::LoadFromBlobsToTransport(blobs) => {
-            let mut transport_data = HashMap::new();
-            for (data_id, blob) in &blobs {
-                let data_id = *data_id;
-                let blob = Rc::clone(blob);
-                transport_data.insert(data_id, blob);
-            }
-            if !transport_data.is_empty() {
-                let room = &state.room;
-                room.send(skyway::Msg::SetResource(ResourceData::from(transport_data)));
-                update(state, Msg::LoadFromBlobs(blobs))
-            } else {
-                Cmd::none()
-            }
-        }
-        Msg::LoadFromBlobs(blobs) => {
-            for (data_id, blob) in blobs {
-                let cmd = Cmd::task({
-                    let blob = Rc::clone(&blob);
-                    move |resolve| {
-                        let blob_type = blob.type_();
-                        let blob_type: Vec<&str> = blob_type.split('/').collect();
-                        let blob_type = blob_type.first().map(|x| x as &str).unwrap_or("");
-                        if blob_type == "image" {
-                            let image = Rc::new(crate::util::html_image_element());
-                            let a = {
-                                let image = Rc::clone(&image);
-                                let blob = Rc::clone(&blob);
-                                Closure::once(Box::new(move || {
-                                    let object_url =
-                                        web_sys::Url::create_object_url_with_blob(&blob)
-                                            .unwrap_or("".into());
-                                    resolve(Msg::LoadReasource(
-                                        data_id,
-                                        Data::Image(image, blob, Rc::new(object_url)),
-                                    ));
-                                }))
-                            };
-                            image.set_onload(Some(&a.as_ref().unchecked_ref()));
-                            if let Ok(object_url) = web_sys::Url::create_object_url_with_blob(&blob)
-                            {
-                                image.set_src(&object_url);
+                    let promise = Data::from_blob(blob);
+                    let task = Cmd::task(move |resolve| {
+                        promise.then(|data| {
+                            if let Ok(data) = data {
+                                resolve(Msg::LoadDataToResource(data));
                             }
-                            a.forget();
-                        }
+                        })
+                    });
+                    state.enqueue(task);
+                }
+            }
+            state.dequeue()
+        }
+
+        Msg::LoadDataToResource(data) => {
+            let promise = data.pack();
+            let id = state.resource_mut().add(data);
+            Cmd::task(move |resolve| {
+                promise.then(|data| {
+                    if let Ok(data) = data {
+                        resolve(Msg::SendResourcePacks(
+                            vec![(id, data)].into_iter().collect(),
+                        ))
                     }
-                });
-                state.cmd_queue.enqueue(cmd);
-                state.loading_resource_num += 1;
-            }
-            state.cmd_queue.dequeue()
-        }
-
-        Msg::LoadReasource(resource_id, data) => {
-            state.resource.insert(resource_id, data);
-            state.loading_resource_num -= 1;
-            if state.loading_resource_num == 0 {
-                state.loaded_resource_num = 0;
-            } else {
-                state.loaded_resource_num += 1;
-            }
-            state.cmd_queue.dequeue()
-        }
-
-        // IndexedDB
-        Msg::AddCharacterToDb(character_id) => {
-            if let Some(character) = state.world.character(&character_id) {
-                let texture_id = character.texture_id();
-                let character: JsObject = character.as_data().into();
-                let character: js_sys::Object = character.into();
-                idb::query(
-                    &state.common_database,
-                    "characters",
-                    idb::Query::Add(
-                        &JsValue::from(character_id.to_string()),
-                        &JsValue::from(&character),
-                    ),
-                    {
-                        let texture_id = texture_id.clone();
-                        move |_| {
-                            texture_id
-                                .map(|texture_id| Msg::AddResourceToDb(texture_id))
-                                .unwrap_or(Msg::NoOp)
-                        }
-                    },
-                    move |_| Msg::PutCharacterToDb(character_id, character, texture_id),
-                )
-            } else {
-                Cmd::none()
-            }
-        }
-        Msg::PutCharacterToDb(character_id, character, texture_id) => idb::query(
-            &state.common_database,
-            "characters",
-            idb::Query::Put(
-                &JsValue::from(character_id.to_string()),
-                &JsValue::from(character),
-            ),
-            {
-                let texture_id = texture_id.clone();
-                move |_| {
-                    texture_id
-                        .map(|texture_id| Msg::AddResourceToDb(texture_id))
-                        .unwrap_or(Msg::NoOp)
-                }
-            },
-            |_| Msg::NoOp,
-        ),
-        Msg::AddResourceToDb(resource_id) => {
-            if let Some(data) = state.resource.get_blob(&resource_id) {
-                let data = data.as_ref().clone().dyn_into::<js_sys::Object>().unwrap();
-                idb::query(
-                    &state.common_database,
-                    "resources",
-                    idb::Query::Add(
-                        &JsValue::from(resource_id.to_string()),
-                        &JsValue::from(&data),
-                    ),
-                    |_| Msg::NoOp,
-                    move |_| Msg::PutResourceToDb(resource_id, data),
-                )
-            } else {
-                Cmd::none()
-            }
-        }
-        Msg::PutResourceToDb(resource_id, data) => idb::query(
-            &state.common_database,
-            "resources",
-            idb::Query::Put(
-                &JsValue::from(resource_id.to_string()),
-                &JsValue::from(data),
-            ),
-            |_| Msg::NoOp,
-            |_| Msg::NoOp,
-        ),
-        Msg::GetCharacterListFromDbToOpenModal => idb::query(
-            &state.common_database,
-            "characters",
-            idb::Query::GetAllKeys,
-            move |x| Msg::FinishToGetCharacterListFromDbToOpenModal(x),
-            |_| Msg::NoOp,
-        ),
-        Msg::FinishToGetCharacterListFromDbToOpenModal(keys) => {
-            let raw_keys = js_sys::Array::from(&keys).to_vec();
-            let mut keys = vec![];
-
-            for raw_key in raw_keys {
-                if let Some(key) = raw_key.as_string().and_then(|x| x.parse().ok()) {
-                    keys.push(key);
-                }
-            }
-
-            state.loading_character_keys = keys;
-            get_character_with_key_from_db_to_open_modal(
-                &state.common_database,
-                state.loading_character_keys.pop(),
-            )
-        }
-        Msg::FinishToGetCharacterWithKeyFromDbToOpenModal(x) => {
-            if let Ok(x) = x.dyn_into::<JsObject>() {
-                let character = model::CharacterData::from(x);
-                let character: Character = character.into();
-                state.loading_characters.push(character);
-            }
-            get_character_with_key_from_db_to_open_modal(
-                &state.common_database,
-                state.loading_character_keys.pop(),
-            )
+                })
+            })
         }
 
         // 接続に関する操作
+        Msg::SendBlockPacks(packs) => {
+            let packs = packs
+                .into_iter()
+                .map(|(id, data)| (id.to_u128(), data))
+                .collect();
+            state.room().send(skyway::Msg::SetBlockPacks(packs));
+            state.dequeue()
+        }
+
+        Msg::SendResourcePacks(packs) => {
+            state.room().send(skyway::Msg::SetResourcePacks(packs));
+            state.dequeue()
+        }
+
         Msg::ReceiveMsg(msg) => match msg {
-            skyway::Msg::SetSelectingTable(table_id) => {
-                update(state, Msg::SetSelectingTable(table_id))
-            }
-            skyway::Msg::SetTableName(table_id, name) => {
-                update(state, Msg::SetTableName(table_id, name))
-            }
-            skyway::Msg::CreateTable(table_id) => update(state, Msg::AddTable(table_id)),
-            skyway::Msg::CreateCharacterToTable(character_id, character) => {
-                let character: Character = character.into();
-                state.world.add_character_with_id(character_id, character);
-                update(state, Msg::Render)
-            }
-            skyway::Msg::CreateTablemaskToTable(tablemask_id, tablemask) => {
-                let tablemask: Tablemask = tablemask.into();
-                state.world.add_tablemask_with_id(tablemask_id, tablemask);
-                update(state, Msg::Render)
-            }
-            skyway::Msg::SetTableSize(size) => update(state, Msg::SetTableSize(size)),
-            skyway::Msg::SetTableImage(data_id) => update(state, Msg::SetTableImage(data_id)),
-            skyway::Msg::DrawLineToTable(start_point, end_point) => {
-                if let Some(table) = state.world.selecting_table_mut() {
-                    table.draw_line(&start_point, &end_point, ColorSystem::gray(255, 9), 0.5);
-                }
-                update(state, Msg::Render)
-            }
-            skyway::Msg::EraceLineToTable(start_point, end_point) => {
-                if let Some(table) = state.world.selecting_table_mut() {
-                    table.erace_line(&start_point, &end_point, 1.0);
-                }
-                update(state, Msg::Render)
-            }
-            skyway::Msg::SetCharacterImage(character_id, data_id) => {
-                update(state, Msg::SetCharacterImage(character_id, data_id))
-            }
-            skyway::Msg::SetCharacterSize(character_id, size) => update(
-                state,
-                Msg::SetCharacterSize(character_id, Some(size[0]), Some(size[1])),
-            ),
-            skyway::Msg::SetCharacterName(character_id, name) => {
-                update(state, Msg::SetCharacterName(character_id, name))
-            }
-            skyway::Msg::SetCharacterProperty(character_id, prop) => {
-                let prop = Property::from(prop);
-                if let Some(character) = state.world.character_mut(&character_id) {
-                    character.property = prop;
-                }
-                state.cmd_queue.dequeue()
-            }
-            skyway::Msg::SetTablemaskSizeWithStyle(tablemask_id, size, is_rounded, is_fixed) => {
-                update(
-                    state,
-                    Msg::SetTablemaskSizeWithStyle(tablemask_id, size, is_rounded, is_fixed),
-                )
-            }
-            skyway::Msg::SetTablemaskColor(tablemask_id, color) => update(
-                state,
-                Msg::SetTablemaskColor(tablemask_id, Color::from(color)),
-            ),
-            skyway::Msg::SetObjectPosition(object_id, position) => {
-                update(state, Msg::SetObjectPosition(object_id, position))
-            }
-            skyway::Msg::BindObjectToTableGrid(object_id) => {
-                update(state, Msg::BindObjectToTableGrid(object_id))
-            }
-            skyway::Msg::SetIsBindToGrid(is_bind_to_grid) => {
-                update(state, Msg::SetIsBindToGrid(is_bind_to_grid))
-            }
-            skyway::Msg::SetWorld(world_data) => {
-                state.world = world_data.into();
-                update(state, Msg::Render)
-            }
-            skyway::Msg::SetResource(resource_data) => {
-                update(state, Msg::LoadFromBlobs(resource_data.into()))
-            }
-            skyway::Msg::SetChat(chat) => {
-                state.chat_data.tabs = Chat::from(chat);
-                Cmd::none()
-            }
-            skyway::Msg::SetConnection(peers) => {
-                state.peers = peers;
-                state.cmd_queue.dequeue()
-            }
-            skyway::Msg::RemoveObject(object_id) => {
-                update(state, Msg::RemoveObjectWithObjectId(object_id))
-            }
-            skyway::Msg::InsertChatItem(tab_idx, item) => update(
-                state,
-                Msg::InsertChatItem(tab_idx as usize, ChatItem::from(item)),
-            ),
-            skyway::Msg::AddChatTab => update(state, Msg::AddChatTab),
-            skyway::Msg::SetChatTabName(tab_idx, name) => {
-                update(state, Msg::SetChatTabName(tab_idx as usize, name))
-            }
-            skyway::Msg::RemoveChatTab(tab_idx) => {
-                update(state, Msg::RemoveChatTab(tab_idx as usize))
-            }
-            skyway::Msg::None => state.cmd_queue.dequeue(),
+            skyway::Msg::None => state.dequeue(),
+            skyway::Msg::SetBlockPacks(packs) => state.dequeue(),
+            skyway::Msg::SetResourcePacks(packs) => state.dequeue(),
         },
         Msg::PeerJoin(peer_id) => {
             if state.loading_state != 0 {

@@ -46,6 +46,18 @@ impl Texture {
         me
     }
 
+    pub fn texture_position(&self, p: &[f64; 2]) -> [f64; 2] {
+        [(p[0] + self.size[0] / 2.0), -(p[1] - self.size[1] / 2.0)]
+    }
+
+    pub fn element(&self) -> &web_sys::HtmlCanvasElement {
+        &self.element
+    }
+
+    pub fn context(&self) -> &web_sys::CanvasRenderingContext2d {
+        &self.context
+    }
+
     pub fn set_size(&mut self, size: [f64; 2]) {
         let new_pixel_ratio = [4096.0 / size[0], 4096.0 / size[1]];
 
@@ -61,14 +73,6 @@ impl Texture {
 
         self.pixel_ratio = new_pixel_ratio;
         self.size = size;
-    }
-
-    pub fn element(&self) -> &web_sys::HtmlCanvasElement {
-        &self.element
-    }
-
-    pub fn context(&self) -> &web_sys::CanvasRenderingContext2d {
-        &self.context
     }
 }
 

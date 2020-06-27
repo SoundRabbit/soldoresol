@@ -13,7 +13,6 @@ use wasm_bindgen::{prelude::*, JsCast};
 pub mod character;
 pub mod chat;
 pub mod property;
-pub mod resource;
 pub mod table;
 pub mod table_object;
 pub mod world;
@@ -21,7 +20,6 @@ pub mod world;
 pub use character::Character;
 pub use chat::Chat;
 pub use property::Property;
-pub use resource::Resource;
 pub use table::Table;
 pub use world::World;
 
@@ -128,8 +126,6 @@ impl FieldBlock {
             payload.pack()
         } else if let Some(payload) = self.payload.downcast_ref::<Property>() {
             payload.pack()
-        } else if let Some(payload) = self.payload.downcast_ref::<Resource>() {
-            payload.pack()
         } else {
             Promise::new(|resolve| resolve(Err(())))
         }
@@ -232,24 +228,29 @@ impl Field {
     pub fn update<T: Block + 'static>(
         &mut self,
         block_id: &BlockId,
-        timestamp: Timestamp,
+        timestamp: Option<Timestamp>,
         f: impl FnOnce(&mut T),
-    ) -> bool {
+    ) -> Option<&mut Self> {
         self.table
             .borrow_mut()
             .get_mut(block_id)
             .and_then(|fb| {
-                if fb.timestamp < timestamp {
-                    fb.payload.downcast_mut::<T>()
+                if let Some(timestamp) = timestamp {
+                    if fb.timestamp < timestamp {
+                        fb.timestamp = timestamp;
+                        fb.payload.downcast_mut::<T>()
+                    } else {
+                        None
+                    }
                 } else {
-                    None
+                    fb.payload.downcast_mut::<T>()
                 }
             })
             .map(move |b| {
                 f(b);
-                true
+                None
             })
-            .unwrap_or(false)
+            .unwrap_or(Some(self))
     }
 
     pub fn timestamp(&self, block_id: &BlockId) -> Option<&Timestamp> {

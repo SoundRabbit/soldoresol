@@ -16,7 +16,7 @@ pub struct State {
 }
 
 impl Sender {
-    fn as_character(&self) -> Option<&BlockId> {
+    pub fn as_character(&self) -> Option<&BlockId> {
         match self {
             Self::Character(c_id) => Some(c_id),
             _ => None,
@@ -36,5 +36,9 @@ impl State {
             take: 64,
             senders: vec![Sender::Player],
         }
+    }
+
+    pub fn set_inputing_message(&mut self, msg: String) {
+        self.inputing_message = msg;
     }
 }

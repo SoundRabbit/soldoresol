@@ -10,8 +10,7 @@ pub struct World {
 }
 
 impl World {
-    pub fn new(field: &mut Field) -> Self {
-        let selecting_table = field.add(super::Table::new(field));
+    pub fn new(selecting_table: BlockId) -> Self {
         let tables = vec![selecting_table.clone()];
         Self {
             selecting_table,
@@ -22,6 +21,10 @@ impl World {
 
     pub fn selecting_table(&self) -> &BlockId {
         &self.selecting_table
+    }
+
+    pub fn add_table(&mut self, table: BlockId) {
+        self.tables.push(table);
     }
 
     pub fn add_character(&mut self, character: BlockId) {

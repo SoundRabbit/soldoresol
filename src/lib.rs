@@ -28,12 +28,14 @@ mod model;
 mod promise;
 mod random_id;
 mod renderer;
+mod resource;
 mod skyway;
 
 use color::Color;
 use config::Config;
 use js_object::JsObject;
 use promise::Promise;
+use resource::Resource;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen(start)]
