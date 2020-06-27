@@ -3,10 +3,15 @@ use super::super::{
     webgl::{WebGlF32Vbo, WebGlI16Ibo, WebGlRenderingContext},
     ModelMatrix,
 };
-use crate::model::{Camera, Character, Color, Resource};
+use super::Camera;
+use crate::{
+    block::{self, BlockId},
+    resource::Data,
+    Color, Resource,
+};
 use ndarray::{arr1, Array2};
 use ordered_float::OrderedFloat;
-use std::collections::{hash_map, BTreeMap};
+use std::collections::BTreeMap;
 
 pub struct CharacterCollectionRenderer {
     img_vertexis_buffer: WebGlF32Vbo,
@@ -62,12 +67,13 @@ impl CharacterCollectionRenderer {
         }
     }
 
-    pub fn render(
+    pub fn render<'a>(
         &mut self,
         gl: &WebGlRenderingContext,
         camera: &Camera,
-        vp_matrix: &Array2<f64>,
-        characters: hash_map::IterMut<u128, Character>,
+        vp_matrix: &Array2<f32>,
+        block_field: &block::Field,
+        characters: impl Iterator<Item = &'a BlockId>,
         textures: &mut super::TextureCollection,
         resource: &Resource,
     ) {
@@ -90,12 +96,12 @@ impl CharacterCollectionRenderer {
             Some(&self.mask_index_buffer),
         );
 
-        let mut z_index: BTreeMap<OrderedFloat<f64>, Vec<(Array2<f64>, &mut Character)>> =
+        let mut z_index: BTreeMap<OrderedFloat<f32>, Vec<(Array2<f32>, &block::Character)>> =
             BTreeMap::new();
-        for (_, character) in characters {
+        for (_, character) in block_field.listed::<block::Character>(characters.collect()) {
             let s = character.size();
             let p = character.position();
-            let model_matrix: Array2<f64> = ModelMatrix::new()
+            let model_matrix: Array2<f32> = ModelMatrix::new()
                 .with_scale(&[s[0], s[0], 1.0])
                 .with_movement(&p)
                 .into();
@@ -126,7 +132,7 @@ impl CharacterCollectionRenderer {
                 0,
             );
 
-            let model_matrix: Array2<f64> = ModelMatrix::new()
+            let model_matrix: Array2<f32> = ModelMatrix::new()
                 .with_x_axis_rotation(camera.x_axis_rotation())
                 .with_z_axis_rotation(camera.z_axis_rotation())
                 .with_movement(&p)
@@ -168,15 +174,19 @@ impl CharacterCollectionRenderer {
             for (mvp_matrix, character) in character_list {
                 let texture_id = character.texture_id();
                 if let Some(texture_id) = texture_id {
-                    if let (None, Some(texture_data)) = (
-                        textures.get(&texture_id),
-                        resource.get_as_image(&texture_id),
-                    ) {
-                        textures.insert(gl, texture_id, &texture_data);
+                    if let (
+                        None,
+                        Some(Data::Image {
+                            element: texture_data,
+                            ..
+                        }),
+                    ) = (textures.get(texture_id), resource.get(texture_id))
+                    {
+                        textures.insert(gl, *texture_id, texture_data);
                     }
                     if let Some(texture) = textures.get(&texture_id) {
                         let s = character.size();
-                        let model_matrix: Array2<f64> =
+                        let model_matrix: Array2<f32> =
                             ModelMatrix::new().with_scale(&[s[0], s[1], 1.0]).into();
                         let mvp_matrix = model_matrix.dot(&mvp_matrix);
 
@@ -207,7 +217,6 @@ impl CharacterCollectionRenderer {
                         );
                     }
                 }
-                character.rendered();
             }
         }
     }

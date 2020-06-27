@@ -44,6 +44,10 @@ impl Character {
         self.texture_id.as_ref()
     }
 
+    pub fn background_color(&self) -> &Color {
+        &self.background_color
+    }
+
     pub fn set_name(&mut self, name: String) {
         self.name = name;
     }

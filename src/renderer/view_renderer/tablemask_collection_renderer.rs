@@ -3,9 +3,8 @@ use super::super::{
     webgl::{WebGlF32Vbo, WebGlI16Ibo, WebGlRenderingContext},
     ModelMatrix,
 };
-use crate::model::{Camera, Tablemask};
+use crate::block::{self, BlockId};
 use ndarray::Array2;
-use std::collections::hash_map;
 
 pub struct TablemaskCollectionRenderer {
     vertexis_buffer: WebGlF32Vbo,
@@ -39,12 +38,12 @@ impl TablemaskCollectionRenderer {
         }
     }
 
-    pub fn render(
+    pub fn render<'a>(
         &self,
         gl: &WebGlRenderingContext,
-        _camera: &Camera,
-        vp_matrix: &Array2<f64>,
-        tablemasks: hash_map::Iter<u128, Tablemask>,
+        vp_matrix: &Array2<f32>,
+        data_field: &block::Field,
+        tablemasks: impl Iterator<Item = &'a BlockId>,
     ) {
         self.mask_program.use_program(gl);
 
@@ -65,10 +64,12 @@ impl TablemaskCollectionRenderer {
             Some(&self.index_buffer),
         );
 
-        for (_, tablemask) in tablemasks {
+        for (id, tablemask) in
+            data_field.listed::<block::table_object::Tablemask>(tablemasks.collect())
+        {
             let s = tablemask.size();
             let p = tablemask.position();
-            let model_matrix: Array2<f64> = ModelMatrix::new()
+            let model_matrix: Array2<f32> = ModelMatrix::new()
                 .with_scale(&[s[0], s[1], 1.0])
                 .with_z_axis_rotation(-tablemask.z_rotation())
                 .with_movement(&p)

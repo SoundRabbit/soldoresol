@@ -5,7 +5,10 @@ mod program;
 mod view_renderer;
 mod webgl;
 
-use crate::model::{Resource, World};
+use crate::{
+    block::{self, BlockId},
+    Resource,
+};
 pub use camera::Camera;
 use mask_renderer::MaskRenderer;
 use model_matrix::ModelMatrix;
@@ -39,16 +42,16 @@ impl Renderer {
     }
 
     pub fn table_position(
-        vertex: &[f64; 3],
-        movement: &[f64; 3],
+        vertex: &[f32; 3],
+        movement: &[f32; 3],
         camera: &Camera,
-        canvas_size: &[f64; 2],
+        canvas_size: &[f32; 2],
         is_billboard: bool,
-    ) -> [f64; 2] {
+    ) -> [f32; 2] {
         let vp_matrix = camera
             .view_matrix()
             .dot(&camera.perspective_matrix(&canvas_size));
-        let model_matrix: Array2<f64> = if is_billboard {
+        let model_matrix: Array2<f32> = if is_billboard {
             ModelMatrix::new()
                 .with_x_axis_rotation(camera.x_axis_rotation())
                 .with_z_axis_rotation(camera.z_axis_rotation())
@@ -70,10 +73,11 @@ impl Renderer {
 
     pub fn render(
         &mut self,
-        world: &mut World,
+        block_field: &mut block::Field,
+        world: &BlockId,
         camera: &Camera,
         resource: &Resource,
-        canvas_size: &[f64; 2],
+        canvas_size: &[f32; 2],
     ) {
         if Rc::strong_count(&self.gl) < 3 {
             self.view_renderer

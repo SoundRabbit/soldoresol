@@ -1,7 +1,13 @@
-use super::super::program::{TableGridProgram, TableTextureProgram};
-use super::super::webgl::{WebGlF32Vbo, WebGlI16Ibo, WebGlRenderingContext};
-use super::super::ModelMatrix;
-use crate::model::{Camera, Color, Resource, Table};
+use super::super::{
+    program::TableGridProgram,
+    webgl::{WebGlF32Vbo, WebGlI16Ibo},
+    ModelMatrix,
+};
+use super::WebGlRenderingContext;
+use crate::{
+    block::{self},
+    Color,
+};
 use ndarray::Array2;
 
 pub struct TableGridRenderer {
@@ -42,9 +48,8 @@ impl TableGridRenderer {
     pub fn render(
         &mut self,
         gl: &WebGlRenderingContext,
-        _camera: &Camera,
-        vp_matrix: &Array2<f64>,
-        table: &mut Table,
+        vp_matrix: &Array2<f32>,
+        table: &block::Table,
     ) {
         let table_size = table.size();
         let table_size = [table_size[0].floor() as u64, table_size[1].floor() as u64];
@@ -69,7 +74,7 @@ impl TableGridRenderer {
             web_sys::WebGlRenderingContext::ELEMENT_ARRAY_BUFFER,
             Some(&self.grid_index_buffer),
         );
-        let model_matrix: Array2<f64> = ModelMatrix::new().into();
+        let model_matrix: Array2<f32> = ModelMatrix::new().into();
         let mvp_matrix = model_matrix.dot(vp_matrix);
         gl.uniform_matrix4fv_with_f32_array(
             Some(&self.table_grid_program.u_translate_location),
@@ -82,7 +87,6 @@ impl TableGridRenderer {
             ]
             .concat()
             .into_iter()
-            .map(|a| a as f32)
             .collect::<Vec<f32>>(),
         );
         gl.uniform4fv_with_f32_array(
@@ -95,8 +99,6 @@ impl TableGridRenderer {
             web_sys::WebGlRenderingContext::UNSIGNED_SHORT,
             0,
         );
-
-        table.rendered();
     }
 
     fn create_grid_buffers(

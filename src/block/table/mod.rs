@@ -38,8 +38,16 @@ impl Table {
         &self.drawing_texture_id
     }
 
+    pub fn image_texture_id(&self) -> Option<&ResourceId> {
+        self.image_texture_id.as_ref()
+    }
+
     pub fn set_image_texture_id(&mut self, image_texture_id: Option<ResourceId>) {
         self.image_texture_id = image_texture_id
+    }
+
+    pub fn tablemasks(&self) -> impl Iterator<Item = &BlockId> {
+        self.tablemasks.iter()
     }
 
     pub fn add_tablemask(&mut self, tablemask: BlockId) {

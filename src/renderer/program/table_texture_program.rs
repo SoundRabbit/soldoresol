@@ -20,8 +20,7 @@ const FRAGMENT_SHADER: &str = r#"
     varying vec2 v_textureCoord;
     uniform sampler2D u_texture0;
     uniform sampler2D u_texture1;
-    uniform sampler2D u_texture2;
-    uniform int u_flagTexture2;
+    uniform int u_flagTexture1;
 
     vec4 blend(vec4 bg, vec4 fr) {
         float dist_a = bg.w;
@@ -33,11 +32,9 @@ const FRAGMENT_SHADER: &str = r#"
 
     void main() {
         vec4 smpColor0 = texture2D(u_texture0, v_textureCoord);
-        vec4 smpColor1 = texture2D(u_texture1, v_textureCoord);
-        vec4 smpColor2 = u_flagTexture2 != 0 ? texture2D(u_texture2, v_textureCoord) : vec4(0.0,0.0,0.0,0.0);
-        vec4 color_a = blend(u_bgColor, smpColor2);
-        vec4 color_b = blend(color_a, smpColor0);
-        vec4 color_c = blend(color_b, smpColor1);
+        vec4 smpColor1 = u_flagTexture1 != 0 ? texture2D(u_texture1, v_textureCoord) : vec4(0.0,0.0,0.0,0.0);
+        vec4 color_b = blend(color_a, smpColor1);
+        vec4 color_c = blend(color_b, smpColor0);
         gl_FragColor = color_c;
     }
 "#;
@@ -50,8 +47,7 @@ pub struct TableTextureProgram {
     pub u_bg_color_location: WebGlUniformLocation,
     pub u_texture_0_location: WebGlUniformLocation,
     pub u_texture_1_location: WebGlUniformLocation,
-    pub u_texture_2_location: WebGlUniformLocation,
-    pub u_flag_texture_2_location: WebGlUniformLocation,
+    pub u_flag_texture_1_location: WebGlUniformLocation,
 }
 
 impl TableTextureProgram {
@@ -77,9 +73,8 @@ impl TableTextureProgram {
         let u_bg_color_location = gl.get_uniform_location(&program, "u_bgColor").unwrap();
         let u_texture_0_location = gl.get_uniform_location(&program, "u_texture0").unwrap();
         let u_texture_1_location = gl.get_uniform_location(&program, "u_texture1").unwrap();
-        let u_texture_2_location = gl.get_uniform_location(&program, "u_texture2").unwrap();
-        let u_flag_texture_2_location =
-            gl.get_uniform_location(&program, "u_flagTexture2").unwrap();
+        let u_flag_texture_1_location =
+            gl.get_uniform_location(&program, "u_flagTexture1").unwrap();
 
         Self {
             program,
@@ -89,8 +84,7 @@ impl TableTextureProgram {
             u_bg_color_location,
             u_texture_0_location,
             u_texture_1_location,
-            u_texture_2_location,
-            u_flag_texture_2_location,
+            u_flag_texture_1_location,
         }
     }
 

@@ -23,6 +23,10 @@ impl World {
         &self.selecting_table
     }
 
+    pub fn characters(&self) -> impl Iterator<Item = &BlockId> {
+        self.characters.iter()
+    }
+
     pub fn add_table(&mut self, table: BlockId) {
         self.tables.push(table);
     }

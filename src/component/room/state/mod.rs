@@ -101,6 +101,10 @@ impl<M, S> State<M, S> {
         Rc::clone(&self.room)
     }
 
+    pub fn peers_mut(&mut self) -> &mut HashSet<String> {
+        &mut self.peers
+    }
+
     pub fn personal_data_mut(&mut self) -> &mut model::PersonalData {
         &mut self.personal_data
     }

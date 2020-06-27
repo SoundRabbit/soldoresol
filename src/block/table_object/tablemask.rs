@@ -45,6 +45,18 @@ impl Tablemask {
         self.position = [position[0], position[1], 0.0];
     }
 
+    pub fn z_rotation(&self) -> f32 {
+        self.z_rotation
+    }
+
+    pub fn background_color(&self) -> &Color {
+        &self.background_color
+    }
+
+    pub fn is_rounded(&self) -> bool {
+        self.is_rounded
+    }
+
     pub fn property_id(&self) -> &BlockId {
         &self.property_id
     }

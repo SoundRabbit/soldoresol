@@ -3,8 +3,12 @@ mod table_grid_renderer;
 mod table_texture_renderer;
 mod tablemask_collection_renderer;
 
-use super::webgl::WebGlRenderingContext;
-use crate::model::{Camera, Resource, World};
+use super::{webgl::WebGlRenderingContext, Camera};
+use crate::{
+    block::{self},
+    resource::ResourceId,
+    Resource,
+};
 use character_collection_renderer::CharacterCollectionRenderer;
 use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
@@ -12,10 +16,10 @@ use table_grid_renderer::TableGridRenderer;
 use table_texture_renderer::TableTextureRenderer;
 use tablemask_collection_renderer::TablemaskCollectionRenderer;
 
-pub struct TextureCollection(HashMap<u128, web_sys::WebGlTexture>);
+pub struct TextureCollection(HashMap<ResourceId, web_sys::WebGlTexture>);
 
 impl Deref for TextureCollection {
-    type Target = HashMap<u128, web_sys::WebGlTexture>;
+    type Target = HashMap<ResourceId, web_sys::WebGlTexture>;
     fn deref(&self) -> &Self::Target {
         &self.0
     }
@@ -63,9 +67,10 @@ impl ViewRenderer {
     pub fn render(
         &mut self,
         gl: &WebGlRenderingContext,
-        canvas_size: &[f64; 2],
+        canvas_size: &[f32; 2],
         camera: &Camera,
-        world: &mut World,
+        block_field: &block::Field,
+        world: &block::World,
         resource: &Resource,
     ) {
         let vp_matrix = camera
@@ -78,28 +83,29 @@ impl ViewRenderer {
                 | web_sys::WebGlRenderingContext::DEPTH_BUFFER_BIT,
         );
         gl.depth_func(web_sys::WebGlRenderingContext::ALWAYS);
-        if let Some(table) = world.selecting_table_mut() {
+        if let Some(table) = block_field.get::<block::Table>(world.selecting_table()) {
             self.table_texture_renderer.render(
                 gl,
-                camera,
                 &vp_matrix,
+                block_field,
                 table,
                 &mut self.img_texture_buffer,
                 resource,
             );
-        }
-        self.tablemask_collection_renderer
-            .render(gl, camera, &vp_matrix, world.tablemasks());
-        if let Some(table) = world.selecting_table_mut() {
-            self.table_grid_renderer
-                .render(gl, camera, &vp_matrix, table);
-            table.rendered();
+            self.tablemask_collection_renderer.render(
+                gl,
+                &vp_matrix,
+                block_field,
+                table.tablemasks(),
+            );
+            self.table_grid_renderer.render(gl, &vp_matrix, table);
         }
         self.character_collection_renderer.render(
             gl,
             camera,
             &vp_matrix,
-            world.characters_mut(),
+            block_field,
+            world.characters(),
             &mut self.img_texture_buffer,
             resource,
         );
@@ -110,7 +116,7 @@ impl TextureCollection {
     fn insert(
         &mut self,
         gl: &WebGlRenderingContext,
-        texture_id: u128,
+        texture_id: ResourceId,
         texture_data: &web_sys::HtmlImageElement,
     ) {
         let texture_buffer = gl.create_texture().unwrap();
