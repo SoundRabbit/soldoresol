@@ -13,7 +13,7 @@ pub enum Value {
 #[derive(Clone)]
 pub struct Property {
     name: String,
-    is_selected_to_show: bool,
+    is_selected: bool,
     value: Value,
 }
 
@@ -32,9 +32,17 @@ impl Property {
     pub fn new(name: impl Into<String>) -> Self {
         Self {
             name: name.into(),
-            is_selected_to_show: false,
+            is_selected: false,
             value: Value::None,
         }
+    }
+
+    pub fn name(&self) -> &String {
+        &self.name
+    }
+
+    pub fn is_selected(&self) -> bool {
+        self.is_selected
     }
 
     pub fn value(&self) -> &Value {

@@ -1,6 +1,11 @@
+use crate::block::BlockId;
 use std::ops::{Deref, DerefMut};
 
-pub enum Contextmenu {}
+pub enum Contextmenu {
+    Default,
+    Character(BlockId),
+    Tablemask(BlockId),
+}
 
 pub struct State {
     grobal_position: [f64; 2],

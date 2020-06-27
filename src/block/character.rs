@@ -48,6 +48,10 @@ impl Character {
         &self.background_color
     }
 
+    pub fn name(&self) -> &String {
+        &self.name
+    }
+
     pub fn set_name(&mut self, name: String) {
         self.name = name;
     }

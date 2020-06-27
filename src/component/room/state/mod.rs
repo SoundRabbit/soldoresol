@@ -105,6 +105,10 @@ impl<M, S> State<M, S> {
         &mut self.peers
     }
 
+    pub fn personal_data(&self) -> &model::PersonalData {
+        &self.personal_data
+    }
+
     pub fn personal_data_mut(&mut self) -> &mut model::PersonalData {
         &mut self.personal_data
     }
@@ -123,6 +127,10 @@ impl<M, S> State<M, S> {
 
     pub fn block_field_mut(&mut self) -> &mut block::Field {
         &mut self.block_field
+    }
+
+    pub fn chat(&self) -> &chat::State {
+        &self.chat
     }
 
     pub fn chat_mut(&mut self) -> &mut chat::State {
@@ -194,6 +202,10 @@ impl<M, S> State<M, S> {
 
     pub fn close_contextmenu(&mut self) {
         self.contextmenu = None;
+    }
+
+    pub fn modeless(&self) -> &modeless::Collection<Modeless> {
+        &self.modeless
     }
 
     pub fn open_modeless(&mut self, modeless: Modeless) {

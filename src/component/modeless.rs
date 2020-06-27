@@ -1,13 +1,5 @@
 use kagura::prelude::*;
 
-pub fn container<Msg>(
-    attributes: Attributes,
-    events: Events<Msg>,
-    children: Vec<Html<Msg>>,
-) -> Html<Msg> {
-    Html::div(attributes.class("grid grid-table"), events, children)
-}
-
 pub fn frame<Msg>(
     loc_a: &[i32; 2],
     loc_b: &[i32; 2],

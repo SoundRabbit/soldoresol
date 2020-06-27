@@ -1,5 +1,6 @@
 use crate::block::BlockId;
 
+#[derive(Clone)]
 pub enum Tool {
     Selector,
     Pen,
@@ -9,6 +10,13 @@ pub enum Tool {
     Route(BlockId),
 }
 
+#[derive(Clone)]
+pub enum Focused {
+    None,
+    Character(BlockId),
+    Tablemask(BlockId),
+}
+
 pub struct State {
     selecting_tool: Tool,
     info: Vec<(String, String)>,
@@ -16,7 +24,7 @@ pub struct State {
     last_mouse_down_position: [f32; 2],
     last_mouse_up_position: [f32; 2],
     is_2d_mode: bool,
-    focused: Option<BlockId>,
+    focused: Focused,
 }
 
 impl Tool {
@@ -67,8 +75,12 @@ impl State {
             last_mouse_down_position: [0.0, 0.0],
             last_mouse_up_position: [0.0, 0.0],
             is_2d_mode: false,
-            focused: None,
+            focused: Focused::None,
         }
+    }
+
+    pub fn selecting_tool(&self) -> &Tool {
+        &self.selecting_tool
     }
 
     pub fn set_selecting_tool(&mut self, tool: Tool) {
@@ -95,6 +107,10 @@ impl State {
         self.last_mouse_position = pos;
     }
 
+    pub fn last_mouse_down_position(&self) -> &[f32; 2] {
+        &self.last_mouse_down_position
+    }
+
     pub fn set_last_mouse_down_position(&mut self, pos: [f32; 2]) {
         self.last_mouse_down_position = pos;
     }
@@ -103,11 +119,15 @@ impl State {
         self.last_mouse_up_position = pos;
     }
 
-    pub fn focused(&self) -> Option<&BlockId> {
-        self.focused.as_ref()
+    pub fn is_2d_mode(&self) -> bool {
+        self.is_2d_mode
     }
 
-    pub fn set_focused(&mut self, focused: Option<BlockId>) {
+    pub fn focused(&self) -> &Focused {
+        &self.focused
+    }
+
+    pub fn set_focused(&mut self, focused: Focused) {
         self.focused = focused
     }
 }

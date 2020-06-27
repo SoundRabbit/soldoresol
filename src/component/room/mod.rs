@@ -61,7 +61,8 @@ pub enum Msg {
     SetCameraMovementWithMouseMovement([f32; 2]),
     SetCameraMovementWithMouseWheel(f32),
     SetSelectingTableTool(state::table::Tool),
-    SetTableObjectPositionWithMousePosition(BlockId, [f32; 2]),
+    SetCharacterPositionWithMousePosition(BlockId, [f32; 2]),
+    SetTablemaskPositionWithMousePosition(BlockId, [f32; 2]),
     DrawLineWithMousePosition([f32; 2], [f32; 2]),
     EraceLineWithMousePosition([f32; 2], [f32; 2]),
     MeasureLineWithMousePosition([f32; 2], [f32; 2]),
@@ -541,24 +542,35 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 .renderer()
                 .and_then(|r| r.table_object_id(&mouse_position))
             {
-                state.table_mut().set_focused(Some(block_id.clone()));
+                if state
+                    .block_field()
+                    .get::<block::Character>(block_id)
+                    .is_some()
+                {
+                    let table = state.table_mut();
+                    table.set_focused(state::table::Focused::Character(block_id.clone()));
+                    let block_field = state.block_field_mut();
+                    block_field
+                        .update(block_id, None, |character: &mut block::Character| {})
+                        .and_then(|bf| {
+                            bf.update(
+                                block_id,
+                                None,
+                                |tablemask: &mut block::table_object::Tablemask| {},
+                            )
+                        });
+                } else if state
+                    .block_field()
+                    .get::<block::table_object::Tablemask>(block_id)
+                    .is_some()
+                {
+                    let table = state.table_mut();
+                    table.set_focused(state::table::Focused::Tablemask(block_id.clone()));
+                    let block_field = state.block_field_mut();
+                    block_field.update(block_id, None, |route: &mut block::table_object::Route| {});
+                }
             } else {
-                state.table_mut().set_focused(None);
-            }
-
-            if let Some(block_id) = state.table().focused() {
-                let bf = state.block_field_mut();
-                bf.update(block_id, None, |character: &mut block::Character| {})
-                    .and_then(|bf| {
-                        bf.update(
-                            block_id,
-                            None,
-                            |tablemask: &mut block::table_object::Tablemask| {},
-                        )
-                    })
-                    .and_then(|bf| {
-                        bf.update(block_id, None, |route: &mut block::table_object::Route| {})
-                    });
+                state.table_mut().set_focused(state::table::Focused::None);
             }
 
             state.table_mut().set_last_mouse_position(mouse_position);
@@ -635,7 +647,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.dequeue()
         }
 
-        Msg::SetTableObjectPositionWithMousePosition(block_id, mouse_position) => {
+        Msg::SetCharacterPositionWithMousePosition(block_id, mouse_position) => {
             let [x, y] = get_table_position(state, &mouse_position, state.pixel_ratio());
             let timestamp = timestamp();
 
@@ -644,15 +656,29 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 .update(&block_id, timestamp, |character: &mut block::Character| {
                     character.set_position([x, y, 0.0]);
                 })
-                .and_then(|bf| {
-                    bf.update(
-                        &block_id,
-                        timestamp,
-                        |tablemask: &mut block::table_object::Tablemask| {
-                            tablemask.set_position([x, y]);
-                        },
-                    )
-                })
+                .is_none();
+
+            if updated {
+                render_canvas(state);
+                send_pack_cmd(state.block_field(), vec![&block_id])
+            } else {
+                state.dequeue()
+            }
+        }
+
+        Msg::SetTablemaskPositionWithMousePosition(block_id, mouse_position) => {
+            let [x, y] = get_table_position(state, &mouse_position, state.pixel_ratio());
+            let timestamp = timestamp();
+
+            let updated = state
+                .block_field_mut()
+                .update(
+                    &block_id,
+                    timestamp,
+                    |tablemask: &mut block::table_object::Tablemask| {
+                        tablemask.set_position([x, y]);
+                    },
+                )
                 .is_none();
 
             if updated {
