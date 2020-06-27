@@ -1,27 +1,21 @@
+use crate::model;
 use kagura::prelude::*;
 
-pub fn frame<Msg>(
-    loc_a: &[i32; 2],
-    loc_b: &[i32; 2],
+pub fn frame<Msg, Modeless>(
+    modeless: &model::Modeless<Modeless>,
     attributes: Attributes,
     events: Events<Msg>,
     children: Vec<Html<Msg>>,
 ) -> Html<Msg> {
-    let clm = format!(
-        "grid-cs-{} grid-ce-{}",
-        loc_a[0].min(loc_b[0]).max(1),
-        loc_a[0].max(loc_b[0]).min(25)
-    );
-    let row = format!(
-        "grid-rs-{} grid-re-{}",
-        loc_a[1].min(loc_b[1]).max(1),
-        loc_a[1].max(loc_b[1]).min(15)
-    );
-
     Html::div(
         attributes
-            .class(format!("frame {} {}", clm, row))
-            .draggable(false),
+            .class("frame")
+            .class("frame-modeless")
+            .draggable(false)
+            .style("left", modeless.position()[0].to_string() + "vw")
+            .style("top", modeless.position()[1].to_string() + "vh")
+            .style("width", modeless.size()[0].to_string() + "vw")
+            .style("height", modeless.size()[1].to_string() + "vh"),
         events,
         children,
     )

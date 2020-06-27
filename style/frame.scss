@@ -13,6 +13,10 @@
         max-height: 90vh;
     }
 
+    &-modeless {
+        position: absolute;
+    }
+
     &>.frame-header {
         line-height: 1;
         padding: 0.5em;
