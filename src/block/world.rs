@@ -3,6 +3,7 @@ use crate::Promise;
 use std::collections::HashSet;
 use wasm_bindgen::prelude::*;
 
+#[derive(Debug)]
 pub struct World {
     selecting_table: BlockId,
     tables: Vec<BlockId>,
@@ -23,12 +24,16 @@ impl World {
         &self.selecting_table
     }
 
-    pub fn characters(&self) -> impl Iterator<Item = &BlockId> {
-        self.characters.iter()
+    pub fn tables(&self) -> impl Iterator<Item = &BlockId> {
+        self.tables.iter()
     }
 
     pub fn add_table(&mut self, table: BlockId) {
         self.tables.push(table);
+    }
+
+    pub fn characters(&self) -> impl Iterator<Item = &BlockId> {
+        self.characters.iter()
     }
 
     pub fn add_character(&mut self, character: BlockId) {
@@ -41,10 +46,10 @@ impl World {
 }
 
 impl Block for World {
-    fn pack(&self) -> Promise<JsValue, ()> {
+    fn pack(&self) -> Promise<JsValue> {
         unimplemented!();
     }
-    fn unpack(field: &Field, val: JsValue) -> Promise<Box<Self>, ()> {
+    fn unpack(field: &mut Field, val: JsValue) -> Promise<Box<Self>> {
         unimplemented!();
     }
 }

@@ -134,7 +134,7 @@ impl From<JsObject> for Msg {
                     for row in payload {
                         let cols = Array::from(row.as_ref()).to_vec();
                         let id = cols[0].as_string().unwrap().parse().unwrap();
-                        let data = cols[1];
+                        let data = cols[1].clone();
                         packs.insert(id, data);
                     }
                     Msg::SetBlockPacks(packs)
@@ -146,7 +146,7 @@ impl From<JsObject> for Msg {
                     for row in payload {
                         let cols = Array::from(row.as_ref()).to_vec();
                         let id = cols[0].as_string().unwrap().parse().unwrap();
-                        let data = cols[1];
+                        let data = cols[1].clone();
                         packs.insert(id, data);
                     }
                     Msg::SetResourcePacks(packs)

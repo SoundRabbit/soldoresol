@@ -24,14 +24,14 @@ pub enum Modeless {
 
 pub enum Modal {
     Resource,
-    SelectTableImage,
-    SelectCharacterImage,
+    SelectTableImage(BlockId),
+    SelectCharacterImage(BlockId),
     SelectPlayerImage,
     PersonalSetting,
-    TablemaskColorPicker,
+    TablemaskColorPicker(BlockId),
     SenderCharacterSelecter,
     TableSetting,
-    ChatLog,
+    ChatLog(BlockId),
     ChatTabEditor,
 }
 
@@ -49,8 +49,8 @@ pub struct State<M, S> {
     renderer: Option<Renderer>,
     pixel_ratio: f32,
     canvas_size: [f32; 2],
-    contextmenu: Option<contextmenu::State>,
     speech_bubble: speech_bubble::State,
+    contextmenu: Option<contextmenu::State>,
     modeless: modeless::Collection<Modeless>,
     modal: Vec<Modal>,
     dice_bot: dice_bot::State,
@@ -72,6 +72,9 @@ impl<M, S> State<M, S> {
         let texture = block_field.add(block::table::Texture::new(&[4096, 4096], [20.0, 20.0]));
         let table = block_field.add(block::Table::new(texture, [20.0, 20.0], "テーブル"));
         let world = block_field.add(block::World::new(table));
+
+        assert!(block_field.get::<block::World>(&world).is_some());
+
         Self {
             peer: peer,
             room: room,
@@ -86,8 +89,8 @@ impl<M, S> State<M, S> {
             renderer: None,
             pixel_ratio: 1.0,
             canvas_size: [0.0, 0.0],
-            contextmenu: None,
             speech_bubble: speech_bubble::State::new(),
+            contextmenu: None,
             modeless: modeless::Collection::new(),
             modal: vec![],
             dice_bot: dice_bot::State::new(),
@@ -167,8 +170,16 @@ impl<M, S> State<M, S> {
         self.renderer.as_ref()
     }
 
-    pub fn renderer_mut(&mut self) -> Option<&mut Renderer> {
-        self.renderer.as_mut()
+    pub fn render(&mut self) {
+        if let Some(renderer) = &mut self.renderer {
+            renderer.render(
+                &self.block_field,
+                &self.world,
+                &self.camera,
+                &self.resource,
+                &self.canvas_size,
+            );
+        }
     }
 
     pub fn set_renderer(&mut self, renderer: Renderer) {
@@ -185,6 +196,14 @@ impl<M, S> State<M, S> {
 
     pub fn set_canvas_size(&mut self, canvas_size: [f32; 2]) {
         self.canvas_size = canvas_size;
+    }
+
+    pub fn speech_bubble(&self) -> &speech_bubble::State {
+        &self.speech_bubble
+    }
+
+    pub fn contextmenu(&self) -> Option<&contextmenu::State> {
+        self.contextmenu.as_ref()
     }
 
     pub fn open_contextmenu(
@@ -242,6 +261,10 @@ impl<M, S> State<M, S> {
 
     pub fn close_modeless(&mut self, modeless_id: ModelessId) {
         self.modeless.close(modeless_id);
+    }
+
+    pub fn modal(&self) -> &Vec<Modal> {
+        &self.modal
     }
 
     pub fn open_modal(&mut self, modal: Modal) {

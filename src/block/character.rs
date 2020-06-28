@@ -66,10 +66,10 @@ impl Character {
 }
 
 impl Block for Character {
-    fn pack(&self) -> Promise<JsValue, ()> {
+    fn pack(&self) -> Promise<JsValue> {
         unimplemented!();
     }
-    fn unpack(field: &Field, val: JsValue) -> Promise<Box<Self>, ()> {
+    fn unpack(field: &mut Field, val: JsValue) -> Promise<Box<Self>> {
         unimplemented!();
     }
 }

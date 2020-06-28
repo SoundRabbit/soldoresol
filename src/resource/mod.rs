@@ -28,6 +28,10 @@ impl Resource {
     pub fn assign(&mut self, resource_id: ResourceId, data: Data) {
         self.data.insert(resource_id, data);
     }
+
+    pub fn all(&self) -> impl Iterator<Item = (&ResourceId, &Data)> {
+        self.data.iter()
+    }
 }
 
 impl Deref for Resource {

@@ -3,7 +3,7 @@ use std::rc::Rc;
 use wasm_bindgen::{prelude::*, JsCast};
 
 trait LoadFrom<T> {
-    fn load_from(x: T) -> Promise<Data, ()>;
+    fn load_from(x: T) -> Promise<Data>;
 }
 
 pub enum Data {
@@ -15,7 +15,7 @@ pub enum Data {
 }
 
 impl Data {
-    pub fn pack(&self) -> Promise<JsValue, ()> {
+    pub fn pack(&self) -> Promise<JsValue> {
         match self {
             Self::Image { blob, .. } => {
                 let obj: js_sys::Object = object! {
@@ -24,13 +24,13 @@ impl Data {
                 }
                 .into();
                 Promise::new(|resolve| {
-                    resolve(Ok(obj.into()));
+                    resolve(Some(obj.into()));
                 })
             }
         }
     }
 
-    pub fn unpack(val: JsValue) -> Promise<Self, ()> {
+    pub fn unpack(val: JsValue) -> Promise<Self> {
         use crate::JsObject;
         let obj = val.dyn_into::<js_sys::Object>().unwrap();
         let obj = obj.dyn_into::<JsObject>().unwrap();
@@ -49,7 +49,7 @@ impl Data {
         Self::from_blob(blob)
     }
 
-    pub fn from_blob(blob: web_sys::Blob) -> Promise<Data, ()> {
+    pub fn from_blob(blob: web_sys::Blob) -> Promise<Data> {
         Promise::new(move |resolve| {
             let blob = Rc::new(blob);
             let blob_type = blob.type_();
@@ -65,7 +65,7 @@ impl Data {
                     let blob = Rc::clone(&blob);
                     let object_url = Rc::clone(&object_url);
                     Closure::once(Box::new(move || {
-                        resolve(Ok(Data::Image {
+                        resolve(Some(Data::Image {
                             element: image,
                             blob: blob,
                             url: object_url,

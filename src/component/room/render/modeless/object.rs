@@ -118,7 +118,12 @@ fn character_frame(
                                 btn::primary(
                                     Attributes::new(),
                                     Events::new().on_click({
-                                        move |_| Msg::OpenModal(Modal::SelectCharacterImage)
+                                        let character_id = character_id.clone();
+                                        move |_| {
+                                            Msg::OpenModal(Modal::SelectCharacterImage(
+                                                character_id,
+                                            ))
+                                        }
                                     }),
                                     vec![Html::text("画像を選択")],
                                 ),

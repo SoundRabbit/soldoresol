@@ -1,33 +1,30 @@
-type Resolve<T, E> = Box<dyn FnOnce(Result<T, E>)>;
-type Task<T, E> = Box<dyn FnOnce(Resolve<T, E>)>;
+type Resolve<T> = Box<dyn FnOnce(Option<T>) -> ()>;
+type Task<T> = Box<dyn FnOnce(Resolve<T>) -> ()>;
 
-pub struct Promise<T: 'static, E: 'static> {
-    task: Task<T, E>,
+pub struct Promise<T: 'static> {
+    task: Task<T>,
 }
 
-impl<T, E> Promise<T, E> {
-    pub fn new(task: impl FnOnce(Resolve<T, E>) + 'static) -> Self {
+impl<T> Promise<T> {
+    pub fn new(task: impl FnOnce(Resolve<T>) -> () + 'static) -> Self {
         Self {
             task: Box::new(task),
         }
     }
 
-    pub fn then(self, resolve: impl FnOnce(Result<T, E>) + 'static) {
+    pub fn then(self, resolve: impl FnOnce(Option<T>) -> () + 'static) {
         (self.task)(Box::new(resolve))
     }
 
-    pub fn map<U, F>(
-        self,
-        f: impl FnOnce(Result<T, E>) -> Result<U, F> + 'static,
-    ) -> Promise<U, F> {
+    pub fn map<U: 'static>(self, f: impl FnOnce(Option<T>) -> Option<U> + 'static) -> Promise<U> {
         Promise::new(move |resolve| {
             self.then(|result| resolve(f(result)));
         })
     }
 }
 
-impl<T, E> Promise<T, E> {
-    pub fn some(tasks: Vec<Self>) -> Promise<Vec<Option<T>>, ()> {
+impl<T> Promise<T> {
+    pub fn some(tasks: Vec<Self>) -> Promise<Vec<Option<T>>> {
         Promise::new(move |resolve| {
             use std::{cell::RefCell, rc::Rc};
             let results = Rc::new(RefCell::new(vec![]));
@@ -37,17 +34,18 @@ impl<T, E> Promise<T, E> {
                 results.borrow_mut().push(None);
                 task.then({
                     let mut resolve = Rc::clone(&resolve);
+                    let results = Rc::clone(&results);
                     move |result| {
-                        results.borrow_mut()[idx] = result.ok();
+                        results.borrow_mut()[idx] = result;
                         if let Some(resolve) = Rc::get_mut(&mut resolve).and_then(|r| r.take()) {
-                            resolve(Ok(results.borrow_mut().drain(..).collect()));
+                            resolve(Some(results.borrow_mut().drain(..).collect()));
                         }
                     }
                 });
                 idx += 1;
             }
             if let Some(resolve) = Rc::get_mut(&mut resolve).and_then(|r| r.take()) {
-                resolve(Ok(results.borrow_mut().drain(..).collect()));
+                resolve(Some(results.borrow_mut().drain(..).collect()));
             }
         })
     }

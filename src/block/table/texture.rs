@@ -66,38 +66,36 @@ impl Texture {
             new_pixel_ratio[1] / self.pixel_ratio[1],
         );
 
-        let _ = self.context.scale(
-            new_pixel_ratio[0] / self.pixel_ratio[0],
-            new_pixel_ratio[1] / self.pixel_ratio[1],
-        );
-
         self.pixel_ratio = new_pixel_ratio;
         self.size = size;
     }
 }
 
 impl Block for Texture {
-    fn pack(&self) -> Promise<JsValue, ()> {
-        let size = array![self.size[0], self.size[1]];
+    fn pack(&self) -> Promise<JsValue> {
+        let w = self.size[0];
+        let h = self.size[1];
         let element = self.element.clone();
+        let element = element;
         Promise::new(move |resolve| {
             let resolve = RefCell::new(Some(resolve));
-            let a = Closure::wrap(Box::new(move |blob| {
+            let a = Closure::once(Box::new(move |blob| {
+                let obj = object! {
+                    buffer: blob,
+                    size: array![w, h]
+                };
+                let obj: js_sys::Object = obj.into();
+                let obj: JsValue = obj.into();
                 if let Some(resolve) = resolve.borrow_mut().take() {
-                    let obj: js_sys::Object = object! {
-                        buffer: blob,
-                        size: size
-                    }
-                    .into();
-                    resolve(Ok(obj.into()));
+                    resolve(Some(JsValue::undefined()));
                 }
-            }) as Box<dyn FnMut(JsValue)>);
-            let _ = element.to_blob(a.as_ref().unchecked_ref());
+            }) as Box<dyn FnOnce(web_sys::Blob)>);
+            element.to_blob(a.as_ref().unchecked_ref());
             a.forget();
         })
     }
 
-    fn unpack(field: &Field, val: JsValue) -> Promise<Box<Self>, ()> {
+    fn unpack(field: &mut Field, val: JsValue) -> Promise<Box<Self>> {
         use crate::JsObject;
 
         let val = val.dyn_into::<JsObject>().unwrap();
@@ -126,19 +124,17 @@ impl Block for Texture {
                         let _ = me
                             .context()
                             .draw_image_with_html_image_element(&image, 0.0, 0.0);
-                        resolve(Ok(Box::new(me)));
+                        resolve(Some(Box::new(me)));
                     }))
                 };
                 image.set_onload(Some(&a.as_ref().unchecked_ref()));
                 if let Ok(object_url) = web_sys::Url::create_object_url_with_blob(&blob) {
                     image.set_src(&object_url);
-                } else {
-                    resolve(Err(()));
                 }
                 a.forget();
             })
         } else {
-            Promise::new(|resolve| resolve(Err(())))
+            Promise::new(|resolve| resolve(None))
         }
     }
 }

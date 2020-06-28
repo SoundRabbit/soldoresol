@@ -1,10 +1,10 @@
 use super::super::{
-    common, modeless,
+    modeless,
     state::{self, chat, table, Modeless},
 };
-use super::{Msg, State};
+use super::Msg;
 use crate::{
-    block::{self, chat::item::Icon, BlockId},
+    block,
     model::{self, PersonalData},
     Resource,
 };
@@ -33,7 +33,7 @@ pub fn render(
                 let last_mouse_down_pos = table.last_mouse_down_position().clone();
                 move |e| {
                     let mouse_pos = [e.offset_x() as f32, e.offset_y() as f32];
-                    if e.buttons() & 1 != 0 {
+                    if e.buttons() & 1 == 0 {
                         Msg::NoOp
                     } else if (e.alt_key() || e.ctrl_key()) && !is_2d_mode {
                         Msg::SetCameraRotationWithMouseMovement(mouse_pos)
@@ -112,7 +112,7 @@ pub fn render(
             .iter()
             .map(|(modeless_id, modeless)| {
                 if let Some(modeless) = modeless {
-                    modeless::render(block_field, modeless)
+                    modeless::render(block_field, resource, modeless_id, modeless)
                 } else {
                     Html::div(Attributes::new(), Events::new(), vec![])
                 }

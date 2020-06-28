@@ -57,6 +57,10 @@ impl Tablemask {
         self.is_rounded
     }
 
+    pub fn is_fixed(&self) -> bool {
+        self.is_fixed
+    }
+
     pub fn property_id(&self) -> &BlockId {
         &self.property_id
     }
@@ -67,10 +71,10 @@ impl Tablemask {
 }
 
 impl Block for Tablemask {
-    fn pack(&self) -> Promise<JsValue, ()> {
+    fn pack(&self) -> Promise<JsValue> {
         unimplemented!();
     }
-    fn unpack(field: &Field, val: JsValue) -> Promise<Box<Self>, ()> {
+    fn unpack(field: &mut Field, val: JsValue) -> Promise<Box<Self>> {
         unimplemented!();
     }
 }
