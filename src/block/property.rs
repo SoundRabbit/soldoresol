@@ -55,10 +55,45 @@ impl Property {
 }
 
 impl Block for Property {
-    fn pack(&self) -> Promise<JsValue, ()> {
-        unimplemented!();
+    fn pack(&self) -> Promise<JsValue> {
+        let value = match &self.value {
+            Value::Str(a) => object! {
+                type: "string",
+                payload: a
+            },
+            Value::Num(a) => object! {
+                type: "number",
+                payload: *a
+            },
+            Value::Children(list) => {
+                let children = js_sys::Array::new();
+                for child in list {
+                    children.push(&JsValue::from(child.to_string()));
+                }
+                object! {
+                    type: "children",
+                    payload: children
+                }
+            }
+            Value::None => object! {
+                type: "none",
+                payload: JsValue::undefined()
+            },
+        };
+        let value: js_sys::Object = value.into();
+        let value: JsValue = value.into();
+
+        let data = object! {
+            name: self.name(),
+            is_selected: self.is_selected,
+            value: value
+        };
+        let data: js_sys::Object = data.into();
+        let data: JsValue = data.into();
+
+        Promise::new(|resolve| resolve(Some(data)))
     }
-    fn unpack(field: &Field, val: JsValue) -> Promise<Box<Self>, ()> {
+    fn unpack(field: &mut Field, val: JsValue) -> Promise<Box<Self>> {
         unimplemented!();
     }
 }

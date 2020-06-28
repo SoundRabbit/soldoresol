@@ -3,7 +3,7 @@ use js_sys::Date;
 use std::{
     any::Any,
     cell::{Cell, RefCell},
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     hash::{Hash, Hasher},
     iter::Iterator,
     rc::Rc,
@@ -23,37 +23,47 @@ pub use property::Property;
 pub use table::Table;
 pub use world::World;
 
+#[allow(private_in_public)]
 trait Block {
-    fn pack(&self) -> Promise<JsValue, ()>;
-    fn unpack(field: &Field, val: JsValue) -> Promise<Box<Self>, ()>;
+    fn pack(&self) -> Promise<JsValue>;
+    fn unpack(field: &mut Field, val: JsValue) -> Promise<Box<Self>>;
 }
 
-type Timestamp = u32;
+#[allow(private_in_public)]
+type Timestamp = f64;
 
-type BlockTable = Rc<RefCell<HashMap<BlockId, FieldBlock>>>;
+#[allow(private_in_public)]
+type BlockTable = HashMap<u128, FieldBlock>;
 
+#[allow(private_in_public)]
+#[derive(Debug)]
 pub struct BlockId {
-    table: BlockTable,
+    count: Rc<Cell<usize>>,
+    garbage: Rc<RefCell<HashSet<u128>>>,
     internal_id: u128,
 }
 
+#[allow(private_in_public)]
 struct FieldBlock {
-    count: usize,
+    count: Rc<Cell<usize>>,
     timestamp: Timestamp,
-    payload: Box<dyn Any>,
+    payload: Option<Box<dyn Any>>,
 }
 
+#[allow(private_in_public)]
 pub struct Field {
     table: BlockTable,
+    garbage: Rc<RefCell<HashSet<u128>>>,
 }
 
 impl BlockId {
-    fn new(table: BlockTable, internal_id: u128) -> Self {
-        let me = Self { table, internal_id };
-        if let Some(block) = me.table.borrow_mut().get_mut(&me) {
-            block.count += 1;
+    fn new(count: Rc<Cell<usize>>, garbage: Rc<RefCell<HashSet<u128>>>, internal_id: u128) -> Self {
+        count.set(count.get() + 1);
+        Self {
+            count,
+            garbage,
+            internal_id,
         }
-        me
     }
 
     pub fn to_string(&self) -> String {
@@ -67,23 +77,29 @@ impl BlockId {
 
 impl Clone for BlockId {
     fn clone(&self) -> Self {
-        if let Some(block) = self.table.borrow_mut().get_mut(&self) {
-            block.count += 1;
-        }
-        let table = Rc::clone(&self.table);
+        let count = self.count.get() + 1;
+        self.count.set(count);
+
+        let count = Rc::clone(&self.count);
+        let garbage = Rc::clone(&self.garbage);
         let internal_id = self.internal_id;
-        Self { table, internal_id }
+
+        Self {
+            count,
+            internal_id,
+            garbage,
+        }
     }
 }
 
 impl Drop for BlockId {
     fn drop(&mut self) {
-        if let Some(block) = self.table.borrow_mut().get_mut(&self) {
-            if block.count > 1 {
-                block.count -= 1;
-            } else {
-                self.table.borrow_mut().remove(&self);
-            }
+        let count = self.count.get() - 1;
+
+        if count > 1 {
+            self.count.set(count);
+        } else {
+            self.garbage.borrow_mut().insert(self.to_u128());
         }
     }
 }
@@ -103,31 +119,40 @@ impl Hash for BlockId {
 }
 
 impl FieldBlock {
-    fn new<T: Block + 'static>(timestamp: u32, block: T) -> Self {
+    fn new<T: Block + 'static>(timestamp: f64, block: T) -> Self {
         Self {
-            count: 0,
+            count: Rc::new(Cell::new(0)),
             timestamp: timestamp,
-            payload: Box::new(block),
+            payload: Some(Box::new(block)),
         }
     }
 
-    pub fn pack(&self) -> Promise<JsValue, ()> {
-        if let Some(payload) = self.payload.downcast_ref::<Chat>() {
+    fn none(timestamp: f64) -> Self {
+        Self {
+            count: Rc::new(Cell::new(0)),
+            timestamp: timestamp,
+            payload: None,
+        }
+    }
+
+    pub fn pack(&self) -> Promise<JsValue> {
+        let payload = self.payload.as_ref();
+        if let Some(payload) = payload.and_then(|p| p.downcast_ref::<Chat>()) {
             payload.pack()
-        } else if let Some(payload) = self.payload.downcast_ref::<chat::Item>() {
+        } else if let Some(payload) = payload.and_then(|p| p.downcast_ref::<chat::Item>()) {
             payload.pack()
-        } else if let Some(payload) = self.payload.downcast_ref::<chat::Tab>() {
+        } else if let Some(payload) = payload.and_then(|p| p.downcast_ref::<chat::Tab>()) {
             payload.pack()
-        } else if let Some(payload) = self.payload.downcast_ref::<Table>() {
+        } else if let Some(payload) = payload.and_then(|p| p.downcast_ref::<Table>()) {
             payload.pack()
-        } else if let Some(payload) = self.payload.downcast_ref::<table::Texture>() {
+        } else if let Some(payload) = payload.and_then(|p| p.downcast_ref::<table::Texture>()) {
             payload.pack()
-        } else if let Some(payload) = self.payload.downcast_ref::<Character>() {
+        } else if let Some(payload) = payload.and_then(|p| p.downcast_ref::<Character>()) {
             payload.pack()
-        } else if let Some(payload) = self.payload.downcast_ref::<Property>() {
+        } else if let Some(payload) = payload.and_then(|p| p.downcast_ref::<Property>()) {
             payload.pack()
         } else {
-            Promise::new(|resolve| resolve(Err(())))
+            Promise::new(|resolve| resolve(None))
         }
     }
 
@@ -155,56 +180,68 @@ impl FieldBlock {
 }
 
 impl Field {
-    pub fn block_id(&self, internal_id: u128) -> BlockId {
-        BlockId::new(Rc::clone(&self.table), internal_id)
+    pub fn block_id(&mut self, internal_id: u128) -> BlockId {
+        if let Some(field_block) = self.table.get(&internal_id) {
+            let count = Rc::clone(&field_block.count);
+            let garbage = Rc::clone(&self.garbage);
+            BlockId::new(count, garbage, internal_id)
+        } else {
+            let dummy = FieldBlock::none(0.0);
+            let count = Rc::clone(&dummy.count);
+            let garbage = Rc::clone(&self.garbage);
+            self.table.insert(internal_id, dummy);
+            BlockId::new(count, garbage, internal_id)
+        }
     }
 
     pub fn new() -> Self {
         Self {
-            table: Rc::new(RefCell::new(HashMap::new())),
+            table: HashMap::new(),
+            garbage: Rc::new(RefCell::new(HashSet::new())),
         }
     }
 
+    #[allow(private_in_public)]
     pub fn add<T: Block + 'static>(&mut self, block: T) -> BlockId {
         let block_id = self.block_id(random_id::u128val());
-        if !self.table.borrow().contains_key(&block_id) {
-            self.assign(block_id.clone(), Date::now() as u32, block);
-        }
+        self.assign(block_id.clone(), Date::now(), block);
         block_id
     }
 
+    #[allow(private_in_public)]
     pub fn assign<T: Block + 'static>(
         &mut self,
         block_id: BlockId,
         timestamp: Timestamp,
         block: T,
     ) {
-        if self
-            .table
-            .borrow()
-            .get(&block_id)
-            .map(|b| b.timestamp < timestamp)
-            .unwrap_or(true)
-        {
+        if let Some(field_block) = self.table.get_mut(&block_id.to_u128()) {
+            if field_block.payload.is_none() || field_block.timestamp < timestamp {
+                field_block.timestamp = timestamp;
+                field_block.payload = Some(Box::new(block));
+            }
+        } else {
             let block = FieldBlock::new(timestamp, block);
-            self.table.borrow_mut().insert(block_id, block);
+            self.table.insert(block_id.to_u128(), block);
         }
     }
-
-    pub fn get<T: Block + 'static>(&self, block_id: &BlockId) -> Option<&T> {
+    #[allow(private_in_public)]
+    pub fn get<'a, T: Block + 'static>(&self, block_id: &BlockId) -> Option<&T> {
         self.table
-            .borrow()
-            .get(&block_id)
-            .and_then(|fb| fb.payload.downcast_ref::<T>())
+            .get(&block_id.to_u128())
+            .and_then(|fb| fb.payload.as_ref())
+            .and_then(|p| p.downcast_ref::<T>())
     }
 
-    pub fn all<T: Block + 'static>(&self) -> Vec<(&BlockId, &T)> {
+    #[allow(private_in_public)]
+    pub fn all<T: Block + 'static>(&self) -> Vec<(BlockId, &T)> {
         self.table
-            .borrow()
             .iter()
             .filter_map(|(id, fb)| {
-                if let Some(b) = fb.payload.downcast_ref::<T>() {
-                    Some((id, b))
+                if let Some(b) = fb.payload.as_ref().and_then(|p| p.downcast_ref::<T>()) {
+                    let block_id =
+                        BlockId::new(Rc::clone(&fb.count), Rc::clone(&self.garbage), *id);
+                    Some((block_id, b))
                 } else {
                     None
                 }
@@ -212,6 +249,7 @@ impl Field {
             .collect()
     }
 
+    #[allow(private_in_public)]
     pub fn listed<T: Block + 'static>(
         &self,
         block_ids: Vec<&BlockId>,
@@ -225,6 +263,7 @@ impl Field {
         blocks.into_iter()
     }
 
+    #[allow(private_in_public)]
     pub fn update<T: Block + 'static>(
         &mut self,
         block_id: &BlockId,
@@ -232,20 +271,20 @@ impl Field {
         f: impl FnOnce(&mut T),
     ) -> Option<&mut Self> {
         self.table
-            .borrow_mut()
-            .get_mut(block_id)
+            .get_mut(&block_id.to_u128())
             .and_then(|fb| {
                 if let Some(timestamp) = timestamp {
                     if fb.timestamp < timestamp {
                         fb.timestamp = timestamp;
-                        fb.payload.downcast_mut::<T>()
+                        fb.payload.as_mut()
                     } else {
                         None
                     }
                 } else {
-                    fb.payload.downcast_mut::<T>()
+                    fb.payload.as_mut()
                 }
             })
+            .and_then(|p| p.downcast_mut::<T>())
             .map(move |b| {
                 f(b);
                 None
@@ -254,13 +293,13 @@ impl Field {
     }
 
     pub fn timestamp(&self, block_id: &BlockId) -> Option<&Timestamp> {
-        self.table.borrow().get(block_id).map(|b| &b.timestamp)
+        self.table.get(&block_id.to_u128()).map(|b| &b.timestamp)
     }
 
-    pub fn pack_listed(&self, block_ids: Vec<&BlockId>) -> Promise<Vec<(BlockId, JsValue)>, ()> {
+    pub fn pack_listed(&self, block_ids: Vec<&BlockId>) -> Promise<Vec<(BlockId, JsValue)>> {
         let mut promises = vec![];
         for block_id in block_ids {
-            if let Some(block) = self.table.borrow().get(block_id) {
+            if let Some(block) = self.table.get(&block_id.to_u128()) {
                 let block_id = block_id.clone();
                 promises.push(block.pack().map(move |res| res.map(|val| (block_id, val))));
             }

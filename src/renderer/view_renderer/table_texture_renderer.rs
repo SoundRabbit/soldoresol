@@ -16,7 +16,7 @@ pub struct TableTextureRenderer {
     polygon_texture_coord_buffer: WebGlF32Vbo,
     polygon_texture_buffer: web_sys::WebGlTexture,
     table_texture_program: TableTextureProgram,
-    texture_update_time: u32,
+    texture_update_time: f64,
 }
 
 impl TableTextureRenderer {
@@ -68,7 +68,7 @@ impl TableTextureRenderer {
             polygon_index_buffer,
             polygon_texture_buffer,
             table_texture_program,
-            texture_update_time: 0,
+            texture_update_time: 0.0,
         }
     }
 
@@ -114,7 +114,14 @@ impl TableTextureRenderer {
         let drawing_texture_id = table.drawing_texture_id();
         if block_field
             .timestamp(drawing_texture_id)
-            .map(|t| *t > self.texture_update_time)
+            .map(|t| {
+                if *t > self.texture_update_time {
+                    self.texture_update_time = *t;
+                    true
+                } else {
+                    false
+                }
+            })
             .unwrap_or(false)
         {
             if let Some(texture) = block_field.get::<block::table::Texture>(drawing_texture_id) {

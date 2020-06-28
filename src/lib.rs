@@ -22,6 +22,7 @@ mod color;
 mod color_system;
 mod component;
 mod config;
+mod debug;
 mod dice_bot;
 mod idb;
 mod model;

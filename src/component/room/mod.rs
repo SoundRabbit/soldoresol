@@ -2,16 +2,12 @@ use crate::{
     block::{self, BlockId},
     color_system,
     model::modeless::ModelessId,
-    random_id,
-    renderer::{Camera, Renderer},
+    renderer::Renderer,
     resource::{Data, ResourceId},
-    skyway, Promise,
+    skyway,
 };
 use kagura::prelude::*;
-use std::{
-    collections::{HashMap, HashSet},
-    rc::Rc,
-};
+use std::{collections::HashMap, rc::Rc};
 use wasm_bindgen::{prelude::*, JsCast};
 
 mod render;
@@ -54,7 +50,7 @@ pub enum Msg {
     RemoveTablemaskToCloseContextmenu(BlockId),
 
     // Mouse
-    SetLastMousePosition([f32; 2]),
+    SetLastMousePosition(bool, [f32; 2]),
     SetLastMouseDownPosition([f32; 2]),
     SetLastMouseUpPosition([f32; 2]),
     SetCameraRotationWithMouseMovement([f32; 2]),
@@ -222,24 +218,16 @@ fn get_table_position(state: &State, screen_position: &[f32; 2], pixel_ratio: f3
     let mouse_coord = [screen_position[0] * dpr, screen_position[1] * dpr];
     let p = state
         .camera()
-        .collision_point_on_xy_plane(state.canvas_size(), &screen_position);
+        .collision_point_on_xy_plane(state.canvas_size(), &mouse_coord);
     [p[0], p[1]]
 }
 
 fn render_canvas(state: &mut State) {
-    if let Some(renderer) = state.renderer_mut() {
-        renderer.render(
-            state.block_field(),
-            state.world(),
-            state.camera(),
-            state.resource(),
-            state.canvas_size(),
-        );
-    }
+    state.render();
 }
 
-fn timestamp() -> Option<u32> {
-    Some(js_sys::Date::now() as u32)
+fn timestamp() -> Option<f64> {
+    Some(js_sys::Date::now())
 }
 
 fn send_pack_cmd(block_field: &block::Field, packs: Vec<&BlockId>) -> Cmd<Msg, Sub> {
@@ -247,28 +235,34 @@ fn send_pack_cmd(block_field: &block::Field, packs: Vec<&BlockId>) -> Cmd<Msg, S
 
     Cmd::task(move |resolve| {
         packs.then(|packs| {
-            if let Ok(packs) = packs {
+            if let Some(packs) = packs {
                 resolve(Msg::SendBlockPacks(packs.into_iter().collect()));
             }
         })
     })
 }
 
-fn clone_prop(block_field: &mut block::Field, prop: &block::Property) -> block::Property {
-    let mut prop = prop.clone();
+fn clone_prop(block_field: &mut block::Field, prop: &BlockId) -> Option<block::Property> {
+    let mut prop = if let Some(prop) = block_field.get::<block::Property>(prop) {
+        Some(prop.clone())
+    } else {
+        None
+    };
 
-    if let block::property::Value::Children(children) = prop.value() {
-        let mut new_children = vec![];
+    if let Some(prop) = &mut prop {
+        if let block::property::Value::Children(children) = prop.value() {
+            let mut new_children = vec![];
 
-        for child in children {
-            if let Some(child) = block_field.get::<block::Property>(child) {
+            for child in children {
                 let child = clone_prop(block_field, child);
-                let child = block_field.add(child);
-                new_children.push(child);
+                if let Some(child) = child {
+                    let child = block_field.add(child);
+                    new_children.push(child);
+                }
             }
-        }
 
-        prop.set_value(block::property::Value::Children(new_children));
+            prop.set_value(block::property::Value::Children(new_children));
+        }
     }
 
     prop
@@ -384,10 +378,10 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             character.set_position([x, y, 0.0]);
             let character = state.block_field_mut().add(character);
 
-            let world = state.world();
+            let world = state.world().clone();
             state
                 .block_field_mut()
-                .update(world, timestamp(), |world: &mut block::World| {
+                .update(&world, timestamp(), |world: &mut block::World| {
                     world.add_character(character.clone());
                 });
 
@@ -395,25 +389,25 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
             send_pack_cmd(
                 state.block_field(),
-                vec![&prop_hp, &prop_mp, &prop_root, &character, world],
+                vec![&prop_hp, &prop_mp, &prop_root, &character, &world],
             )
         }
 
         Msg::AddTablemaskWithMousePositionToCloseContextmenu(mouse_position) => {
             state.close_contextmenu();
 
-            if let Some(selecting_table) = state.selecting_table() {
+            if let Some(selecting_table) = state.selecting_table().map(|t| t.clone()) {
                 let [x, y] = get_table_position(state, &mouse_position, state.pixel_ratio());
 
-                let mut prop_root = block::Property::new("");
+                let prop_root = block::Property::new("");
                 let prop_root = state.block_field_mut().add(prop_root);
 
-                let tablemask = block::table_object::Tablemask::new(prop_root.clone());
+                let mut tablemask = block::table_object::Tablemask::new(prop_root.clone());
                 tablemask.set_position([x, y]);
                 let tablemask = state.block_field_mut().add(tablemask);
 
                 state.block_field_mut().update(
-                    selecting_table,
+                    &selecting_table,
                     timestamp(),
                     |table: &mut block::Table| {
                         table.add_tablemask(tablemask.clone());
@@ -422,7 +416,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
                 render_canvas(state);
 
-                send_pack_cmd(state.block_field(), vec![&tablemask, selecting_table])
+                send_pack_cmd(state.block_field(), vec![&tablemask, &selecting_table])
             } else {
                 state.dequeue()
             }
@@ -433,11 +427,8 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
             if let Some(character) = state.block_field().get::<block::Character>(&character) {
                 let mut character = character.clone();
-                let prop = if let Some(prop) = state.block_field().get(character.property_id()) {
-                    clone_prop(state.block_field_mut(), prop)
-                } else {
-                    block::Property::new("")
-                };
+                let prop = clone_prop(state.block_field_mut(), character.property_id())
+                    .unwrap_or(block::Property::new(""));
                 let prop = state.block_field_mut().add(prop);
 
                 let mut props = trace_prop_id(state.block_field(), &prop);
@@ -445,10 +436,10 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 character.set_property_id(prop);
                 let character = state.block_field_mut().add(character);
 
-                let world = state.world();
+                let world = state.world().clone();
                 state
                     .block_field_mut()
-                    .update(world, timestamp(), |world: &mut block::World| {
+                    .update(&world, timestamp(), |world: &mut block::World| {
                         world.add_character(character.clone());
                     });
 
@@ -470,14 +461,11 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 state
                     .block_field()
                     .get::<block::table_object::Tablemask>(&tablemask),
-                state.selecting_table(),
+                state.selecting_table().map(|t| t.clone()),
             ) {
                 let mut tablemask = tablemask.clone();
-                let prop = if let Some(prop) = state.block_field().get(tablemask.property_id()) {
-                    clone_prop(state.block_field_mut(), prop)
-                } else {
-                    block::Property::new("")
-                };
+                let prop = clone_prop(state.block_field_mut(), tablemask.property_id())
+                    .unwrap_or(block::Property::new(""));
                 let prop = state.block_field_mut().add(prop);
 
                 let mut props = trace_prop_id(state.block_field(), &prop);
@@ -486,7 +474,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 let tablemask = state.block_field_mut().add(tablemask);
 
                 state.block_field_mut().update(
-                    selecting_table,
+                    &selecting_table,
                     timestamp(),
                     |table: &mut block::Table| {
                         table.add_tablemask(tablemask.clone());
@@ -495,7 +483,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
                 render_canvas(state);
 
-                send_pack_cmd(state.block_field(), vec![&tablemask, selecting_table])
+                send_pack_cmd(state.block_field(), vec![&tablemask, &selecting_table])
             } else {
                 state.dequeue()
             }
@@ -504,24 +492,24 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         Msg::RemoveCharacterToCloseContextmenu(character) => {
             state.close_contextmenu();
 
-            let world = state.world();
+            let world = state.world().clone();
             state
                 .block_field_mut()
-                .update(world, timestamp(), |world: &mut block::World| {
+                .update(&world, timestamp(), |world: &mut block::World| {
                     world.remove_character(&character);
                 });
 
             render_canvas(state);
 
-            send_pack_cmd(state.block_field(), vec![world])
+            send_pack_cmd(state.block_field(), vec![&world])
         }
 
         Msg::RemoveTablemaskToCloseContextmenu(tablemask) => {
             state.close_contextmenu();
 
-            if let Some(selecting_table) = state.selecting_table() {
+            if let Some(selecting_table) = state.selecting_table().map(|t| t.clone()) {
                 state.block_field_mut().update(
-                    selecting_table,
+                    &selecting_table,
                     timestamp(),
                     |table: &mut block::Table| {
                         table.remove_tablemask(&tablemask);
@@ -530,52 +518,61 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
                 render_canvas(state);
 
-                send_pack_cmd(state.block_field(), vec![selecting_table])
+                send_pack_cmd(state.block_field(), vec![&selecting_table])
             } else {
                 state.dequeue()
             }
         }
 
         // Mouse
-        Msg::SetLastMousePosition(mouse_position) => {
-            if let Some(block_id) = state
-                .renderer()
-                .and_then(|r| r.table_object_id(&mouse_position))
-            {
-                if state
-                    .block_field()
-                    .get::<block::Character>(block_id)
-                    .is_some()
-                {
-                    let table = state.table_mut();
-                    table.set_focused(state::table::Focused::Character(block_id.clone()));
-                    let block_field = state.block_field_mut();
-                    block_field
-                        .update(block_id, None, |character: &mut block::Character| {})
-                        .and_then(|bf| {
-                            bf.update(
-                                block_id,
-                                None,
-                                |tablemask: &mut block::table_object::Tablemask| {},
-                            )
-                        });
-                } else if state
-                    .block_field()
-                    .get::<block::table_object::Tablemask>(block_id)
-                    .is_some()
-                {
-                    let table = state.table_mut();
-                    table.set_focused(state::table::Focused::Tablemask(block_id.clone()));
-                    let block_field = state.block_field_mut();
-                    block_field.update(block_id, None, |route: &mut block::table_object::Route| {});
+        Msg::SetLastMousePosition(check_focused, mouse_position) => {
+            if check_focused {
+                let cpr = get_canvas_pixel_ratio(state.pixel_ratio());
+
+                let canvas_pos = [mouse_position[0] * cpr, mouse_position[1] * cpr];
+
+                if let Some(block_id) = state.renderer().and_then(|r| {
+                    r.table_object_id(state.canvas_size(), &canvas_pos)
+                        .map(|t| t.clone())
+                }) {
+                    web_sys::console::log_1(&JsValue::from(block_id.to_string()));
+                    if state
+                        .block_field()
+                        .get::<block::Character>(&block_id)
+                        .is_some()
+                    {
+                        let table = state.table_mut();
+                        table.set_focused(state::table::Focused::Character(block_id.clone()));
+                        let block_field = state.block_field_mut();
+                        block_field
+                            .update(&block_id, None, |character: &mut block::Character| {})
+                            .and_then(|bf| {
+                                bf.update(
+                                    &block_id,
+                                    None,
+                                    |tablemask: &mut block::table_object::Tablemask| {},
+                                )
+                            });
+                    } else if state
+                        .block_field()
+                        .get::<block::table_object::Tablemask>(&block_id)
+                        .is_some()
+                    {
+                        let table = state.table_mut();
+                        table.set_focused(state::table::Focused::Tablemask(block_id.clone()));
+                        let block_field = state.block_field_mut();
+                        block_field.update(
+                            &block_id,
+                            None,
+                            |route: &mut block::table_object::Route| {},
+                        );
+                    }
+                } else {
+                    state.table_mut().set_focused(state::table::Focused::None);
                 }
-            } else {
-                state.table_mut().set_focused(state::table::Focused::None);
             }
 
             state.table_mut().set_last_mouse_position(mouse_position);
-
-            render_canvas(state);
 
             state.dequeue()
         }
@@ -690,16 +687,21 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
 
         Msg::DrawLineWithMousePosition(a, b) => {
-            if let Some(texture_id) = state
-                .selecting_table()
-                .and_then(|table_id| state.block_field_mut().get::<block::Table>(&table_id))
-                .map(|table| table.drawing_texture_id())
-            {
+            let selecting_table = state.selecting_table();
+            let drawing_texture_id = if let Some(selecting_table) = selecting_table {
+                state
+                    .block_field()
+                    .get::<block::Table>(&selecting_table)
+                    .map(|table| table.drawing_texture_id().clone())
+            } else {
+                None
+            };
+            if let Some(texture_id) = drawing_texture_id {
                 let [ax, ay] = get_table_position(state, &a, state.pixel_ratio());
                 let [bx, by] = get_table_position(state, &b, state.pixel_ratio());
 
                 state.block_field_mut().update(
-                    texture_id,
+                    &texture_id,
                     timestamp(),
                     |texture: &mut block::table::Texture| {
                         let [ax, ay] = texture.texture_position(&[ax as f64, ay as f64]);
@@ -709,7 +711,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
                         context.set_line_width(0.5);
                         context.set_line_cap("round");
-                        context.set_stroke_style(&color_system::gray(0, 9).to_jsvalue());
+                        context.set_stroke_style(&color_system::gray(255, 9).to_jsvalue());
                         context
                             .set_global_composite_operation("source-over")
                             .unwrap();
@@ -723,23 +725,28 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
                 render_canvas(state);
 
-                send_pack_cmd(state.block_field(), vec![&texture_id])
+                state.dequeue()
             } else {
                 state.dequeue()
             }
         }
 
         Msg::EraceLineWithMousePosition(a, b) => {
-            if let Some(texture_id) = state
-                .selecting_table()
-                .and_then(|table_id| state.block_field_mut().get::<block::Table>(&table_id))
-                .map(|table| table.drawing_texture_id())
-            {
+            let selecting_table = state.selecting_table();
+            let drawing_texture_id = if let Some(selecting_table) = selecting_table {
+                state
+                    .block_field()
+                    .get::<block::Table>(&selecting_table)
+                    .map(|table| table.drawing_texture_id().clone())
+            } else {
+                None
+            };
+            if let Some(texture_id) = drawing_texture_id {
                 let [ax, ay] = get_table_position(state, &a, state.pixel_ratio());
                 let [bx, by] = get_table_position(state, &b, state.pixel_ratio());
 
                 state.block_field_mut().update(
-                    texture_id,
+                    &texture_id,
                     timestamp(),
                     |texture: &mut block::table::Texture| {
                         let [ax, ay] = texture.texture_position(&[ax as f64, ay as f64]);
@@ -749,7 +756,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
                         context.set_line_width(1.0);
                         context.set_line_cap("round");
-                        context.set_stroke_style(&color_system::gray(0, 9).to_jsvalue());
+                        context.set_stroke_style(&color_system::gray(255, 9).to_jsvalue());
                         context
                             .set_global_composite_operation("destination-out")
                             .unwrap();
@@ -763,11 +770,13 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
                 render_canvas(state);
 
-                send_pack_cmd(state.block_field(), vec![&texture_id])
+                state.dequeue()
             } else {
                 state.dequeue()
             }
         }
+
+        Msg::MeasureLineWithMousePosition(a, b) => state.dequeue(),
 
         // World
         Msg::AddTable => {
@@ -776,11 +785,13 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             let table = block::Table::new(texture.clone(), [20.0, 20.0], "テーブル");
             let table = state.block_field_mut().add(table);
 
-            state.block_field_mut().update(
-                state.world(),
-                timestamp(),
-                |world: &mut block::World| world.add_table(table.clone()),
-            );
+            let world = state.world().clone();
+
+            state
+                .block_field_mut()
+                .update(&world, timestamp(), |world: &mut block::World| {
+                    world.add_table(table.clone())
+                });
 
             render_canvas(state);
 
@@ -901,7 +912,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     let promise = Data::from_blob(blob);
                     let task = Cmd::task(move |resolve| {
                         promise.then(|data| {
-                            if let Ok(data) = data {
+                            if let Some(data) = data {
                                 resolve(Msg::LoadDataToResource(data));
                             }
                         })
@@ -916,8 +927,8 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             let promise = data.pack();
             let id = state.resource_mut().add(data);
             Cmd::task(move |resolve| {
-                promise.then(|data| {
-                    if let Ok(data) = data {
+                promise.then(move |data| {
+                    if let Some(data) = data {
                         resolve(Msg::SendResourcePacks(
                             vec![(id, data)].into_iter().collect(),
                         ))

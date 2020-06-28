@@ -1,10 +1,10 @@
 use super::super::{
-    common, modeless,
+    modeless,
     state::{self, chat, table, Modeless},
 };
-use super::{Msg, State};
+use super::Msg;
 use crate::{
-    block::{self, chat::item::Icon, BlockId},
+    block,
     model::{self, PersonalData},
     Resource,
 };
@@ -33,7 +33,7 @@ pub fn render(
                 let last_mouse_down_pos = table.last_mouse_down_position().clone();
                 move |e| {
                     let mouse_pos = [e.offset_x() as f32, e.offset_y() as f32];
-                    if e.buttons() & 1 != 0 {
+                    if e.buttons() & 1 == 0 {
                         Msg::NoOp
                     } else if (e.alt_key() || e.ctrl_key()) && !is_2d_mode {
                         Msg::SetCameraRotationWithMouseMovement(mouse_pos)
@@ -88,13 +88,17 @@ pub fn render(
                     let page_mouse_coord = [e.page_x() as f64, e.page_y() as f64];
                     let offset_mouse_coord = [e.offset_x() as f64, e.offset_y() as f64];
                     e.prevent_default();
+                    e.stop_propagation();
 
                     match focused {
-                        table::Focused::Character(character_id) => Msg::OpenContextmenu(
-                            page_mouse_coord,
-                            offset_mouse_coord,
-                            state::Contextmenu::Character(character_id.clone()),
-                        ),
+                        table::Focused::Character(character_id) => {
+                            crate::debug::log_1("focused::Character");
+                            Msg::OpenContextmenu(
+                                page_mouse_coord,
+                                offset_mouse_coord,
+                                state::Contextmenu::Character(character_id.clone()),
+                            )
+                        }
                         table::Focused::Tablemask(tablemask_id) => Msg::OpenContextmenu(
                             page_mouse_coord,
                             offset_mouse_coord,
@@ -112,7 +116,7 @@ pub fn render(
             .iter()
             .map(|(modeless_id, modeless)| {
                 if let Some(modeless) = modeless {
-                    modeless::render(block_field, modeless)
+                    modeless::render(block_field, resource, modeless_id, modeless)
                 } else {
                     Html::div(Attributes::new(), Events::new(), vec![])
                 }

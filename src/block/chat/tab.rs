@@ -1,5 +1,6 @@
 use super::{Block, BlockId, Field};
 use crate::Promise;
+use std::ops::{Deref, DerefMut};
 use wasm_bindgen::prelude::*;
 
 #[derive(Clone)]
@@ -15,13 +16,33 @@ impl Tab {
             items: vec![],
         }
     }
+
+    pub fn name(&self) -> &String {
+        &self.name
+    }
 }
 
 impl Block for Tab {
-    fn pack(&self) -> Promise<JsValue, ()> {
+    fn pack(&self) -> Promise<JsValue> {
+        let data = object! {};
+        let data: js_sys::Object = data.into();
+        let data: JsValue = data.into();
+        Promise::new(|resolve| resolve(Some(data)))
+    }
+    fn unpack(field: &mut Field, val: JsValue) -> Promise<Box<Self>> {
         unimplemented!();
     }
-    fn unpack(field: &Field, val: JsValue) -> Promise<Box<Self>, ()> {
-        unimplemented!();
+}
+
+impl Deref for Tab {
+    type Target = Vec<BlockId>;
+    fn deref(&self) -> &Self::Target {
+        &self.items
+    }
+}
+
+impl DerefMut for Tab {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.items
     }
 }

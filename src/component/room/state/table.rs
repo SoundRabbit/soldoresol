@@ -87,6 +87,10 @@ impl State {
         self.selecting_tool = tool;
     }
 
+    pub fn info(&self) -> &Vec<(String, String)> {
+        &self.info
+    }
+
     pub fn set_info(&mut self, info: Vec<(String, String)>) {
         self.info = info;
     }

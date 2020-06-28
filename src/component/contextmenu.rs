@@ -1,72 +1,34 @@
-use super::MessengerGen;
 use kagura::prelude::*;
+use std::{cell::RefCell, rc::Rc};
 
-pub struct State {
-    showing: bool,
-    loc: [f64; 2],
-}
-
-pub enum Msg {
-    SetShowingState(bool),
-}
-
-pub fn init() -> State {
-    State {
-        showing: false,
-        loc: [0.0, 0.0],
-    }
-}
-
-#[allow(dead_code)]
-pub fn open(state: &mut State, loc: [f64; 2]) {
-    state.loc = loc;
-    update(state, Msg::SetShowingState(true));
-}
-
-#[allow(dead_code)]
-pub fn close(state: &mut State) {
-    update(state, Msg::SetShowingState(false));
-}
-
-pub fn update(state: &mut State, msg: Msg) {
-    match msg {
-        Msg::SetShowingState(s) => {
-            state.showing = s;
-        }
-    }
-}
-
-pub fn render<M: 'static>(
-    _centering: bool,
-    state: &State,
-    messenger_gen: impl Fn() -> MessengerGen<Msg, M>,
+pub fn div<Msg: 'static>(
+    on_close: impl FnMut() -> Msg + 'static,
+    position: &[f64; 2],
     attributes: Attributes,
-    events: Events<M>,
-    children: Vec<Html<M>>,
-) -> Html<M> {
-    if !state.showing {
-        return Html::none();
-    }
+    events: Events<Msg>,
+    children: Vec<Html<Msg>>,
+) -> Html<Msg> {
+    let on_close = Rc::new(RefCell::new(Box::new(on_close)));
     Html::div(
         Attributes::new().class("fullscreen").style("z-index", "0"),
         Events::new()
             .on_click({
-                let m = messenger_gen()();
-                |_| m(Msg::SetShowingState(false))
+                let on_close = Rc::clone(&on_close);
+                move |_| (&mut *on_close.borrow_mut())()
             })
             .on_contextmenu({
-                let m = messenger_gen()();
-                |e| {
+                let on_close = Rc::clone(&on_close);
+                move |e| {
                     e.prevent_default();
-                    m(Msg::SetShowingState(false))
+                    (&mut *on_close.borrow_mut())()
                 }
             }),
         vec![Html::div(
             attributes
                 .class("pure-menu")
                 .style("position", "absolute")
-                .style("left", state.loc[0].to_string() + "px")
-                .style("top", state.loc[1].to_string() + "px"),
+                .style("left", position[0].to_string() + "px")
+                .style("top", position[1].to_string() + "px"),
             events,
             children,
         )],

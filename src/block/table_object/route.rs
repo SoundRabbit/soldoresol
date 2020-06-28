@@ -25,10 +25,10 @@ impl Route {
 }
 
 impl Block for Route {
-    fn pack(&self) -> Promise<JsValue, ()> {
+    fn pack(&self) -> Promise<JsValue> {
         unimplemented!();
     }
-    fn unpack(field: &Field, val: JsValue) -> Promise<Box<Self>, ()> {
+    fn unpack(field: &mut Field, val: JsValue) -> Promise<Box<Self>> {
         unimplemented!();
     }
 }

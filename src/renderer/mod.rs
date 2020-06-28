@@ -37,8 +37,8 @@ impl Renderer {
         }
     }
 
-    pub fn table_object_id(&self, position: &[f32; 2]) -> Option<&BlockId> {
-        self.mask_renderer.table_object_id(position)
+    pub fn table_object_id(&self, canvas_size: &[f32; 2], position: &[f32; 2]) -> Option<&BlockId> {
+        self.mask_renderer.table_object_id(canvas_size, position)
     }
 
     pub fn table_position(

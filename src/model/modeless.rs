@@ -67,7 +67,7 @@ impl<T> Modeless<T> {
         ]
     }
 
-    pub fn set_position(&self, x: f64, y: f64) {
+    pub fn set_position(&mut self, x: f64, y: f64) {
         let [x, y] = window_pos(&[x, y]);
         let dx = x - self.position.left;
         let dy = y - self.position.top;
@@ -78,7 +78,7 @@ impl<T> Modeless<T> {
         self.position.bottom += y;
     }
 
-    pub fn set_size(&self, w: f64, h: f64) {
+    pub fn set_size(&mut self, w: f64, h: f64) {
         let [w, h] = window_pos(&[w, h]);
         self.position.right = self.position.left + w;
         self.position.bottom = self.position.top + h;
@@ -97,7 +97,8 @@ impl<T> Modeless<T> {
     }
 
     pub fn grub(&mut self, x: f64, y: f64) {
-        self.grubbed = Some(window_pos(&[x, y]));
+        let [x, y] = window_pos(&[x, y]);
+        self.grubbed = Some([self.position.left - x, self.position.top - y]);
     }
 
     pub fn drop(&mut self) {
@@ -113,20 +114,22 @@ impl<T> Modeless<T> {
         if let Some(grubbed) = &self.grubbed {
             let pos = window_pos(&[x, y]);
 
-            let dx = pos[0] - grubbed[0];
-            let dy = pos[1] - grubbed[1];
+            let w = self.position.right - self.position.left;
+            let h = self.position.bottom - self.position.top;
+            let top = pos[0] + grubbed[0];
+            let left = pos[1] + grubbed[1];
 
             if self.movable.top {
-                self.position.top += dy;
+                self.position.top = top;
             }
             if self.movable.left {
-                self.position.left += dx;
+                self.position.left = left;
             }
             if self.movable.bottom {
-                self.position.bottom += dy;
+                self.position.bottom = top + h;
             }
             if self.movable.right {
-                self.position.right += dx;
+                self.position.right = left + w;
             }
         }
     }
@@ -142,6 +145,12 @@ impl<T> Deref for Modeless<T> {
 impl<T> DerefMut for Modeless<T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.payload
+    }
+}
+
+impl<T> AsRef<T> for Modeless<T> {
+    fn as_ref(&self) -> &T {
+        &self.payload
     }
 }
 

@@ -41,4 +41,12 @@ impl State {
     pub fn set_inputing_message(&mut self, msg: String) {
         self.inputing_message = msg;
     }
+
+    pub fn block_id(&self) -> &BlockId {
+        &self.block_id
+    }
+
+    pub fn senders(&self) -> &Vec<Sender> {
+        &self.senders
+    }
 }

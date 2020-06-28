@@ -1,5 +1,6 @@
 use super::{Block, BlockId, Field};
 use crate::Promise;
+use std::ops::{Deref, DerefMut};
 use wasm_bindgen::prelude::*;
 
 pub mod item;
@@ -20,14 +21,14 @@ impl Chat {
 }
 
 impl Block for Chat {
-    fn pack(&self) -> Promise<JsValue, ()> {
+    fn pack(&self) -> Promise<JsValue> {
         let val = js_sys::Array::new();
         for tab_id in &self.tabs {
             val.push(&JsValue::from(tab_id.to_string()));
         }
-        Promise::new(|resolve| resolve(Ok(val.into())))
+        Promise::new(|resolve| resolve(Some(val.into())))
     }
-    fn unpack(field: &Field, val: JsValue) -> Promise<Box<Self>, ()> {
+    fn unpack(field: &mut Field, val: JsValue) -> Promise<Box<Self>> {
         let val = js_sys::Array::from(&val).to_vec();
         let mut tabs = vec![];
         for tab in val {
@@ -36,6 +37,19 @@ impl Block for Chat {
             }
         }
         let chat = Self { tabs };
-        Promise::new(|resolve| resolve(Ok(Box::new(chat))))
+        Promise::new(|resolve| resolve(Some(Box::new(chat))))
+    }
+}
+
+impl Deref for Chat {
+    type Target = Vec<BlockId>;
+    fn deref(&self) -> &Self::Target {
+        &self.tabs
+    }
+}
+
+impl DerefMut for Chat {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.tabs
     }
 }

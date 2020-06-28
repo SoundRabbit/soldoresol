@@ -14,8 +14,18 @@ use wasm_bindgen::JsCast;
 
 mod object;
 
-pub fn render(block_field: &block::Field, modeless: &model::Modeless<Modeless>) -> Html<Msg> {
-    unimplemented!();
+pub fn render(
+    block_field: &block::Field,
+    resource: &Resource,
+    modeless_id: model::modeless::ModelessId,
+    modeless: &model::Modeless<Modeless>,
+) -> Html<Msg> {
+    match modeless.as_ref() {
+        Modeless::Object { tabs, focused } => {
+            object::render(block_field, resource, modeless_id, modeless, tabs, *focused)
+        }
+        Modeless::Chat => Html::none(),
+    }
 }
 
 fn frame(

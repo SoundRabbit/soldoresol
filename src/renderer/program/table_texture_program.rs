@@ -33,6 +33,7 @@ const FRAGMENT_SHADER: &str = r#"
     void main() {
         vec4 smpColor0 = texture2D(u_texture0, v_textureCoord);
         vec4 smpColor1 = u_flagTexture1 != 0 ? texture2D(u_texture1, v_textureCoord) : vec4(0.0,0.0,0.0,0.0);
+        vec4 color_a = u_bgColor;
         vec4 color_b = blend(color_a, smpColor1);
         vec4 color_c = blend(color_b, smpColor0);
         gl_FragColor = color_c;

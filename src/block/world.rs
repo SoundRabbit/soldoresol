@@ -3,6 +3,7 @@ use crate::Promise;
 use std::collections::HashSet;
 use wasm_bindgen::prelude::*;
 
+#[derive(Debug)]
 pub struct World {
     selecting_table: BlockId,
     tables: Vec<BlockId>,
@@ -23,12 +24,16 @@ impl World {
         &self.selecting_table
     }
 
-    pub fn characters(&self) -> impl Iterator<Item = &BlockId> {
-        self.characters.iter()
+    pub fn tables(&self) -> impl Iterator<Item = &BlockId> {
+        self.tables.iter()
     }
 
     pub fn add_table(&mut self, table: BlockId) {
         self.tables.push(table);
+    }
+
+    pub fn characters(&self) -> impl Iterator<Item = &BlockId> {
+        self.characters.iter()
     }
 
     pub fn add_character(&mut self, character: BlockId) {
@@ -41,10 +46,28 @@ impl World {
 }
 
 impl Block for World {
-    fn pack(&self) -> Promise<JsValue, ()> {
-        unimplemented!();
+    fn pack(&self) -> Promise<JsValue> {
+        let tables = js_sys::Array::new();
+        for table in &self.tables {
+            tables.push(&JsValue::from(table.to_string()));
+        }
+        let characters = js_sys::Array::new();
+        for character in &self.characters {
+            characters.push(&JsValue::from(character.to_string()));
+        }
+
+        let data = object! {
+            selecting_table: self.selecting_table.to_string(),
+            tables: tables,
+            characters: characters
+        };
+
+        let data: js_sys::Object = data.into();
+        let data: JsValue = data.into();
+
+        Promise::new(|resolve| resolve(Some(data)))
     }
-    fn unpack(field: &Field, val: JsValue) -> Promise<Box<Self>, ()> {
+    fn unpack(field: &mut Field, val: JsValue) -> Promise<Box<Self>> {
         unimplemented!();
     }
 }

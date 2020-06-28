@@ -20,8 +20,12 @@ pub struct MaskRenderer {
 impl MaskRenderer {
     pub fn new() -> Self {
         let canvas = crate::util::html_canvas_element();
+        let option = object! {
+            preserveDrawingBuffer: true
+        };
+        let option: js_sys::Object = option.into();
         let gl = canvas
-            .get_context("webgl")
+            .get_context_with_context_options("webgl", &option.into())
             .unwrap()
             .unwrap()
             .dyn_into::<web_sys::WebGlRenderingContext>()
@@ -56,12 +60,15 @@ impl MaskRenderer {
         Rc::clone(&self.gl)
     }
 
-    pub fn table_object_id(&self, position: &[f32; 2]) -> Option<&BlockId> {
+    pub fn table_object_id(&self, canvas_size: &[f32; 2], position: &[f32; 2]) -> Option<&BlockId> {
         let mut pixel = [0, 0, 0, 0];
+
+        crate::debug::log_2(position[0] as i32, position[1] as i32);
+
         self.gl
             .read_pixels_with_opt_u8_array(
                 position[0] as i32,
-                position[1] as i32,
+                (canvas_size[1] - position[1]) as i32,
                 1,
                 1,
                 web_sys::WebGlRenderingContext::RGBA,
@@ -69,6 +76,12 @@ impl MaskRenderer {
                 Some(&mut pixel),
             )
             .unwrap();
+
+        crate::debug::log_1(format!(
+            "{:X}",
+            u32::from_be_bytes([pixel[3], pixel[0], pixel[1], pixel[2],])
+        ));
+
         self.id_map.get(&u32::from_be_bytes([
             pixel[3], pixel[0], pixel[1], pixel[2],
         ]))
@@ -81,6 +94,8 @@ impl MaskRenderer {
         block_field: &block::Field,
         world: &block::World,
     ) {
+        crate::debug::log_2(self.canvas.width(), self.canvas.height());
+
         let gl = &self.gl;
         let canvas = &self.canvas;
         canvas.set_width(canvas_size[0] as u32);

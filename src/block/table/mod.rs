@@ -10,6 +10,7 @@ pub use texture::Texture;
 pub struct Table {
     name: String,
     size: [f32; 2],
+    is_bind_to_grid: bool,
     drawing_texture_id: BlockId,
     image_texture_id: Option<ResourceId>,
     tablemasks: Vec<BlockId>,
@@ -20,10 +21,15 @@ impl Table {
         Self {
             name: name.into(),
             size,
+            is_bind_to_grid: true,
             drawing_texture_id,
             image_texture_id: None,
             tablemasks: vec![],
         }
+    }
+
+    pub fn name(&self) -> &String {
+        &self.name
     }
 
     pub fn size(&self) -> &[f32; 2] {
@@ -32,6 +38,10 @@ impl Table {
 
     pub fn set_size(&mut self, size: [f32; 2]) {
         self.size = size;
+    }
+
+    pub fn is_bind_to_grid(&self) -> bool {
+        self.is_bind_to_grid
     }
 
     pub fn drawing_texture_id(&self) -> &BlockId {
@@ -62,10 +72,13 @@ impl Table {
 }
 
 impl Block for Table {
-    fn pack(&self) -> Promise<JsValue, ()> {
-        unimplemented!();
+    fn pack(&self) -> Promise<JsValue> {
+        let data = object! {};
+        let data: js_sys::Object = data.into();
+        let data: JsValue = data.into();
+        Promise::new(|resolve| resolve(Some(data)))
     }
-    fn unpack(field: &Field, val: JsValue) -> Promise<Box<Self>, ()> {
+    fn unpack(field: &mut Field, val: JsValue) -> Promise<Box<Self>> {
         unimplemented!();
     }
 }

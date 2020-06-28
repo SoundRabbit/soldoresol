@@ -66,10 +66,29 @@ impl Character {
 }
 
 impl Block for Character {
-    fn pack(&self) -> Promise<JsValue, ()> {
-        unimplemented!();
+    fn pack(&self) -> Promise<JsValue> {
+        let size = array![self.size[0], self.size[1], self.size[2]];
+        let position = array![self.position[0], self.position[1], self.position[2]];
+        let texture_id = self
+            .texture_id
+            .map(|r| JsValue::from(r.to_string()))
+            .unwrap_or(JsValue::undefined());
+        let name = self.name();
+        let property_id = self.property_id.to_string();
+
+        let data = object! {
+            size: size,
+            position: position,
+            texture_id: texture_id,
+            name: name,
+            property_id: property_id
+        };
+        let data: js_sys::Object = data.into();
+        let data: JsValue = data.into();
+
+        Promise::new(|resolve| resolve(Some(data)))
     }
-    fn unpack(field: &Field, val: JsValue) -> Promise<Box<Self>, ()> {
+    fn unpack(field: &mut Field, val: JsValue) -> Promise<Box<Self>> {
         unimplemented!();
     }
 }

@@ -1,16 +1,30 @@
-use crate::block::BlockId;
+use crate::resource::ResourceId;
 use std::{
     collections::VecDeque,
     ops::{Deref, DerefMut},
 };
 
 pub struct Item {
-    texture_id: Option<BlockId>,
+    texture_id: Option<ResourceId>,
     message: String,
     position: [f64; 2],
 }
 
 pub struct State(VecDeque<Item>);
+
+impl Item {
+    pub fn texture_id(&self) -> Option<&ResourceId> {
+        self.texture_id.as_ref()
+    }
+
+    pub fn message(&self) -> &String {
+        &self.message
+    }
+
+    pub fn position(&self) -> &[f64; 2] {
+        &self.position
+    }
+}
 
 impl State {
     pub fn new() -> Self {
