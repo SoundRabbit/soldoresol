@@ -12,13 +12,17 @@ use crate::{
     model::modeless::{self, ModelessId},
     renderer::{Camera, Renderer},
     skyway::{Peer, Room},
-    Resource,
+    Color, Resource,
 };
 use kagura::prelude::*;
 use std::{collections::HashSet, rc::Rc};
 
 pub enum Modeless {
-    Object { tabs: Vec<BlockId>, focused: usize },
+    Object {
+        tabs: Vec<BlockId>,
+        focused: usize,
+        outlined: Option<Color>,
+    },
     Chat,
 }
 
@@ -261,6 +265,17 @@ impl<M, S> State<M, S> {
 
     pub fn close_modeless(&mut self, modeless_id: ModelessId) {
         self.modeless.close(modeless_id);
+    }
+
+    pub fn outline_modeless(&mut self, modeless_id: ModelessId, color: Option<Color>) {
+        self.modeless
+            .get_mut(modeless_id)
+            .map(|m| match m.as_mut() {
+                Modeless::Object { outlined, .. } => {
+                    *outlined = color;
+                }
+                _ => (),
+            });
     }
 
     pub fn modal(&self) -> &Vec<Modal> {

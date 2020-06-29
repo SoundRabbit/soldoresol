@@ -22,6 +22,7 @@ pub fn render(contextmenu: &state::contextmenu::State, block_id: &BlockId) -> Ht
                             Msg::OpenModeless(Modeless::Object {
                                 tabs: vec![block_id],
                                 focused: 0,
+                                outlined: None,
                             })
                         }
                     }),

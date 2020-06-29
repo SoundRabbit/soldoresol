@@ -8,7 +8,7 @@ use crate::{
     block::{self, chat::item::Icon, BlockId},
     model::{self, PersonalData},
     resource::Data,
-    Resource,
+    Color, Resource,
 };
 use kagura::prelude::*;
 use wasm_bindgen::JsCast;
@@ -18,19 +18,37 @@ pub fn render(
     resource: &Resource,
     modeless_id: model::modeless::ModelessId,
     modless: &model::Modeless<Modeless>,
+    grubbed: Option<model::modeless::ModelessId>,
     tabs: &Vec<BlockId>,
     focused: usize,
+    outlined: Option<&Color>,
 ) -> Html<Msg> {
+    let attributes = if let Some(color) = outlined {
+        Attributes::new().style(
+            "box-shadow",
+            format!("0 0 0.2rem 0.2rem {}", color.to_string()),
+        )
+    } else {
+        Attributes::new()
+    };
     let focused_id = &tabs[focused];
     super::frame(
         modeless_id,
         modless,
-        Attributes::new(),
+        attributes,
         Events::new(),
         vec![
             super::header(
                 modeless_id,
-                Html::div(Attributes::new(), Events::new(), vec![]),
+                grubbed,
+                Html::div(
+                    Attributes::new(),
+                    Events::new(),
+                    block_field
+                        .listed::<block::Character>(tabs.iter().collect())
+                        .map(|(_, character)| Html::text(character.name()))
+                        .collect(),
+                ),
             ),
             if let Some(character) = block_field.get::<block::Character>(focused_id) {
                 character_frame(block_field, resource, character, focused_id)

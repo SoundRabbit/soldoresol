@@ -25,7 +25,7 @@ pub struct Collection<T> {
     max_z_index: i32,
 }
 
-fn window_pos(pos: &[f64; 2]) -> [f64; 2] {
+pub fn window_pos(pos: &[f64; 2]) -> [f64; 2] {
     let window = web_sys::window().unwrap();
     let vw = window.inner_width().unwrap().as_f64().unwrap();
     let vh = window.inner_height().unwrap().as_f64().unwrap();
@@ -154,6 +154,12 @@ impl<T> AsRef<T> for Modeless<T> {
     }
 }
 
+impl<T> AsMut<T> for Modeless<T> {
+    fn as_mut(&mut self) -> &mut T {
+        &mut self.payload
+    }
+}
+
 impl<T> Collection<T> {
     pub fn new() -> Self {
         Self {
@@ -188,6 +194,10 @@ impl<T> Collection<T> {
         }
     }
 
+    pub fn get(&self, modeless_id: ModelessId) -> Option<&Modeless<T>> {
+        self.modelesses.get(modeless_id).and_then(|x| x.as_ref())
+    }
+
     pub fn get_mut(&mut self, modeless_id: ModelessId) -> Option<&mut Modeless<T>> {
         self.modelesses
             .get_mut(modeless_id)
@@ -202,9 +212,9 @@ impl<T> Collection<T> {
         self.modelesses.iter_mut().enumerate()
     }
 
-    pub fn some_is_grubbed(&self) -> bool {
+    pub fn grubbed(&self) -> Option<ModelessId> {
         self.modelesses
             .iter()
-            .any(|m| m.as_ref().map(|m| m.is_grubbed()).unwrap_or(false))
+            .position(|m| m.as_ref().map(|m| m.is_grubbed()).unwrap_or(false))
     }
 }

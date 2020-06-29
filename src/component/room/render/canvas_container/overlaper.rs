@@ -20,7 +20,8 @@ pub fn render(
     personal_data: &PersonalData,
     modeless: &model::modeless::Collection<Modeless>,
 ) -> Html<Msg> {
-    let some_modeless_is_grubbed = modeless.some_is_grubbed();
+    let grubbed = modeless.grubbed();
+    let some_modeless_is_grubbed = grubbed.is_some();
 
     Html::div(
         Attributes::new()
@@ -118,7 +119,13 @@ pub fn render(
             .iter()
             .map(|(modeless_id, modeless)| {
                 if let Some(modeless) = modeless {
-                    modeless::render(block_field, resource, modeless_id, modeless)
+                    modeless::render(
+                        block_field,
+                        resource,
+                        modeless_id,
+                        modeless,
+                        grubbed.clone(),
+                    )
                 } else {
                     Html::div(Attributes::new(), Events::new(), vec![])
                 }

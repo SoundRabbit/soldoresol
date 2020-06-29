@@ -62,9 +62,6 @@ impl MaskRenderer {
 
     pub fn table_object_id(&self, canvas_size: &[f32; 2], position: &[f32; 2]) -> Option<&BlockId> {
         let mut pixel = [0, 0, 0, 0];
-
-        crate::debug::log_2(position[0] as i32, position[1] as i32);
-
         self.gl
             .read_pixels_with_opt_u8_array(
                 position[0] as i32,
@@ -76,11 +73,6 @@ impl MaskRenderer {
                 Some(&mut pixel),
             )
             .unwrap();
-
-        crate::debug::log_1(format!(
-            "{:X}",
-            u32::from_be_bytes([pixel[3], pixel[0], pixel[1], pixel[2],])
-        ));
 
         self.id_map.get(&u32::from_be_bytes([
             pixel[3], pixel[0], pixel[1], pixel[2],

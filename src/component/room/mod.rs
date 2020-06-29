@@ -1,7 +1,7 @@
 use crate::{
     block::{self, BlockId},
     color_system,
-    model::modeless::ModelessId,
+    model::{self, modeless::ModelessId},
     renderer::Renderer,
     resource::{Data, ResourceId},
     skyway,
@@ -36,6 +36,7 @@ pub enum Msg {
     DragModeless(ModelessId, [f64; 2]),
     DropModeless(ModelessId),
     CloseModeless(ModelessId),
+    MergeModeless(ModelessId, ModelessId),
 
     // Modal
     OpenModal(state::Modal),
@@ -330,7 +331,46 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.dequeue()
         }
         Msg::DragModeless(modeless_id, mouse_position) => {
+            let mp = model::modeless::window_pos(&mouse_position);
+
             state.drag_modeless(modeless_id, mouse_position);
+
+            // マウスとモードレスの重なりを検出
+            let mut modeless = state
+                .modeless()
+                .iter()
+                .filter_map(|(id, m)| if let Some(m) = m { Some((id, m)) } else { None })
+                .collect::<Vec<_>>();
+
+            modeless.sort_by(|(_, a), (_, b)| a.z_index().cmp(&b.z_index()));
+            let _ = modeless.pop();
+
+            let mut outlined = None;
+            let mut unoutlined = vec![];
+
+            while let Some((id, m)) = modeless.pop() {
+                let p = m.position();
+                let s = m.size();
+                if p[0] < mp[0]
+                    && mp[0] < p[0] + s[0]
+                    && p[1] < mp[1]
+                    && mp[1] < p[1] + s[1]
+                    && outlined.is_none()
+                {
+                    outlined = Some(id);
+                } else {
+                    unoutlined.push(id);
+                }
+            }
+
+            if let Some(outlined) = outlined {
+                state.outline_modeless(outlined, Some(color_system::blue(255, 5)));
+            }
+
+            for id in unoutlined {
+                state.outline_modeless(id, None);
+            }
+
             state.dequeue()
         }
         Msg::DropModeless(modeless_id) => {
@@ -341,6 +381,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.close_modeless(modeless_id);
             state.dequeue()
         }
+        Msg::MergeModeless(modeless_id, grubbed) => state.dequeue(),
 
         // Modal
         Msg::OpenModal(modal) => {
@@ -468,7 +509,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     .unwrap_or(block::Property::new(""));
                 let prop = state.block_field_mut().add(prop);
 
-                let mut props = trace_prop_id(state.block_field(), &prop);
+                let props = trace_prop_id(state.block_field(), &prop);
 
                 tablemask.set_property_id(prop);
                 let tablemask = state.block_field_mut().add(tablemask);

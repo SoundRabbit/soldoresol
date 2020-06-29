@@ -19,11 +19,23 @@ pub fn render(
     resource: &Resource,
     modeless_id: model::modeless::ModelessId,
     modeless: &model::Modeless<Modeless>,
+    grubbed: Option<model::modeless::ModelessId>,
 ) -> Html<Msg> {
     match modeless.as_ref() {
-        Modeless::Object { tabs, focused } => {
-            object::render(block_field, resource, modeless_id, modeless, tabs, *focused)
-        }
+        Modeless::Object {
+            tabs,
+            focused,
+            outlined,
+        } => object::render(
+            block_field,
+            resource,
+            modeless_id,
+            modeless,
+            grubbed,
+            tabs,
+            *focused,
+            outlined.as_ref(),
+        ),
         Modeless::Chat => Html::none(),
     }
 }
@@ -162,15 +174,30 @@ fn resizers() -> Vec<Html<Msg>> {
     ]
 }
 
-fn header(modeless_id: model::modeless::ModelessId, header: Html<Msg>) -> Html<Msg> {
+fn header(
+    modeless_id: model::modeless::ModelessId,
+    grubbed: Option<model::modeless::ModelessId>,
+    header: Html<Msg>,
+) -> Html<Msg> {
     modeless::header(
         Attributes::new()
             .style("display", "grid")
             .style("grid-template-columns", "1fr max-content"),
-        Events::new().on_mousedown(move |e| {
-            let mouse_pos = [e.page_x() as f64, e.page_y() as f64];
-            Msg::GrubModeless(modeless_id, mouse_pos, [true, true, true, true])
-        }),
+        Events::new()
+            .on("dragover", {
+                let grubbed = grubbed.clone();
+                move |_| {
+                    if let Some(grubbed) = grubbed {
+                        Msg::MergeModeless(modeless_id, grubbed)
+                    } else {
+                        Msg::NoOp
+                    }
+                }
+            })
+            .on_mousedown(move |e| {
+                let mouse_pos = [e.page_x() as f64, e.page_y() as f64];
+                Msg::GrubModeless(modeless_id, mouse_pos, [true, true, true, true])
+            }),
         vec![
             header,
             Html::div(
