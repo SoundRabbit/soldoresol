@@ -8,24 +8,38 @@ mod character_list;
 mod overlaper;
 
 pub fn render(state: &State, world: &block::World) -> Html<Msg> {
+    let some_modeless_is_grubbed = state.modeless().some_is_grubbed();
+
     Html::div(
         Attributes::new()
             .class("cover")
             .style("position", "relative")
             .style("z-index", "0"),
         Events::new()
-            .on_mousedown(|e| {
-                Msg::SetLastMouseDownPosition([e.offset_x() as f32, e.offset_y() as f32])
-            })
-            .on_mousemove(|e| {
-                if e.buttons() & 1 != 0 {
-                    Msg::SetLastMousePosition(false, [e.offset_x() as f32, e.offset_y() as f32])
+            .on_mousedown(move |e| {
+                if !some_modeless_is_grubbed {
+                    Msg::SetLastMouseDownPosition([e.offset_x() as f32, e.offset_y() as f32])
                 } else {
-                    Msg::SetLastMousePosition(true, [e.offset_x() as f32, e.offset_y() as f32])
+                    Msg::NoOp
                 }
             })
-            .on_mouseup(|e| {
-                Msg::SetLastMouseUpPosition([e.offset_x() as f32, e.offset_y() as f32])
+            .on_mousemove(move |e| {
+                if !some_modeless_is_grubbed {
+                    if e.buttons() & 1 != 0 {
+                        Msg::SetLastMousePosition(false, [e.offset_x() as f32, e.offset_y() as f32])
+                    } else {
+                        Msg::SetLastMousePosition(true, [e.offset_x() as f32, e.offset_y() as f32])
+                    }
+                } else {
+                    Msg::NoOp
+                }
+            })
+            .on_mouseup(move |e| {
+                if !some_modeless_is_grubbed {
+                    Msg::SetLastMouseUpPosition([e.offset_x() as f32, e.offset_y() as f32])
+                } else {
+                    Msg::NoOp
+                }
             }),
         vec![
             canvas(),

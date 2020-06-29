@@ -15,7 +15,7 @@ struct Loc<T> {
 pub struct Modeless<T> {
     z_index: i32,
     position: Loc<f64>,
-    grubbed: Option<[f64; 2]>,
+    grubbed: Option<Loc<f64>>,
     movable: Loc<bool>,
     payload: T,
 }
@@ -98,7 +98,12 @@ impl<T> Modeless<T> {
 
     pub fn grub(&mut self, x: f64, y: f64) {
         let [x, y] = window_pos(&[x, y]);
-        self.grubbed = Some([self.position.left - x, self.position.top - y]);
+        self.grubbed = Some(Loc::new(
+            self.position.top - y,
+            self.position.left - x,
+            self.position.bottom - y,
+            self.position.right - x,
+        ));
     }
 
     pub fn drop(&mut self) {
@@ -114,22 +119,17 @@ impl<T> Modeless<T> {
         if let Some(grubbed) = &self.grubbed {
             let pos = window_pos(&[x, y]);
 
-            let w = self.position.right - self.position.left;
-            let h = self.position.bottom - self.position.top;
-            let top = pos[0] + grubbed[0];
-            let left = pos[1] + grubbed[1];
-
             if self.movable.top {
-                self.position.top = top;
+                self.position.top = pos[1] + grubbed.top;
             }
             if self.movable.left {
-                self.position.left = left;
+                self.position.left = pos[0] + grubbed.left;
             }
             if self.movable.bottom {
-                self.position.bottom = top + h;
+                self.position.bottom = pos[1] + grubbed.bottom;
             }
             if self.movable.right {
-                self.position.right = left + w;
+                self.position.right = pos[0] + grubbed.right;
             }
         }
     }
@@ -200,5 +200,11 @@ impl<T> Collection<T> {
 
     pub fn iter_mut(&mut self) -> impl Iterator<Item = (ModelessId, &mut Option<Modeless<T>>)> {
         self.modelesses.iter_mut().enumerate()
+    }
+
+    pub fn some_is_grubbed(&self) -> bool {
+        self.modelesses
+            .iter()
+            .any(|m| m.as_ref().map(|m| m.is_grubbed()).unwrap_or(false))
     }
 }

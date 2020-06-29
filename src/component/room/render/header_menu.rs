@@ -90,7 +90,7 @@ pub fn render(room_id: &String, selecting_tool: &table::Tool, is_2d_mode: bool) 
                         Attributes::new(),
                         Events::new()
                             .on_click(|_| Msg::SetSelectingTableTool(table::Tool::Measure)),
-                        vec![awesome::i("fa-fa-ruler-combined"), Html::text(" 範囲")],
+                        vec![awesome::i("fa-ruler-combined"), Html::text(" 範囲")],
                     ),
                     btn::selectable(
                         selecting_tool.is_route(),

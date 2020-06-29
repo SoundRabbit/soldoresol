@@ -20,6 +20,8 @@ pub fn render(
     personal_data: &PersonalData,
     modeless: &model::modeless::Collection<Modeless>,
 ) -> Html<Msg> {
+    let some_modeless_is_grubbed = modeless.some_is_grubbed();
+
     Html::div(
         Attributes::new()
             .class("cover cover-a")
@@ -33,7 +35,7 @@ pub fn render(
                 let last_mouse_down_pos = table.last_mouse_down_position().clone();
                 move |e| {
                     let mouse_pos = [e.offset_x() as f32, e.offset_y() as f32];
-                    if e.buttons() & 1 == 0 {
+                    if e.buttons() & 1 == 0 || some_modeless_is_grubbed {
                         Msg::NoOp
                     } else if (e.alt_key() || e.ctrl_key()) && !is_2d_mode {
                         Msg::SetCameraRotationWithMouseMovement(mouse_pos)

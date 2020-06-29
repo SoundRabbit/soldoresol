@@ -45,6 +45,10 @@ fn frame(
         modeless,
         attributes,
         events
+            .on_mousedown(move |e| {
+                e.stop_propagation();
+                Msg::FocusModeless(modeless_id)
+            })
             .on_contextmenu(|e| {
                 e.stop_propagation();
                 Msg::NoOp
@@ -62,7 +66,7 @@ fn frame(
                 move |e| {
                     e.stop_propagation();
                     if is_grubbed {
-                        let mouse_pos = [e.offset_x() as f64, e.offset_y() as f64];
+                        let mouse_pos = [e.page_x() as f64, e.page_y() as f64];
                         Msg::DragModeless(modeless_id, mouse_pos)
                     } else {
                         Msg::NoOp
@@ -74,7 +78,7 @@ fn frame(
                 move |e| {
                     e.stop_propagation();
                     if is_grubbed {
-                        let mouse_pos = [e.offset_x() as f64, e.offset_y() as f64];
+                        let mouse_pos = [e.page_x() as f64, e.page_y() as f64];
                         Msg::DragModeless(modeless_id, mouse_pos)
                     } else {
                         Msg::NoOp
@@ -87,7 +91,7 @@ fn frame(
                 Attributes::new(),
                 Events::new().on_mousedown(move |e| {
                     e.stop_propagation();
-                    let mouse_pos = [e.offset_x() as f64, e.offset_y() as f64];
+                    let mouse_pos = [e.page_x() as f64, e.page_y() as f64];
                     e.target()
                         .and_then(|t| t.dyn_into::<web_sys::Element>().ok())
                         .and_then(|t| t.get_attribute("data-position"))
@@ -164,8 +168,7 @@ fn header(modeless_id: model::modeless::ModelessId, header: Html<Msg>) -> Html<M
             .style("display", "grid")
             .style("grid-template-columns", "1fr max-content"),
         Events::new().on_mousedown(move |e| {
-            e.stop_propagation();
-            let mouse_pos = [e.offset_x() as f64, e.offset_y() as f64];
+            let mouse_pos = [e.page_x() as f64, e.page_y() as f64];
             Msg::GrubModeless(modeless_id, mouse_pos, [true, true, true, true])
         }),
         vec![
