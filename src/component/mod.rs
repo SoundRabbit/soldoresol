@@ -6,7 +6,6 @@ mod contextmenu;
 mod icon;
 mod modal;
 mod modeless;
-mod modeless_modal;
 mod peer_connection;
 mod room;
 mod room_connection;

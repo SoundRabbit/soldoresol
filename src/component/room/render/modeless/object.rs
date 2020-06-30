@@ -8,6 +8,7 @@ use crate::{
     Color, Resource,
 };
 use kagura::prelude::*;
+use wasm_bindgen::JsCast;
 
 pub fn render(
     block_field: &block::Field,
@@ -38,20 +39,71 @@ pub fn render(
                 modeless_id,
                 grubbed,
                 Attributes::new().class("frame-header-tab"),
+                Events::new()
+                    .on("dragover", |e| {
+                        let e = e.dyn_into::<web_sys::DragEvent>().unwrap();
+                        let dt = e.data_transfer().unwrap();
+                        if dt
+                            .types()
+                            .to_vec()
+                            .iter()
+                            .any(|x| x.as_string().unwrap() == "application/x-tab-idx")
+                        {
+                            e.prevent_default();
+                            e.stop_propagation();
+                            Msg::NoOp
+                        } else {
+                            Msg::NoOp
+                        }
+                    })
+                    .on("drop", move |e| {
+                        let e = e.dyn_into::<web_sys::DragEvent>().unwrap();
+                        let dt = e.data_transfer().unwrap();
+                        if dt
+                            .types()
+                            .to_vec()
+                            .iter()
+                            .any(|x| x.as_string().unwrap() == "application/x-tab-idx")
+                        {
+                            e.prevent_default();
+                            e.stop_propagation();
+                            Msg::DropModelessTabToModeless(modeless_id)
+                        } else {
+                            Msg::NoOp
+                        }
+                    }),
                 Html::div(
                     Attributes::new(),
                     Events::new(),
                     block_field
                         .listed::<block::Character>(tabs.iter().collect())
                         .enumerate()
-                        .map(|(tab_idx, (id, character))| {
+                        .map(|(tab_idx, (_, character))| {
                             btn::frame_tab(
                                 tab_idx == focused,
-                                Attributes::new(),
-                                Events::new().on_click({
-                                    let modeless_id = modeless_id.clone();
-                                    move |_| Msg::SetModelessTabIdx(modeless_id, tab_idx)
-                                }),
+                                Events::new()
+                                    .on_click({
+                                        let modeless_id = modeless_id.clone();
+                                        move |_| Msg::SetModelessTabIdx(modeless_id, tab_idx)
+                                    })
+                                    .on_mousedown(move |e| {
+                                        e.stop_propagation();
+                                        Msg::NoOp
+                                    })
+                                    .on("dragstart", move |e| {
+                                        let e = e.dyn_into::<web_sys::DragEvent>().unwrap();
+                                        e.stop_propagation();
+                                        let dt = e.data_transfer().unwrap();
+                                        dt.set_effect_allowed("move");
+                                        let _ = dt.set_data(
+                                            "application/x-tab-idx",
+                                            &tab_idx.to_string(),
+                                        );
+
+                                        crate::debug::log_1("dragstart");
+
+                                        Msg::GrubModelessTab(modeless_id, tab_idx)
+                                    }),
                                 character.name(),
                             )
                         })
@@ -62,7 +114,7 @@ pub fn render(
                 character_frame(
                     block_field,
                     resource,
-                    modeless.is_grubbed(),
+                    grubbed.is_some(),
                     character,
                     focused_id,
                 )

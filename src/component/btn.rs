@@ -174,27 +174,34 @@ pub fn tab<Msg>(
 
 pub fn frame_tab<Msg>(
     is_selected: bool,
-    attributes: Attributes,
     events: Events<Msg>,
     name: impl Into<String>,
 ) -> Html<Msg> {
     if is_selected {
-        Html::button(
-            attributes
-                .class("pure-button")
-                .class("pure-button-frametab")
-                .class("pure-button-primary"),
+        Html::span(
+            Attributes::new().draggable(true),
             events,
-            vec![Html::text(name)],
+            vec![Html::span(
+                Attributes::new()
+                    .class("pure-button")
+                    .class("pure-button-frametab")
+                    .class("pure-button-primary"),
+                Events::new(),
+                vec![Html::text(name)],
+            )],
         )
     } else {
-        Html::button(
-            attributes
-                .class("pure-button")
-                .class("pure-button-frametab")
-                .class("pure-button-transparent"),
+        Html::span(
+            Attributes::new().draggable(true),
             events,
-            vec![Html::text(name)],
+            vec![Html::span(
+                Attributes::new()
+                    .class("pure-button")
+                    .class("pure-button-frametab")
+                    .class("pure-button-transparent"),
+                Events::new(),
+                vec![Html::text(name)],
+            )],
         )
     }
 }

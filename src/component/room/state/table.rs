@@ -1,4 +1,5 @@
 use crate::block::BlockId;
+use crate::model::modeless::ModelessId;
 
 #[derive(Clone)]
 pub enum Tool {
@@ -25,6 +26,7 @@ pub struct State {
     last_mouse_up_position: [f32; 2],
     is_2d_mode: bool,
     focused: Focused,
+    moving_tab: Option<(ModelessId, usize)>,
 }
 
 impl Tool {
@@ -76,6 +78,7 @@ impl State {
             last_mouse_up_position: [0.0, 0.0],
             is_2d_mode: false,
             focused: Focused::None,
+            moving_tab: None,
         }
     }
 
@@ -133,5 +136,13 @@ impl State {
 
     pub fn set_focused(&mut self, focused: Focused) {
         self.focused = focused
+    }
+
+    pub fn moving_tab(&self) -> Option<&(ModelessId, usize)> {
+        self.moving_tab.as_ref()
+    }
+
+    pub fn set_moving_tab(&mut self, moving_tab: Option<(ModelessId, usize)>) {
+        self.moving_tab = moving_tab;
     }
 }

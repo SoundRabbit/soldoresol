@@ -37,6 +37,8 @@ pub enum Msg {
     DropModeless(ModelessId),
     CloseModeless(ModelessId),
     SetModelessTabIdx(ModelessId, usize),
+    GrubModelessTab(ModelessId, usize),
+    DropModelessTabToModeless(ModelessId),
 
     // Modal
     OpenModal(state::Modal),
@@ -235,62 +237,12 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
 
         Msg::DragModeless(modeless_id, mouse_position, diff) => {
-            let mp = model::modeless::window_pos(&[
-                mouse_position[0] - diff[0],
-                mouse_position[1] - diff[1],
-            ]);
-
             state.drag_modeless(modeless_id, mouse_position);
-
-            // マウスとモードレスの重なりを検出
-            let mut modeless = state
-                .modeless()
-                .iter()
-                .filter_map(|(id, m)| if let Some(m) = m { Some((id, m)) } else { None })
-                .collect::<Vec<_>>();
-
-            modeless.sort_by(|(_, a), (_, b)| a.z_index().cmp(&b.z_index()));
-            let _ = modeless.pop();
-
-            let mut outlined = None;
-            let mut unoutlined = vec![];
-
-            while let Some((id, m)) = modeless.pop() {
-                let p = m.position();
-                let s = m.size();
-                if p[0] < mp[0]
-                    && mp[0] < p[0] + s[0]
-                    && p[1] < mp[1]
-                    && mp[1] < p[1] + s[1]
-                    && outlined.is_none()
-                {
-                    outlined = Some(id);
-                } else {
-                    unoutlined.push(id);
-                }
-            }
-
-            if let Some(outlined) = outlined {
-                state.outline_modeless(outlined, Some(color_system::blue(255, 5)));
-                state.set_covering_modeless(modeless_id, Some(outlined));
-            } else {
-                state.set_covering_modeless(modeless_id, None);
-            }
-
-            for id in unoutlined {
-                state.outline_modeless(id, None);
-            }
-
             state.dequeue()
         }
 
         Msg::DropModeless(modeless_id) => {
             state.drop_modeless(modeless_id);
-            if let Some(covering) = state.covering_modeless(modeless_id) {
-                state.merge_object_modeless(modeless_id, covering);
-                state.close_modeless(modeless_id);
-                state.outline_modeless(covering, None);
-            }
             state.dequeue()
         }
 
@@ -301,6 +253,26 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
         Msg::SetModelessTabIdx(modeless_id, tab_idx) => {
             state.set_modeless_focused_tab(modeless_id, tab_idx);
+            state.dequeue()
+        }
+
+        Msg::GrubModelessTab(modeless_id, tab_idx) => {
+            state
+                .table_mut()
+                .set_moving_tab(Some((modeless_id, tab_idx)));
+            state.grub_modeless(modeless_id, [0.0, 0.0], [false, false, false, false]);
+            state.dequeue()
+        }
+
+        Msg::DropModelessTabToModeless(modeless_id) => {
+            if let Some((from_id, tab_idx)) = state.table().moving_tab() {
+                let from_id = *from_id;
+                let tab_idx = *tab_idx;
+                if let Some(block_id) = state.remove_modeless_tab(from_id, tab_idx) {
+                    state.add_modeless_tab(modeless_id, block_id);
+                }
+                state.drop_modeless(from_id);
+            }
             state.dequeue()
         }
 

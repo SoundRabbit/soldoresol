@@ -23,7 +23,6 @@ pub fn render(contextmenu: &state::contextmenu::State, block_id: &BlockId) -> Ht
                                 tabs: vec![block_id],
                                 focused: 0,
                                 outlined: None,
-                                cover: None,
                             })
                         }
                     }),

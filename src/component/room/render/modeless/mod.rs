@@ -48,11 +48,6 @@ fn frame(
     events: Events<Msg>,
     children: Vec<Html<Msg>>,
 ) -> Html<Msg> {
-    let attributes = if modeless.is_grubbed() {
-        attributes.class("grubbed")
-    } else {
-        attributes
-    };
     let attributes = attributes.style("z-index", modeless.z_index().to_string());
     modeless::frame(
         modeless,
@@ -151,13 +146,14 @@ fn header(
     modeless_id: model::modeless::ModelessId,
     grubbed: Option<model::modeless::ModelessId>,
     attributes: Attributes,
+    events: Events<Msg>,
     header: Html<Msg>,
 ) -> Html<Msg> {
     modeless::header(
         attributes
             .style("display", "grid")
             .style("grid-template-columns", "1fr max-content"),
-        Events::new().on_mousedown(move |e| {
+        events.on_mousedown(move |e| {
             let mouse_pos = [e.page_x() as f64, e.page_y() as f64];
             Msg::GrubModeless(modeless_id, mouse_pos, [true, true, true, true])
         }),
