@@ -269,10 +269,12 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             if let Some((from_id, tab_idx)) = state.table().moving_tab() {
                 let from_id = *from_id;
                 let tab_idx = *tab_idx;
-                if let Some(block_id) = state.remove_modeless_tab(from_id, tab_idx) {
-                    state.add_modeless_tab(modeless_id, block_id);
+                if modeless_id != from_id {
+                    if let Some(block_id) = state.remove_modeless_tab(from_id, tab_idx) {
+                        state.add_modeless_tab(modeless_id, block_id);
+                    }
+                    state.drop_modeless(from_id);
                 }
-                state.drop_modeless(from_id);
             }
             state.dequeue()
         }
