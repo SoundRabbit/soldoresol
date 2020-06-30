@@ -37,16 +37,8 @@ pub fn render(
                 move |e| {
                     let mouse_pos = [e.offset_x() as f32, e.offset_y() as f32];
                     if let Some(modeless_id) = grubbed {
-                        let current_tagret = e
-                            .current_target()
-                            .unwrap()
-                            .dyn_into::<web_sys::HtmlElement>()
-                            .unwrap();
-                        let cr = current_tagret.get_bounding_client_rect();
-                        let x = cr.left();
-                        let y = cr.top();
                         let mouse_pos = [e.client_x() as f64, e.client_y() as f64];
-                        Msg::DragModeless(modeless_id, mouse_pos, [x, y])
+                        Msg::DragModeless(modeless_id, mouse_pos)
                     } else if e.buttons() & 1 == 0 {
                         Msg::NoOp
                     } else if (e.alt_key() || e.ctrl_key()) && !is_2d_mode {
@@ -134,6 +126,31 @@ pub fn render(
                             state::Contextmenu::Default,
                         ),
                     }
+                }
+            })
+            .on("drop", move |e| {
+                let e = e.dyn_into::<web_sys::DragEvent>().unwrap();
+                let dt = e.data_transfer().unwrap();
+                if dt
+                    .types()
+                    .to_vec()
+                    .iter()
+                    .any(|x| x.as_string().unwrap() == "application/x-tab-idx")
+                {
+                    e.prevent_default();
+                    e.stop_propagation();
+                    let current_tagret = e
+                        .current_target()
+                        .unwrap()
+                        .dyn_into::<web_sys::HtmlElement>()
+                        .unwrap();
+                    let cr = current_tagret.get_bounding_client_rect();
+                    let x = cr.left();
+                    let y = cr.top();
+                    let mouse_pos = [e.client_x() as f64 - x, e.client_y() as f64 - y];
+                    Msg::DropModelessTab(mouse_pos)
+                } else {
+                    Msg::NoOp
                 }
             }),
         modeless

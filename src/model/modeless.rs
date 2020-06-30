@@ -73,9 +73,9 @@ impl<T> Modeless<T> {
         let dy = y - self.position.top;
 
         self.position.left += dx;
-        self.position.right += x;
-        self.position.top += y;
-        self.position.bottom += y;
+        self.position.right += dx;
+        self.position.top += dy;
+        self.position.bottom += dy;
     }
 
     pub fn set_size(&mut self, w: f64, h: f64) {
@@ -130,23 +130,6 @@ impl<T> Modeless<T> {
             }
             if self.movable.right {
                 self.position.right = pos[0] + grubbed.right;
-            }
-
-            if self.position.top < 0.0 {
-                self.position.bottom += 0.0 - self.position.top;
-                self.position.top = 0.0;
-            }
-            if self.position.bottom > 100.0 {
-                self.position.top += 100.0 - self.position.bottom;
-                self.position.bottom = 100.0;
-            }
-            if self.position.left < 0.0 {
-                self.position.right += 0.0 - self.position.left;
-                self.position.left = 0.0;
-            }
-            if self.position.right > 100.0 {
-                self.position.left += 100.0 - self.position.right;
-                self.position.right = 100.0;
             }
         }
     }

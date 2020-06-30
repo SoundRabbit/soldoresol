@@ -235,6 +235,12 @@ impl<M, S> State<M, S> {
         self.modeless.open(model::Modeless::new(modeless));
     }
 
+    pub fn open_modeless_with_position(&mut self, modeless: Modeless, pos: [f64; 2]) {
+        let mut modeless = model::Modeless::new(modeless);
+        modeless.set_position(pos[0], pos[1]);
+        self.modeless.open(modeless);
+    }
+
     pub fn focus_modeless(&mut self, modeless_id: ModelessId) {
         self.modeless.focus(modeless_id);
     }

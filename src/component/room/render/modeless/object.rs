@@ -39,39 +39,22 @@ pub fn render(
                 modeless_id,
                 grubbed,
                 Attributes::new().class("frame-header-tab"),
-                Events::new()
-                    .on("dragover", |e| {
-                        let e = e.dyn_into::<web_sys::DragEvent>().unwrap();
-                        let dt = e.data_transfer().unwrap();
-                        if dt
-                            .types()
-                            .to_vec()
-                            .iter()
-                            .any(|x| x.as_string().unwrap() == "application/x-tab-idx")
-                        {
-                            e.prevent_default();
-                            e.stop_propagation();
-                            Msg::NoOp
-                        } else {
-                            Msg::NoOp
-                        }
-                    })
-                    .on("drop", move |e| {
-                        let e = e.dyn_into::<web_sys::DragEvent>().unwrap();
-                        let dt = e.data_transfer().unwrap();
-                        if dt
-                            .types()
-                            .to_vec()
-                            .iter()
-                            .any(|x| x.as_string().unwrap() == "application/x-tab-idx")
-                        {
-                            e.prevent_default();
-                            e.stop_propagation();
-                            Msg::DropModelessTabToModeless(modeless_id)
-                        } else {
-                            Msg::NoOp
-                        }
-                    }),
+                Events::new().on("drop", move |e| {
+                    let e = e.dyn_into::<web_sys::DragEvent>().unwrap();
+                    let dt = e.data_transfer().unwrap();
+                    if dt
+                        .types()
+                        .to_vec()
+                        .iter()
+                        .any(|x| x.as_string().unwrap() == "application/x-tab-idx")
+                    {
+                        e.prevent_default();
+                        e.stop_propagation();
+                        Msg::DropModelessTabToModeless(modeless_id)
+                    } else {
+                        Msg::NoOp
+                    }
+                }),
                 Html::div(
                     Attributes::new(),
                     Events::new(),

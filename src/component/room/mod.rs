@@ -33,12 +33,13 @@ pub enum Msg {
     OpenModeless(state::Modeless),
     FocusModeless(ModelessId),
     GrubModeless(ModelessId, [f64; 2], [bool; 4]),
-    DragModeless(ModelessId, [f64; 2], [f64; 2]),
+    DragModeless(ModelessId, [f64; 2]),
     DropModeless(ModelessId),
     CloseModeless(ModelessId),
     SetModelessTabIdx(ModelessId, usize),
     GrubModelessTab(ModelessId, usize),
     DropModelessTabToModeless(ModelessId),
+    DropModelessTab([f64; 2]),
 
     // Modal
     OpenModal(state::Modal),
@@ -236,7 +237,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.dequeue()
         }
 
-        Msg::DragModeless(modeless_id, mouse_position, diff) => {
+        Msg::DragModeless(modeless_id, mouse_position) => {
             state.drag_modeless(modeless_id, mouse_position);
             state.dequeue()
         }
@@ -273,6 +274,24 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 }
                 state.drop_modeless(from_id);
             }
+            state.dequeue()
+        }
+
+        Msg::DropModelessTab(mouse_pos) => {
+            if let Some((from_id, tab_idx)) = state.table().moving_tab() {
+                let from_id = *from_id;
+                let tab_idx = *tab_idx;
+                if let Some(block_id) = state.remove_modeless_tab(from_id, tab_idx) {
+                    let modeless = state::Modeless::Object {
+                        tabs: vec![block_id],
+                        focused: 0,
+                        outlined: None,
+                    };
+                    state.open_modeless_with_position(modeless, mouse_pos);
+                }
+                state.drop_modeless(from_id);
+            }
+
             state.dequeue()
         }
 
