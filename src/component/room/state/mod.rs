@@ -22,6 +22,7 @@ pub enum Modeless {
         tabs: Vec<BlockId>,
         focused: usize,
         outlined: Option<Color>,
+        cover: Option<ModelessId>,
     },
     Chat,
 }
@@ -276,6 +277,47 @@ impl<M, S> State<M, S> {
                 }
                 _ => (),
             });
+    }
+
+    pub fn covering_modeless(&self, modeless_id: ModelessId) -> Option<ModelessId> {
+        self.modeless
+            .get(modeless_id)
+            .and_then(|m| match m.as_ref() {
+                Modeless::Object { cover, .. } => cover.clone(),
+                _ => None,
+            })
+    }
+
+    pub fn set_covering_modeless(&mut self, modeless_id: ModelessId, covering: Option<ModelessId>) {
+        self.modeless
+            .get_mut(modeless_id)
+            .map(|m| match m.as_mut() {
+                Modeless::Object { cover, .. } => {
+                    *cover = covering;
+                }
+                _ => (),
+            });
+    }
+
+    pub fn merge_object_modeless(&mut self, a: ModelessId, b: ModelessId) {
+        let mut a = match self.modeless.get_mut(a).map(|m| m.as_mut()) {
+            Some(Modeless::Object { tabs, .. }) => tabs.drain(..).collect::<Vec<_>>(),
+            _ => vec![],
+        };
+        if let Some(Modeless::Object { tabs, .. }) = self.modeless.get_mut(b).map(|m| m.as_mut()) {
+            tabs.append(&mut a);
+        }
+    }
+
+    pub fn set_modeless_focused_tab(&mut self, modeless_id: ModelessId, tab_idx: usize) {
+        if let Some(modeless) = self.modeless.get_mut(modeless_id) {
+            match modeless.as_mut() {
+                Modeless::Object { focused, .. } => {
+                    *focused = tab_idx;
+                }
+                _ => (),
+            }
+        }
     }
 
     pub fn modal(&self) -> &Vec<Modal> {

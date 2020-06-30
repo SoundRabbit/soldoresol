@@ -2,4 +2,12 @@
     & .pure-img {
         max-height: 20vh;
     }
+
+    & input {
+        width: 100%;
+    }
+
+    & input.key {
+        width: 8em;
+    }
 }

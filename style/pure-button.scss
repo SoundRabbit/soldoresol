@@ -50,4 +50,15 @@
             font-size: 2em;
         }
     }
+
+    &-close {
+        color: $gray-000 !important;
+        background-color: transparent;
+    }
+
+    &-frametab {
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+        padding: .75em 1em;
+    }
 }

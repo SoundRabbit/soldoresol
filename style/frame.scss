@@ -14,13 +14,21 @@
     }
 
     &-modeless {
-        position: fixed;
+        position: absolute;
     }
 
     &>.frame-header {
         line-height: 1;
         padding: 0.5em;
         background-color: $gray-900;
+
+        &-tab {
+            padding-bottom: 0;
+
+            & .pure-button-close {
+                margin-bottom: 0.5em;
+            }
+        }
     }
 
     &>.frame-body {

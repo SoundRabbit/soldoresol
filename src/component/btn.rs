@@ -106,7 +106,7 @@ pub fn toggle<Msg>(is_toggled: bool, attributes: Attributes, events: Events<Msg>
 
 pub fn close<Msg>(attributes: Attributes, events: Events<Msg>) -> Html<Msg> {
     Html::button(
-        attributes.class("pure-button pure-button-dark"),
+        attributes.class("pure-button pure-button-close"),
         events,
         vec![awesome::i("fa-times")],
     )
@@ -172,16 +172,31 @@ pub fn tab<Msg>(
     }
 }
 
-pub fn like_tab<Msg>(
+pub fn frame_tab<Msg>(
+    is_selected: bool,
     attributes: Attributes,
     events: Events<Msg>,
     name: impl Into<String>,
 ) -> Html<Msg> {
-    Html::button(
-        attributes.class("pure-button").class("pure-button-tab"),
-        events,
-        vec![Html::text(name)],
-    )
+    if is_selected {
+        Html::button(
+            attributes
+                .class("pure-button")
+                .class("pure-button-frametab")
+                .class("pure-button-primary"),
+            events,
+            vec![Html::text(name)],
+        )
+    } else {
+        Html::button(
+            attributes
+                .class("pure-button")
+                .class("pure-button-frametab")
+                .class("pure-button-transparent"),
+            events,
+            vec![Html::text(name)],
+        )
+    }
 }
 
 #[allow(dead_code)]

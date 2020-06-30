@@ -33,10 +33,10 @@ pub enum Msg {
     OpenModeless(state::Modeless),
     FocusModeless(ModelessId),
     GrubModeless(ModelessId, [f64; 2], [bool; 4]),
-    DragModeless(ModelessId, [f64; 2]),
+    DragModeless(ModelessId, [f64; 2], [f64; 2]),
     DropModeless(ModelessId),
     CloseModeless(ModelessId),
-    MergeModeless(ModelessId, ModelessId),
+    SetModelessTabIdx(ModelessId, usize),
 
     // Modal
     OpenModal(state::Modal),
@@ -187,105 +187,6 @@ pub fn new(
         })
 }
 
-fn get_table_canvas_element() -> web_sys::HtmlCanvasElement {
-    web_sys::window()
-        .unwrap()
-        .document()
-        .unwrap()
-        .get_element_by_id("table")
-        .unwrap()
-        .dyn_into::<web_sys::HtmlCanvasElement>()
-        .unwrap()
-}
-
-fn get_canvas_pixel_ratio(pixel_ratio: f32) -> f32 {
-    web_sys::window().unwrap().device_pixel_ratio() as f32 * pixel_ratio
-}
-
-fn reset_canvas_size(pixel_ratio: f32) -> [f32; 2] {
-    let canvas = get_table_canvas_element();
-    let dpr = get_canvas_pixel_ratio(pixel_ratio);
-    let canvas_size = [
-        canvas.client_width() as f32 * dpr,
-        canvas.client_height() as f32 * dpr,
-    ];
-    canvas.set_width(canvas_size[0] as u32);
-    canvas.set_height(canvas_size[1] as u32);
-    canvas_size
-}
-
-fn get_table_position(state: &State, screen_position: &[f32; 2], pixel_ratio: f32) -> [f32; 2] {
-    let dpr = get_canvas_pixel_ratio(pixel_ratio);
-    let mouse_coord = [screen_position[0] * dpr, screen_position[1] * dpr];
-    let p = state
-        .camera()
-        .collision_point_on_xy_plane(state.canvas_size(), &mouse_coord);
-    [p[0], p[1]]
-}
-
-fn render_canvas(state: &mut State) {
-    state.render();
-}
-
-fn timestamp() -> Option<f64> {
-    Some(js_sys::Date::now())
-}
-
-fn send_pack_cmd(block_field: &block::Field, packs: Vec<&BlockId>) -> Cmd<Msg, Sub> {
-    let packs = block_field.pack_listed(packs);
-
-    Cmd::task(move |resolve| {
-        packs.then(|packs| {
-            if let Some(packs) = packs {
-                resolve(Msg::SendBlockPacks(packs.into_iter().collect()));
-            }
-        })
-    })
-}
-
-fn clone_prop(block_field: &mut block::Field, prop: &BlockId) -> Option<block::Property> {
-    let mut prop = if let Some(prop) = block_field.get::<block::Property>(prop) {
-        Some(prop.clone())
-    } else {
-        None
-    };
-
-    if let Some(prop) = &mut prop {
-        if let block::property::Value::Children(children) = prop.value() {
-            let mut new_children = vec![];
-
-            for child in children {
-                let child = clone_prop(block_field, child);
-                if let Some(child) = child {
-                    let child = block_field.add(child);
-                    new_children.push(child);
-                }
-            }
-
-            prop.set_value(block::property::Value::Children(new_children));
-        }
-    }
-
-    prop
-}
-
-fn trace_prop_id(block_field: &block::Field, prop: &BlockId) -> Vec<BlockId> {
-    let mut prop_ids = vec![prop.clone()];
-
-    if let Some(block::property::Value::Children(children)) =
-        block_field.get::<block::Property>(&prop).map(|p| p.value())
-    {
-        for child in children {
-            let child_children = trace_prop_id(block_field, child);
-            for child_child in child_children {
-                prop_ids.push(child_child);
-            }
-        }
-    }
-
-    prop_ids
-}
-
 fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
     match msg {
         Msg::NoOp => state.dequeue(),
@@ -322,16 +223,22 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.open_modeless(modeless);
             state.dequeue()
         }
+
         Msg::FocusModeless(modeless_id) => {
             state.focus_modeless(modeless_id);
             state.dequeue()
         }
+
         Msg::GrubModeless(modeless_id, mouse_position, movable) => {
             state.grub_modeless(modeless_id, mouse_position, movable);
             state.dequeue()
         }
-        Msg::DragModeless(modeless_id, mouse_position) => {
-            let mp = model::modeless::window_pos(&mouse_position);
+
+        Msg::DragModeless(modeless_id, mouse_position, diff) => {
+            let mp = model::modeless::window_pos(&[
+                mouse_position[0] - diff[0],
+                mouse_position[1] - diff[1],
+            ]);
 
             state.drag_modeless(modeless_id, mouse_position);
 
@@ -365,6 +272,9 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
             if let Some(outlined) = outlined {
                 state.outline_modeless(outlined, Some(color_system::blue(255, 5)));
+                state.set_covering_modeless(modeless_id, Some(outlined));
+            } else {
+                state.set_covering_modeless(modeless_id, None);
             }
 
             for id in unoutlined {
@@ -373,15 +283,26 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
             state.dequeue()
         }
+
         Msg::DropModeless(modeless_id) => {
             state.drop_modeless(modeless_id);
+            if let Some(covering) = state.covering_modeless(modeless_id) {
+                state.merge_object_modeless(modeless_id, covering);
+                state.close_modeless(modeless_id);
+                state.outline_modeless(covering, None);
+            }
             state.dequeue()
         }
+
         Msg::CloseModeless(modeless_id) => {
             state.close_modeless(modeless_id);
             state.dequeue()
         }
-        Msg::MergeModeless(modeless_id, grubbed) => state.dequeue(),
+
+        Msg::SetModelessTabIdx(modeless_id, tab_idx) => {
+            state.set_modeless_focused_tab(modeless_id, tab_idx);
+            state.dequeue()
+        }
 
         // Modal
         Msg::OpenModal(modal) => {
@@ -568,49 +489,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         // Mouse
         Msg::SetLastMousePosition(check_focused, mouse_position) => {
             if check_focused {
-                let cpr = get_canvas_pixel_ratio(state.pixel_ratio());
-
-                let canvas_pos = [mouse_position[0] * cpr, mouse_position[1] * cpr];
-
-                if let Some(block_id) = state.renderer().and_then(|r| {
-                    r.table_object_id(state.canvas_size(), &canvas_pos)
-                        .map(|t| t.clone())
-                }) {
-                    web_sys::console::log_1(&JsValue::from(block_id.to_string()));
-                    if state
-                        .block_field()
-                        .get::<block::Character>(&block_id)
-                        .is_some()
-                    {
-                        let table = state.table_mut();
-                        table.set_focused(state::table::Focused::Character(block_id.clone()));
-                        let block_field = state.block_field_mut();
-                        block_field
-                            .update(&block_id, None, |character: &mut block::Character| {})
-                            .and_then(|bf| {
-                                bf.update(
-                                    &block_id,
-                                    None,
-                                    |tablemask: &mut block::table_object::Tablemask| {},
-                                )
-                            });
-                    } else if state
-                        .block_field()
-                        .get::<block::table_object::Tablemask>(&block_id)
-                        .is_some()
-                    {
-                        let table = state.table_mut();
-                        table.set_focused(state::table::Focused::Tablemask(block_id.clone()));
-                        let block_field = state.block_field_mut();
-                        block_field.update(
-                            &block_id,
-                            None,
-                            |route: &mut block::table_object::Route| {},
-                        );
-                    }
-                } else {
-                    state.table_mut().set_focused(state::table::Focused::None);
-                }
+                check_focused_object(state, &mouse_position);
             }
 
             state.table_mut().set_last_mouse_position(mouse_position);
@@ -1007,5 +886,134 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.dequeue()
         }
         Msg::DisconnectFromRoom => Cmd::Sub(Sub::DisconnectFromRoom),
+    }
+}
+
+fn get_table_canvas_element() -> web_sys::HtmlCanvasElement {
+    web_sys::window()
+        .unwrap()
+        .document()
+        .unwrap()
+        .get_element_by_id("table")
+        .unwrap()
+        .dyn_into::<web_sys::HtmlCanvasElement>()
+        .unwrap()
+}
+
+fn get_canvas_pixel_ratio(pixel_ratio: f32) -> f32 {
+    web_sys::window().unwrap().device_pixel_ratio() as f32 * pixel_ratio
+}
+
+fn reset_canvas_size(pixel_ratio: f32) -> [f32; 2] {
+    let canvas = get_table_canvas_element();
+    let dpr = get_canvas_pixel_ratio(pixel_ratio);
+    let canvas_size = [
+        canvas.client_width() as f32 * dpr,
+        canvas.client_height() as f32 * dpr,
+    ];
+    canvas.set_width(canvas_size[0] as u32);
+    canvas.set_height(canvas_size[1] as u32);
+    canvas_size
+}
+
+fn get_table_position(state: &State, screen_position: &[f32; 2], pixel_ratio: f32) -> [f32; 2] {
+    let dpr = get_canvas_pixel_ratio(pixel_ratio);
+    let mouse_coord = [screen_position[0] * dpr, screen_position[1] * dpr];
+    let p = state
+        .camera()
+        .collision_point_on_xy_plane(state.canvas_size(), &mouse_coord);
+    [p[0], p[1]]
+}
+
+fn render_canvas(state: &mut State) {
+    state.render();
+}
+
+fn timestamp() -> Option<f64> {
+    Some(js_sys::Date::now())
+}
+
+fn send_pack_cmd(block_field: &block::Field, packs: Vec<&BlockId>) -> Cmd<Msg, Sub> {
+    let packs = block_field.pack_listed(packs);
+
+    Cmd::task(move |resolve| {
+        packs.then(|packs| {
+            if let Some(packs) = packs {
+                resolve(Msg::SendBlockPacks(packs.into_iter().collect()));
+            }
+        })
+    })
+}
+
+fn clone_prop(block_field: &mut block::Field, prop: &BlockId) -> Option<block::Property> {
+    let mut prop = if let Some(prop) = block_field.get::<block::Property>(prop) {
+        Some(prop.clone())
+    } else {
+        None
+    };
+
+    if let Some(prop) = &mut prop {
+        if let block::property::Value::Children(children) = prop.value() {
+            let mut new_children = vec![];
+
+            for child in children {
+                let child = clone_prop(block_field, child);
+                if let Some(child) = child {
+                    let child = block_field.add(child);
+                    new_children.push(child);
+                }
+            }
+
+            prop.set_value(block::property::Value::Children(new_children));
+        }
+    }
+
+    prop
+}
+
+fn trace_prop_id(block_field: &block::Field, prop: &BlockId) -> Vec<BlockId> {
+    let mut prop_ids = vec![prop.clone()];
+
+    if let Some(block::property::Value::Children(children)) =
+        block_field.get::<block::Property>(&prop).map(|p| p.value())
+    {
+        for child in children {
+            let child_children = trace_prop_id(block_field, child);
+            for child_child in child_children {
+                prop_ids.push(child_child);
+            }
+        }
+    }
+
+    prop_ids
+}
+
+fn check_focused_object(state: &mut State, mouse_position: &[f32; 2]) {
+    let cpr = get_canvas_pixel_ratio(state.pixel_ratio());
+
+    let canvas_pos = [mouse_position[0] * cpr, mouse_position[1] * cpr];
+
+    if let Some(block_id) = state.renderer().and_then(|r| {
+        r.table_object_id(state.canvas_size(), &canvas_pos)
+            .map(|t| t.clone())
+    }) {
+        web_sys::console::log_1(&JsValue::from(block_id.to_string()));
+        if state
+            .block_field()
+            .get::<block::Character>(&block_id)
+            .is_some()
+        {
+            let table = state.table_mut();
+            table.set_focused(state::table::Focused::Character(block_id.clone()));
+        } else if state
+            .block_field()
+            .get::<block::table_object::Tablemask>(&block_id)
+            .is_some()
+        {
+            let table = state.table_mut();
+            table.set_focused(state::table::Focused::Tablemask(block_id.clone()));
+        }
+    } else {
+        state.table_mut().set_focused(state::table::Focused::None);
     }
 }

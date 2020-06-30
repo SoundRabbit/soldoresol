@@ -21,7 +21,6 @@ pub fn render(
     modeless: &model::modeless::Collection<Modeless>,
 ) -> Html<Msg> {
     let grubbed = modeless.grubbed();
-    let some_modeless_is_grubbed = grubbed.is_some();
 
     Html::div(
         Attributes::new()
@@ -34,9 +33,21 @@ pub fn render(
                 let focused = table.focused().clone();
                 let last_mouse_pos = table.last_mouse_position().clone();
                 let last_mouse_down_pos = table.last_mouse_down_position().clone();
+                let grubbed = grubbed.clone();
                 move |e| {
                     let mouse_pos = [e.offset_x() as f32, e.offset_y() as f32];
-                    if e.buttons() & 1 == 0 || some_modeless_is_grubbed {
+                    if let Some(modeless_id) = grubbed {
+                        let current_tagret = e
+                            .current_target()
+                            .unwrap()
+                            .dyn_into::<web_sys::HtmlElement>()
+                            .unwrap();
+                        let cr = current_tagret.get_bounding_client_rect();
+                        let x = cr.left();
+                        let y = cr.top();
+                        let mouse_pos = [e.client_x() as f64, e.client_y() as f64];
+                        Msg::DragModeless(modeless_id, mouse_pos, [x, y])
+                    } else if e.buttons() & 1 == 0 {
                         Msg::NoOp
                     } else if (e.alt_key() || e.ctrl_key()) && !is_2d_mode {
                         Msg::SetCameraRotationWithMouseMovement(mouse_pos)
@@ -74,6 +85,16 @@ pub fn render(
                             } => Msg::NoOp,
                             table::Tool::Route(block_id) => Msg::NoOp,
                         }
+                    }
+                }
+            })
+            .on_mouseup({
+                let grubbed = grubbed.clone();
+                move |e| {
+                    if let Some(modeless_id) = grubbed {
+                        Msg::DropModeless(modeless_id)
+                    } else {
+                        Msg::NoOp
                     }
                 }
             })

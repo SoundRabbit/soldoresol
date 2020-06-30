@@ -26,6 +26,7 @@ pub fn render(
             tabs,
             focused,
             outlined,
+            ..
         } => object::render(
             block_field,
             resource,
@@ -68,34 +69,6 @@ fn frame(
             .on("wheel", |e| {
                 e.stop_propagation();
                 Msg::NoOp
-            })
-            .on_mouseup(move |e| {
-                e.stop_propagation();
-                Msg::DropModeless(modeless_id)
-            })
-            .on_mousemove({
-                let is_grubbed = modeless.is_grubbed();
-                move |e| {
-                    e.stop_propagation();
-                    if is_grubbed {
-                        let mouse_pos = [e.page_x() as f64, e.page_y() as f64];
-                        Msg::DragModeless(modeless_id, mouse_pos)
-                    } else {
-                        Msg::NoOp
-                    }
-                }
-            })
-            .on_mouseleave({
-                let is_grubbed = modeless.is_grubbed();
-                move |e| {
-                    e.stop_propagation();
-                    if is_grubbed {
-                        let mouse_pos = [e.page_x() as f64, e.page_y() as f64];
-                        Msg::DragModeless(modeless_id, mouse_pos)
-                    } else {
-                        Msg::NoOp
-                    }
-                }
             }),
         vec![
             children,
@@ -177,27 +150,17 @@ fn resizers() -> Vec<Html<Msg>> {
 fn header(
     modeless_id: model::modeless::ModelessId,
     grubbed: Option<model::modeless::ModelessId>,
+    attributes: Attributes,
     header: Html<Msg>,
 ) -> Html<Msg> {
     modeless::header(
-        Attributes::new()
+        attributes
             .style("display", "grid")
             .style("grid-template-columns", "1fr max-content"),
-        Events::new()
-            .on("dragover", {
-                let grubbed = grubbed.clone();
-                move |_| {
-                    if let Some(grubbed) = grubbed {
-                        Msg::MergeModeless(modeless_id, grubbed)
-                    } else {
-                        Msg::NoOp
-                    }
-                }
-            })
-            .on_mousedown(move |e| {
-                let mouse_pos = [e.page_x() as f64, e.page_y() as f64];
-                Msg::GrubModeless(modeless_id, mouse_pos, [true, true, true, true])
-            }),
+        Events::new().on_mousedown(move |e| {
+            let mouse_pos = [e.page_x() as f64, e.page_y() as f64];
+            Msg::GrubModeless(modeless_id, mouse_pos, [true, true, true, true])
+        }),
         vec![
             header,
             Html::div(
