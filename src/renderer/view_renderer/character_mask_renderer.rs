@@ -3,17 +3,21 @@ use super::super::{
     webgl::{WebGlF32Vbo, WebGlI16Ibo, WebGlRenderingContext},
     ModelMatrix,
 };
-use crate::block::{self, BlockId};
+use super::Camera;
+use crate::{
+    block::{self, BlockId},
+    Color,
+};
 use ndarray::Array2;
 
-pub struct TablemaskCollectionRenderer {
+pub struct CharacterMaskRenderer {
     vertexis_buffer: WebGlF32Vbo,
     texture_coord_buffer: WebGlF32Vbo,
     index_buffer: WebGlI16Ibo,
     mask_program: MaskProgram,
 }
 
-impl TablemaskCollectionRenderer {
+impl CharacterMaskRenderer {
     pub fn new(gl: &WebGlRenderingContext) -> Self {
         let vertexis_buffer = gl.create_vbo_with_f32array(
             &[
@@ -39,14 +43,14 @@ impl TablemaskCollectionRenderer {
     }
 
     pub fn render<'a>(
-        &self,
+        &mut self,
         gl: &WebGlRenderingContext,
+        _: &Camera,
         vp_matrix: &Array2<f32>,
-        data_field: &block::Field,
-        tablemasks: impl Iterator<Item = &'a BlockId>,
+        block_field: &block::Field,
+        characters: impl Iterator<Item = &'a BlockId>,
     ) {
         self.mask_program.use_program(gl);
-
         gl.set_attribute(
             &self.vertexis_buffer,
             &self.mask_program.a_vertex_location,
@@ -59,22 +63,21 @@ impl TablemaskCollectionRenderer {
             2,
             0,
         );
+        gl.uniform1i(Some(&self.mask_program.u_flag_round_location), 1);
         gl.bind_buffer(
             web_sys::WebGlRenderingContext::ELEMENT_ARRAY_BUFFER,
             Some(&self.index_buffer),
         );
 
-        for (_, tablemask) in
-            data_field.listed::<block::table_object::Tablemask>(tablemasks.collect())
-        {
-            let s = tablemask.size();
-            let p = tablemask.position();
+        for (_, character) in block_field.listed::<block::Character>(characters.collect()) {
+            let s = character.size();
+            let p = character.position();
             let model_matrix: Array2<f32> = ModelMatrix::new()
-                .with_scale(&[s[0], s[1], 1.0])
-                .with_z_axis_rotation(-tablemask.z_rotation())
+                .with_scale(&[s[0], s[0], 1.0])
                 .with_movement(&p)
                 .into();
             let mvp_matrix = model_matrix.dot(vp_matrix);
+
             gl.uniform_matrix4fv_with_f32_array(
                 Some(&self.mask_program.u_translate_location),
                 false,
@@ -91,11 +94,7 @@ impl TablemaskCollectionRenderer {
             );
             gl.uniform4fv_with_f32_array(
                 Some(&self.mask_program.u_mask_color_location),
-                &tablemask.background_color().to_f32array(),
-            );
-            gl.uniform1i(
-                Some(&self.mask_program.u_flag_round_location),
-                if tablemask.is_rounded() { 1 } else { 0 },
+                &Color::from([0.0, 0.0, 0.0, 0.75]).to_f32array(),
             );
             gl.draw_elements_with_i32(
                 web_sys::WebGlRenderingContext::TRIANGLES,

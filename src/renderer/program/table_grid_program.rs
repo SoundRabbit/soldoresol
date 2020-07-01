@@ -4,8 +4,10 @@ use web_sys::WebGlUniformLocation;
 const VERTEX_SHADER: &str = r#"
     attribute vec4 a_vertex;
     uniform mat4 u_translate;
+    uniform float u_pointSize;
 
     void main() {
+        gl_PointSize = u_pointSize;
         gl_Position = u_translate * a_vertex;
     }
 "#;
@@ -24,6 +26,7 @@ pub struct TableGridProgram {
     program: web_sys::WebGlProgram,
     pub a_vertex_location: WebGlAttributeLocation,
     pub u_translate_location: WebGlUniformLocation,
+    pub u_point_size_location: WebGlUniformLocation,
     pub u_mask_color_location: WebGlUniformLocation,
 }
 
@@ -45,12 +48,14 @@ impl TableGridProgram {
         let a_vertex_location =
             WebGlAttributeLocation(gl.get_attrib_location(&program, "a_vertex") as u32);
         let u_translate_location = gl.get_uniform_location(&program, "u_translate").unwrap();
+        let u_point_size_location = gl.get_uniform_location(&program, "u_pointSize").unwrap();
         let u_mask_color_location = gl.get_uniform_location(&program, "u_maskColor").unwrap();
 
         Self {
             program,
             a_vertex_location,
             u_translate_location,
+            u_point_size_location,
             u_mask_color_location,
         }
     }

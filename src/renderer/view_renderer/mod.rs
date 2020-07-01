@@ -1,4 +1,6 @@
-mod character_collection_renderer;
+mod character_mask_renderer;
+mod character_texture_renderer;
+mod measure_renderer;
 mod table_grid_renderer;
 mod table_texture_renderer;
 mod tablemask_collection_renderer;
@@ -9,7 +11,9 @@ use crate::{
     resource::ResourceId,
     Resource,
 };
-use character_collection_renderer::CharacterCollectionRenderer;
+use character_mask_renderer::CharacterMaskRenderer;
+use character_texture_renderer::CharacterTextureRenderer;
+use measure_renderer::MeasureRenderer;
 use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
 use table_grid_renderer::TableGridRenderer;
@@ -32,10 +36,12 @@ impl DerefMut for TextureCollection {
 }
 
 pub struct ViewRenderer {
-    character_collection_renderer: CharacterCollectionRenderer,
+    character_mask_renderer: CharacterMaskRenderer,
+    character_texture_renderer: CharacterTextureRenderer,
     table_texture_renderer: TableTextureRenderer,
     table_grid_renderer: TableGridRenderer,
     tablemask_collection_renderer: TablemaskCollectionRenderer,
+    measure_renderer: MeasureRenderer,
     img_texture_buffer: TextureCollection,
 }
 
@@ -50,16 +56,20 @@ impl ViewRenderer {
         );
         gl.enable(web_sys::WebGlRenderingContext::DEPTH_TEST);
 
-        let character_collection_renderer = CharacterCollectionRenderer::new(gl);
+        let character_mask_renderer = CharacterMaskRenderer::new(gl);
+        let character_texture_renderer = CharacterTextureRenderer::new(gl);
         let table_texture_renderer = TableTextureRenderer::new(gl);
         let table_grid_renderer = TableGridRenderer::new(gl);
         let tablemask_collection_renderer = TablemaskCollectionRenderer::new(gl);
+        let measure_renderer = MeasureRenderer::new(gl);
 
         Self {
-            character_collection_renderer,
+            character_mask_renderer,
+            character_texture_renderer,
             table_texture_renderer,
             table_grid_renderer,
             tablemask_collection_renderer,
+            measure_renderer,
             img_texture_buffer: TextureCollection(HashMap::new()),
         }
     }
@@ -100,7 +110,19 @@ impl ViewRenderer {
             );
             self.table_grid_renderer.render(gl, &vp_matrix, table);
         }
-        self.character_collection_renderer.render(
+        self.character_mask_renderer.render(
+            gl,
+            camera,
+            &vp_matrix,
+            block_field,
+            world.characters(),
+        );
+
+        self.measure_renderer.render(gl, &vp_matrix, block_field);
+
+        gl.depth_func(web_sys::WebGlRenderingContext::LEQUAL);
+
+        self.character_texture_renderer.render(
             gl,
             camera,
             &vp_matrix,

@@ -689,7 +689,46 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             }
         }
 
-        Msg::MeasureLineWithMousePosition(a, b) => state.dequeue(),
+        Msg::MeasureLineWithMousePosition(a, b) => {
+            let [ax, ay] = get_table_position(state, &a, state.pixel_ratio());
+            let [bx, by] = get_table_position(state, &b, state.pixel_ratio());
+            let len = ((bx - ax).powi(2) + (by - ay).powi(2)).sqrt();
+
+            state.table_mut().clear_info();
+            state
+                .table_mut()
+                .add_info("始点", format!("({:.1},{:.1})", ax, ay));
+            state
+                .table_mut()
+                .add_info("終点", format!("({:.1},{:.1})", bx, by));
+            state.table_mut().add_info("距離", format!("{:.1}", len));
+
+            let updated = state
+                .table()
+                .editing_block_id()
+                .map(|x| x.clone())
+                .map(|bid| {
+                    state
+                        .block_field_mut()
+                        .update(&bid, timestamp(), |m: &mut block::table_object::Measure| {
+                            m.set_org([ax, ay, 0.0]);
+                            m.set_vec([bx - ax, by - ay, 0.0]);
+                        })
+                        .is_none()
+                })
+                .unwrap_or(false);
+
+            if !updated {
+                let measure =
+                    block::table_object::Measure::new([ax, ay, 0.0], [bx - ax, by - ay, 0.0]);
+                let bid = state.block_field_mut().add(measure);
+                state.table_mut().set_editing_block_id(bid);
+            }
+
+            render_canvas(state);
+
+            state.dequeue()
+        }
 
         // World
         Msg::AddTable => {

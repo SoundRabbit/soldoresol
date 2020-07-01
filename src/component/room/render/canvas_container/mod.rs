@@ -140,7 +140,12 @@ fn info(info: &Vec<(String, String)>) -> Html<Msg> {
             .style("right", "5em"),
         Events::new(),
         info.iter()
-            .map(|(key, val)| vec![Html::text(key), Html::text(val)])
+            .map(|(key, val)| {
+                vec![
+                    Html::span(Attributes::new(), Events::new(), vec![Html::text(key)]),
+                    Html::span(Attributes::new(), Events::new(), vec![Html::text(val)]),
+                ]
+            })
             .flatten()
             .collect(),
     )

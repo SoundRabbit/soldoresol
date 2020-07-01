@@ -25,16 +25,6 @@ impl TableGridRenderer {
         let (grid_vertexis_buffer, grid_index_buffer, grid_index_len) =
             Self::create_grid_buffers(&gl, &table_size);
 
-        let polygon_vertexis_buffer = gl.create_vbo_with_f32array(
-            &[
-                [0.5, 0.5, 0.0],
-                [-0.5, 0.5, 0.0],
-                [0.5, -0.5, 0.0],
-                [-0.5, -0.5, 0.0],
-            ]
-            .concat(),
-        );
-
         let table_grid_program = TableGridProgram::new(gl);
         Self {
             table_size,
@@ -89,9 +79,12 @@ impl TableGridRenderer {
             .into_iter()
             .collect::<Vec<f32>>(),
         );
+        gl.uniform1f(Some(&self.table_grid_program.u_point_size_location), 1.0);
+
+        gl.line_width(5.0);
         gl.uniform4fv_with_f32_array(
             Some(&self.table_grid_program.u_mask_color_location),
-            &Color::from([0, 0, 0, 191]).to_f32array(),
+            &Color::from([0, 0, 0, 127]).to_f32array(),
         );
         gl.draw_elements_with_i32(
             web_sys::WebGlRenderingContext::LINES,
