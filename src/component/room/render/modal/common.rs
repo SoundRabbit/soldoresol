@@ -38,9 +38,9 @@ pub fn header(name: impl Into<String>) -> Html<Msg> {
 
 pub fn select_image(
     resource: &Resource,
-    on_select: impl FnMut(ResourceId) -> Msg + 'static,
+    on_select: impl FnOnce(ResourceId) -> Msg + 'static,
 ) -> Html<Msg> {
-    let on_select = Rc::new(RefCell::new(Box::new(on_select)));
+    let on_select = Rc::new(RefCell::new(Some(Box::new(on_select))));
 
     modal::container(
         Attributes::new(),
@@ -71,7 +71,13 @@ pub fn select_image(
                                 Events::new().on_click({
                                     let data_id = *data_id;
                                     let on_select = Rc::clone(&on_select);
-                                    move |_| (&mut *on_select.borrow_mut())(data_id)
+                                    move |_| {
+                                        if let Some(on_select) = on_select.borrow_mut().take() {
+                                            on_select(data_id)
+                                        } else {
+                                            unreachable!()
+                                        }
+                                    }
                                 }),
                                 vec![Html::img(
                                     Attributes::new()

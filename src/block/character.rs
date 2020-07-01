@@ -44,6 +44,10 @@ impl Character {
         self.texture_id.as_ref()
     }
 
+    pub fn set_texture_id(&mut self, texture_id: Option<ResourceId>) {
+        self.texture_id = texture_id;
+    }
+
     pub fn background_color(&self) -> &Color {
         &self.background_color
     }

@@ -79,8 +79,11 @@ pub enum Msg {
     SetPersonalDataWithIconImageToCloseModal(u128),
 
     // table object
+
+    // character
     SetCharacterName(BlockId, String),
     SetCharacterSize(BlockId, [Option<f32>; 2]),
+    SetCharacterTextrureToCloseModal(BlockId, Option<ResourceId>),
 
     // property
 
@@ -835,6 +838,20 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             }
 
             send_pack_cmd(state.block_field(), vec![&character])
+        }
+
+        Msg::SetCharacterTextrureToCloseModal(character_id, texture_id) => {
+            state.block_field_mut().update(
+                &character_id,
+                timestamp(),
+                |character: &mut block::Character| {
+                    character.set_texture_id(texture_id);
+                },
+            );
+
+            render(state);
+
+            state.dequeue()
         }
 
         // Chat
