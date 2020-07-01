@@ -70,13 +70,12 @@ impl CharacterMaskRenderer {
         );
 
         for (_, character) in block_field.listed::<block::Character>(characters.collect()) {
-            let s = character.size();
-            let p = character.position();
             let model_matrix: Array2<f32> = ModelMatrix::new()
-                .with_scale(&[s[0], s[0], 1.0])
-                .with_movement(&p)
+                .with_scale(character.size())
+                .with_movement(character.position())
                 .into();
-            let mvp_matrix = model_matrix.dot(vp_matrix);
+            let mvp_matrix = vp_matrix.dot(&model_matrix);
+            let mvp_matrix = mvp_matrix.t();
 
             gl.uniform_matrix4fv_with_f32_array(
                 Some(&self.mask_program.u_translate_location),

@@ -84,8 +84,8 @@ impl ViewRenderer {
         resource: &Resource,
     ) {
         let vp_matrix = camera
-            .view_matrix()
-            .dot(&camera.perspective_matrix(&canvas_size));
+            .perspective_matrix(&canvas_size)
+            .dot(&camera.view_matrix());
         gl.viewport(0, 0, canvas_size[0] as i32, canvas_size[1] as i32);
         gl.clear_color(0.0, 0.0, 0.0, 0.0);
         gl.clear(

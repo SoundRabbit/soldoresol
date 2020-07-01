@@ -15,7 +15,7 @@ pub struct Character {
 impl Character {
     pub fn new(property_id: BlockId, name: impl Into<String>) -> Self {
         Self {
-            size: [1.0, 0.0, 1.0],
+            size: [1.0, 1.0, 0.0],
             position: [0.0, 0.0, 0.0],
             texture_id: None,
             background_color: Color::from(0),

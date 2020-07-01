@@ -24,8 +24,8 @@ impl CharacterTextureRenderer {
     pub fn new(gl: &WebGlRenderingContext) -> Self {
         let vertexis_buffer = gl.create_vbo_with_f32array(
             &[
-                [0.5, 1.0, 0.0],
-                [-0.5, 1.0, 0.0],
+                [0.5, 0.0, 1.0],
+                [-0.5, 0.0, 1.0],
                 [0.5, 0.0, 0.0],
                 [-0.5, 0.0, 0.0],
             ]
@@ -59,16 +59,15 @@ impl CharacterTextureRenderer {
             BTreeMap::new();
         for (_, character) in block_field.listed::<block::Character>(characters.collect()) {
             let s = character.size();
-            let p = character.position();
             let model_matrix: Array2<f32> = ModelMatrix::new()
-                .with_scale(&[s[0], s[2], s[1]])
-                .with_x_axis_rotation(camera.x_axis_rotation())
+                .with_scale(s)
+                .with_x_axis_rotation(camera.x_axis_rotation() - std::f32::consts::FRAC_PI_2)
                 .with_z_axis_rotation(camera.z_axis_rotation())
-                .with_movement(&p)
+                .with_movement(&character.position())
                 .into();
-            let mvp_matrix = model_matrix.dot(vp_matrix);
+            let mvp_matrix = vp_matrix.dot(&model_matrix);
 
-            let s = mvp_matrix.t().dot(&arr1(&[0.0, 0.0, 0.0, 1.0]));
+            let s = mvp_matrix.dot(&arr1(&[0.0, 0.0, 0.0, 1.0]));
             let key = OrderedFloat(-s[2] / s[3]);
             let value = (mvp_matrix, character);
             if let Some(v) = z_index.get_mut(&key) {
@@ -112,6 +111,7 @@ impl CharacterTextureRenderer {
                         textures.insert(gl, *texture_id, texture_data);
                     }
                     if let Some(texture) = textures.get(&texture_id) {
+                        let mvp_matrix = mvp_matrix.t();
                         gl.bind_texture(web_sys::WebGlRenderingContext::TEXTURE_2D, Some(&texture));
                         gl.uniform_matrix4fv_with_f32_array(
                             Some(&self.character_program.u_translate_location),

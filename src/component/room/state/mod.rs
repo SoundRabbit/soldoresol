@@ -74,7 +74,7 @@ impl<M, S> State<M, S> {
         let mut block_field = block::Field::new();
         let chat = chat::State::new(&mut block_field);
         let texture = block_field.add(block::table::Texture::new(&[4096, 4096], [20.0, 20.0]));
-        let table = block_field.add(block::Table::new(texture, [20.0, 20.0], "テーブル"));
+        let table = block_field.add(block::Table::new(texture, [20.0, 10.0], "テーブル"));
         let world = block_field.add(block::World::new(table));
 
         assert!(block_field.get::<block::World>(&world).is_some());

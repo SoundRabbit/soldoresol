@@ -58,7 +58,8 @@ impl MeasureRenderer {
                 .with_scale(&[s[0], s[1], s[2]])
                 .with_movement(&p)
                 .into();
-            let mvp_matrix = model_matrix.dot(vp_matrix);
+            let mvp_matrix = vp_matrix.dot(&model_matrix);
+            let mvp_matrix = mvp_matrix.t();
             gl.uniform_matrix4fv_with_f32_array(
                 Some(&self.table_grid_program.u_translate_location),
                 false,

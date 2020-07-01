@@ -93,8 +93,8 @@ impl MaskRenderer {
         canvas.set_width(canvas_size[0] as u32);
         canvas.set_height(canvas_size[1] as u32);
         let vp_matrix = camera
-            .view_matrix()
-            .dot(&camera.perspective_matrix(&canvas_size));
+            .perspective_matrix(&canvas_size)
+            .dot(&camera.view_matrix());
         gl.viewport(0, 0, canvas_size[0] as i32, canvas_size[1] as i32);
         gl.clear_color(0.0, 0.0, 0.0, 0.0);
         gl.clear(

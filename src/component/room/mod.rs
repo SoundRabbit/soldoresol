@@ -514,8 +514,8 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
             let camera = state.camera_mut();
 
-            camera.set_x_axis_rotation(camera.x_axis_rotation() + dy * factor);
-            camera.set_z_axis_rotation(camera.z_axis_rotation() + dx * factor);
+            camera.set_x_axis_rotation(camera.x_axis_rotation() - dy * factor);
+            camera.set_z_axis_rotation(camera.z_axis_rotation() - dx * factor);
 
             render_canvas(state);
 
@@ -532,7 +532,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             let camera = state.camera_mut();
 
             let mov = camera.movement();
-            let mov = [mov[0] + dx * factor, mov[1] - dy * factor, mov[2]];
+            let mov = [mov[0] - dx * factor, mov[1] + dy * factor, mov[2]];
 
             camera.set_movement(mov);
 
@@ -546,7 +546,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
             let camera = state.camera_mut();
             let mov = camera.movement();
-            let mov = [mov[0], mov[1], mov[2] - factor * delta_y];
+            let mov = [mov[0], mov[1], mov[2] + factor * delta_y];
 
             camera.set_movement(mov);
 
@@ -804,7 +804,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     &character,
                     timestamp(),
                     |character: &mut block::Character| {
-                        character.set_size([w, 0.0, h]);
+                        character.set_size([w, w, h]);
                     },
                 );
             } else if let Some(Data::Image { element, .. }) = state
@@ -821,7 +821,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                         &character,
                         timestamp(),
                         |character: &mut block::Character| {
-                            character.set_size([w, 0.0, h]);
+                            character.set_size([w, w, h]);
                         },
                     );
                 }
@@ -831,11 +831,13 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                         &character,
                         timestamp(),
                         |character: &mut block::Character| {
-                            character.set_size([w, 0.0, h]);
+                            character.set_size([w, w, h]);
                         },
                     );
                 }
             }
+
+            render_canvas(state);
 
             send_pack_cmd(state.block_field(), vec![&character])
         }
@@ -849,7 +851,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 },
             );
 
-            render(state);
+            render_canvas(state);
 
             state.dequeue()
         }

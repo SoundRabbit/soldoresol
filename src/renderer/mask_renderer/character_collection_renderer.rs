@@ -23,17 +23,27 @@ impl<T: PartialOrd> Ord for Total<T> {
 }
 
 pub struct CharacterCollectionRenderer {
-    vertexis_buffer: WebGlF32Vbo,
+    vertexis_buffer_xy: WebGlF32Vbo,
+    vertexis_buffer_xz: WebGlF32Vbo,
     texture_coord_buffer: WebGlF32Vbo,
     index_buffer: WebGlI16Ibo,
 }
 
 impl CharacterCollectionRenderer {
     pub fn new(gl: &WebGlRenderingContext) -> Self {
-        let vertexis_buffer = gl.create_vbo_with_f32array(
+        let vertexis_buffer_xy = gl.create_vbo_with_f32array(
             &[
-                [0.5, 1.0, 0.0],
-                [-0.5, 1.0, 0.0],
+                [0.5, 0.5, 0.0],
+                [-0.5, 0.5, 0.0],
+                [0.5, -0.5, 0.0],
+                [-0.5, -0.5, 0.0],
+            ]
+            .concat(),
+        );
+        let vertexis_buffer_xz = gl.create_vbo_with_f32array(
+            &[
+                [0.5, 0.0, 1.0],
+                [-0.5, 0.0, 1.0],
                 [0.5, 0.0, 0.0],
                 [-0.5, 0.0, 0.0],
             ]
@@ -43,7 +53,8 @@ impl CharacterCollectionRenderer {
             gl.create_vbo_with_f32array(&[[1.0, 1.0], [0.0, 1.0], [1.0, 0.0], [0.0, 0.0]].concat());
         let index_buffer = gl.create_ibo_with_i16array(&[0, 1, 2, 3, 2, 1]);
         Self {
-            vertexis_buffer,
+            vertexis_buffer_xy,
+            vertexis_buffer_xz,
             texture_coord_buffer,
             index_buffer,
         }
@@ -59,7 +70,7 @@ impl CharacterCollectionRenderer {
         characters: impl Iterator<Item = &'a BlockId>,
         id_map: &mut HashMap<u32, BlockId>,
     ) {
-        gl.set_attribute(&self.vertexis_buffer, &program.a_vertex_location, 3, 0);
+        gl.set_attribute(&self.vertexis_buffer_xy, &program.a_vertex_location, 3, 0);
         gl.set_attribute(
             &self.texture_coord_buffer,
             &program.a_texture_coord_location,
@@ -78,11 +89,10 @@ impl CharacterCollectionRenderer {
         {
             let s = character.size();
             let p = character.position();
-            let model_matrix: Array2<f32> = ModelMatrix::new()
-                .with_scale(&[s[0], s[0], 1.0])
-                .with_movement(&[p[0], (p[1] - 0.5 * s[0]), p[2]])
-                .into();
-            let mvp_matrix = model_matrix.dot(vp_matrix);
+            let model_matrix: Array2<f32> =
+                ModelMatrix::new().with_scale(s).with_movement(p).into();
+            let mvp_matrix = vp_matrix.dot(&model_matrix);
+            let mvp_matrix = mvp_matrix.t();
             let color = Color::from(id_map.len() as u32 | 0xFF000000);
 
             gl.uniform_matrix4fv_with_f32_array(
@@ -113,12 +123,12 @@ impl CharacterCollectionRenderer {
             );
 
             let model_matrix: Array2<f32> = ModelMatrix::new()
-                .with_scale(&[s[0], s[1], 1.0])
-                .with_x_axis_rotation(camera.x_axis_rotation())
+                .with_scale(s)
+                .with_x_axis_rotation(camera.x_axis_rotation() - std::f32::consts::FRAC_PI_2)
                 .with_z_axis_rotation(camera.z_axis_rotation())
-                .with_movement(&p)
+                .with_movement(p)
                 .into();
-            let mvp_matrix = model_matrix.dot(vp_matrix);
+            let mvp_matrix = vp_matrix.dot(&model_matrix);
 
             mvp_matrixies.push((mvp_matrix, color.to_f32array()));
 
@@ -126,8 +136,10 @@ impl CharacterCollectionRenderer {
         }
 
         gl.depth_func(web_sys::WebGlRenderingContext::LEQUAL);
+        gl.set_attribute(&self.vertexis_buffer_xz, &program.a_vertex_location, 3, 0);
 
         for (mvp_matrix, color) in mvp_matrixies {
+            let mvp_matrix = mvp_matrix.t();
             gl.uniform_matrix4fv_with_f32_array(
                 Some(&program.u_translate_location),
                 false,

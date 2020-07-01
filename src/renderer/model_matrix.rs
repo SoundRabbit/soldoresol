@@ -20,12 +20,12 @@ impl ModelMatrix {
     pub fn with_movement(mut self, movement: &[f32; 3]) -> Self {
         let m = movement;
         let t = arr2(&[
-            [1.0, 0.0, 0.0, 0.0],
-            [0.0, 1.0, 0.0, 0.0],
-            [0.0, 0.0, 1.0, 0.0],
-            [m[0], m[1], m[2], 1.0],
+            [1.0, 0.0, 0.0, m[0]],
+            [0.0, 1.0, 0.0, m[1]],
+            [0.0, 0.0, 1.0, m[2]],
+            [0.0, 0.0, 0.0, 1.0],
         ]);
-        self.model_matrix = self.model_matrix.dot(&t);
+        self.model_matrix = t.dot(&self.model_matrix);
         self
     }
 
@@ -37,7 +37,7 @@ impl ModelMatrix {
             [0.0, 0.0, s[2], 0.0],
             [0.0, 0.0, 0.0, 1.0],
         ]);
-        self.model_matrix = self.model_matrix.dot(&t);
+        self.model_matrix = t.dot(&self.model_matrix);
         self
     }
 
@@ -49,7 +49,7 @@ impl ModelMatrix {
             [0.0, s, c, 0.0],
             [0.0, 0.0, 0.0, 1.0],
         ]);
-        self.model_matrix = self.model_matrix.dot(&t);
+        self.model_matrix = t.dot(&self.model_matrix);
         self
     }
 
@@ -62,7 +62,7 @@ impl ModelMatrix {
             [-s, 0.0, c, 0.0],
             [0.0, 0.0, 0.0, 1.0],
         ]);
-        self.model_matrix = self.model_matrix.dot(&t);
+        self.model_matrix = t.dot(&self.model_matrix);
         self
     }
 
@@ -74,7 +74,7 @@ impl ModelMatrix {
             [0.0, 0.0, 1.0, 0.0],
             [0.0, 0.0, 0.0, 1.0],
         ]);
-        self.model_matrix = self.model_matrix.dot(&t);
+        self.model_matrix = t.dot(&self.model_matrix);
         self
     }
 }

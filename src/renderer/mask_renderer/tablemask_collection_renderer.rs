@@ -62,14 +62,13 @@ impl TablemaskCollectionRenderer {
         for (tablemask_id, tablemask) in
             block_field.listed::<block::table_object::Tablemask>(tablemasks.collect())
         {
-            let s = tablemask.size();
-            let p = tablemask.position();
             let model_matrix: Array2<f32> = ModelMatrix::new()
-                .with_scale(&[s[0], s[1], 1.0])
-                .with_z_axis_rotation(-tablemask.z_rotation())
-                .with_movement(&p)
+                .with_scale(tablemask.size())
+                .with_movement(tablemask.position())
                 .into();
-            let mvp_matrix = model_matrix.dot(vp_matrix);
+            let mvp_matrix = vp_matrix.dot(&model_matrix);
+            let mvp_matrix = mvp_matrix.t();
+
             gl.uniform_matrix4fv_with_f32_array(
                 Some(&program.u_translate_location),
                 false,

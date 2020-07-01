@@ -171,7 +171,8 @@ impl TableTextureRenderer {
         gl.active_texture(web_sys::WebGlRenderingContext::TEXTURE0);
 
         let model_matrix: Array2<f32> = ModelMatrix::new().with_scale(&[height, width, 1.0]).into();
-        let mvp_matrix = model_matrix.dot(vp_matrix);
+        let mvp_matrix = vp_matrix.dot(&model_matrix);
+        let mvp_matrix = mvp_matrix.t();
 
         gl.uniform_matrix4fv_with_f32_array(
             Some(&self.table_texture_program.u_translate_location),
