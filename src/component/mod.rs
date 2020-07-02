@@ -3,6 +3,7 @@ mod btn;
 mod color_picker;
 pub mod config_loder;
 mod contextmenu;
+mod dropdown;
 mod icon;
 mod modal;
 mod modeless;

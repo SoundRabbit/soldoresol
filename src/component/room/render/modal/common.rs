@@ -116,7 +116,7 @@ pub fn color_picker(on_select: impl FnOnce(Color) -> Msg + 'static) -> Html<Msg>
                         .class("centering")
                         .class("centering-a"),
                     Events::new(),
-                    vec![color_picker::picker(Msg::NoOp, on_select)],
+                    vec![color_picker::all(Msg::NoOp, on_select)],
                 ),
                 modal::footer(Attributes::new(), Events::new(), vec![]),
             ],

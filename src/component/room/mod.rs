@@ -4,7 +4,7 @@ use crate::{
     model::{self, modeless::ModelessId},
     renderer::Renderer,
     resource::{Data, ResourceId},
-    skyway,
+    skyway, Color,
 };
 use kagura::prelude::*;
 use std::{collections::HashMap, rc::Rc};
@@ -63,7 +63,7 @@ pub enum Msg {
     SetSelectingTableTool(state::table::Tool),
     SetCharacterPositionWithMousePosition(BlockId, [f32; 2]),
     SetTablemaskPositionWithMousePosition(BlockId, [f32; 2]),
-    DrawLineWithMousePosition([f32; 2], [f32; 2]),
+    DrawLineWithMousePosition([f32; 2], [f32; 2], f64, Color),
     EraceLineWithMousePosition([f32; 2], [f32; 2]),
     MeasureLineWithMousePosition([f32; 2], [f32; 2]),
 
@@ -602,7 +602,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             }
         }
 
-        Msg::DrawLineWithMousePosition(a, b) => {
+        Msg::DrawLineWithMousePosition(a, b, line_width, color) => {
             let selecting_table = state.selecting_table();
             let drawing_texture_id = if let Some(selecting_table) = selecting_table {
                 state
@@ -625,9 +625,9 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
                         let context = texture.context();
 
-                        context.set_line_width(0.5);
+                        context.set_line_width(line_width);
                         context.set_line_cap("round");
-                        context.set_stroke_style(&color_system::gray(255, 9).to_jsvalue());
+                        context.set_stroke_style(&color.to_jsvalue());
                         context
                             .set_global_composite_operation("source-over")
                             .unwrap();

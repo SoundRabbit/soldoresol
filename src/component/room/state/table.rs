@@ -1,13 +1,23 @@
 use crate::block::BlockId;
 use crate::model::modeless::ModelessId;
+use crate::Color;
 
 #[derive(Clone)]
 pub enum Tool {
     Selector,
-    Pen,
-    Eracer,
+    Pen {
+        line_width: f64,
+        color: Color,
+        show_option_menu: bool,
+    },
+    Eracer {
+        show_option_menu: bool,
+    },
     Measure(Option<BlockId>),
-    Area { line_width: f64, is_rounded: bool },
+    Area {
+        line_width: f64,
+        is_rounded: bool,
+    },
     Route(Option<BlockId>),
 }
 
@@ -38,13 +48,13 @@ impl Tool {
     }
     pub fn is_pen(&self) -> bool {
         match self {
-            Self::Pen => true,
+            Self::Pen { .. } => true,
             _ => false,
         }
     }
     pub fn is_eracer(&self) -> bool {
         match self {
-            Self::Eracer => true,
+            Self::Eracer { .. } => true,
             _ => false,
         }
     }

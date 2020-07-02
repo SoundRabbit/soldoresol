@@ -1,9 +1,12 @@
-use super::super::{awesome, btn, text};
+use super::super::{awesome, btn, color_picker, dropdown, text};
 use super::{
     state::{self, table, Modal, Modeless},
     Msg, State,
 };
-use crate::block::{self, BlockId};
+use crate::{
+    block::{self, BlockId},
+    color_system,
+};
 use kagura::prelude::*;
 use wasm_bindgen::{prelude::*, JsCast};
 
@@ -64,7 +67,9 @@ fn side_menu(selecting_tool: &table::Tool) -> Html<Msg> {
         Attributes::new()
             .class("panel")
             .class("keyvalue")
-            .class("keyvalue-rev"),
+            .class("keyvalue-rev")
+            .style("overflow", "visible")
+            .style("z-index", "1"),
         Events::new(),
         vec![
             row(
@@ -72,22 +77,106 @@ fn side_menu(selecting_tool: &table::Tool) -> Html<Msg> {
                 "fa-mouse-pointer",
                 "選択",
                 Events::new().on_click(|_| Msg::SetSelectingTableTool(table::Tool::Selector)),
-                Events::new(),
+                match selecting_tool {
+                    table::Tool::Selector => option(false, Events::new(), vec![]),
+                    _ => text::span(""),
+                },
             ),
             delm("描画"),
             row(
                 selecting_tool.is_pen(),
                 "fa-pen",
                 "ペン",
-                Events::new().on_click(|_| Msg::SetSelectingTableTool(table::Tool::Pen)),
-                Events::new(),
+                Events::new().on_click(|_| {
+                    Msg::SetSelectingTableTool(table::Tool::Pen {
+                        line_width: 0.5,
+                        color: color_system::gray(255, 9),
+                        show_option_menu: false,
+                    })
+                }),
+                match selecting_tool {
+                    table::Tool::Pen {
+                        line_width,
+                        color,
+                        show_option_menu,
+                    } => {
+                        let line_width = *line_width;
+                        let color = *color;
+                        let show_option_menu = *show_option_menu;
+                        option(
+                            show_option_menu,
+                            Events::new().on_click(move |_| {
+                                Msg::SetSelectingTableTool(table::Tool::Pen {
+                                    line_width: line_width,
+                                    color: color,
+                                    show_option_menu: !show_option_menu,
+                                })
+                            }),
+                            vec![
+                                Html::div(
+                                    Attributes::new().class("keyvalue"),
+                                    Events::new(),
+                                    vec![
+                                        text::span("太さ"),
+                                        Html::input(
+                                            Attributes::new()
+                                                .type_("number")
+                                                .value(line_width.to_string())
+                                                .string("step", "0.1"),
+                                            Events::new().on_input(move |w| {
+                                                w.parse()
+                                                    .map(|w| {
+                                                        Msg::SetSelectingTableTool(
+                                                            table::Tool::Pen {
+                                                                line_width: w,
+                                                                color: color,
+                                                                show_option_menu: show_option_menu,
+                                                            },
+                                                        )
+                                                    })
+                                                    .unwrap_or(Msg::NoOp)
+                                            }),
+                                            vec![],
+                                        ),
+                                    ],
+                                ),
+                                color_picker::major(Msg::NoOp, move |color| {
+                                    Msg::SetSelectingTableTool(table::Tool::Pen {
+                                        line_width: line_width,
+                                        color: color,
+                                        show_option_menu: show_option_menu,
+                                    })
+                                }),
+                            ],
+                        )
+                    }
+                    _ => text::span(""),
+                },
             ),
             row(
                 selecting_tool.is_eracer(),
                 "fa-eraser",
                 "消しゴム",
-                Events::new().on_click(|_| Msg::SetSelectingTableTool(table::Tool::Eracer)),
-                Events::new(),
+                Events::new().on_click(|_| {
+                    Msg::SetSelectingTableTool(table::Tool::Eracer {
+                        show_option_menu: false,
+                    })
+                }),
+                match selecting_tool {
+                    table::Tool::Eracer { show_option_menu } => {
+                        let show_option_menu = *show_option_menu;
+                        option(
+                            show_option_menu,
+                            Events::new().on_click(move |_| {
+                                Msg::SetSelectingTableTool(table::Tool::Eracer {
+                                    show_option_menu: !show_option_menu,
+                                })
+                            }),
+                            vec![],
+                        )
+                    }
+                    _ => text::span(""),
+                },
             ),
             delm("作成"),
             row(
@@ -100,14 +189,20 @@ fn side_menu(selecting_tool: &table::Tool) -> Html<Msg> {
                         is_rounded: false,
                     })
                 }),
-                Events::new(),
+                match selecting_tool {
+                    table::Tool::Area { .. } => option(false, Events::new(), vec![]),
+                    _ => text::span(""),
+                },
             ),
             row(
                 selecting_tool.is_route(),
                 "fa-route",
                 "経路",
                 Events::new().on_click(|_| Msg::SetSelectingTableTool(table::Tool::Route(None))),
-                Events::new(),
+                match selecting_tool {
+                    table::Tool::Route(..) => option(false, Events::new(), vec![]),
+                    _ => text::span(""),
+                },
             ),
             delm("表示"),
             row(
@@ -115,7 +210,10 @@ fn side_menu(selecting_tool: &table::Tool) -> Html<Msg> {
                 "fa-ruler",
                 "距離",
                 Events::new().on_click(|_| Msg::SetSelectingTableTool(table::Tool::Measure(None))),
-                Events::new(),
+                match selecting_tool {
+                    table::Tool::Measure(..) => option(false, Events::new(), vec![]),
+                    _ => text::span(""),
+                },
             ),
         ]
         .into_iter()
@@ -129,7 +227,7 @@ fn row(
     icon: impl Into<String>,
     text: impl Into<String>,
     btn_event: Events<Msg>,
-    option_event: Events<Msg>,
+    option: Html<Msg>,
 ) -> Vec<Html<Msg>> {
     vec![
         btn::selectable(
@@ -138,16 +236,28 @@ fn row(
             btn_event,
             vec![awesome::i(icon), Html::text(" "), text::span(text)],
         ),
-        option(selected, Attributes::new(), option_event),
+        option,
     ]
 }
 
-fn option(show: bool, attrs: Attributes, events: Events<Msg>) -> Html<Msg> {
-    if show {
-        btn::transparent(attrs, events, vec![awesome::i("fa-angle-right")])
-    } else {
-        text::span("")
-    }
+fn option(show_option: bool, events: Events<Msg>, menu: Vec<Html<Msg>>) -> Html<Msg> {
+    dropdown::right_bottom(
+        show_option,
+        btn::transparent(
+            Attributes::new(),
+            events,
+            vec![awesome::i("fa-angle-right")],
+        ),
+        Html::div(
+            Attributes::new()
+                .class("panel")
+                .class("pure-form")
+                .class("linear-v")
+                .style("width", "max-content"),
+            Events::new(),
+            menu,
+        ),
+    )
 }
 
 fn delm(text: impl Into<String>) -> Vec<Html<Msg>> {

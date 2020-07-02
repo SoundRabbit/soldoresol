@@ -258,7 +258,8 @@ fn character_frame(
                                         Html::input(
                                             Attributes::new()
                                                 .type_("number")
-                                                .value(height.to_string()),
+                                                .value(height.to_string())
+                                                .string("step", "0.5"),
                                             Events::new().on_input({
                                                 let character_id = character_id.clone();
                                                 move |height| {

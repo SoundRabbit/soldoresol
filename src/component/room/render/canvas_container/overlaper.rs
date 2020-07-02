@@ -62,10 +62,15 @@ pub fn render(
                                     Msg::SetCameraMovementWithMouseMovement(mouse_pos)
                                 }
                             },
-                            table::Tool::Pen => {
-                                Msg::DrawLineWithMousePosition(last_mouse_pos, mouse_pos)
-                            }
-                            table::Tool::Eracer => {
+                            table::Tool::Pen {
+                                line_width, color, ..
+                            } => Msg::DrawLineWithMousePosition(
+                                last_mouse_pos,
+                                mouse_pos,
+                                line_width,
+                                color,
+                            ),
+                            table::Tool::Eracer { .. } => {
                                 Msg::EraceLineWithMousePosition(last_mouse_pos, mouse_pos)
                             }
                             table::Tool::Measure(..) => {

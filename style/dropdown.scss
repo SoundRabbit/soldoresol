@@ -1,0 +1,16 @@
+.dropdown {
+    overflow: visible;
+    position: relative;
+
+    &-false {
+        &>*:last-child {
+            display: none;
+        }
+    }
+
+    &>*:last-child {
+        position: absolute;
+        left: calc(100% + 0.65em);
+        top: 0;
+    }
+}
