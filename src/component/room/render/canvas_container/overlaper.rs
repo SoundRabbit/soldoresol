@@ -77,9 +77,14 @@ pub fn render(
                                     line_width,
                                 )
                             }
-                            table::Tool::Measure(..) => {
-                                Msg::MeasureLineWithMousePosition(last_mouse_down_pos, mouse_pos)
-                            }
+                            table::Tool::Measure {
+                                color, block_id, ..
+                            } => Msg::MeasureLineWithMousePosition(
+                                last_mouse_down_pos,
+                                mouse_pos,
+                                block_id,
+                                color,
+                            ),
                             table::Tool::Area {
                                 line_width,
                                 is_rounded,
@@ -92,11 +97,11 @@ pub fn render(
             .on_mouseup({
                 let grubbed = grubbed.clone();
                 let selecting_tool = table.selecting_tool().clone();
-                move |e| {
+                move |_| {
                     if let Some(modeless_id) = grubbed {
                         Msg::DropModeless(modeless_id)
                     } else if selecting_tool.is_measure() {
-                        Msg::SetSelectingTableTool(table::Tool::Measure(None))
+                        Msg::ClearMeasure
                     } else {
                         Msg::NoOp
                     }

@@ -66,7 +66,8 @@ pub enum Msg {
     DrawLineWithMousePosition([f32; 2], [f32; 2], f64, Color),
     EraceLineWithMousePosition([f32; 2], [f32; 2], f64),
     ClearTable,
-    MeasureLineWithMousePosition([f32; 2], [f32; 2]),
+    MeasureLineWithMousePosition([f32; 2], [f32; 2], Option<BlockId>, Color),
+    ClearMeasure,
 
     // World
     AddTable,
@@ -720,7 +721,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             }
         }
 
-        Msg::MeasureLineWithMousePosition(a, b) => {
+        Msg::MeasureLineWithMousePosition(a, b, block_id, color) => {
             let [ax, ay] = get_table_position(state, &a, state.pixel_ratio());
             let [bx, by] = get_table_position(state, &b, state.pixel_ratio());
             let len = ((bx - ax).powi(2) + (by - ay).powi(2)).sqrt();
@@ -734,27 +735,52 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 .add_info("終点", format!("({:.1},{:.1})", bx, by));
             state.table_mut().add_info("距離", format!("{:.1}", len));
 
-            match state.table().selecting_tool() {
-                state::table::Tool::Measure(Some(block_id)) => {
-                    let block_id = block_id.clone();
-                    state.block_field_mut().update(
-                        &block_id,
-                        timestamp(),
-                        |m: &mut block::table_object::Measure| {
-                            m.set_org([ax, ay, 0.0]);
-                            m.set_vec([bx - ax, by - ay, 0.0]);
-                        },
-                    );
+            if let Some(block_id) = block_id {
+                let block_id = block_id.clone();
+                state.block_field_mut().update(
+                    &block_id,
+                    timestamp(),
+                    |m: &mut block::table_object::Measure| {
+                        m.set_org([ax, ay, 0.0]);
+                        m.set_vec([bx - ax, by - ay, 0.0]);
+                        m.set_color(color);
+                    },
+                );
+            } else {
+                let measure = block::table_object::Measure::new(
+                    [ax, ay, 0.0],
+                    [bx - ax, by - ay, 0.0],
+                    color,
+                );
+                let bid = state.block_field_mut().add(measure);
+                if let state::table::Tool::Measure { block_id, .. } =
+                    state.table_mut().selecting_tool_mut()
+                {
+                    *block_id = Some(bid);
                 }
-                state::table::Tool::Measure(None) => {
-                    let measure =
-                        block::table_object::Measure::new([ax, ay, 0.0], [bx - ax, by - ay, 0.0]);
-                    let bid = state.block_field_mut().add(measure);
-                    state
-                        .table_mut()
-                        .set_selecting_tool(state::table::Tool::Measure(Some(bid)));
-                }
-                _ => (),
+            }
+
+            render_canvas(state);
+
+            state.dequeue()
+        }
+
+        Msg::ClearMeasure => {
+            let measures = state
+                .block_field()
+                .all::<block::table_object::Measure>()
+                .into_iter()
+                .map(|(id, _)| id)
+                .collect::<Vec<_>>();
+
+            for measure_id in measures {
+                state.block_field_mut().remove(&measure_id);
+            }
+
+            if let state::table::Tool::Measure { block_id, .. } =
+                state.table_mut().selecting_tool_mut()
+            {
+                *block_id = None;
             }
 
             render_canvas(state);

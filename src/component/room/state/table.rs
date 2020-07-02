@@ -14,7 +14,11 @@ pub enum Tool {
         line_width: f64,
         show_option_menu: bool,
     },
-    Measure(Option<BlockId>),
+    Measure {
+        color: Color,
+        block_id: Option<BlockId>,
+        show_option_menu: bool,
+    },
     Area {
         line_width: f64,
         is_rounded: bool,
@@ -61,7 +65,7 @@ impl Tool {
     }
     pub fn is_measure(&self) -> bool {
         match self {
-            Self::Measure(..) => true,
+            Self::Measure { .. } => true,
             _ => false,
         }
     }
@@ -95,6 +99,10 @@ impl State {
 
     pub fn selecting_tool(&self) -> &Tool {
         &self.selecting_tool
+    }
+
+    pub fn selecting_tool_mut(&mut self) -> &mut Tool {
+        &mut self.selecting_tool
     }
 
     pub fn set_selecting_tool(&mut self, tool: Tool) {

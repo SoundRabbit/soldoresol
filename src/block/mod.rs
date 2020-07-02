@@ -225,12 +225,19 @@ impl Field {
             self.table.insert(block_id.to_u128(), block);
         }
     }
+
     #[allow(private_in_public)]
-    pub fn get<'a, T: Block + 'static>(&self, block_id: &BlockId) -> Option<&T> {
+    pub fn get<T: Block + 'static>(&self, block_id: &BlockId) -> Option<&T> {
         self.table
             .get(&block_id.to_u128())
             .and_then(|fb| fb.payload.as_ref())
             .and_then(|p| p.downcast_ref::<T>())
+    }
+
+    pub fn remove(&mut self, block_id: &BlockId) {
+        self.table.get_mut(&block_id.to_u128()).map(|fb| {
+            fb.payload = None;
+        });
     }
 
     #[allow(private_in_public)]

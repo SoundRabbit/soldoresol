@@ -11,11 +11,11 @@ pub struct Measure {
 }
 
 impl Measure {
-    pub fn new(origin: [f32; 3], vector: [f32; 3]) -> Self {
+    pub fn new(origin: [f32; 3], vector: [f32; 3], color: Color) -> Self {
         Self {
             origin: origin,
             vector: vector,
-            color: color_system::red(255, 5),
+            color: color,
         }
     }
 
@@ -37,6 +37,10 @@ impl Measure {
 
     pub fn color(&self) -> &Color {
         &self.color
+    }
+
+    pub fn set_color(&mut self, color: Color) {
+        self.color = color;
     }
 }
 

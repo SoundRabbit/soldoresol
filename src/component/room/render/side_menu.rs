@@ -1,6 +1,6 @@
 use super::super::super::{awesome, btn, color_picker, dropdown, text};
 use super::{state::table, Msg};
-use crate::{color_system, Color};
+use crate::{block::BlockId, color_system, Color};
 use kagura::prelude::*;
 
 pub fn render(selecting_tool: &table::Tool) -> Html<Msg> {
@@ -53,16 +53,7 @@ pub fn render(selecting_tool: &table::Tool) -> Html<Msg> {
                 },
             ),
             delm("表示"),
-            row(
-                selecting_tool.is_measure(),
-                "fa-ruler",
-                "距離",
-                Events::new().on_click(|_| Msg::SetSelectingTableTool(table::Tool::Measure(None))),
-                match selecting_tool {
-                    table::Tool::Measure(..) => option(false, Events::new(), vec![]),
-                    _ => text::span(""),
-                },
-            ),
+            row_measure(selecting_tool),
         ]
         .into_iter()
         .flatten()
@@ -219,8 +210,80 @@ fn row_eraser_menu(line_width: f64) -> Vec<Html<Msg>> {
         btn::secondary(
             Attributes::new(),
             Events::new().on_click(|_| Msg::ClearTable),
-            vec![Html::text("全てを消去")],
+            vec![Html::text("クリア")],
         ),
+    ]
+}
+
+fn row_measure(selecting_tool: &table::Tool) -> Vec<Html<Msg>> {
+    row(
+        selecting_tool.is_measure(),
+        "fa-ruler",
+        "距離",
+        Events::new().on_click(|_| {
+            Msg::SetSelectingTableTool(table::Tool::Measure {
+                color: color_system::red(255, 7),
+                block_id: None,
+                show_option_menu: true,
+            })
+        }),
+        match selecting_tool {
+            table::Tool::Measure {
+                color,
+                block_id,
+                show_option_menu,
+            } => {
+                let color = *color;
+                let show_option_menu = *show_option_menu;
+                option(
+                    show_option_menu,
+                    Events::new().on_click({
+                        let block_id = block_id.clone();
+                        move |_| {
+                            Msg::SetSelectingTableTool(table::Tool::Measure {
+                                color,
+                                block_id,
+                                show_option_menu: !show_option_menu,
+                            })
+                        }
+                    }),
+                    row_measure_menu(color, block_id),
+                )
+            }
+            _ => text::span(""),
+        },
+    )
+}
+
+fn row_measure_menu(color: Color, block_id: &Option<BlockId>) -> Vec<Html<Msg>> {
+    vec![
+        Html::div(
+            Attributes::new().class("keyvalue"),
+            Events::new(),
+            vec![
+                text::span("現在の描画色"),
+                Html::div(
+                    Attributes::new()
+                        .class("cell")
+                        .class("cell-medium")
+                        .style("background-color", color.to_string()),
+                    Events::new(),
+                    vec![],
+                ),
+            ],
+        ),
+        Html::hr(Attributes::new(), Events::new(), vec![]),
+        text::div("描画色"),
+        color_picker::idx(7, Msg::NoOp, {
+            let block_id = block_id.clone();
+            move |color| {
+                Msg::SetSelectingTableTool(table::Tool::Measure {
+                    color,
+                    block_id,
+                    show_option_menu: true,
+                })
+            }
+        }),
     ]
 }
 

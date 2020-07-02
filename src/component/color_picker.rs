@@ -52,6 +52,34 @@ pub fn major<Msg: 'static>(no_op: Msg, on_pick: impl FnOnce(Color) -> Msg + 'sta
     )
 }
 
+pub fn idx<Msg: 'static>(
+    idx: usize,
+    no_op: Msg,
+    on_pick: impl FnOnce(Color) -> Msg + 'static,
+) -> Html<Msg> {
+    Html::div(
+        Attributes::new().class("linear-h"),
+        Events::new().on_click(move |e| {
+            e.target()
+                .unwrap()
+                .dyn_into::<web_sys::Element>()
+                .unwrap()
+                .get_attribute("data-color")
+                .map(move |c| on_pick(Color::from(c.parse().unwrap_or(0))))
+                .unwrap_or(no_op)
+        }),
+        vec![
+            color_cell!(gray, idx),
+            color_cell!(blue, idx),
+            color_cell!(green, idx),
+            color_cell!(purple, idx),
+            color_cell!(yellow, idx),
+            color_cell!(orange, idx),
+            color_cell!(red, idx),
+        ],
+    )
+}
+
 pub fn all<Msg: 'static>(no_op: Msg, on_pick: impl FnOnce(Color) -> Msg + 'static) -> Html<Msg> {
     Html::div(
         Attributes::new().class("linear-v"),
