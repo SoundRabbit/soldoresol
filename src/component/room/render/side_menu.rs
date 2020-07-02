@@ -1,6 +1,6 @@
 use super::super::super::{awesome, btn, color_picker, dropdown, text};
 use super::{state::table, Msg};
-use crate::color_system;
+use crate::{color_system, Color};
 use kagura::prelude::*;
 
 pub fn render(selecting_tool: &table::Tool) -> Html<Msg> {
@@ -24,76 +24,7 @@ pub fn render(selecting_tool: &table::Tool) -> Html<Msg> {
                 },
             ),
             delm("描画"),
-            row(
-                selecting_tool.is_pen(),
-                "fa-pen",
-                "ペン",
-                Events::new().on_click(|_| {
-                    Msg::SetSelectingTableTool(table::Tool::Pen {
-                        line_width: 0.5,
-                        color: color_system::gray(255, 9),
-                        show_option_menu: false,
-                    })
-                }),
-                match selecting_tool {
-                    table::Tool::Pen {
-                        line_width,
-                        color,
-                        show_option_menu,
-                    } => {
-                        let line_width = *line_width;
-                        let color = *color;
-                        let show_option_menu = *show_option_menu;
-                        option(
-                            show_option_menu,
-                            Events::new().on_click(move |_| {
-                                Msg::SetSelectingTableTool(table::Tool::Pen {
-                                    line_width: line_width,
-                                    color: color,
-                                    show_option_menu: !show_option_menu,
-                                })
-                            }),
-                            vec![
-                                Html::div(
-                                    Attributes::new().class("keyvalue"),
-                                    Events::new(),
-                                    vec![
-                                        text::span("太さ"),
-                                        Html::input(
-                                            Attributes::new()
-                                                .type_("number")
-                                                .value(line_width.to_string())
-                                                .string("step", "0.1"),
-                                            Events::new().on_input(move |w| {
-                                                w.parse()
-                                                    .map(|w| {
-                                                        Msg::SetSelectingTableTool(
-                                                            table::Tool::Pen {
-                                                                line_width: w,
-                                                                color: color,
-                                                                show_option_menu: show_option_menu,
-                                                            },
-                                                        )
-                                                    })
-                                                    .unwrap_or(Msg::NoOp)
-                                            }),
-                                            vec![],
-                                        ),
-                                    ],
-                                ),
-                                color_picker::major(Msg::NoOp, move |color| {
-                                    Msg::SetSelectingTableTool(table::Tool::Pen {
-                                        line_width: line_width,
-                                        color: color,
-                                        show_option_menu: show_option_menu,
-                                    })
-                                }),
-                            ],
-                        )
-                    }
-                    _ => text::span(""),
-                },
-            ),
+            row_pen(selecting_tool),
             row(
                 selecting_tool.is_eracer(),
                 "fa-eraser",
@@ -161,6 +92,81 @@ pub fn render(selecting_tool: &table::Tool) -> Html<Msg> {
         .flatten()
         .collect(),
     )
+}
+
+fn row_pen(selecting_tool: &table::Tool) -> Vec<Html<Msg>> {
+    row(
+        selecting_tool.is_pen(),
+        "fa-pen",
+        "ペン",
+        Events::new().on_click(|_| {
+            Msg::SetSelectingTableTool(table::Tool::Pen {
+                line_width: 0.5,
+                color: color_system::gray(255, 9),
+                show_option_menu: false,
+            })
+        }),
+        match selecting_tool {
+            table::Tool::Pen {
+                line_width,
+                color,
+                show_option_menu,
+            } => {
+                let line_width = *line_width;
+                let color = *color;
+                let show_option_menu = *show_option_menu;
+                option(
+                    show_option_menu,
+                    Events::new().on_click(move |_| {
+                        Msg::SetSelectingTableTool(table::Tool::Pen {
+                            line_width: line_width,
+                            color: color,
+                            show_option_menu: !show_option_menu,
+                        })
+                    }),
+                    row_pen_menu(line_width, color),
+                )
+            }
+            _ => text::span(""),
+        },
+    )
+}
+
+fn row_pen_menu(line_width: f64, color: Color) -> Vec<Html<Msg>> {
+    vec![
+        Html::div(
+            Attributes::new().class("keyvalue"),
+            Events::new(),
+            vec![
+                text::span("太さ"),
+                Html::input(
+                    Attributes::new()
+                        .type_("number")
+                        .value(line_width.to_string())
+                        .string("step", "0.1"),
+                    Events::new().on_input(move |w| {
+                        w.parse()
+                            .map(|w| {
+                                Msg::SetSelectingTableTool(table::Tool::Pen {
+                                    line_width: w,
+                                    color: color,
+                                    show_option_menu: true,
+                                })
+                            })
+                            .unwrap_or(Msg::NoOp)
+                    }),
+                    vec![],
+                ),
+            ],
+        ),
+        color_picker::major(Msg::NoOp, move |color| {
+            Msg::SetSelectingTableTool(table::Tool::Pen {
+                line_width: line_width,
+                color: color,
+                show_option_menu: true,
+            })
+        }),
+    ]
 }
 
 fn row(
