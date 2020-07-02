@@ -64,7 +64,8 @@ pub enum Msg {
     SetCharacterPositionWithMousePosition(BlockId, [f32; 2]),
     SetTablemaskPositionWithMousePosition(BlockId, [f32; 2]),
     DrawLineWithMousePosition([f32; 2], [f32; 2], f64, Color),
-    EraceLineWithMousePosition([f32; 2], [f32; 2]),
+    EraceLineWithMousePosition([f32; 2], [f32; 2], f64),
+    ClearTable,
     MeasureLineWithMousePosition([f32; 2], [f32; 2]),
 
     // World
@@ -647,7 +648,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             }
         }
 
-        Msg::EraceLineWithMousePosition(a, b) => {
+        Msg::EraceLineWithMousePosition(a, b, line_width) => {
             let selecting_table = state.selecting_table();
             let drawing_texture_id = if let Some(selecting_table) = selecting_table {
                 state
@@ -670,7 +671,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
                         let context = texture.context();
 
-                        context.set_line_width(1.0);
+                        context.set_line_width(line_width);
                         context.set_line_cap("round");
                         context.set_stroke_style(&color_system::gray(255, 9).to_jsvalue());
                         context
@@ -681,6 +682,33 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                         context.line_to(bx, by);
                         context.fill();
                         context.stroke();
+                    },
+                );
+
+                render_canvas(state);
+
+                state.dequeue()
+            } else {
+                state.dequeue()
+            }
+        }
+
+        Msg::ClearTable => {
+            let selecting_table = state.selecting_table();
+            let drawing_texture_id = if let Some(selecting_table) = selecting_table {
+                state
+                    .block_field()
+                    .get::<block::Table>(&selecting_table)
+                    .map(|table| table.drawing_texture_id().clone())
+            } else {
+                None
+            };
+            if let Some(texture_id) = drawing_texture_id {
+                state.block_field_mut().update(
+                    &texture_id,
+                    timestamp(),
+                    |texture: &mut block::table::Texture| {
+                        texture.clear();
                     },
                 );
 

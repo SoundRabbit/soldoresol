@@ -25,31 +25,7 @@ pub fn render(selecting_tool: &table::Tool) -> Html<Msg> {
             ),
             delm("描画"),
             row_pen(selecting_tool),
-            row(
-                selecting_tool.is_eracer(),
-                "fa-eraser",
-                "消しゴム",
-                Events::new().on_click(|_| {
-                    Msg::SetSelectingTableTool(table::Tool::Eracer {
-                        show_option_menu: false,
-                    })
-                }),
-                match selecting_tool {
-                    table::Tool::Eracer { show_option_menu } => {
-                        let show_option_menu = *show_option_menu;
-                        option(
-                            show_option_menu,
-                            Events::new().on_click(move |_| {
-                                Msg::SetSelectingTableTool(table::Tool::Eracer {
-                                    show_option_menu: !show_option_menu,
-                                })
-                            }),
-                            vec![],
-                        )
-                    }
-                    _ => text::span(""),
-                },
-            ),
+            row_eraser(selecting_tool),
             delm("作成"),
             row(
                 selecting_tool.is_area(),
@@ -157,7 +133,7 @@ fn row_pen_menu(line_width: f64, color: Color) -> Vec<Html<Msg>> {
                     }),
                     vec![],
                 ),
-                text::span("選択色"),
+                text::span("現在の描画色"),
                 Html::div(
                     Attributes::new()
                         .class("cell")
@@ -168,6 +144,8 @@ fn row_pen_menu(line_width: f64, color: Color) -> Vec<Html<Msg>> {
                 ),
             ],
         ),
+        Html::hr(Attributes::new(), Events::new(), vec![]),
+        text::div("描画色"),
         color_picker::major(Msg::NoOp, move |color| {
             Msg::SetSelectingTableTool(table::Tool::Pen {
                 line_width: line_width,
@@ -175,6 +153,74 @@ fn row_pen_menu(line_width: f64, color: Color) -> Vec<Html<Msg>> {
                 show_option_menu: true,
             })
         }),
+    ]
+}
+
+fn row_eraser(selecting_tool: &table::Tool) -> Vec<Html<Msg>> {
+    row(
+        selecting_tool.is_eracer(),
+        "fa-eraser",
+        "消しゴム",
+        Events::new().on_click(|_| {
+            Msg::SetSelectingTableTool(table::Tool::Eracer {
+                line_width: 1.0,
+                show_option_menu: true,
+            })
+        }),
+        match selecting_tool {
+            table::Tool::Eracer {
+                line_width,
+                show_option_menu,
+            } => {
+                let line_width = *line_width;
+                let show_option_menu = *show_option_menu;
+                option(
+                    show_option_menu,
+                    Events::new().on_click(move |_| {
+                        Msg::SetSelectingTableTool(table::Tool::Eracer {
+                            line_width: line_width,
+                            show_option_menu: !show_option_menu,
+                        })
+                    }),
+                    row_eraser_menu(line_width),
+                )
+            }
+            _ => text::span(""),
+        },
+    )
+}
+
+fn row_eraser_menu(line_width: f64) -> Vec<Html<Msg>> {
+    vec![
+        Html::div(
+            Attributes::new().class("keyvalue"),
+            Events::new(),
+            vec![
+                text::span("太さ"),
+                Html::input(
+                    Attributes::new()
+                        .type_("number")
+                        .value(line_width.to_string())
+                        .string("step", "0.1"),
+                    Events::new().on_input(move |w| {
+                        w.parse()
+                            .map(|w| {
+                                Msg::SetSelectingTableTool(table::Tool::Eracer {
+                                    line_width: w,
+                                    show_option_menu: true,
+                                })
+                            })
+                            .unwrap_or(Msg::NoOp)
+                    }),
+                    vec![],
+                ),
+            ],
+        ),
+        btn::secondary(
+            Attributes::new(),
+            Events::new().on_click(|_| Msg::ClearTable),
+            vec![Html::text("全てを消去")],
+        ),
     ]
 }
 

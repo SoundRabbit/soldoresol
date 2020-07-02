@@ -70,8 +70,12 @@ pub fn render(
                                 line_width,
                                 color,
                             ),
-                            table::Tool::Eracer { .. } => {
-                                Msg::EraceLineWithMousePosition(last_mouse_pos, mouse_pos)
+                            table::Tool::Eracer { line_width, .. } => {
+                                Msg::EraceLineWithMousePosition(
+                                    last_mouse_pos,
+                                    mouse_pos,
+                                    line_width,
+                                )
                             }
                             table::Tool::Measure(..) => {
                                 Msg::MeasureLineWithMousePosition(last_mouse_down_pos, mouse_pos)

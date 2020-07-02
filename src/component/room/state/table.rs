@@ -11,6 +11,7 @@ pub enum Tool {
         show_option_menu: bool,
     },
     Eracer {
+        line_width: f64,
         show_option_menu: bool,
     },
     Measure(Option<BlockId>),

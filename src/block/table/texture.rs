@@ -69,6 +69,11 @@ impl Texture {
         self.pixel_ratio = new_pixel_ratio;
         self.size = size;
     }
+
+    pub fn clear(&self) {
+        let [px, py] = self.pixel_ratio.clone();
+        self.context.clear_rect(0.0, 0.0, 4096.0 * px, 4096.0 * py);
+    }
 }
 
 impl Block for Texture {
