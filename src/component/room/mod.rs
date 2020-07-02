@@ -706,26 +706,27 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 .add_info("終点", format!("({:.1},{:.1})", bx, by));
             state.table_mut().add_info("距離", format!("{:.1}", len));
 
-            let updated = state
-                .table()
-                .editing_block_id()
-                .map(|x| x.clone())
-                .map(|bid| {
-                    state
-                        .block_field_mut()
-                        .update(&bid, timestamp(), |m: &mut block::table_object::Measure| {
+            match state.table().selecting_tool() {
+                state::table::Tool::Measure(Some(block_id)) => {
+                    let block_id = block_id.clone();
+                    state.block_field_mut().update(
+                        &block_id,
+                        timestamp(),
+                        |m: &mut block::table_object::Measure| {
                             m.set_org([ax, ay, 0.0]);
                             m.set_vec([bx - ax, by - ay, 0.0]);
-                        })
-                        .is_none()
-                })
-                .unwrap_or(false);
-
-            if !updated {
-                let measure =
-                    block::table_object::Measure::new([ax, ay, 0.0], [bx - ax, by - ay, 0.0]);
-                let bid = state.block_field_mut().add(measure);
-                state.table_mut().set_editing_block_id(bid);
+                        },
+                    );
+                }
+                state::table::Tool::Measure(None) => {
+                    let measure =
+                        block::table_object::Measure::new([ax, ay, 0.0], [bx - ax, by - ay, 0.0]);
+                    let bid = state.block_field_mut().add(measure);
+                    state
+                        .table_mut()
+                        .set_selecting_tool(state::table::Tool::Measure(Some(bid)));
+                }
+                _ => (),
             }
 
             render_canvas(state);

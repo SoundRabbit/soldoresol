@@ -82,21 +82,25 @@ pub fn render(room_id: &String, selecting_tool: &table::Tool, is_2d_mode: bool) 
                         selecting_tool.is_measure(),
                         Attributes::new(),
                         Events::new()
-                            .on_click(|_| Msg::SetSelectingTableTool(table::Tool::Measure)),
+                            .on_click(|_| Msg::SetSelectingTableTool(table::Tool::Measure(None))),
                         vec![awesome::i("fa-ruler"), Html::text(" 計測")],
                     ),
                     btn::selectable(
                         selecting_tool.is_area(),
                         Attributes::new(),
-                        Events::new()
-                            .on_click(|_| Msg::SetSelectingTableTool(table::Tool::Measure)),
+                        Events::new().on_click(|_| {
+                            Msg::SetSelectingTableTool(table::Tool::Area {
+                                line_width: 2.0,
+                                is_rounded: false,
+                            })
+                        }),
                         vec![awesome::i("fa-ruler-combined"), Html::text(" 範囲")],
                     ),
                     btn::selectable(
                         selecting_tool.is_route(),
                         Attributes::new(),
                         Events::new()
-                            .on_click(|_| Msg::SetSelectingTableTool(table::Tool::Measure)),
+                            .on_click(|_| Msg::SetSelectingTableTool(table::Tool::Route(None))),
                         vec![awesome::i("fa-route"), Html::text(" 経路")],
                     ),
                 ]]

@@ -6,9 +6,9 @@ pub enum Tool {
     Selector,
     Pen,
     Eracer,
-    Measure,
+    Measure(Option<BlockId>),
     Area { line_width: f64, is_rounded: bool },
-    Route(BlockId),
+    Route(Option<BlockId>),
 }
 
 #[derive(Clone)]
@@ -27,7 +27,6 @@ pub struct State {
     is_2d_mode: bool,
     focused: Focused,
     moving_tab: Option<(ModelessId, usize)>,
-    editing_block_id: Option<BlockId>,
 }
 
 impl Tool {
@@ -51,7 +50,7 @@ impl Tool {
     }
     pub fn is_measure(&self) -> bool {
         match self {
-            Self::Measure => true,
+            Self::Measure(..) => true,
             _ => false,
         }
     }
@@ -80,7 +79,6 @@ impl State {
             is_2d_mode: false,
             focused: Focused::None,
             moving_tab: None,
-            editing_block_id: None,
         }
     }
 
@@ -146,17 +144,5 @@ impl State {
 
     pub fn set_moving_tab(&mut self, moving_tab: Option<(ModelessId, usize)>) {
         self.moving_tab = moving_tab;
-    }
-
-    pub fn editing_block_id(&self) -> Option<&BlockId> {
-        self.editing_block_id.as_ref()
-    }
-
-    pub fn set_editing_block_id(&mut self, block_id: BlockId) {
-        self.editing_block_id = Some(block_id);
-    }
-
-    pub fn take_editing_block_id(&mut self) -> Option<BlockId> {
-        self.editing_block_id.take()
     }
 }

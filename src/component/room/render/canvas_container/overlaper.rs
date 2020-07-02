@@ -68,7 +68,7 @@ pub fn render(
                             table::Tool::Eracer => {
                                 Msg::EraceLineWithMousePosition(last_mouse_pos, mouse_pos)
                             }
-                            table::Tool::Measure => {
+                            table::Tool::Measure(..) => {
                                 Msg::MeasureLineWithMousePosition(last_mouse_down_pos, mouse_pos)
                             }
                             table::Tool::Area {
@@ -82,9 +82,12 @@ pub fn render(
             })
             .on_mouseup({
                 let grubbed = grubbed.clone();
+                let selecting_tool = table.selecting_tool().clone();
                 move |e| {
                     if let Some(modeless_id) = grubbed {
                         Msg::DropModeless(modeless_id)
+                    } else if selecting_tool.is_measure() {
+                        Msg::SetSelectingTableTool(table::Tool::Measure(None))
                     } else {
                         Msg::NoOp
                     }
