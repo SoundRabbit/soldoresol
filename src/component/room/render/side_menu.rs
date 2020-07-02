@@ -103,7 +103,7 @@ fn row_pen(selecting_tool: &table::Tool) -> Vec<Html<Msg>> {
             Msg::SetSelectingTableTool(table::Tool::Pen {
                 line_width: 0.5,
                 color: color_system::gray(255, 9),
-                show_option_menu: false,
+                show_option_menu: true,
             })
         }),
         match selecting_tool {
@@ -155,6 +155,15 @@ fn row_pen_menu(line_width: f64, color: Color) -> Vec<Html<Msg>> {
                             })
                             .unwrap_or(Msg::NoOp)
                     }),
+                    vec![],
+                ),
+                text::span("選択色"),
+                Html::div(
+                    Attributes::new()
+                        .class("cell")
+                        .class("cell-medium")
+                        .style("background-color", color.to_string()),
+                    Events::new(),
                     vec![],
                 ),
             ],
