@@ -58,55 +58,7 @@ pub fn render(room_id: &String, selecting_tool: &table::Tool, is_2d_mode: bool) 
                     .class("centering-v-i")
                     .class("pure-form"),
                 Events::new(),
-                vec![vec![
-                    btn::selectable(
-                        selecting_tool.is_selector(),
-                        Attributes::new(),
-                        Events::new()
-                            .on_click(|_| Msg::SetSelectingTableTool(table::Tool::Selector)),
-                        vec![awesome::i("fa-mouse-pointer"), Html::text(" 選択")],
-                    ),
-                    btn::selectable(
-                        selecting_tool.is_pen(),
-                        Attributes::new(),
-                        Events::new().on_click(|_| Msg::SetSelectingTableTool(table::Tool::Pen)),
-                        vec![awesome::i("fa-pen"), Html::text(" ペン")],
-                    ),
-                    btn::selectable(
-                        selecting_tool.is_eracer(),
-                        Attributes::new(),
-                        Events::new().on_click(|_| Msg::SetSelectingTableTool(table::Tool::Eracer)),
-                        vec![awesome::i("fa-eraser"), Html::text(" 消しゴム")],
-                    ),
-                    btn::selectable(
-                        selecting_tool.is_measure(),
-                        Attributes::new(),
-                        Events::new()
-                            .on_click(|_| Msg::SetSelectingTableTool(table::Tool::Measure(None))),
-                        vec![awesome::i("fa-ruler"), Html::text(" 計測")],
-                    ),
-                    btn::selectable(
-                        selecting_tool.is_area(),
-                        Attributes::new(),
-                        Events::new().on_click(|_| {
-                            Msg::SetSelectingTableTool(table::Tool::Area {
-                                line_width: 2.0,
-                                is_rounded: false,
-                            })
-                        }),
-                        vec![awesome::i("fa-ruler-combined"), Html::text(" 範囲")],
-                    ),
-                    btn::selectable(
-                        selecting_tool.is_route(),
-                        Attributes::new(),
-                        Events::new()
-                            .on_click(|_| Msg::SetSelectingTableTool(table::Tool::Route(None))),
-                        vec![awesome::i("fa-route"), Html::text(" 経路")],
-                    ),
-                ]]
-                .into_iter()
-                .flatten()
-                .collect(),
+                vec![],
             ),
             Html::div(
                 Attributes::new()
