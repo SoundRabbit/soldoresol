@@ -10,7 +10,11 @@ pub fn div<Msg: 'static>(
 ) -> Html<Msg> {
     let on_close = Rc::new(RefCell::new(Box::new(on_close)));
     Html::div(
-        Attributes::new().class("fullscreen").style("z-index", "0"),
+        Attributes::new()
+            .class("fullscreen")
+            .style("z-index", "0")
+            .style("left", position[0].to_string() + "px")
+            .style("top", position[1].to_string() + "px"),
         Events::new()
             .on_click({
                 let on_close = Rc::clone(&on_close);
