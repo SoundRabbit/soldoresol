@@ -13,16 +13,24 @@ pub enum Type {
 pub struct Area {
     origin: [f32; 3],
     vector: [f32; 3],
-    color: Color,
+    color_1: Color,
+    color_2: Color,
     type_: Type,
 }
 
 impl Area {
-    pub fn new(origin: [f32; 3], vector: [f32; 3], color: Color, type_: Type) -> Self {
+    pub fn new(
+        origin: [f32; 3],
+        vector: [f32; 3],
+        color_1: Color,
+        color_2: Color,
+        type_: Type,
+    ) -> Self {
         Self {
             origin: origin,
             vector: vector,
-            color: color,
+            color_1: color_1,
+            color_2: color_2,
             type_: type_,
         }
     }
@@ -43,12 +51,20 @@ impl Area {
         self.origin = org;
     }
 
-    pub fn color(&self) -> &Color {
-        &self.color
+    pub fn color_1(&self) -> &Color {
+        &self.color_1
     }
 
-    pub fn set_color(&mut self, color: Color) {
-        self.color = color;
+    pub fn set_color_1(&mut self, color: Color) {
+        self.color_1 = color;
+    }
+
+    pub fn color_2(&self) -> &Color {
+        &self.color_2
+    }
+
+    pub fn set_color_2(&mut self, color: Color) {
+        self.color_2 = color;
     }
 
     pub fn type_(&self) -> &Type {

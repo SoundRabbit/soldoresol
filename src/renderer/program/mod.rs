@@ -1,10 +1,12 @@
 mod character_program;
+mod mask_check_program;
 mod mask_program;
 mod table_grid_program;
 mod table_texture_program;
 
 use super::webgl;
 pub use character_program::CharacterProgram;
+pub use mask_check_program::MaskCheckProgram;
 pub use mask_program::MaskProgram;
 pub use table_grid_program::TableGridProgram;
 pub use table_texture_program::TableTextureProgram;

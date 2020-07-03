@@ -1,5 +1,5 @@
 use super::super::{
-    program::MaskProgram,
+    program::MaskCheckProgram,
     webgl::{WebGlF32Vbo, WebGlI16Ibo, WebGlRenderingContext},
     ModelMatrix,
 };
@@ -10,7 +10,7 @@ pub struct AreaCollectionRenderer {
     vertexis_buffer: WebGlF32Vbo,
     texture_coord_buffer: WebGlF32Vbo,
     index_buffer: WebGlI16Ibo,
-    mask_program: MaskProgram,
+    mask_check_program: MaskCheckProgram,
 }
 
 impl AreaCollectionRenderer {
@@ -28,13 +28,13 @@ impl AreaCollectionRenderer {
             gl.create_vbo_with_f32array(&[[1.0, 1.0], [0.0, 1.0], [1.0, 0.0], [0.0, 0.0]].concat());
         let index_buffer = gl.create_ibo_with_i16array(&[0, 1, 2, 3, 2, 1]);
 
-        let mask_program = MaskProgram::new(gl);
+        let mask_check_program = MaskCheckProgram::new(gl);
 
         Self {
             vertexis_buffer,
             texture_coord_buffer,
             index_buffer,
-            mask_program,
+            mask_check_program,
         }
     }
 
@@ -45,17 +45,17 @@ impl AreaCollectionRenderer {
         block_field: &block::Field,
         areas: impl Iterator<Item = &'a BlockId>,
     ) {
-        self.mask_program.use_program(gl);
+        self.mask_check_program.use_program(gl);
 
         gl.set_attribute(
             &self.vertexis_buffer,
-            &self.mask_program.a_vertex_location,
+            &self.mask_check_program.a_vertex_location,
             3,
             0,
         );
         gl.set_attribute(
             &self.texture_coord_buffer,
-            &self.mask_program.a_texture_coord_location,
+            &self.mask_check_program.a_texture_coord_location,
             2,
             0,
         );
@@ -65,7 +65,7 @@ impl AreaCollectionRenderer {
         );
 
         for (_, area) in block_field.listed::<block::table_object::Area>(areas.collect()) {
-            let (model_matrix, is_rounded) =
+            let (model_matrix, is_rounded, size) =
                 if let block::table_object::area::Type::Line(line_width) = area.type_() {
                     let line_width = *line_width as f32;
                     let o = area.org().clone();
@@ -82,7 +82,7 @@ impl AreaCollectionRenderer {
                         .with_z_axis_rotation(zr)
                         .with_movement(&[o[0] + v[0] / 2.0, o[1] + v[1] / 2.0, o[2] + v[2] / 2.0])
                         .into();
-                    (mm, false)
+                    (mm, false, [len, line_width])
                 } else {
                     let o = area.org();
                     let v = area.vec().clone();
@@ -96,13 +96,13 @@ impl AreaCollectionRenderer {
                         .with_y_axis_rotation(yr)
                         .with_movement(o)
                         .into();
-                    (mm, true)
+                    (mm, true, [len, len])
                 };
 
             let mvp_matrix = vp_matrix.dot(&model_matrix);
             let mvp_matrix = mvp_matrix.t();
             gl.uniform_matrix4fv_with_f32_array(
-                Some(&self.mask_program.u_translate_location),
+                Some(&self.mask_check_program.u_translate_location),
                 false,
                 &[
                     mvp_matrix.row(0).to_vec(),
@@ -116,11 +116,19 @@ impl AreaCollectionRenderer {
                 .collect::<Vec<f32>>(),
             );
             gl.uniform4fv_with_f32_array(
-                Some(&self.mask_program.u_mask_color_location),
-                &area.color().to_f32array(),
+                Some(&self.mask_check_program.u_mask_color_1_location),
+                &area.color_1().to_f32array(),
+            );
+            gl.uniform4fv_with_f32_array(
+                Some(&self.mask_check_program.u_mask_color_2_location),
+                &area.color_2().to_f32array(),
+            );
+            gl.uniform2fv_with_f32_array(
+                Some(&self.mask_check_program.u_mask_size_location),
+                &size,
             );
             gl.uniform1i(
-                Some(&self.mask_program.u_flag_round_location),
+                Some(&self.mask_check_program.u_flag_round_location),
                 if is_rounded { 1 } else { 0 },
             );
             gl.draw_elements_with_i32(

@@ -105,14 +105,16 @@ pub fn render(
                             ),
                             table::Tool::Area {
                                 type_,
-                                color,
+                                color_1,
+                                color_2,
                                 block_id,
                                 ..
                             } => Msg::SetAreaWithMousePosition(
                                 last_mouse_down_pos,
                                 mouse_pos,
                                 block_id,
-                                color,
+                                color_1,
+                                color_2,
                                 type_,
                             ),
                             table::Tool::Route { .. } => Msg::NoOp,
@@ -128,7 +130,7 @@ pub fn render(
                         Msg::DropModeless(modeless_id)
                     } else if selecting_tool.is_measure() {
                         Msg::ClearMeasure
-                    } else if let table::Tool::Measure { block_id, .. } = &mut selecting_tool {
+                    } else if let table::Tool::Area { block_id, .. } = &mut selecting_tool {
                         *block_id = None;
                         Msg::SetSelectingTableTool(selecting_tool)
                     } else {

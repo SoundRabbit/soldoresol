@@ -21,7 +21,8 @@ pub enum Tool {
     },
     Area {
         type_: block::table_object::area::Type,
-        color: Color,
+        color_1: Color,
+        color_2: Color,
         block_id: Option<BlockId>,
         show_option_menu: bool,
     },

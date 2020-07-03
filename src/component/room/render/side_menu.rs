@@ -67,7 +67,8 @@ pub fn render(z_index: u64, selecting_tool: &table::Tool) -> Html<Msg> {
                 Events::new().on_click(|_| {
                     Msg::SetSelectingTableTool(table::Tool::Area {
                         type_: block::table_object::area::Type::Line(2.0),
-                        color: color_system::red(192, 4),
+                        color_1: color_system::red(192, 3),
+                        color_2: color_system::red(192, 2),
                         block_id: None,
                         show_option_menu: false,
                     })
