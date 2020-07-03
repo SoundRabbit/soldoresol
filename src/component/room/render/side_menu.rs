@@ -60,24 +60,7 @@ pub fn render(z_index: u64, selecting_tool: &table::Tool) -> Html<Msg> {
                     _ => text::span(""),
                 },
             ),
-            row(
-                selecting_tool.is_area(),
-                "fa-ruler-combined",
-                "範囲",
-                Events::new().on_click(|_| {
-                    Msg::SetSelectingTableTool(table::Tool::Area {
-                        type_: block::table_object::area::Type::Line(2.0),
-                        color_1: color_system::red(192, 3),
-                        color_2: color_system::red(192, 2),
-                        block_id: None,
-                        show_option_menu: false,
-                    })
-                }),
-                match selecting_tool {
-                    table::Tool::Area { .. } => option(false, Events::new(), vec![]),
-                    _ => text::span(""),
-                },
-            ),
+            row_area(selecting_tool),
             row(
                 selecting_tool.is_route(),
                 "fa-route",
@@ -141,51 +124,56 @@ fn row_pen(selecting_tool: &table::Tool) -> Vec<Html<Msg>> {
 }
 
 fn row_pen_menu(line_width: f64, color: Color) -> Vec<Html<Msg>> {
-    vec![
-        Html::div(
-            Attributes::new().class("keyvalue"),
-            Events::new(),
-            vec![
-                text::span("太さ"),
-                Html::input(
-                    Attributes::new()
-                        .type_("number")
-                        .value(line_width.to_string())
-                        .string("step", "0.1"),
-                    Events::new().on_input(move |w| {
-                        w.parse()
-                            .map(|w| {
-                                Msg::SetSelectingTableTool(table::Tool::Pen {
-                                    line_width: w,
-                                    color: color,
-                                    show_option_menu: true,
-                                })
+    vec![Html::div(
+        Attributes::new().class("keyvalue"),
+        Events::new(),
+        vec![
+            text::span("太さ"),
+            Html::input(
+                Attributes::new()
+                    .type_("number")
+                    .value(line_width.to_string())
+                    .string("step", "0.1"),
+                Events::new().on_input(move |w| {
+                    w.parse()
+                        .map(|w| {
+                            Msg::SetSelectingTableTool(table::Tool::Pen {
+                                line_width: w,
+                                color: color,
+                                show_option_menu: true,
                             })
-                            .unwrap_or(Msg::NoOp)
-                    }),
-                    vec![],
-                ),
-                text::span("現在の描画色"),
-                Html::div(
-                    Attributes::new()
-                        .class("cell")
-                        .class("cell-medium")
-                        .style("background-color", color.to_string()),
-                    Events::new(),
-                    vec![],
-                ),
-            ],
-        ),
-        Html::hr(Attributes::new(), Events::new(), vec![]),
-        text::div("描画色"),
-        color_picker::major(Msg::NoOp, move |color| {
-            Msg::SetSelectingTableTool(table::Tool::Pen {
-                line_width: line_width,
-                color: color,
-                show_option_menu: true,
-            })
-        }),
-    ]
+                        })
+                        .unwrap_or(Msg::NoOp)
+                }),
+                vec![],
+            ),
+            Html::hr(
+                Attributes::new().class("keyvalue-banner"),
+                Events::new(),
+                vec![],
+            ),
+            text::span("選択色"),
+            Html::div(
+                Attributes::new()
+                    .class("cell")
+                    .class("cell-medium")
+                    .style("background-color", color.to_string()),
+                Events::new(),
+                vec![],
+            ),
+            Html::div(
+                Attributes::new().class("keyvalue-banner"),
+                Events::new(),
+                vec![color_picker::major(Msg::NoOp, move |color| {
+                    Msg::SetSelectingTableTool(table::Tool::Pen {
+                        line_width: line_width,
+                        color: color,
+                        show_option_menu: true,
+                    })
+                })],
+            ),
+        ],
+    )]
 }
 
 fn row_eraser(selecting_tool: &table::Tool) -> Vec<Html<Msg>> {
@@ -228,7 +216,7 @@ fn row_eraser_menu(line_width: f64) -> Vec<Html<Msg>> {
             Attributes::new().class("keyvalue"),
             Events::new(),
             vec![
-                text::span("太さ"),
+                text::span("線幅"),
                 Html::input(
                     Attributes::new()
                         .type_("number")
@@ -254,6 +242,210 @@ fn row_eraser_menu(line_width: f64) -> Vec<Html<Msg>> {
             vec![Html::text("クリア")],
         ),
     ]
+}
+
+fn row_area(selecting_tool: &table::Tool) -> Vec<Html<Msg>> {
+    row(
+        selecting_tool.is_area(),
+        "fa-ruler-combined",
+        "範囲",
+        Events::new().on_click(|_| {
+            Msg::SetSelectingTableTool(table::Tool::Area {
+                type_: block::table_object::area::Type::Line(2.0),
+                color_1: color_system::red(192, 3),
+                color_2: color_system::red(192, 2),
+                block_id: None,
+                show_option_menu: true,
+            })
+        }),
+        match selecting_tool {
+            table::Tool::Area {
+                type_,
+                color_1,
+                color_2,
+                block_id,
+                show_option_menu,
+            } => {
+                let color_1 = *color_1;
+                let color_2 = *color_2;
+                let show_option_menu = *show_option_menu;
+                option(
+                    show_option_menu,
+                    Events::new().on_click({
+                        let type_ = type_.clone();
+                        let block_id = block_id.clone();
+                        move |_| {
+                            Msg::SetSelectingTableTool(table::Tool::Area {
+                                type_,
+                                color_1,
+                                color_2,
+                                block_id,
+                                show_option_menu: !show_option_menu,
+                            })
+                        }
+                    }),
+                    row_area_menu(type_, color_1, color_2, block_id),
+                )
+            }
+            _ => text::span(""),
+        },
+    )
+}
+
+fn row_area_menu(
+    type_: &block::table_object::area::Type,
+    color_1: Color,
+    color_2: Color,
+    block_id: &Option<BlockId>,
+) -> Vec<Html<Msg>> {
+    vec![Html::div(
+        Attributes::new().class("keyvalue"),
+        Events::new(),
+        vec![
+            text::span("形状"),
+            Html::div(
+                Attributes::new().class("linear-h"),
+                Events::new(),
+                vec![
+                    btn::selectable(
+                        type_.is_line(),
+                        Attributes::new(),
+                        Events::new().on_click({
+                            let block_id = block_id.clone();
+                            let is_line = type_.is_line();
+                            move |_| {
+                                if is_line {
+                                    Msg::NoOp
+                                } else {
+                                    Msg::SetSelectingTableTool(table::Tool::Area {
+                                        type_: block::table_object::area::Type::Line(2.0),
+                                        color_1,
+                                        color_2,
+                                        block_id,
+                                        show_option_menu: true,
+                                    })
+                                }
+                            }
+                        }),
+                        vec![Html::text("直線")],
+                    ),
+                    btn::selectable(
+                        type_.is_rounded(),
+                        Attributes::new(),
+                        Events::new().on_click({
+                            let block_id = block_id.clone();
+                            let is_rounded = type_.is_rounded();
+                            move |_| {
+                                if is_rounded {
+                                    Msg::NoOp
+                                } else {
+                                    Msg::SetSelectingTableTool(table::Tool::Area {
+                                        type_: block::table_object::area::Type::Rounded,
+                                        color_1,
+                                        color_2,
+                                        block_id,
+                                        show_option_menu: true,
+                                    })
+                                }
+                            }
+                        }),
+                        vec![Html::text("円内")],
+                    ),
+                ],
+            ),
+            text::span("線幅"),
+            match type_ {
+                block::table_object::area::Type::Line(line_width) => Html::input(
+                    Attributes::new()
+                        .type_("number")
+                        .value(line_width.to_string())
+                        .string("step", "0.1"),
+                    Events::new().on_input({
+                        let block_id = block_id.clone();
+                        move |w| {
+                            w.parse()
+                                .map(|w| {
+                                    Msg::SetSelectingTableTool(table::Tool::Area {
+                                        type_: block::table_object::area::Type::Line(w),
+                                        color_1,
+                                        color_2,
+                                        block_id,
+                                        show_option_menu: true,
+                                    })
+                                })
+                                .unwrap_or(Msg::NoOp)
+                        }
+                    }),
+                    vec![],
+                ),
+                _ => Html::input(Attributes::new().flag("disabled"), Events::new(), vec![]),
+            },
+            Html::hr(
+                Attributes::new().class("keyvalue-banner"),
+                Events::new(),
+                vec![],
+            ),
+            text::span("選択色1"),
+            Html::div(
+                Attributes::new()
+                    .class("cell")
+                    .class("cell-medium")
+                    .style("background-color", color_1.to_string()),
+                Events::new(),
+                vec![],
+            ),
+            Html::div(
+                Attributes::new().class("keyvalue-banner"),
+                Events::new(),
+                vec![color_picker::idx(3, Msg::NoOp, {
+                    let block_id = block_id.clone();
+                    let type_ = type_.clone();
+                    move |mut color_1| {
+                        color_1.alpha = 192;
+                        Msg::SetSelectingTableTool(table::Tool::Area {
+                            type_,
+                            color_1,
+                            color_2,
+                            block_id,
+                            show_option_menu: true,
+                        })
+                    }
+                })],
+            ),
+            Html::hr(
+                Attributes::new().class("keyvalue-banner"),
+                Events::new(),
+                vec![],
+            ),
+            text::span("選択色2"),
+            Html::div(
+                Attributes::new()
+                    .class("cell")
+                    .class("cell-medium")
+                    .style("background-color", color_2.to_string()),
+                Events::new(),
+                vec![],
+            ),
+            Html::div(
+                Attributes::new().class("keyvalue-banner"),
+                Events::new(),
+                vec![color_picker::idx(2, Msg::NoOp, {
+                    let block_id = block_id.clone();
+                    let type_ = type_.clone();
+                    move |mut color_2| {
+                        color_2.alpha = 192;
+                        Msg::SetSelectingTableTool(table::Tool::Area {
+                            type_,
+                            color_1,
+                            color_2,
+                            block_id,
+                            show_option_menu: true,
+                        })
+                    }
+                })],
+            ),
+        ],
+    )]
 }
 
 fn row_measure(selecting_tool: &table::Tool) -> Vec<Html<Msg>> {
@@ -297,35 +489,35 @@ fn row_measure(selecting_tool: &table::Tool) -> Vec<Html<Msg>> {
 }
 
 fn row_measure_menu(color: Color, block_id: &Option<BlockId>) -> Vec<Html<Msg>> {
-    vec![
-        Html::div(
-            Attributes::new().class("keyvalue"),
-            Events::new(),
-            vec![
-                text::span("現在の描画色"),
-                Html::div(
-                    Attributes::new()
-                        .class("cell")
-                        .class("cell-medium")
-                        .style("background-color", color.to_string()),
-                    Events::new(),
-                    vec![],
-                ),
-            ],
-        ),
-        Html::hr(Attributes::new(), Events::new(), vec![]),
-        text::div("描画色"),
-        color_picker::idx(7, Msg::NoOp, {
-            let block_id = block_id.clone();
-            move |color| {
-                Msg::SetSelectingTableTool(table::Tool::Measure {
-                    color,
-                    block_id,
-                    show_option_menu: true,
-                })
-            }
-        }),
-    ]
+    vec![Html::div(
+        Attributes::new().class("keyvalue"),
+        Events::new(),
+        vec![
+            text::span("選択色"),
+            Html::div(
+                Attributes::new()
+                    .class("cell")
+                    .class("cell-medium")
+                    .style("background-color", color.to_string()),
+                Events::new(),
+                vec![],
+            ),
+            Html::div(
+                Attributes::new().class("keyvalue-banner"),
+                Events::new(),
+                vec![color_picker::idx(7, Msg::NoOp, {
+                    let block_id = block_id.clone();
+                    move |color| {
+                        Msg::SetSelectingTableTool(table::Tool::Measure {
+                            color,
+                            block_id,
+                            show_option_menu: true,
+                        })
+                    }
+                })],
+            ),
+        ],
+    )]
 }
 
 fn row(

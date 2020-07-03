@@ -87,7 +87,7 @@ impl AreaCollectionRenderer {
                     let o = area.org();
                     let v = area.vec().clone();
 
-                    let len = (v[0].powi(2) + v[1].powi(2) + v[2].powi(2)).sqrt();
+                    let len = (v[0].powi(2) + v[1].powi(2) + v[2].powi(2)).sqrt() * 2.0;
 
                     let yr = v[2].atan2(v[0]);
 

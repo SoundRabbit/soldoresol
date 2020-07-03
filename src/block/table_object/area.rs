@@ -18,6 +18,22 @@ pub struct Area {
     type_: Type,
 }
 
+impl Type {
+    pub fn is_line(&self) -> bool {
+        match self {
+            Self::Line(..) => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_rounded(&self) -> bool {
+        match self {
+            Self::Rounded => true,
+            _ => false,
+        }
+    }
+}
+
 impl Area {
     pub fn new(
         origin: [f32; 3],
