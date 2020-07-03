@@ -104,9 +104,17 @@ pub fn render(
                                 color,
                             ),
                             table::Tool::Area {
-                                line_width,
-                                is_rounded,
-                            } => Msg::NoOp,
+                                type_,
+                                color,
+                                block_id,
+                                ..
+                            } => Msg::SetAreaWithMousePosition(
+                                last_mouse_down_pos,
+                                mouse_pos,
+                                block_id,
+                                color,
+                                type_,
+                            ),
                             table::Tool::Route { .. } => Msg::NoOp,
                         }
                     }
@@ -114,12 +122,15 @@ pub fn render(
             })
             .on_mouseup({
                 let grubbed = grubbed.clone();
-                let selecting_tool = table.selecting_tool().clone();
+                let mut selecting_tool = table.selecting_tool().clone();
                 move |_| {
                     if let Some(modeless_id) = grubbed {
                         Msg::DropModeless(modeless_id)
                     } else if selecting_tool.is_measure() {
                         Msg::ClearMeasure
+                    } else if let table::Tool::Measure { block_id, .. } = &mut selecting_tool {
+                        *block_id = None;
+                        Msg::SetSelectingTableTool(selecting_tool)
                     } else {
                         Msg::NoOp
                     }

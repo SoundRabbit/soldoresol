@@ -1,3 +1,4 @@
+mod area_collection_renderer;
 mod character_mask_renderer;
 mod character_texture_renderer;
 mod measure_renderer;
@@ -11,6 +12,7 @@ use crate::{
     resource::ResourceId,
     Resource,
 };
+use area_collection_renderer::AreaCollectionRenderer;
 use character_mask_renderer::CharacterMaskRenderer;
 use character_texture_renderer::CharacterTextureRenderer;
 use measure_renderer::MeasureRenderer;
@@ -36,6 +38,7 @@ impl DerefMut for TextureCollection {
 }
 
 pub struct ViewRenderer {
+    area_collection_renderer: AreaCollectionRenderer,
     character_mask_renderer: CharacterMaskRenderer,
     character_texture_renderer: CharacterTextureRenderer,
     table_texture_renderer: TableTextureRenderer,
@@ -56,6 +59,7 @@ impl ViewRenderer {
         );
         gl.enable(web_sys::WebGlRenderingContext::DEPTH_TEST);
 
+        let area_collection_renderer = AreaCollectionRenderer::new(gl);
         let character_mask_renderer = CharacterMaskRenderer::new(gl);
         let character_texture_renderer = CharacterTextureRenderer::new(gl);
         let table_texture_renderer = TableTextureRenderer::new(gl);
@@ -64,6 +68,7 @@ impl ViewRenderer {
         let measure_renderer = MeasureRenderer::new(gl);
 
         Self {
+            area_collection_renderer,
             character_mask_renderer,
             character_texture_renderer,
             table_texture_renderer,
@@ -109,6 +114,8 @@ impl ViewRenderer {
                 table.tablemasks(),
             );
             self.table_grid_renderer.render(gl, &vp_matrix, table);
+            self.area_collection_renderer
+                .render(gl, &vp_matrix, block_field, table.areas());
         }
         self.character_mask_renderer.render(
             gl,

@@ -68,6 +68,13 @@ pub enum Msg {
     ClearTable,
     MeasureLineWithMousePosition([f32; 2], [f32; 2], Option<BlockId>, Color),
     ClearMeasure,
+    SetAreaWithMousePosition(
+        [f32; 2],
+        [f32; 2],
+        Option<BlockId>,
+        Color,
+        block::table_object::area::Type,
+    ),
 
     // World
     AddTable,
@@ -781,6 +788,60 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 state.table_mut().selecting_tool_mut()
             {
                 *block_id = None;
+            }
+
+            render_canvas(state);
+
+            state.dequeue()
+        }
+
+        Msg::SetAreaWithMousePosition(a, b, block_id, color, type_) => {
+            let [ax, ay] = get_table_position(state, &a, state.pixel_ratio());
+            let [bx, by] = get_table_position(state, &b, state.pixel_ratio());
+            let len = ((bx - ax).powi(2) + (by - ay).powi(2)).sqrt();
+
+            state.table_mut().clear_info();
+            state
+                .table_mut()
+                .add_info("始点", format!("({:.1},{:.1})", ax, ay));
+            state
+                .table_mut()
+                .add_info("終点", format!("({:.1},{:.1})", bx, by));
+            state.table_mut().add_info("距離", format!("{:.1}", len));
+
+            if let Some(block_id) = block_id {
+                let block_id = block_id.clone();
+                state.block_field_mut().update(
+                    &block_id,
+                    timestamp(),
+                    |a: &mut block::table_object::Area| {
+                        a.set_org([ax, ay, 0.0]);
+                        a.set_vec([bx - ax, by - ay, 0.0]);
+                        a.set_color(color);
+                        a.set_type(type_);
+                    },
+                );
+            } else if let Some(selecting_table) = state.selecting_table().map(|t| t.clone()) {
+                let area = block::table_object::Area::new(
+                    [ax, ay, 0.0],
+                    [bx - ax, by - ay, 0.0],
+                    color,
+                    type_,
+                );
+                let bid = state.block_field_mut().add(area);
+                state.block_field_mut().update(
+                    &selecting_table,
+                    timestamp(),
+                    |table: &mut block::Table| {
+                        crate::debug::log_1("add area");
+                        table.add_area(bid.clone());
+                    },
+                );
+                if let state::table::Tool::Area { block_id, .. } =
+                    state.table_mut().selecting_tool_mut()
+                {
+                    *block_id = Some(bid);
+                }
             }
 
             render_canvas(state);

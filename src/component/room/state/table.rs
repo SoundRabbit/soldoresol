@@ -1,4 +1,4 @@
-use crate::block::BlockId;
+use crate::block::{self, BlockId};
 use crate::model::modeless::ModelessId;
 use crate::Color;
 
@@ -20,8 +20,10 @@ pub enum Tool {
         show_option_menu: bool,
     },
     Area {
-        line_width: f64,
-        is_rounded: bool,
+        type_: block::table_object::area::Type,
+        color: Color,
+        block_id: Option<BlockId>,
+        show_option_menu: bool,
     },
     Route {
         block_id: Option<BlockId>,

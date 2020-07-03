@@ -1,6 +1,9 @@
 use super::super::super::{awesome, btn, color_picker, dropdown, text};
 use super::{state::table, Msg};
-use crate::{block::BlockId, color_system, Color};
+use crate::{
+    block::{self, BlockId},
+    color_system, Color,
+};
 use kagura::prelude::*;
 
 pub fn render(z_index: u64, selecting_tool: &table::Tool) -> Html<Msg> {
@@ -63,8 +66,10 @@ pub fn render(z_index: u64, selecting_tool: &table::Tool) -> Html<Msg> {
                 "範囲",
                 Events::new().on_click(|_| {
                     Msg::SetSelectingTableTool(table::Tool::Area {
-                        line_width: 2.0,
-                        is_rounded: false,
+                        type_: block::table_object::area::Type::Line(2.0),
+                        color: color_system::red(192, 4),
+                        block_id: None,
+                        show_option_menu: false,
                     })
                 }),
                 match selecting_tool {

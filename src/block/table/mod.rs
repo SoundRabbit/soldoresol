@@ -14,6 +14,7 @@ pub struct Table {
     drawing_texture_id: BlockId,
     image_texture_id: Option<ResourceId>,
     tablemasks: Vec<BlockId>,
+    areas: Vec<BlockId>,
 }
 
 impl Table {
@@ -25,6 +26,7 @@ impl Table {
             drawing_texture_id,
             image_texture_id: None,
             tablemasks: vec![],
+            areas: vec![],
         }
     }
 
@@ -68,6 +70,14 @@ impl Table {
         if let Some(idx) = self.tablemasks.iter().position(|x| x == tablemask) {
             self.tablemasks.remove(idx);
         }
+    }
+
+    pub fn areas(&self) -> impl Iterator<Item = &BlockId> {
+        self.areas.iter()
+    }
+
+    pub fn add_area(&mut self, area: BlockId) {
+        self.areas.push(area);
     }
 }
 
