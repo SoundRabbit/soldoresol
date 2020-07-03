@@ -5,6 +5,7 @@ pub enum Contextmenu {
     Default,
     Character(BlockId),
     Tablemask(BlockId),
+    Area(BlockId),
 }
 
 pub struct State {

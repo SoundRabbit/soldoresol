@@ -52,6 +52,7 @@ pub enum Msg {
     CloneTablemaskToCloseContextmenu(BlockId),
     RemoveCharacterToCloseContextmenu(BlockId),
     RemoveTablemaskToCloseContextmenu(BlockId),
+    RemoveAreaToCloseContextmenu(BlockId),
 
     // Mouse
     SetLastMousePosition(bool, [f32; 2]),
@@ -452,6 +453,26 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 render_canvas(state);
 
                 send_pack_cmd(state.block_field(), vec![&tablemask, &selecting_table])
+            } else {
+                state.dequeue()
+            }
+        }
+
+        Msg::RemoveAreaToCloseContextmenu(area_id) => {
+            state.close_contextmenu();
+
+            if let Some(selecting_table) = state.selecting_table().map(|t| t.clone()) {
+                state.block_field_mut().update(
+                    &selecting_table,
+                    timestamp(),
+                    |table: &mut block::Table| {
+                        table.remove_area(&area_id);
+                    },
+                );
+
+                render_canvas(state);
+
+                send_pack_cmd(state.block_field(), vec![&selecting_table])
             } else {
                 state.dequeue()
             }
@@ -1182,6 +1203,13 @@ fn check_focused_object(state: &mut State, mouse_position: &[f32; 2]) {
         {
             let table = state.table_mut();
             table.set_focused(state::table::Focused::Tablemask(block_id.clone()));
+        } else if state
+            .block_field()
+            .get::<block::table_object::Area>(&block_id)
+            .is_some()
+        {
+            let table = state.table_mut();
+            table.set_focused(state::table::Focused::Area(block_id.clone()));
         }
     } else {
         state.table_mut().set_focused(state::table::Focused::None);

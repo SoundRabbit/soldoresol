@@ -76,9 +76,7 @@ pub fn render(
                                         mouse_pos,
                                     )
                                 }
-                                table::Focused::None => {
-                                    Msg::SetCameraMovementWithMouseMovement(mouse_pos)
-                                }
+                                _ => Msg::SetCameraMovementWithMouseMovement(mouse_pos),
                             },
                             table::Tool::Pen {
                                 line_width, color, ..
@@ -160,13 +158,18 @@ pub fn render(
                             Msg::OpenContextmenu(
                                 page_mouse_coord,
                                 offset_mouse_coord,
-                                state::Contextmenu::Character(character_id.clone()),
+                                state::Contextmenu::Character(character_id),
                             )
                         }
                         table::Focused::Tablemask(tablemask_id) => Msg::OpenContextmenu(
                             page_mouse_coord,
                             offset_mouse_coord,
-                            state::Contextmenu::Tablemask(tablemask_id.clone()),
+                            state::Contextmenu::Tablemask(tablemask_id),
+                        ),
+                        table::Focused::Area(area_id) => Msg::OpenContextmenu(
+                            page_mouse_coord,
+                            offset_mouse_coord,
+                            state::Contextmenu::Area(area_id),
                         ),
                         table::Focused::None => Msg::OpenContextmenu(
                             page_mouse_coord,

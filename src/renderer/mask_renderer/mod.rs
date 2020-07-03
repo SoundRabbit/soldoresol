@@ -1,8 +1,10 @@
+mod area_collection_renderer;
 mod character_collection_renderer;
 mod tablemask_collection_renderer;
 
 use super::{program::MaskProgram, webgl::WebGlRenderingContext, Camera};
 use crate::block::{self, BlockId};
+use area_collection_renderer::AreaCollectionRenderer;
 pub use character_collection_renderer::CharacterCollectionRenderer;
 use std::{collections::HashMap, rc::Rc};
 use tablemask_collection_renderer::TablemaskCollectionRenderer;
@@ -12,6 +14,7 @@ pub struct MaskRenderer {
     canvas: web_sys::HtmlCanvasElement,
     gl: Rc<WebGlRenderingContext>,
     mask_program: MaskProgram,
+    area_collection_renderer: AreaCollectionRenderer,
     character_collection_renderer: CharacterCollectionRenderer,
     tablemask_collection_renderer: TablemaskCollectionRenderer,
     id_map: HashMap<u32, BlockId>,
@@ -40,6 +43,7 @@ impl MaskRenderer {
             web_sys::WebGlRenderingContext::ONE_MINUS_SRC_ALPHA,
         );
 
+        let area_collection_renderer = AreaCollectionRenderer::new(&gl);
         let character_collection_renderer = CharacterCollectionRenderer::new(&gl);
         let tablemask_collection_renderer = TablemaskCollectionRenderer::new(&gl);
 
@@ -50,6 +54,7 @@ impl MaskRenderer {
             canvas,
             gl,
             mask_program,
+            area_collection_renderer,
             character_collection_renderer,
             tablemask_collection_renderer,
             id_map: HashMap::new(),
@@ -116,6 +121,14 @@ impl MaskRenderer {
                 &vp_matrix,
                 block_field,
                 table.tablemasks(),
+                &mut self.id_map,
+            );
+            self.area_collection_renderer.render(
+                gl,
+                &self.mask_program,
+                &vp_matrix,
+                block_field,
+                table.areas(),
                 &mut self.id_map,
             );
         }

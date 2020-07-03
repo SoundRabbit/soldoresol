@@ -3,6 +3,7 @@ use super::{Msg, State};
 use crate::block;
 use kagura::prelude::*;
 
+mod area;
 mod character;
 mod default;
 mod tablemask;
@@ -14,6 +15,7 @@ pub fn render(
 ) -> Html<Msg> {
     match &contextmenu as &state::Contextmenu {
         state::Contextmenu::Default => default::render(z_index, contextmenu),
+        state::Contextmenu::Area(block_id) => area::render(z_index, contextmenu, block_id),
         state::Contextmenu::Character(block_id) => {
             character::render(z_index, contextmenu, block_id)
         }

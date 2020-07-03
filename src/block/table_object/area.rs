@@ -94,7 +94,10 @@ impl Area {
 
 impl Block for Area {
     fn pack(&self) -> Promise<JsValue> {
-        unimplemented!();
+        let data = object! {};
+        let data: js_sys::Object = data.into();
+        let data: JsValue = data.into();
+        Promise::new(|resolve| resolve(Some(data)))
     }
     fn unpack(field: &mut Field, val: JsValue) -> Promise<Box<Self>> {
         unimplemented!();

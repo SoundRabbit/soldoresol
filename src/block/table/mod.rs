@@ -79,6 +79,12 @@ impl Table {
     pub fn add_area(&mut self, area: BlockId) {
         self.areas.push(area);
     }
+
+    pub fn remove_area(&mut self, area: &BlockId) {
+        if let Some(idx) = self.areas.iter().position(|x| x == area) {
+            self.areas.remove(idx);
+        }
+    }
 }
 
 impl Block for Table {
