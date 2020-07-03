@@ -326,7 +326,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         Msg::AddChracaterWithMousePositionToCloseContextmenu(mouse_position) => {
             state.close_contextmenu();
 
-            let [x, y] = get_table_position(state, &mouse_position, state.pixel_ratio());
+            let [x, y] = get_table_position(state, false, &mouse_position, state.pixel_ratio());
 
             let mut prop_hp = block::Property::new("HP");
             prop_hp.set_value(block::property::Value::Num(0.0));
@@ -366,7 +366,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.close_contextmenu();
 
             if let Some(selecting_table) = state.selecting_table().map(|t| t.clone()) {
-                let [x, y] = get_table_position(state, &mouse_position, state.pixel_ratio());
+                let [x, y] = get_table_position(state, false, &mouse_position, state.pixel_ratio());
 
                 let prop_root = block::Property::new("");
                 let prop_root = state.block_field_mut().add(prop_root);
@@ -592,7 +592,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
 
         Msg::SetCharacterPositionWithMousePosition(block_id, mouse_position) => {
-            let [x, y] = get_table_position(state, &mouse_position, state.pixel_ratio());
+            let [x, y] = get_table_position(state, false, &mouse_position, state.pixel_ratio());
             let timestamp = timestamp();
 
             let updated = state
@@ -611,7 +611,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
 
         Msg::SetTablemaskPositionWithMousePosition(block_id, mouse_position) => {
-            let [x, y] = get_table_position(state, &mouse_position, state.pixel_ratio());
+            let [x, y] = get_table_position(state, false, &mouse_position, state.pixel_ratio());
             let timestamp = timestamp();
 
             let updated = state
@@ -644,8 +644,8 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 None
             };
             if let Some(texture_id) = drawing_texture_id {
-                let [ax, ay] = get_table_position(state, &a, state.pixel_ratio());
-                let [bx, by] = get_table_position(state, &b, state.pixel_ratio());
+                let [ax, ay] = get_table_position(state, true, &a, state.pixel_ratio());
+                let [bx, by] = get_table_position(state, true, &b, state.pixel_ratio());
 
                 state.block_field_mut().update(
                     &texture_id,
@@ -689,8 +689,8 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 None
             };
             if let Some(texture_id) = drawing_texture_id {
-                let [ax, ay] = get_table_position(state, &a, state.pixel_ratio());
-                let [bx, by] = get_table_position(state, &b, state.pixel_ratio());
+                let [ax, ay] = get_table_position(state, true, &a, state.pixel_ratio());
+                let [bx, by] = get_table_position(state, true, &b, state.pixel_ratio());
 
                 state.block_field_mut().update(
                     &texture_id,
@@ -751,8 +751,8 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
 
         Msg::MeasureLineWithMousePosition(a, b, block_id, color) => {
-            let [ax, ay] = get_table_position(state, &a, state.pixel_ratio());
-            let [bx, by] = get_table_position(state, &b, state.pixel_ratio());
+            let [ax, ay] = get_table_position(state, false, &a, state.pixel_ratio());
+            let [bx, by] = get_table_position(state, false, &b, state.pixel_ratio());
             let len = ((bx - ax).powi(2) + (by - ay).powi(2)).sqrt();
 
             state.table_mut().clear_info();
@@ -818,8 +818,8 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
 
         Msg::SetAreaWithMousePosition(a, b, block_id, color_1, color_2, type_) => {
-            let [ax, ay] = get_table_position(state, &a, state.pixel_ratio());
-            let [bx, by] = get_table_position(state, &b, state.pixel_ratio());
+            let [ax, ay] = get_table_position(state, false, &a, state.pixel_ratio());
+            let [bx, by] = get_table_position(state, false, &b, state.pixel_ratio());
             let len = ((bx - ax).powi(2) + (by - ay).powi(2)).sqrt();
 
             state.table_mut().clear_info();
@@ -1107,13 +1107,29 @@ fn reset_canvas_size(pixel_ratio: f32) -> [f32; 2] {
     canvas_size
 }
 
-fn get_table_position(state: &State, screen_position: &[f32; 2], pixel_ratio: f32) -> [f32; 2] {
+fn get_table_position(
+    state: &State,
+    ignore_binding: bool,
+    screen_position: &[f32; 2],
+    pixel_ratio: f32,
+) -> [f32; 2] {
     let dpr = get_canvas_pixel_ratio(pixel_ratio);
     let mouse_coord = [screen_position[0] * dpr, screen_position[1] * dpr];
     let p = state
         .camera()
         .collision_point_on_xy_plane(state.canvas_size(), &mouse_coord);
-    [p[0], p[1]]
+    if state
+        .block_field()
+        .get::<block::World>(state.world())
+        .and_then(|w| state.block_field().get::<block::Table>(w.selecting_table()))
+        .map(|t| t.is_bind_to_grid())
+        .unwrap_or(false)
+        && (!ignore_binding)
+    {
+        [(p[0] * 2.0).round() / 2.0, (p[1] * 2.0).round() / 2.0]
+    } else {
+        [p[0], p[1]]
+    }
 }
 
 fn render_canvas(state: &mut State) {
