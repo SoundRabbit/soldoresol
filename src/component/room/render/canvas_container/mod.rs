@@ -7,14 +7,14 @@ use std::collections::VecDeque;
 mod character_list;
 mod overlaper;
 
-pub fn render(state: &State, world: &block::World) -> Html<Msg> {
+pub fn render(z_index: u64, state: &State, world: &block::World) -> Html<Msg> {
     let some_modeless_is_grubbed = state.modeless().grubbed().is_some();
 
     Html::div(
         Attributes::new()
             .class("cover")
             .style("position", "relative")
-            .style("z-index", "0"),
+            .style("z-index", z_index.to_string()),
         Events::new()
             .on_mousedown(move |e| {
                 if !some_modeless_is_grubbed {

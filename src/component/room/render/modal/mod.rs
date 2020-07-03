@@ -16,6 +16,7 @@ mod table_mask_color_picker;
 mod table_setting;
 
 pub fn render(
+    z_index: u64,
     block_field: &block::Field,
     resource: &Resource,
     modals: &Vec<Modal>,
@@ -66,7 +67,7 @@ pub fn render(
     Html::div(
         Attributes::new()
             .style("position", "fixied")
-            .style("z-index", "1"),
+            .style("z-index", z_index.to_string()),
         Events::new(),
         children,
     )

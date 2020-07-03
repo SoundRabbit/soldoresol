@@ -2,6 +2,7 @@ use kagura::prelude::*;
 use std::{cell::RefCell, rc::Rc};
 
 pub fn div<Msg: 'static>(
+    z_index: u64,
     on_close: impl FnMut() -> Msg + 'static,
     position: &[f64; 2],
     attributes: Attributes,
@@ -10,7 +11,9 @@ pub fn div<Msg: 'static>(
 ) -> Html<Msg> {
     let on_close = Rc::new(RefCell::new(Box::new(on_close)));
     Html::div(
-        Attributes::new().class("fullscreen").style("z-index", "0"),
+        Attributes::new()
+            .class("fullscreen")
+            .style("z-index", z_index.to_string()),
         Events::new()
             .on_click({
                 let on_close = Rc::clone(&on_close);

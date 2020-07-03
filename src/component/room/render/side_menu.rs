@@ -3,14 +3,14 @@ use super::{state::table, Msg};
 use crate::{block::BlockId, color_system, Color};
 use kagura::prelude::*;
 
-pub fn render(selecting_tool: &table::Tool) -> Html<Msg> {
+pub fn render(z_index: u64, selecting_tool: &table::Tool) -> Html<Msg> {
     Html::div(
         Attributes::new()
             .class("panel")
             .class("keyvalue")
             .class("keyvalue-rev")
             .style("overflow", "visible")
-            .style("z-index", "1"),
+            .style("z-index", z_index.to_string()),
         Events::new(),
         vec![
             row(
@@ -19,7 +19,7 @@ pub fn render(selecting_tool: &table::Tool) -> Html<Msg> {
                 "選択",
                 Events::new().on_click(|_| Msg::SetSelectingTableTool(table::Tool::Selector)),
                 match selecting_tool {
-                    table::Tool::Selector => option(false, Events::new(), vec![]),
+                    table::Tool::Selector => no_option(),
                     _ => text::span(""),
                 },
             ),
@@ -27,6 +27,36 @@ pub fn render(selecting_tool: &table::Tool) -> Html<Msg> {
             row_pen(selecting_tool),
             row_eraser(selecting_tool),
             delm("作成"),
+            row(
+                selecting_tool.is_character(),
+                "fa-user",
+                "キャラクター",
+                Events::new().on_click(|_| Msg::SetSelectingTableTool(table::Tool::Character)),
+                match selecting_tool {
+                    table::Tool::Character => no_option(),
+                    _ => text::span(""),
+                },
+            ),
+            row(
+                selecting_tool.is_tablemask(),
+                "fa-circle",
+                "マップマスク",
+                Events::new().on_click(|_| Msg::SetSelectingTableTool(table::Tool::Tablemask)),
+                match selecting_tool {
+                    table::Tool::Tablemask => no_option(),
+                    _ => text::span(""),
+                },
+            ),
+            row(
+                selecting_tool.is_boxblock(),
+                "fa-cube",
+                "ブロック",
+                Events::new().on_click(|_| Msg::SetSelectingTableTool(table::Tool::Boxblock)),
+                match selecting_tool {
+                    table::Tool::Boxblock => no_option(),
+                    _ => text::span(""),
+                },
+            ),
             row(
                 selecting_tool.is_area(),
                 "fa-ruler-combined",
@@ -46,9 +76,14 @@ pub fn render(selecting_tool: &table::Tool) -> Html<Msg> {
                 selecting_tool.is_route(),
                 "fa-route",
                 "経路",
-                Events::new().on_click(|_| Msg::SetSelectingTableTool(table::Tool::Route(None))),
+                Events::new().on_click(|_| {
+                    Msg::SetSelectingTableTool(table::Tool::Route {
+                        block_id: None,
+                        show_option_menu: false,
+                    })
+                }),
                 match selecting_tool {
-                    table::Tool::Route(..) => option(false, Events::new(), vec![]),
+                    table::Tool::Route { .. } => option(false, Events::new(), vec![]),
                     _ => text::span(""),
                 },
             ),
@@ -297,9 +332,9 @@ fn row(
     vec![
         btn::selectable(
             selected,
-            Attributes::new(),
+            Attributes::new().title(text),
             btn_event,
-            vec![awesome::i(icon), Html::text(" "), text::span(text)],
+            vec![awesome::i(icon)],
         ),
         option,
     ]
@@ -311,7 +346,11 @@ fn option(show_option: bool, events: Events<Msg>, menu: Vec<Html<Msg>>) -> Html<
         btn::transparent(
             Attributes::new(),
             events,
-            vec![awesome::i("fa-angle-right")],
+            vec![if show_option {
+                awesome::i("fa-angle-left")
+            } else {
+                awesome::i("fa-angle-right")
+            }],
         ),
         Html::div(
             Attributes::new()
@@ -322,6 +361,14 @@ fn option(show_option: bool, events: Events<Msg>, menu: Vec<Html<Msg>>) -> Html<
             Events::new(),
             menu,
         ),
+    )
+}
+
+fn no_option() -> Html<Msg> {
+    btn::spacer(
+        Attributes::new().flag("disabled"),
+        Events::new(),
+        vec![awesome::i("fa-angle-right")],
     )
 }
 

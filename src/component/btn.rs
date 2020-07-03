@@ -124,6 +124,18 @@ pub fn transparent<Msg>(
     )
 }
 
+pub fn spacer<Msg>(
+    attributes: Attributes,
+    events: Events<Msg>,
+    children: Vec<Html<Msg>>,
+) -> Html<Msg> {
+    Html::button(
+        attributes.class("pure-button pure-button-spacer"),
+        events,
+        children,
+    )
+}
+
 pub fn check<Msg>(is_checked: bool, attributes: Attributes, events: Events<Msg>) -> Html<Msg> {
     if is_checked {
         Html::div(

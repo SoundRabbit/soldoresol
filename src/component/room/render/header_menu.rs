@@ -2,9 +2,15 @@ use super::super::super::{awesome, btn};
 use super::{state::table, Modal, Msg};
 use kagura::prelude::*;
 
-pub fn render(room_id: &String, selecting_tool: &table::Tool, is_2d_mode: bool) -> Html<Msg> {
+pub fn render(
+    z_index: u64,
+    room_id: &String,
+    selecting_tool: &table::Tool,
+    is_2d_mode: bool,
+) -> Html<Msg> {
     Html::div(
         Attributes::new()
+            .style("z-index", z_index.to_string())
             .style("grid-column", "span 2")
             .class("panel grid"),
         Events::new(),

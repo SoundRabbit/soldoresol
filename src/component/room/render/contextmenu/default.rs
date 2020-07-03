@@ -3,8 +3,9 @@ use super::state;
 use super::Msg;
 use kagura::prelude::*;
 
-pub fn render(contextmenu: &state::contextmenu::State) -> Html<Msg> {
+pub fn render(z_index: u64, contextmenu: &state::contextmenu::State) -> Html<Msg> {
     contextmenu::div(
+        z_index,
         || Msg::CloseContextmenu,
         contextmenu.grobal_position(),
         Attributes::new(),

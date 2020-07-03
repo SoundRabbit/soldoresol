@@ -39,22 +39,29 @@ pub fn render(state: &State) -> Html<Msg> {
             }),
         vec![
             header_menu::render(
+                3,
                 state.room().id.as_ref(),
                 state.table().selecting_tool(),
                 state.table().is_2d_mode(),
             ),
-            side_menu::render(state.table().selecting_tool()),
+            side_menu::render(2, state.table().selecting_tool()),
             if let Some(world) = state.block_field().get::<block::World>(state.world()) {
-                canvas_container::render(&state, world)
+                canvas_container::render(1, &state, world)
             } else {
                 Html::none()
             },
             if let Some(contextmenu_state) = state.contextmenu() {
-                contextmenu::render(state.block_field(), contextmenu_state)
+                contextmenu::render(5, state.block_field(), contextmenu_state)
             } else {
                 Html::none()
             },
-            modal::render(state.block_field(), state.resource(), state.modal(), state),
+            modal::render(
+                4,
+                state.block_field(),
+                state.resource(),
+                state.modal(),
+                state,
+            ),
         ],
     )
 }

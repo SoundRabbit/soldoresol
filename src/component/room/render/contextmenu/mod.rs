@@ -7,13 +7,19 @@ mod character;
 mod default;
 mod tablemask;
 
-pub fn render(block_field: &block::Field, contextmenu: &state::contextmenu::State) -> Html<Msg> {
+pub fn render(
+    z_index: u64,
+    block_field: &block::Field,
+    contextmenu: &state::contextmenu::State,
+) -> Html<Msg> {
     match &contextmenu as &state::Contextmenu {
-        state::Contextmenu::Default => default::render(contextmenu),
-        state::Contextmenu::Character(block_id) => character::render(contextmenu, block_id),
+        state::Contextmenu::Default => default::render(z_index, contextmenu),
+        state::Contextmenu::Character(block_id) => {
+            character::render(z_index, contextmenu, block_id)
+        }
         state::Contextmenu::Tablemask(block_id) => {
             if let Some(tablemask) = block_field.get::<block::table_object::Tablemask>(block_id) {
-                tablemask::render(contextmenu, block_id, tablemask)
+                tablemask::render(z_index, contextmenu, block_id, tablemask)
             } else {
                 Html::none()
             }

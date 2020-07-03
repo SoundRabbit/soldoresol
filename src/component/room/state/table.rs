@@ -23,7 +23,13 @@ pub enum Tool {
         line_width: f64,
         is_rounded: bool,
     },
-    Route(Option<BlockId>),
+    Route {
+        block_id: Option<BlockId>,
+        show_option_menu: bool,
+    },
+    Character,
+    Tablemask,
+    Boxblock,
 }
 
 #[derive(Clone)]
@@ -77,7 +83,25 @@ impl Tool {
     }
     pub fn is_route(&self) -> bool {
         match self {
-            Self::Route(..) => true,
+            Self::Route { .. } => true,
+            _ => false,
+        }
+    }
+    pub fn is_character(&self) -> bool {
+        match self {
+            Self::Character => true,
+            _ => false,
+        }
+    }
+    pub fn is_tablemask(&self) -> bool {
+        match self {
+            Self::Tablemask => true,
+            _ => false,
+        }
+    }
+    pub fn is_boxblock(&self) -> bool {
+        match self {
+            Self::Boxblock => true,
             _ => false,
         }
     }

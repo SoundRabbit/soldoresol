@@ -27,6 +27,21 @@ pub fn render(
             .class("cover cover-a")
             .style("z-index", "0"),
         Events::new()
+            .on_click({
+                let selecting_tool = table.selecting_tool().clone();
+                move |e| {
+                    let mouse_pos = [e.offset_x() as f32, e.offset_y() as f32];
+                    match selecting_tool {
+                        table::Tool::Character => {
+                            Msg::AddChracaterWithMousePositionToCloseContextmenu(mouse_pos)
+                        }
+                        table::Tool::Tablemask => {
+                            Msg::AddTablemaskWithMousePositionToCloseContextmenu(mouse_pos)
+                        }
+                        _ => Msg::NoOp,
+                    }
+                }
+            })
             .on_mousemove({
                 let selecting_tool = table.selecting_tool().clone();
                 let is_2d_mode = table.is_2d_mode();
@@ -45,7 +60,10 @@ pub fn render(
                         Msg::SetCameraRotationWithMouseMovement(mouse_pos)
                     } else {
                         match selecting_tool {
-                            table::Tool::Selector => match focused {
+                            table::Tool::Selector
+                            | table::Tool::Character
+                            | table::Tool::Tablemask
+                            | table::Tool::Boxblock => match focused {
                                 table::Focused::Character(character_id) => {
                                     Msg::SetCharacterPositionWithMousePosition(
                                         character_id,
@@ -89,7 +107,7 @@ pub fn render(
                                 line_width,
                                 is_rounded,
                             } => Msg::NoOp,
-                            table::Tool::Route(block_id) => Msg::NoOp,
+                            table::Tool::Route { .. } => Msg::NoOp,
                         }
                     }
                 }

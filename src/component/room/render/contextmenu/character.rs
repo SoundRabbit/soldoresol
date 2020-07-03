@@ -4,8 +4,13 @@ use super::Msg;
 use crate::block::BlockId;
 use kagura::prelude::*;
 
-pub fn render(contextmenu: &state::contextmenu::State, block_id: &BlockId) -> Html<Msg> {
+pub fn render(
+    z_index: u64,
+    contextmenu: &state::contextmenu::State,
+    block_id: &BlockId,
+) -> Html<Msg> {
     contextmenu::div(
+        z_index,
         || Msg::CloseContextmenu,
         contextmenu.grobal_position(),
         Attributes::new(),

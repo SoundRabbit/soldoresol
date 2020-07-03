@@ -5,11 +5,13 @@ use crate::block::{self, BlockId};
 use kagura::prelude::*;
 
 pub fn render(
+    z_index: u64,
     contextmenu: &state::contextmenu::State,
     block_id: &BlockId,
     tablemask: &block::table_object::Tablemask,
 ) -> Html<Msg> {
     contextmenu::div(
+        z_index,
         || Msg::CloseContextmenu,
         contextmenu.grobal_position(),
         Attributes::new(),
