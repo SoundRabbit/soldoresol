@@ -38,6 +38,9 @@ pub fn render(
                         table::Tool::Tablemask => {
                             Msg::AddTablemaskWithMousePositionToCloseContextmenu(mouse_pos)
                         }
+                        table::Tool::Boxblock => {
+                            Msg::AddBoxblockWithMousePositionToCloseContextmenu(mouse_pos)
+                        }
                         _ => Msg::NoOp,
                     }
                 }
@@ -153,14 +156,11 @@ pub fn render(
                     e.stop_propagation();
 
                     match focused {
-                        table::Focused::Character(character_id) => {
-                            crate::debug::log_1("focused::Character");
-                            Msg::OpenContextmenu(
-                                page_mouse_coord,
-                                offset_mouse_coord,
-                                state::Contextmenu::Character(character_id),
-                            )
-                        }
+                        table::Focused::Character(character_id) => Msg::OpenContextmenu(
+                            page_mouse_coord,
+                            offset_mouse_coord,
+                            state::Contextmenu::Character(character_id),
+                        ),
                         table::Focused::Tablemask(tablemask_id) => Msg::OpenContextmenu(
                             page_mouse_coord,
                             offset_mouse_coord,

@@ -289,6 +289,34 @@ fn character_frame(
                                             }),
                                             vec![Html::text("画像に合わせる")],
                                         ),
+                                        Html::label(
+                                            Attributes::new(),
+                                            Events::new(),
+                                            vec![Html::text("Z座標")],
+                                        ),
+                                        Html::input(
+                                            Attributes::new()
+                                                .type_("number")
+                                                .value(character.position()[2].to_string())
+                                                .string("step", "0.1"),
+                                            Events::new().on_input({
+                                                let character_id = character_id.clone();
+                                                let mut pos = character.position().clone();
+                                                move |height| {
+                                                    height
+                                                        .parse()
+                                                        .map(|z| {
+                                                            pos[2] = z;
+                                                            Msg::SetCharacterPosition(
+                                                                character_id,
+                                                                pos,
+                                                            )
+                                                        })
+                                                        .unwrap_or(Msg::NoOp)
+                                                }
+                                            }),
+                                            vec![],
+                                        ),
                                     ],
                                 ),
                                 character_root_property(

@@ -48,6 +48,7 @@ pub enum Msg {
     // UI for table
     AddChracaterWithMousePositionToCloseContextmenu([f32; 2]),
     AddTablemaskWithMousePositionToCloseContextmenu([f32; 2]),
+    AddBoxblockWithMousePositionToCloseContextmenu([f32; 2]),
     CloneCharacterToCloseContextmenu(BlockId),
     CloneTablemaskToCloseContextmenu(BlockId),
     RemoveCharacterToCloseContextmenu(BlockId),
@@ -95,6 +96,7 @@ pub enum Msg {
     SetCharacterName(BlockId, String),
     SetCharacterSize(BlockId, [Option<f32>; 2]),
     SetCharacterTextrureToCloseModal(BlockId, Option<ResourceId>),
+    SetCharacterPosition(BlockId, [f32; 3]),
 
     // property
 
@@ -391,6 +393,35 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             }
         }
 
+        Msg::AddBoxblockWithMousePositionToCloseContextmenu(mouse_position) => {
+            state.close_contextmenu();
+
+            if let Some(selecting_table) = state.selecting_table().map(|t| t.clone()) {
+                let [x, y] = get_table_position(state, false, &mouse_position, state.pixel_ratio());
+
+                let boxblock = block::table_object::Boxblock::new(
+                    [x, y, 0.5],
+                    [1.0, 1.0, 1.0],
+                    color_system::red(255, 5),
+                );
+                let boxblock = state.block_field_mut().add(boxblock);
+
+                state.block_field_mut().update(
+                    &selecting_table,
+                    timestamp(),
+                    |table: &mut block::Table| {
+                        table.add_boxblock(boxblock.clone());
+                    },
+                );
+
+                render_canvas(state);
+
+                send_pack_cmd(state.block_field(), vec![&boxblock, &selecting_table])
+            } else {
+                state.dequeue()
+            }
+        }
+
         Msg::CloneCharacterToCloseContextmenu(character) => {
             state.close_contextmenu();
 
@@ -598,7 +629,8 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             let updated = state
                 .block_field_mut()
                 .update(&block_id, timestamp, |character: &mut block::Character| {
-                    character.set_position([x, y, 0.0]);
+                    let z = character.position()[2];
+                    character.set_position([x, y, z]);
                 })
                 .is_none();
 
@@ -988,6 +1020,20 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 timestamp(),
                 |character: &mut block::Character| {
                     character.set_texture_id(texture_id);
+                },
+            );
+
+            render_canvas(state);
+
+            state.dequeue()
+        }
+
+        Msg::SetCharacterPosition(character_id, pos) => {
+            state.block_field_mut().update(
+                &character_id,
+                timestamp(),
+                |character: &mut block::Character| {
+                    character.set_position(pos);
                 },
             );
 

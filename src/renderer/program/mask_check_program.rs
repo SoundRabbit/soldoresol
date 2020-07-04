@@ -27,7 +27,7 @@ const FRAGMENT_SHADER: &str = r#"
         float h = u_maskSize.y;
         float x = v_textureCoord.x;
         float y = v_textureCoord.y;
-        float f = mod(mod(floor(x * w * 4.0), 2.0) + mod(floor(y * h * 4.0), 2.0), 2.0);
+        float f = mod(mod(floor(x * w * 3.0), 2.0) + mod(floor(y * h * 3.0), 2.0), 2.0);
         return f != 0.0 ? u_maskColor2 : u_maskColor1;
     }
 

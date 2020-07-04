@@ -1,4 +1,5 @@
 mod area_collection_renderer;
+mod boxblock_collection_renderer;
 mod character_mask_renderer;
 mod character_texture_renderer;
 mod measure_renderer;
@@ -13,6 +14,7 @@ use crate::{
     Resource,
 };
 use area_collection_renderer::AreaCollectionRenderer;
+use boxblock_collection_renderer::BoxblockCollectionRenderer;
 use character_mask_renderer::CharacterMaskRenderer;
 use character_texture_renderer::CharacterTextureRenderer;
 use measure_renderer::MeasureRenderer;
@@ -39,6 +41,7 @@ impl DerefMut for TextureCollection {
 
 pub struct ViewRenderer {
     area_collection_renderer: AreaCollectionRenderer,
+    boxblock_collection_renderer: BoxblockCollectionRenderer,
     character_mask_renderer: CharacterMaskRenderer,
     character_texture_renderer: CharacterTextureRenderer,
     table_texture_renderer: TableTextureRenderer,
@@ -60,6 +63,7 @@ impl ViewRenderer {
         gl.enable(web_sys::WebGlRenderingContext::DEPTH_TEST);
 
         let area_collection_renderer = AreaCollectionRenderer::new(gl);
+        let boxblock_collection_renderer = BoxblockCollectionRenderer::new(gl);
         let character_mask_renderer = CharacterMaskRenderer::new(gl);
         let character_texture_renderer = CharacterTextureRenderer::new(gl);
         let table_texture_renderer = TableTextureRenderer::new(gl);
@@ -69,6 +73,7 @@ impl ViewRenderer {
 
         Self {
             area_collection_renderer,
+            boxblock_collection_renderer,
             character_mask_renderer,
             character_texture_renderer,
             table_texture_renderer,
@@ -128,6 +133,15 @@ impl ViewRenderer {
         self.measure_renderer.render(gl, &vp_matrix, block_field);
 
         gl.depth_func(web_sys::WebGlRenderingContext::LEQUAL);
+
+        if let Some(table) = block_field.get::<block::Table>(world.selecting_table()) {
+            self.boxblock_collection_renderer.render(
+                gl,
+                &vp_matrix,
+                block_field,
+                table.boxblocks(),
+            );
+        }
 
         self.character_texture_renderer.render(
             gl,

@@ -42,7 +42,7 @@ pub fn render(z_index: u64, selecting_tool: &table::Tool) -> Html<Msg> {
             ),
             row(
                 selecting_tool.is_tablemask(),
-                "fa-circle",
+                "fa-clone",
                 "マップマスク",
                 Events::new().on_click(|_| Msg::SetSelectingTableTool(table::Tool::Tablemask)),
                 match selecting_tool {
@@ -247,7 +247,7 @@ fn row_eraser_menu(line_width: f64) -> Vec<Html<Msg>> {
 fn row_area(selecting_tool: &table::Tool) -> Vec<Html<Msg>> {
     row(
         selecting_tool.is_area(),
-        "fa-ruler-combined",
+        "fa-chess-board",
         "範囲",
         Events::new().on_click(|_| {
             Msg::SetSelectingTableTool(table::Tool::Area {

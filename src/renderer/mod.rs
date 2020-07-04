@@ -27,6 +27,12 @@ pub struct Renderer {
 
 impl Renderer {
     pub fn new(gl: web_sys::WebGlRenderingContext) -> Self {
+        crate::debug::log_1(
+            gl.get_extension("EXT_frag_depth")
+                .map_err(|err| crate::debug::log_1(&err))
+                .unwrap()
+                .unwrap(),
+        );
         let gl = Rc::new(WebGlRenderingContext(gl));
         let view_renderer = ViewRenderer::new(&gl);
         let mask_renderer = MaskRenderer::new();

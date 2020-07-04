@@ -15,6 +15,7 @@ pub struct Table {
     image_texture_id: Option<ResourceId>,
     tablemasks: Vec<BlockId>,
     areas: Vec<BlockId>,
+    boxblocks: Vec<BlockId>,
 }
 
 impl Table {
@@ -27,6 +28,7 @@ impl Table {
             image_texture_id: None,
             tablemasks: vec![],
             areas: vec![],
+            boxblocks: vec![],
         }
     }
 
@@ -83,6 +85,20 @@ impl Table {
     pub fn remove_area(&mut self, area: &BlockId) {
         if let Some(idx) = self.areas.iter().position(|x| x == area) {
             self.areas.remove(idx);
+        }
+    }
+
+    pub fn boxblocks(&self) -> impl Iterator<Item = &BlockId> {
+        self.boxblocks.iter()
+    }
+
+    pub fn add_boxblock(&mut self, boxblock: BlockId) {
+        self.boxblocks.push(boxblock);
+    }
+
+    pub fn remove_boxblock(&mut self, boxblock: &BlockId) {
+        if let Some(idx) = self.boxblocks.iter().position(|x| x == boxblock) {
+            self.boxblocks.remove(idx);
         }
     }
 }
