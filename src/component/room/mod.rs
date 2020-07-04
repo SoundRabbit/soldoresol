@@ -403,13 +403,13 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     state,
                     &mouse_position,
                     state.pixel_ratio(),
-                    &[0.5, 0.5, 0.5],
+                    &[1.0, 1.0, 1.0],
                 );
 
                 let boxblock = block::table_object::Boxblock::new(
                     [x, y, z],
-                    [1.0, 1.0, 1.0],
-                    color_system::red(63, 5),
+                    [2.0, 2.0, 2.0],
+                    color_system::red(255, 5),
                 );
                 let boxblock = state.block_field_mut().add(boxblock);
 
