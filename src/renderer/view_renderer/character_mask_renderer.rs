@@ -1,5 +1,5 @@
 use super::super::{
-    program::MaskProgram,
+    program::TablemaskProgram,
     webgl::{WebGlF32Vbo, WebGlI16Ibo, WebGlRenderingContext},
     ModelMatrix,
 };
@@ -14,7 +14,7 @@ pub struct CharacterMaskRenderer {
     vertexis_buffer: WebGlF32Vbo,
     texture_coord_buffer: WebGlF32Vbo,
     index_buffer: WebGlI16Ibo,
-    mask_program: MaskProgram,
+    program: TablemaskProgram,
 }
 
 impl CharacterMaskRenderer {
@@ -32,13 +32,13 @@ impl CharacterMaskRenderer {
             gl.create_vbo_with_f32array(&[[1.0, 1.0], [0.0, 1.0], [1.0, 0.0], [0.0, 0.0]].concat());
         let index_buffer = gl.create_ibo_with_i16array(&[0, 1, 2, 3, 2, 1]);
 
-        let mask_program = MaskProgram::new(gl);
+        let program = TablemaskProgram::new(gl);
 
         Self {
             vertexis_buffer,
             texture_coord_buffer,
             index_buffer,
-            mask_program,
+            program,
         }
     }
 
@@ -50,20 +50,15 @@ impl CharacterMaskRenderer {
         block_field: &block::Field,
         characters: impl Iterator<Item = &'a BlockId>,
     ) {
-        self.mask_program.use_program(gl);
-        gl.set_attribute(
-            &self.vertexis_buffer,
-            &self.mask_program.a_vertex_location,
-            3,
-            0,
-        );
+        self.program.use_program(gl);
+        gl.set_attribute(&self.vertexis_buffer, &self.program.a_vertex_location, 3, 0);
         gl.set_attribute(
             &self.texture_coord_buffer,
-            &self.mask_program.a_texture_coord_location,
+            &self.program.a_texture_coord_location,
             2,
             0,
         );
-        gl.uniform1i(Some(&self.mask_program.u_flag_round_location), 1);
+        gl.uniform1i(Some(&self.program.u_flag_round_location), 1);
         gl.bind_buffer(
             web_sys::WebGlRenderingContext::ELEMENT_ARRAY_BUFFER,
             Some(&self.index_buffer),
@@ -78,7 +73,7 @@ impl CharacterMaskRenderer {
             let mvp_matrix = mvp_matrix.t();
 
             gl.uniform_matrix4fv_with_f32_array(
-                Some(&self.mask_program.u_translate_location),
+                Some(&self.program.u_translate_location),
                 false,
                 &[
                     mvp_matrix.row(0).to_vec(),
@@ -92,7 +87,7 @@ impl CharacterMaskRenderer {
                 .collect::<Vec<f32>>(),
             );
             gl.uniform4fv_with_f32_array(
-                Some(&self.mask_program.u_mask_color_location),
+                Some(&self.program.u_mask_color_location),
                 &Color::from([0.0, 0.0, 0.0, 0.75]).to_f32array(),
             );
             gl.draw_elements_with_i32(

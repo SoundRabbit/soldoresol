@@ -61,6 +61,7 @@ impl ViewRenderer {
             web_sys::WebGlRenderingContext::ONE,
         );
         gl.enable(web_sys::WebGlRenderingContext::DEPTH_TEST);
+        gl.enable(web_sys::WebGlRenderingContext::CULL_FACE);
 
         let area_collection_renderer = AreaCollectionRenderer::new(gl);
         let boxblock_collection_renderer = BoxblockCollectionRenderer::new(gl);
@@ -171,12 +172,12 @@ impl TextureCollection {
         gl.tex_parameteri(
             web_sys::WebGlRenderingContext::TEXTURE_2D,
             web_sys::WebGlRenderingContext::TEXTURE_MIN_FILTER,
-            web_sys::WebGlRenderingContext::LINEAR as i32,
+            web_sys::WebGlRenderingContext::NEAREST as i32,
         );
         gl.tex_parameteri(
             web_sys::WebGlRenderingContext::TEXTURE_2D,
             web_sys::WebGlRenderingContext::TEXTURE_MAG_FILTER,
-            web_sys::WebGlRenderingContext::LINEAR as i32,
+            web_sys::WebGlRenderingContext::NEAREST as i32,
         );
         gl.tex_parameteri(
             web_sys::WebGlRenderingContext::TEXTURE_2D,

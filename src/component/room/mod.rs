@@ -399,12 +399,17 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.close_contextmenu();
 
             if let Some(selecting_table) = state.selecting_table().map(|t| t.clone()) {
-                let [x, y, z] = get_focused_position(state, &mouse_position, state.pixel_ratio());
+                let [x, y, z] = get_focused_position(
+                    state,
+                    &mouse_position,
+                    state.pixel_ratio(),
+                    &[0.5, 0.5, 0.5],
+                );
 
                 let boxblock = block::table_object::Boxblock::new(
-                    [x, y, z + 0.5],
+                    [x, y, z],
                     [1.0, 1.0, 1.0],
-                    color_system::red(255, 5),
+                    color_system::red(63, 5),
                 );
                 let boxblock = state.block_field_mut().add(boxblock);
 
@@ -1224,18 +1229,42 @@ fn get_table_position(
     }
 }
 
-fn get_focused_position(state: &State, screen_position: &[f32; 2], pixel_ratio: f32) -> [f32; 3] {
-    let z = if let state::table::Focused::Boxblock(block_id) = state.table().focused() {
+enum FocusedPosition {
+    XY([f32; 3]),
+    XZ([f32; 3]),
+    YZ([f32; 3]),
+}
+
+fn get_focused_position(
+    state: &State,
+    screen_position: &[f32; 2],
+    pixel_ratio: f32,
+    offset: &[f32; 3],
+) -> [f32; 3] {
+    let pos = if let state::table::Focused::Boxblock(tableblock) = state.table().focused() {
         state
             .block_field()
-            .get::<block::table_object::Boxblock>(block_id)
-            .map(|boxblock| boxblock.size()[2] * 0.5 + boxblock.position()[2])
-            .unwrap_or(0.0)
+            .get::<block::table_object::Boxblock>(&tableblock.block_id)
+            .map(|boxblock| {
+                let p = boxblock.position();
+                let s = boxblock.size();
+                match tableblock.surface_idx {
+                    0 => [p[0], p[1], p[2] + s[2] * 0.5 + offset[2]],
+                    1 => [p[0], p[1] + s[1] * 0.5 + offset[1], p[2]],
+                    2 => [p[0] + s[0] * 0.5 + offset[0], p[1], p[2]],
+                    3 => [p[0] - s[0] * 0.5 - offset[0], p[1], p[2]],
+                    4 => [p[0], p[1] - s[1] * 0.5 - offset[1], p[2]],
+                    5 => [p[0], p[1], p[2] - s[2] * 0.5 - offset[2]],
+                    _ => unreachable!(),
+                }
+            })
     } else {
-        0.0
+        None
     };
-    let [x, y] = get_table_position(state, false, screen_position, pixel_ratio);
-    [x, y, z]
+    pos.unwrap_or({
+        let [x, y] = get_table_position(state, false, screen_position, pixel_ratio);
+        [x, y, offset[2]]
+    })
 }
 
 fn render_canvas(state: &mut State) {
@@ -1306,39 +1335,38 @@ fn check_focused_object(state: &mut State, mouse_position: &[f32; 2]) {
 
     let canvas_pos = [mouse_position[0] * cpr, mouse_position[1] * cpr];
 
-    if let Some(block_id) = state.renderer().and_then(|r| {
+    if let Some(tableblock) = state.renderer().and_then(|r| {
         r.table_object_id(state.canvas_size(), &canvas_pos)
             .map(|t| t.clone())
     }) {
-        web_sys::console::log_1(&JsValue::from(block_id.to_string()));
         if state
             .block_field()
-            .get::<block::Character>(&block_id)
+            .get::<block::Character>(&tableblock.block_id)
             .is_some()
         {
             let table = state.table_mut();
-            table.set_focused(state::table::Focused::Character(block_id.clone()));
+            table.set_focused(state::table::Focused::Character(tableblock.clone()));
         } else if state
             .block_field()
-            .get::<block::table_object::Tablemask>(&block_id)
+            .get::<block::table_object::Tablemask>(&tableblock.block_id)
             .is_some()
         {
             let table = state.table_mut();
-            table.set_focused(state::table::Focused::Tablemask(block_id.clone()));
+            table.set_focused(state::table::Focused::Tablemask(tableblock.clone()));
         } else if state
             .block_field()
-            .get::<block::table_object::Area>(&block_id)
+            .get::<block::table_object::Area>(&tableblock.block_id)
             .is_some()
         {
             let table = state.table_mut();
-            table.set_focused(state::table::Focused::Area(block_id.clone()));
+            table.set_focused(state::table::Focused::Area(tableblock.clone()));
         } else if state
             .block_field()
-            .get::<block::table_object::Boxblock>(&block_id)
+            .get::<block::table_object::Boxblock>(&tableblock.block_id)
             .is_some()
         {
             let table = state.table_mut();
-            table.set_focused(state::table::Focused::Boxblock(block_id.clone()));
+            table.set_focused(state::table::Focused::Boxblock(tableblock.clone()));
         }
     } else {
         state.table_mut().set_focused(state::table::Focused::None);

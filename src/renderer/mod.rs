@@ -11,6 +11,7 @@ use crate::{
 };
 pub use camera::Camera;
 use mask_renderer::MaskRenderer;
+pub use mask_renderer::TableBlock;
 use model_matrix::ModelMatrix;
 use ndarray::{arr1, Array2};
 use std::rc::Rc;
@@ -43,7 +44,11 @@ impl Renderer {
         }
     }
 
-    pub fn table_object_id(&self, canvas_size: &[f32; 2], position: &[f32; 2]) -> Option<&BlockId> {
+    pub fn table_object_id(
+        &self,
+        canvas_size: &[f32; 2],
+        position: &[f32; 2],
+    ) -> Option<&TableBlock> {
         self.mask_renderer.table_object_id(canvas_size, position)
     }
 
@@ -53,7 +58,7 @@ impl Renderer {
         camera: &Camera,
         canvas_size: &[f32; 2],
         is_billboard: bool,
-    ) -> [f32; 2] {
+    ) -> [f32; 3] {
         let vp_matrix = camera
             .view_matrix()
             .dot(&camera.perspective_matrix(&canvas_size));
@@ -74,6 +79,7 @@ impl Renderer {
         [
             screen_position[0] / screen_position[3],
             screen_position[1] / screen_position[3],
+            screen_position[2],
         ]
     }
 

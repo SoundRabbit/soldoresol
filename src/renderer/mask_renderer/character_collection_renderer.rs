@@ -3,7 +3,7 @@ use super::super::{
     webgl::{WebGlF32Vbo, WebGlI16Ibo, WebGlRenderingContext},
     ModelMatrix,
 };
-use super::Camera;
+use super::{Camera, TableBlock};
 use crate::{
     block::{self, BlockId},
     Color,
@@ -68,7 +68,7 @@ impl CharacterCollectionRenderer {
         vp_matrix: &Array2<f32>,
         block_field: &block::Field,
         characters: impl Iterator<Item = &'a BlockId>,
-        id_map: &mut HashMap<u32, BlockId>,
+        id_map: &mut HashMap<u32, TableBlock>,
     ) {
         gl.set_attribute(&self.vertexis_buffer_xy, &program.a_vertex_location, 3, 0);
         gl.set_attribute(
@@ -132,7 +132,7 @@ impl CharacterCollectionRenderer {
 
             mvp_matrixies.push((mvp_matrix, color.to_f32array()));
 
-            id_map.insert(color.to_u32(), character_id.clone());
+            id_map.insert(color.to_u32(), TableBlock::new(character_id.clone(), 0));
         }
 
         gl.depth_func(web_sys::WebGlRenderingContext::LEQUAL);

@@ -3,6 +3,7 @@ use super::super::{
     webgl::{WebGlF32Vbo, WebGlI16Ibo, WebGlRenderingContext},
     ModelMatrix,
 };
+use super::TableBlock;
 use crate::{
     block::{self, BlockId},
     Color,
@@ -45,7 +46,7 @@ impl TablemaskCollectionRenderer {
         vp_matrix: &Array2<f32>,
         block_field: &block::Field,
         tablemasks: impl Iterator<Item = &'a BlockId>,
-        id_map: &mut HashMap<u32, BlockId>,
+        id_map: &mut HashMap<u32, TableBlock>,
     ) {
         gl.set_attribute(&self.vertexis_buffer, &program.a_vertex_location, 3, 0);
         gl.set_attribute(
@@ -96,7 +97,7 @@ impl TablemaskCollectionRenderer {
                 0,
             );
 
-            id_map.insert(color.to_u32(), tablemask_id.clone());
+            id_map.insert(color.to_u32(), TableBlock::new(tablemask_id.clone(), 0));
         }
     }
 }

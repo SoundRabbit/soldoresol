@@ -31,7 +31,7 @@ const FRAGMENT_SHADER: &str = r#"
     }
 "#;
 
-pub struct MaskProgram {
+pub struct TablemaskProgram {
     program: web_sys::WebGlProgram,
     pub a_vertex_location: WebGlAttributeLocation,
     pub a_texture_coord_location: WebGlAttributeLocation,
@@ -40,7 +40,7 @@ pub struct MaskProgram {
     pub u_flag_round_location: WebGlUniformLocation,
 }
 
-impl MaskProgram {
+impl TablemaskProgram {
     pub fn new(gl: &WebGlRenderingContext) -> Self {
         let v_shader = super::compile_shader(
             gl,

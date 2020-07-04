@@ -1,5 +1,6 @@
 use crate::block::{self, BlockId};
 use crate::model::modeless::ModelessId;
+use crate::renderer::TableBlock;
 use crate::Color;
 
 #[derive(Clone)]
@@ -38,10 +39,10 @@ pub enum Tool {
 #[derive(Clone)]
 pub enum Focused {
     None,
-    Character(BlockId),
-    Tablemask(BlockId),
-    Area(BlockId),
-    Boxblock(BlockId),
+    Character(TableBlock),
+    Tablemask(TableBlock),
+    Area(TableBlock),
+    Boxblock(TableBlock),
 }
 
 pub struct State {

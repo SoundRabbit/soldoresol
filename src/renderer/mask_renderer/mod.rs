@@ -12,6 +12,12 @@ use std::{collections::HashMap, rc::Rc};
 use tablemask_collection_renderer::TablemaskCollectionRenderer;
 use wasm_bindgen::JsCast;
 
+#[derive(Clone)]
+pub struct TableBlock {
+    pub block_id: BlockId,
+    pub surface_idx: usize,
+}
+
 pub struct MaskRenderer {
     canvas: web_sys::HtmlCanvasElement,
     gl: Rc<WebGlRenderingContext>,
@@ -20,7 +26,16 @@ pub struct MaskRenderer {
     boxblock_collection_renderer: BoxblockCollectionRenderer,
     character_collection_renderer: CharacterCollectionRenderer,
     tablemask_collection_renderer: TablemaskCollectionRenderer,
-    id_map: HashMap<u32, BlockId>,
+    id_map: HashMap<u32, TableBlock>,
+}
+
+impl TableBlock {
+    fn new(block_id: BlockId, surface_idx: usize) -> Self {
+        Self {
+            block_id,
+            surface_idx,
+        }
+    }
 }
 
 impl MaskRenderer {
@@ -70,7 +85,11 @@ impl MaskRenderer {
         Rc::clone(&self.gl)
     }
 
-    pub fn table_object_id(&self, canvas_size: &[f32; 2], position: &[f32; 2]) -> Option<&BlockId> {
+    pub fn table_object_id(
+        &self,
+        canvas_size: &[f32; 2],
+        position: &[f32; 2],
+    ) -> Option<&TableBlock> {
         let mut pixel = [0, 0, 0, 0];
         self.gl
             .read_pixels_with_opt_u8_array(
@@ -114,8 +133,10 @@ impl MaskRenderer {
 
         self.id_map.clear();
 
-        self.id_map
-            .insert(0xFF000000, world.selecting_table().clone());
+        self.id_map.insert(
+            0xFF000000,
+            TableBlock::new(world.selecting_table().clone(), 0),
+        );
 
         gl.depth_func(web_sys::WebGlRenderingContext::ALWAYS);
 
@@ -136,6 +157,9 @@ impl MaskRenderer {
                 table.areas(),
                 &mut self.id_map,
             );
+
+            gl.depth_func(web_sys::WebGlRenderingContext::LEQUAL);
+
             self.boxblock_collection_renderer.render(
                 gl,
                 &self.mask_program,
@@ -145,6 +169,8 @@ impl MaskRenderer {
                 &mut self.id_map,
             );
         }
+
+        gl.depth_func(web_sys::WebGlRenderingContext::ALWAYS);
 
         self.character_collection_renderer.render(
             gl,

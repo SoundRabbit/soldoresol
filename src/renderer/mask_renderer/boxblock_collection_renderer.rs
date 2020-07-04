@@ -3,6 +3,7 @@ use super::super::{
     webgl::{WebGlF32Vbo, WebGlI16Ibo, WebGlRenderingContext},
     ModelMatrix,
 };
+use super::TableBlock;
 use crate::{
     block::{self, BlockId},
     Color,
@@ -46,12 +47,12 @@ impl BoxblockCollectionRenderer {
         );
         let index_buffer = gl.create_ibo_with_i16array(
             &[
-                [0, 1, 2, 3, 2, 1],
-                [0, 1, 4, 5, 4, 1],
-                [0, 2, 4, 6, 4, 2],
-                [1, 3, 5, 7, 5, 3],
-                [2, 3, 6, 7, 6, 3],
-                [4, 5, 6, 7, 6, 5],
+                [0, 1, 2, 3, 2, 1], // 上
+                [0, 1, 4, 5, 4, 1], // 奥
+                [0, 2, 4, 6, 4, 2], // 右
+                [1, 3, 5, 7, 5, 3], // 左
+                [2, 3, 6, 7, 6, 3], // 前
+                [4, 5, 6, 7, 6, 5], // 下
             ]
             .concat(),
         );
@@ -70,7 +71,7 @@ impl BoxblockCollectionRenderer {
         vp_matrix: &Array2<f32>,
         block_field: &block::Field,
         boxblocks: impl Iterator<Item = &'a BlockId>,
-        id_map: &mut HashMap<u32, BlockId>,
+        id_map: &mut HashMap<u32, TableBlock>,
     ) {
         gl.set_attribute(&self.vertexis_buffer, &program.a_vertex_location, 3, 0);
         gl.set_attribute(
@@ -108,18 +109,23 @@ impl BoxblockCollectionRenderer {
                 .collect::<Vec<f32>>(),
             );
             gl.uniform1i(Some(&program.u_flag_round_location), 0);
-            let color = Color::from(id_map.len() as u32 | 0xFF000000);
-            gl.uniform4fv_with_f32_array(
-                Some(&program.u_mask_color_location),
-                &color.to_f32array(),
-            );
-            gl.draw_elements_with_i32(
-                web_sys::WebGlRenderingContext::TRIANGLES,
-                36,
-                web_sys::WebGlRenderingContext::UNSIGNED_SHORT,
-                0,
-            );
-            id_map.insert(color.to_u32(), boxblock_id.clone());
+            for srfs in 0..6 {
+                let color = Color::from(id_map.len() as u32 | 0xFF000000);
+                gl.uniform4fv_with_f32_array(
+                    Some(&program.u_mask_color_location),
+                    &color.to_f32array(),
+                );
+                gl.draw_elements_with_i32(
+                    web_sys::WebGlRenderingContext::TRIANGLES,
+                    6,
+                    web_sys::WebGlRenderingContext::UNSIGNED_SHORT,
+                    6 * 2 * srfs,
+                );
+                id_map.insert(
+                    color.to_u32(),
+                    TableBlock::new(boxblock_id.clone(), srfs as usize),
+                );
+            }
         }
     }
 }
