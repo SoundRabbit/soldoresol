@@ -63,10 +63,7 @@ pub fn render(
                         Msg::SetCameraRotationWithMouseMovement(mouse_pos)
                     } else {
                         match selecting_tool {
-                            table::Tool::Selector
-                            | table::Tool::Character
-                            | table::Tool::Tablemask
-                            | table::Tool::Boxblock => match focused {
+                            table::Tool::Selector => match focused {
                                 table::Focused::Character(character_id) => {
                                     Msg::SetCharacterPositionWithMousePosition(
                                         character_id,
@@ -76,6 +73,12 @@ pub fn render(
                                 table::Focused::Tablemask(tablemask_id) => {
                                     Msg::SetTablemaskPositionWithMousePosition(
                                         tablemask_id,
+                                        mouse_pos,
+                                    )
+                                }
+                                table::Focused::Boxblock(boxblock_id) => {
+                                    Msg::SetBoxblockPositionWithMousePosition(
+                                        boxblock_id,
                                         mouse_pos,
                                     )
                                 }
@@ -119,6 +122,7 @@ pub fn render(
                                 type_,
                             ),
                             table::Tool::Route { .. } => Msg::NoOp,
+                            _ => Msg::NoOp,
                         }
                     }
                 }
@@ -170,6 +174,11 @@ pub fn render(
                             page_mouse_coord,
                             offset_mouse_coord,
                             state::Contextmenu::Area(area_id),
+                        ),
+                        table::Focused::Boxblock(boxblock_id) => Msg::OpenContextmenu(
+                            page_mouse_coord,
+                            offset_mouse_coord,
+                            state::Contextmenu::Boxblock(boxblock_id),
                         ),
                         table::Focused::None => Msg::OpenContextmenu(
                             page_mouse_coord,

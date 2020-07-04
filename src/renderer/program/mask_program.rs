@@ -20,10 +20,15 @@ const FRAGMENT_SHADER: &str = r#"
     uniform int u_flagRound;
     varying vec2 v_textureCoord;
 
-    void main() {
+    vec4 roundedColor() {
         float x = (v_textureCoord.x - 0.5) * 2.0;
         float y = (v_textureCoord.y - 0.5) * 2.0;
-        gl_FragColor = u_flagRound != 0 ? (x * x + y * y > 1.0 ? vec4(0.0, 0.0, 0.0, 0.0) : u_maskColor) : u_maskColor;
+        return x * x + y * y > 1.0 ? vec4(0.0, 0.0, 0.0, 0.0) : u_maskColor;
+    }
+
+    void main() {
+        
+        gl_FragColor = u_flagRound != 0 ? roundedColor() : u_maskColor;
     }
 "#;
 

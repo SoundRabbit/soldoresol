@@ -1,10 +1,12 @@
 mod area_collection_renderer;
+mod boxblock_collection_renderer;
 mod character_collection_renderer;
 mod tablemask_collection_renderer;
 
 use super::{program::MaskProgram, webgl::WebGlRenderingContext, Camera};
 use crate::block::{self, BlockId};
 use area_collection_renderer::AreaCollectionRenderer;
+use boxblock_collection_renderer::BoxblockCollectionRenderer;
 pub use character_collection_renderer::CharacterCollectionRenderer;
 use std::{collections::HashMap, rc::Rc};
 use tablemask_collection_renderer::TablemaskCollectionRenderer;
@@ -15,6 +17,7 @@ pub struct MaskRenderer {
     gl: Rc<WebGlRenderingContext>,
     mask_program: MaskProgram,
     area_collection_renderer: AreaCollectionRenderer,
+    boxblock_collection_renderer: BoxblockCollectionRenderer,
     character_collection_renderer: CharacterCollectionRenderer,
     tablemask_collection_renderer: TablemaskCollectionRenderer,
     id_map: HashMap<u32, BlockId>,
@@ -44,6 +47,7 @@ impl MaskRenderer {
         );
 
         let area_collection_renderer = AreaCollectionRenderer::new(&gl);
+        let boxblock_collection_renderer = BoxblockCollectionRenderer::new(&gl);
         let character_collection_renderer = CharacterCollectionRenderer::new(&gl);
         let tablemask_collection_renderer = TablemaskCollectionRenderer::new(&gl);
 
@@ -55,6 +59,7 @@ impl MaskRenderer {
             gl,
             mask_program,
             area_collection_renderer,
+            boxblock_collection_renderer,
             character_collection_renderer,
             tablemask_collection_renderer,
             id_map: HashMap::new(),
@@ -129,6 +134,14 @@ impl MaskRenderer {
                 &vp_matrix,
                 block_field,
                 table.areas(),
+                &mut self.id_map,
+            );
+            self.boxblock_collection_renderer.render(
+                gl,
+                &self.mask_program,
+                &vp_matrix,
+                block_field,
+                table.boxblocks(),
                 &mut self.id_map,
             );
         }

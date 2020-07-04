@@ -41,6 +41,7 @@ pub enum Focused {
     Character(BlockId),
     Tablemask(BlockId),
     Area(BlockId),
+    Boxblock(BlockId),
 }
 
 pub struct State {

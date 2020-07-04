@@ -23,6 +23,10 @@ impl Boxblock {
         &self.position
     }
 
+    pub fn set_position(&mut self, pos: [f32; 3]) {
+        self.position = pos;
+    }
+
     pub fn size(&self) -> &[f32; 3] {
         &self.size
     }

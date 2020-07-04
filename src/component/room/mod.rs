@@ -54,6 +54,7 @@ pub enum Msg {
     RemoveCharacterToCloseContextmenu(BlockId),
     RemoveTablemaskToCloseContextmenu(BlockId),
     RemoveAreaToCloseContextmenu(BlockId),
+    RemoveBoxblockToCloseContextmenu(BlockId),
 
     // Mouse
     SetLastMousePosition(bool, [f32; 2]),
@@ -65,6 +66,7 @@ pub enum Msg {
     SetSelectingTableTool(state::table::Tool),
     SetCharacterPositionWithMousePosition(BlockId, [f32; 2]),
     SetTablemaskPositionWithMousePosition(BlockId, [f32; 2]),
+    SetBoxblockPositionWithMousePosition(BlockId, [f32; 2]),
     DrawLineWithMousePosition([f32; 2], [f32; 2], f64, Color),
     EraceLineWithMousePosition([f32; 2], [f32; 2], f64),
     ClearTable,
@@ -397,10 +399,10 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.close_contextmenu();
 
             if let Some(selecting_table) = state.selecting_table().map(|t| t.clone()) {
-                let [x, y] = get_table_position(state, false, &mouse_position, state.pixel_ratio());
+                let [x, y, z] = get_focused_position(state, &mouse_position, state.pixel_ratio());
 
                 let boxblock = block::table_object::Boxblock::new(
-                    [x, y, 0.5],
+                    [x, y, z + 0.5],
                     [1.0, 1.0, 1.0],
                     color_system::red(255, 5),
                 );
@@ -498,6 +500,26 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     timestamp(),
                     |table: &mut block::Table| {
                         table.remove_area(&area_id);
+                    },
+                );
+
+                render_canvas(state);
+
+                send_pack_cmd(state.block_field(), vec![&selecting_table])
+            } else {
+                state.dequeue()
+            }
+        }
+
+        Msg::RemoveBoxblockToCloseContextmenu(boxblock_id) => {
+            state.close_contextmenu();
+
+            if let Some(selecting_table) = state.selecting_table().map(|t| t.clone()) {
+                state.block_field_mut().update(
+                    &selecting_table,
+                    timestamp(),
+                    |table: &mut block::Table| {
+                        table.remove_boxblock(&boxblock_id);
                     },
                 );
 
@@ -653,6 +675,30 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     timestamp,
                     |tablemask: &mut block::table_object::Tablemask| {
                         tablemask.set_position([x, y]);
+                    },
+                )
+                .is_none();
+
+            if updated {
+                render_canvas(state);
+                send_pack_cmd(state.block_field(), vec![&block_id])
+            } else {
+                state.dequeue()
+            }
+        }
+
+        Msg::SetBoxblockPositionWithMousePosition(block_id, mouse_position) => {
+            let [x, y] = get_table_position(state, false, &mouse_position, state.pixel_ratio());
+            let timestamp = timestamp();
+
+            let updated = state
+                .block_field_mut()
+                .update(
+                    &block_id,
+                    timestamp,
+                    |boxblock: &mut block::table_object::Boxblock| {
+                        let z = boxblock.position()[2];
+                        boxblock.set_position([x, y, z]);
                     },
                 )
                 .is_none();
@@ -1178,6 +1224,20 @@ fn get_table_position(
     }
 }
 
+fn get_focused_position(state: &State, screen_position: &[f32; 2], pixel_ratio: f32) -> [f32; 3] {
+    let z = if let state::table::Focused::Boxblock(block_id) = state.table().focused() {
+        state
+            .block_field()
+            .get::<block::table_object::Boxblock>(block_id)
+            .map(|boxblock| boxblock.size()[2] * 0.5 + boxblock.position()[2])
+            .unwrap_or(0.0)
+    } else {
+        0.0
+    };
+    let [x, y] = get_table_position(state, false, screen_position, pixel_ratio);
+    [x, y, z]
+}
+
 fn render_canvas(state: &mut State) {
     state.render();
 }
@@ -1272,6 +1332,13 @@ fn check_focused_object(state: &mut State, mouse_position: &[f32; 2]) {
         {
             let table = state.table_mut();
             table.set_focused(state::table::Focused::Area(block_id.clone()));
+        } else if state
+            .block_field()
+            .get::<block::table_object::Boxblock>(&block_id)
+            .is_some()
+        {
+            let table = state.table_mut();
+            table.set_focused(state::table::Focused::Boxblock(block_id.clone()));
         }
     } else {
         state.table_mut().set_focused(state::table::Focused::None);
