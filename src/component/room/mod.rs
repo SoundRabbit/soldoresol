@@ -399,8 +399,6 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.close_contextmenu();
 
             if let Some(selecting_table) = state.selecting_table().map(|t| t.clone()) {
-                check_focused_object(state, &mouse_position);
-
                 let [x, y, z] = get_focused_position(
                     state,
                     &mouse_position,
@@ -833,17 +831,19 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
 
         Msg::MeasureLineWithMousePosition(a, b, block_id, color) => {
-            let [ax, ay] = get_table_position(state, false, &a, state.pixel_ratio());
-            let [bx, by] = get_table_position(state, false, &b, state.pixel_ratio());
-            let len = ((bx - ax).powi(2) + (by - ay).powi(2)).sqrt();
+            let [ax, ay, az] =
+                get_focused_position(state, &a, state.pixel_ratio(), &[0.0, 0.0, 0.0]);
+            let [bx, by, bz] =
+                get_focused_position(state, &b, state.pixel_ratio(), &[0.0, 0.0, 0.0]);
+            let len = ((bx - ax).powi(2) + (by - ay).powi(2) + (bz - az).powi(2)).sqrt();
 
             state.table_mut().clear_info();
             state
                 .table_mut()
-                .add_info("始点", format!("({:.1},{:.1})", ax, ay));
+                .add_info("始点", format!("({:.1},{:.1},{:.1})", ax, ay, az));
             state
                 .table_mut()
-                .add_info("終点", format!("({:.1},{:.1})", bx, by));
+                .add_info("終点", format!("({:.1},{:.1},{:.1})", bx, by, bz));
             state.table_mut().add_info("距離", format!("{:.1}", len));
 
             if let Some(block_id) = block_id {
@@ -852,15 +852,15 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     &block_id,
                     timestamp(),
                     |m: &mut block::table_object::Measure| {
-                        m.set_org([ax, ay, 0.0]);
-                        m.set_vec([bx - ax, by - ay, 0.0]);
+                        m.set_org([ax, ay, az]);
+                        m.set_vec([bx - ax, by - ay, bz - az]);
                         m.set_color(color);
                     },
                 );
             } else {
                 let measure = block::table_object::Measure::new(
-                    [ax, ay, 0.0],
-                    [bx - ax, by - ay, 0.0],
+                    [ax, ay, az],
+                    [bx - ax, by - ay, bz - az],
                     color,
                 );
                 let bid = state.block_field_mut().add(measure);
@@ -1240,7 +1240,14 @@ fn get_focused_position(
     pixel_ratio: f32,
     offset: &[f32; 3],
 ) -> [f32; 3] {
-    let pos = if let state::table::Focused::Boxblock(tableblock) = state.table().focused() {
+    let cpr = get_canvas_pixel_ratio(state.pixel_ratio());
+
+    let canvas_pos = [screen_position[0] * cpr, screen_position[1] * cpr];
+
+    let pos = if let Some(tableblock) = state.renderer().and_then(|r| {
+        r.table_object_id(state.canvas_size(), &canvas_pos)
+            .map(|t| t.clone())
+    }) {
         state
             .block_field()
             .get::<block::table_object::Boxblock>(&tableblock.block_id)
