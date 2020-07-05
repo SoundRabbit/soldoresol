@@ -33,7 +33,10 @@ pub enum Tool {
     },
     Character,
     Tablemask,
-    Boxblock,
+    Boxblock {
+        color: Color,
+        show_option_menu: bool,
+    },
 }
 
 #[derive(Clone)]
@@ -107,7 +110,7 @@ impl Tool {
     }
     pub fn is_boxblock(&self) -> bool {
         match self {
-            Self::Boxblock => true,
+            Self::Boxblock { .. } => true,
             _ => false,
         }
     }

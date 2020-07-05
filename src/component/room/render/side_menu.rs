@@ -50,16 +50,7 @@ pub fn render(z_index: u64, selecting_tool: &table::Tool) -> Html<Msg> {
                     _ => text::span(""),
                 },
             ),
-            row(
-                selecting_tool.is_boxblock(),
-                "fa-cube",
-                "ブロック",
-                Events::new().on_click(|_| Msg::SetSelectingTableTool(table::Tool::Boxblock)),
-                match selecting_tool {
-                    table::Tool::Boxblock => no_option(),
-                    _ => text::span(""),
-                },
-            ),
+            row_boxblock(selecting_tool),
             row_area(selecting_tool),
             row(
                 selecting_tool.is_route(),
@@ -242,6 +233,90 @@ fn row_eraser_menu(line_width: f64) -> Vec<Html<Msg>> {
             vec![Html::text("クリア")],
         ),
     ]
+}
+
+fn row_boxblock(selecting_tool: &table::Tool) -> Vec<Html<Msg>> {
+    row(
+        selecting_tool.is_boxblock(),
+        "fa-cube",
+        "ブロック",
+        Events::new().on_click(|_| {
+            Msg::SetSelectingTableTool(table::Tool::Boxblock {
+                color: color_system::red(255, 5),
+                show_option_menu: true,
+            })
+        }),
+        match selecting_tool {
+            table::Tool::Boxblock {
+                color,
+                show_option_menu,
+            } => {
+                let color = *color;
+                let show_option_menu = *show_option_menu;
+                option(
+                    show_option_menu,
+                    Events::new().on_click({
+                        move |_| {
+                            Msg::SetSelectingTableTool(table::Tool::Boxblock {
+                                color,
+                                show_option_menu: !show_option_menu,
+                            })
+                        }
+                    }),
+                    row_boxblock_menu(color),
+                )
+            }
+            _ => text::span(""),
+        },
+    )
+}
+
+fn row_boxblock_menu(color: Color) -> Vec<Html<Msg>> {
+    vec![Html::div(
+        Attributes::new().class("keyvalue"),
+        Events::new(),
+        vec![
+            text::span("選択色"),
+            Html::div(
+                Attributes::new()
+                    .class("cell")
+                    .class("cell-medium")
+                    .style("background-color", color.to_string()),
+                Events::new(),
+                vec![],
+            ),
+            Html::div(
+                Attributes::new().class("keyvalue-banner").class("linear-v"),
+                Events::new(),
+                vec![
+                    color_picker::idx(3, Msg::NoOp, {
+                        move |color| {
+                            Msg::SetSelectingTableTool(table::Tool::Boxblock {
+                                color,
+                                show_option_menu: true,
+                            })
+                        }
+                    }),
+                    color_picker::idx(5, Msg::NoOp, {
+                        move |color| {
+                            Msg::SetSelectingTableTool(table::Tool::Boxblock {
+                                color,
+                                show_option_menu: true,
+                            })
+                        }
+                    }),
+                    color_picker::idx(7, Msg::NoOp, {
+                        move |color| {
+                            Msg::SetSelectingTableTool(table::Tool::Boxblock {
+                                color,
+                                show_option_menu: true,
+                            })
+                        }
+                    }),
+                ],
+            ),
+        ],
+    )]
 }
 
 fn row_area(selecting_tool: &table::Tool) -> Vec<Html<Msg>> {

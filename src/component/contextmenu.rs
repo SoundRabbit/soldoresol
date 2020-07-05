@@ -17,7 +17,10 @@ pub fn div<Msg: 'static>(
         Events::new()
             .on_click({
                 let on_close = Rc::clone(&on_close);
-                move |_| (&mut *on_close.borrow_mut())()
+                move |e| {
+                    e.stop_propagation();
+                    (&mut *on_close.borrow_mut())()
+                }
             })
             .on_contextmenu({
                 let on_close = Rc::clone(&on_close);
@@ -30,8 +33,8 @@ pub fn div<Msg: 'static>(
             attributes
                 .class("pure-menu")
                 .style("position", "absolute")
-                .style("left", position[0].to_string() + "px")
-                .style("top", position[1].to_string() + "px"),
+                .style("left", (position[0] - 5.0).to_string() + "px")
+                .style("top", (position[1] - 2.5).to_string() + "px"),
             events,
             children,
         )],

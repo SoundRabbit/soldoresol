@@ -31,17 +31,23 @@ pub fn render(
                 let selecting_tool = table.selecting_tool().clone();
                 move |e| {
                     let mouse_pos = [e.offset_x() as f32, e.offset_y() as f32];
-                    match selecting_tool {
-                        table::Tool::Character => {
-                            Msg::AddChracaterWithMousePositionToCloseContextmenu(mouse_pos)
+                    if e.alt_key() || e.ctrl_key() {
+                        Msg::NoOp
+                    } else {
+                        match selecting_tool {
+                            table::Tool::Character => {
+                                Msg::AddChracaterWithMousePositionToCloseContextmenu(mouse_pos)
+                            }
+                            table::Tool::Tablemask => {
+                                Msg::AddTablemaskWithMousePositionToCloseContextmenu(mouse_pos)
+                            }
+                            table::Tool::Boxblock { color, .. } => {
+                                Msg::AddBoxblockWithMousePositionToCloseContextmenu(
+                                    mouse_pos, color,
+                                )
+                            }
+                            _ => Msg::NoOp,
                         }
-                        table::Tool::Tablemask => {
-                            Msg::AddTablemaskWithMousePositionToCloseContextmenu(mouse_pos)
-                        }
-                        table::Tool::Boxblock => {
-                            Msg::AddBoxblockWithMousePositionToCloseContextmenu(mouse_pos)
-                        }
-                        _ => Msg::NoOp,
                     }
                 }
             })
@@ -57,6 +63,8 @@ pub fn render(
                     if let Some(modeless_id) = grubbed {
                         let mouse_pos = [e.client_x() as f64, e.client_y() as f64];
                         Msg::DragModeless(modeless_id, mouse_pos)
+                    } else if e.buttons() & 4 != 0 {
+                        Msg::SetCameraMovementWithMouseMovement(mouse_pos)
                     } else if e.buttons() & 1 == 0 {
                         Msg::NoOp
                     } else if (e.alt_key() || e.ctrl_key()) && !is_2d_mode {
@@ -72,12 +80,6 @@ pub fn render(
                                 }
                                 table::Focused::Tablemask(tableblock) => {
                                     Msg::SetTablemaskPositionWithMousePosition(
-                                        tableblock.block_id,
-                                        mouse_pos,
-                                    )
-                                }
-                                table::Focused::Boxblock(tableblock) => {
-                                    Msg::SetBoxblockPositionWithMousePosition(
                                         tableblock.block_id,
                                         mouse_pos,
                                     )
