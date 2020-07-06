@@ -242,7 +242,7 @@ fn row_boxblock(selecting_tool: &table::Tool) -> Vec<Html<Msg>> {
         "ブロック",
         Events::new().on_click(|_| {
             Msg::SetSelectingTableTool(table::Tool::Boxblock {
-                color: color_system::red(255, 5),
+                color: color_system::blue(255, 5),
                 size: [1.0, 1.0, 1.0],
                 show_option_menu: true,
             })
