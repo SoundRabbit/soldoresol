@@ -69,6 +69,7 @@ impl CharacterCollectionRenderer {
         block_field: &block::Field,
         characters: impl Iterator<Item = &'a BlockId>,
         id_map: &mut HashMap<u32, TableBlock>,
+        floating_object: &Option<&BlockId>,
     ) {
         gl.set_attribute(&self.vertexis_buffer_xy, &program.a_vertex_location, 3, 0);
         gl.set_attribute(
@@ -87,54 +88,59 @@ impl CharacterCollectionRenderer {
         for (character_id, character) in
             block_field.listed::<block::Character>(characters.collect())
         {
-            let s = character.size();
-            let p = character.position();
-            let model_matrix: Array2<f32> = ModelMatrix::new()
-                .with_scale(&[s[0], s[1], 1.0])
-                .with_movement(p)
-                .into();
-            let mvp_matrix = vp_matrix.dot(&model_matrix);
-            let mvp_matrix = mvp_matrix.t();
-            let color = Color::from(id_map.len() as u32 | 0xFF000000);
+            if floating_object
+                .map(|object_id| character_id != *object_id)
+                .unwrap_or(true)
+            {
+                let s = character.size();
+                let p = character.position();
+                let model_matrix: Array2<f32> = ModelMatrix::new()
+                    .with_scale(&[s[0], s[1], 1.0])
+                    .with_movement(p)
+                    .into();
+                let mvp_matrix = vp_matrix.dot(&model_matrix);
+                let mvp_matrix = mvp_matrix.t();
+                let color = Color::from(id_map.len() as u32 | 0xFF000000);
 
-            gl.uniform_matrix4fv_with_f32_array(
-                Some(&program.u_translate_location),
-                false,
-                &[
-                    mvp_matrix.row(0).to_vec(),
-                    mvp_matrix.row(1).to_vec(),
-                    mvp_matrix.row(2).to_vec(),
-                    mvp_matrix.row(3).to_vec(),
-                ]
-                .concat()
-                .into_iter()
-                .map(|a| a as f32)
-                .collect::<Vec<f32>>(),
-            );
-            gl.uniform1i(Some(&program.u_flag_round_location), 1);
-            gl.uniform4fv_with_f32_array(
-                Some(&program.u_mask_color_location),
-                &color.to_f32array(),
-            );
+                gl.uniform_matrix4fv_with_f32_array(
+                    Some(&program.u_translate_location),
+                    false,
+                    &[
+                        mvp_matrix.row(0).to_vec(),
+                        mvp_matrix.row(1).to_vec(),
+                        mvp_matrix.row(2).to_vec(),
+                        mvp_matrix.row(3).to_vec(),
+                    ]
+                    .concat()
+                    .into_iter()
+                    .map(|a| a as f32)
+                    .collect::<Vec<f32>>(),
+                );
+                gl.uniform1i(Some(&program.u_flag_round_location), 1);
+                gl.uniform4fv_with_f32_array(
+                    Some(&program.u_mask_color_location),
+                    &color.to_f32array(),
+                );
 
-            gl.draw_elements_with_i32(
-                web_sys::WebGlRenderingContext::TRIANGLES,
-                6,
-                web_sys::WebGlRenderingContext::UNSIGNED_SHORT,
-                0,
-            );
+                gl.draw_elements_with_i32(
+                    web_sys::WebGlRenderingContext::TRIANGLES,
+                    6,
+                    web_sys::WebGlRenderingContext::UNSIGNED_SHORT,
+                    0,
+                );
 
-            let model_matrix: Array2<f32> = ModelMatrix::new()
-                .with_scale(s)
-                .with_x_axis_rotation(camera.x_axis_rotation() - std::f32::consts::FRAC_PI_2)
-                .with_z_axis_rotation(camera.z_axis_rotation())
-                .with_movement(p)
-                .into();
-            let mvp_matrix = vp_matrix.dot(&model_matrix);
+                let model_matrix: Array2<f32> = ModelMatrix::new()
+                    .with_scale(s)
+                    .with_x_axis_rotation(camera.x_axis_rotation() - std::f32::consts::FRAC_PI_2)
+                    .with_z_axis_rotation(camera.z_axis_rotation())
+                    .with_movement(p)
+                    .into();
+                let mvp_matrix = vp_matrix.dot(&model_matrix);
 
-            mvp_matrixies.push((mvp_matrix, color.to_f32array()));
+                mvp_matrixies.push((mvp_matrix, color.to_f32array()));
 
-            id_map.insert(color.to_u32(), TableBlock::new(character_id.clone(), 0));
+                id_map.insert(color.to_u32(), TableBlock::new(character_id.clone(), 0));
+            }
         }
 
         gl.set_attribute(&self.vertexis_buffer_xz, &program.a_vertex_location, 3, 0);

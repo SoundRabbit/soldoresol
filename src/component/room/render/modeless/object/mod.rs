@@ -9,6 +9,7 @@ use crate::{
 use kagura::prelude::*;
 use wasm_bindgen::JsCast;
 
+mod boxblock;
 mod character;
 mod tablemask;
 
@@ -70,6 +71,14 @@ pub fn render(
                             {
                                 let p = tablemask.position();
                                 Some((tab_idx, format!("マップマスク({:.1},{:.1})", p[0], p[1])))
+                            } else if let Some(boxblock) =
+                                block_field.get::<block::table_object::Boxblock>(block_id)
+                            {
+                                let p = boxblock.position();
+                                Some((
+                                    tab_idx,
+                                    format!("ブロック({:.1},{:.1},{:.1})", p[0], p[1], p[2]),
+                                ))
                             } else {
                                 None
                             }
@@ -122,6 +131,16 @@ pub fn render(
                     resource,
                     grubbed.is_some(),
                     tablemask,
+                    focused_id,
+                )
+            } else if let Some(boxblock) =
+                block_field.get::<block::table_object::Boxblock>(focused_id)
+            {
+                boxblock::render(
+                    block_field,
+                    resource,
+                    grubbed.is_some(),
+                    boxblock,
                     focused_id,
                 )
             } else {

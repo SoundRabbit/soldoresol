@@ -90,6 +90,7 @@ impl Renderer {
         camera: &Camera,
         resource: &Resource,
         canvas_size: &[f32; 2],
+        floating_object: &Option<&BlockId>,
     ) {
         if Rc::strong_count(&self.gl) < 3 {
             if let Some(world) = block_field.get::<block::World>(world) {
@@ -102,8 +103,13 @@ impl Renderer {
                     resource,
                 );
 
-                self.mask_renderer
-                    .render(&canvas_size, &camera, block_field, world);
+                self.mask_renderer.render(
+                    &canvas_size,
+                    &camera,
+                    block_field,
+                    world,
+                    floating_object,
+                );
 
                 let view_gl = Rc::clone(&self.gl);
                 let mask_gl = self.mask_renderer.gl();

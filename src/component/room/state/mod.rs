@@ -182,6 +182,7 @@ impl<M, S> State<M, S> {
                 &self.camera,
                 &self.resource,
                 &self.canvas_size,
+                &self.table.floating_object(),
             );
         }
     }

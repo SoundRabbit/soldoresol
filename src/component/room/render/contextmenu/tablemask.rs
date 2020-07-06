@@ -69,11 +69,3 @@ pub fn render(
         )],
     )
 }
-
-fn resizer(block_id: BlockId, size: [f64; 2], text: impl Into<String>) -> Html<Msg> {
-    btn::contextmenu_text(
-        Attributes::new(),
-        Events::new().on_click(move |_| Msg::NoOp),
-        text,
-    )
-}

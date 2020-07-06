@@ -98,6 +98,11 @@ pub enum Msg {
     SetTablemaskIsFixed(BlockId, bool),
     SetTablemaskIsRounded(BlockId, bool),
 
+    // boxblock
+    SetBoxblockSize(BlockId, [f32; 3]),
+    SetBoxblockColor(BlockId, Color),
+    SetBoxblockIsFixed(BlockId, bool),
+
     // character
     SetCharacterName(BlockId, String),
     SetCharacterSize(BlockId, [Option<f32>; 2]),
@@ -595,14 +600,34 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
 
         Msg::SetLastMouseDownPosition(mouse_position) => {
+            check_focused_object(state, &mouse_position);
+
             state
                 .table_mut()
                 .set_last_mouse_down_position(mouse_position);
+
+            match state.table().focused() {
+                state::table::Focused::Character(table_block)
+                | state::table::Focused::Tablemask(table_block)
+                | state::table::Focused::Boxblock(table_block) => {
+                    let block_id = table_block.block_id.clone();
+                    state.table_mut().set_floating_object(Some(block_id));
+                }
+                _ => (),
+            }
+
             state.dequeue()
         }
 
         Msg::SetLastMouseUpPosition(mouse_position) => {
+            check_focused_object(state, &mouse_position);
+
             state.table_mut().set_last_mouse_up_position(mouse_position);
+
+            state.table_mut().set_floating_object(None);
+
+            render_canvas(state);
+
             state.dequeue()
         }
 
@@ -712,21 +737,21 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             let is_fixied = state
                 .block_field()
                 .get::<block::table_object::Boxblock>(&block_id)
-                .map(|boxblock| boxblock.is_fixied())
+                .map(|boxblock| boxblock.is_fixed())
                 .unwrap_or(true);
 
             if !is_fixied {
-                let zw = state
+                let s = state
                     .block_field()
                     .get::<block::table_object::Boxblock>(&block_id)
-                    .map(|boxblock| boxblock.size()[2])
-                    .unwrap_or(0.0);
+                    .map(|boxblock| boxblock.size().clone())
+                    .unwrap_or([0.0, 0.0, 0.0]);
 
                 let position = get_focused_position(
                     state,
                     &mouse_position,
                     state.pixel_ratio(),
-                    &[0.0, 0.0, zw * 0.5],
+                    &[s[0] * 0.5, s[1] * 0.5, s[2] * 0.5],
                 );
                 let timestamp = timestamp();
 
@@ -1105,6 +1130,49 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             send_pack_cmd(state.block_field(), vec![&tablemask_id])
         }
 
+        // Boxblock
+        Msg::SetBoxblockSize(boxblock_id, size) => {
+            state.block_field_mut().update(
+                &boxblock_id,
+                timestamp(),
+                |boxblock: &mut block::table_object::Boxblock| {
+                    boxblock.set_size(size);
+                },
+            );
+
+            render_canvas(state);
+
+            send_pack_cmd(state.block_field(), vec![&boxblock_id])
+        }
+
+        Msg::SetBoxblockColor(boxblock_id, color) => {
+            state.block_field_mut().update(
+                &boxblock_id,
+                timestamp(),
+                |boxblock: &mut block::table_object::Boxblock| {
+                    boxblock.set_color(color);
+                },
+            );
+
+            render_canvas(state);
+
+            send_pack_cmd(state.block_field(), vec![&boxblock_id])
+        }
+
+        Msg::SetBoxblockIsFixed(boxblock_id, is_fixed) => {
+            state.block_field_mut().update(
+                &boxblock_id,
+                timestamp(),
+                |boxblock: &mut block::table_object::Boxblock| {
+                    boxblock.set_is_fixed(is_fixed);
+                },
+            );
+
+            render_canvas(state);
+
+            send_pack_cmd(state.block_field(), vec![&boxblock_id])
+        }
+
         // Character
         Msg::SetCharacterName(character, name) => {
             state.block_field_mut().update(
@@ -1371,6 +1439,7 @@ fn get_focused_position(
                 .camera()
                 .collision_point(state.canvas_size(), &canvas_pos, &r, &s, &t);
             let p = bind_to_grid(state, false, &p);
+            let p = [p[0], p[1], p[2] + offset[2]];
             Some(p)
         } else {
             None

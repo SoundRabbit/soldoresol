@@ -33,12 +33,24 @@ impl Boxblock {
         &self.size
     }
 
+    pub fn set_size(&mut self, size: [f32; 3]) {
+        self.size = size;
+    }
+
     pub fn color(&self) -> &Color {
         &self.color
     }
 
-    pub fn is_fixied(&self) -> bool {
+    pub fn set_color(&mut self, color: Color) {
+        self.color = color;
+    }
+
+    pub fn is_fixed(&self) -> bool {
         self.is_fixed
+    }
+
+    pub fn set_is_fixed(&mut self, is_fixed: bool) {
+        self.is_fixed = is_fixed;
     }
 }
 

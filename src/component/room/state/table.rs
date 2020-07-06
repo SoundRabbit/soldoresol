@@ -63,6 +63,7 @@ pub struct State {
     is_2d_mode: bool,
     focused: Focused,
     moving_tab: Option<(ModelessId, usize)>,
+    floating_object: Option<BlockId>,
 }
 
 impl Tool {
@@ -133,6 +134,7 @@ impl State {
             is_2d_mode: false,
             focused: Focused::None,
             moving_tab: None,
+            floating_object: None,
         }
     }
 
@@ -202,5 +204,13 @@ impl State {
 
     pub fn set_moving_tab(&mut self, moving_tab: Option<(ModelessId, usize)>) {
         self.moving_tab = moving_tab;
+    }
+
+    pub fn floating_object(&self) -> Option<&BlockId> {
+        self.floating_object.as_ref()
+    }
+
+    pub fn set_floating_object(&mut self, floating_object: Option<BlockId>) {
+        self.floating_object = floating_object;
     }
 }

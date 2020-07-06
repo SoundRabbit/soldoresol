@@ -72,6 +72,7 @@ impl BoxblockCollectionRenderer {
         block_field: &block::Field,
         boxblocks: impl Iterator<Item = &'a BlockId>,
         id_map: &mut HashMap<u32, TableBlock>,
+        floating_object: &Option<&BlockId>,
     ) {
         gl.set_attribute(&self.vertexis_buffer, &program.a_vertex_location, 3, 0);
         gl.set_attribute(
@@ -88,43 +89,48 @@ impl BoxblockCollectionRenderer {
         for (boxblock_id, boxblock) in
             block_field.listed::<block::table_object::Boxblock>(boxblocks.collect())
         {
-            let model_matrix: Array2<f32> = ModelMatrix::new()
-                .with_scale(boxblock.size())
-                .with_movement(boxblock.position())
-                .into();
-            let mvp_matrix = vp_matrix.dot(&model_matrix);
-            let mvp_matrix = mvp_matrix.t();
-            gl.uniform_matrix4fv_with_f32_array(
-                Some(&program.u_translate_location),
-                false,
-                &[
-                    mvp_matrix.row(0).to_vec(),
-                    mvp_matrix.row(1).to_vec(),
-                    mvp_matrix.row(2).to_vec(),
-                    mvp_matrix.row(3).to_vec(),
-                ]
-                .concat()
-                .into_iter()
-                .map(|a| a as f32)
-                .collect::<Vec<f32>>(),
-            );
-            gl.uniform1i(Some(&program.u_flag_round_location), 0);
-            for srfs in 0..6 {
-                let color = Color::from(id_map.len() as u32 | 0xFF000000);
-                gl.uniform4fv_with_f32_array(
-                    Some(&program.u_mask_color_location),
-                    &color.to_f32array(),
+            if floating_object
+                .map(|object_id| boxblock_id != *object_id)
+                .unwrap_or(true)
+            {
+                let model_matrix: Array2<f32> = ModelMatrix::new()
+                    .with_scale(boxblock.size())
+                    .with_movement(boxblock.position())
+                    .into();
+                let mvp_matrix = vp_matrix.dot(&model_matrix);
+                let mvp_matrix = mvp_matrix.t();
+                gl.uniform_matrix4fv_with_f32_array(
+                    Some(&program.u_translate_location),
+                    false,
+                    &[
+                        mvp_matrix.row(0).to_vec(),
+                        mvp_matrix.row(1).to_vec(),
+                        mvp_matrix.row(2).to_vec(),
+                        mvp_matrix.row(3).to_vec(),
+                    ]
+                    .concat()
+                    .into_iter()
+                    .map(|a| a as f32)
+                    .collect::<Vec<f32>>(),
                 );
-                gl.draw_elements_with_i32(
-                    web_sys::WebGlRenderingContext::TRIANGLES,
-                    6,
-                    web_sys::WebGlRenderingContext::UNSIGNED_SHORT,
-                    6 * 2 * srfs,
-                );
-                id_map.insert(
-                    color.to_u32(),
-                    TableBlock::new(boxblock_id.clone(), srfs as usize),
-                );
+                gl.uniform1i(Some(&program.u_flag_round_location), 0);
+                for srfs in 0..6 {
+                    let color = Color::from(id_map.len() as u32 | 0xFF000000);
+                    gl.uniform4fv_with_f32_array(
+                        Some(&program.u_mask_color_location),
+                        &color.to_f32array(),
+                    );
+                    gl.draw_elements_with_i32(
+                        web_sys::WebGlRenderingContext::TRIANGLES,
+                        6,
+                        web_sys::WebGlRenderingContext::UNSIGNED_SHORT,
+                        6 * 2 * srfs,
+                    );
+                    id_map.insert(
+                        color.to_u32(),
+                        TableBlock::new(boxblock_id.clone(), srfs as usize),
+                    );
+                }
             }
         }
     }

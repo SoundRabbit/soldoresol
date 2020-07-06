@@ -114,6 +114,7 @@ impl MaskRenderer {
         camera: &Camera,
         block_field: &block::Field,
         world: &block::World,
+        floating_object: &Option<&BlockId>,
     ) {
         crate::debug::log_2(self.canvas.width(), self.canvas.height());
 
@@ -167,6 +168,7 @@ impl MaskRenderer {
                 block_field,
                 table.boxblocks(),
                 &mut self.id_map,
+                floating_object,
             );
         }
 
@@ -178,6 +180,7 @@ impl MaskRenderer {
             block_field,
             world.characters(),
             &mut self.id_map,
+            floating_object,
         );
     }
 }
