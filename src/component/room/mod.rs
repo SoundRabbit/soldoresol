@@ -48,7 +48,7 @@ pub enum Msg {
     // UI for table
     AddChracaterWithMousePositionToCloseContextmenu([f32; 2]),
     AddTablemaskWithMousePositionToCloseContextmenu([f32; 2]),
-    AddBoxblockWithMousePositionToCloseContextmenu([f32; 2], Color),
+    AddBoxblockWithMousePositionToCloseContextmenu([f32; 2], Color, [f32; 3]),
     CloneCharacterToCloseContextmenu(BlockId),
     CloneTablemaskToCloseContextmenu(BlockId),
     RemoveCharacterToCloseContextmenu(BlockId),
@@ -395,19 +395,20 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             }
         }
 
-        Msg::AddBoxblockWithMousePositionToCloseContextmenu(mouse_position, color) => {
+        Msg::AddBoxblockWithMousePositionToCloseContextmenu(mouse_position, color, size) => {
             state.close_contextmenu();
 
             if let Some(selecting_table) = state.selecting_table().map(|t| t.clone()) {
+                let [xw, yw, zw] = size;
+
                 let [x, y, z] = get_focused_position(
                     state,
                     &mouse_position,
                     state.pixel_ratio(),
-                    &[0.5, 0.5, 0.5],
+                    &[xw * 0.5, yw * 0.5, zw * 0.5],
                 );
 
-                let boxblock =
-                    block::table_object::Boxblock::new([x, y, z], [1.0, 1.0, 1.0], color);
+                let boxblock = block::table_object::Boxblock::new([x, y, z], [xw, yw, zw], color);
                 let boxblock = state.block_field_mut().add(boxblock);
 
                 state.block_field_mut().update(

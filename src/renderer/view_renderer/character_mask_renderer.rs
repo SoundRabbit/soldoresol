@@ -6,7 +6,7 @@ use super::super::{
 use super::Camera;
 use crate::{
     block::{self, BlockId},
-    Color,
+    color_system, Color,
 };
 use ndarray::Array2;
 
@@ -21,10 +21,10 @@ impl CharacterMaskRenderer {
     pub fn new(gl: &WebGlRenderingContext) -> Self {
         let vertexis_buffer = gl.create_vbo_with_f32array(
             &[
-                [0.5, 0.5, 0.0],
-                [-0.5, 0.5, 0.0],
-                [0.5, -0.5, 0.0],
-                [-0.5, -0.5, 0.0],
+                [0.5, 0.5, 1.0 / 128.0],
+                [-0.5, 0.5, 1.0 / 128.0],
+                [0.5, -0.5, 1.0 / 128.0],
+                [-0.5, -0.5, 1.0 / 128.0],
             ]
             .concat(),
         );
@@ -65,8 +65,9 @@ impl CharacterMaskRenderer {
         );
 
         for (_, character) in block_field.listed::<block::Character>(characters.collect()) {
+            let s = character.size();
             let model_matrix: Array2<f32> = ModelMatrix::new()
-                .with_scale(character.size())
+                .with_scale(&[s[0], s[1], 1.0])
                 .with_movement(character.position())
                 .into();
             let mvp_matrix = vp_matrix.dot(&model_matrix);
@@ -88,7 +89,7 @@ impl CharacterMaskRenderer {
             );
             gl.uniform4fv_with_f32_array(
                 Some(&self.program.u_mask_color_location),
-                &Color::from([0.0, 0.0, 0.0, 0.75]).to_f32array(),
+                &color_system::gray(192, 9).to_f32array(),
             );
             gl.draw_elements_with_i32(
                 web_sys::WebGlRenderingContext::TRIANGLES,

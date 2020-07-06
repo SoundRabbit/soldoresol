@@ -41,9 +41,9 @@ pub fn render(
                             table::Tool::Tablemask => {
                                 Msg::AddTablemaskWithMousePositionToCloseContextmenu(mouse_pos)
                             }
-                            table::Tool::Boxblock { color, .. } => {
+                            table::Tool::Boxblock { color, size, .. } => {
                                 Msg::AddBoxblockWithMousePositionToCloseContextmenu(
-                                    mouse_pos, color,
+                                    mouse_pos, color, size,
                                 )
                             }
                             _ => Msg::NoOp,

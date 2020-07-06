@@ -35,6 +35,7 @@ pub enum Tool {
     Tablemask,
     Boxblock {
         color: Color,
+        size: [f32; 3],
         show_option_menu: bool,
     },
 }

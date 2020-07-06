@@ -119,10 +119,20 @@ impl ViewRenderer {
                 block_field,
                 table.tablemasks(),
             );
-            self.table_grid_renderer.render(gl, &vp_matrix, table);
             self.area_collection_renderer
                 .render(gl, &vp_matrix, block_field, table.areas());
+
+            self.table_grid_renderer.render(gl, &vp_matrix, table);
+
+            gl.depth_func(web_sys::WebGlRenderingContext::LEQUAL);
+            self.boxblock_collection_renderer.render(
+                gl,
+                &vp_matrix,
+                block_field,
+                table.boxblocks(),
+            );
         }
+
         self.character_mask_renderer.render(
             gl,
             camera,
@@ -131,18 +141,11 @@ impl ViewRenderer {
             world.characters(),
         );
 
+        gl.depth_func(web_sys::WebGlRenderingContext::ALWAYS);
+
         self.measure_renderer.render(gl, &vp_matrix, block_field);
 
         gl.depth_func(web_sys::WebGlRenderingContext::LEQUAL);
-
-        if let Some(table) = block_field.get::<block::Table>(world.selecting_table()) {
-            self.boxblock_collection_renderer.render(
-                gl,
-                &vp_matrix,
-                block_field,
-                table.boxblocks(),
-            );
-        }
 
         self.character_texture_renderer.render(
             gl,

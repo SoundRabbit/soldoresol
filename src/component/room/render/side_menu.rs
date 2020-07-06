@@ -243,12 +243,14 @@ fn row_boxblock(selecting_tool: &table::Tool) -> Vec<Html<Msg>> {
         Events::new().on_click(|_| {
             Msg::SetSelectingTableTool(table::Tool::Boxblock {
                 color: color_system::red(255, 5),
+                size: [1.0, 1.0, 1.0],
                 show_option_menu: true,
             })
         }),
         match selecting_tool {
             table::Tool::Boxblock {
                 color,
+                size,
                 show_option_menu,
             } => {
                 let color = *color;
@@ -256,14 +258,16 @@ fn row_boxblock(selecting_tool: &table::Tool) -> Vec<Html<Msg>> {
                 option(
                     show_option_menu,
                     Events::new().on_click({
+                        let size = size.clone();
                         move |_| {
                             Msg::SetSelectingTableTool(table::Tool::Boxblock {
                                 color,
+                                size,
                                 show_option_menu: !show_option_menu,
                             })
                         }
                     }),
-                    row_boxblock_menu(color),
+                    row_boxblock_menu(color, size),
                 )
             }
             _ => text::span(""),
@@ -271,11 +275,18 @@ fn row_boxblock(selecting_tool: &table::Tool) -> Vec<Html<Msg>> {
     )
 }
 
-fn row_boxblock_menu(color: Color) -> Vec<Html<Msg>> {
+fn row_boxblock_menu(color: Color, size: &[f32; 3]) -> Vec<Html<Msg>> {
+    let [xw, yw, zw] = size.clone();
     vec![Html::div(
         Attributes::new().class("keyvalue"),
         Events::new(),
         vec![
+            text::span("X幅"),
+            row_boxblock_menu_size(color, xw, move |xw| [xw, yw, zw]),
+            text::span("Y幅"),
+            row_boxblock_menu_size(color, yw, move |yw| [xw, yw, zw]),
+            text::span("Z幅"),
+            row_boxblock_menu_size(color, zw, move |zw| [xw, yw, zw]),
             text::span("選択色"),
             Html::div(
                 Attributes::new()
@@ -289,34 +300,50 @@ fn row_boxblock_menu(color: Color) -> Vec<Html<Msg>> {
                 Attributes::new().class("keyvalue-banner").class("linear-v"),
                 Events::new(),
                 vec![
-                    color_picker::idx(3, Msg::NoOp, {
-                        move |color| {
-                            Msg::SetSelectingTableTool(table::Tool::Boxblock {
-                                color,
-                                show_option_menu: true,
-                            })
-                        }
-                    }),
-                    color_picker::idx(5, Msg::NoOp, {
-                        move |color| {
-                            Msg::SetSelectingTableTool(table::Tool::Boxblock {
-                                color,
-                                show_option_menu: true,
-                            })
-                        }
-                    }),
-                    color_picker::idx(7, Msg::NoOp, {
-                        move |color| {
-                            Msg::SetSelectingTableTool(table::Tool::Boxblock {
-                                color,
-                                show_option_menu: true,
-                            })
-                        }
-                    }),
+                    row_boxblock_menu_color(3, xw, yw, zw),
+                    row_boxblock_menu_color(5, xw, yw, zw),
+                    row_boxblock_menu_color(7, xw, yw, zw),
                 ],
             ),
         ],
     )]
+}
+
+fn row_boxblock_menu_size(
+    color: Color,
+    s: f32,
+    on_input: impl FnOnce(f32) -> [f32; 3] + 'static,
+) -> Html<Msg> {
+    Html::input(
+        Attributes::new()
+            .type_("number")
+            .value(s.to_string())
+            .string("step", "0.1"),
+        Events::new().on_input(move |w| {
+            w.parse()
+                .map(|w| {
+                    Msg::SetSelectingTableTool(table::Tool::Boxblock {
+                        color,
+                        size: on_input(w),
+                        show_option_menu: true,
+                    })
+                })
+                .unwrap_or(Msg::NoOp)
+        }),
+        vec![],
+    )
+}
+
+fn row_boxblock_menu_color(idx: usize, xw: f32, yw: f32, zw: f32) -> Html<Msg> {
+    color_picker::idx(idx, Msg::NoOp, {
+        move |color| {
+            Msg::SetSelectingTableTool(table::Tool::Boxblock {
+                color,
+                size: [xw, yw, zw],
+                show_option_menu: true,
+            })
+        }
+    })
 }
 
 fn row_area(selecting_tool: &table::Tool) -> Vec<Html<Msg>> {
