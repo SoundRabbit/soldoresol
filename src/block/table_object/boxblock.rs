@@ -8,6 +8,7 @@ pub struct Boxblock {
     position: [f32; 3],
     size: [f32; 3],
     color: Color,
+    is_fixed: bool,
 }
 
 impl Boxblock {
@@ -16,6 +17,7 @@ impl Boxblock {
             position,
             size,
             color,
+            is_fixed: true,
         }
     }
 
@@ -33,6 +35,10 @@ impl Boxblock {
 
     pub fn color(&self) -> &Color {
         &self.color
+    }
+
+    pub fn is_fixied(&self) -> bool {
+        self.is_fixed
     }
 }
 

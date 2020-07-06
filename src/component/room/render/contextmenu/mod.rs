@@ -1,5 +1,5 @@
-use super::{common, state};
-use super::{Msg, State};
+use super::state;
+use super::Msg;
 use crate::block;
 use kagura::prelude::*;
 

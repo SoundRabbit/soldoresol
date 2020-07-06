@@ -8,7 +8,7 @@ pub struct Tablemask {
     size: [f32; 3],
     position: [f32; 3],
     z_rotation: f32,
-    background_color: Color,
+    color: Color,
     size_is_binded: bool,
     is_rounded: bool,
     is_fixed: bool,
@@ -16,14 +16,14 @@ pub struct Tablemask {
 }
 
 impl Tablemask {
-    pub fn new(property_id: BlockId) -> Self {
+    pub fn new(property_id: BlockId, size: &[f32; 2], color: Color, is_rounded: bool) -> Self {
         Self {
-            size: [8.0, 8.0, 0.0],
+            size: [size[0], size[1], 0.0],
             position: [0.0, 0.0, 0.0],
             z_rotation: 0.0,
-            background_color: color_system::red((255.0 * 0.6) as u8, 5),
+            color: color,
             size_is_binded: true,
-            is_rounded: true,
+            is_rounded: is_rounded,
             is_fixed: false,
             property_id: property_id,
         }
@@ -33,7 +33,7 @@ impl Tablemask {
         &self.size
     }
 
-    pub fn set_size(&mut self, size: [f32; 2]) {
+    pub fn set_size(&mut self, size: &[f32; 2]) {
         self.size = [size[0], size[1], 0.0];
     }
 
@@ -49,16 +49,28 @@ impl Tablemask {
         self.z_rotation
     }
 
-    pub fn background_color(&self) -> &Color {
-        &self.background_color
+    pub fn color(&self) -> &Color {
+        &self.color
+    }
+
+    pub fn set_color(&mut self, color: Color) {
+        self.color = color;
     }
 
     pub fn is_rounded(&self) -> bool {
         self.is_rounded
     }
 
+    pub fn set_is_rounded(&mut self, is_rounded: bool) {
+        self.is_rounded = is_rounded;
+    }
+
     pub fn is_fixed(&self) -> bool {
         self.is_fixed
+    }
+
+    pub fn set_is_fixed(&mut self, is_fixed: bool) {
+        self.is_fixed = is_fixed;
     }
 
     pub fn property_id(&self) -> &BlockId {

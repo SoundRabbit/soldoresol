@@ -84,7 +84,7 @@ impl TablemaskCollectionRenderer {
             );
             gl.uniform4fv_with_f32_array(
                 Some(&self.program.u_mask_color_location),
-                &tablemask.background_color().to_f32array(),
+                &tablemask.color().to_f32array(),
             );
             gl.uniform1i(
                 Some(&self.program.u_flag_round_location),

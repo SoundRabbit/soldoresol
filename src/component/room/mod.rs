@@ -47,8 +47,8 @@ pub enum Msg {
 
     // UI for table
     AddChracaterWithMousePositionToCloseContextmenu([f32; 2]),
-    AddTablemaskWithMousePositionToCloseContextmenu([f32; 2]),
-    AddBoxblockWithMousePositionToCloseContextmenu([f32; 2], Color, [f32; 3]),
+    AddTablemaskWithMousePositionToCloseContextmenu([f32; 2], [f32; 2], Color, bool),
+    AddBoxblockWithMousePositionToCloseContextmenu([f32; 2], [f32; 3], Color),
     CloneCharacterToCloseContextmenu(BlockId),
     CloneTablemaskToCloseContextmenu(BlockId),
     RemoveCharacterToCloseContextmenu(BlockId),
@@ -92,7 +92,11 @@ pub enum Msg {
     SetPersonalDataWithPlayerName(String),
     SetPersonalDataWithIconImageToCloseModal(u128),
 
-    // table object
+    // tablemask
+    SetTablemaskSize(BlockId, [f32; 2]),
+    SetTablemaskColor(BlockId, Color),
+    SetTablemaskIsFixed(BlockId, bool),
+    SetTablemaskIsRounded(BlockId, bool),
 
     // character
     SetCharacterName(BlockId, String),
@@ -366,7 +370,12 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             )
         }
 
-        Msg::AddTablemaskWithMousePositionToCloseContextmenu(mouse_position) => {
+        Msg::AddTablemaskWithMousePositionToCloseContextmenu(
+            mouse_position,
+            size,
+            color,
+            is_rounded,
+        ) => {
             state.close_contextmenu();
 
             if let Some(selecting_table) = state.selecting_table().map(|t| t.clone()) {
@@ -375,7 +384,12 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 let prop_root = block::Property::new("");
                 let prop_root = state.block_field_mut().add(prop_root);
 
-                let mut tablemask = block::table_object::Tablemask::new(prop_root.clone());
+                let mut tablemask = block::table_object::Tablemask::new(
+                    prop_root.clone(),
+                    &size,
+                    color,
+                    is_rounded,
+                );
                 tablemask.set_position([x, y]);
                 let tablemask = state.block_field_mut().add(tablemask);
 
@@ -395,7 +409,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             }
         }
 
-        Msg::AddBoxblockWithMousePositionToCloseContextmenu(mouse_position, color, size) => {
+        Msg::AddBoxblockWithMousePositionToCloseContextmenu(mouse_position, size, color) => {
             state.close_contextmenu();
 
             if let Some(selecting_table) = state.selecting_table().map(|t| t.clone()) {
@@ -695,36 +709,48 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
 
         Msg::SetBoxblockPositionWithMousePosition(block_id, mouse_position) => {
-            let zw = state
+            let is_fixied = state
                 .block_field()
                 .get::<block::table_object::Boxblock>(&block_id)
-                .map(|boxblock| boxblock.size()[2])
-                .unwrap_or(0.0);
+                .map(|boxblock| boxblock.is_fixied())
+                .unwrap_or(true);
 
-            let position = get_focused_position(
-                state,
-                &mouse_position,
-                state.pixel_ratio(),
-                &[0.0, 0.0, zw * 0.5],
-            );
-            let timestamp = timestamp();
+            if !is_fixied {
+                let zw = state
+                    .block_field()
+                    .get::<block::table_object::Boxblock>(&block_id)
+                    .map(|boxblock| boxblock.size()[2])
+                    .unwrap_or(0.0);
 
-            let updated = state
-                .block_field_mut()
-                .update(
-                    &block_id,
-                    timestamp,
-                    |boxblock: &mut block::table_object::Boxblock| {
-                        boxblock.set_position(position);
-                    },
-                )
-                .is_none();
+                let position = get_focused_position(
+                    state,
+                    &mouse_position,
+                    state.pixel_ratio(),
+                    &[0.0, 0.0, zw * 0.5],
+                );
+                let timestamp = timestamp();
 
-            if updated {
-                render_canvas(state);
-                send_pack_cmd(state.block_field(), vec![&block_id])
+                let updated = state
+                    .block_field_mut()
+                    .update(
+                        &block_id,
+                        timestamp,
+                        |boxblock: &mut block::table_object::Boxblock| {
+                            boxblock.set_position(position);
+                        },
+                    )
+                    .is_none();
+                if updated {
+                    render_canvas(state);
+                    send_pack_cmd(state.block_field(), vec![&block_id])
+                } else {
+                    state.dequeue()
+                }
             } else {
-                state.dequeue()
+                update(
+                    state,
+                    Msg::SetCameraMovementWithMouseMovement(mouse_position),
+                )
             }
         }
 
@@ -1020,6 +1046,63 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.personal_data_mut().set_icon(Some(r_id));
             state.close_modal();
             state.dequeue()
+        }
+
+        // Tablemask
+        Msg::SetTablemaskSize(tablemask_id, size) => {
+            state.block_field_mut().update(
+                &tablemask_id,
+                timestamp(),
+                |tablemask: &mut block::table_object::Tablemask| {
+                    tablemask.set_size(&size);
+                },
+            );
+
+            render_canvas(state);
+
+            send_pack_cmd(state.block_field(), vec![&tablemask_id])
+        }
+
+        Msg::SetTablemaskColor(tablemask_id, color) => {
+            state.block_field_mut().update(
+                &tablemask_id,
+                timestamp(),
+                |tablemask: &mut block::table_object::Tablemask| {
+                    tablemask.set_color(color);
+                },
+            );
+
+            render_canvas(state);
+
+            send_pack_cmd(state.block_field(), vec![&tablemask_id])
+        }
+
+        Msg::SetTablemaskIsFixed(tablemask_id, is_fixed) => {
+            state.block_field_mut().update(
+                &tablemask_id,
+                timestamp(),
+                |tablemask: &mut block::table_object::Tablemask| {
+                    tablemask.set_is_fixed(is_fixed);
+                },
+            );
+
+            render_canvas(state);
+
+            send_pack_cmd(state.block_field(), vec![&tablemask_id])
+        }
+
+        Msg::SetTablemaskIsRounded(tablemask_id, is_rounded) => {
+            state.block_field_mut().update(
+                &tablemask_id,
+                timestamp(),
+                |tablemask: &mut block::table_object::Tablemask| {
+                    tablemask.set_is_rounded(is_rounded);
+                },
+            );
+
+            render_canvas(state);
+
+            send_pack_cmd(state.block_field(), vec![&tablemask_id])
         }
 
         // Character

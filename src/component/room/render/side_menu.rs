@@ -40,16 +40,7 @@ pub fn render(z_index: u64, selecting_tool: &table::Tool) -> Html<Msg> {
                     _ => text::span(""),
                 },
             ),
-            row(
-                selecting_tool.is_tablemask(),
-                "fa-clone",
-                "マップマスク",
-                Events::new().on_click(|_| Msg::SetSelectingTableTool(table::Tool::Tablemask)),
-                match selecting_tool {
-                    table::Tool::Tablemask => no_option(),
-                    _ => text::span(""),
-                },
-            ),
+            row_tablemask(selecting_tool),
             row_boxblock(selecting_tool),
             row_area(selecting_tool),
             row(
@@ -235,6 +226,165 @@ fn row_eraser_menu(line_width: f64) -> Vec<Html<Msg>> {
     ]
 }
 
+fn row_tablemask(selecting_tool: &table::Tool) -> Vec<Html<Msg>> {
+    row(
+        selecting_tool.is_tablemask(),
+        "fa-clone",
+        "マップマスク",
+        Events::new().on_click(|_| {
+            Msg::SetSelectingTableTool(table::Tool::Tablemask {
+                size: [8.0, 8.0],
+                color: color_system::gray((0.6 * 255.0) as u8, 5),
+                is_rounded: true,
+                show_option_menu: true,
+            })
+        }),
+        match selecting_tool {
+            table::Tool::Tablemask {
+                size,
+                color,
+                is_rounded,
+                show_option_menu,
+            } => {
+                let color = *color;
+                let is_rounded = *is_rounded;
+                let show_option_menu = *show_option_menu;
+                option(
+                    show_option_menu,
+                    Events::new().on_click({
+                        let size = size.clone();
+                        move |_| {
+                            Msg::SetSelectingTableTool(table::Tool::Tablemask {
+                                size,
+                                color,
+                                is_rounded,
+                                show_option_menu: !show_option_menu,
+                            })
+                        }
+                    }),
+                    row_tablemask_menu(size, color, is_rounded),
+                )
+            }
+            _ => text::span(""),
+        },
+    )
+}
+
+fn row_tablemask_menu(size: &[f32; 2], color: Color, is_rounded: bool) -> Vec<Html<Msg>> {
+    let [xw, yw] = size.clone();
+    vec![Html::div(
+        Attributes::new().class("keyvalue"),
+        Events::new(),
+        vec![
+            text::span("形状"),
+            Html::div(
+                Attributes::new().class("linear-h"),
+                Events::new(),
+                vec![
+                    row_tablemask_menu_type(color, xw, yw, "矩形", false, !is_rounded),
+                    row_tablemask_menu_type(color, xw, yw, "円形", true, is_rounded),
+                ],
+            ),
+            text::span("X幅"),
+            row_tablemask_menu_size(color, is_rounded, xw, move |xw| [xw, yw]),
+            text::span("Y幅"),
+            row_tablemask_menu_size(color, is_rounded, yw, move |yw| [xw, yw]),
+            text::span("選択色"),
+            Html::div(
+                Attributes::new()
+                    .class("cell")
+                    .class("cell-medium")
+                    .style("background-color", color.to_string()),
+                Events::new(),
+                vec![],
+            ),
+            Html::div(
+                Attributes::new().class("keyvalue-banner").class("linear-v"),
+                Events::new(),
+                vec![
+                    row_tablemask_menu_color(3, color.alpha, is_rounded, xw, yw),
+                    row_tablemask_menu_color(5, color.alpha, is_rounded, xw, yw),
+                    row_tablemask_menu_color(7, color.alpha, is_rounded, xw, yw),
+                ],
+            ),
+        ],
+    )]
+}
+
+fn row_tablemask_menu_type(
+    color: Color,
+    xw: f32,
+    yw: f32,
+    text: impl Into<String>,
+    is_rounded: bool,
+    selected: bool,
+) -> Html<Msg> {
+    btn::selectable(
+        selected,
+        Attributes::new(),
+        Events::new().on_click(move |_| {
+            if selected {
+                Msg::NoOp
+            } else {
+                Msg::SetSelectingTableTool(table::Tool::Tablemask {
+                    size: [xw, yw],
+                    color,
+                    is_rounded: is_rounded,
+                    show_option_menu: true,
+                })
+            }
+        }),
+        vec![Html::text(text)],
+    )
+}
+
+fn row_tablemask_menu_size(
+    color: Color,
+    is_rounded: bool,
+    s: f32,
+    on_input: impl FnOnce(f32) -> [f32; 2] + 'static,
+) -> Html<Msg> {
+    Html::input(
+        Attributes::new()
+            .type_("number")
+            .value(s.to_string())
+            .string("step", "0.1"),
+        Events::new().on_input(move |w| {
+            w.parse()
+                .map(|w| {
+                    Msg::SetSelectingTableTool(table::Tool::Tablemask {
+                        color,
+                        size: on_input(w),
+                        is_rounded,
+                        show_option_menu: true,
+                    })
+                })
+                .unwrap_or(Msg::NoOp)
+        }),
+        vec![],
+    )
+}
+
+fn row_tablemask_menu_color(
+    idx: usize,
+    alpha: u8,
+    is_rounded: bool,
+    xw: f32,
+    yw: f32,
+) -> Html<Msg> {
+    color_picker::idx(idx, Msg::NoOp, {
+        move |mut color| {
+            color.alpha = alpha;
+            Msg::SetSelectingTableTool(table::Tool::Tablemask {
+                color,
+                size: [xw, yw],
+                is_rounded,
+                show_option_menu: true,
+            })
+        }
+    })
+}
+
 fn row_boxblock(selecting_tool: &table::Tool) -> Vec<Html<Msg>> {
     row(
         selecting_tool.is_boxblock(),
@@ -249,8 +399,8 @@ fn row_boxblock(selecting_tool: &table::Tool) -> Vec<Html<Msg>> {
         }),
         match selecting_tool {
             table::Tool::Boxblock {
-                color,
                 size,
+                color,
                 show_option_menu,
             } => {
                 let color = *color;
@@ -261,13 +411,13 @@ fn row_boxblock(selecting_tool: &table::Tool) -> Vec<Html<Msg>> {
                         let size = size.clone();
                         move |_| {
                             Msg::SetSelectingTableTool(table::Tool::Boxblock {
-                                color,
                                 size,
+                                color,
                                 show_option_menu: !show_option_menu,
                             })
                         }
                     }),
-                    row_boxblock_menu(color, size),
+                    row_boxblock_menu(size, color),
                 )
             }
             _ => text::span(""),
@@ -275,7 +425,7 @@ fn row_boxblock(selecting_tool: &table::Tool) -> Vec<Html<Msg>> {
     )
 }
 
-fn row_boxblock_menu(color: Color, size: &[f32; 3]) -> Vec<Html<Msg>> {
+fn row_boxblock_menu(size: &[f32; 3], color: Color) -> Vec<Html<Msg>> {
     let [xw, yw, zw] = size.clone();
     vec![Html::div(
         Attributes::new().class("keyvalue"),
@@ -480,7 +630,15 @@ fn row_area_menu(
                     }),
                     vec![],
                 ),
-                _ => Html::input(Attributes::new().flag("disabled"), Events::new(), vec![]),
+                _ => Html::div(
+                    Attributes::new(),
+                    Events::new(),
+                    vec![Html::input(
+                        Attributes::new().flag("disabled"),
+                        Events::new(),
+                        vec![],
+                    )],
+                ),
             },
             Html::hr(
                 Attributes::new().class("keyvalue-banner"),

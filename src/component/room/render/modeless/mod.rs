@@ -64,6 +64,10 @@ fn frame(
             .on("wheel", |e| {
                 e.stop_propagation();
                 Msg::NoOp
+            })
+            .on_click(|e| {
+                e.stop_propagation();
+                Msg::NoOp
             }),
         vec![
             children,

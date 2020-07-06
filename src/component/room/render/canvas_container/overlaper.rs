@@ -38,12 +38,17 @@ pub fn render(
                             table::Tool::Character => {
                                 Msg::AddChracaterWithMousePositionToCloseContextmenu(mouse_pos)
                             }
-                            table::Tool::Tablemask => {
-                                Msg::AddTablemaskWithMousePositionToCloseContextmenu(mouse_pos)
-                            }
-                            table::Tool::Boxblock { color, size, .. } => {
+                            table::Tool::Tablemask {
+                                size,
+                                color,
+                                is_rounded,
+                                ..
+                            } => Msg::AddTablemaskWithMousePositionToCloseContextmenu(
+                                mouse_pos, size, color, is_rounded,
+                            ),
+                            table::Tool::Boxblock { size, color, .. } => {
                                 Msg::AddBoxblockWithMousePositionToCloseContextmenu(
-                                    mouse_pos, color, size,
+                                    mouse_pos, size, color,
                                 )
                             }
                             _ => Msg::NoOp,
@@ -80,6 +85,12 @@ pub fn render(
                                 }
                                 table::Focused::Tablemask(tableblock) => {
                                     Msg::SetTablemaskPositionWithMousePosition(
+                                        tableblock.block_id,
+                                        mouse_pos,
+                                    )
+                                }
+                                table::Focused::Boxblock(tableblock) => {
+                                    Msg::SetBoxblockPositionWithMousePosition(
                                         tableblock.block_id,
                                         mouse_pos,
                                     )

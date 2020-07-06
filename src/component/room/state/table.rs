@@ -32,10 +32,15 @@ pub enum Tool {
         show_option_menu: bool,
     },
     Character,
-    Tablemask,
-    Boxblock {
+    Tablemask {
+        size: [f32; 2],
         color: Color,
+        is_rounded: bool,
+        show_option_menu: bool,
+    },
+    Boxblock {
         size: [f32; 3],
+        color: Color,
         show_option_menu: bool,
     },
 }
@@ -105,7 +110,7 @@ impl Tool {
     }
     pub fn is_tablemask(&self) -> bool {
         match self {
-            Self::Tablemask => true,
+            Self::Tablemask { .. } => true,
             _ => false,
         }
     }
