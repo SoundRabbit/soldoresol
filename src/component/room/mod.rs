@@ -648,14 +648,18 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
 
         Msg::SetCharacterPositionWithMousePosition(block_id, mouse_position) => {
-            let [x, y] = get_table_position(state, false, &mouse_position, state.pixel_ratio());
+            let position = get_focused_position(
+                state,
+                &mouse_position,
+                state.pixel_ratio(),
+                &[0.0, 0.0, 0.0],
+            );
             let timestamp = timestamp();
 
             let updated = state
                 .block_field_mut()
                 .update(&block_id, timestamp, |character: &mut block::Character| {
-                    let z = character.position()[2];
-                    character.set_position([x, y, z]);
+                    character.set_position(position);
                 })
                 .is_none();
 
@@ -691,7 +695,18 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
 
         Msg::SetBoxblockPositionWithMousePosition(block_id, mouse_position) => {
-            let [x, y] = get_table_position(state, false, &mouse_position, state.pixel_ratio());
+            let zw = state
+                .block_field()
+                .get::<block::table_object::Boxblock>(&block_id)
+                .map(|boxblock| boxblock.size()[2])
+                .unwrap_or(0.0);
+
+            let position = get_focused_position(
+                state,
+                &mouse_position,
+                state.pixel_ratio(),
+                &[0.0, 0.0, zw * 0.5],
+            );
             let timestamp = timestamp();
 
             let updated = state
@@ -700,8 +715,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     &block_id,
                     timestamp,
                     |boxblock: &mut block::table_object::Boxblock| {
-                        let z = boxblock.position()[2];
-                        boxblock.set_position([x, y, z]);
+                        boxblock.set_position(position);
                     },
                 )
                 .is_none();
@@ -1229,12 +1243,6 @@ fn get_table_position(
     }
 }
 
-enum FocusedPosition {
-    XY([f32; 3]),
-    XZ([f32; 3]),
-    YZ([f32; 3]),
-}
-
 fn get_focused_position(
     state: &State,
     screen_position: &[f32; 2],
@@ -1249,22 +1257,41 @@ fn get_focused_position(
         r.table_object_id(state.canvas_size(), &canvas_pos)
             .map(|t| t.clone())
     }) {
-        state
+        if let Some(boxblock) = state
             .block_field()
             .get::<block::table_object::Boxblock>(&tableblock.block_id)
-            .map(|boxblock| {
-                let p = boxblock.position();
-                let s = boxblock.size();
-                match tableblock.surface_idx {
-                    0 => [p[0], p[1], p[2] + s[2] * 0.5 + offset[2]],
-                    1 => [p[0], p[1] + s[1] * 0.5 + offset[1], p[2]],
-                    2 => [p[0] + s[0] * 0.5 + offset[0], p[1], p[2]],
-                    3 => [p[0] - s[0] * 0.5 - offset[0], p[1], p[2]],
-                    4 => [p[0], p[1] - s[1] * 0.5 - offset[1], p[2]],
-                    5 => [p[0], p[1], p[2] - s[2] * 0.5 - offset[2]],
-                    _ => unreachable!(),
-                }
-            })
+        {
+            let (r, s, t) =
+                box_surface(boxblock.position(), boxblock.size(), tableblock.surface_idx);
+            let p = state
+                .camera()
+                .collision_point(state.canvas_size(), &canvas_pos, &r, &s, &t);
+            let p = bind_to_grid(state, false, &p);
+            let p = match tableblock.surface_idx {
+                0 => [p[0], p[1], p[2] + offset[2]],
+                1 => [p[0], p[1] + offset[1], p[2]],
+                2 => [p[0] + offset[0], p[1], p[2]],
+                3 => [p[0] - offset[0], p[1], p[2]],
+                4 => [p[0], p[1] - offset[1], p[2]],
+                5 => [p[0], p[1], p[2] - offset[2]],
+                _ => unreachable!(),
+            };
+            Some(p)
+        } else if let Some(character) = state
+            .block_field()
+            .get::<block::Character>(&tableblock.block_id)
+        {
+            let r = character.position();
+            let s = [1.0, 0.0, 0.0];
+            let t = [0.0, 1.0, 0.0];
+            let p = state
+                .camera()
+                .collision_point(state.canvas_size(), &canvas_pos, &r, &s, &t);
+            let p = bind_to_grid(state, false, &p);
+            Some(p)
+        } else {
+            None
+        }
     } else {
         None
     };
@@ -1272,6 +1299,67 @@ fn get_focused_position(
         let [x, y] = get_table_position(state, false, screen_position, pixel_ratio);
         [x, y, offset[2]]
     })
+}
+
+fn box_surface(p: &[f32; 3], s: &[f32; 3], s_idx: usize) -> ([f32; 3], [f32; 3], [f32; 3]) {
+    match s_idx {
+        0 => {
+            let r = [p[0], p[1], p[2] + s[2] * 0.5];
+            let s = [1.0, 0.0, 0.0];
+            let t = [0.0, 1.0, 0.0];
+            (r, s, t)
+        }
+        1 => {
+            let r = [p[0], p[1] + s[1] * 0.5, p[2]];
+            let s = [1.0, 0.0, 0.0];
+            let t = [0.0, 0.0, 1.0];
+            (r, s, t)
+        }
+        2 => {
+            let r = [p[0] + s[0] * 0.5, p[1], p[2]];
+            let s = [0.0, 1.0, 0.0];
+            let t = [0.0, 0.0, 1.0];
+            (r, s, t)
+        }
+        3 => {
+            let r = [p[0] - s[0] * 0.5, p[1], p[2]];
+            let s = [0.0, 1.0, 0.0];
+            let t = [0.0, 0.0, 1.0];
+            (r, s, t)
+        }
+        4 => {
+            let r = [p[0], p[1] - s[1] * 0.5, p[2]];
+            let s = [1.0, 0.0, 0.0];
+            let t = [0.0, 0.0, 1.0];
+            (r, s, t)
+        }
+        5 => {
+            let r = [p[0], p[1], p[2] - s[2] * 0.5];
+            let s = [1.0, 0.0, 0.0];
+            let t = [0.0, 1.0, 0.0];
+            (r, s, t)
+        }
+        _ => unreachable!(),
+    }
+}
+
+fn bind_to_grid(state: &State, ignore_binding: bool, p: &[f32; 3]) -> [f32; 3] {
+    if state
+        .block_field()
+        .get::<block::World>(state.world())
+        .and_then(|w| state.block_field().get::<block::Table>(w.selecting_table()))
+        .map(|t| t.is_bind_to_grid())
+        .unwrap_or(false)
+        && (!ignore_binding)
+    {
+        [
+            (p[0] * 2.0).round() / 2.0,
+            (p[1] * 2.0).round() / 2.0,
+            (p[2] * 2.0).round() / 2.0,
+        ]
+    } else {
+        [p[0], p[1], p[2]]
+    }
 }
 
 fn render_canvas(state: &mut State) {

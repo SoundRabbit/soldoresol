@@ -73,6 +73,18 @@ pub fn light<Msg>(
     )
 }
 
+pub fn dark<Msg>(
+    attributes: Attributes,
+    events: Events<Msg>,
+    children: Vec<Html<Msg>>,
+) -> Html<Msg> {
+    Html::button(
+        attributes.class("pure-button").class("pure-button-dark"),
+        events,
+        children,
+    )
+}
+
 pub fn selectable<Msg>(
     is_selected: bool,
     attributes: Attributes,

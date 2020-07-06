@@ -16,7 +16,7 @@ pub fn render(
         Events::new(),
         vec![
             Html::div(
-                Attributes::new().class("grid-w-6 keyvalue pure-form"),
+                Attributes::new().class("grid-w-12 keyvalue pure-form"),
                 Events::new(),
                 vec![
                     Html::label(
@@ -36,7 +36,7 @@ pub fn render(
             ),
             Html::div(
                 Attributes::new()
-                    .class("grid-w-18")
+                    .class("grid-w-12")
                     .class("justify-r")
                     .class("centering-h"),
                 Events::new(),
@@ -58,13 +58,13 @@ pub fn render(
                 )],
             ),
             Html::div(
-                Attributes::new()
-                    .class("grid-w-12")
-                    .class("linear-h")
-                    .class("centering-v-i")
-                    .class("pure-form"),
+                Attributes::new().class("grid-w-12"),
                 Events::new(),
-                vec![],
+                vec![btn::primary(
+                    Attributes::new(),
+                    Events::new(),
+                    vec![awesome::i("fa-bars"), Html::text(" ルーム設定")],
+                )],
             ),
             Html::div(
                 Attributes::new()

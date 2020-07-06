@@ -33,10 +33,10 @@ impl CharacterCollectionRenderer {
     pub fn new(gl: &WebGlRenderingContext) -> Self {
         let vertexis_buffer_xy = gl.create_vbo_with_f32array(
             &[
-                [0.5, 0.5, 0.0],
-                [-0.5, 0.5, 0.0],
-                [0.5, -0.5, 0.0],
-                [-0.5, -0.5, 0.0],
+                [0.5, 0.5, 1.0 / 128.0],
+                [-0.5, 0.5, 1.0 / 128.0],
+                [0.5, -0.5, 1.0 / 128.0],
+                [-0.5, -0.5, 1.0 / 128.0],
             ]
             .concat(),
         );
@@ -89,8 +89,10 @@ impl CharacterCollectionRenderer {
         {
             let s = character.size();
             let p = character.position();
-            let model_matrix: Array2<f32> =
-                ModelMatrix::new().with_scale(s).with_movement(p).into();
+            let model_matrix: Array2<f32> = ModelMatrix::new()
+                .with_scale(&[s[0], s[1], 1.0])
+                .with_movement(p)
+                .into();
             let mvp_matrix = vp_matrix.dot(&model_matrix);
             let mvp_matrix = mvp_matrix.t();
             let color = Color::from(id_map.len() as u32 | 0xFF000000);
@@ -135,7 +137,6 @@ impl CharacterCollectionRenderer {
             id_map.insert(color.to_u32(), TableBlock::new(character_id.clone(), 0));
         }
 
-        gl.depth_func(web_sys::WebGlRenderingContext::LEQUAL);
         gl.set_attribute(&self.vertexis_buffer_xz, &program.a_vertex_location, 3, 0);
 
         for (mvp_matrix, color) in mvp_matrixies {

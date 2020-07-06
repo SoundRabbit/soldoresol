@@ -170,8 +170,6 @@ impl MaskRenderer {
             );
         }
 
-        gl.depth_func(web_sys::WebGlRenderingContext::ALWAYS);
-
         self.character_collection_renderer.render(
             gl,
             &self.mask_program,

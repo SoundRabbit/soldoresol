@@ -155,4 +155,64 @@ impl Camera {
 
         inv.dot(&arr1(&[p[0] * w, p[1] * w, screen_z, w]))
     }
+
+    pub fn collision_point(
+        &self,
+        canvas_size: &[f32; 2],
+        screen_position: &[f32; 2],
+        r: &[f32; 3],
+        s: &[f32; 3],
+        t: &[f32; 3],
+    ) -> [f32; 3] {
+        let inv_v = self.inv_view_matrix();
+        let inv_p = self.inv_perspective_matrix(canvas_size);
+        let inv = inv_v.dot(&inv_p);
+
+        let p = [
+            screen_position[0] / canvas_size[0] * 2.0 - 1.0,
+            -(screen_position[1] / canvas_size[1] * 2.0 - 1.0),
+        ];
+
+        let ix = inv.row(0);
+        let iy = inv.row(1);
+        let iz = inv.row(2);
+        let iw = inv.row(3);
+        let xw = ix[0] * p[0] + ix[1] * p[1] + ix[3];
+        let yw = iy[0] * p[0] + iy[1] * p[1] + iy[3];
+        let zw = iz[0] * p[0] + iz[1] * p[1] + iz[3];
+        let ww = iw[0] * p[0] + iw[1] * p[1] + iw[3];
+
+        let mut m = [
+            [ix[2], xw, -s[0], -t[0], r[0]],
+            [iy[2], yw, -s[1], -t[1], r[1]],
+            [iz[2], zw, -s[2], -t[2], r[2]],
+            [iw[2], ww, 0.0, 0.0, 1.0],
+        ];
+
+        // 拡大係数行列mを解く
+        for rc in 0..4 {
+            for r in 0..4 {
+                if r == rc {
+                    let f = m[rc][rc];
+                    for c in 0..5 {
+                        m[r][c] /= f;
+                    }
+                } else {
+                    let b = m[r][rc] / m[rc][rc];
+                    for c in 0..5 {
+                        m[r][c] -= m[rc][c] * b;
+                    }
+                }
+            }
+        }
+
+        let u = m[2][4];
+        let v = m[3][4];
+
+        [
+            u * s[0] + v * t[0] + r[0],
+            u * s[1] + v * t[1] + r[1],
+            u * s[2] + v * t[2] + r[2],
+        ]
+    }
 }
