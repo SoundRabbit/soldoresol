@@ -62,6 +62,7 @@ impl ViewRenderer {
         );
         gl.enable(web_sys::WebGlRenderingContext::DEPTH_TEST);
         gl.enable(web_sys::WebGlRenderingContext::CULL_FACE);
+        gl.cull_face(web_sys::WebGlRenderingContext::BACK);
 
         let area_collection_renderer = AreaCollectionRenderer::new(gl);
         let boxblock_collection_renderer = BoxblockCollectionRenderer::new(gl);

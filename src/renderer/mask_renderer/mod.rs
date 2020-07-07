@@ -60,7 +60,8 @@ impl MaskRenderer {
             web_sys::WebGlRenderingContext::SRC_ALPHA,
             web_sys::WebGlRenderingContext::ONE_MINUS_SRC_ALPHA,
         );
-
+        gl.enable(web_sys::WebGlRenderingContext::CULL_FACE);
+        gl.cull_face(web_sys::WebGlRenderingContext::BACK);
         let area_collection_renderer = AreaCollectionRenderer::new(&gl);
         let boxblock_collection_renderer = BoxblockCollectionRenderer::new(&gl);
         let character_collection_renderer = CharacterCollectionRenderer::new(&gl);

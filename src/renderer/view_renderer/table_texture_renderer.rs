@@ -86,7 +86,6 @@ impl TableTextureRenderer {
 
         self.table_texture_program.use_program(gl);
 
-        gl.enable(web_sys::WebGlRenderingContext::CULL_FACE);
         gl.set_attribute(
             &self.polygon_vertexis_buffer,
             &self.table_texture_program.a_vertex_location,
@@ -198,7 +197,5 @@ impl TableTextureRenderer {
             web_sys::WebGlRenderingContext::UNSIGNED_SHORT,
             0,
         );
-
-        gl.disable(web_sys::WebGlRenderingContext::CULL_FACE);
     }
 }
