@@ -72,7 +72,7 @@ pub fn render(
                     btn::primary(
                         Attributes::new(),
                         Events::new().on_click(|_| Msg::OpenModeless(Modeless::Chat)),
-                        vec![awesome::i("fa-chat"), Html::text(" チャット")],
+                        vec![awesome::i("fa-comments"), Html::text(" チャット")],
                     ),
                 ],
             ),
