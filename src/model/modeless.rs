@@ -133,17 +133,40 @@ impl<T> Modeless<T> {
         if let Some(grubbed) = &self.grubbed {
             let pos = self.window_pos(&[x, y]);
 
+            let top = pos[1] + grubbed.top;
+            let left = pos[0] + grubbed.left;
+            let bottom = pos[1] + grubbed.bottom;
+            let right = pos[0] + grubbed.right;
+
+            let diff_top = if self.movable.top { -top.min(0.0) } else { 0.0 };
+            let diff_left = if self.movable.left {
+                -left.min(0.0)
+            } else {
+                0.0
+            };
+            let diff_bottom = if self.movable.bottom {
+                -(bottom.max(100.0) - 100.0)
+            } else {
+                0.0
+            };
+            let diff_right = if self.movable.right {
+                -(right.max(100.0) - 100.0)
+            } else {
+                0.0
+            };
+
             if self.movable.top {
-                self.position.top = pos[1] + grubbed.top;
-            }
-            if self.movable.left {
-                self.position.left = pos[0] + grubbed.left;
+                self.position.top = top + diff_top + diff_bottom;
             }
             if self.movable.bottom {
-                self.position.bottom = pos[1] + grubbed.bottom;
+                self.position.bottom = bottom + diff_top + diff_bottom;
+            }
+
+            if self.movable.left {
+                self.position.left = left + diff_left + diff_right;
             }
             if self.movable.right {
-                self.position.right = pos[0] + grubbed.right;
+                self.position.right = right + diff_left + diff_right;
             }
         }
     }
