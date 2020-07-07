@@ -63,6 +63,10 @@ impl ViewRenderer {
         gl.enable(web_sys::WebGlRenderingContext::DEPTH_TEST);
         gl.enable(web_sys::WebGlRenderingContext::CULL_FACE);
         gl.cull_face(web_sys::WebGlRenderingContext::BACK);
+        gl.enable(web_sys::WebGlRenderingContext::STENCIL_TEST);
+
+        gl.clear_color(0.0, 0.0, 0.0, 0.0);
+        gl.clear_stencil(0);
 
         let area_collection_renderer = AreaCollectionRenderer::new(gl);
         let boxblock_collection_renderer = BoxblockCollectionRenderer::new(gl);
@@ -99,10 +103,10 @@ impl ViewRenderer {
             .perspective_matrix(&canvas_size)
             .dot(&camera.view_matrix());
         gl.viewport(0, 0, canvas_size[0] as i32, canvas_size[1] as i32);
-        gl.clear_color(0.0, 0.0, 0.0, 0.0);
         gl.clear(
             web_sys::WebGlRenderingContext::COLOR_BUFFER_BIT
-                | web_sys::WebGlRenderingContext::DEPTH_BUFFER_BIT,
+                | web_sys::WebGlRenderingContext::DEPTH_BUFFER_BIT
+                | web_sys::WebGlRenderingContext::STENCIL_BUFFER_BIT,
         );
         gl.depth_func(web_sys::WebGlRenderingContext::ALWAYS);
         if let Some(table) = block_field.get::<block::Table>(world.selecting_table()) {
@@ -118,6 +122,7 @@ impl ViewRenderer {
                 gl,
                 &vp_matrix,
                 block_field,
+                table,
                 table.tablemasks(),
             );
             self.area_collection_renderer

@@ -11,12 +11,19 @@ pub struct Tablemask {
     color: Color,
     size_is_binded: bool,
     is_rounded: bool,
+    is_inved: bool,
     is_fixed: bool,
     property_id: BlockId,
 }
 
 impl Tablemask {
-    pub fn new(property_id: BlockId, size: &[f32; 2], color: Color, is_rounded: bool) -> Self {
+    pub fn new(
+        property_id: BlockId,
+        size: &[f32; 2],
+        color: Color,
+        is_rounded: bool,
+        is_inved: bool,
+    ) -> Self {
         Self {
             size: [size[0], size[1], 0.0],
             position: [0.0, 0.0, 0.0],
@@ -24,6 +31,7 @@ impl Tablemask {
             color: color,
             size_is_binded: true,
             is_rounded: is_rounded,
+            is_inved: is_inved,
             is_fixed: false,
             property_id: property_id,
         }
@@ -63,6 +71,10 @@ impl Tablemask {
 
     pub fn set_is_rounded(&mut self, is_rounded: bool) {
         self.is_rounded = is_rounded;
+    }
+
+    pub fn is_inved(&self) -> bool {
+        self.is_inved
     }
 
     pub fn is_fixed(&self) -> bool {

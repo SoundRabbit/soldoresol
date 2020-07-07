@@ -35,6 +35,7 @@ pub fn render(z_index: u64, contextmenu: &state::contextmenu::State) -> Html<Msg
                                 [8.0, 8.0],
                                 color_system::gray((255.0 * 0.6) as u8, 5),
                                 true,
+                                false,
                             )
                         }
                     }),

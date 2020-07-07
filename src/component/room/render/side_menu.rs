@@ -236,6 +236,7 @@ fn row_tablemask(selecting_tool: &table::Tool) -> Vec<Html<Msg>> {
                 size: [8.0, 8.0],
                 color: color_system::gray((0.6 * 255.0) as u8, 5),
                 is_rounded: true,
+                is_inved: false,
                 show_option_menu: true,
             })
         }),
@@ -244,10 +245,12 @@ fn row_tablemask(selecting_tool: &table::Tool) -> Vec<Html<Msg>> {
                 size,
                 color,
                 is_rounded,
+                is_inved,
                 show_option_menu,
             } => {
                 let color = *color;
                 let is_rounded = *is_rounded;
+                let is_inved = *is_inved;
                 let show_option_menu = *show_option_menu;
                 option(
                     show_option_menu,
@@ -258,11 +261,12 @@ fn row_tablemask(selecting_tool: &table::Tool) -> Vec<Html<Msg>> {
                                 size,
                                 color,
                                 is_rounded,
+                                is_inved,
                                 show_option_menu: !show_option_menu,
                             })
                         }
                     }),
-                    row_tablemask_menu(size, color, is_rounded),
+                    row_tablemask_menu(size, color, is_rounded, is_inved),
                 )
             }
             _ => text::span(""),
@@ -270,7 +274,12 @@ fn row_tablemask(selecting_tool: &table::Tool) -> Vec<Html<Msg>> {
     )
 }
 
-fn row_tablemask_menu(size: &[f32; 2], color: Color, is_rounded: bool) -> Vec<Html<Msg>> {
+fn row_tablemask_menu(
+    size: &[f32; 2],
+    color: Color,
+    is_rounded: bool,
+    is_inved: bool,
+) -> Vec<Html<Msg>> {
     let [xw, yw] = size.clone();
     vec![Html::div(
         Attributes::new().class("keyvalue"),
@@ -281,14 +290,28 @@ fn row_tablemask_menu(size: &[f32; 2], color: Color, is_rounded: bool) -> Vec<Ht
                 Attributes::new().class("linear-h"),
                 Events::new(),
                 vec![
-                    row_tablemask_menu_type(color, xw, yw, "矩形", false, !is_rounded),
-                    row_tablemask_menu_type(color, xw, yw, "円形", true, is_rounded),
+                    row_tablemask_menu_type(color, xw, yw, "矩形", false, is_inved, !is_rounded),
+                    row_tablemask_menu_type(color, xw, yw, "円形", true, is_inved, is_rounded),
                 ],
             ),
+            text::span("反転"),
+            btn::toggle(
+                is_inved,
+                Attributes::new(),
+                Events::new().on_click(move |_| {
+                    Msg::SetSelectingTableTool(table::Tool::Tablemask {
+                        size: [xw, yw],
+                        color,
+                        is_rounded,
+                        is_inved: !is_inved,
+                        show_option_menu: true,
+                    })
+                }),
+            ),
             text::span("X幅"),
-            row_tablemask_menu_size(color, is_rounded, xw, move |xw| [xw, yw]),
+            row_tablemask_menu_size(color, is_rounded, is_inved, xw, move |xw| [xw, yw]),
             text::span("Y幅"),
-            row_tablemask_menu_size(color, is_rounded, yw, move |yw| [xw, yw]),
+            row_tablemask_menu_size(color, is_rounded, is_inved, yw, move |yw| [xw, yw]),
             text::span("選択色"),
             Html::div(
                 Attributes::new()
@@ -302,10 +325,35 @@ fn row_tablemask_menu(size: &[f32; 2], color: Color, is_rounded: bool) -> Vec<Ht
                 Attributes::new().class("keyvalue-banner").class("linear-v"),
                 Events::new(),
                 vec![
-                    row_tablemask_menu_color(3, color.alpha, is_rounded, xw, yw),
-                    row_tablemask_menu_color(5, color.alpha, is_rounded, xw, yw),
-                    row_tablemask_menu_color(7, color.alpha, is_rounded, xw, yw),
+                    row_tablemask_menu_color(3, color.alpha, is_rounded, is_inved, xw, yw),
+                    row_tablemask_menu_color(5, color.alpha, is_rounded, is_inved, xw, yw),
+                    row_tablemask_menu_color(7, color.alpha, is_rounded, is_inved, xw, yw),
                 ],
+            ),
+            text::span("透明度"),
+            Html::input(
+                Attributes::new()
+                    .type_("number")
+                    .string("step", "1")
+                    .value(color.alpha.to_string()),
+                Events::new().on_input({
+                    let mut color = color;
+                    move |a| {
+                        a.parse()
+                            .map(|a| {
+                                color.alpha = a;
+                                Msg::SetSelectingTableTool(table::Tool::Tablemask {
+                                    size: [xw, yw],
+                                    color,
+                                    is_rounded: is_rounded,
+                                    is_inved: is_inved,
+                                    show_option_menu: true,
+                                })
+                            })
+                            .unwrap_or(Msg::NoOp)
+                    }
+                }),
+                vec![],
             ),
         ],
     )]
@@ -317,6 +365,7 @@ fn row_tablemask_menu_type(
     yw: f32,
     text: impl Into<String>,
     is_rounded: bool,
+    is_inved: bool,
     selected: bool,
 ) -> Html<Msg> {
     btn::selectable(
@@ -330,6 +379,7 @@ fn row_tablemask_menu_type(
                     size: [xw, yw],
                     color,
                     is_rounded: is_rounded,
+                    is_inved: is_inved,
                     show_option_menu: true,
                 })
             }
@@ -341,6 +391,7 @@ fn row_tablemask_menu_type(
 fn row_tablemask_menu_size(
     color: Color,
     is_rounded: bool,
+    is_inved: bool,
     s: f32,
     on_input: impl FnOnce(f32) -> [f32; 2] + 'static,
 ) -> Html<Msg> {
@@ -356,6 +407,7 @@ fn row_tablemask_menu_size(
                         color,
                         size: on_input(w),
                         is_rounded,
+                        is_inved,
                         show_option_menu: true,
                     })
                 })
@@ -369,6 +421,7 @@ fn row_tablemask_menu_color(
     idx: usize,
     alpha: u8,
     is_rounded: bool,
+    is_inved: bool,
     xw: f32,
     yw: f32,
 ) -> Html<Msg> {
@@ -379,6 +432,7 @@ fn row_tablemask_menu_color(
                 color,
                 size: [xw, yw],
                 is_rounded,
+                is_inved,
                 show_option_menu: true,
             })
         }

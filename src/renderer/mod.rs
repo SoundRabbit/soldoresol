@@ -27,13 +27,19 @@ pub struct Renderer {
 }
 
 impl Renderer {
-    pub fn new(gl: web_sys::WebGlRenderingContext) -> Self {
-        crate::debug::log_1(
-            gl.get_extension("EXT_frag_depth")
-                .map_err(|err| crate::debug::log_1(&err))
-                .unwrap()
-                .unwrap(),
-        );
+    pub fn new(canvas: web_sys::HtmlCanvasElement) -> Self {
+        let option = object! {stencil: true};
+        let option: js_sys::Object = option.into();
+        let gl = canvas
+            .get_context_with_context_options("webgl", &option.into())
+            .unwrap()
+            .unwrap()
+            .dyn_into::<web_sys::WebGlRenderingContext>()
+            .unwrap();
+        gl.get_extension("EXT_frag_depth")
+            .map_err(|err| crate::debug::log_1(&err))
+            .unwrap()
+            .unwrap();
         let gl = Rc::new(WebGlRenderingContext(gl));
         let view_renderer = ViewRenderer::new(&gl);
         let mask_renderer = MaskRenderer::new();

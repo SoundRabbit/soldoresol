@@ -73,12 +73,10 @@ impl AreaCollectionRenderer {
 
                     let len = (v[0].powi(2) + v[1].powi(2) + v[2].powi(2)).sqrt();
 
-                    let yr = v[2].atan2(v[0]);
                     let zr = v[1].atan2(v[0]);
 
                     let mm: Array2<f32> = ModelMatrix::new()
                         .with_scale(&[len, line_width, 0.0])
-                        .with_y_axis_rotation(yr)
                         .with_z_axis_rotation(zr)
                         .with_movement(&[o[0] + v[0] / 2.0, o[1] + v[1] / 2.0, o[2] + v[2] / 2.0])
                         .into();
@@ -89,11 +87,8 @@ impl AreaCollectionRenderer {
 
                     let len = (v[0].powi(2) + v[1].powi(2) + v[2].powi(2)).sqrt() * 2.0;
 
-                    let yr = v[2].atan2(v[0]);
-
                     let mm: Array2<f32> = ModelMatrix::new()
                         .with_scale(&[len, len, 0.0])
-                        .with_y_axis_rotation(yr)
                         .with_movement(o)
                         .into();
                     (mm, true, [len, len])

@@ -36,6 +36,7 @@ pub enum Tool {
         size: [f32; 2],
         color: Color,
         is_rounded: bool,
+        is_inved: bool,
         show_option_menu: bool,
     },
     Boxblock {

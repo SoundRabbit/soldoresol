@@ -47,7 +47,7 @@ pub enum Msg {
 
     // UI for table
     AddChracaterWithMousePositionToCloseContextmenu([f32; 2]),
-    AddTablemaskWithMousePositionToCloseContextmenu([f32; 2], [f32; 2], Color, bool),
+    AddTablemaskWithMousePositionToCloseContextmenu([f32; 2], [f32; 2], Color, bool, bool),
     AddBoxblockWithMousePositionToCloseContextmenu([f32; 2], [f32; 3], Color),
     CloneCharacterToCloseContextmenu(BlockId),
     CloneTablemaskToCloseContextmenu(BlockId),
@@ -223,9 +223,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         Msg::InitDomDependents => {
             state.set_canvas_size(reset_canvas_size(state.pixel_ratio()));
             let canvas = get_table_canvas_element();
-            let gl = canvas.get_context("webgl").unwrap().unwrap();
-            let gl = gl.dyn_into::<web_sys::WebGlRenderingContext>().unwrap();
-            state.set_renderer(Renderer::new(gl));
+            state.set_renderer(Renderer::new(canvas));
             render_canvas(state);
 
             let element = get_element_by_id("modeless-parent");
@@ -384,6 +382,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             size,
             color,
             is_rounded,
+            is_inved,
         ) => {
             state.close_contextmenu();
 
@@ -398,6 +397,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     &size,
                     color,
                     is_rounded,
+                    is_inved,
                 );
                 tablemask.set_position([x, y]);
                 let tablemask = state.block_field_mut().add(tablemask);

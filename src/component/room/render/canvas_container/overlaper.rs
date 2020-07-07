@@ -43,9 +43,10 @@ pub fn render(
                                 size,
                                 color,
                                 is_rounded,
+                                is_inved,
                                 ..
                             } => Msg::AddTablemaskWithMousePositionToCloseContextmenu(
-                                mouse_pos, size, color, is_rounded,
+                                mouse_pos, size, color, is_rounded, is_inved,
                             ),
                             table::Tool::Boxblock { size, color, .. } => {
                                 Msg::AddBoxblockWithMousePositionToCloseContextmenu(
