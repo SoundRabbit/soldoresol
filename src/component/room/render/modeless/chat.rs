@@ -206,7 +206,7 @@ fn chat_tab_list(
                         btn::selectable(
                             *tab_id == *selecting_tab_id,
                             Attributes::new(),
-                            Events::new().on_click(move |_| Msg::NoOp),
+                            Events::new().on_click(move |_| Msg::SetSelectingChatTabIdx(tab_idx)),
                             vec![Html::text(tab.name())],
                         )
                     })
@@ -241,7 +241,7 @@ fn sender_list(
                         .and_then(|e| e.dyn_into::<web_sys::Element>().ok())
                         .and_then(|e| e.get_attribute("data-sender-idx"))
                         .and_then(|data| data.parse().ok())
-                        .map(|sender_idx| Msg::SetChatSender(sender_idx))
+                        .map(|sender_idx| Msg::SetSelectingChatSenderIdx(sender_idx))
                         .unwrap_or(Msg::NoOp)
                 }),
                 chat_state

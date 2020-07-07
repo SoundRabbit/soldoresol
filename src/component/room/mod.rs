@@ -116,8 +116,9 @@ pub enum Msg {
     SetInputingChatMessage(String),
     SendInputingChatMessage,
     InsertChatItem(BlockId, block::chat::Item),
-    SetChatSender(usize),
+    SetSelectingChatSenderIdx(usize),
     AddChatTab,
+    SetSelectingChatTabIdx(usize),
     SetChatTabName(BlockId, String),
     RemoveChatTab(BlockId),
 
@@ -716,25 +717,38 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
 
         Msg::SetTablemaskPositionWithMousePosition(block_id, mouse_position) => {
-            let [x, y] = get_table_position(state, false, &mouse_position, state.pixel_ratio());
-            let timestamp = timestamp();
+            let is_fixied = state
+                .block_field()
+                .get::<block::table_object::Tablemask>(&block_id)
+                .map(|tablemask| tablemask.is_fixed())
+                .unwrap_or(true);
 
-            let updated = state
-                .block_field_mut()
-                .update(
-                    &block_id,
-                    timestamp,
-                    |tablemask: &mut block::table_object::Tablemask| {
-                        tablemask.set_position([x, y]);
-                    },
-                )
-                .is_none();
+            if !is_fixied {
+                let [x, y] = get_table_position(state, false, &mouse_position, state.pixel_ratio());
+                let timestamp = timestamp();
 
-            if updated {
-                render_canvas(state);
-                send_pack_cmd(state.block_field(), vec![&block_id])
+                let updated = state
+                    .block_field_mut()
+                    .update(
+                        &block_id,
+                        timestamp,
+                        |tablemask: &mut block::table_object::Tablemask| {
+                            tablemask.set_position([x, y]);
+                        },
+                    )
+                    .is_none();
+
+                if updated {
+                    render_canvas(state);
+                    send_pack_cmd(state.block_field(), vec![&block_id])
+                } else {
+                    state.dequeue()
+                }
             } else {
-                state.dequeue()
+                update(
+                    state,
+                    Msg::SetCameraMovementWithMouseMovement(mouse_position),
+                )
             }
         }
 
@@ -1287,7 +1301,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
         Msg::InsertChatItem(tab, item) => state.dequeue(),
 
-        Msg::SetChatSender(idx) => {
+        Msg::SetSelectingChatSenderIdx(idx) => {
             state.chat_mut().set_selecting_sender_idx(idx);
             state.dequeue()
         }
@@ -1298,6 +1312,11 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.update_chat_block(timestamp(), |chat| {
                 chat.push(tab_id);
             });
+            state.dequeue()
+        }
+
+        Msg::SetSelectingChatTabIdx(idx) => {
+            state.chat_mut().set_selecting_tab_idx(idx);
             state.dequeue()
         }
 

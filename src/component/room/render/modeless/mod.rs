@@ -16,13 +16,10 @@ mod chat;
 mod object;
 
 pub fn render(
-    block_field: &block::Field,
-    resource: &Resource,
+    state: &State,
     modeless_id: model::modeless::ModelessId,
     modeless: &model::Modeless<Modeless>,
     grubbed: Option<model::modeless::ModelessId>,
-    chat_state: &state::chat::State,
-    personal_data: &PersonalData,
 ) -> Html<Msg> {
     match modeless.as_ref() {
         Modeless::Object {
@@ -31,8 +28,8 @@ pub fn render(
             outlined,
             ..
         } => object::render(
-            block_field,
-            resource,
+            state.block_field(),
+            state.resource(),
             modeless_id,
             modeless,
             grubbed,
@@ -41,28 +38,24 @@ pub fn render(
             outlined.as_ref(),
         ),
         Modeless::Chat => {
-            if let Some((chat_data, tab_id, tab)) = block_field
-                .get::<block::Chat>(chat_state.block_id())
-                .and_then(|chat| {
-                    chat.tabs()
-                        .get(chat_state.selecting_tab_idx())
-                        .map(|tab_id| (chat, tab_id))
-                })
+            if let Some((chat_data, tab_id, tab)) = state
+                .chat_block()
+                .and_then(|chat| state.selecting_chat_tab_id().map(|tab_id| (chat, tab_id)))
                 .and_then(|(chat, tab_id)| {
-                    block_field
-                        .get::<block::chat::Tab>(tab_id)
-                        .map(|tab| (chat, tab_id, tab))
+                    state
+                        .selecting_chat_tab_block()
+                        .map(|tab_block| (chat, tab_id, tab_block))
                 })
             {
                 chat::render(
-                    block_field,
-                    resource,
+                    state.block_field(),
+                    state.resource(),
                     modeless_id,
                     modeless,
                     grubbed,
-                    chat_state,
+                    state.chat(),
                     chat_data,
-                    personal_data,
+                    state.personal_data(),
                     tab_id,
                     tab,
                 )

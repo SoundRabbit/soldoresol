@@ -89,7 +89,10 @@ impl TablemaskCollectionRenderer {
                 Some(&program.u_mask_color_location),
                 &color.to_f32array(),
             );
-            gl.uniform1i(Some(&program.u_flag_round_location), 1);
+            gl.uniform1i(
+                Some(&program.u_flag_round_location),
+                if tablemask.is_rounded() { 1 } else { 0 },
+            );
             gl.draw_elements_with_i32(
                 web_sys::WebGlRenderingContext::TRIANGLES,
                 6,

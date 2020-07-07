@@ -1,26 +1,16 @@
 use super::super::{
     modeless,
-    state::{self, chat, table, Modeless},
+    state::{self, table, Modeless},
+    Msg,
 };
-use super::Msg;
-use crate::{
-    block,
-    model::{self, PersonalData},
-    Resource,
-};
+use super::State;
+use crate::model;
 use kagura::prelude::*;
 use wasm_bindgen::JsCast;
 
-pub fn render(
-    block_field: &block::Field,
-    table: &table::State,
-    world: &block::World,
-    resource: &Resource,
-    chat: &chat::State,
-    personal_data: &PersonalData,
-    modeless: &model::modeless::Collection<Modeless>,
-) -> Html<Msg> {
+pub fn render(state: &State, modeless: &model::modeless::Collection<Modeless>) -> Html<Msg> {
     let grubbed = modeless.grubbed();
+    let table = state.table();
 
     Html::div(
         Attributes::new()
@@ -232,15 +222,7 @@ pub fn render(
             .iter()
             .map(|(modeless_id, modeless)| {
                 if let Some(modeless) = modeless {
-                    modeless::render(
-                        block_field,
-                        resource,
-                        modeless_id,
-                        modeless,
-                        grubbed.clone(),
-                        chat,
-                        personal_data,
-                    )
+                    modeless::render(state, modeless_id, modeless, grubbed.clone())
                 } else {
                     Html::div(Attributes::new(), Events::new(), vec![])
                 }

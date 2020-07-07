@@ -144,8 +144,38 @@ impl<M, S> State<M, S> {
         &mut self.chat
     }
 
+    pub fn chat_block(&self) -> Option<&block::Chat> {
+        self.block_field.get::<block::Chat>(self.chat.block_id())
+    }
+
     pub fn update_chat_block(&mut self, timestamp: Option<f64>, f: impl FnOnce(&mut block::Chat)) {
         self.block_field.update(self.chat.block_id(), timestamp, f);
+    }
+
+    pub fn selecting_chat_tab_id(&self) -> Option<&BlockId> {
+        self.chat_block().and_then(|chat| {
+            let idx = self.chat.selecting_tab_idx();
+            if idx < chat.len() {
+                chat.get(idx)
+            } else {
+                chat.get(chat.len() - 1)
+            }
+        })
+    }
+
+    pub fn selecting_chat_tab_block(&self) -> Option<&block::chat::Tab> {
+        self.selecting_chat_tab_id()
+            .and_then(|tab_id| self.block_field.get::<block::chat::Tab>(tab_id))
+    }
+
+    pub fn update_selecting_chat_tab_block(
+        &mut self,
+        timestamp: Option<f64>,
+        f: impl FnOnce(&mut block::chat::Tab),
+    ) {
+        if let Some(block_id) = self.selecting_chat_tab_id() {
+            self.block_field.update(&block_id.clone(), timestamp, f);
+        }
     }
 
     pub fn world(&self) -> &BlockId {

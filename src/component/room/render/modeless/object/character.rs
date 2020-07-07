@@ -1,14 +1,12 @@
 use super::super::super::super::super::{awesome, btn, modeless};
-use super::super::state::{Modal, Modeless};
+use super::super::state::Modal;
 use super::Msg;
 use crate::{
     block::{self, BlockId},
-    model::{self},
     resource::Data,
-    Color, Resource,
+    Resource,
 };
 use kagura::prelude::*;
-use wasm_bindgen::JsCast;
 
 pub fn render(
     block_field: &block::Field,
@@ -220,7 +218,7 @@ pub fn render(
                                         ),
                                     ],
                                 ),
-                                root_property(block_field, character_id, character.property_id()),
+                                root_property(block_field, character.property_id()),
                             ],
                         ),
                     ],
@@ -230,11 +228,7 @@ pub fn render(
     )
 }
 
-fn root_property(
-    block_field: &block::Field,
-    character_id: &BlockId,
-    prop_id: &BlockId,
-) -> Html<Msg> {
+fn root_property(block_field: &block::Field, prop_id: &BlockId) -> Html<Msg> {
     if let Some(prop) = block_field.get::<block::Property>(prop_id) {
         match prop.value() {
             block::property::Value::Children(children) => Html::div(

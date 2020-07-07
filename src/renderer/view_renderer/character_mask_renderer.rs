@@ -6,7 +6,7 @@ use super::super::{
 use super::Camera;
 use crate::{
     block::{self, BlockId},
-    color_system, Color,
+    color_system,
 };
 use ndarray::Array2;
 

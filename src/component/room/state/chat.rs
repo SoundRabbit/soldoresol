@@ -44,6 +44,10 @@ impl State {
         self.selecting_tab_idx
     }
 
+    pub fn set_selecting_tab_idx(&mut self, idx: usize) {
+        self.selecting_tab_idx = idx;
+    }
+
     pub fn selecting_sender_idx(&self) -> usize {
         self.selecting_sender_idx
     }

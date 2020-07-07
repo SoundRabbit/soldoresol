@@ -3,10 +3,7 @@ use super::super::{
     webgl::{WebGlF32Vbo, WebGlI16Ibo, WebGlRenderingContext},
     ModelMatrix,
 };
-use crate::{
-    block::{self, BlockId},
-    color_system,
-};
+use crate::block::{self, BlockId};
 use ndarray::Array2;
 
 pub struct BoxblockCollectionRenderer {

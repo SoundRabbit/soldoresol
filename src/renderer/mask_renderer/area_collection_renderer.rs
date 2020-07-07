@@ -61,7 +61,7 @@ impl AreaCollectionRenderer {
         );
 
         for (area_id, area) in block_field.listed::<block::table_object::Area>(areas.collect()) {
-            let (model_matrix, is_rounded, size) =
+            let (model_matrix, is_rounded) =
                 if let block::table_object::area::Type::Line(line_width) = area.type_() {
                     let line_width = *line_width as f32;
                     let o = area.org().clone();
@@ -76,7 +76,7 @@ impl AreaCollectionRenderer {
                         .with_z_axis_rotation(zr)
                         .with_movement(&[o[0] + v[0] / 2.0, o[1] + v[1] / 2.0, o[2] + v[2] / 2.0])
                         .into();
-                    (mm, false, [len, line_width])
+                    (mm, false)
                 } else {
                     let o = area.org();
                     let v = area.vec().clone();
@@ -87,7 +87,7 @@ impl AreaCollectionRenderer {
                         .with_scale(&[len, len, 0.0])
                         .with_movement(o)
                         .into();
-                    (mm, true, [len, len])
+                    (mm, true)
                 };
 
             let mvp_matrix = vp_matrix.dot(&model_matrix);

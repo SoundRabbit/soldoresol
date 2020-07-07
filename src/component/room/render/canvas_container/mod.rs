@@ -47,15 +47,7 @@ pub fn render(z_index: u64, state: &State, world: &block::World) -> Html<Msg> {
             info(state.table().info()),
             hint(),
             character_list::render(state.block_field(), world.characters(), state.resource()),
-            overlaper::render(
-                state.block_field(),
-                state.table(),
-                world,
-                state.resource(),
-                state.chat(),
-                state.personal_data(),
-                state.modeless(),
-            ),
+            overlaper::render(state, state.modeless()),
         ],
     )
 }
