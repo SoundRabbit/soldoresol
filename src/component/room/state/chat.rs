@@ -48,6 +48,12 @@ impl State {
         self.selecting_sender_idx
     }
 
+    pub fn set_selecting_sender_idx(&mut self, idx: usize) {
+        if idx < self.senders.len() {
+            self.selecting_sender_idx = idx;
+        }
+    }
+
     pub fn inputing_message(&self) -> &String {
         &self.inputing_message
     }

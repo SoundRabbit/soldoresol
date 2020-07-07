@@ -20,6 +20,10 @@ impl Tab {
     pub fn name(&self) -> &String {
         &self.name
     }
+
+    pub fn set_name(&mut self, name: String) {
+        self.name = name;
+    }
 }
 
 impl Block for Tab {

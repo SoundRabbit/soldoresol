@@ -77,6 +77,10 @@ impl Tablemask {
         self.is_inved
     }
 
+    pub fn set_is_inved(&mut self, is_inved: bool) {
+        self.is_inved = is_inved;
+    }
+
     pub fn is_fixed(&self) -> bool {
         self.is_fixed
     }

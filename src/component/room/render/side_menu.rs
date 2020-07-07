@@ -276,7 +276,7 @@ fn row_tablemask(selecting_tool: &table::Tool) -> Vec<Html<Msg>> {
 
 fn row_tablemask_menu(
     size: &[f32; 2],
-    color: Color,
+    mut color: Color,
     is_rounded: bool,
     is_inved: bool,
 ) -> Vec<Html<Msg>> {
@@ -290,8 +290,8 @@ fn row_tablemask_menu(
                 Attributes::new().class("linear-h"),
                 Events::new(),
                 vec![
-                    row_tablemask_menu_type(color, xw, yw, "矩形", false, is_inved, !is_rounded),
-                    row_tablemask_menu_type(color, xw, yw, "円形", true, is_inved, is_rounded),
+                    row_tablemask_menu_type(color, xw, yw, is_inved, "矩形", false, !is_rounded),
+                    row_tablemask_menu_type(color, xw, yw, is_inved, "円形", true, is_rounded),
                 ],
             ),
             text::span("反転"),
@@ -325,33 +325,31 @@ fn row_tablemask_menu(
                 Attributes::new().class("keyvalue-banner").class("linear-v"),
                 Events::new(),
                 vec![
-                    row_tablemask_menu_color(3, color.alpha, is_rounded, is_inved, xw, yw),
-                    row_tablemask_menu_color(5, color.alpha, is_rounded, is_inved, xw, yw),
-                    row_tablemask_menu_color(7, color.alpha, is_rounded, is_inved, xw, yw),
+                    row_tablemask_menu_color(3, is_rounded, is_inved, xw, yw),
+                    row_tablemask_menu_color(5, is_rounded, is_inved, xw, yw),
+                    row_tablemask_menu_color(7, is_rounded, is_inved, xw, yw),
                 ],
             ),
-            text::span("透明度"),
+            text::span("不透明度"),
             Html::input(
                 Attributes::new()
                     .type_("number")
                     .string("step", "1")
-                    .value(color.alpha.to_string()),
-                Events::new().on_input({
-                    let mut color = color;
-                    move |a| {
-                        a.parse()
-                            .map(|a| {
-                                color.alpha = a;
-                                Msg::SetSelectingTableTool(table::Tool::Tablemask {
-                                    size: [xw, yw],
-                                    color,
-                                    is_rounded: is_rounded,
-                                    is_inved: is_inved,
-                                    show_option_menu: true,
-                                })
+                    .value((color.alpha as f32 * 100.0 / 255.0).round().to_string()),
+                Events::new().on_input(move |a| {
+                    a.parse()
+                        .map(|a: f32| {
+                            let a = (a * 255.0 / 100.0).min(255.0).max(0.0) as u8;
+                            color.alpha = a;
+                            Msg::SetSelectingTableTool(table::Tool::Tablemask {
+                                size: [xw, yw],
+                                color,
+                                is_rounded: is_rounded,
+                                is_inved: is_inved,
+                                show_option_menu: true,
                             })
-                            .unwrap_or(Msg::NoOp)
-                    }
+                        })
+                        .unwrap_or(Msg::NoOp)
                 }),
                 vec![],
             ),
@@ -363,9 +361,9 @@ fn row_tablemask_menu_type(
     color: Color,
     xw: f32,
     yw: f32,
+    is_inved: bool,
     text: impl Into<String>,
     is_rounded: bool,
-    is_inved: bool,
     selected: bool,
 ) -> Html<Msg> {
     btn::selectable(
@@ -419,7 +417,6 @@ fn row_tablemask_menu_size(
 
 fn row_tablemask_menu_color(
     idx: usize,
-    alpha: u8,
     is_rounded: bool,
     is_inved: bool,
     xw: f32,
@@ -427,7 +424,6 @@ fn row_tablemask_menu_color(
 ) -> Html<Msg> {
     color_picker::idx(idx, Msg::NoOp, {
         move |mut color| {
-            color.alpha = alpha;
             Msg::SetSelectingTableTool(table::Tool::Tablemask {
                 color,
                 size: [xw, yw],

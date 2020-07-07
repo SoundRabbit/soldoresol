@@ -19,6 +19,8 @@ pub fn render(
 ) -> Html<Msg> {
     let [xw, yw, _] = tablemask.size().clone();
     let color = tablemask.color();
+    let is_inved = tablemask.is_inved();
+
     modeless::body(
         Attributes::new().class("scroll-v"),
         Events::new().on_mousemove(move |e| {
@@ -46,6 +48,15 @@ pub fn render(
                             set_type_btn(tablemask_id, "円形", true, tablemask.is_rounded()),
                         ],
                     ),
+                    text::span("反転"),
+                    btn::toggle(
+                        is_inved,
+                        Attributes::new(),
+                        Events::new().on_click({
+                            let tablemask_id = tablemask_id.clone();
+                            move |_| Msg::SetTablemaskIsInved(tablemask_id, !is_inved)
+                        }),
+                    ),
                     text::span("X幅"),
                     set_size_input(tablemask_id, xw, move |xw| [xw, yw]),
                     text::span("Y幅"),
@@ -67,6 +78,27 @@ pub fn render(
                             table_color(tablemask_id, color.alpha, 5),
                             table_color(tablemask_id, color.alpha, 7),
                         ],
+                    ),
+                    text::span("不透明度"),
+                    Html::input(
+                        Attributes::new()
+                            .type_("number")
+                            .string("step", "1")
+                            .value((color.alpha as f32 * 100.0 / 255.0).round().to_string()),
+                        Events::new().on_input({
+                            let tablemask_id = tablemask_id.clone();
+                            let mut color = color.clone();
+                            move |a| {
+                                a.parse()
+                                    .map(|a: f32| {
+                                        let a = (a * 255.0 / 100.0).min(255.0).max(0.0) as u8;
+                                        color.alpha = a;
+                                        Msg::SetTablemaskColor(tablemask_id, color)
+                                    })
+                                    .unwrap_or(Msg::NoOp)
+                            }
+                        }),
+                        vec![],
                     ),
                 ],
             )],

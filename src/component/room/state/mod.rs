@@ -144,6 +144,10 @@ impl<M, S> State<M, S> {
         &mut self.chat
     }
 
+    pub fn update_chat_block(&mut self, timestamp: Option<f64>, f: impl FnOnce(&mut block::Chat)) {
+        self.block_field.update(self.chat.block_id(), timestamp, f);
+    }
+
     pub fn world(&self) -> &BlockId {
         &self.world
     }

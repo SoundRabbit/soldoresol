@@ -97,6 +97,7 @@ pub enum Msg {
     SetTablemaskColor(BlockId, Color),
     SetTablemaskIsFixed(BlockId, bool),
     SetTablemaskIsRounded(BlockId, bool),
+    SetTablemaskIsInved(BlockId, bool),
 
     // boxblock
     SetBoxblockSize(BlockId, [f32; 3]),
@@ -1134,6 +1135,20 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             send_pack_cmd(state.block_field(), vec![&tablemask_id])
         }
 
+        Msg::SetTablemaskIsInved(tablemask_id, is_inved) => {
+            state.block_field_mut().update(
+                &tablemask_id,
+                timestamp(),
+                |tablemask: &mut block::table_object::Tablemask| {
+                    tablemask.set_is_inved(is_inved);
+                },
+            );
+
+            render_canvas(state);
+
+            send_pack_cmd(state.block_field(), vec![&tablemask_id])
+        }
+
         // Boxblock
         Msg::SetBoxblockSize(boxblock_id, size) => {
             state.block_field_mut().update(
@@ -1272,13 +1287,39 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
         Msg::InsertChatItem(tab, item) => state.dequeue(),
 
-        Msg::SetChatSender(idx) => state.dequeue(),
+        Msg::SetChatSender(idx) => {
+            state.chat_mut().set_selecting_sender_idx(idx);
+            state.dequeue()
+        }
 
-        Msg::AddChatTab => state.dequeue(),
+        Msg::AddChatTab => {
+            let tab = block::chat::Tab::new("タブ");
+            let tab_id = state.block_field_mut().add(tab);
+            state.update_chat_block(timestamp(), |chat| {
+                chat.push(tab_id);
+            });
+            state.dequeue()
+        }
 
-        Msg::SetChatTabName(tab, name) => state.dequeue(),
+        Msg::SetChatTabName(tab, name) => {
+            state
+                .block_field_mut()
+                .update(&tab, timestamp(), |tab: &mut block::chat::Tab| {
+                    tab.set_name(name);
+                });
+            state.dequeue()
+        }
 
-        Msg::RemoveChatTab(tab) => state.dequeue(),
+        Msg::RemoveChatTab(tab) => {
+            state.update_chat_block(timestamp(), |chat| {
+                if let Some(tab_idx) = chat.iter().position(|t| tab == *t) {
+                    if chat.len() > 1 {
+                        chat.remove(tab_idx);
+                    }
+                }
+            });
+            state.dequeue()
+        }
 
         // リソース
         Msg::LoadFromFileList(file_list) => {

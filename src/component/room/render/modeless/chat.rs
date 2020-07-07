@@ -26,6 +26,7 @@ pub fn render(
     selecting_tab: &block::chat::Tab,
 ) -> Html<Msg> {
     let take_num = chat_state.take_num();
+    let is_grubbed = grubbed.is_some();
 
     super::frame(
         modeless_id,
@@ -45,7 +46,12 @@ pub fn render(
                     .class("linear-v")
                     .style("grid-template-rows", "1fr fit-content(40%)")
                     .style("row-gap", "0"),
-                Events::new(),
+                Events::new().on_mousemove(move |e| {
+                    if !is_grubbed {
+                        e.stop_propagation();
+                    }
+                    Msg::NoOp
+                }),
                 vec![
                     Html::div(
                         Attributes::new()
@@ -176,16 +182,16 @@ fn chat_tab_list(
     selecting_tab_id: &BlockId,
 ) -> Html<Msg> {
     Html::div(
-        Attributes::new().class("keyvalue").class("aside"),
+        Attributes::new().class("keyvalue"),
         Events::new(),
         vec![
             btn::info(
-                Attributes::new(),
+                Attributes::new().class("aside"),
                 Events::new().on_click(|_| Msg::OpenModal(Modal::ChatTabEditor)),
-                vec![Html::text("設定")],
+                vec![Html::text("タブ")],
             ),
             Html::div(
-                Attributes::new(),
+                Attributes::new().class("flex-h").class("aside"),
                 Events::new(),
                 chat_data
                     .tabs()
@@ -217,7 +223,7 @@ fn sender_list(
     chat_state: &chat::State,
 ) -> Html<Msg> {
     Html::div(
-        Attributes::new().class("keyvalue"),
+        Attributes::new().class("keyvalueoption"),
         Events::new(),
         vec![
             btn::info(
