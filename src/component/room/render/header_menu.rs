@@ -1,5 +1,8 @@
 use super::super::super::{awesome, btn};
-use super::{state::table, Modal, Msg};
+use super::super::{
+    state::{table, Modal, Modeless},
+    Msg,
+};
 use kagura::prelude::*;
 
 pub fn render(
@@ -58,13 +61,20 @@ pub fn render(
                 )],
             ),
             Html::div(
-                Attributes::new().class("grid-w-12"),
+                Attributes::new().class("grid-w-12").class("linear-h"),
                 Events::new(),
-                vec![btn::primary(
-                    Attributes::new(),
-                    Events::new(),
-                    vec![awesome::i("fa-bars"), Html::text(" ルーム設定")],
-                )],
+                vec![
+                    btn::primary(
+                        Attributes::new(),
+                        Events::new(),
+                        vec![awesome::i("fa-bars"), Html::text(" ルーム設定")],
+                    ),
+                    btn::primary(
+                        Attributes::new(),
+                        Events::new().on_click(|_| Msg::OpenModeless(Modeless::Chat)),
+                        vec![awesome::i("fa-chat"), Html::text(" チャット")],
+                    ),
+                ],
             ),
             Html::div(
                 Attributes::new()

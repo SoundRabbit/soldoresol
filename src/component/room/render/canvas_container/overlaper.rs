@@ -236,6 +236,8 @@ pub fn render(
                         modeless_id,
                         modeless,
                         grubbed.clone(),
+                        chat,
+                        personal_data,
                     )
                 } else {
                     Html::div(Attributes::new(), Events::new(), vec![])

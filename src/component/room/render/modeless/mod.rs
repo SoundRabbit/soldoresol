@@ -1,7 +1,7 @@
 use super::super::super::{btn, modeless};
 use super::{
     common,
-    state::{self, chat, table, Modeless},
+    state::{self, Modeless},
 };
 use super::{Msg, State};
 use crate::{
@@ -12,6 +12,7 @@ use crate::{
 use kagura::prelude::*;
 use wasm_bindgen::JsCast;
 
+mod chat;
 mod object;
 
 pub fn render(
@@ -20,6 +21,8 @@ pub fn render(
     modeless_id: model::modeless::ModelessId,
     modeless: &model::Modeless<Modeless>,
     grubbed: Option<model::modeless::ModelessId>,
+    chat_state: &state::chat::State,
+    personal_data: &PersonalData,
 ) -> Html<Msg> {
     match modeless.as_ref() {
         Modeless::Object {
@@ -37,7 +40,36 @@ pub fn render(
             *focused,
             outlined.as_ref(),
         ),
-        Modeless::Chat => Html::none(),
+        Modeless::Chat => {
+            if let Some((chat_data, tab_id, tab)) = block_field
+                .get::<block::Chat>(chat_state.block_id())
+                .and_then(|chat| {
+                    chat.tabs()
+                        .get(chat_state.selecting_tab_idx())
+                        .map(|tab_id| (chat, tab_id))
+                })
+                .and_then(|(chat, tab_id)| {
+                    block_field
+                        .get::<block::chat::Tab>(tab_id)
+                        .map(|tab| (chat, tab_id, tab))
+                })
+            {
+                chat::render(
+                    block_field,
+                    resource,
+                    modeless_id,
+                    modeless,
+                    grubbed,
+                    chat_state,
+                    chat_data,
+                    personal_data,
+                    tab_id,
+                    tab,
+                )
+            } else {
+                Html::none()
+            }
+        }
     }
 }
 
@@ -169,7 +201,10 @@ fn header(
                 vec![btn::close(
                     Attributes::new(),
                     Events::new()
-                        .on_click(move |_| Msg::CloseModeless(modeless_id))
+                        .on_click(move |e| {
+                            e.stop_propagation();
+                            Msg::CloseModeless(modeless_id)
+                        })
                         .on_mousedown(|e| {
                             e.stop_propagation();
                             Msg::NoOp

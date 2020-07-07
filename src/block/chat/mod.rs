@@ -18,6 +18,10 @@ impl Chat {
     pub fn new(tabs: Vec<BlockId>) -> Self {
         Self { tabs: tabs }
     }
+
+    pub fn tabs(&self) -> &Vec<BlockId> {
+        &self.tabs
+    }
 }
 
 impl Block for Chat {
