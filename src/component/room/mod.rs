@@ -19,7 +19,7 @@ pub type State = state::State<Msg, Sub>;
 
 pub enum Msg {
     NoOp,
-    SetTableContext,
+    InitDomDependents,
     ResizeCanvas,
 
     // Tick
@@ -149,7 +149,7 @@ pub fn new(
         move || {
             let state = State::new(peer, room, common_database, room_database);
             let task = Cmd::task(|handler| {
-                handler(Msg::SetTableContext);
+                handler(Msg::InitDomDependents);
             });
             (state, task)
         }
@@ -220,13 +220,17 @@ pub fn new(
 fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
     match msg {
         Msg::NoOp => state.dequeue(),
-        Msg::SetTableContext => {
+        Msg::InitDomDependents => {
             state.set_canvas_size(reset_canvas_size(state.pixel_ratio()));
             let canvas = get_table_canvas_element();
             let gl = canvas.get_context("webgl").unwrap().unwrap();
             let gl = gl.dyn_into::<web_sys::WebGlRenderingContext>().unwrap();
             state.set_renderer(Renderer::new(gl));
             render_canvas(state);
+
+            let element = get_element_by_id("modeless-parent");
+            state.set_modeless_parent(Some(element));
+
             state.dequeue()
         }
         Msg::ResizeCanvas => {
@@ -1342,13 +1346,17 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
     }
 }
 
-fn get_table_canvas_element() -> web_sys::HtmlCanvasElement {
+fn get_element_by_id(id: &str) -> web_sys::Element {
     web_sys::window()
         .unwrap()
         .document()
         .unwrap()
-        .get_element_by_id("table")
+        .get_element_by_id(id)
         .unwrap()
+}
+
+fn get_table_canvas_element() -> web_sys::HtmlCanvasElement {
+    get_element_by_id("table")
         .dyn_into::<web_sys::HtmlCanvasElement>()
         .unwrap()
 }

@@ -358,6 +358,10 @@ impl<M, S> State<M, S> {
         }
     }
 
+    pub fn set_modeless_parent(&mut self, element: Option<web_sys::Element>) {
+        self.modeless.set_parent(element);
+    }
+
     pub fn modal(&self) -> &Vec<Modal> {
         &self.modal
     }

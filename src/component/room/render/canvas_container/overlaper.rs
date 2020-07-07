@@ -25,6 +25,7 @@ pub fn render(
     Html::div(
         Attributes::new()
             .class("cover cover-a")
+            .id("modeless-parent")
             .style("z-index", "0"),
         Events::new()
             .on_click({

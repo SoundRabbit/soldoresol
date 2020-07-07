@@ -12,10 +12,10 @@ pub fn frame<Msg, Modeless>(
             .class("frame")
             .class("frame-modeless")
             .draggable(false)
-            .style("left", modeless.position()[0].to_string() + "vw")
-            .style("top", modeless.position()[1].to_string() + "vh")
-            .style("width", modeless.size()[0].to_string() + "vw")
-            .style("height", modeless.size()[1].to_string() + "vh"),
+            .style("left", modeless.position()[0].to_string() + "%")
+            .style("top", modeless.position()[1].to_string() + "%")
+            .style("width", modeless.size()[0].to_string() + "%")
+            .style("height", modeless.size()[1].to_string() + "%"),
         events,
         children,
     )

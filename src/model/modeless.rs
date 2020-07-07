@@ -1,6 +1,7 @@
 use std::{
     iter::Iterator,
     ops::{Deref, DerefMut},
+    rc::Rc,
 };
 
 pub type ModelessId = usize;
@@ -17,21 +18,14 @@ pub struct Modeless<T> {
     position: Loc<f64>,
     grubbed: Option<Loc<f64>>,
     movable: Loc<bool>,
+    parent: Option<Rc<web_sys::Element>>,
     payload: T,
 }
 
 pub struct Collection<T> {
     modelesses: Vec<Option<Modeless<T>>>,
     max_z_index: i32,
-}
-
-pub fn window_pos(pos: &[f64; 2]) -> [f64; 2] {
-    let window = web_sys::window().unwrap();
-    let vw = window.inner_width().unwrap().as_f64().unwrap();
-    let vh = window.inner_height().unwrap().as_f64().unwrap();
-    let x = pos[0] / vw * 100.0;
-    let y = pos[1] / vh * 100.0;
-    [x, y]
+    parent: Option<Rc<web_sys::Element>>,
 }
 
 impl<T> Loc<T> {
@@ -52,8 +46,28 @@ impl<T> Modeless<T> {
             position: Loc::new(20.0, 20.0, 60.0, 60.0),
             grubbed: None,
             movable: Loc::new(false, false, false, false),
+            parent: None,
             payload,
         }
+    }
+
+    fn window_pos(&self, pos: &[f64; 2]) -> [f64; 2] {
+        let (vw, vh) = if let Some(element) = &self.parent {
+            let cr = element.get_bounding_client_rect();
+            (cr.width(), cr.height())
+        } else {
+            let window = web_sys::window().unwrap();
+            let vw = window.inner_width().unwrap().as_f64().unwrap();
+            let vh = window.inner_height().unwrap().as_f64().unwrap();
+            (vw, vh)
+        };
+        let x = pos[0] / vw * 100.0;
+        let y = pos[1] / vh * 100.0;
+        [x, y]
+    }
+
+    fn set_parent(&mut self, element: Option<Rc<web_sys::Element>>) {
+        self.parent = element;
     }
 
     pub fn position(&self) -> [f64; 2] {
@@ -68,7 +82,7 @@ impl<T> Modeless<T> {
     }
 
     pub fn set_position(&mut self, x: f64, y: f64) {
-        let [x, y] = window_pos(&[x, y]);
+        let [x, y] = self.window_pos(&[x, y]);
         let dx = x - self.position.left;
         let dy = y - self.position.top;
 
@@ -79,7 +93,7 @@ impl<T> Modeless<T> {
     }
 
     pub fn set_size(&mut self, w: f64, h: f64) {
-        let [w, h] = window_pos(&[w, h]);
+        let [w, h] = self.window_pos(&[w, h]);
         self.position.right = self.position.left + w;
         self.position.bottom = self.position.top + h;
     }
@@ -97,7 +111,7 @@ impl<T> Modeless<T> {
     }
 
     pub fn grub(&mut self, x: f64, y: f64) {
-        let [x, y] = window_pos(&[x, y]);
+        let [x, y] = self.window_pos(&[x, y]);
         self.grubbed = Some(Loc::new(
             self.position.top - y,
             self.position.left - x,
@@ -117,7 +131,7 @@ impl<T> Modeless<T> {
 
     pub fn move_with_mouse_pos(&mut self, x: f64, y: f64) {
         if let Some(grubbed) = &self.grubbed {
-            let pos = window_pos(&[x, y]);
+            let pos = self.window_pos(&[x, y]);
 
             if self.movable.top {
                 self.position.top = pos[1] + grubbed.top;
@@ -165,11 +179,13 @@ impl<T> Collection<T> {
         Self {
             modelesses: vec![],
             max_z_index: 0,
+            parent: None,
         }
     }
 
     pub fn open(&mut self, mut modeless: Modeless<T>) -> ModelessId {
         modeless.set_z_index(self.max_z_index + 1);
+        modeless.set_parent(self.parent.as_ref().map(|el| Rc::clone(&el)));
         self.max_z_index += 1;
 
         if let Some(insert_point) = self.modelesses.iter().position(|x| x.is_none()) {
@@ -216,5 +232,9 @@ impl<T> Collection<T> {
         self.modelesses
             .iter()
             .position(|m| m.as_ref().map(|m| m.is_grubbed()).unwrap_or(false))
+    }
+
+    pub fn set_parent(&mut self, element: Option<web_sys::Element>) {
+        self.parent = element.map(|el| Rc::new(el));
     }
 }
