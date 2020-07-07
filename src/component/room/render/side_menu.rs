@@ -110,7 +110,7 @@ fn row_pen_menu(line_width: f64, color: Color) -> Vec<Html<Msg>> {
         Attributes::new().class("keyvalue"),
         Events::new(),
         vec![
-            text::span("太さ"),
+            text::span("線幅"),
             Html::input(
                 Attributes::new()
                     .type_("number")
