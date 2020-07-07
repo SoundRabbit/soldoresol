@@ -43,21 +43,21 @@ pub fn render(z_index: u64, selecting_tool: &table::Tool) -> Html<Msg> {
             row_tablemask(selecting_tool),
             row_boxblock(selecting_tool),
             row_area(selecting_tool),
-            row(
-                selecting_tool.is_route(),
-                "fa-route",
-                "経路",
-                Events::new().on_click(|_| {
-                    Msg::SetSelectingTableTool(table::Tool::Route {
-                        block_id: None,
-                        show_option_menu: false,
-                    })
-                }),
-                match selecting_tool {
-                    table::Tool::Route { .. } => option(false, Events::new(), vec![]),
-                    _ => text::span(""),
-                },
-            ),
+            // row(
+            //     selecting_tool.is_route(),
+            //     "fa-route",
+            //     "経路",
+            //     Events::new().on_click(|_| {
+            //         Msg::SetSelectingTableTool(table::Tool::Route {
+            //             block_id: None,
+            //             show_option_menu: false,
+            //         })
+            //     }),
+            //     match selecting_tool {
+            //         table::Tool::Route { .. } => option(false, Events::new(), vec![]),
+            //         _ => text::span(""),
+            //     },
+            // ),
             delm("表示"),
             row_measure(selecting_tool),
         ]
