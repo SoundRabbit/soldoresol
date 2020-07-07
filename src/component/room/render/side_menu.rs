@@ -500,7 +500,7 @@ fn row_area(selecting_tool: &table::Tool) -> Vec<Html<Msg>> {
     row(
         selecting_tool.is_area(),
         "fa-chess-board",
-        "範囲",
+        "範囲マーカー",
         Events::new().on_click(|_| {
             Msg::SetSelectingTableTool(table::Tool::Area {
                 type_: block::table_object::area::Type::Line(2.0),
