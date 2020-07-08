@@ -57,7 +57,7 @@ fn rand(n: u32) -> u32 {
     (js_sys::Math::random() * n as f64).floor() as u32
 }
 
-pub mod bc_dice {
+pub mod bcdice {
     use serde::Deserialize;
     use std::ops::Deref;
 

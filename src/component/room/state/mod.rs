@@ -433,6 +433,10 @@ impl<M, S> State<M, S> {
         &self.dice_bot
     }
 
+    pub fn dice_bot_mut(&mut self) -> &mut dice_bot::State {
+        &mut self.dice_bot
+    }
+
     pub fn dequeue(&mut self) -> Cmd<M, S> {
         self.cmd_queue.dequeue()
     }

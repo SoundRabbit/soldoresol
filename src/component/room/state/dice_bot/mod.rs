@@ -1,10 +1,13 @@
 use crate::dice_bot;
 use regex::Regex;
 
+pub mod bcdice;
+
 pub struct State {
     run_time: dice_bot::RunTime,
     config: dice_bot::Config,
     regex: Regex,
+    bcdice: bcdice::State,
 }
 
 impl State {
@@ -17,6 +20,7 @@ impl State {
             run_time,
             config,
             regex,
+            bcdice: bcdice::State::new(),
         }
     }
 
@@ -28,5 +32,9 @@ impl State {
         } else {
             (text, "")
         }
+    }
+
+    pub fn bcdice_mut(&mut self) -> &mut bcdice::State {
+        &mut self.bcdice
     }
 }

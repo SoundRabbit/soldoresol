@@ -9,6 +9,7 @@ extern crate regex;
 extern crate sainome;
 extern crate serde;
 extern crate serde_json;
+extern crate serde_yaml;
 extern crate toml;
 extern crate wasm_bindgen;
 extern crate web_sys;

@@ -1,6 +1,7 @@
 use crate::{
     block::{self, BlockId},
     color_system,
+    dice_bot::{self, bcdice},
     model::{self, modeless::ModelessId},
     renderer::Renderer,
     resource::{Data, ResourceId},
@@ -131,6 +132,12 @@ pub enum Msg {
     LoadFromFileList(web_sys::FileList),
     LoadDataToResource(Data),
 
+    // BCDice
+    GetBcdiceServerList,
+    SetBcdiceServerList(Vec<String>),
+    GetBcdiceSystemNames(String),
+    SetBcdiceSystemNames(bcdice::Names),
+
     // 接続に関する操作
     SendBlockPacks(HashMap<BlockId, JsValue>, HashSet<BlockId>),
     SendResourcePacks(HashMap<ResourceId, JsValue>),
@@ -236,7 +243,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             let element = get_element_by_id("modeless-parent");
             state.set_modeless_parent(Some(element));
 
-            state.dequeue()
+            Cmd::task(|resolve| resolve(Msg::GetBcdiceServerList))
         }
         Msg::ResizeCanvas => {
             state.set_canvas_size(reset_canvas_size(state.pixel_ratio()));
@@ -1476,6 +1483,61 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     }
                 })
             })
+        }
+
+        //BCDice
+        Msg::GetBcdiceServerList => Cmd::task(task::http::get(
+            r"https://raw.githubusercontent.com/bcdice/bcdice-api-servers/master/servers.yaml",
+            task::http::Props::new(),
+            |response| {
+                if let Some(servers) = response
+                    .ok()
+                    .and_then(|r| r.text)
+                    .and_then(|text| serde_yaml::from_str(&text).ok())
+                {
+                    Msg::SetBcdiceServerList(servers)
+                } else {
+                    Msg::NoOp
+                }
+            },
+        )),
+
+        Msg::SetBcdiceServerList(servers) => {
+            for server in servers.iter() {
+                crate::debug::log_1(server);
+            }
+
+            let url = servers.get(0).map(|url| url.clone());
+            state.dice_bot_mut().bcdice_mut().set_servers(servers);
+
+            if let Some(url) = url {
+                Cmd::task(|r| r(Msg::GetBcdiceSystemNames(url)))
+            } else {
+                state.dequeue()
+            }
+        }
+
+        Msg::GetBcdiceSystemNames(url) => Cmd::task(task::http::get(
+            url + r"/v1/names",
+            task::http::Props::new(),
+            |response| {
+                if let Some(names) = response
+                    .ok()
+                    .and_then(|r| r.text)
+                    .and_then(|text| serde_json::from_str(&text).ok())
+                {
+                    Msg::SetBcdiceSystemNames(names)
+                } else {
+                    Msg::NoOp
+                }
+            },
+        )),
+
+        Msg::SetBcdiceSystemNames(names) => {
+            for name in names.iter() {
+                crate::debug::log_1(name.name());
+            }
+            state.dequeue()
         }
 
         // 接続に関する操作

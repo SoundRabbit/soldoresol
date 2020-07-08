@@ -22,6 +22,10 @@
         grid-area: text;
         min-height: max-content;
         position: relative;
+        display: grid;
+        grid-auto-rows: max-content;
+        grid-auto-flow: row;
+        row-gap: .5em;
 
         &>div {
             padding: .5em .6em;
