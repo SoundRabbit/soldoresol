@@ -86,18 +86,20 @@ pub fn render(
                                     .style("resize", "none")
                                     .class("text-wrap")
                                     .value(chat_state.inputing_message()),
-                                Events::new().on_input(|m| Msg::NoOp).on_keydown(|e| {
-                                    if e.key_code() == 13
-                                        && !e.shift_key()
-                                        && !e.ctrl_key()
-                                        && !e.alt_key()
-                                    {
-                                        e.prevent_default();
-                                        Msg::NoOp
-                                    } else {
-                                        Msg::NoOp
-                                    }
-                                }),
+                                Events::new()
+                                    .on_input(Msg::SetInputingChatMessage)
+                                    .on_keydown(|e| {
+                                        if e.key_code() == 13
+                                            && !e.shift_key()
+                                            && !e.ctrl_key()
+                                            && !e.alt_key()
+                                        {
+                                            e.prevent_default();
+                                            Msg::SendInputingChatMessage
+                                        } else {
+                                            Msg::NoOp
+                                        }
+                                    }),
                                 vec![],
                             ),
                             Html::div(
@@ -108,7 +110,7 @@ pub fn render(
                                     Events::new(),
                                     vec![btn::info(
                                         Attributes::new(),
-                                        Events::new().on_click(|_| Msg::NoOp),
+                                        Events::new().on_click(|_| Msg::SendInputingChatMessage),
                                         vec![awesome::i("fa-paper-plane"), Html::text(" 送信")],
                                     )],
                                 )],

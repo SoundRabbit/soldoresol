@@ -17,6 +17,14 @@ use render::render;
 
 pub type State = state::State<Msg, Sub>;
 
+pub struct ChatMsg {
+    timestamp: f64,
+    display_name: String,
+    text: String,
+    dice: Option<String>,
+    character_id: Option<BlockId>,
+}
+
 pub enum Msg {
     NoOp,
     InitDomDependents,
@@ -1301,7 +1309,14 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.dequeue()
         }
 
-        Msg::SendInputingChatMessage => state.dequeue(),
+        Msg::SendInputingChatMessage => {
+            let text = state.chat_mut().drain_inputing_message();
+            let (left, right) = state.dice_bot().delimit(&text);
+
+            // let item = block::chat::Item::new();
+
+            state.dequeue()
+        }
 
         Msg::InsertChatItem(tab, item) => state.dequeue(),
 

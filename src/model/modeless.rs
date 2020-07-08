@@ -83,6 +83,10 @@ impl<T> Modeless<T> {
 
     pub fn set_position(&mut self, x: f64, y: f64) {
         let [x, y] = self.window_pos(&[x, y]);
+        self.set_position_r(x, y);
+    }
+
+    pub fn set_position_r(&mut self, x: f64, y: f64) {
         let dx = x - self.position.left;
         let dy = y - self.position.top;
 
@@ -92,8 +96,7 @@ impl<T> Modeless<T> {
         self.position.bottom += dy;
     }
 
-    pub fn set_size(&mut self, w: f64, h: f64) {
-        let [w, h] = self.window_pos(&[w, h]);
+    pub fn set_size_r(&mut self, w: f64, h: f64) {
         self.position.right = self.position.left + w;
         self.position.bottom = self.position.top + h;
     }

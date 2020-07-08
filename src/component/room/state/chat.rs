@@ -66,6 +66,10 @@ impl State {
         self.inputing_message = msg;
     }
 
+    pub fn drain_inputing_message(&mut self) -> String {
+        self.inputing_message.drain(..).collect()
+    }
+
     pub fn block_id(&self) -> &BlockId {
         &self.block_id
     }

@@ -63,6 +63,15 @@ pub struct State<M, S> {
     cmd_queue: model::CmdQueue<M, S>,
 }
 
+impl Modeless {
+    fn is_chat(&self) -> bool {
+        match self {
+            Self::Chat => true,
+            _ => false,
+        }
+    }
+}
+
 impl<M, S> State<M, S> {
     pub fn new(
         peer: Rc<Peer>,
@@ -282,7 +291,15 @@ impl<M, S> State<M, S> {
     }
 
     pub fn open_modeless(&mut self, modeless: Modeless) {
-        self.modeless.open(model::Modeless::new(modeless));
+        let modeless = if modeless.is_chat() {
+            let mut modeless = model::Modeless::new(modeless);
+            modeless.set_position_r(0.0, 30.0);
+            modeless.set_size_r(40.0, 70.0);
+            modeless
+        } else {
+            model::Modeless::new(modeless)
+        };
+        self.modeless.open(modeless);
     }
 
     pub fn open_modeless_with_position(&mut self, modeless: Modeless, pos: [f64; 2]) {
@@ -406,6 +423,10 @@ impl<M, S> State<M, S> {
 
     pub fn close_modal(&mut self) {
         self.modal.pop();
+    }
+
+    pub fn dice_bot(&self) -> &dice_bot::State {
+        &self.dice_bot
     }
 
     pub fn dequeue(&mut self) -> Cmd<M, S> {

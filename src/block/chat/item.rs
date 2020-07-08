@@ -13,22 +13,26 @@ pub enum Icon {
 pub struct Item {
     display_name: String,
     peer_id: String,
-    character_id: Option<BlockId>,
     icon: Icon,
     payload: String,
 }
 
 impl Item {
+    pub fn new(display_name: String, peer_id: String, icon: Icon, payload: String) -> Self {
+        Self {
+            display_name,
+            peer_id,
+            icon,
+            payload,
+        }
+    }
+
     pub fn display_name(&self) -> &String {
         &self.display_name
     }
 
     pub fn peer_id(&self) -> &String {
         &self.peer_id
-    }
-
-    pub fn character_id(&self) -> Option<&BlockId> {
-        self.character_id.as_ref()
     }
 
     pub fn icon(&self) -> &Icon {

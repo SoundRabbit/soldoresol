@@ -21,6 +21,14 @@ impl<T> Promise<T> {
             self.then(|result| resolve(f(result)));
         })
     }
+    pub fn and_then<U: 'static>(
+        self,
+        f: impl FnOnce(Option<T>) -> Promise<U> + 'static,
+    ) -> Promise<U> {
+        Promise::new(move |resolve| {
+            self.then(|result| f(result).then(resolve));
+        })
+    }
 }
 
 impl<T> Promise<T> {
