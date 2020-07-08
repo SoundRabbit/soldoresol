@@ -113,6 +113,10 @@ impl<M, S> State<M, S> {
         }
     }
 
+    pub fn peer(&self) -> Rc<Peer> {
+        Rc::clone(&self.peer)
+    }
+
     pub fn room(&self) -> Rc<Room> {
         Rc::clone(&self.room)
     }

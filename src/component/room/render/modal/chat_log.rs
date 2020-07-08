@@ -25,8 +25,12 @@ pub fn render(
                 modal::body(
                     Attributes::new().class("scroll-v"),
                     Events::new(),
-                    block_field
-                        .listed::<block::chat::Item>(tab.iter().collect())
+                    tab.iter()
+                        .filter_map(|(t, item_id)| {
+                            block_field
+                                .get::<block::chat::Item>(item_id)
+                                .map(|item| (t, item))
+                        })
                         .map(|(_, item)| {
                             Html::div(
                                 Attributes::new().class("pure-form chat-item"),
@@ -51,11 +55,22 @@ pub fn render(
                                     Html::div(
                                         Attributes::new().class("chat-payload"),
                                         Events::new(),
-                                        vec![Html::div(
-                                            Attributes::new().class("text-wrap"),
-                                            Events::new(),
-                                            vec![Html::text(item.payload())],
-                                        )],
+                                        vec![
+                                            Html::div(
+                                                Attributes::new().class("text-wrap"),
+                                                Events::new(),
+                                                vec![Html::text(item.text())],
+                                            ),
+                                            if let Some(reply) = item.reply() {
+                                                Html::div(
+                                                    Attributes::new().class("text-wrap"),
+                                                    Events::new(),
+                                                    vec![Html::text(reply)],
+                                                )
+                                            } else {
+                                                Html::none()
+                                            },
+                                        ],
                                     ),
                                 ],
                             )

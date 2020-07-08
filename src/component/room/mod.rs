@@ -7,7 +7,10 @@ use crate::{
     skyway, Color,
 };
 use kagura::prelude::*;
-use std::{collections::HashMap, rc::Rc};
+use std::{
+    collections::{HashMap, HashSet},
+    rc::Rc,
+};
 use wasm_bindgen::{prelude::*, JsCast};
 
 mod render;
@@ -16,14 +19,6 @@ mod state;
 use render::render;
 
 pub type State = state::State<Msg, Sub>;
-
-pub struct ChatMsg {
-    timestamp: f64,
-    display_name: String,
-    text: String,
-    dice: Option<String>,
-    character_id: Option<BlockId>,
-}
 
 pub enum Msg {
     NoOp,
@@ -123,7 +118,7 @@ pub enum Msg {
     // チャット関係
     SetInputingChatMessage(String),
     SendInputingChatMessage,
-    InsertChatItem(BlockId, block::chat::Item),
+    InsertChatItem(BlockId, block::chat::Item, f64),
     AddChatSender(BlockId),
     RemoveChatSender(BlockId),
     SetSelectingChatSenderIdx(usize),
@@ -137,7 +132,7 @@ pub enum Msg {
     LoadDataToResource(Data),
 
     // 接続に関する操作
-    SendBlockPacks(HashMap<BlockId, JsValue>),
+    SendBlockPacks(HashMap<BlockId, JsValue>, HashSet<BlockId>),
     SendResourcePacks(HashMap<ResourceId, JsValue>),
     ReceiveMsg(skyway::Msg),
     PeerJoin(String),
@@ -386,6 +381,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             send_pack_cmd(
                 state.block_field(),
                 vec![&prop_hp, &prop_mp, &prop_root, &character, &world],
+                hash_set! {},
             )
         }
 
@@ -424,7 +420,11 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
                 render_canvas(state);
 
-                send_pack_cmd(state.block_field(), vec![&tablemask, &selecting_table])
+                send_pack_cmd(
+                    state.block_field(),
+                    vec![&tablemask, &selecting_table],
+                    hash_set! {},
+                )
             } else {
                 state.dequeue()
             }
@@ -456,7 +456,11 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
                 render_canvas(state);
 
-                send_pack_cmd(state.block_field(), vec![&boxblock, &selecting_table])
+                send_pack_cmd(
+                    state.block_field(),
+                    vec![&boxblock, &selecting_table],
+                    hash_set! {},
+                )
             } else {
                 state.dequeue()
             }
@@ -488,7 +492,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
                 render_canvas(state);
 
-                send_pack_cmd(state.block_field(), props.iter().collect())
+                send_pack_cmd(state.block_field(), props.iter().collect(), hash_set! {})
             } else {
                 state.dequeue()
             }
@@ -523,7 +527,11 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
                 render_canvas(state);
 
-                send_pack_cmd(state.block_field(), vec![&tablemask, &selecting_table])
+                send_pack_cmd(
+                    state.block_field(),
+                    vec![&tablemask, &selecting_table],
+                    hash_set! {},
+                )
             } else {
                 state.dequeue()
             }
@@ -541,9 +549,15 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     },
                 );
 
+                state.block_field_mut().remove(&area_id);
+
                 render_canvas(state);
 
-                send_pack_cmd(state.block_field(), vec![&selecting_table])
+                send_pack_cmd(
+                    state.block_field(),
+                    vec![&selecting_table],
+                    hash_set! {area_id},
+                )
             } else {
                 state.dequeue()
             }
@@ -561,9 +575,15 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     },
                 );
 
+                state.block_field_mut().remove(&boxblock_id);
+
                 render_canvas(state);
 
-                send_pack_cmd(state.block_field(), vec![&selecting_table])
+                send_pack_cmd(
+                    state.block_field(),
+                    vec![&selecting_table],
+                    hash_set! {boxblock_id},
+                )
             } else {
                 state.dequeue()
             }
@@ -583,7 +603,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
             render_canvas(state);
 
-            send_pack_cmd(state.block_field(), vec![&world])
+            send_pack_cmd(state.block_field(), vec![&world], hash_set! {character})
         }
 
         Msg::RemoveTablemaskToCloseContextmenu(tablemask) => {
@@ -598,9 +618,15 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     },
                 );
 
+                state.block_field_mut().remove(&tablemask);
+
                 render_canvas(state);
 
-                send_pack_cmd(state.block_field(), vec![&selecting_table])
+                send_pack_cmd(
+                    state.block_field(),
+                    vec![&selecting_table],
+                    hash_set! {tablemask},
+                )
             } else {
                 state.dequeue()
             }
@@ -722,7 +748,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
             if updated {
                 render_canvas(state);
-                send_pack_cmd(state.block_field(), vec![&block_id])
+                send_pack_cmd(state.block_field(), vec![&block_id], hash_set! {})
             } else {
                 state.dequeue()
             }
@@ -752,7 +778,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
                 if updated {
                     render_canvas(state);
-                    send_pack_cmd(state.block_field(), vec![&block_id])
+                    send_pack_cmd(state.block_field(), vec![&block_id], hash_set! {})
                 } else {
                     state.dequeue()
                 }
@@ -798,7 +824,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     .is_none();
                 if updated {
                     render_canvas(state);
-                    send_pack_cmd(state.block_field(), vec![&block_id])
+                    send_pack_cmd(state.block_field(), vec![&block_id], hash_set! {})
                 } else {
                     state.dequeue()
                 }
@@ -1069,7 +1095,11 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
             render_canvas(state);
 
-            send_pack_cmd(state.block_field(), vec![&texture, &table, state.world()])
+            send_pack_cmd(
+                state.block_field(),
+                vec![&texture, &table, state.world()],
+                hash_set! {},
+            )
         }
 
         // Table
@@ -1080,7 +1110,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     table.set_size(size);
                 });
 
-            send_pack_cmd(state.block_field(), vec![&table])
+            send_pack_cmd(state.block_field(), vec![&table], hash_set! {})
         }
 
         Msg::SetTableImage(table, image) => {
@@ -1090,7 +1120,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     table.set_image_texture_id(image);
                 });
 
-            send_pack_cmd(state.block_field(), vec![&table])
+            send_pack_cmd(state.block_field(), vec![&table], hash_set! {})
         }
 
         // PersonalData
@@ -1116,7 +1146,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
             render_canvas(state);
 
-            send_pack_cmd(state.block_field(), vec![&tablemask_id])
+            send_pack_cmd(state.block_field(), vec![&tablemask_id], hash_set! {})
         }
 
         Msg::SetTablemaskColor(tablemask_id, color) => {
@@ -1130,7 +1160,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
             render_canvas(state);
 
-            send_pack_cmd(state.block_field(), vec![&tablemask_id])
+            send_pack_cmd(state.block_field(), vec![&tablemask_id], hash_set! {})
         }
 
         Msg::SetTablemaskIsFixed(tablemask_id, is_fixed) => {
@@ -1144,7 +1174,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
             render_canvas(state);
 
-            send_pack_cmd(state.block_field(), vec![&tablemask_id])
+            send_pack_cmd(state.block_field(), vec![&tablemask_id], hash_set! {})
         }
 
         Msg::SetTablemaskIsRounded(tablemask_id, is_rounded) => {
@@ -1158,7 +1188,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
             render_canvas(state);
 
-            send_pack_cmd(state.block_field(), vec![&tablemask_id])
+            send_pack_cmd(state.block_field(), vec![&tablemask_id], hash_set! {})
         }
 
         Msg::SetTablemaskIsInved(tablemask_id, is_inved) => {
@@ -1172,7 +1202,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
             render_canvas(state);
 
-            send_pack_cmd(state.block_field(), vec![&tablemask_id])
+            send_pack_cmd(state.block_field(), vec![&tablemask_id], hash_set! {})
         }
 
         // Boxblock
@@ -1187,7 +1217,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
             render_canvas(state);
 
-            send_pack_cmd(state.block_field(), vec![&boxblock_id])
+            send_pack_cmd(state.block_field(), vec![&boxblock_id], hash_set! {})
         }
 
         Msg::SetBoxblockColor(boxblock_id, color) => {
@@ -1201,7 +1231,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
             render_canvas(state);
 
-            send_pack_cmd(state.block_field(), vec![&boxblock_id])
+            send_pack_cmd(state.block_field(), vec![&boxblock_id], hash_set! {})
         }
 
         Msg::SetBoxblockIsFixed(boxblock_id, is_fixed) => {
@@ -1215,7 +1245,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
             render_canvas(state);
 
-            send_pack_cmd(state.block_field(), vec![&boxblock_id])
+            send_pack_cmd(state.block_field(), vec![&boxblock_id], hash_set! {})
         }
 
         // Character
@@ -1228,7 +1258,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 },
             );
 
-            send_pack_cmd(state.block_field(), vec![&character])
+            send_pack_cmd(state.block_field(), vec![&character], hash_set! {})
         }
 
         Msg::SetCharacterSize(character, [w, h]) => {
@@ -1272,7 +1302,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
             render_canvas(state);
 
-            send_pack_cmd(state.block_field(), vec![&character])
+            send_pack_cmd(state.block_field(), vec![&character], hash_set! {})
         }
 
         Msg::SetCharacterTextrureToCloseModal(character_id, texture_id) => {
@@ -1310,15 +1340,60 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
 
         Msg::SendInputingChatMessage => {
-            let text = state.chat_mut().drain_inputing_message();
-            let (left, right) = state.dice_bot().delimit(&text);
+            use block::chat::item::Icon;
+            use block::chat::item::Sender;
 
-            // let item = block::chat::Item::new();
-
-            state.dequeue()
+            let sender = state.chat().selecting_sender().clone();
+            let (display_name, character_id, icon) = match &sender {
+                Sender::User => (
+                    Some(state.personal_data().name().clone()),
+                    None,
+                    state.personal_data().icon().map(|r_id| *r_id),
+                ),
+                Sender::Character(character_id) => {
+                    if let Some(character) =
+                        state.block_field().get::<block::Character>(character_id)
+                    {
+                        (
+                            Some(character.name().clone()),
+                            Some(*character_id),
+                            character.texture_id().map(|r_id| *r_id),
+                        )
+                    } else {
+                        (None, None, None)
+                    }
+                }
+                _ => (None, None, None),
+            };
+            if let (Some(display_name), Some(tab)) = (display_name, state.selecting_chat_tab_id()) {
+                let tab = *tab;
+                let text = state.chat_mut().drain_inputing_message();
+                let (left, right) = state.dice_bot().delimit(&text);
+                let [left, right] = [left.to_string(), right.to_string()];
+                let item = block::chat::Item::new(
+                    state.peer().id(),
+                    display_name,
+                    icon.map(|r_id| Icon::Resource(r_id))
+                        .unwrap_or(Icon::DefaultUser),
+                    sender.clone(),
+                    text,
+                    Some(left),
+                );
+                update(state, Msg::InsertChatItem(tab, item, js_sys::Date::now()))
+            } else {
+                state.dequeue()
+            }
         }
 
-        Msg::InsertChatItem(tab, item) => state.dequeue(),
+        Msg::InsertChatItem(tab, item, timestamp) => {
+            let item_id = state.block_field_mut().add(item);
+            state
+                .block_field_mut()
+                .update(&tab, None, |tab: &mut block::chat::Tab| {
+                    tab.insert(timestamp, item_id);
+                });
+            state.dequeue()
+        }
 
         Msg::AddChatSender(character_id) => {
             state.chat_mut().add_sender(character_id);
@@ -1404,7 +1479,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
 
         // 接続に関する操作
-        Msg::SendBlockPacks(packs) => {
+        Msg::SendBlockPacks(packs, removed) => {
             let packs = packs
                 .into_iter()
                 .map(|(id, data)| (id.to_u128(), data))
@@ -1619,13 +1694,17 @@ fn timestamp() -> Option<f64> {
     Some(js_sys::Date::now())
 }
 
-fn send_pack_cmd(block_field: &block::Field, packs: Vec<&BlockId>) -> Cmd<Msg, Sub> {
+fn send_pack_cmd(
+    block_field: &block::Field,
+    packs: Vec<&BlockId>,
+    removed: HashSet<BlockId>,
+) -> Cmd<Msg, Sub> {
     let packs = block_field.pack_listed(packs);
 
     Cmd::task(move |resolve| {
         packs.then(|packs| {
             if let Some(packs) = packs {
-                resolve(Msg::SendBlockPacks(packs.into_iter().collect()));
+                resolve(Msg::SendBlockPacks(packs.into_iter().collect(), removed));
             }
         })
     })

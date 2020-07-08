@@ -2,7 +2,7 @@ use super::super::super::super::{awesome, btn, modeless, text};
 use super::super::super::state::{chat, Modal, Modeless};
 use super::Msg;
 use crate::{
-    block::{self, BlockId},
+    block::{self, chat::item::Sender, BlockId},
     model::{self},
     Color, Resource,
 };
@@ -141,7 +141,7 @@ fn chat_item_list(
             .rev()
             .take(take_num)
             .rev()
-            .filter_map(|item_id| block_field.get::<block::chat::Item>(item_id))
+            .filter_map(|(_, item_id)| block_field.get::<block::chat::Item>(item_id))
             .map(|item| chat_item(resource, item))
             .collect(),
     )
@@ -168,11 +168,22 @@ fn chat_item(resource: &Resource, item: &block::chat::Item) -> Html<Msg> {
             Html::div(
                 Attributes::new().class("chat-payload"),
                 Events::new(),
-                vec![Html::div(
-                    Attributes::new().class("text-wrap"),
-                    Events::new(),
-                    vec![Html::text(item.payload())],
-                )],
+                vec![
+                    Html::div(
+                        Attributes::new().class("text-wrap"),
+                        Events::new(),
+                        vec![Html::text(item.text())],
+                    ),
+                    if let Some(reply) = item.reply() {
+                        Html::div(
+                            Attributes::new().class("text-wrap"),
+                            Events::new(),
+                            vec![Html::text(reply)],
+                        )
+                    } else {
+                        Html::none()
+                    },
+                ],
             ),
         ],
     )
@@ -266,7 +277,7 @@ fn sender_item(
     resource: &Resource,
     personal_data: &model::PersonalData,
     sender_idx: usize,
-    sender: &chat::Sender,
+    sender: &Sender,
     is_selected: bool,
 ) -> Html<Msg> {
     use block::chat::item::Icon;
@@ -277,14 +288,14 @@ fn sender_item(
         Attributes::new()
     };
     if let Some((icon, name)) = match sender {
-        chat::Sender::Player => {
+        Sender::User => {
             let icon = personal_data
                 .icon()
                 .map(|icon_id| Icon::Resource(*icon_id))
                 .unwrap_or(Icon::DefaultUser);
             Some((icon, personal_data.name()))
         }
-        chat::Sender::Character(character_id) => {
+        Sender::Character(character_id) => {
             if let Some(character) = block_field.get::<block::Character>(character_id) {
                 let icon = character
                     .texture_id()
@@ -295,6 +306,7 @@ fn sender_item(
                 None
             }
         }
+        _ => None,
     } {
         Html::div(
             Attributes::new()

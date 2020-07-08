@@ -36,12 +36,8 @@ type Timestamp = f64;
 type BlockTable = HashMap<u128, FieldBlock>;
 
 #[allow(private_in_public)]
-#[derive(Debug)]
-pub struct BlockId {
-    count: Rc<Cell<usize>>,
-    garbage: Rc<RefCell<HashSet<u128>>>,
-    internal_id: u128,
-}
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+pub struct BlockId(u128);
 
 #[allow(private_in_public)]
 struct FieldBlock {
@@ -53,68 +49,19 @@ struct FieldBlock {
 #[allow(private_in_public)]
 pub struct Field {
     table: BlockTable,
-    garbage: Rc<RefCell<HashSet<u128>>>,
 }
 
 impl BlockId {
-    fn new(count: Rc<Cell<usize>>, garbage: Rc<RefCell<HashSet<u128>>>, internal_id: u128) -> Self {
-        count.set(count.get() + 1);
-        Self {
-            count,
-            garbage,
-            internal_id,
-        }
+    fn new(id: u128) -> Self {
+        Self(id)
     }
 
     pub fn to_string(&self) -> String {
-        self.internal_id.to_string()
+        self.0.to_string()
     }
 
     pub fn to_u128(&self) -> u128 {
-        self.internal_id
-    }
-}
-
-impl Clone for BlockId {
-    fn clone(&self) -> Self {
-        let count = self.count.get() + 1;
-        self.count.set(count);
-
-        let count = Rc::clone(&self.count);
-        let garbage = Rc::clone(&self.garbage);
-        let internal_id = self.internal_id;
-
-        Self {
-            count,
-            internal_id,
-            garbage,
-        }
-    }
-}
-
-impl Drop for BlockId {
-    fn drop(&mut self) {
-        let count = self.count.get() - 1;
-
-        if count > 1 {
-            self.count.set(count);
-        } else {
-            self.garbage.borrow_mut().insert(self.to_u128());
-        }
-    }
-}
-
-impl PartialEq for BlockId {
-    fn eq(&self, other: &Self) -> bool {
-        self.internal_id == other.internal_id
-    }
-}
-
-impl Eq for BlockId {}
-
-impl Hash for BlockId {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.internal_id.hash(state);
+        self.0
     }
 }
 
@@ -180,31 +127,20 @@ impl FieldBlock {
 }
 
 impl Field {
-    pub fn block_id(&mut self, internal_id: u128) -> BlockId {
-        if let Some(field_block) = self.table.get(&internal_id) {
-            let count = Rc::clone(&field_block.count);
-            let garbage = Rc::clone(&self.garbage);
-            BlockId::new(count, garbage, internal_id)
-        } else {
-            let dummy = FieldBlock::none(0.0);
-            let count = Rc::clone(&dummy.count);
-            let garbage = Rc::clone(&self.garbage);
-            self.table.insert(internal_id, dummy);
-            BlockId::new(count, garbage, internal_id)
-        }
-    }
-
     pub fn new() -> Self {
         Self {
             table: HashMap::new(),
-            garbage: Rc::new(RefCell::new(HashSet::new())),
         }
+    }
+
+    pub fn block_id(&mut self, id: u128) -> BlockId {
+        BlockId::new(id)
     }
 
     #[allow(private_in_public)]
     pub fn add<T: Block + 'static>(&mut self, block: T) -> BlockId {
         let block_id = self.block_id(random_id::u128val());
-        self.assign(block_id.clone(), Date::now(), block);
+        self.assign(block_id, Date::now(), block);
         block_id
     }
 
@@ -246,8 +182,7 @@ impl Field {
             .iter()
             .filter_map(|(id, fb)| {
                 if let Some(b) = fb.payload.as_ref().and_then(|p| p.downcast_ref::<T>()) {
-                    let block_id =
-                        BlockId::new(Rc::clone(&fb.count), Rc::clone(&self.garbage), *id);
+                    let block_id = BlockId::new(*id);
                     Some((block_id, b))
                 } else {
                     None

@@ -1,6 +1,9 @@
 use super::state::chat;
 use super::Msg;
-use crate::{block, Resource};
+use crate::{
+    block::{self, chat::item::Sender},
+    Resource,
+};
 use kagura::prelude::*;
 
 mod common {
@@ -21,7 +24,7 @@ pub fn render(
             .senders()
             .iter()
             .filter_map(|sender| {
-                if let chat::Sender::Character(block_id) = sender {
+                if let Sender::Character(block_id) = sender {
                     Some(block_id.clone())
                 } else {
                     None

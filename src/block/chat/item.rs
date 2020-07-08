@@ -10,20 +10,38 @@ pub enum Icon {
 }
 
 #[derive(Clone)]
+pub enum Sender {
+    System,
+    User,
+    Character(BlockId),
+}
+
+#[derive(Clone)]
 pub struct Item {
-    display_name: String,
     peer_id: String,
+    display_name: String,
     icon: Icon,
-    payload: String,
+    sender: Sender,
+    text: String,
+    reply: Option<String>,
 }
 
 impl Item {
-    pub fn new(display_name: String, peer_id: String, icon: Icon, payload: String) -> Self {
+    pub fn new(
+        peer_id: String,
+        display_name: String,
+        icon: Icon,
+        sender: Sender,
+        text: String,
+        reply: Option<String>,
+    ) -> Self {
         Self {
-            display_name,
             peer_id,
+            display_name,
             icon,
-            payload,
+            sender,
+            text,
+            reply,
         }
     }
 
@@ -39,8 +57,12 @@ impl Item {
         &self.icon
     }
 
-    pub fn payload(&self) -> &String {
-        &self.payload
+    pub fn text(&self) -> &String {
+        &self.text
+    }
+
+    pub fn reply(&self) -> Option<&String> {
+        self.reply.as_ref()
     }
 }
 

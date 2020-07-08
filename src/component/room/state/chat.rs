@@ -1,10 +1,4 @@
-use crate::block::{self, BlockId};
-
-#[derive(PartialEq, Eq)]
-pub enum Sender {
-    Player,
-    Character(BlockId),
-}
+use crate::block::{self, chat::item::Sender, BlockId};
 
 pub struct State {
     selecting_tab_idx: usize,
@@ -13,15 +7,6 @@ pub struct State {
     block_id: BlockId,
     take_num: usize,
     senders: Vec<Sender>,
-}
-
-impl Sender {
-    pub fn as_character(&self) -> Option<&BlockId> {
-        match self {
-            Self::Character(c_id) => Some(c_id),
-            _ => None,
-        }
-    }
 }
 
 impl State {
@@ -36,7 +21,7 @@ impl State {
             inputing_message: "".into(),
             block_id,
             take_num: 64,
-            senders: vec![Sender::Player],
+            senders: vec![Sender::User],
         }
     }
 
@@ -102,6 +87,14 @@ impl State {
             _ => false,
         }) {
             self.senders.remove(pos);
+        }
+    }
+
+    pub fn selecting_sender(&self) -> &Sender {
+        if let Some(sender) = self.senders.get(self.selecting_sender_idx) {
+            sender
+        } else {
+            &self.senders[self.senders.len() - 1]
         }
     }
 }

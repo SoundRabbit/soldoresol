@@ -21,9 +21,12 @@ impl State {
     }
 
     pub fn delimit<'a>(&self, text: &'a str) -> (&'a str, &'a str) {
-        let caps = self.regex.captures(text).unwrap();
-        let left = caps.get(1).map_or("", |m| m.as_str());
-        let right = caps.get(2).map_or("", |m| m.as_str());
-        (left, right)
+        if let Some(caps) = self.regex.captures(text) {
+            let left = caps.get(1).map_or("", |m| m.as_str());
+            let right = caps.get(2).map_or("", |m| m.as_str());
+            (left, right)
+        } else {
+            (text, "")
+        }
     }
 }
