@@ -28,6 +28,12 @@ pub fn render(
                 }
             })
             .collect(),
-        |_| Msg::NoOp,
+        |character_id, is_selected| {
+            if is_selected {
+                Msg::AddChatSender(character_id)
+            } else {
+                Msg::RemoveChatSender(character_id)
+            }
+        },
     )
 }

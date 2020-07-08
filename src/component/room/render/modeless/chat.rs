@@ -223,7 +223,9 @@ fn sender_list(
     chat_state: &chat::State,
 ) -> Html<Msg> {
     Html::div(
-        Attributes::new().class("keyvalueoption"),
+        Attributes::new()
+            .class("keyvalue")
+            .class("keyvalue-align-start"),
         Events::new(),
         vec![
             btn::info(
@@ -236,14 +238,7 @@ fn sender_list(
                     .class("flex-h")
                     .class("flex-padding")
                     .class("centering-v-i"),
-                Events::new().on_click(|e| {
-                    e.target()
-                        .and_then(|e| e.dyn_into::<web_sys::Element>().ok())
-                        .and_then(|e| e.get_attribute("data-sender-idx"))
-                        .and_then(|data| data.parse().ok())
-                        .map(|sender_idx| Msg::SetSelectingChatSenderIdx(sender_idx))
-                        .unwrap_or(Msg::NoOp)
-                }),
+                Events::new(),
                 chat_state
                     .senders()
                     .iter()
@@ -279,22 +274,13 @@ fn sender_item(
     } else {
         Attributes::new()
     };
-    match sender {
+    if let Some((icon, name)) = match sender {
         chat::Sender::Player => {
             let icon = personal_data
                 .icon()
                 .map(|icon_id| Icon::Resource(*icon_id))
                 .unwrap_or(Icon::DefaultUser);
-            common::chat_icon(
-                attrs
-                    .class("clickable")
-                    .class("icon-small")
-                    .string("data-sender-idx", sender_idx.to_string())
-                    .title(personal_data.name()),
-                &icon,
-                personal_data.name(),
-                resource,
-            )
+            Some((icon, personal_data.name()))
         }
         chat::Sender::Character(character_id) => {
             if let Some(character) = block_field.get::<block::Character>(character_id) {
@@ -302,19 +288,32 @@ fn sender_item(
                     .texture_id()
                     .map(|r_id| Icon::Resource(*r_id))
                     .unwrap_or(Icon::DefaultUser);
-                common::chat_icon(
-                    attrs
-                        .class("clickable")
-                        .class("icon-small")
-                        .string("data-sender-idx", sender_idx.to_string())
-                        .title(character.name()),
-                    &icon,
-                    character.name(),
-                    resource,
-                )
+                Some((icon, character.name()))
             } else {
-                Html::none()
+                None
             }
         }
+    } {
+        Html::div(
+            Attributes::new()
+                .class("chat-sender")
+                .string("data-sender-idx", sender_idx.to_string()),
+            Events::new().on_click(move |_| Msg::SetSelectingChatSenderIdx(sender_idx)),
+            vec![
+                common::chat_icon(
+                    attrs.class("clickable").class("icon-small").title(name),
+                    &icon,
+                    name,
+                    resource,
+                ),
+                Html::span(
+                    Attributes::new().class("chat-sender-text"),
+                    Events::new(),
+                    vec![Html::text(name)],
+                ),
+            ],
+        )
+    } else {
+        Html::none()
     }
 }

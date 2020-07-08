@@ -38,4 +38,20 @@
             border-radius: 0.5ch;
         }
     }
+
+    &-sender {
+        display: grid;
+        grid-auto-flow: row;
+        grid-auto-rows: max-content;
+        grid-template-columns: 4em;
+        justify-items: center;
+
+        &-text {
+            width: 100%;
+            text-align: center;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 0.8em;
+        }
+    }
 }

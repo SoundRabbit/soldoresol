@@ -129,7 +129,7 @@ pub fn character_selecter(
     resource: &Resource,
     world: &block::World,
     selected: &HashSet<BlockId>,
-    on_select: impl FnMut(BlockId) -> Msg + 'static,
+    on_select: impl FnMut(BlockId, bool) -> Msg + 'static,
 ) -> Html<Msg> {
     let on_select = Rc::new(RefCell::new(Box::new(on_select)));
 
@@ -153,6 +153,7 @@ pub fn character_selecter(
                         block_field
                             .listed::<block::Character>(world.characters().collect())
                             .map(|(character_id, character)| {
+                                let is_selected = selected.contains(&character_id);
                                 vec![
                                     {
                                         let icon = character
@@ -160,13 +161,10 @@ pub fn character_selecter(
                                             .map(|r_id| Icon::Resource(*r_id))
                                             .unwrap_or(Icon::DefaultUser);
                                         common::chat_icon(
-                                            Attributes::new()
-                                                .class("icon-medium")
-                                                .class("clickable")
-                                                .string(
-                                                    "data-character-id",
-                                                    character_id.to_string(),
-                                                ),
+                                            Attributes::new().class("icon-medium").string(
+                                                "data-character-id",
+                                                character_id.to_string(),
+                                            ),
                                             &icon,
                                             character.name(),
                                             resource,
@@ -174,7 +172,6 @@ pub fn character_selecter(
                                     },
                                     Html::div(
                                         Attributes::new()
-                                            .class("clickable")
                                             .string("data-character-id", character_id.to_string()),
                                         Events::new(),
                                         vec![Html::text(character.name())],
@@ -184,7 +181,12 @@ pub fn character_selecter(
                                         Attributes::new(),
                                         Events::new().on_click({
                                             let on_select = Rc::clone(&on_select);
-                                            move |_| (&mut *on_select.borrow_mut())(character_id)
+                                            move |_| {
+                                                (&mut *on_select.borrow_mut())(
+                                                    character_id,
+                                                    !is_selected,
+                                                )
+                                            }
                                         }),
                                     ),
                                 ]

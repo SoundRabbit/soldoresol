@@ -116,6 +116,8 @@ pub enum Msg {
     SetInputingChatMessage(String),
     SendInputingChatMessage,
     InsertChatItem(BlockId, block::chat::Item),
+    AddChatSender(BlockId),
+    RemoveChatSender(BlockId),
     SetSelectingChatSenderIdx(usize),
     AddChatTab,
     SetSelectingChatTabIdx(usize),
@@ -568,6 +570,8 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 .update(&world, timestamp(), |world: &mut block::World| {
                     world.remove_character(&character);
                 });
+
+            state.block_field_mut().remove(&character);
 
             render_canvas(state);
 
@@ -1300,6 +1304,16 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         Msg::SendInputingChatMessage => state.dequeue(),
 
         Msg::InsertChatItem(tab, item) => state.dequeue(),
+
+        Msg::AddChatSender(character_id) => {
+            state.chat_mut().add_sender(character_id);
+            state.dequeue()
+        }
+
+        Msg::RemoveChatSender(character_id) => {
+            state.chat_mut().remove_sender(&character_id);
+            state.dequeue()
+        }
 
         Msg::SetSelectingChatSenderIdx(idx) => {
             state.chat_mut().set_selecting_sender_idx(idx);

@@ -77,4 +77,27 @@ impl State {
     pub fn senders(&self) -> &Vec<Sender> {
         &self.senders
     }
+
+    pub fn add_sender(&mut self, character_id: BlockId) {
+        if self
+            .senders
+            .iter()
+            .position(|sender| match &sender {
+                Sender::Character(c_id) => character_id == *c_id,
+                _ => false,
+            })
+            .is_none()
+        {
+            self.senders.push(Sender::Character(character_id));
+        }
+    }
+
+    pub fn remove_sender(&mut self, character_id: &BlockId) {
+        if let Some(pos) = self.senders.iter().position(|sender| match &sender {
+            Sender::Character(c_id) => *character_id == *c_id,
+            _ => false,
+        }) {
+            self.senders.remove(pos);
+        }
+    }
 }
