@@ -1,6 +1,6 @@
 pub mod chat;
 pub mod contextmenu;
-pub mod dice_bot;
+pub mod dicebot;
 pub mod speech_bubble;
 pub mod table;
 
@@ -37,6 +37,7 @@ pub enum Modal {
     TableSetting,
     ChatLog(BlockId),
     ChatTabEditor,
+    DicebotSelecter,
 }
 
 pub struct State<M, S> {
@@ -57,7 +58,7 @@ pub struct State<M, S> {
     contextmenu: Option<contextmenu::State>,
     modeless: modeless::Collection<Modeless>,
     modal: Vec<Modal>,
-    dice_bot: dice_bot::State,
+    dicebot: dicebot::State,
     common_database: Rc<web_sys::IdbDatabase>,
     room_database: Rc<web_sys::IdbDatabase>,
     cmd_queue: model::CmdQueue<M, S>,
@@ -106,7 +107,7 @@ impl<M, S> State<M, S> {
             contextmenu: None,
             modeless: modeless::Collection::new(),
             modal: vec![],
-            dice_bot: dice_bot::State::new(),
+            dicebot: dicebot::State::new(),
             common_database,
             room_database,
             cmd_queue: model::CmdQueue::new(),
@@ -297,8 +298,8 @@ impl<M, S> State<M, S> {
     pub fn open_modeless(&mut self, modeless: Modeless) {
         let modeless = if modeless.is_chat() {
             let mut modeless = model::Modeless::new(modeless);
-            modeless.set_position_r(0.0, 30.0);
-            modeless.set_size_r(40.0, 70.0);
+            modeless.set_position_r(0.0, 50.0);
+            modeless.set_size_r(40.0, 50.0);
             modeless
         } else {
             model::Modeless::new(modeless)
@@ -429,12 +430,12 @@ impl<M, S> State<M, S> {
         self.modal.pop();
     }
 
-    pub fn dice_bot(&self) -> &dice_bot::State {
-        &self.dice_bot
+    pub fn dicebot(&self) -> &dicebot::State {
+        &self.dicebot
     }
 
-    pub fn dice_bot_mut(&mut self) -> &mut dice_bot::State {
-        &mut self.dice_bot
+    pub fn dicebot_mut(&mut self) -> &mut dicebot::State {
+        &mut self.dicebot
     }
 
     pub fn dequeue(&mut self) -> Cmd<M, S> {

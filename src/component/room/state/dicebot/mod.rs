@@ -1,20 +1,20 @@
-use crate::dice_bot;
+use crate::dicebot;
 use regex::Regex;
 
 pub mod bcdice;
 
 pub struct State {
-    run_time: dice_bot::RunTime,
-    config: dice_bot::Config,
+    run_time: dicebot::RunTime,
+    config: dicebot::Config,
     regex: Regex,
     bcdice: bcdice::State,
 }
 
 impl State {
     pub fn new() -> Self {
-        let mut run_time = dice_bot::new_run_time();
-        let config = dice_bot::config();
-        dice_bot::set_env(&config, &mut run_time);
+        let mut run_time = dicebot::new_run_time();
+        let config = dicebot::config();
+        dicebot::set_env(&config, &mut run_time);
         let regex = Regex::new(r"(.*)[\s\n　](.*)").unwrap();
         Self {
             run_time,
@@ -32,6 +32,10 @@ impl State {
         } else {
             (text, "")
         }
+    }
+
+    pub fn bcdice(&self) -> &bcdice::State {
+        &self.bcdice
     }
 
     pub fn bcdice_mut(&mut self) -> &mut bcdice::State {

@@ -54,6 +54,7 @@ pub fn render(
                     modeless,
                     grubbed,
                     state.chat(),
+                    state.dicebot(),
                     chat_data,
                     state.personal_data(),
                     tab_id,

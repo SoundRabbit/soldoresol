@@ -1,5 +1,5 @@
 use super::super::super::super::{awesome, btn, modeless, text};
-use super::super::super::state::{chat, Modal, Modeless};
+use super::super::super::state::{chat, dicebot, Modal, Modeless};
 use super::Msg;
 use crate::{
     block::{self, chat::item::Sender, BlockId},
@@ -20,6 +20,7 @@ pub fn render(
     modeless: &model::Modeless<Modeless>,
     grubbed: Option<model::modeless::ModelessId>,
     chat_state: &chat::State,
+    dicebot_state: &dicebot::State,
     chat_data: &block::Chat,
     personal_data: &model::PersonalData,
     selecting_tab_id: &BlockId,
@@ -43,9 +44,9 @@ pub fn render(
             ),
             modeless::body(
                 Attributes::new()
-                    .class("linear-v")
-                    .style("grid-template-rows", "1fr fit-content(40%)")
-                    .style("row-gap", "0"),
+                    .class("linear-h")
+                    .style("grid-template-rows", "1fr")
+                    .style("grid-template-columns", "minmax(max-content, 40%) 1fr"),
                 Events::new().on_mousemove(move |e| {
                     if !is_grubbed {
                         e.stop_propagation();
@@ -55,32 +56,23 @@ pub fn render(
                 vec![
                     Html::div(
                         Attributes::new()
-                            .class("container-a linear-v")
-                            .style("align-self", "stretch")
-                            .style("grid-template-rows", "max-content 1fr"),
+                            .class("pure-form linear-v")
+                            .style("grid-template-rows", "1fr"),
                         Events::new(),
                         vec![
-                            if selecting_tab.len() > take_num {
-                                btn::secondary(
-                                    Attributes::new(),
-                                    Events::new().on_click({
-                                        let selecting_tab_id = selecting_tab_id.clone();
-                                        move |_| Msg::OpenModal(Modal::ChatLog(selecting_tab_id))
-                                    }),
-                                    vec![Html::text("全履歴を表示")],
-                                )
-                            } else {
-                                Html::div(Attributes::new(), Events::new(), vec![])
-                            },
-                            chat_item_list(block_field, resource, selecting_tab, take_num),
-                            chat_tab_list(block_field, chat_data, selecting_tab_id),
-                        ],
-                    ),
-                    Html::div(
-                        Attributes::new().class("pure-form linear-v"),
-                        Events::new(),
-                        vec![
-                            sender_list(block_field, resource, personal_data, chat_state),
+                            Html::div(Attributes::new(), Events::new(), vec![]),
+                            Html::div(
+                                Attributes::new().class("keyvalueoption"),
+                                Events::new(),
+                                dicebot_menu(dicebot_state),
+                            ),
+                            Html::div(
+                                Attributes::new()
+                                    .class("keyvalueoption")
+                                    .class("keyvalueoption-align-stretch"),
+                                Events::new(),
+                                sender_list(block_field, resource, personal_data, chat_state),
+                            ),
                             Html::textarea(
                                 Attributes::new()
                                     .style("resize", "none")
@@ -115,6 +107,29 @@ pub fn render(
                                     )],
                                 )],
                             ),
+                        ],
+                    ),
+                    Html::div(
+                        Attributes::new()
+                            .class("container-a linear-v")
+                            .style("align-self", "stretch")
+                            .style("grid-template-rows", "max-content max-content 1fr"),
+                        Events::new(),
+                        vec![
+                            chat_tab_list(block_field, chat_data, selecting_tab_id),
+                            if selecting_tab.len() > take_num {
+                                btn::secondary(
+                                    Attributes::new(),
+                                    Events::new().on_click({
+                                        let selecting_tab_id = selecting_tab_id.clone();
+                                        move |_| Msg::OpenModal(Modal::ChatLog(selecting_tab_id))
+                                    }),
+                                    vec![Html::text("全履歴を表示")],
+                                )
+                            } else {
+                                Html::div(Attributes::new(), Events::new(), vec![])
+                            },
+                            chat_item_list(block_field, resource, selecting_tab, take_num),
                         ],
                     ),
                 ],
@@ -195,14 +210,12 @@ fn chat_tab_list(
     selecting_tab_id: &BlockId,
 ) -> Html<Msg> {
     Html::div(
-        Attributes::new().class("keyvalue"),
+        Attributes::new()
+            .class("keyvalue")
+            .class("keyvalue-rev")
+            .class("keyvalue-align-stretch"),
         Events::new(),
         vec![
-            btn::info(
-                Attributes::new().class("aside"),
-                Events::new().on_click(|_| Msg::OpenModal(Modal::ChatTabEditor)),
-                vec![Html::text("タブ")],
-            ),
             Html::div(
                 Attributes::new().class("flex-h").class("aside"),
                 Events::new(),
@@ -216,17 +229,43 @@ fn chat_tab_list(
                             .map(|tab| (tab_idx, tab_id, tab))
                     })
                     .map(|(tab_idx, tab_id, tab)| {
-                        btn::selectable(
+                        btn::frame_tab(
                             *tab_id == *selecting_tab_id,
-                            Attributes::new(),
                             Events::new().on_click(move |_| Msg::SetSelectingChatTabIdx(tab_idx)),
-                            vec![Html::text(tab.name())],
+                            tab.name(),
                         )
                     })
                     .collect(),
             ),
+            btn::secondary(
+                Attributes::new(),
+                Events::new().on_click(|_| Msg::OpenModal(Modal::ChatTabEditor)),
+                vec![Html::text("編集")],
+            ),
         ],
     )
+}
+
+fn dicebot_menu(dicebot_state: &dicebot::State) -> Vec<Html<Msg>> {
+    vec![
+        Html::div(
+            Attributes::new().style("justify-self", "right"),
+            Events::new(),
+            vec![Html::text("ダイスボット")],
+        ),
+        text::div(
+            dicebot_state
+                .bcdice()
+                .system_info()
+                .map(|system_info| system_info.name().to_string())
+                .unwrap_or("［未選択］".to_string()),
+        ),
+        btn::secondary(
+            Attributes::new(),
+            Events::new().on_click(|_| Msg::OpenModal(Modal::DicebotSelecter)),
+            vec![Html::text("編集")],
+        ),
+    ]
 }
 
 fn sender_list(
@@ -234,42 +273,41 @@ fn sender_list(
     resource: &Resource,
     personal_data: &model::PersonalData,
     chat_state: &chat::State,
-) -> Html<Msg> {
-    Html::div(
-        Attributes::new()
-            .class("keyvalue")
-            .class("keyvalue-align-start"),
-        Events::new(),
-        vec![
-            btn::info(
-                Attributes::new().class("aside"),
-                Events::new().on_click(|_| Msg::OpenModal(Modal::SenderCharacterSelecter)),
-                vec![Html::text("送信元")],
-            ),
-            Html::div(
-                Attributes::new()
-                    .class("flex-h")
-                    .class("flex-padding")
-                    .class("centering-v-i"),
-                Events::new(),
-                chat_state
-                    .senders()
-                    .iter()
-                    .enumerate()
-                    .map(|(idx, sender)| {
-                        sender_item(
-                            block_field,
-                            resource,
-                            personal_data,
-                            idx,
-                            sender,
-                            idx == chat_state.selecting_sender_idx(),
-                        )
-                    })
-                    .collect(),
-            ),
-        ],
-    )
+) -> Vec<Html<Msg>> {
+    vec![
+        Html::div(
+            Attributes::new().style("justify-self", "right"),
+            Events::new(),
+            vec![Html::text("送信元")],
+        ),
+        Html::div(
+            Attributes::new()
+                .class("flex-h")
+                .class("flex-padding")
+                .class("centering-v-i"),
+            Events::new(),
+            chat_state
+                .senders()
+                .iter()
+                .enumerate()
+                .map(|(idx, sender)| {
+                    sender_item(
+                        block_field,
+                        resource,
+                        personal_data,
+                        idx,
+                        sender,
+                        idx == chat_state.selecting_sender_idx(),
+                    )
+                })
+                .collect(),
+        ),
+        btn::secondary(
+            Attributes::new(),
+            Events::new().on_click(|_| Msg::OpenModal(Modal::SenderCharacterSelecter)),
+            vec![Html::text("編集")],
+        ),
+    ]
 }
 
 fn sender_item(

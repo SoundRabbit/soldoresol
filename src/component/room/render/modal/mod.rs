@@ -6,6 +6,7 @@ use kagura::prelude::*;
 mod chat_log;
 mod chat_tab_editor;
 mod common;
+mod dicebot_selecter;
 mod personal_setting;
 mod resource;
 mod select_character_image;
@@ -61,6 +62,7 @@ pub fn render(
                     Html::none()
                 }
             }
+            Modal::DicebotSelecter => dicebot_selecter::render(state.dicebot()),
         };
         children.push(child);
     }

@@ -10,6 +10,11 @@
         align-items: start;
     }
 
+    &-align-stretch {
+        align-content: stretch;
+        align-items: stretch;
+    }
+
     &>&-banner {
         grid-column: span 3;
     }

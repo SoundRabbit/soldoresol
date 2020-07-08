@@ -1,7 +1,7 @@
 use crate::{
     block::{self, BlockId},
     color_system,
-    dice_bot::{self, bcdice},
+    dicebot::{self, bcdice},
     model::{self, modeless::ModelessId},
     renderer::Renderer,
     resource::{Data, ResourceId},
@@ -1375,7 +1375,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             if let (Some(display_name), Some(tab)) = (display_name, state.selecting_chat_tab_id()) {
                 let tab = *tab;
                 let text = state.chat_mut().drain_inputing_message();
-                let (left, right) = state.dice_bot().delimit(&text);
+                let (left, right) = state.dicebot().delimit(&text);
                 let [left, right] = [left.to_string(), right.to_string()];
                 let item = block::chat::Item::new(
                     state.peer().id(),
@@ -1508,7 +1508,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             }
 
             let url = servers.get(0).map(|url| url.clone());
-            state.dice_bot_mut().bcdice_mut().set_servers(servers);
+            state.dicebot_mut().bcdice_mut().set_servers(servers);
 
             if let Some(url) = url {
                 Cmd::task(|r| r(Msg::GetBcdiceSystemNames(url)))
@@ -1537,6 +1537,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             for name in names.iter() {
                 crate::debug::log_1(name.name());
             }
+            state.dicebot_mut().bcdice_mut().set_names(names);
             state.dequeue()
         }
 

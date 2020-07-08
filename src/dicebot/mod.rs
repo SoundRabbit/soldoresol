@@ -112,6 +112,12 @@ pub mod bcdice {
         }
     }
 
+    impl AsRef<Vec<ImplNames>> for Names {
+        fn as_ref(&self) -> &Vec<ImplNames> {
+            &self.names
+        }
+    }
+
     impl ImplSystemInfo {
         pub fn name(&self) -> &String {
             &self.name

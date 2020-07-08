@@ -222,7 +222,7 @@ pub fn frame_tab<Msg>(
                 Attributes::new()
                     .class("pure-button")
                     .class("pure-button-frametab")
-                    .class("pure-button-transparent"),
+                    .class("pure-button-secondary"),
                 Events::new(),
                 vec![Html::text(name)],
             )],
