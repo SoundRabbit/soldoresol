@@ -8,7 +8,7 @@ pub struct PersonalData {
 impl PersonalData {
     pub fn new() -> Self {
         Self {
-            name: "Player".into(),
+            name: "プレイヤー".into(),
             icon: None,
         }
     }

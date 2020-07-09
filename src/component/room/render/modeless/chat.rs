@@ -44,9 +44,8 @@ pub fn render(
             ),
             modeless::body(
                 Attributes::new()
-                    .class("linear-h")
-                    .style("grid-template-rows", "1fr")
-                    .style("grid-template-columns", "minmax(max-content, 40%) 1fr"),
+                    .class("linear-v")
+                    .style("grid-template-rows", "1fr"),
                 Events::new().on_mousemove(move |e| {
                     if !is_grubbed {
                         e.stop_propagation();
@@ -54,6 +53,29 @@ pub fn render(
                     Msg::NoOp
                 }),
                 vec![
+                    Html::div(
+                        Attributes::new()
+                            .class("container-a linear-v")
+                            .style("align-self", "stretch")
+                            .style("grid-template-rows", "max-content max-content 1fr"),
+                        Events::new(),
+                        vec![
+                            chat_tab_list(block_field, chat_data, selecting_tab_id),
+                            if selecting_tab.len() > take_num {
+                                btn::secondary(
+                                    Attributes::new(),
+                                    Events::new().on_click({
+                                        let selecting_tab_id = selecting_tab_id.clone();
+                                        move |_| Msg::OpenModal(Modal::ChatLog(selecting_tab_id))
+                                    }),
+                                    vec![Html::text("全履歴を表示")],
+                                )
+                            } else {
+                                Html::div(Attributes::new(), Events::new(), vec![])
+                            },
+                            chat_item_list(block_field, resource, selecting_tab, take_num),
+                        ],
+                    ),
                     Html::div(
                         Attributes::new()
                             .class("pure-form linear-v")
@@ -109,29 +131,6 @@ pub fn render(
                             ),
                         ],
                     ),
-                    Html::div(
-                        Attributes::new()
-                            .class("container-a linear-v")
-                            .style("align-self", "stretch")
-                            .style("grid-template-rows", "max-content max-content 1fr"),
-                        Events::new(),
-                        vec![
-                            chat_tab_list(block_field, chat_data, selecting_tab_id),
-                            if selecting_tab.len() > take_num {
-                                btn::secondary(
-                                    Attributes::new(),
-                                    Events::new().on_click({
-                                        let selecting_tab_id = selecting_tab_id.clone();
-                                        move |_| Msg::OpenModal(Modal::ChatLog(selecting_tab_id))
-                                    }),
-                                    vec![Html::text("全履歴を表示")],
-                                )
-                            } else {
-                                Html::div(Attributes::new(), Events::new(), vec![])
-                            },
-                            chat_item_list(block_field, resource, selecting_tab, take_num),
-                        ],
-                    ),
                 ],
             ),
             modeless::footer(Attributes::new(), Events::new(), vec![]),
@@ -156,13 +155,17 @@ fn chat_item_list(
             .rev()
             .take(take_num)
             .rev()
-            .filter_map(|(_, item_id)| block_field.get::<block::chat::Item>(item_id))
-            .map(|item| chat_item(resource, item))
+            .filter_map(|(timestamp, item_id)| {
+                block_field
+                    .get::<block::chat::Item>(item_id)
+                    .map(|item| (timestamp, item))
+            })
+            .map(|(timestamp, item)| chat_item(resource, timestamp, item))
             .collect(),
     )
 }
 
-fn chat_item(resource: &Resource, item: &block::chat::Item) -> Html<Msg> {
+fn chat_item(resource: &Resource, timestamp: f64, item: &block::chat::Item) -> Html<Msg> {
     Html::div(
         Attributes::new().class("pure-form chat-item"),
         Events::new(),
@@ -176,9 +179,28 @@ fn chat_item(resource: &Resource, item: &block::chat::Item) -> Html<Msg> {
             Html::div(
                 Attributes::new().class("chat-args"),
                 Events::new(),
-                vec![Html::text(
-                    String::from("") + item.display_name() + "@" + item.peer_id(),
-                )],
+                vec![
+                    Html::span(
+                        Attributes::new(),
+                        Events::new(),
+                        vec![Html::text(item.display_name())],
+                    ),
+                    Html::span(
+                        Attributes::new().class("aside"),
+                        Events::new(),
+                        vec![Html::text(item.peer_id())],
+                    ),
+                    Html::span(
+                        Attributes::new(),
+                        Events::new(),
+                        vec![Html::text(
+                            js_sys::Date::new(&wasm_bindgen::JsValue::from(timestamp))
+                                .to_locale_string("ja-JP", object! {}.as_ref())
+                                .as_string()
+                                .unwrap_or(String::from("")),
+                        )],
+                    ),
+                ],
             ),
             Html::div(
                 Attributes::new().class("chat-payload"),
