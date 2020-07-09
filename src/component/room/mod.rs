@@ -33,6 +33,9 @@ pub enum Msg {
     OpenContextmenu([f64; 2], [f64; 2], state::Contextmenu),
     CloseContextmenu,
 
+    // header menu
+    SetHeadermenuState(Option<state::headermenu::State>),
+
     // Modeless
     OpenModeless(state::Modeless),
     FocusModeless(ModelessId),
@@ -263,6 +266,12 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
         Msg::CloseContextmenu => {
             state.close_contextmenu();
+            state.dequeue()
+        }
+
+        // Headermenu
+        Msg::SetHeadermenuState(headermenu_state) => {
+            state.set_headermenu(headermenu_state);
             state.dequeue()
         }
 

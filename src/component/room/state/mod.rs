@@ -1,6 +1,7 @@
 pub mod chat;
 pub mod contextmenu;
 pub mod dicebot;
+pub mod headermenu;
 pub mod speech_bubble;
 pub mod table;
 
@@ -56,6 +57,7 @@ pub struct State<M, S> {
     canvas_size: [f32; 2],
     speech_bubble: speech_bubble::State,
     contextmenu: Option<contextmenu::State>,
+    headermenu: Option<headermenu::State>,
     modeless: modeless::Collection<Modeless>,
     modal: Vec<Modal>,
     dicebot: dicebot::State,
@@ -105,6 +107,7 @@ impl<M, S> State<M, S> {
             canvas_size: [0.0, 0.0],
             speech_bubble: speech_bubble::State::new(),
             contextmenu: None,
+            headermenu: None,
             modeless: modeless::Collection::new(),
             modal: vec![],
             dicebot: dicebot::State::new(),
@@ -289,6 +292,14 @@ impl<M, S> State<M, S> {
 
     pub fn close_contextmenu(&mut self) {
         self.contextmenu = None;
+    }
+
+    pub fn headermenu(&self) -> Option<&headermenu::State> {
+        self.headermenu.as_ref()
+    }
+
+    pub fn set_headermenu(&mut self, headermenu: Option<headermenu::State>) {
+        self.headermenu = headermenu;
     }
 
     pub fn modeless(&self) -> &modeless::Collection<Modeless> {

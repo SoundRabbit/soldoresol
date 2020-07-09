@@ -33,6 +33,11 @@
         background-color: $gray-900 !important;
     }
 
+    &-darkgray {
+        color: $gray-000 !important;
+        background-color: $gray-700 !important;
+    }
+
     &-transparent {
         color: $gray-000 !important;
         background-color: transparent;
@@ -68,5 +73,11 @@
         border-bottom-left-radius: 0;
         border-bottom-right-radius: 0;
         padding: .75em 1em;
+    }
+
+    &-headermenu {
+        color: $gray-000 !important;
+        background-color: $gray-900 !important;
+        text-align: left;
     }
 }

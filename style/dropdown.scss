@@ -8,9 +8,19 @@
         }
     }
 
-    &>*:last-child {
-        position: absolute;
-        left: calc(100% + 0.65em);
-        top: 0;
+    &-br {
+        &>*:last-child {
+            position: absolute;
+            left: 0;
+            top: calc(100% + 0.1em);
+        }
+    }
+
+    &-rb {
+        &>*:last-child {
+            position: absolute;
+            left: calc(100% + 0.65em);
+            top: 0;
+        }
     }
 }

@@ -41,7 +41,7 @@ pub fn render(state: &State) -> Html<Msg> {
             header_menu::render(
                 3,
                 state.room().id.as_ref(),
-                state.table().selecting_tool(),
+                state.headermenu(),
                 state.table().is_2d_mode(),
             ),
             side_menu::render(2, state.table().selecting_tool()),

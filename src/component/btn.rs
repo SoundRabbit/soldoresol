@@ -99,9 +99,7 @@ pub fn selectable<Msg>(
         )
     } else {
         Html::button(
-            attributes
-                .class("pure-button")
-                .class("pure-button-secondary"),
+            attributes.class("pure-button").class("pure-button-dark"),
             events,
             children,
         )
@@ -191,7 +189,7 @@ pub fn tab<Msg>(is_selected: bool, events: Events<Msg>, name: impl Into<String>)
                 Attributes::new()
                     .class("pure-button")
                     .class("pure-button-frametab")
-                    .class("pure-button-secondary"),
+                    .class("pure-button-dark"),
                 Events::new(),
                 vec![Html::text(name)],
             )],
@@ -225,7 +223,7 @@ pub fn frame_tab<Msg>(
                 Attributes::new()
                     .class("pure-button")
                     .class("pure-button-frametab")
-                    .class("pure-button-secondary"),
+                    .class("pure-button-darkgray"),
                 Events::new(),
                 vec![Html::text(name)],
             )],
@@ -233,7 +231,6 @@ pub fn frame_tab<Msg>(
     }
 }
 
-#[allow(dead_code)]
 pub fn contextmenu_text<Msg>(
     attributes: Attributes,
     events: Events<Msg>,
@@ -247,5 +244,38 @@ pub fn contextmenu_text<Msg>(
             events,
             vec![Html::text(text)],
         )],
+    )
+}
+
+pub fn contextmenu_text_window<Msg>(
+    attributes: Attributes,
+    events: Events<Msg>,
+    text: impl Into<String>,
+) -> Html<Msg> {
+    Html::li(
+        Attributes::new().class("pure-menu-item"),
+        Events::new(),
+        vec![Html::a(
+            attributes
+                .class("pure-menu-link")
+                .class("keyvalue")
+                .class("keyvalue-rev"),
+            events,
+            vec![Html::text(text), awesome::i("fa-external-link-alt")],
+        )],
+    )
+}
+
+pub fn headermenu<Msg>(
+    attributes: Attributes,
+    events: Events<Msg>,
+    children: Vec<Html<Msg>>,
+) -> Html<Msg> {
+    Html::button(
+        attributes
+            .class("pure-button")
+            .class("pure-button-headermenu"),
+        events,
+        children,
     )
 }

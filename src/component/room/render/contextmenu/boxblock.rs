@@ -21,7 +21,7 @@ pub fn render(
             Attributes::new().class("pure-menu-list"),
             Events::new(),
             vec![
-                btn::contextmenu_text(
+                btn::contextmenu_text_window(
                     Attributes::new(),
                     Events::new().on_click({
                         let block_id = block_id.clone();

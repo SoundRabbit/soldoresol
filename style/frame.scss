@@ -9,6 +9,10 @@
     position: relative;
     overflow: visible;
 
+    & * {
+        overflow: hidden;
+    }
+
     &-modal {
         max-height: 90vh;
     }

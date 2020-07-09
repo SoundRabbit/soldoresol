@@ -1,6 +1,6 @@
 use super::super::super::super::{btn, contextmenu};
 use super::super::state::Modeless;
-use super::state::{self, Modal};
+use super::state::{self};
 use super::Msg;
 use crate::block::{self, BlockId};
 use kagura::prelude::*;
@@ -21,7 +21,7 @@ pub fn render(
             Attributes::new().class("pure-menu-list"),
             Events::new(),
             vec![
-                btn::contextmenu_text(
+                btn::contextmenu_text_window(
                     Attributes::new(),
                     Events::new().on_click({
                         let block_id = block_id.clone();
