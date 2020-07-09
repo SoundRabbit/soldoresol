@@ -229,7 +229,7 @@ fn chat_tab_list(
                             .map(|tab| (tab_idx, tab_id, tab))
                     })
                     .map(|(tab_idx, tab_id, tab)| {
-                        btn::frame_tab(
+                        btn::tab(
                             *tab_id == *selecting_tab_id,
                             Events::new().on_click(move |_| Msg::SetSelectingChatTabIdx(tab_idx)),
                             tab.name(),

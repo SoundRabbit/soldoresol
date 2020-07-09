@@ -28,6 +28,24 @@ pub struct Collection<T> {
     parent: Option<Rc<web_sys::Element>>,
 }
 
+fn bind(n: f64, m: f64, v: f64) -> f64 {
+    if m < v {
+        if m < n {
+            v
+        } else {
+            n
+        }
+    } else if m > v {
+        if m > n {
+            v
+        } else {
+            n
+        }
+    } else {
+        n
+    }
+}
+
 impl<T> Loc<T> {
     fn new(top: T, left: T, bottom: T, right: T) -> Self {
         Self {
@@ -71,13 +89,20 @@ impl<T> Modeless<T> {
     }
 
     pub fn position(&self) -> [f64; 2] {
-        [self.position.left, self.position.top]
+        let r = self.position.right;
+        let b = self.position.bottom;
+        [
+            bind(self.position.left + bind(r, 99.0, 100.0) - r, 1.0, 0.0),
+            bind(self.position.top + bind(b, 99.0, 100.0) - b, 1.0, 0.0),
+        ]
     }
 
     pub fn size(&self) -> [f64; 2] {
+        let l = self.position.left;
+        let t = self.position.top;
         [
-            self.position.right - self.position.left,
-            self.position.bottom - self.position.top,
+            bind(self.position.right + bind(l, 1.0, 0.0) - l, 99.0, 100.0) - self.position()[0],
+            bind(self.position.bottom + bind(t, 1.0, 0.0) - t, 99.0, 100.0) - self.position()[1],
         ]
     }
 

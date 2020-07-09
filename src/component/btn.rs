@@ -169,29 +169,32 @@ pub fn add<Msg>(attributes: Attributes, events: Events<Msg>) -> Html<Msg> {
     )
 }
 
-pub fn tab<Msg>(
-    is_selected: bool,
-    attributes: Attributes,
-    events: Events<Msg>,
-    name: impl Into<String>,
-) -> Html<Msg> {
+pub fn tab<Msg>(is_selected: bool, events: Events<Msg>, name: impl Into<String>) -> Html<Msg> {
     if is_selected {
-        Html::button(
-            attributes
-                .class("pure-button")
-                .class("pure-button-tab")
-                .class("pure-button-primary"),
+        Html::span(
+            Attributes::new().draggable(false),
             events,
-            vec![Html::text(name)],
+            vec![Html::span(
+                Attributes::new()
+                    .class("pure-button")
+                    .class("pure-button-frametab")
+                    .class("pure-button-primary"),
+                Events::new(),
+                vec![Html::text(name)],
+            )],
         )
     } else {
-        Html::button(
-            attributes
-                .class("pure-button")
-                .class("pure-button-tab")
-                .class("pure-button-secondary"),
+        Html::span(
+            Attributes::new().draggable(false),
             events,
-            vec![Html::text(name)],
+            vec![Html::span(
+                Attributes::new()
+                    .class("pure-button")
+                    .class("pure-button-frametab")
+                    .class("pure-button-secondary"),
+                Events::new(),
+                vec![Html::text(name)],
+            )],
         )
     }
 }
