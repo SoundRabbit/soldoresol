@@ -64,6 +64,13 @@ impl State {
         self.system_info = Some(system_info);
     }
 
+    pub fn system_name(&self) -> String {
+        self.system_info
+            .as_ref()
+            .map(|si| si.game_type().clone())
+            .unwrap_or(String::new())
+    }
+
     pub fn match_to_prefix(&self, text: &str) -> bool {
         self.default_prefixs
             .iter()

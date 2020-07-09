@@ -1315,6 +1315,8 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
 
         Msg::SetCharacterTextrureToCloseModal(character_id, texture_id) => {
+            state.close_modal();
+
             state.block_field_mut().update(
                 &character_id,
                 timestamp(),
@@ -1424,12 +1426,14 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
 
         Msg::InsertChatItem(tab, item, timestamp) => {
-            let item_id = state.block_field_mut().add(item);
-            state
-                .block_field_mut()
-                .update(&tab, None, |tab: &mut block::chat::Tab| {
-                    tab.insert(timestamp, item_id);
-                });
+            if item.text() != "" {
+                let item_id = state.block_field_mut().add(item);
+                state
+                    .block_field_mut()
+                    .update(&tab, None, |tab: &mut block::chat::Tab| {
+                        tab.insert(timestamp, item_id);
+                    });
+            }
             state.dequeue()
         }
 

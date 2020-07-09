@@ -101,6 +101,10 @@ pub mod bcdice {
         pub fn system(&self) -> &String {
             &self.system
         }
+
+        pub fn sort_key(&self) -> &String {
+            &self.sort_key
+        }
     }
 
     impl Names {

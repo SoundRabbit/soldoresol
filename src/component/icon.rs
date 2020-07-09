@@ -22,6 +22,18 @@ pub fn from_str<Msg>(attrs: Attributes, v: &str) -> Html<Msg> {
     )
 }
 
+pub fn from_char<Msg>(attrs: Attributes, c: char) -> Html<Msg> {
+    Html::div(
+        attrs
+            .class("icon")
+            .class("icon-rounded")
+            .class("bg-color-light")
+            .class("text-color-dark"),
+        Events::new(),
+        vec![Html::text(c.to_string())],
+    )
+}
+
 pub fn from_img<Msg>(attrs: Attributes, url: impl Into<String>) -> Html<Msg> {
     Html::img(
         attrs

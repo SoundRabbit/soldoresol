@@ -11,5 +11,9 @@
         grid-auto-rows: max-content;
         row-gap: 0.8em;
         grid-auto-flow: row;
+
+        &-stretch {
+            align-items: stretch;
+        }
     }
 }
