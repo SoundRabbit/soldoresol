@@ -90,6 +90,7 @@ pub enum Msg {
 
     // World
     AddTable,
+    SetSelectingTable(BlockId),
 
     // Table
     SetTableSize(BlockId, [f32; 2]),
@@ -1119,14 +1120,37 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 hash_set! {},
             )
         }
+        Msg::SetSelectingTable(table_id) => {
+            state.update_world(timestamp(), move |world| {
+                world.set_selecting_table(table_id);
+            });
+
+            render_canvas(state);
+
+            send_pack_cmd(state.block_field(), vec![state.world()], hash_set! {})
+        }
 
         // Table
         Msg::SetTableSize(table, size) => {
+            let mut texture_id = None;
             state
                 .block_field_mut()
                 .update(&table, timestamp(), |table: &mut block::Table| {
-                    table.set_size(size);
+                    table.set_size(size.clone());
+                    texture_id = Some(table.drawing_texture_id().clone());
                 });
+
+            if let Some(texture_id) = texture_id {
+                state.block_field_mut().update(
+                    &texture_id,
+                    timestamp(),
+                    |texture: &mut block::table::Texture| {
+                        texture.set_size([size[0] as f64, size[1] as f64]);
+                    },
+                );
+            }
+
+            render_canvas(state);
 
             send_pack_cmd(state.block_field(), vec![&table], hash_set! {})
         }
@@ -1137,6 +1161,8 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 .update(&table, timestamp(), |table: &mut block::Table| {
                     table.set_image_texture_id(image);
                 });
+
+            render_canvas(state);
 
             send_pack_cmd(state.block_field(), vec![&table], hash_set! {})
         }

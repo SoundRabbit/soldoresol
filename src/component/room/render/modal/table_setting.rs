@@ -1,4 +1,4 @@
-use super::super::super::super::{btn, modal};
+use super::super::super::super::{awesome, btn, modal};
 use super::state::Modal;
 use super::Msg;
 use crate::{
@@ -44,14 +44,16 @@ pub fn render<'a>(
                                         btn::selectable(
                                             table_id == *world.selecting_table(),
                                             Attributes::new(),
-                                            Events::new().on_click(move |_| Msg::NoOp),
+                                            Events::new().on_click(move |_| {
+                                                Msg::SetSelectingTable(table_id)
+                                            }),
                                             vec![Html::text(table.name())],
                                         )
                                     })
                                     .collect(),
-                                vec![btn::primary(
+                                vec![btn::secondary(
                                     Attributes::new(),
-                                    Events::new().on_click(|_| Msg::NoOp),
+                                    Events::new().on_click(|_| Msg::AddTable),
                                     vec![Html::text("追加")],
                                 )],
                             ]
@@ -134,7 +136,10 @@ fn selected_table(resource: &Resource, block_id: &BlockId, table: &block::Table)
                                     let block_id = block_id.clone();
                                     move |_| Msg::OpenModal(Modal::SelectTableImage(block_id))
                                 }),
-                                vec![Html::text("画像を選択")],
+                                vec![
+                                    Html::text("画像を選択 "),
+                                    awesome::i("fa-external-link-alt"),
+                                ],
                             ),
                         ],
                     ),

@@ -205,6 +205,14 @@ impl<M, S> State<M, S> {
             .map(|world| world.selecting_table())
     }
 
+    pub fn update_world(
+        &mut self,
+        timestamp: Option<f64>,
+        f: impl FnOnce(&mut block::World) + 'static,
+    ) {
+        self.block_field.update(&self.world, timestamp, f);
+    }
+
     pub fn table(&self) -> &table::State {
         &self.table
     }

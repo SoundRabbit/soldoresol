@@ -24,6 +24,10 @@ impl World {
         &self.selecting_table
     }
 
+    pub fn set_selecting_table(&mut self, table_id: BlockId) {
+        self.selecting_table = table_id;
+    }
+
     pub fn tables(&self) -> impl Iterator<Item = &BlockId> {
         self.tables.iter()
     }

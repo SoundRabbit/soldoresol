@@ -118,7 +118,7 @@ pub fn render(
                                 ),
                                 btn::headermenu(
                                     Attributes::new().class("keyvalueoption"),
-                                    Events::new(),
+                                    Events::new().on_click(|_| Msg::OpenModal(Modal::TableSetting)),
                                     vec![
                                         awesome::i("fa-vector-square"),
                                         Html::text(" テーブル設定 "),
