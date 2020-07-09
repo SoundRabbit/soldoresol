@@ -87,7 +87,7 @@ pub fn render(
                                 .class("panel-dark")
                                 .class("pure-form")
                                 .class("linear-v"),
-                            Events::new(),
+                            Events::new().on_click(|_| Msg::SetHeadermenuState(None)),
                             vec![
                                 btn::headermenu(
                                     Attributes::new().class("keyvalueoption"),
@@ -98,24 +98,24 @@ pub fn render(
                                         awesome::i("fa-external-link-alt"),
                                     ],
                                 ),
-                                btn::headermenu(
-                                    Attributes::new().class("keyvalueoption"),
-                                    Events::new(),
-                                    vec![
-                                        awesome::i("fa-layer-group"),
-                                        Html::text(" ルーム設定 "),
-                                        awesome::i("fa-external-link-alt"),
-                                    ],
-                                ),
-                                btn::headermenu(
-                                    Attributes::new().class("keyvalueoption"),
-                                    Events::new(),
-                                    vec![
-                                        awesome::i("fa-object-group"),
-                                        Html::text(" シーン設定 "),
-                                        awesome::i("fa-external-link-alt"),
-                                    ],
-                                ),
+                                // btn::headermenu(
+                                //     Attributes::new().class("keyvalueoption"),
+                                //     Events::new(),
+                                //     vec![
+                                //         awesome::i("fa-layer-group"),
+                                //         Html::text(" ルーム設定 "),
+                                //         awesome::i("fa-external-link-alt"),
+                                //     ],
+                                // ),
+                                // btn::headermenu(
+                                //     Attributes::new().class("keyvalueoption"),
+                                //     Events::new(),
+                                //     vec![
+                                //         awesome::i("fa-object-group"),
+                                //         Html::text(" シーン設定 "),
+                                //         awesome::i("fa-external-link-alt"),
+                                //     ],
+                                // ),
                                 btn::headermenu(
                                     Attributes::new().class("keyvalueoption"),
                                     Events::new().on_click(|_| Msg::OpenModal(Modal::TableSetting)),
