@@ -7,5 +7,5 @@ mod common {
 }
 
 pub fn render(resource: &Resource) -> Html<Msg> {
-    common::select_image(resource, { move |resource_id| Msg::NoOp })
+    common::select_image(resource, Msg::SetPersonalDataWithIconImageToCloseModal)
 }

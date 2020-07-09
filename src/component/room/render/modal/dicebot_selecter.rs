@@ -1,7 +1,6 @@
 use super::super::super::super::{btn, icon, modal};
 use super::super::super::state::dicebot;
 use super::Msg;
-use crate::{resource::Data, Resource};
 use kagura::prelude::*;
 
 mod common {
@@ -62,7 +61,7 @@ pub fn render(dicebot_state: &dicebot::State) -> Html<Msg> {
                                                 let system = system.clone();
                                                 btn::selectable(
                                                     system == dicebot_state.bcdice().system_name(),
-                                                    Attributes::new().class("clickable"),
+                                                    Attributes::new().class("pure-button-list"),
                                                     Events::new().on_click(move |_| {
                                                         Msg::GetBcdiceSystemInfo(system)
                                                     }),

@@ -75,6 +75,10 @@
         padding: .75em 1em;
     }
 
+    &-list {
+        text-align: left !important;
+    }
+
     &-headermenu {
         color: $gray-000 !important;
         background-color: $gray-900 !important;

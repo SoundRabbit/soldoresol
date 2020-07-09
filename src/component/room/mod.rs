@@ -98,7 +98,7 @@ pub enum Msg {
 
     // PersonalData
     SetPersonalDataWithPlayerName(String),
-    SetPersonalDataWithIconImageToCloseModal(u128),
+    SetPersonalDataWithIconImageToCloseModal(ResourceId),
 
     // tablemask
     SetTablemaskSize(BlockId, [f32; 2]),
@@ -1598,7 +1598,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 {
                     Msg::SetBcdiceSystemNames(names)
                 } else {
-                    Msg::NoOp
+                    Msg::GetBcdiceServerList
                 }
             },
         )),

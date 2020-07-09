@@ -1,6 +1,6 @@
 use super::super::super::{awesome, btn, dropdown};
 use super::super::{
-    state::{headermenu, table, Modal, Modeless},
+    state::{headermenu, Modal, Modeless},
     Msg,
 };
 use kagura::prelude::*;
@@ -91,7 +91,8 @@ pub fn render(
                             vec![
                                 btn::headermenu(
                                     Attributes::new().class("keyvalueoption"),
-                                    Events::new(),
+                                    Events::new()
+                                        .on_click(|_| Msg::OpenModal(Modal::PersonalSetting)),
                                     vec![
                                         awesome::i("fa-user-cog"),
                                         Html::text(" 個人設定 "),
