@@ -177,18 +177,13 @@ fn chat_item(resource: &Resource, timestamp: f64, item: &block::chat::Item) -> H
                 resource,
             ),
             Html::div(
-                Attributes::new().class("chat-args"),
+                Attributes::new().class("chat-args").class("linear-h"),
                 Events::new(),
                 vec![
                     Html::span(
                         Attributes::new(),
                         Events::new(),
                         vec![Html::text(item.display_name())],
-                    ),
-                    Html::span(
-                        Attributes::new().class("aside"),
-                        Events::new(),
-                        vec![Html::text(item.peer_id())],
                     ),
                     Html::span(
                         Attributes::new(),
@@ -199,6 +194,11 @@ fn chat_item(resource: &Resource, timestamp: f64, item: &block::chat::Item) -> H
                                 .as_string()
                                 .unwrap_or(String::from("")),
                         )],
+                    ),
+                    Html::span(
+                        Attributes::new().class("aside"),
+                        Events::new(),
+                        vec![Html::text(String::from("@") + item.peer_id())],
                     ),
                 ],
             ),

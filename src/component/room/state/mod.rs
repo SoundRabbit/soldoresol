@@ -315,15 +315,23 @@ impl<M, S> State<M, S> {
     }
 
     pub fn open_modeless(&mut self, modeless: Modeless) {
-        let modeless = if modeless.is_chat() {
-            let mut modeless = model::Modeless::new(modeless);
-            modeless.set_position_r(0.0, 50.0);
-            modeless.set_size_r(40.0, 50.0);
-            modeless
+        if modeless.is_chat() {
+            let chat_modeless_id = self.modeless.iter().find_map(|(id, m)| {
+                m.as_ref()
+                    .and_then(|m| if m.is_chat() { Some(id) } else { None })
+            });
+            if let Some(chat_modeless_id) = chat_modeless_id {
+                self.modeless.focus(chat_modeless_id);
+            } else {
+                let mut modeless = model::Modeless::new(modeless);
+                modeless.set_position_r(0.0, 50.0);
+                modeless.set_size_r(40.0, 50.0);
+                self.modeless.open(modeless);
+            }
         } else {
-            model::Modeless::new(modeless)
+            let modeless = model::Modeless::new(modeless);
+            self.modeless.open(modeless);
         };
-        self.modeless.open(modeless);
     }
 
     pub fn open_modeless_with_position(&mut self, modeless: Modeless, pos: [f64; 2]) {
