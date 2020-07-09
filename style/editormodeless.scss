@@ -7,7 +7,7 @@
         width: 100%;
     }
 
-    & input.key {
+    & :not(.keyvalueoption-banner-2)>input.key {
         width: 8em;
     }
 }

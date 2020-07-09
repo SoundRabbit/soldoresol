@@ -41,8 +41,16 @@ impl Property {
         &self.name
     }
 
+    pub fn set_name(&mut self, name: String) {
+        self.name = name;
+    }
+
     pub fn is_selected(&self) -> bool {
         self.is_selected
+    }
+
+    pub fn set_is_selected(&mut self, is_selected: bool) {
+        self.is_selected = is_selected;
     }
 
     pub fn value(&self) -> &Value {
@@ -51,6 +59,23 @@ impl Property {
 
     pub fn set_value(&mut self, value: Value) {
         self.value = value
+    }
+
+    pub fn add_child(&mut self, child_id: BlockId) {
+        match &mut self.value {
+            Value::Children(children) => {
+                children.push(child_id);
+            }
+            _ => (),
+        }
+    }
+
+    pub fn remove_child(&mut self, child_id: &BlockId) {
+        if let Value::Children(children) = &mut self.value {
+            if let Some(pos) = children.iter().position(|prop_id| *prop_id == *child_id) {
+                children.remove(pos);
+            }
+        }
     }
 }
 

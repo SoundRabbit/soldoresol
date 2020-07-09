@@ -239,7 +239,7 @@ fn root_property(block_field: &block::Field, prop_id: &BlockId) -> Html<Msg> {
                 vec![
                     block_field
                         .listed::<block::Property>(children.iter().collect())
-                        .map(|(prop_id, prop)| property(block_field, &prop_id, prop))
+                        .map(|(child_id, prop)| property(block_field, &prop_id, &child_id, prop))
                         .flatten()
                         .collect(),
                     btn_add_child_to_property(prop_id.clone()),
@@ -269,6 +269,7 @@ fn root_property(block_field: &block::Field, prop_id: &BlockId) -> Html<Msg> {
 
 fn property(
     block_field: &block::Field,
+    parent_id: &BlockId,
     prop_id: &BlockId,
     prop: &block::Property,
 ) -> Vec<Html<Msg>> {
@@ -283,45 +284,75 @@ fn property(
                 vec![
                     btn::primary(
                         Attributes::new(),
-                        Events::new().on_click(move |_| Msg::NoOp),
+                        Events::new().on_click({
+                            let prop_id = prop_id.clone();
+                            move |_| {
+                                Msg::SetPropertyValue(
+                                    prop_id,
+                                    block::property::Value::Children(vec![]),
+                                )
+                            }
+                        }),
                         vec![Html::text(" グループ")],
                     ),
                     btn::primary(
                         Attributes::new(),
-                        Events::new().on_click(move |_| Msg::NoOp),
+                        Events::new().on_click({
+                            let prop_id = prop_id.clone();
+                            move |_| {
+                                Msg::SetPropertyValue(prop_id, block::property::Value::Num(0.0))
+                            }
+                        }),
                         vec![Html::text("数値")],
                     ),
                     btn::primary(
                         Attributes::new(),
-                        Events::new().on_click(move |_| Msg::NoOp),
+                        Events::new().on_click({
+                            let prop_id = prop_id.clone();
+                            move |_| {
+                                Msg::SetPropertyValue(
+                                    prop_id,
+                                    block::property::Value::Str(String::new()),
+                                )
+                            }
+                        }),
                         vec![Html::text("テキスト")],
                     ),
                 ],
             ),
-            btn_remove_property(prop_id.clone()),
+            btn_remove_property(parent_id.clone(), prop_id.clone()),
         ],
         block::property::Value::Num(n) => vec![
             property_key(false, prop_id, prop),
             Html::input(
                 Attributes::new().value(n.to_string()).type_("number"),
-                Events::new()
-                    .on_input(move |s| s.parse().map(|_: f64| Msg::NoOp).unwrap_or(Msg::NoOp)),
+                Events::new().on_input({
+                    let prop_id = prop_id.clone();
+                    move |s| {
+                        s.parse()
+                            .map(|n| Msg::SetPropertyValue(prop_id, block::property::Value::Num(n)))
+                            .unwrap_or(Msg::NoOp)
+                    }
+                }),
                 vec![],
             ),
-            btn_remove_property(prop_id.clone()),
+            btn_remove_property(parent_id.clone(), prop_id.clone()),
         ],
         block::property::Value::Str(s) => vec![
             property_key(false, prop_id, prop),
             Html::input(
                 Attributes::new().value(s),
-                Events::new().on_input(move |s| Msg::NoOp),
+                Events::new().on_input({
+                    let prop_id = prop_id.clone();
+                    move |s| Msg::SetPropertyValue(prop_id, block::property::Value::Str(s))
+                }),
                 vec![],
             ),
-            btn_remove_property(prop_id.clone()),
+            btn_remove_property(parent_id.clone(), prop_id.clone()),
         ],
         block::property::Value::Children(children) => vec![
             property_key(true, prop_id, prop),
-            btn_remove_property(prop_id.clone()),
+            btn_remove_property(parent_id.clone(), prop_id.clone()),
             Html::div(
                 Attributes::new()
                     .class("container-indent")
@@ -331,7 +362,7 @@ fn property(
                 vec![
                     block_field
                         .listed(children.iter().collect())
-                        .map(|(prop_id, prop)| property(block_field, &prop_id, prop))
+                        .map(|(child_id, prop)| property(block_field, &prop_id, &child_id, prop))
                         .flatten()
                         .collect(),
                     btn_add_child_to_property(prop_id.clone()),
@@ -361,24 +392,30 @@ fn property_key(is_banner: bool, property_id: &BlockId, property: &block::Proper
             btn::check(
                 is_selected,
                 Attributes::new(),
-                Events::new().on_click(move |_| Msg::NoOp),
+                Events::new().on_click({
+                    let property_id = property_id.clone();
+                    move |_| Msg::SetPropertyIsSelected(property_id, !is_selected)
+                }),
             ),
             Html::input(
                 Attributes::new()
                     .value(property.name())
                     .type_("text")
                     .class("key"),
-                Events::new().on_input(move |s| Msg::NoOp),
+                Events::new().on_input({
+                    let property_id = property_id.clone();
+                    move |s| Msg::SetPropertyName(property_id, s)
+                }),
                 vec![],
             ),
         ],
     )
 }
 
-fn btn_remove_property(property_id: BlockId) -> Html<Msg> {
+fn btn_remove_property(parent_id: BlockId, child_id: BlockId) -> Html<Msg> {
     btn::danger(
         Attributes::new(),
-        Events::new().on_click(move |_| Msg::NoOp),
+        Events::new().on_click(move |_| Msg::RemoveProperty(parent_id, child_id)),
         vec![awesome::i("fa-times")],
     )
 }
@@ -387,7 +424,7 @@ fn btn_add_child_to_property(property_id: BlockId) -> Vec<Html<Msg>> {
     vec![
         btn::secondary(
             Attributes::new().class("keyvalueoption-banner-2"),
-            Events::new().on_click(move |_| Msg::NoOp),
+            Events::new().on_click(move |_| Msg::AddChildToProprty(property_id)),
             vec![awesome::i("fa-plus")],
         ),
         Html::span(Attributes::new(), Events::new(), vec![]),

@@ -119,6 +119,11 @@ pub enum Msg {
     SetCharacterPosition(BlockId, [f32; 3]),
 
     // property
+    AddChildToProprty(BlockId),
+    SetPropertyName(BlockId, String),
+    SetPropertyValue(BlockId, block::property::Value),
+    SetPropertyIsSelected(BlockId, bool),
+    RemoveProperty(BlockId, BlockId),
 
     // チャット関係
     SetInputingChatMessage(String),
@@ -1377,6 +1382,82 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             render_canvas(state);
 
             state.dequeue()
+        }
+
+        // Property
+        Msg::AddChildToProprty(property_id) => {
+            let child_property = block::Property::new("");
+            let child_property_id = state.block_field_mut().add(child_property);
+            state.block_field_mut().update(
+                &property_id,
+                timestamp(),
+                |property: &mut block::Property| {
+                    property.add_child(child_property_id.clone());
+                },
+            );
+
+            send_pack_cmd(
+                state.block_field(),
+                vec![&property_id, &child_property_id],
+                hash_set! {},
+            )
+        }
+
+        Msg::SetPropertyName(property_id, name) => {
+            state.block_field_mut().update(
+                &property_id,
+                timestamp(),
+                |property: &mut block::Property| {
+                    property.set_name(name);
+                },
+            );
+
+            send_pack_cmd(state.block_field(), vec![&property_id], hash_set! {})
+        }
+
+        Msg::SetPropertyValue(property_id, mut value) => {
+            if let block::property::Value::Children(children) = &mut value {
+                if children.is_empty() {
+                    let none = block::Property::new("");
+                    let none = state.block_field_mut().add(none);
+                    children.push(none);
+                }
+            }
+
+            state.block_field_mut().update(
+                &property_id,
+                timestamp(),
+                |property: &mut block::Property| {
+                    property.set_value(value);
+                },
+            );
+
+            send_pack_cmd(state.block_field(), vec![&property_id], hash_set! {})
+        }
+
+        Msg::SetPropertyIsSelected(property_id, is_selected) => {
+            state.block_field_mut().update(
+                &property_id,
+                timestamp(),
+                |property: &mut block::Property| {
+                    property.set_is_selected(is_selected);
+                },
+            );
+
+            send_pack_cmd(state.block_field(), vec![&property_id], hash_set! {})
+        }
+
+        Msg::RemoveProperty(parent_id, self_id) => {
+            state.block_field_mut().update(
+                &parent_id,
+                timestamp(),
+                |property: &mut block::Property| {
+                    property.remove_child(&self_id);
+                },
+            );
+            state.block_field_mut().remove(&self_id);
+
+            send_pack_cmd(state.block_field(), vec![&parent_id], hash_set! {self_id})
         }
 
         // Chat
