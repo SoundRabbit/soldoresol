@@ -7,9 +7,18 @@ pub struct State {
     system_info: Option<bcdice::SystemInfo>,
     selected_server_idx: usize,
     prefixs: Vec<Regex>,
+    default_prefixs: Vec<Regex>,
 }
 
 impl State {
+    fn default_prefixs() -> Vec<Regex> {
+        vec![
+            Regex::new(r"\d+[bdu]\d*").unwrap(),
+            Regex::new(r"C\(").unwrap(),
+            Regex::new(r"choice\[").unwrap(),
+        ]
+    }
+
     pub fn new() -> Self {
         Self {
             servers: vec![],
@@ -17,10 +26,12 @@ impl State {
             system_info: None,
             selected_server_idx: 0,
             prefixs: vec![],
+            default_prefixs: Self::default_prefixs(),
         }
     }
 
     pub fn set_servers(&mut self, servers: Vec<String>) {
+        self.selected_server_idx = (crate::random_id::u128val() % servers.len() as u128) as usize;
         self.servers = servers;
     }
 
@@ -54,6 +65,9 @@ impl State {
     }
 
     pub fn match_to_prefix(&self, text: &str) -> bool {
-        self.prefixs.iter().any(|regex| regex.is_match(text))
+        self.default_prefixs
+            .iter()
+            .any(|regex| regex.is_match(text))
+            || self.prefixs.iter().any(|regex| regex.is_match(text))
     }
 }

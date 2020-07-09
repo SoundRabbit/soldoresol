@@ -17,7 +17,7 @@ pub fn render(block_field: &block::Field, chat: &block::Chat) -> Html<Msg> {
             Attributes::new(),
             Events::new(),
             vec![
-                common::header("チャット履歴"),
+                common::header("チャットタブを編集"),
                 modal::body(
                     Attributes::new()
                         .class("scroll-v")

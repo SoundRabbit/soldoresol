@@ -1389,9 +1389,9 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                         .bcdice()
                         .system_info()
                         .map(|si| format!("?system={}&command={}", si.game_type(), &left))
-                        .unwrap_or(format!("?command={}", &left));
+                        .unwrap_or(format!("?system=DiceBot&command={}", &left));
                     Cmd::task(task::http::get(
-                        state.dicebot().bcdice().server() + r"/v1/diceroll?system=" + &query,
+                        state.dicebot().bcdice().server() + r"/v1/diceroll" + &query,
                         task::http::Props::new(),
                         move |response| {
                             let result = if let Some(diceroll) =
