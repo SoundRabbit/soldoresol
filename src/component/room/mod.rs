@@ -1377,18 +1377,47 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             if let (Some(display_name), Some(tab)) = (display_name, state.selecting_chat_tab_id()) {
                 let tab = *tab;
                 let text = state.chat_mut().drain_inputing_message();
-                let (left, right) = state.dicebot().delimit(&text);
-                let [left, right] = [left.to_string(), right.to_string()];
-                let item = block::chat::Item::new(
-                    state.peer().id(),
-                    display_name,
-                    icon.map(|r_id| Icon::Resource(r_id))
-                        .unwrap_or(Icon::DefaultUser),
-                    sender.clone(),
-                    text,
-                    Some(left),
-                );
-                update(state, Msg::InsertChatItem(tab, item, js_sys::Date::now()))
+                let (left, _) = state.dicebot().delimit(&text);
+                let left = left.to_string();
+                let icon = icon
+                    .map(|r_id| Icon::Resource(r_id))
+                    .unwrap_or(Icon::DefaultUser);
+                let peer_id = state.peer().id();
+                if state.dicebot().bcdice().match_to_prefix(&left) {
+                    let query = state
+                        .dicebot()
+                        .bcdice()
+                        .system_info()
+                        .map(|si| format!("?system={}&command={}", si.game_type(), &left))
+                        .unwrap_or(format!("?command={}", &left));
+                    Cmd::task(task::http::get(
+                        state.dicebot().bcdice().server() + r"/v1/diceroll?system=" + &query,
+                        task::http::Props::new(),
+                        move |response| {
+                            let result = if let Some(diceroll) =
+                                response.ok().and_then(|r| r.text).and_then(|text| {
+                                    serde_json::from_str::<bcdice::DiceRoll>(&text).ok()
+                                }) {
+                                Some(diceroll.result().clone())
+                            } else {
+                                None
+                            };
+                            let item = block::chat::Item::new(
+                                peer_id.clone(),
+                                display_name.clone(),
+                                icon.clone(),
+                                sender.clone(),
+                                text.clone(),
+                                result,
+                            );
+                            Msg::InsertChatItem(tab, item, js_sys::Date::now())
+                        },
+                    ))
+                } else {
+                    let item =
+                        block::chat::Item::new(peer_id, display_name, icon, sender, text, None);
+                    update(state, Msg::InsertChatItem(tab, item, js_sys::Date::now()))
+                }
             } else {
                 state.dequeue()
             }

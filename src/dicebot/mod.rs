@@ -88,6 +88,11 @@ pub mod bcdice {
         systeminfo: ImplSystemInfo,
     }
 
+    #[derive(Deserialize, Debug)]
+    pub struct DiceRoll {
+        result: String,
+    }
+
     impl ImplNames {
         pub fn name(&self) -> &String {
             &self.name
@@ -140,6 +145,12 @@ pub mod bcdice {
         type Target = ImplSystemInfo;
         fn deref(&self) -> &Self::Target {
             &self.systeminfo
+        }
+    }
+
+    impl DiceRoll {
+        pub fn result(&self) -> &String {
+            &self.result
         }
     }
 }

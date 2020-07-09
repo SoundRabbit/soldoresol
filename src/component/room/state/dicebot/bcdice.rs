@@ -1,10 +1,12 @@
 use crate::dicebot::bcdice;
+use regex::Regex;
 
 pub struct State {
     servers: Vec<String>,
     names: Option<bcdice::Names>,
     system_info: Option<bcdice::SystemInfo>,
     selected_server_idx: usize,
+    prefixs: Vec<Regex>,
 }
 
 impl State {
@@ -14,6 +16,7 @@ impl State {
             names: None,
             system_info: None,
             selected_server_idx: 0,
+            prefixs: vec![],
         }
     }
 
@@ -41,6 +44,16 @@ impl State {
     }
 
     pub fn set_system_info(&mut self, system_info: bcdice::SystemInfo) {
+        self.prefixs.clear();
+        for prefix in system_info.prefixs() {
+            if let Ok(prefix) = Regex::new(prefix) {
+                self.prefixs.push(prefix);
+            }
+        }
         self.system_info = Some(system_info);
+    }
+
+    pub fn match_to_prefix(&self, text: &str) -> bool {
+        self.prefixs.iter().any(|regex| regex.is_match(text))
     }
 }
