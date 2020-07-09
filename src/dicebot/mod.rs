@@ -79,7 +79,7 @@ pub mod bcdice {
         name: String,
         game_type: String,
         sort_key: String,
-        prefix: Vec<String>,
+        prefixs: Vec<String>,
         info: String,
     }
 
@@ -127,8 +127,8 @@ pub mod bcdice {
             &self.game_type
         }
 
-        pub fn prefix(&self) -> &Vec<String> {
-            &self.prefix
+        pub fn prefixs(&self) -> &Vec<String> {
+            &self.prefixs
         }
 
         pub fn info(&self) -> &String {

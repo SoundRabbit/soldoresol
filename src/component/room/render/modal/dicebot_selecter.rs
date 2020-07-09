@@ -33,7 +33,7 @@ pub fn render(dicebot_state: &dicebot::State) -> Html<Msg> {
                             let system = name.system().clone();
                             Html::div(
                                 Attributes::new(),
-                                Events::new(),
+                                Events::new().on_click(move |_| Msg::GetBcdiceSystemInfo(system)),
                                 vec![Html::text(name.name())],
                             )
                         })

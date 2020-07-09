@@ -135,8 +135,10 @@ pub enum Msg {
     // BCDice
     GetBcdiceServerList,
     SetBcdiceServerList(Vec<String>),
-    GetBcdiceSystemNames(String),
+    GetBcdiceSystemNames,
     SetBcdiceSystemNames(bcdice::Names),
+    GetBcdiceSystemInfo(String),
+    SetBcdiceSystemInfo(bcdice::SystemInfo),
 
     // 接続に関する操作
     SendBlockPacks(HashMap<BlockId, JsValue>, HashSet<BlockId>),
@@ -1511,14 +1513,14 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.dicebot_mut().bcdice_mut().set_servers(servers);
 
             if let Some(url) = url {
-                Cmd::task(|r| r(Msg::GetBcdiceSystemNames(url)))
+                Cmd::task(|r| r(Msg::GetBcdiceSystemNames))
             } else {
                 state.dequeue()
             }
         }
 
-        Msg::GetBcdiceSystemNames(url) => Cmd::task(task::http::get(
-            url + r"/v1/names",
+        Msg::GetBcdiceSystemNames => Cmd::task(task::http::get(
+            state.dicebot().bcdice().server() + r"/v1/names",
             task::http::Props::new(),
             |response| {
                 if let Some(names) = response
@@ -1534,10 +1536,32 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         )),
 
         Msg::SetBcdiceSystemNames(names) => {
-            for name in names.iter() {
-                crate::debug::log_1(name.name());
-            }
             state.dicebot_mut().bcdice_mut().set_names(names);
+            state.dequeue()
+        }
+
+        Msg::GetBcdiceSystemInfo(system) => Cmd::task(task::http::get(
+            state.dicebot().bcdice().server() + r"/v1/systeminfo?system=" + &system,
+            task::http::Props::new(),
+            |response| {
+                if let Some(system_info) = response
+                    .ok()
+                    .and_then(|r| r.text)
+                    .and_then(|text| serde_json::from_str(&text).ok())
+                {
+                    Msg::SetBcdiceSystemInfo(system_info)
+                } else {
+                    Msg::NoOp
+                }
+            },
+        )),
+
+        Msg::SetBcdiceSystemInfo(system_info) => {
+            crate::debug::log_1(system_info.name());
+            state
+                .dicebot_mut()
+                .bcdice_mut()
+                .set_system_info(system_info);
             state.dequeue()
         }
 

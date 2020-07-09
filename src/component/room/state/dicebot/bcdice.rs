@@ -4,6 +4,7 @@ pub struct State {
     servers: Vec<String>,
     names: Option<bcdice::Names>,
     system_info: Option<bcdice::SystemInfo>,
+    selected_server_idx: usize,
 }
 
 impl State {
@@ -12,15 +13,19 @@ impl State {
             servers: vec![],
             names: None,
             system_info: None,
+            selected_server_idx: 0,
         }
-    }
-
-    pub fn servers(&self) -> &Vec<String> {
-        &self.servers
     }
 
     pub fn set_servers(&mut self, servers: Vec<String>) {
         self.servers = servers;
+    }
+
+    pub fn server(&self) -> String {
+        self.servers
+            .get(self.selected_server_idx)
+            .map(|s| s.clone())
+            .unwrap_or(String::new())
     }
 
     pub fn names(&self) -> Option<&bcdice::Names> {
