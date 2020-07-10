@@ -1,7 +1,7 @@
 use super::{Block, Field};
 use crate::Color;
 use crate::Promise;
-use wasm_bindgen::prelude::*;
+use wasm_bindgen::{prelude::*, JsCast};
 
 #[derive(Clone)]
 pub struct Boxblock {
@@ -56,12 +56,72 @@ impl Boxblock {
 
 impl Block for Boxblock {
     fn pack(&self) -> Promise<JsValue> {
-        let data = object! {};
+        let size = array![self.size[0], self.size[1], self.size[2]];
+        let position = array![self.position[0], self.position[1], self.position[2]];
+        let color = self.color.to_u32();
+
+        let data = object! {
+            size: size,
+            position: position,
+            color: color,
+            is_fixed: self.is_fixed
+        };
         let data: js_sys::Object = data.into();
         let data: JsValue = data.into();
         Promise::new(|resolve| resolve(Some(data)))
     }
-    fn unpack(field: &mut Field, val: JsValue) -> Promise<Box<Self>> {
-        unimplemented!();
+    fn unpack(_: &mut Field, val: JsValue) -> Promise<Box<Self>> {
+        Promise::new(|resolve| {
+            use crate::JsObject;
+
+            let val = val.dyn_into::<JsObject>().unwrap();
+
+            if let (Some(size), Some(position), Some(color), Some(is_fixed)) = (
+                val.get("size").map(|s| {
+                    let s: js_sys::Object = s.into();
+                    js_sys::Array::from(s.as_ref())
+                }),
+                val.get("position").map(|p| {
+                    let p: js_sys::Object = p.into();
+                    js_sys::Array::from(p.as_ref())
+                }),
+                val.get("color").and_then(|c| c.as_f64().map(|c| c as u32)),
+                val.get("is_fixed").and_then(|f| f.as_bool()),
+            ) {
+                let size = if let (Some(x), Some(y), Some(z)) = (
+                    size.get(0).as_f64().map(|x| x as f32),
+                    size.get(1).as_f64().map(|x| x as f32),
+                    size.get(2).as_f64().map(|x| x as f32),
+                ) {
+                    Some([x, y, z])
+                } else {
+                    None
+                };
+
+                let position = if let (Some(x), Some(y), Some(z)) = (
+                    position.get(0).as_f64().map(|x| x as f32),
+                    position.get(1).as_f64().map(|x| x as f32),
+                    position.get(2).as_f64().map(|x| x as f32),
+                ) {
+                    Some([x, y, z])
+                } else {
+                    None
+                };
+
+                if let (Some(size), Some(position)) = (size, position) {
+                    let tablemask = Self {
+                        size: size,
+                        position: position,
+                        color: Color::from(color),
+                        is_fixed: is_fixed,
+                    };
+                    resolve(Some(Box::new(tablemask)));
+                } else {
+                    resolve(None);
+                }
+            } else {
+                resolve(None);
+            }
+        })
     }
 }
