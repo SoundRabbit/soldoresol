@@ -1,4 +1,6 @@
 use crate::dicebot::bcdice;
+use kanaria::string::UCSStr;
+use kanaria::utils::ConvertTarget;
 use regex::Regex;
 
 pub struct State {
@@ -71,11 +73,22 @@ impl State {
             .unwrap_or(String::new())
     }
 
-    pub fn match_to_prefix(&self, text: &str) -> bool {
-        let text = text.to_lowercase();
-        self.default_prefixs
+    pub fn match_to_prefix(&self, text: &str) -> Option<String> {
+        let text = UCSStr::from_str(text)
+            .narrow(ConvertTarget::ALPHABET)
+            .narrow(ConvertTarget::NUMBER)
+            .narrow(ConvertTarget::SYMBOL)
+            .lower_case()
+            .to_string();
+        if self
+            .default_prefixs
             .iter()
             .any(|regex| regex.is_match(&text))
             || self.prefixs.iter().any(|regex| regex.is_match(&text))
+        {
+            Some(text)
+        } else {
+            None
+        }
     }
 }

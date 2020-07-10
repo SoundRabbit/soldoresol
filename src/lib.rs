@@ -3,6 +3,7 @@ extern crate bincode;
 extern crate hex;
 extern crate indexmap;
 extern crate kagura;
+extern crate kanaria;
 extern crate ndarray;
 extern crate ordered_float;
 extern crate regex;

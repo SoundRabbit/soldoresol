@@ -1486,7 +1486,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     .map(|r_id| Icon::Resource(r_id))
                     .unwrap_or(Icon::DefaultUser);
                 let peer_id = state.peer().id();
-                if state.dicebot().bcdice().match_to_prefix(&left) {
+                if let Some(left) = state.dicebot().bcdice().match_to_prefix(&left) {
                     let query = state
                         .dicebot()
                         .bcdice()
