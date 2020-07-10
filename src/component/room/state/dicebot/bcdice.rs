@@ -14,7 +14,7 @@ impl State {
     fn default_prefixs() -> Vec<Regex> {
         vec![
             Regex::new(r"\d+[bdu]\d*").unwrap(),
-            Regex::new(r"C\(").unwrap(),
+            Regex::new(r"c\(").unwrap(),
             Regex::new(r"choice\[").unwrap(),
         ]
     }
@@ -57,7 +57,7 @@ impl State {
     pub fn set_system_info(&mut self, system_info: bcdice::SystemInfo) {
         self.prefixs.clear();
         for prefix in system_info.prefixs() {
-            if let Ok(prefix) = Regex::new(prefix) {
+            if let Ok(prefix) = Regex::new(&prefix.to_lowercase()) {
                 self.prefixs.push(prefix);
             }
         }
@@ -72,9 +72,10 @@ impl State {
     }
 
     pub fn match_to_prefix(&self, text: &str) -> bool {
+        let text = text.to_lowercase();
         self.default_prefixs
             .iter()
-            .any(|regex| regex.is_match(text))
-            || self.prefixs.iter().any(|regex| regex.is_match(text))
+            .any(|regex| regex.is_match(&text))
+            || self.prefixs.iter().any(|regex| regex.is_match(&text))
     }
 }

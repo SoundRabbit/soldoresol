@@ -1,7 +1,7 @@
 use crate::JsObject;
 use js_sys::Array;
 use std::{
-    collections::{BTreeSet, HashMap},
+    collections::{HashMap, HashSet},
     rc::Rc,
 };
 use wasm_bindgen::{prelude::*, JsCast};
@@ -86,7 +86,7 @@ impl Room {
 
 pub enum Msg {
     None,
-    SetBlockPacks(HashMap<u128, JsValue>),
+    SetBlockPacks(HashMap<u128, JsValue>, HashSet<u128>),
     SetResourcePacks(HashMap<u128, JsValue>),
 }
 
@@ -105,7 +105,17 @@ impl Into<JsObject> for Msg {
         let type_name = self.type_name();
         let payload: JsValue = match self {
             Self::None => JsValue::NULL,
-            Self::SetBlockPacks(packs) | Self::SetResourcePacks(packs) => {
+            Self::SetBlockPacks(packs, removed) => {
+                let payload = Array::new();
+                for (id, pack) in packs {
+                    payload.push(array![id.to_string(), pack].as_ref());
+                }
+                for id in removed {
+                    payload.push(array![id.to_string()].as_ref());
+                }
+                payload.into()
+            }
+            Self::SetResourcePacks(packs) => {
                 let payload = Array::new();
                 for (id, pack) in packs {
                     payload.push(array![id.to_string(), pack].as_ref());
@@ -131,13 +141,17 @@ impl From<JsObject> for Msg {
                     let payload: js_sys::Object = payload.into();
                     let payload = Array::from(payload.as_ref()).to_vec();
                     let mut packs = HashMap::new();
+                    let mut removed = HashSet::new();
                     for row in payload {
                         let cols = Array::from(row.as_ref()).to_vec();
                         let id = cols[0].as_string().unwrap().parse().unwrap();
-                        let data = cols[1].clone();
-                        packs.insert(id, data);
+                        if let Some(data) = cols.get(1) {
+                            packs.insert(id, data.clone());
+                        } else {
+                            removed.insert(id);
+                        }
                     }
-                    Msg::SetBlockPacks(packs)
+                    Msg::SetBlockPacks(packs, removed)
                 }
                 "SetResourcePacks" => {
                     let payload: js_sys::Object = payload.into();

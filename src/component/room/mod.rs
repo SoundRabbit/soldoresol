@@ -421,16 +421,8 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             if let Some(selecting_table) = state.selecting_table().map(|t| t.clone()) {
                 let [x, y] = get_table_position(state, false, &mouse_position, state.pixel_ratio());
 
-                let prop_root = block::Property::new("");
-                let prop_root = state.block_field_mut().add(prop_root);
-
-                let mut tablemask = block::table_object::Tablemask::new(
-                    prop_root.clone(),
-                    &size,
-                    color,
-                    is_rounded,
-                    is_inved,
-                );
+                let mut tablemask =
+                    block::table_object::Tablemask::new(&size, color, is_rounded, is_inved);
                 tablemask.set_position([x, y]);
                 let tablemask = state.block_field_mut().add(tablemask);
 
@@ -532,13 +524,6 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 state.selecting_table().map(|t| t.clone()),
             ) {
                 let mut tablemask = tablemask.clone();
-                let prop = clone_prop(state.block_field_mut(), tablemask.property_id())
-                    .unwrap_or(block::Property::new(""));
-                let prop = state.block_field_mut().add(prop);
-
-                let props = trace_prop_id(state.block_field(), &prop);
-
-                tablemask.set_property_id(prop);
                 let tablemask = state.block_field_mut().add(tablemask);
 
                 state.block_field_mut().update(
@@ -1720,7 +1705,10 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 .into_iter()
                 .map(|(id, data)| (id.to_u128(), data))
                 .collect();
-            state.room().send(skyway::Msg::SetBlockPacks(packs));
+            let removed = removed.into_iter().map(|id| id.to_u128()).collect();
+            state
+                .room()
+                .send(skyway::Msg::SetBlockPacks(packs, removed));
             state.dequeue()
         }
 
@@ -1731,7 +1719,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
         Msg::ReceiveMsg(msg) => match msg {
             skyway::Msg::None => state.dequeue(),
-            skyway::Msg::SetBlockPacks(packs) => state.dequeue(),
+            skyway::Msg::SetBlockPacks(packs, removed) => state.dequeue(),
             skyway::Msg::SetResourcePacks(packs) => state.dequeue(),
         },
         Msg::PeerJoin(peer_id) => {
