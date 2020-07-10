@@ -1,6 +1,6 @@
 use super::{Block, BlockId, Field};
-use crate::{resource::ResourceId, Promise};
-use wasm_bindgen::prelude::*;
+use crate::{resource::ResourceId, JsObject, Promise};
+use wasm_bindgen::{prelude::*, JsCast};
 
 mod texture;
 
@@ -105,12 +105,146 @@ impl Table {
 
 impl Block for Table {
     fn pack(&self) -> Promise<JsValue> {
-        let data = object! {};
+        let tablemasks = array![];
+        for id in &self.tablemasks {
+            tablemasks.push(&JsValue::from(id.to_string()));
+        }
+
+        let areas = array![];
+        for id in &self.areas {
+            areas.push(&JsValue::from(id.to_string()));
+        }
+
+        let boxblocks = array![];
+        for id in &self.boxblocks {
+            boxblocks.push(&JsValue::from(id.to_string()));
+        }
+
+        let data = object! {
+            name: &self.name,
+            size: array![self.size[0], self.size[1]],
+            is_bind_to_grid: self.is_bind_to_grid,
+            drawing_texture_id: self.drawing_texture_id.to_string(),
+            image_texture_id: self.image_texture_id.map(|id| id.to_string()),
+            tablemasks: tablemasks,
+            areas: areas,
+            boxblocks: boxblocks
+        };
         let data: js_sys::Object = data.into();
         let data: JsValue = data.into();
         Promise::new(|resolve| resolve(Some(data)))
     }
     fn unpack(field: &mut Field, val: JsValue) -> Promise<Box<Self>> {
-        unimplemented!();
+        let self_ = if let Ok(val) = val.dyn_into::<JsObject>() {
+            let name = val.get("name").and_then(|name| name.as_string());
+            let size = val.get("size").map(|p| {
+                let p: js_sys::Object = p.into();
+                js_sys::Array::from(p.as_ref())
+            });
+            let is_bind_to_grid = val.get("is_bind_to_grid").and_then(|i| i.as_bool());
+            let drawing_texture_id = val
+                .get("drawing_texture_id")
+                .and_then(|id| id.as_string())
+                .and_then(|id| id.parse().ok())
+                .map(|id| field.block_id(id));
+            let image_texture_id = Some(
+                val.get("image_texture_id")
+                    .and_then(|id| id.as_string())
+                    .and_then(|id| id.parse().ok()),
+            );
+            let tablemasks = val.get("tablemasks").map(|p| {
+                let p: js_sys::Object = p.into();
+                js_sys::Array::from(p.as_ref())
+            });
+            let areas = val.get("areas").map(|p| {
+                let p: js_sys::Object = p.into();
+                js_sys::Array::from(p.as_ref())
+            });
+            let boxblocks = val.get("boxblocks").map(|p| {
+                let p: js_sys::Object = p.into();
+                js_sys::Array::from(p.as_ref())
+            });
+            if let (
+                Some(name),
+                Some(size),
+                Some(is_bind_to_grid),
+                Some(drawing_texture_id),
+                Some(image_texture_id),
+                Some(raw_tablemasks),
+                Some(raw_areas),
+                Some(raw_boxblocks),
+            ) = (
+                name,
+                size,
+                is_bind_to_grid,
+                drawing_texture_id,
+                image_texture_id,
+                tablemasks,
+                areas,
+                boxblocks,
+            ) {
+                let size = if let (Some(x), Some(y)) = (
+                    size.get(0).as_f64().map(|x| x as f32),
+                    size.get(1).as_f64().map(|x| x as f32),
+                ) {
+                    Some([x, y])
+                } else {
+                    None
+                };
+
+                let mut tablemasks = vec![];
+                for id in raw_tablemasks.to_vec() {
+                    if let Some(id) = id
+                        .as_string()
+                        .and_then(|id| id.parse().ok())
+                        .map(|id| field.block_id(id))
+                    {
+                        tablemasks.push(id);
+                    }
+                }
+
+                let mut areas = vec![];
+                for id in raw_areas.to_vec() {
+                    if let Some(id) = id
+                        .as_string()
+                        .and_then(|id| id.parse().ok())
+                        .map(|id| field.block_id(id))
+                    {
+                        areas.push(id);
+                    }
+                }
+
+                let mut boxblocks = vec![];
+                for id in raw_boxblocks.to_vec() {
+                    if let Some(id) = id
+                        .as_string()
+                        .and_then(|id| id.parse().ok())
+                        .map(|id| field.block_id(id))
+                    {
+                        boxblocks.push(id);
+                    }
+                }
+
+                if let Some(size) = size {
+                    Some(Box::new(Self {
+                        name,
+                        size,
+                        is_bind_to_grid,
+                        drawing_texture_id,
+                        image_texture_id,
+                        tablemasks,
+                        areas,
+                        boxblocks,
+                    }))
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+        Promise::new(move |resolve| resolve(self_))
     }
 }
