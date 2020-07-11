@@ -1,6 +1,6 @@
 use super::{Block, BlockId, Field};
-use crate::{resource::ResourceId, Color, Promise};
-use wasm_bindgen::prelude::*;
+use crate::{resource::ResourceId, Color, JsObject, Promise};
+use wasm_bindgen::{prelude::*, JsCast};
 
 #[derive(Clone)]
 pub struct Character {
@@ -93,6 +93,60 @@ impl Block for Character {
         Promise::new(|resolve| resolve(Some(data)))
     }
     fn unpack(field: &mut Field, val: JsValue) -> Promise<Box<Self>> {
-        unimplemented!();
+        let self_ = if let Ok(val) = val.dyn_into::<JsObject>() {
+            let size = val.get("size").map(|x| js_sys::Array::from(&x));
+            let position = val.get("position").map(|x| js_sys::Array::from(&x));
+            let texture_id = Some(
+                val.get("texture_id")
+                    .and_then(|x| x.as_string())
+                    .and_then(|x| x.parse().ok()),
+            );
+            let name = val.get("name").and_then(|x| x.as_string());
+            let property_id = val
+                .get("property_id")
+                .and_then(|x| x.as_string())
+                .and_then(|x| x.parse().ok())
+                .map(|x| field.block_id(x));
+            if let (Some(size), Some(position), Some(texture_id), Some(name), Some(property_id)) =
+                (size, position, texture_id, name, property_id)
+            {
+                let size = if let (Some(x), Some(y), Some(z)) = (
+                    size.get(0).as_f64().map(|x| x as f32),
+                    size.get(1).as_f64().map(|x| x as f32),
+                    size.get(2).as_f64().map(|x| x as f32),
+                ) {
+                    Some([x, y, z])
+                } else {
+                    None
+                };
+
+                let position = if let (Some(x), Some(y), Some(z)) = (
+                    position.get(0).as_f64().map(|x| x as f32),
+                    position.get(1).as_f64().map(|x| x as f32),
+                    position.get(2).as_f64().map(|x| x as f32),
+                ) {
+                    Some([x, y, z])
+                } else {
+                    None
+                };
+                if let (Some(size), Some(position)) = (size, position) {
+                    Some(Box::new(Self {
+                        size,
+                        position,
+                        texture_id,
+                        background_color: Color::from(0),
+                        name,
+                        property_id,
+                    }))
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+        Promise::new(move |resolve| resolve(self_))
     }
 }

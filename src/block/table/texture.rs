@@ -92,7 +92,7 @@ impl Block for Texture {
                 let obj: js_sys::Object = obj.into();
                 let obj: JsValue = obj.into();
                 if let Some(resolve) = resolve.borrow_mut().take() {
-                    resolve(Some(JsValue::undefined()));
+                    resolve(Some(obj));
                 }
             }) as Box<dyn FnOnce(web_sys::Blob)>);
             element.to_blob(a.as_ref().unchecked_ref());
@@ -125,10 +125,18 @@ impl Block for Texture {
                 let a = {
                     let image = Rc::clone(&image);
                     Closure::once(Box::new(move || {
-                        let me = Self::new(&[image.width(), image.height()], size);
+                        let w = image.width();
+                        let h = image.height();
+                        let me = Self::new(&[w, h], size);
                         let _ = me
                             .context()
-                            .draw_image_with_html_image_element(&image, 0.0, 0.0);
+                            .draw_image_with_html_image_element_and_dw_and_dh(
+                                &image,
+                                0.0,
+                                0.0,
+                                w as f64 / me.pixel_ratio[0],
+                                h as f64 / me.pixel_ratio[1],
+                            );
                         resolve(Some(Box::new(me)));
                     }))
                 };
