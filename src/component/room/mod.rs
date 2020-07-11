@@ -1585,6 +1585,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             for (id, block) in blocks {
                 state.block_field_mut().assign_fb(id, block);
             }
+            render_canvas(state);
             state.dequeue()
         }
 
