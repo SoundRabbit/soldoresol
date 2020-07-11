@@ -1,13 +1,6 @@
 use crate::{js_object::JsObject, random_id, Promise};
 use js_sys::Date;
-use std::{
-    any::Any,
-    cell::{Cell, RefCell},
-    collections::{HashMap, HashSet},
-    hash::{Hash, Hasher},
-    iter::Iterator,
-    rc::Rc,
-};
+use std::{any::Any, collections::HashMap, hash::Hash, iter::Iterator};
 use wasm_bindgen::{prelude::*, JsCast};
 
 pub mod character;
@@ -100,6 +93,8 @@ impl FieldBlock {
             (payload.pack(), "Character")
         } else if let Some(payload) = payload.and_then(|p| p.downcast_ref::<Property>()) {
             (payload.pack(), "Property")
+        } else if let Some(payload) = payload.and_then(|p| p.downcast_ref::<World>()) {
+            (payload.pack(), "World")
         } else {
             (
                 Promise::new(|resolve| resolve(Some(js_sys::Object::new().into()))),
@@ -157,6 +152,9 @@ impl FieldBlock {
                     "Character" => {
                         Character::unpack(field, payload).map(|x| x.map(|x| x as Box<dyn Any>))
                     }
+                    "Property" => {
+                        Property::unpack(field, payload).map(|x| x.map(|x| x as Box<dyn Any>))
+                    }
                     "World" => World::unpack(field, payload).map(|x| x.map(|x| x as Box<dyn Any>)),
                     _ => Promise::new(|resolve| resolve(None)),
                 };
@@ -211,16 +209,19 @@ impl Field {
     }
 
     #[allow(private_in_public)]
-    pub fn assign_fb(&mut self, block_id: BlockId, field_block: FieldBlock) {
+    pub fn assign_fb(&mut self, block_id: BlockId, block: FieldBlock) {
         if let Some(field_block) = self.table.get_mut(&block_id.to_u128()) {
-            let timestamp = field_block.timestamp;
-            let payload = field_block.payload;
-            if field_block.payload.is_none() || field_block.timestamp < timestamp {
+            let timestamp = block.timestamp;
+            let payload = block.payload;
+
+            crate::debug::log_1(format!("{}, {}", timestamp, field_block.timestamp));
+
+            if field_block.timestamp < timestamp {
                 field_block.timestamp = timestamp;
                 field_block.payload = payload;
             }
         } else {
-            self.table.insert(block_id.to_u128(), field_block);
+            self.table.insert(block_id.to_u128(), block);
         }
     }
 
@@ -298,6 +299,15 @@ impl Field {
 
     pub fn timestamp(&self, block_id: &BlockId) -> Option<&Timestamp> {
         self.table.get(&block_id.to_u128()).map(|b| &b.timestamp)
+    }
+
+    pub fn pack_all(&mut self) -> Promise<Vec<(BlockId, JsValue)>> {
+        let mut keys = vec![];
+        for key in self.table.keys().map(|x| *x).collect::<Vec<_>>() {
+            let key = self.block_id(key);
+            keys.push(key);
+        }
+        self.pack_listed(keys.iter().collect())
     }
 
     pub fn pack_listed(&self, block_ids: Vec<&BlockId>) -> Promise<Vec<(BlockId, JsValue)>> {

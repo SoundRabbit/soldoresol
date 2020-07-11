@@ -86,7 +86,8 @@ impl Room {
 
 pub enum Msg {
     None,
-    SetBlockPacks(HashMap<u128, JsValue>, HashSet<u128>),
+    SetContext { world: u128, chat: u128 },
+    SetBlockPacks(HashMap<u128, JsValue>),
     SetResourcePacks(HashMap<u128, JsValue>),
 }
 
@@ -94,6 +95,7 @@ impl Msg {
     pub fn type_name(&self) -> &'static str {
         match self {
             Self::None => "None",
+            Self::SetContext { .. } => "SetContext",
             Self::SetBlockPacks(..) => "SetBlockPacks",
             Self::SetResourcePacks(..) => "SetResourcePacks",
         }
@@ -105,17 +107,15 @@ impl Into<JsObject> for Msg {
         let type_name = self.type_name();
         let payload: JsValue = match self {
             Self::None => JsValue::NULL,
-            Self::SetBlockPacks(packs, removed) => {
-                let payload = Array::new();
-                for (id, pack) in packs {
-                    payload.push(array![id.to_string(), pack].as_ref());
-                }
-                for id in removed {
-                    payload.push(array![id.to_string()].as_ref());
-                }
+            Self::SetContext { chat, world } => {
+                let payload = object! {
+                    chat: chat.to_string(),
+                    world: world.to_string()
+                };
+                let payload: js_sys::Object = payload.into();
                 payload.into()
             }
-            Self::SetResourcePacks(packs) => {
+            Self::SetBlockPacks(packs) | Self::SetResourcePacks(packs) => {
                 let payload = Array::new();
                 for (id, pack) in packs {
                     payload.push(array![id.to_string(), pack].as_ref());
@@ -137,21 +137,34 @@ impl From<JsObject> for Msg {
             obj.get("payload"),
         ) {
             match msg_type.as_str() {
+                "SetContext" => {
+                    if let (Some(chat), Some(world)) = (
+                        payload
+                            .get("chat")
+                            .and_then(|x| x.as_string())
+                            .and_then(|x| x.parse().ok()),
+                        payload
+                            .get("world")
+                            .and_then(|x| x.as_string())
+                            .and_then(|x| x.parse().ok()),
+                    ) {
+                        Self::SetContext { chat, world }
+                    } else {
+                        Self::None
+                    }
+                }
                 "SetBlockPacks" => {
                     let payload: js_sys::Object = payload.into();
                     let payload = Array::from(payload.as_ref()).to_vec();
                     let mut packs = HashMap::new();
-                    let mut removed = HashSet::new();
                     for row in payload {
                         let cols = Array::from(row.as_ref()).to_vec();
                         let id = cols[0].as_string().unwrap().parse().unwrap();
                         if let Some(data) = cols.get(1) {
                             packs.insert(id, data.clone());
-                        } else {
-                            removed.insert(id);
                         }
                     }
-                    Msg::SetBlockPacks(packs, removed)
+                    Msg::SetBlockPacks(packs)
                 }
                 "SetResourcePacks" => {
                     let payload: js_sys::Object = payload.into();

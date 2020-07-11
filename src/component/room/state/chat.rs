@@ -59,6 +59,10 @@ impl State {
         &self.block_id
     }
 
+    pub fn set_block_id(&mut self, block_id: BlockId) {
+        self.block_id = block_id;
+    }
+
     pub fn take_num(&self) -> usize {
         self.take_num
     }

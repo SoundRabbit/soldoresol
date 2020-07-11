@@ -199,6 +199,10 @@ impl<M, S> State<M, S> {
         &self.world
     }
 
+    pub fn set_world(&mut self, block_id: BlockId) {
+        self.world = block_id;
+    }
+
     pub fn selecting_table(&self) -> Option<&BlockId> {
         self.block_field
             .get::<block::World>(&self.world)
