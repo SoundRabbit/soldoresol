@@ -137,6 +137,9 @@ pub enum Msg {
     SetChatTabName(BlockId, String),
     RemoveChatTab(BlockId),
 
+    // ブロックフィールド
+    AssignFieldBlocks(HashMap<BlockId, block::FieldBlock>),
+
     // リソース管理
     LoadFromFileList(web_sys::FileList),
     LoadDataToResource(Data),
@@ -1589,6 +1592,14 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.dequeue()
         }
 
+        // ブロックフィールド
+        Msg::AssignFieldBlocks(blocks) => {
+            for (id, block) in blocks {
+                state.block_field_mut().assign_fb(id, block);
+            }
+            state.dequeue()
+        }
+
         // リソース
         Msg::LoadFromFileList(file_list) => {
             let len = file_list.length();
@@ -1721,7 +1732,14 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
         Msg::ReceiveMsg(msg) => match msg {
             skyway::Msg::None => state.dequeue(),
-            skyway::Msg::SetBlockPacks(packs, removed) => state.dequeue(),
+            skyway::Msg::SetBlockPacks(packs, removed) => {
+                let promise = state.block_field_mut().unpack_listed(packs.into_iter());
+                Cmd::task(move |resolve| {
+                    promise.then(move |blocks| {
+                        blocks.map(move |blocks| resolve(Msg::AssignFieldBlocks(blocks)));
+                    });
+                })
+            }
             skyway::Msg::SetResourcePacks(packs) => state.dequeue(),
         },
         Msg::PeerJoin(peer_id) => {

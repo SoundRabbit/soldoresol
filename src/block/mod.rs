@@ -40,8 +40,7 @@ type BlockTable = HashMap<u128, FieldBlock>;
 pub struct BlockId(u128);
 
 #[allow(private_in_public)]
-struct FieldBlock {
-    count: Rc<Cell<usize>>,
+pub struct FieldBlock {
     timestamp: Timestamp,
     payload: Option<Box<dyn Any>>,
 }
@@ -68,39 +67,67 @@ impl BlockId {
 impl FieldBlock {
     fn new<T: Block + 'static>(timestamp: f64, block: T) -> Self {
         Self {
-            count: Rc::new(Cell::new(0)),
             timestamp: timestamp,
             payload: Some(Box::new(block)),
         }
     }
 
-    pub fn pack(&self) -> Promise<JsValue> {
+    fn pack(&self) -> Promise<JsValue> {
         let payload = self.payload.as_ref();
-        if let Some(payload) = payload.and_then(|p| p.downcast_ref::<Chat>()) {
-            payload.pack()
+        let (promise, type_name) = if let Some(payload) =
+            payload.and_then(|p| p.downcast_ref::<Chat>())
+        {
+            (payload.pack(), "Chat")
         } else if let Some(payload) = payload.and_then(|p| p.downcast_ref::<chat::Item>()) {
-            payload.pack()
+            (payload.pack(), "chat::Item")
         } else if let Some(payload) = payload.and_then(|p| p.downcast_ref::<chat::Tab>()) {
-            payload.pack()
+            (payload.pack(), "chat::Tab")
         } else if let Some(payload) = payload.and_then(|p| p.downcast_ref::<Table>()) {
-            payload.pack()
+            (payload.pack(), "Table")
         } else if let Some(payload) = payload.and_then(|p| p.downcast_ref::<table::Texture>()) {
-            payload.pack()
+            (payload.pack(), "table::Texture")
+        } else if let Some(payload) = payload.and_then(|p| p.downcast_ref::<table_object::Area>()) {
+            (payload.pack(), "table_object::Area")
+        } else if let Some(payload) =
+            payload.and_then(|p| p.downcast_ref::<table_object::Boxblock>())
+        {
+            (payload.pack(), "table_object::Boxblock")
+        } else if let Some(payload) =
+            payload.and_then(|p| p.downcast_ref::<table_object::Tablemask>())
+        {
+            (payload.pack(), "table_object::Tablemask")
         } else if let Some(payload) = payload.and_then(|p| p.downcast_ref::<Character>()) {
-            payload.pack()
+            (payload.pack(), "Character")
         } else if let Some(payload) = payload.and_then(|p| p.downcast_ref::<Property>()) {
-            payload.pack()
+            (payload.pack(), "Property")
         } else {
-            Promise::new(|resolve| resolve(None))
-        }
+            (
+                Promise::new(|resolve| resolve(Some(js_sys::Object::new().into()))),
+                "_",
+            )
+        };
+        let timestamp = self.timestamp;
+        let promise = promise.map(move |x| {
+            x.map(|payload| {
+                object! {
+                    type_name: type_name,
+                    timestamp: timestamp,
+                    payload: payload
+                }
+            })
+        });
+        promise.map(|x| {
+            x.map(|x| {
+                let x: js_sys::Object = x.into();
+                x.into()
+            })
+        })
     }
 
-    pub fn unpack(val: JsValue, resolve: impl FnOnce(Option<Self>) + 'static) {
+    fn unpack(field: &mut Field, val: JsValue) -> Promise<Self> {
         if let Ok(val) = val.dyn_into::<JsObject>() {
             let type_name = val.get("type_name").and_then(|x| x.as_string());
-            let timestamp = val
-                .get("timestamp")
-                .and_then(|x| x.as_f64().map(|x| x as u32));
+            let timestamp = val.get("timestamp").and_then(|x| x.as_f64());
             let payload = val.get("payload").map(|x| {
                 let x: js_sys::Object = x.into();
                 let x: JsValue = x.into();
@@ -109,11 +136,47 @@ impl FieldBlock {
             if let (Some(type_name), Some(timestamp), Some(payload)) =
                 (type_name, timestamp, payload)
             {
+                let promise = match type_name.as_str() {
+                    "Chat" => Chat::unpack(field, payload).map(|x| x.map(|x| x as Box<dyn Any>)),
+                    "chat::Item" => {
+                        chat::Item::unpack(field, payload).map(|x| x.map(|x| x as Box<dyn Any>))
+                    }
+                    "chat::Tab" => {
+                        chat::Tab::unpack(field, payload).map(|x| x.map(|x| x as Box<dyn Any>))
+                    }
+                    "Table" => Table::unpack(field, payload).map(|x| x.map(|x| x as Box<dyn Any>)),
+                    "table::Texture" => {
+                        table::Texture::unpack(field, payload).map(|x| x.map(|x| x as Box<dyn Any>))
+                    }
+                    "table_object::Area" => table_object::Area::unpack(field, payload)
+                        .map(|x| x.map(|x| x as Box<dyn Any>)),
+                    "table_object::Boxblock" => table_object::Boxblock::unpack(field, payload)
+                        .map(|x| x.map(|x| x as Box<dyn Any>)),
+                    "table_object::Tablemask" => table_object::Tablemask::unpack(field, payload)
+                        .map(|x| x.map(|x| x as Box<dyn Any>)),
+                    "Character" => {
+                        Character::unpack(field, payload).map(|x| x.map(|x| x as Box<dyn Any>))
+                    }
+                    "World" => World::unpack(field, payload).map(|x| x.map(|x| x as Box<dyn Any>)),
+                    _ => Promise::new(|resolve| resolve(None)),
+                };
+                promise.map(move |x| {
+                    Some(
+                        x.map(|payload| Self {
+                            timestamp,
+                            payload: Some(payload),
+                        })
+                        .unwrap_or(Self {
+                            timestamp,
+                            payload: None,
+                        }),
+                    )
+                })
             } else {
-                resolve(None)
+                Promise::new(|resolve| resolve(None))
             }
         } else {
-            resolve(None)
+            Promise::new(|resolve| resolve(None))
         }
     }
 }
@@ -143,14 +206,21 @@ impl Field {
         timestamp: Timestamp,
         block: T,
     ) {
+        let block = FieldBlock::new(timestamp, block);
+        self.assign_fb(block_id, block);
+    }
+
+    #[allow(private_in_public)]
+    pub fn assign_fb(&mut self, block_id: BlockId, field_block: FieldBlock) {
         if let Some(field_block) = self.table.get_mut(&block_id.to_u128()) {
+            let timestamp = field_block.timestamp;
+            let payload = field_block.payload;
             if field_block.payload.is_none() || field_block.timestamp < timestamp {
                 field_block.timestamp = timestamp;
-                field_block.payload = Some(Box::new(block));
+                field_block.payload = payload;
             }
         } else {
-            let block = FieldBlock::new(timestamp, block);
-            self.table.insert(block_id.to_u128(), block);
+            self.table.insert(block_id.to_u128(), field_block);
         }
     }
 
@@ -237,6 +307,20 @@ impl Field {
                 let block_id = block_id.clone();
                 promises.push(block.pack().map(move |res| res.map(|val| (block_id, val))));
             }
+        }
+        Promise::some(promises)
+            .map(|vals| vals.map(|vals| vals.into_iter().filter_map(|x| x).collect()))
+    }
+
+    pub fn unpack_listed(
+        &mut self,
+        blocks: impl Iterator<Item = (u128, JsValue)>,
+    ) -> Promise<HashMap<BlockId, FieldBlock>> {
+        let mut promises = vec![];
+        for (block_id, val) in blocks {
+            let block_id = self.block_id(block_id);
+            promises
+                .push(FieldBlock::unpack(self, val).map(move |res| res.map(|val| (block_id, val))));
         }
         Promise::some(promises)
             .map(|vals| vals.map(|vals| vals.into_iter().filter_map(|x| x).collect()))
