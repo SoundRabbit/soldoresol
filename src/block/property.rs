@@ -1,6 +1,6 @@
 use super::{Block, BlockId, Field};
-use crate::Promise;
-use wasm_bindgen::prelude::*;
+use crate::{JsObject, Promise};
+use wasm_bindgen::{prelude::*, JsCast};
 
 #[derive(Clone)]
 pub enum Value {
@@ -25,6 +25,63 @@ impl Value {
             Self::Num(x) => Some(x.to_string()),
             Self::Str(x) => Some(x.to_string()),
         }
+    }
+
+    pub fn to_jsobject(&self) -> JsObject {
+        match self {
+            Self::None => object! {
+                type: "None"
+            },
+            Self::Num(x) => object! {
+                type: "Num",
+                payload: *x
+            },
+            Self::Str(x) => object! {
+                type: "Str",
+                payload: x
+            },
+            Self::Children(children) => {
+                let children_object = array![];
+                for child in children {
+                    children_object.push(&JsValue::from(child.to_string()));
+                }
+                object! {
+                    type: "Children",
+                    payload: children_object
+                }
+            }
+        }
+    }
+
+    pub fn from_jsobject(field: &mut Field, val: JsObject) -> Option<Self> {
+        val.get("type")
+            .and_then(|t| t.as_string())
+            .and_then(|t| match t.as_str() {
+                "None" => Some(Self::None),
+                "Num" => val
+                    .get("payload")
+                    .and_then(|x| x.as_f64())
+                    .map(|x| Self::Num(x)),
+                "Str" => val
+                    .get("payload")
+                    .and_then(|x| x.as_string())
+                    .map(|x| Self::Str(x)),
+                "Children" => val.get("payload").map(|x| {
+                    let mut children = vec![];
+                    let raw_children = js_sys::Array::from(&x);
+                    for child in raw_children.to_vec() {
+                        if let Some(id) = child
+                            .as_string()
+                            .and_then(|x| x.parse().ok())
+                            .map(|x| field.block_id(x))
+                        {
+                            children.push(id);
+                        }
+                    }
+                    Self::Children(children)
+                }),
+                _ => None,
+            })
     }
 }
 
@@ -81,30 +138,7 @@ impl Property {
 
 impl Block for Property {
     fn pack(&self) -> Promise<JsValue> {
-        let value = match &self.value {
-            Value::Str(a) => object! {
-                type: "string",
-                payload: a
-            },
-            Value::Num(a) => object! {
-                type: "number",
-                payload: *a
-            },
-            Value::Children(list) => {
-                let children = js_sys::Array::new();
-                for child in list {
-                    children.push(&JsValue::from(child.to_string()));
-                }
-                object! {
-                    type: "children",
-                    payload: children
-                }
-            }
-            Value::None => object! {
-                type: "none",
-                payload: JsValue::undefined()
-            },
-        };
+        let value = self.value.to_jsobject();
         let value: js_sys::Object = value.into();
         let value: JsValue = value.into();
 
@@ -119,7 +153,25 @@ impl Block for Property {
         Promise::new(|resolve| resolve(Some(data)))
     }
     fn unpack(field: &mut Field, val: JsValue) -> Promise<Box<Self>> {
-        unimplemented!();
+        let self_ = if let Ok(val) = val.dyn_into::<JsObject>() {
+            let name = val.get("name").and_then(|x| x.as_string());
+            let is_selected = val.get("is_selected").and_then(|x| x.as_bool());
+            let value = val
+                .get("value")
+                .and_then(|x| Value::from_jsobject(field, x));
+            if let (Some(name), Some(is_selected), Some(value)) = (name, is_selected, value) {
+                Some(Box::new(Self {
+                    name,
+                    is_selected,
+                    value,
+                }))
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+        Promise::new(move |resolve| resolve(self_))
     }
 }
 

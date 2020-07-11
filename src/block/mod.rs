@@ -74,14 +74,6 @@ impl FieldBlock {
         }
     }
 
-    fn none(timestamp: f64) -> Self {
-        Self {
-            count: Rc::new(Cell::new(0)),
-            timestamp: timestamp,
-            payload: None,
-        }
-    }
-
     pub fn pack(&self) -> Promise<JsValue> {
         let payload = self.payload.as_ref();
         if let Some(payload) = payload.and_then(|p| p.downcast_ref::<Chat>()) {

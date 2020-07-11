@@ -1,8 +1,8 @@
 use super::{Block, BlockId, Field};
-use crate::Promise;
+use crate::{JsObject, Promise};
 use ordered_float::OrderedFloat;
 use std::collections::BTreeMap;
-use wasm_bindgen::prelude::*;
+use wasm_bindgen::{prelude::*, JsCast};
 
 #[derive(Clone)]
 pub struct Tab {
@@ -41,12 +41,49 @@ impl Tab {
 
 impl Block for Tab {
     fn pack(&self) -> Promise<JsValue> {
-        let data = object! {};
+        let items = array![];
+        for (time, item) in &self.items {
+            let time: f64 = time.clone().into();
+            items.push(array![time, item.to_string()].as_ref());
+        }
+
+        let data = object! {
+            name: &self.name,
+            items: items
+        };
         let data: js_sys::Object = data.into();
         let data: JsValue = data.into();
         Promise::new(|resolve| resolve(Some(data)))
     }
     fn unpack(field: &mut Field, val: JsValue) -> Promise<Box<Self>> {
-        unimplemented!();
+        let self_ = if let Ok(val) = val.dyn_into::<JsObject>() {
+            let name = val.get("name").and_then(|name| name.as_string());
+            let items = val.get("items").map(|items| {
+                let items: js_sys::Object = items.into();
+                js_sys::Array::from(&items)
+            });
+            if let (Some(name), Some(raw_items)) = (name, items) {
+                let mut items = BTreeMap::new();
+                for item in raw_items.to_vec() {
+                    let item = js_sys::Array::from(&item);
+                    if let (Some(time), Some(id)) = (
+                        item.get(0).as_f64().map(|t| OrderedFloat(t)),
+                        item.get(1)
+                            .as_string()
+                            .and_then(|id| id.parse().ok())
+                            .map(|id| field.block_id(id)),
+                    ) {
+                        items.insert(time, id);
+                    }
+                }
+
+                Some(Box::new(Self { name, items }))
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+        Promise::new(move |resolve| resolve(self_))
     }
 }
