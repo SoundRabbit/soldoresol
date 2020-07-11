@@ -532,7 +532,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     .get::<block::table_object::Tablemask>(&tablemask),
                 state.selecting_table().map(|t| t.clone()),
             ) {
-                let mut tablemask = tablemask.clone();
+                let tablemask = tablemask.clone();
                 let tablemask = state.block_field_mut().add(tablemask);
 
                 state.block_field_mut().update(
@@ -1051,6 +1051,10 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                         a.set_type(type_);
                     },
                 );
+
+                render_canvas(state);
+
+                send_pack_cmd(state.block_field(), vec![&block_id])
             } else if let Some(selecting_table) = state.selecting_table().map(|t| t.clone()) {
                 let area = block::table_object::Area::new(
                     [ax, ay, 0.0],
@@ -1071,13 +1075,15 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 if let state::table::Tool::Area { block_id, .. } =
                     state.table_mut().selecting_tool_mut()
                 {
-                    *block_id = Some(bid);
+                    *block_id = Some(bid.clone());
                 }
+
+                render_canvas(state);
+
+                send_pack_cmd(state.block_field(), vec![&selecting_table, &bid])
+            } else {
+                state.dequeue()
             }
-
-            render_canvas(state);
-
-            state.dequeue()
         }
 
         // World
@@ -1341,7 +1347,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
             render_canvas(state);
 
-            state.dequeue()
+            send_pack_cmd(state.block_field(), vec![&character_id])
         }
 
         Msg::SetCharacterPosition(character_id, pos) => {
@@ -1355,7 +1361,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
             render_canvas(state);
 
-            state.dequeue()
+            send_pack_cmd(state.block_field(), vec![&character_id])
         }
 
         // Property
