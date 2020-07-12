@@ -1522,13 +1522,8 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             }
         }
 
-        Msg::InsertChatItem(tab, item, timestamp) => {
-            let item_id = state.block_field_mut().add(item);
-            state
-                .block_field_mut()
-                .update(&tab, None, |tab: &mut block::chat::Tab| {
-                    tab.insert(timestamp, item_id);
-                });
+        Msg::InsertChatItem(tab_id, item, timestamp) => {
+            insert_chat_item(state, &tab_id, item, timestamp);
             state.dequeue()
         }
 
@@ -2068,4 +2063,13 @@ fn check_focused_object(state: &mut State, mouse_position: &[f32; 2]) {
     } else {
         state.table_mut().set_focused(state::table::Focused::None);
     }
+}
+
+fn insert_chat_item(state: &mut State, tab_id: &BlockId, item: block::chat::Item, timestamp: f64) {
+    let item_id = state.block_field_mut().add(item);
+    state
+        .block_field_mut()
+        .update(tab_id, None, |tab: &mut block::chat::Tab| {
+            tab.insert(timestamp, item_id);
+        });
 }
