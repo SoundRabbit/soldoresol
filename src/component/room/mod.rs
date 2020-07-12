@@ -143,6 +143,7 @@ pub enum Msg {
     // リソース管理
     LoadFromFileList(web_sys::FileList),
     LoadDataToResource(Data),
+    AssignDataToResource(u128, Data),
 
     // BCDice
     GetBcdiceServerList,
@@ -1623,6 +1624,12 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             })
         }
 
+        Msg::AssignDataToResource(id, data) => {
+            state.resource_mut().assign(id, data);
+            render_canvas(state);
+            state.dequeue()
+        }
+
         //BCDice
         Msg::GetBcdiceServerList => Cmd::task(task::http::get(
             r"https://raw.githubusercontent.com/bcdice/bcdice-api-servers/master/servers.yaml",
@@ -1732,13 +1739,36 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     });
                 })
             }
-            skyway::Msg::SetResourcePacks(packs) => state.dequeue(),
+            skyway::Msg::SetResourcePacks(packs) => {
+                for (id, data) in packs {
+                    let promise = Data::unpack(data);
+                    let task = Cmd::task(move |resolve| {
+                        promise.then(move |data| {
+                            if let Some(data) = data {
+                                resolve(Msg::AssignDataToResource(id, data));
+                            }
+                        })
+                    });
+                    state.enqueue(task);
+                }
+                state.dequeue()
+            }
         },
         Msg::PeerJoin(peer_id) => {
             state.peers_mut().insert(peer_id);
             let chat = state.chat().block_id().to_u128();
             let world = state.world().to_u128();
             state.room().send(skyway::Msg::SetContext { chat, world });
+
+            let packs = state.resource().pack_all();
+
+            state.enqueue(Cmd::task(move |resolve| {
+                packs.then(|packs| {
+                    if let Some(packs) = packs {
+                        resolve(Msg::SendResourcePacks(packs.into_iter().collect()));
+                    }
+                })
+            }));
 
             let packs = state.block_field_mut().pack_all();
 

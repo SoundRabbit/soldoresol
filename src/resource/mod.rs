@@ -1,6 +1,7 @@
-use crate::random_id;
+use crate::{random_id, Promise};
 use std::collections::HashMap;
 use std::ops::Deref;
+use wasm_bindgen::prelude::*;
 
 mod data;
 
@@ -31,6 +32,16 @@ impl Resource {
 
     pub fn all(&self) -> impl Iterator<Item = (&ResourceId, &Data)> {
         self.data.iter()
+    }
+
+    pub fn pack_all(&self) -> Promise<Vec<(ResourceId, JsValue)>> {
+        let mut promises = vec![];
+        for (key, data) in &self.data {
+            let key = *key;
+            promises.push(data.pack().map(move |data| data.map(|data| (key, data))))
+        }
+        Promise::some(promises)
+            .map(|vals| vals.map(|vals| vals.into_iter().filter_map(|x| x).collect()))
     }
 }
 
