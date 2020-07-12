@@ -1523,8 +1523,18 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
 
         Msg::InsertChatItem(tab_id, item, timestamp) => {
-            insert_chat_item(state, &tab_id, item, timestamp);
-            state.dequeue()
+            let item_id = state.block_field_mut().add(item);
+            state
+                .block_field_mut()
+                .update(&tab_id, None, |tab: &mut block::chat::Tab| {
+                    tab.insert(timestamp, item_id);
+                });
+            state.room().send(skyway::Msg::InsertChatItem(
+                tab_id.to_u128(),
+                item_id.to_u128(),
+                timestamp,
+            ));
+            send_pack_cmd(state.block_field(), vec![&item_id])
         }
 
         Msg::AddChatSender(character_id) => {
@@ -1548,7 +1558,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.update_chat_block(timestamp(), |chat| {
                 chat.push(tab_id);
             });
-            state.dequeue()
+            send_pack_cmd(state.block_field(), vec![state.chat().block_id(), &tab_id])
         }
 
         Msg::SetSelectingChatTabIdx(idx) => {
@@ -1556,13 +1566,13 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.dequeue()
         }
 
-        Msg::SetChatTabName(tab, name) => {
+        Msg::SetChatTabName(tab_id, name) => {
             state
                 .block_field_mut()
-                .update(&tab, timestamp(), |tab: &mut block::chat::Tab| {
+                .update(&tab_id, timestamp(), |tab: &mut block::chat::Tab| {
                     tab.set_name(name);
                 });
-            state.dequeue()
+            send_pack_cmd(state.block_field(), vec![&tab_id])
         }
 
         Msg::RemoveChatTab(tab) => {
@@ -1746,6 +1756,17 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     });
                     state.enqueue(task);
                 }
+                state.dequeue()
+            }
+            skyway::Msg::InsertChatItem(tab_id, item_id, timestamp) => {
+                let tab_id = state.block_field_mut().block_id(tab_id);
+                let item_id = state.block_field_mut().block_id(item_id);
+
+                state
+                    .block_field_mut()
+                    .update(&tab_id, None, |tab: &mut block::chat::Tab| {
+                        tab.insert(timestamp, item_id);
+                    });
                 state.dequeue()
             }
         },
@@ -2063,13 +2084,4 @@ fn check_focused_object(state: &mut State, mouse_position: &[f32; 2]) {
     } else {
         state.table_mut().set_focused(state::table::Focused::None);
     }
-}
-
-fn insert_chat_item(state: &mut State, tab_id: &BlockId, item: block::chat::Item, timestamp: f64) {
-    let item_id = state.block_field_mut().add(item);
-    state
-        .block_field_mut()
-        .update(tab_id, None, |tab: &mut block::chat::Tab| {
-            tab.insert(timestamp, item_id);
-        });
 }

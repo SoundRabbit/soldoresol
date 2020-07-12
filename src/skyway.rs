@@ -89,6 +89,7 @@ pub enum Msg {
     SetContext { world: u128, chat: u128 },
     SetBlockPacks(HashMap<u128, JsValue>),
     SetResourcePacks(HashMap<u128, JsValue>),
+    InsertChatItem(u128, u128, f64),
 }
 
 impl Msg {
@@ -98,6 +99,7 @@ impl Msg {
             Self::SetContext { .. } => "SetContext",
             Self::SetBlockPacks(..) => "SetBlockPacks",
             Self::SetResourcePacks(..) => "SetResourcePacks",
+            Self::InsertChatItem(..) => "InsertChatItem",
         }
     }
 }
@@ -121,6 +123,9 @@ impl Into<JsObject> for Msg {
                     payload.push(array![id.to_string(), pack].as_ref());
                 }
                 payload.into()
+            }
+            Self::InsertChatItem(tab_id, item, timestamp) => {
+                array![tab_id.to_string(), item.to_string(), timestamp].into()
             }
         };
         object! {
@@ -177,6 +182,18 @@ impl From<JsObject> for Msg {
                         packs.insert(id, data);
                     }
                     Msg::SetResourcePacks(packs)
+                }
+                "InsertChatItem" => {
+                    let payload: js_sys::Object = payload.into();
+                    let payload = Array::from(payload.as_ref());
+                    let tab_id = payload.get(0).as_string().and_then(|x| x.parse().ok());
+                    let item = payload.get(1).as_string().and_then(|x| x.parse().ok());
+                    let timestamp = payload.get(2).as_f64();
+                    if let (Some(tab_id), Some(item), Some(timestamp)) = (tab_id, item, timestamp) {
+                        Self::InsertChatItem(tab_id, item, timestamp)
+                    } else {
+                        Self::None
+                    }
                 }
                 _ => Self::None,
             }
