@@ -8,6 +8,7 @@ pub struct Texture {
     element: web_sys::HtmlCanvasElement,
     context: web_sys::CanvasRenderingContext2d,
     size: [f64; 2],
+    buffer_size: [f64; 2],
     pixel_ratio: [f64; 2],
 }
 
@@ -41,6 +42,7 @@ impl Texture {
             context,
             pixel_ratio: [1.0, 1.0],
             size: [1.0, 1.0],
+            buffer_size: [buffer_size[0] as f64, buffer_size[1] as f64],
         };
         me.set_size(size);
         me
@@ -59,7 +61,7 @@ impl Texture {
     }
 
     pub fn set_size(&mut self, size: [f64; 2]) {
-        let new_pixel_ratio = [4096.0 / size[0], 4096.0 / size[1]];
+        let new_pixel_ratio = [self.buffer_size[0] / size[0], self.buffer_size[1] / size[1]];
 
         let _ = self.context.scale(
             new_pixel_ratio[0] / self.pixel_ratio[0],
@@ -72,7 +74,8 @@ impl Texture {
 
     pub fn clear(&self) {
         let [px, py] = self.pixel_ratio.clone();
-        self.context.clear_rect(0.0, 0.0, 4096.0 * px, 4096.0 * py);
+        self.context
+            .clear_rect(0.0, 0.0, self.buffer_size[0] * px, self.buffer_size[1] * py);
     }
 }
 

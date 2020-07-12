@@ -1089,7 +1089,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
         // World
         Msg::AddTable => {
-            let texture = block::table::Texture::new(&[4096, 4096], [20.0, 20.0]);
+            let texture = block::table::Texture::new(&[2048, 2048], [20.0, 20.0]);
             let texture = state.block_field_mut().add(texture);
             let table = block::Table::new(texture.clone(), [20.0, 20.0], "テーブル");
             let table = state.block_field_mut().add(table);
