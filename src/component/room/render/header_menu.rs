@@ -95,7 +95,7 @@ pub fn render(
                                         .on_click(|_| Msg::OpenModal(Modal::PersonalSetting)),
                                     vec![
                                         awesome::i("fa-user-cog"),
-                                        Html::text(" 個人設定 "),
+                                        Html::text(" プレイヤー設定 "),
                                         awesome::i("fa-external-link-alt"),
                                     ],
                                 ),
