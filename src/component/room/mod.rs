@@ -253,6 +253,8 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
     match msg {
         Msg::NoOp => state.dequeue(),
         Msg::InitDomDependents => {
+            state.set_pixel_ratio(web_sys::window().unwrap().device_pixel_ratio() as f32);
+
             if let (Some(canvas_size), Some(canvas), Some(modeless_parent)) = (
                 reset_canvas_size(state.pixel_ratio()),
                 get_table_canvas_element(),
@@ -683,7 +685,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             let dy = mouse_position[1] - state.table().last_mouse_position()[1];
             let long_edge = state.canvas_size()[0].max(state.canvas_size()[1]);
 
-            let factor = 3.0 / long_edge * get_canvas_pixel_ratio(state.pixel_ratio());
+            let factor = 3.0 / long_edge * state.pixel_ratio();
 
             let camera = state.camera_mut();
 
@@ -700,7 +702,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             let dy = mouse_position[1] - state.table().last_mouse_position()[1];
             let long_edge = state.canvas_size()[0].max(state.canvas_size()[1]);
 
-            let factor = 50.0 / long_edge * get_canvas_pixel_ratio(state.pixel_ratio());
+            let factor = 50.0 / long_edge * state.pixel_ratio();
 
             let camera = state.camera_mut();
 
@@ -1816,16 +1818,11 @@ fn get_table_canvas_element() -> Option<web_sys::HtmlCanvasElement> {
     get_element_by_id("table").and_then(|x| x.dyn_into::<web_sys::HtmlCanvasElement>().ok())
 }
 
-fn get_canvas_pixel_ratio(pixel_ratio: f32) -> f32 {
-    web_sys::window().unwrap().device_pixel_ratio() as f32 * pixel_ratio
-}
-
 fn reset_canvas_size(pixel_ratio: f32) -> Option<[f32; 2]> {
     if let Some(canvas) = get_table_canvas_element() {
-        let dpr = get_canvas_pixel_ratio(pixel_ratio);
         let canvas_size = [
-            canvas.client_width() as f32 * dpr,
-            canvas.client_height() as f32 * dpr,
+            canvas.client_width() as f32 * pixel_ratio,
+            canvas.client_height() as f32 * pixel_ratio,
         ];
         canvas.set_width(canvas_size[0] as u32);
         canvas.set_height(canvas_size[1] as u32);
@@ -1841,8 +1838,10 @@ fn get_table_position(
     screen_position: &[f32; 2],
     pixel_ratio: f32,
 ) -> [f32; 2] {
-    let dpr = get_canvas_pixel_ratio(pixel_ratio);
-    let mouse_coord = [screen_position[0] * dpr, screen_position[1] * dpr];
+    let mouse_coord = [
+        screen_position[0] * pixel_ratio,
+        screen_position[1] * pixel_ratio,
+    ];
     let p = state
         .camera()
         .collision_point_on_xy_plane(state.canvas_size(), &mouse_coord);
@@ -1866,9 +1865,10 @@ fn get_focused_position(
     pixel_ratio: f32,
     offset: &[f32; 3],
 ) -> [f32; 3] {
-    let cpr = get_canvas_pixel_ratio(state.pixel_ratio());
-
-    let canvas_pos = [screen_position[0] * cpr, screen_position[1] * cpr];
+    let canvas_pos = [
+        screen_position[0] * pixel_ratio,
+        screen_position[1] * pixel_ratio,
+    ];
 
     let pos = if let Some(tableblock) = state.renderer().and_then(|r| {
         r.table_object_id(state.canvas_size(), &canvas_pos)
@@ -2044,9 +2044,12 @@ fn trace_prop_id(block_field: &block::Field, prop: &BlockId) -> Vec<BlockId> {
 }
 
 fn check_focused_object(state: &mut State, mouse_position: &[f32; 2]) {
-    let cpr = get_canvas_pixel_ratio(state.pixel_ratio());
+    let pixel_ratio = state.pixel_ratio();
 
-    let canvas_pos = [mouse_position[0] * cpr, mouse_position[1] * cpr];
+    let canvas_pos = [
+        mouse_position[0] * pixel_ratio,
+        mouse_position[1] * pixel_ratio,
+    ];
 
     if let Some(tableblock) = state.renderer().and_then(|r| {
         r.table_object_id(state.canvas_size(), &canvas_pos)

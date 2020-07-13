@@ -2,7 +2,6 @@ pub mod chat;
 pub mod contextmenu;
 pub mod dicebot;
 pub mod headermenu;
-pub mod speech_bubble;
 pub mod table;
 
 pub use contextmenu::Contextmenu;
@@ -55,7 +54,6 @@ pub struct State<M, S> {
     renderer: Option<Renderer>,
     pixel_ratio: f32,
     canvas_size: [f32; 2],
-    speech_bubble: speech_bubble::State,
     contextmenu: Option<contextmenu::State>,
     headermenu: Option<headermenu::State>,
     modeless: modeless::Collection<Modeless>,
@@ -105,7 +103,6 @@ impl<M, S> State<M, S> {
             renderer: None,
             pixel_ratio: 1.0,
             canvas_size: [0.0, 0.0],
-            speech_bubble: speech_bubble::State::new(),
             contextmenu: None,
             headermenu: None,
             modeless: modeless::Collection::new(),
@@ -273,16 +270,16 @@ impl<M, S> State<M, S> {
         self.pixel_ratio
     }
 
+    pub fn set_pixel_ratio(&mut self, pixel_ratio: f32) {
+        self.pixel_ratio = pixel_ratio;
+    }
+
     pub fn canvas_size(&self) -> &[f32; 2] {
         &self.canvas_size
     }
 
     pub fn set_canvas_size(&mut self, canvas_size: [f32; 2]) {
         self.canvas_size = canvas_size;
-    }
-
-    pub fn speech_bubble(&self) -> &speech_bubble::State {
-        &self.speech_bubble
     }
 
     pub fn contextmenu(&self) -> Option<&contextmenu::State> {
@@ -328,8 +325,8 @@ impl<M, S> State<M, S> {
                 self.modeless.focus(chat_modeless_id);
             } else {
                 let mut modeless = model::Modeless::new(modeless);
-                modeless.set_position_r(0.0, 50.0);
-                modeless.set_size_r(40.0, 50.0);
+                modeless.set_position_r(0.0, 20.0);
+                modeless.set_size_r(30.0, 80.0);
                 self.modeless.open(modeless);
             }
         } else {

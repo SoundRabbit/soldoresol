@@ -1,6 +1,11 @@
 use super::state;
 use super::{Msg, State};
-use crate::{block, resource::Data, Resource};
+use crate::{
+    block,
+    renderer::{Camera, Renderer},
+    resource::Data,
+    Resource,
+};
 use kagura::prelude::*;
 use std::collections::VecDeque;
 
@@ -43,7 +48,18 @@ pub fn render(z_index: u64, state: &State, world: &block::World) -> Html<Msg> {
             }),
         vec![
             canvas(),
-            speech_bubble(state.speech_bubble(), state.resource()),
+            if let Some(selecting_tab) = state.selecting_chat_tab_block() {
+                speech_bubble(
+                    state.block_field(),
+                    state.resource(),
+                    selecting_tab,
+                    state.camera(),
+                    state.canvas_size(),
+                    state.pixel_ratio(),
+                )
+            } else {
+                Html::div(Attributes::new(), Events::new(), vec![])
+            },
             info(state.table().info()),
             hint(),
             character_list::render(state.block_field(), world.characters(), state.resource()),
@@ -61,24 +77,53 @@ fn canvas() -> Html<Msg> {
 }
 
 fn speech_bubble(
-    speech_bubble: &VecDeque<state::speech_bubble::Item>,
+    block_field: &block::Field,
     resource: &Resource,
+    selecting_tab: &block::chat::Tab,
+    camera: &Camera,
+    canvas_size: &[f32; 2],
+    pixel_ratio: f32,
 ) -> Html<Msg> {
+    let now = js_sys::Date::now();
     Html::div(
         Attributes::new().class("cover").class("cover-a"),
         Events::new(),
-        speech_bubble
+        selecting_tab
             .iter()
-            .map(|speech_bubble| {
+            .filter_map(|(time, item_id)| {
+                if time > now - 10000.0 {
+                    block_field.get::<block::chat::Item>(item_id)
+                } else {
+                    None
+                }
+            })
+            .filter_map(|item| {
+                item.sender()
+                    .as_character()
+                    .and_then(|c_id| block_field.get::<block::Character>(c_id))
+                    .map(|character| (item, character))
+            })
+            .map(|(item, character)| {
+                let pos = character.position();
+                let sz = character.size();
+                let pos =
+                    Renderer::table_position(&[0.0, 0.0, sz[2]], pos, camera, canvas_size, true);
+                crate::debug::log_2(pos[0], pos[1]);
                 Html::div(
                     Attributes::new()
                         .class("speechbubble")
                         .style("position", "absolute")
-                        .style("left", format!("{}px", speech_bubble.position()[0]))
-                        .style("top", format!("{}px", speech_bubble.position()[1])),
+                        .style(
+                            "left",
+                            format!("{}px", (1.0 + pos[0]) * 0.5 * canvas_size[0] / pixel_ratio),
+                        )
+                        .style(
+                            "top",
+                            format!("{}px", (1.0 - pos[1]) * 0.5 * canvas_size[1] / pixel_ratio),
+                        ),
                     Events::new(),
                     vec![
-                        speech_bubble
+                        character
                             .texture_id()
                             .and_then(|texture_id| {
                                 if let Some(Data::Image { url, .. }) = resource.get(texture_id) {
@@ -101,7 +146,7 @@ fn speech_bubble(
                         Html::pre(
                             Attributes::new().class("speechbubble-message"),
                             Events::new(),
-                            vec![Html::text(speech_bubble.message())],
+                            vec![Html::text(item.text())],
                         ),
                     ],
                 )

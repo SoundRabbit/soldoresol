@@ -26,6 +26,15 @@ pub struct Item {
     reply: Option<String>,
 }
 
+impl Sender {
+    pub fn as_character(&self) -> Option<&BlockId> {
+        match self {
+            Self::Character(block_id) => Some(block_id),
+            _ => None,
+        }
+    }
+}
+
 impl Icon {
     pub fn to_jsobject(&self) -> JsObject {
         match self {
@@ -119,6 +128,10 @@ impl Item {
 
     pub fn icon(&self) -> &Icon {
         &self.icon
+    }
+
+    pub fn sender(&self) -> &Sender {
+        &self.sender
     }
 
     pub fn text(&self) -> &String {

@@ -1,7 +1,7 @@
 @import "color";
 
 .speechbubble {
-    transform: translate(-3.2em, calc(-100%));
+    transform: translate(-3.2em, calc(-100% - 1em));
     max-width: 20vw;
 
     &-img {
@@ -21,6 +21,7 @@
         overflow: visible;
         white-space: pre-wrap;
         overflow-wrap: anywhere;
+        margin: 0;
 
         &::before {
             content: "";

@@ -66,21 +66,19 @@ impl Renderer {
         is_billboard: bool,
     ) -> [f32; 3] {
         let vp_matrix = camera
-            .view_matrix()
-            .dot(&camera.perspective_matrix(&canvas_size));
+            .perspective_matrix(&canvas_size)
+            .dot(&camera.view_matrix());
         let model_matrix: Array2<f32> = if is_billboard {
             ModelMatrix::new()
-                .with_x_axis_rotation(camera.x_axis_rotation())
+                .with_x_axis_rotation(camera.x_axis_rotation() - std::f32::consts::FRAC_PI_2)
                 .with_z_axis_rotation(camera.z_axis_rotation())
                 .with_movement(&movement)
                 .into()
         } else {
             ModelMatrix::new().with_movement(&movement).into()
         };
-        let mvp_matrix = model_matrix.dot(&vp_matrix);
-        let screen_position = mvp_matrix
-            .t()
-            .dot(&arr1(&[vertex[0], vertex[1], vertex[2], 1.0]));
+        let mvp_matrix = vp_matrix.dot(&model_matrix);
+        let screen_position = mvp_matrix.dot(&arr1(&[vertex[0], vertex[1], vertex[2], 1.0]));
 
         [
             screen_position[0] / screen_position[3],
