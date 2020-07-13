@@ -1486,6 +1486,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 let peer_id = state.peer().id();
                 if text != "" {
                     if let Some(left) = state.dicebot().bcdice().match_to_prefix(&left) {
+                        let left = js_sys::encode_uri_component(&left).as_string().unwrap();
                         let query = state
                             .dicebot()
                             .bcdice()
