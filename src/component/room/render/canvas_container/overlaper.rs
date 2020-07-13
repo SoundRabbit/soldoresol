@@ -27,7 +27,7 @@ pub fn render(state: &State, modeless: &model::modeless::Collection<Modeless>) -
                     } else {
                         match selecting_tool {
                             table::Tool::Character => {
-                                Msg::AddChracaterWithMousePositionToCloseContextmenu(mouse_pos)
+                                Msg::AddCharacterWithMousePositionToCloseContextmenu(mouse_pos)
                             }
                             table::Tool::Tablemask {
                                 size,

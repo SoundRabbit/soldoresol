@@ -20,7 +20,7 @@ pub fn render(z_index: u64, contextmenu: &state::contextmenu::State) -> Html<Msg
                     Events::new().on_click({
                         let [x, y] = contextmenu.canvas_position();
                         let position = [*x as f32, *y as f32];
-                        move |_| Msg::AddChracaterWithMousePositionToCloseContextmenu(position)
+                        move |_| Msg::AddCharacterWithMousePositionToCloseContextmenu(position)
                     }),
                     "キャラクターを作成",
                 ),

@@ -1,4 +1,4 @@
-use crate::{JSZip, Promise};
+use crate::{resource, JSZip, Promise};
 use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::{prelude::*, JsCast};
 use xmltree::{Element, XMLNode};
@@ -6,7 +6,7 @@ use xmltree::{Element, XMLNode};
 pub use data::Data;
 
 pub struct Character {
-    data: Data,
+    pub data: Data,
     zip: Rc<JSZip>,
 }
 
@@ -75,8 +75,66 @@ impl Character {
         })
     }
 
-    pub fn data(&self) -> &Data {
-        &self.data
+    pub fn texture(&self) -> Promise<resource::Data> {
+        let texture_id = match self.data.find("imageIdentifier") {
+            Some(data::Value::Text(x)) => x.clone(),
+            _ => {
+                return Promise::new(|r| r(None));
+            }
+        };
+
+        crate::debug::log_1(texture_id.as_str());
+
+        let files = js_sys::Object::keys(&self.zip.files());
+        let mut file = None;
+        let mut type_ = String::new();
+
+        for i in 0..files.length() {
+            if let Some(file_name) = files.get(i).as_string() {
+                let fname: Vec<&str> = file_name.split('.').collect();
+                let prefix = fname.first().map(|x| x as &str).unwrap_or("");
+                let suffix = fname.last().map(|x| x as &str).unwrap_or("");
+                if texture_id == prefix {
+                    file = self.zip.file(&file_name);
+                    type_ = type_ + "image/" + suffix;
+                    break;
+                }
+            }
+        }
+
+        if file.is_none() {
+            return Promise::new(|r| r(None));
+        }
+
+        let file = file.unwrap();
+
+        Promise::new(move |resolve| {
+            let resolve = Rc::new(RefCell::new(Some(resolve)));
+
+            let on_load = Closure::wrap(Box::new(move |buf: JsValue| {
+                if let Ok(buf) = buf.dyn_into::<js_sys::ArrayBuffer>() {
+                    let data = object! {
+                        type: type_.clone(),
+                        payload: buf
+                    };
+                    let data: js_sys::Object = data.into();
+                    let data: JsValue = data.into();
+                    resource::Data::unpack(data).then({
+                        let resolve = Rc::clone(&resolve);
+                        move |texture| {
+                            if let Some(resolve) = resolve.borrow_mut().take() {
+                                resolve(texture);
+                            }
+                        }
+                    });
+                } else if let Some(resolve) = resolve.borrow_mut().take() {
+                    resolve(None);
+                }
+            }) as Box<dyn FnMut(_)>);
+
+            file.load_async("arraybuffer").then(&on_load);
+            on_load.forget();
+        })
     }
 }
 

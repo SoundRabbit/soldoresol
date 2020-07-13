@@ -14,7 +14,7 @@ extern "C" {
     pub fn file(this: &JSZip, name: &str) -> Option<ZipObject>;
 
     #[wasm_bindgen(method, getter)]
-    pub fn files(this: &JSZip) -> js_sys::Array;
+    pub fn files(this: &JSZip) -> js_sys::Object;
 }
 
 #[wasm_bindgen]

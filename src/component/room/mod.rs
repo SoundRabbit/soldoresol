@@ -5,7 +5,7 @@ use crate::{
     model::{self, modeless::ModelessId},
     renderer::Renderer,
     resource::{Data, ResourceId},
-    skyway, Color,
+    skyway, udonarium, Color,
 };
 use kagura::prelude::*;
 use std::{
@@ -53,7 +53,7 @@ pub enum Msg {
     CloseModal,
 
     // UI for table
-    AddChracaterWithMousePositionToCloseContextmenu([f32; 2]),
+    AddCharacterWithMousePositionToCloseContextmenu([f32; 2]),
     AddTablemaskWithMousePositionToCloseContextmenu([f32; 2], [f32; 2], Color, bool, bool),
     AddBoxblockWithMousePositionToCloseContextmenu([f32; 2], [f32; 3], Color),
     CloneCharacterToCloseContextmenu(BlockId),
@@ -152,6 +152,10 @@ pub enum Msg {
     SetBcdiceSystemNames(bcdice::Names),
     GetBcdiceSystemInfo(String),
     SetBcdiceSystemInfo(bcdice::SystemInfo),
+
+    // Udonarium互換
+    LoadUdonariumCharacter(udonarium::Character),
+    AddCharacterWithUdonariumData(udonarium::Data, Option<Data>),
 
     // 接続に関する操作
     SendBlockPacks(HashMap<BlockId, JsValue>),
@@ -390,7 +394,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
 
         // UI
-        Msg::AddChracaterWithMousePositionToCloseContextmenu(mouse_position) => {
+        Msg::AddCharacterWithMousePositionToCloseContextmenu(mouse_position) => {
             state.close_contextmenu();
 
             let [x, y] = get_table_position(state, false, &mouse_position, state.pixel_ratio());
@@ -1618,6 +1622,15 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     } else if file_type == "application/zip"
                         || file_type == "application/x-zip-compressed"
                     {
+                        let promise = udonarium::Character::from_blob(&file);
+                        let task = Cmd::task(move |resolve| {
+                            promise.then(|data| {
+                                if let Some(data) = data {
+                                    resolve(Msg::LoadUdonariumCharacter(data));
+                                }
+                            });
+                        });
+                        state.enqueue(task);
                     }
                 }
             }
@@ -1719,6 +1732,50 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 .bcdice_mut()
                 .set_system_info(system_info);
             state.dequeue()
+        }
+
+        // Udonarium互換
+        Msg::LoadUdonariumCharacter(character) => Cmd::task(move |resolve| {
+            character.texture().then(|texture| {
+                resolve(Msg::AddCharacterWithUdonariumData(character.data, texture))
+            })
+        }),
+
+        Msg::AddCharacterWithUdonariumData(data, texture) => {
+            let name = match data.find("name") {
+                Some(udonarium::data::Value::Text(name)) => name.clone(),
+                _ => String::new(),
+            };
+
+            let property = block::Property::new("");
+            let property_id = state.block_field_mut().add(property);
+
+            let mut character = block::Character::new(property_id, name);
+            if let Some(texture) = texture {
+                let promise = texture.pack();
+                let texture_id = state.resource_mut().add(texture);
+                character.set_texture_id(Some(texture_id));
+
+                state.enqueue(Cmd::task(move |resolve| {
+                    promise.then(move |data| {
+                        if let Some(data) = data {
+                            resolve(Msg::SendResourcePacks(
+                                vec![(texture_id, data)].into_iter().collect(),
+                            ))
+                        }
+                    })
+                }));
+            }
+
+            let character_id = state.block_field_mut().add(character);
+            state.update_world(timestamp(), |world| {
+                world.add_character(character_id.clone());
+            });
+
+            send_pack_cmd(
+                state.block_field(),
+                vec![&property_id, &character_id, state.world()],
+            )
         }
 
         // 接続に関する操作
