@@ -14,6 +14,7 @@ extern crate serde_yaml;
 extern crate toml;
 extern crate wasm_bindgen;
 extern crate web_sys;
+extern crate xmltree;
 
 #[macro_use]
 mod js_object;
@@ -27,16 +28,19 @@ mod config;
 mod debug;
 mod dicebot;
 mod idb;
+mod js_zip;
 mod model;
 mod promise;
 mod random_id;
 mod renderer;
 mod resource;
 mod skyway;
+mod udonarium;
 
 use color::Color;
 use config::Config;
 use js_object::JsObject;
+use js_zip::JSZip;
 use promise::Promise;
 use resource::Resource;
 use wasm_bindgen::prelude::*;

@@ -6,7 +6,7 @@ use std::{
 };
 use wasm_bindgen::{prelude::*, JsCast};
 
-#[wasm_bindgen(raw_module = "../src/skyway.js")]
+#[wasm_bindgen(raw_module = "../src/skyway/skyway.js")]
 extern "C" {
     pub type Peer;
 

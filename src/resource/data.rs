@@ -49,6 +49,12 @@ impl Data {
         Self::from_blob(blob)
     }
 
+    pub fn is_able_to_load(file_type: &str) -> bool {
+        let mut file_type: Vec<&str> = file_type.split('/').collect();
+        let prefix = file_type.pop().unwrap_or("");
+        prefix == "image"
+    }
+
     pub fn from_blob(blob: web_sys::Blob) -> Promise<Data> {
         Promise::new(move |resolve| {
             let blob = Rc::new(blob);
