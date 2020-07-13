@@ -56,8 +56,8 @@ impl Data {
     }
 
     pub fn is_able_to_load(file_type: &str) -> bool {
-        let mut file_type: Vec<&str> = file_type.split('/').collect();
-        let prefix = file_type.pop().unwrap_or("");
+        let file_type: Vec<&str> = file_type.split('/').collect();
+        let prefix = file_type.first().map(|x| x as &str).unwrap_or("");
         prefix == "image"
     }
 

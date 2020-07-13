@@ -1611,6 +1611,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     crate::debug::log_1(&file_type);
                     if Data::is_able_to_load(&file_type) {
                         let blob: web_sys::Blob = file.into();
+                        crate::debug::log_1(&blob);
                         let promise = Data::from_blob(blob);
                         let task = Cmd::task(move |resolve| {
                             promise.then(|data| {
