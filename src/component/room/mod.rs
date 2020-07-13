@@ -1747,11 +1747,22 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 _ => String::new(),
             };
 
+            let size = match data.find("size") {
+                Some(udonarium::data::Value::Text(size)) => size.parse().unwrap_or(1.0),
+                _ => 1.0,
+            };
+
             let property = block::Property::new("");
             let property_id = state.block_field_mut().add(property);
 
             let mut character = block::Character::new(property_id, name);
+
             if let Some(texture) = texture {
+                let size_ratio = texture
+                    .as_image()
+                    .map(|el| el.height() as f32 / el.width() as f32)
+                    .unwrap_or(0.0);
+
                 let promise = texture.pack();
                 let texture_id = state.resource_mut().add(texture);
                 character.set_texture_id(Some(texture_id));
@@ -1765,12 +1776,18 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                         }
                     })
                 }));
+
+                character.set_size([size, size, size * size_ratio]);
+            } else {
+                character.set_size([size, size, 0.0]);
             }
 
             let character_id = state.block_field_mut().add(character);
             state.update_world(timestamp(), |world| {
                 world.add_character(character_id.clone());
             });
+
+            render_canvas(state);
 
             send_pack_cmd(
                 state.block_field(),

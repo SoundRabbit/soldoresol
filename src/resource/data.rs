@@ -15,6 +15,12 @@ pub enum Data {
 }
 
 impl Data {
+    pub fn as_image(&self) -> Option<Rc<web_sys::HtmlImageElement>> {
+        match self {
+            Self::Image { element, .. } => Some(Rc::clone(element)),
+        }
+    }
+
     pub fn pack(&self) -> Promise<JsValue> {
         match self {
             Self::Image { blob, .. } => {
