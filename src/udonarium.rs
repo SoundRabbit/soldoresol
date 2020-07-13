@@ -1,13 +1,17 @@
+use crate::{JSZip, Promise};
+use std::{cell::RefCell, rc::Rc};
+use wasm_bindgen::{prelude::*, JsCast};
 use xmltree::{Element, XMLNode};
 
 pub use data::Data;
 
 pub struct Character {
     data: Data,
+    zip: Rc<JSZip>,
 }
 
 impl Character {
-    pub fn from_str(text: &str) -> Option<Self> {
+    fn from_str(text: &str, zip: Rc<JSZip>) -> Option<Self> {
         Element::parse(text.as_bytes()).ok().and_then(|element| {
             if element.name == "character" {
                 let mut data = None;
@@ -22,10 +26,52 @@ impl Character {
                         _ => (),
                     }
                 }
-                data.map(|data| Self { data })
+                data.map(|data| Self { data, zip })
             } else {
                 None
             }
+        })
+    }
+
+    pub fn from_blob(blob: &web_sys::Blob) -> Promise<Self> {
+        let zip = JSZip::new();
+        let promise = zip.load_async(blob);
+        Promise::new(move |resolve| {
+            let resolve = Rc::new(RefCell::new(Some(resolve)));
+
+            let on_load = Closure::wrap(Box::new({
+                let resolve = Rc::clone(&resolve);
+                move |zip: JsValue| {
+                    if let Some((zip, file)) = zip
+                        .dyn_into::<JSZip>()
+                        .ok()
+                        .and_then(|zip| zip.file("data.xml").map(|file| (zip, file)))
+                    {
+                        let on_load = Closure::wrap(Box::new({
+                            let resolve = Rc::clone(&resolve);
+                            let zip = Rc::new(zip);
+                            move |xml: JsValue| {
+                                if let Some(resolve) = resolve.borrow_mut().take() {
+                                    if let Some(xml_text) = xml.as_string() {
+                                        resolve(Self::from_str(&xml_text, Rc::clone(&zip)));
+                                    } else {
+                                        resolve(None);
+                                    }
+                                }
+                            }
+                        })
+                            as Box<dyn FnMut(_)>);
+                        let _ = file.load_async("text").then(&on_load);
+                        on_load.forget();
+                    } else if let Some(resolve) = resolve.borrow_mut().take() {
+                        resolve(None);
+                    }
+                }
+            }) as Box<dyn FnMut(_)>);
+
+            let _ = promise.then(&on_load);
+
+            on_load.forget();
         })
     }
 

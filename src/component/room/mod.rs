@@ -1618,42 +1618,6 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     } else if file_type == "application/zip"
                         || file_type == "application/x-zip-compressed"
                     {
-                        let zip = crate::JSZip::new();
-
-                        let mut on_load = Some(Box::new(move |zip: crate::JSZip| {
-                            let mut on_load = Some(Box::new(|xml: String| {
-                                if let Some(character) = crate::udonarium::Character::from_str(&xml)
-                                {
-                                    crate::debug::log_1(format!(
-                                        "{:?}",
-                                        character.data().find("name")
-                                    ));
-                                } else {
-                                }
-                            }));
-                            let on_load = Closure::wrap(Box::new(move |xml: JsValue| {
-                                if let Some(xml) = xml.as_string() {
-                                    if let Some(on_load) = on_load.take() {
-                                        on_load(xml);
-                                    }
-                                }
-                            })
-                                as Box<dyn FnMut(_)>);
-                            if let Some(data) = zip.file("data.xml") {
-                                data.load_async("text").then(&on_load);
-                                on_load.forget();
-                            }
-                        }));
-                        let on_load = Closure::wrap(Box::new(move |zip: JsValue| {
-                            if let Ok(zip) = zip.dyn_into::<crate::JSZip>() {
-                                if let Some(on_load) = on_load.take() {
-                                    on_load(zip);
-                                }
-                            }
-                        })
-                            as Box<dyn FnMut(_)>);
-                        zip.load_async(&file).then(&on_load);
-                        on_load.forget();
                     }
                 }
             }
