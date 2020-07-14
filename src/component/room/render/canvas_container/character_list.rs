@@ -62,6 +62,7 @@ fn render_item(
             Html::div(
                 Attributes::new()
                     .class("chat-payload")
+                    .class("chat-payload-denth")
                     .class("keyvalue")
                     .class("keyvalue-align-start"),
                 Events::new(),

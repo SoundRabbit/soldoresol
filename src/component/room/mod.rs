@@ -1754,7 +1754,21 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 _ => 1.0,
             };
 
-            let property = block::Property::new("");
+            let mut property = block::Property::new("");
+            property.set_value(block::property::Value::Children(vec![]));
+
+            if let Some(data) = data.find("detail") {
+                if let udonarium::data::Value::Children(children) = data {
+                    for child in children {
+                        if let Some(child) =
+                            property_from_udonarium_data(state.block_field_mut(), child)
+                        {
+                            property.add_child(child);
+                        }
+                    }
+                }
+            }
+
             let property_id = state.block_field_mut().add(property);
 
             let mut character = block::Character::new(property_id, name);
@@ -2169,5 +2183,46 @@ fn check_focused_object(state: &mut State, mouse_position: &[f32; 2]) {
         }
     } else {
         state.table_mut().set_focused(state::table::Focused::None);
+    }
+}
+
+fn property_from_udonarium_data(
+    block_field: &mut block::Field,
+    data: &udonarium::Data,
+) -> Option<BlockId> {
+    use udonarium::data::Value;
+    let name = data.name.clone();
+
+    match &data.value {
+        Value::Text(text) => {
+            if let Ok(num) = text.parse() {
+                let mut prop = block::Property::new(name);
+                prop.set_value(block::property::Value::Num(num));
+                Some(block_field.add(prop))
+            } else if data.type_ == "note" {
+                None
+            } else {
+                let mut prop = block::Property::new(name);
+                prop.set_value(block::property::Value::Str(text.clone()));
+                Some(block_field.add(prop))
+            }
+        }
+        Value::None => {
+            let mut prop = block::Property::new(name);
+            prop.set_value(block::property::Value::Str(String::new()));
+            Some(block_field.add(prop))
+        }
+        Value::Children(children) => {
+            let mut prop = block::Property::new(name);
+            prop.set_value(block::property::Value::Children(vec![]));
+
+            for child in children {
+                if let Some(child) = property_from_udonarium_data(block_field, child) {
+                    prop.add_child(child);
+                }
+            }
+
+            Some(block_field.add(prop))
+        }
     }
 }

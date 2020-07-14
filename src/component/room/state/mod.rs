@@ -247,21 +247,6 @@ impl<M, S> State<M, S> {
         self.renderer = Some(renderer);
     }
 
-    pub fn table_position(
-        &self,
-        vertex: &[f32; 3],
-        movement: &[f32; 3],
-        is_billboard: bool,
-    ) -> [f32; 3] {
-        Renderer::table_position(
-            vertex,
-            movement,
-            &self.camera,
-            &self.canvas_size,
-            is_billboard,
-        )
-    }
-
     pub fn pixel_ratio(&self) -> f32 {
         self.pixel_ratio
     }

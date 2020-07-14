@@ -27,6 +27,10 @@
         grid-auto-flow: row;
         row-gap: .5em;
 
+        &-denth {
+            row-gap: normal;
+        }
+
         &>div {
             padding: .5em .6em;
             margin: 0;

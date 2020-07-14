@@ -224,7 +224,7 @@ pub fn render(state: &State, modeless: &model::modeless::Collection<Modeless>) -
                 if let Some(modeless) = modeless {
                     modeless::render(state, modeless_id, modeless, grubbed.clone())
                 } else {
-                    Html::div(Attributes::new(), Events::new(), vec![])
+                    Html::span(Attributes::new(), Events::new(), vec![])
                 }
             })
             .collect(),

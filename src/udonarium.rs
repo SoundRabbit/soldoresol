@@ -150,9 +150,9 @@ pub mod data {
 
     #[derive(Clone, Debug)]
     pub struct Data {
-        name: String,
-        type_: String,
-        value: Value,
+        pub name: String,
+        pub type_: String,
+        pub value: Value,
     }
 
     impl Value {
