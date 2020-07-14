@@ -161,18 +161,14 @@ pub fn character_selecter(
                                             .map(|r_id| Icon::Resource(*r_id))
                                             .unwrap_or(Icon::DefaultUser);
                                         common::chat_icon(
-                                            Attributes::new().class("icon-medium").string(
-                                                "data-character-id",
-                                                character_id.to_string(),
-                                            ),
+                                            Attributes::new().class("icon-medium"),
                                             &icon,
                                             character.name(),
                                             resource,
                                         )
                                     },
                                     Html::div(
-                                        Attributes::new()
-                                            .string("data-character-id", character_id.to_string()),
+                                        Attributes::new(),
                                         Events::new(),
                                         vec![Html::text(character.name())],
                                     ),

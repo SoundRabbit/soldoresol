@@ -1,5 +1,5 @@
 use super::{Block, BlockId, Field};
-use crate::Promise;
+use crate::{random_id::U128Id, Promise};
 use std::ops::{Deref, DerefMut};
 use wasm_bindgen::prelude::*;
 
@@ -28,7 +28,7 @@ impl Block for Chat {
     fn pack(&self) -> Promise<JsValue> {
         let val = js_sys::Array::new();
         for tab_id in &self.tabs {
-            val.push(&JsValue::from(tab_id.to_string()));
+            val.push(&tab_id.to_jsvalue());
         }
         Promise::new(|resolve| resolve(Some(val.into())))
     }
@@ -36,7 +36,7 @@ impl Block for Chat {
         let val = js_sys::Array::from(&val).to_vec();
         let mut tabs = vec![];
         for tab in val {
-            if let Some(tab_id) = tab.as_string().and_then(|x| x.parse().ok()) {
+            if let Some(tab_id) = U128Id::from_jsvalue(&tab) {
                 tabs.push(field.block_id(tab_id));
             }
         }

@@ -1,5 +1,5 @@
 use super::{Block, BlockId, Field};
-use crate::{resource::ResourceId, JsObject, Promise};
+use crate::{random_id::U128Id, resource::ResourceId, JsObject, Promise};
 use wasm_bindgen::{prelude::*, JsCast};
 
 #[derive(Clone)]
@@ -46,7 +46,7 @@ impl Icon {
             },
             Self::Resource(r_id) => object! {
                 type: "Resource",
-                payload: r_id.to_string()
+                payload: r_id.to_jsvalue()
             },
         }
     }
@@ -59,8 +59,7 @@ impl Icon {
                 "DefaultUser" => Some(Self::DefaultUser),
                 "Resource" => val
                     .get("payload")
-                    .and_then(|p| p.as_string())
-                    .and_then(|p| p.parse().ok())
+                    .and_then(|p| U128Id::from_jsvalue(&p))
                     .map(|p| Self::Resource(p)),
                 _ => None,
             })
@@ -78,7 +77,7 @@ impl Sender {
             },
             Self::Character(c_id) => object! {
                 type: "Character",
-                payload: c_id.to_string()
+                payload: c_id.to_jsvalue()
             },
         }
     }
@@ -91,8 +90,7 @@ impl Sender {
                 "User" => Some(Self::User),
                 "Character" => val
                     .get("payload")
-                    .and_then(|p| p.as_string())
-                    .and_then(|p| p.parse().ok())
+                    .and_then(|p| U128Id::from_jsvalue(&p))
                     .map(|p| Self::Character(field.block_id(p))),
                 _ => None,
             })

@@ -3,6 +3,7 @@ use crate::{
     color_system,
     dicebot::{self, bcdice},
     model::{self, modeless::ModelessId},
+    random_id::U128Id,
     renderer::Renderer,
     resource::{Data, ResourceId},
     skyway, udonarium, Color,
@@ -143,7 +144,7 @@ pub enum Msg {
     // リソース管理
     LoadFromFileList(web_sys::FileList),
     LoadDataToResource(Data),
-    AssignDataToResource(u128, Data),
+    AssignDataToResource(U128Id, Data),
 
     // BCDice
     GetBcdiceServerList,
@@ -1537,8 +1538,8 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     tab.insert(timestamp, item_id);
                 });
             state.room().send(skyway::Msg::InsertChatItem(
-                tab_id.to_u128(),
-                item_id.to_u128(),
+                tab_id.to_id(),
+                item_id.to_id(),
                 timestamp,
             ));
             send_pack_cmd(state.block_field(), vec![&item_id])
@@ -1815,7 +1816,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         Msg::SendBlockPacks(packs) => {
             let packs = packs
                 .into_iter()
-                .map(|(id, data)| (id.to_u128(), data))
+                .map(|(id, data)| (id.to_id(), data))
                 .collect();
             state.room().send(skyway::Msg::SetBlockPacks(packs));
             state.dequeue()
@@ -1871,8 +1872,8 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         },
         Msg::PeerJoin(peer_id) => {
             state.peers_mut().insert(peer_id);
-            let chat = state.chat().block_id().to_u128();
-            let world = state.world().to_u128();
+            let chat = state.chat().block_id().to_id();
+            let world = state.world().to_id();
             state.room().send(skyway::Msg::SetContext { chat, world });
 
             let packs = state.resource().pack_all();

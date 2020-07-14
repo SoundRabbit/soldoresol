@@ -1,5 +1,5 @@
 use super::{Block, BlockId, Field};
-use crate::{JsObject, Promise};
+use crate::{random_id::U128Id, JsObject, Promise};
 use wasm_bindgen::{prelude::*, JsCast};
 
 #[derive(Clone)]
@@ -43,7 +43,7 @@ impl Value {
             Self::Children(children) => {
                 let children_object = array![];
                 for child in children {
-                    children_object.push(&JsValue::from(child.to_string()));
+                    children_object.push(&child.to_jsvalue());
                 }
                 object! {
                     type: "Children",
@@ -70,11 +70,7 @@ impl Value {
                     let mut children = vec![];
                     let raw_children = js_sys::Array::from(&x);
                     for child in raw_children.to_vec() {
-                        if let Some(id) = child
-                            .as_string()
-                            .and_then(|x| x.parse().ok())
-                            .map(|x| field.block_id(x))
-                        {
+                        if let Some(id) = U128Id::from_jsvalue(&child).map(|x| field.block_id(x)) {
                             children.push(id);
                         }
                     }

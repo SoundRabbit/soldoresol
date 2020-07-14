@@ -1,5 +1,5 @@
 use super::{Block, BlockId, Field};
-use crate::{resource::ResourceId, Color, JsObject, Promise};
+use crate::{random_id::U128Id, resource::ResourceId, Color, JsObject, Promise};
 use wasm_bindgen::{prelude::*, JsCast};
 
 #[derive(Clone)]
@@ -75,10 +75,10 @@ impl Block for Character {
         let position = array![self.position[0], self.position[1], self.position[2]];
         let texture_id = self
             .texture_id
-            .map(|r| JsValue::from(r.to_string()))
+            .map(|r| r.to_jsvalue())
             .unwrap_or(JsValue::undefined());
         let name = self.name();
-        let property_id = self.property_id.to_string();
+        let property_id = self.property_id.to_jsvalue();
 
         let data = object! {
             size: size,
@@ -96,16 +96,11 @@ impl Block for Character {
         let self_ = if let Ok(val) = val.dyn_into::<JsObject>() {
             let size = val.get("size").map(|x| js_sys::Array::from(&x));
             let position = val.get("position").map(|x| js_sys::Array::from(&x));
-            let texture_id = Some(
-                val.get("texture_id")
-                    .and_then(|x| x.as_string())
-                    .and_then(|x| x.parse().ok()),
-            );
+            let texture_id = Some(val.get("texture_id").and_then(|x| U128Id::from_jsvalue(&x)));
             let name = val.get("name").and_then(|x| x.as_string());
             let property_id = val
                 .get("property_id")
-                .and_then(|x| x.as_string())
-                .and_then(|x| x.parse().ok())
+                .and_then(|x| U128Id::from_jsvalue(&x))
                 .map(|x| field.block_id(x));
             if let (Some(size), Some(position), Some(texture_id), Some(name), Some(property_id)) =
                 (size, position, texture_id, name, property_id)

@@ -1,5 +1,5 @@
 use super::{Block, BlockId, Field};
-use crate::{JsObject, Promise};
+use crate::{random_id::U128Id, JsObject, Promise};
 use ordered_float::OrderedFloat;
 use std::collections::BTreeMap;
 use wasm_bindgen::{prelude::*, JsCast};
@@ -44,7 +44,7 @@ impl Block for Tab {
         let items = array![];
         for (time, item) in &self.items {
             let time: f64 = time.clone().into();
-            items.push(array![time, item.to_string()].as_ref());
+            items.push(array![time, item.to_jsvalue()].as_ref());
         }
 
         let data = object! {
@@ -68,10 +68,7 @@ impl Block for Tab {
                     let item = js_sys::Array::from(&item);
                     if let (Some(time), Some(id)) = (
                         item.get(0).as_f64().map(|t| OrderedFloat(t)),
-                        item.get(1)
-                            .as_string()
-                            .and_then(|id| id.parse().ok())
-                            .map(|id| field.block_id(id)),
+                        U128Id::from_jsvalue(&item.get(1)).map(|id| field.block_id(id)),
                     ) {
                         items.insert(time, id);
                     }

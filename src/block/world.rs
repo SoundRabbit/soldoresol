@@ -1,5 +1,5 @@
 use super::{Block, BlockId, Field};
-use crate::{JsObject, Promise};
+use crate::{random_id::U128Id, JsObject, Promise};
 use std::collections::HashSet;
 use wasm_bindgen::{prelude::*, JsCast};
 
@@ -53,15 +53,15 @@ impl Block for World {
     fn pack(&self) -> Promise<JsValue> {
         let tables = js_sys::Array::new();
         for table in &self.tables {
-            tables.push(&JsValue::from(table.to_string()));
+            tables.push(&table.to_jsvalue());
         }
         let characters = js_sys::Array::new();
         for character in &self.characters {
-            characters.push(&JsValue::from(character.to_string()));
+            characters.push(&character.to_jsvalue());
         }
 
         let data = object! {
-            selecting_table: self.selecting_table.to_string(),
+            selecting_table: self.selecting_table.to_jsvalue(),
             tables: tables,
             characters: characters
         };
@@ -75,8 +75,7 @@ impl Block for World {
         let self_ = if let Ok(val) = val.dyn_into::<JsObject>() {
             let selecting_table = val
                 .get("selecting_table")
-                .and_then(|x| x.as_string())
-                .and_then(|x| x.parse().ok())
+                .and_then(|x| U128Id::from_jsvalue(&x))
                 .map(|x| field.block_id(x));
             let tables = val.get("tables").map(|x| js_sys::Array::from(&x));
             let characters = val.get("characters").map(|x| js_sys::Array::from(&x));
@@ -85,22 +84,14 @@ impl Block for World {
             {
                 let mut tables = vec![];
                 for id in raw_tables.to_vec() {
-                    if let Some(id) = id
-                        .as_string()
-                        .and_then(|id| id.parse().ok())
-                        .map(|id| field.block_id(id))
-                    {
+                    if let Some(id) = U128Id::from_jsvalue(&id).map(|id| field.block_id(id)) {
                         tables.push(id);
                     }
                 }
 
                 let mut characters = hash_set! {};
                 for id in raw_characters.to_vec() {
-                    if let Some(id) = id
-                        .as_string()
-                        .and_then(|id| id.parse().ok())
-                        .map(|id| field.block_id(id))
-                    {
+                    if let Some(id) = U128Id::from_jsvalue(&id).map(|id| field.block_id(id)) {
                         characters.insert(id);
                     }
                 }

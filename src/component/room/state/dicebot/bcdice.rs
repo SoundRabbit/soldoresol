@@ -33,7 +33,7 @@ impl State {
     }
 
     pub fn set_servers(&mut self, servers: Vec<String>) {
-        self.selected_server_idx = (crate::random_id::u128val() % servers.len() as u128) as usize;
+        self.selected_server_idx = crate::random_id::u32val() as usize % servers.len();
         self.servers = servers;
     }
 

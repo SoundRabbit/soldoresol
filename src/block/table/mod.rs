@@ -1,5 +1,5 @@
 use super::{Block, BlockId, Field};
-use crate::{resource::ResourceId, JsObject, Promise};
+use crate::{random_id::U128Id, resource::ResourceId, JsObject, Promise};
 use wasm_bindgen::{prelude::*, JsCast};
 
 mod texture;
@@ -107,25 +107,25 @@ impl Block for Table {
     fn pack(&self) -> Promise<JsValue> {
         let tablemasks = array![];
         for id in &self.tablemasks {
-            tablemasks.push(&JsValue::from(id.to_string()));
+            tablemasks.push(&id.to_jsvalue());
         }
 
         let areas = array![];
         for id in &self.areas {
-            areas.push(&JsValue::from(id.to_string()));
+            areas.push(&id.to_jsvalue());
         }
 
         let boxblocks = array![];
         for id in &self.boxblocks {
-            boxblocks.push(&JsValue::from(id.to_string()));
+            boxblocks.push(&id.to_jsvalue());
         }
 
         let data = object! {
             name: &self.name,
             size: array![self.size[0], self.size[1]],
             is_bind_to_grid: self.is_bind_to_grid,
-            drawing_texture_id: self.drawing_texture_id.to_string(),
-            image_texture_id: self.image_texture_id.map(|id| id.to_string()),
+            drawing_texture_id: self.drawing_texture_id.to_jsvalue(),
+            image_texture_id: self.image_texture_id.map(|id| id.to_jsvalue()),
             tablemasks: tablemasks,
             areas: areas,
             boxblocks: boxblocks
@@ -144,13 +144,11 @@ impl Block for Table {
             let is_bind_to_grid = val.get("is_bind_to_grid").and_then(|i| i.as_bool());
             let drawing_texture_id = val
                 .get("drawing_texture_id")
-                .and_then(|id| id.as_string())
-                .and_then(|id| id.parse().ok())
+                .and_then(|id| U128Id::from_jsvalue(&id))
                 .map(|id| field.block_id(id));
             let image_texture_id = Some(
                 val.get("image_texture_id")
-                    .and_then(|id| id.as_string())
-                    .and_then(|id| id.parse().ok()),
+                    .and_then(|id| U128Id::from_jsvalue(&id)),
             );
             let tablemasks = val.get("tablemasks").map(|p| {
                 let p: js_sys::Object = p.into();
@@ -194,33 +192,21 @@ impl Block for Table {
 
                 let mut tablemasks = vec![];
                 for id in raw_tablemasks.to_vec() {
-                    if let Some(id) = id
-                        .as_string()
-                        .and_then(|id| id.parse().ok())
-                        .map(|id| field.block_id(id))
-                    {
+                    if let Some(id) = U128Id::from_jsvalue(&id).map(|id| field.block_id(id)) {
                         tablemasks.push(id);
                     }
                 }
 
                 let mut areas = vec![];
                 for id in raw_areas.to_vec() {
-                    if let Some(id) = id
-                        .as_string()
-                        .and_then(|id| id.parse().ok())
-                        .map(|id| field.block_id(id))
-                    {
+                    if let Some(id) = U128Id::from_jsvalue(&id).map(|id| field.block_id(id)) {
                         areas.push(id);
                     }
                 }
 
                 let mut boxblocks = vec![];
                 for id in raw_boxblocks.to_vec() {
-                    if let Some(id) = id
-                        .as_string()
-                        .and_then(|id| id.parse().ok())
-                        .map(|id| field.block_id(id))
-                    {
+                    if let Some(id) = U128Id::from_jsvalue(&id).map(|id| field.block_id(id)) {
                         boxblocks.push(id);
                     }
                 }

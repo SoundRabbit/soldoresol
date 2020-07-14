@@ -1,10 +1,7 @@
-use crate::JsObject;
+use crate::{random_id::U128Id, JsObject};
 use js_sys::Array;
-use std::{
-    collections::{HashMap, HashSet},
-    rc::Rc,
-};
-use wasm_bindgen::{prelude::*, JsCast};
+use std::{collections::HashMap, rc::Rc};
+use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen(raw_module = "../src/skyway/skyway.js")]
 extern "C" {
@@ -86,10 +83,10 @@ impl Room {
 
 pub enum Msg {
     None,
-    SetContext { world: u128, chat: u128 },
-    SetBlockPacks(HashMap<u128, JsValue>),
-    SetResourcePacks(HashMap<u128, JsValue>),
-    InsertChatItem(u128, u128, f64),
+    SetContext { world: U128Id, chat: U128Id },
+    SetBlockPacks(HashMap<U128Id, JsValue>),
+    SetResourcePacks(HashMap<U128Id, JsValue>),
+    InsertChatItem(U128Id, U128Id, f64),
 }
 
 impl Msg {
@@ -111,8 +108,8 @@ impl Into<JsObject> for Msg {
             Self::None => JsValue::NULL,
             Self::SetContext { chat, world } => {
                 let payload = object! {
-                    chat: chat.to_string(),
-                    world: world.to_string()
+                    chat: chat.to_jsvalue(),
+                    world: world.to_jsvalue()
                 };
                 let payload: js_sys::Object = payload.into();
                 payload.into()
@@ -120,12 +117,12 @@ impl Into<JsObject> for Msg {
             Self::SetBlockPacks(packs) | Self::SetResourcePacks(packs) => {
                 let payload = Array::new();
                 for (id, pack) in packs {
-                    payload.push(array![id.to_string(), pack].as_ref());
+                    payload.push(array![id.to_jsvalue(), pack].as_ref());
                 }
                 payload.into()
             }
             Self::InsertChatItem(tab_id, item, timestamp) => {
-                array![tab_id.to_string(), item.to_string(), timestamp].into()
+                array![tab_id.to_jsvalue(), item.to_jsvalue(), timestamp].into()
             }
         };
         object! {
@@ -144,14 +141,8 @@ impl From<JsObject> for Msg {
             match msg_type.as_str() {
                 "SetContext" => {
                     if let (Some(chat), Some(world)) = (
-                        payload
-                            .get("chat")
-                            .and_then(|x| x.as_string())
-                            .and_then(|x| x.parse().ok()),
-                        payload
-                            .get("world")
-                            .and_then(|x| x.as_string())
-                            .and_then(|x| x.parse().ok()),
+                        payload.get("chat").and_then(|x| U128Id::from_jsvalue(&x)),
+                        payload.get("world").and_then(|x| U128Id::from_jsvalue(&x)),
                     ) {
                         Self::SetContext { chat, world }
                     } else {
@@ -164,8 +155,9 @@ impl From<JsObject> for Msg {
                     let mut packs = HashMap::new();
                     for row in payload {
                         let cols = Array::from(row.as_ref()).to_vec();
-                        let id = cols[0].as_string().unwrap().parse().unwrap();
-                        if let Some(data) = cols.get(1) {
+                        if let (Some(id), Some(data)) =
+                            (U128Id::from_jsvalue(&cols[0]), cols.get(1))
+                        {
                             packs.insert(id, data.clone());
                         }
                     }
@@ -177,17 +169,19 @@ impl From<JsObject> for Msg {
                     let mut packs = HashMap::new();
                     for row in payload {
                         let cols = Array::from(row.as_ref()).to_vec();
-                        let id = cols[0].as_string().unwrap().parse().unwrap();
-                        let data = cols[1].clone();
-                        packs.insert(id, data);
+                        if let (Some(id), Some(data)) =
+                            (U128Id::from_jsvalue(&cols[0]), cols.get(1))
+                        {
+                            packs.insert(id, data.clone());
+                        }
                     }
                     Msg::SetResourcePacks(packs)
                 }
                 "InsertChatItem" => {
                     let payload: js_sys::Object = payload.into();
                     let payload = Array::from(payload.as_ref());
-                    let tab_id = payload.get(0).as_string().and_then(|x| x.parse().ok());
-                    let item = payload.get(1).as_string().and_then(|x| x.parse().ok());
+                    let tab_id = U128Id::from_jsvalue(&payload.get(0));
+                    let item = U128Id::from_jsvalue(&payload.get(1));
                     let timestamp = payload.get(2).as_f64();
                     if let (Some(tab_id), Some(item), Some(timestamp)) = (tab_id, item, timestamp) {
                         Self::InsertChatItem(tab_id, item, timestamp)

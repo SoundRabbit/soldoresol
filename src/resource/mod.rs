@@ -1,4 +1,4 @@
-use crate::{random_id, Promise};
+use crate::{random_id::U128Id, Promise};
 use std::collections::HashMap;
 use std::ops::Deref;
 use wasm_bindgen::prelude::*;
@@ -7,7 +7,7 @@ mod data;
 
 pub use data::Data;
 
-pub type ResourceId = u128;
+pub type ResourceId = U128Id;
 
 pub struct Resource {
     data: HashMap<ResourceId, Data>,
@@ -21,7 +21,7 @@ impl Resource {
     }
 
     pub fn add(&mut self, data: Data) -> ResourceId {
-        let resource_id = random_id::u128val();
+        let resource_id = U128Id::new();
         self.assign(resource_id, data);
         resource_id
     }

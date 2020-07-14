@@ -1,4 +1,4 @@
-use crate::{js_object::JsObject, random_id, Promise};
+use crate::{js_object::JsObject, random_id::U128Id, Promise};
 use js_sys::Date;
 use std::{any::Any, collections::HashMap, hash::Hash, iter::Iterator};
 use wasm_bindgen::{prelude::*, JsCast};
@@ -26,11 +26,11 @@ trait Block {
 type Timestamp = f64;
 
 #[allow(private_in_public)]
-type BlockTable = HashMap<u128, FieldBlock>;
+type BlockTable = HashMap<U128Id, FieldBlock>;
 
 #[allow(private_in_public)]
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
-pub struct BlockId(u128);
+pub struct BlockId(U128Id);
 
 #[allow(private_in_public)]
 pub struct FieldBlock {
@@ -44,15 +44,15 @@ pub struct Field {
 }
 
 impl BlockId {
-    fn new(id: u128) -> Self {
+    fn new(id: U128Id) -> Self {
         Self(id)
     }
 
-    pub fn to_string(&self) -> String {
-        self.0.to_string()
+    pub fn to_jsvalue(&self) -> JsValue {
+        self.0.to_jsvalue()
     }
 
-    pub fn to_u128(&self) -> u128 {
+    pub fn to_id(&self) -> U128Id {
         self.0
     }
 }
@@ -186,13 +186,13 @@ impl Field {
         }
     }
 
-    pub fn block_id(&mut self, id: u128) -> BlockId {
+    pub fn block_id(&mut self, id: U128Id) -> BlockId {
         BlockId::new(id)
     }
 
     #[allow(private_in_public)]
     pub fn add<T: Block + 'static>(&mut self, block: T) -> BlockId {
-        let block_id = self.block_id(random_id::u128val());
+        let block_id = self.block_id(U128Id::new());
         self.assign(block_id, Date::now(), block);
         block_id
     }
@@ -210,7 +210,7 @@ impl Field {
 
     #[allow(private_in_public)]
     pub fn assign_fb(&mut self, block_id: BlockId, block: FieldBlock) {
-        if let Some(field_block) = self.table.get_mut(&block_id.to_u128()) {
+        if let Some(field_block) = self.table.get_mut(&block_id.to_id()) {
             let timestamp = block.timestamp;
             let payload = block.payload;
 
@@ -221,20 +221,20 @@ impl Field {
                 field_block.payload = payload;
             }
         } else {
-            self.table.insert(block_id.to_u128(), block);
+            self.table.insert(block_id.to_id(), block);
         }
     }
 
     #[allow(private_in_public)]
     pub fn get<T: Block + 'static>(&self, block_id: &BlockId) -> Option<&T> {
         self.table
-            .get(&block_id.to_u128())
+            .get(&block_id.to_id())
             .and_then(|fb| fb.payload.as_ref())
             .and_then(|p| p.downcast_ref::<T>())
     }
 
     pub fn remove(&mut self, block_id: &BlockId) {
-        self.table.get_mut(&block_id.to_u128()).map(|fb| {
+        self.table.get_mut(&block_id.to_id()).map(|fb| {
             fb.payload = None;
         });
     }
@@ -276,7 +276,7 @@ impl Field {
         f: impl FnOnce(&mut T),
     ) -> Option<&mut Self> {
         self.table
-            .get_mut(&block_id.to_u128())
+            .get_mut(&block_id.to_id())
             .and_then(|fb| {
                 if let Some(timestamp) = timestamp {
                     if fb.timestamp < timestamp {
@@ -298,7 +298,7 @@ impl Field {
     }
 
     pub fn timestamp(&self, block_id: &BlockId) -> Option<&Timestamp> {
-        self.table.get(&block_id.to_u128()).map(|b| &b.timestamp)
+        self.table.get(&block_id.to_id()).map(|b| &b.timestamp)
     }
 
     pub fn pack_all(&mut self) -> Promise<Vec<(BlockId, JsValue)>> {
@@ -313,7 +313,7 @@ impl Field {
     pub fn pack_listed(&self, block_ids: Vec<&BlockId>) -> Promise<Vec<(BlockId, JsValue)>> {
         let mut promises = vec![];
         for block_id in block_ids {
-            if let Some(block) = self.table.get(&block_id.to_u128()) {
+            if let Some(block) = self.table.get(&block_id.to_id()) {
                 let block_id = block_id.clone();
                 promises.push(block.pack().map(move |res| res.map(|val| (block_id, val))));
             }
@@ -324,7 +324,7 @@ impl Field {
 
     pub fn unpack_listed(
         &mut self,
-        blocks: impl Iterator<Item = (u128, JsValue)>,
+        blocks: impl Iterator<Item = (U128Id, JsValue)>,
     ) -> Promise<HashMap<BlockId, FieldBlock>> {
         let mut promises = vec![];
         for (block_id, val) in blocks {
