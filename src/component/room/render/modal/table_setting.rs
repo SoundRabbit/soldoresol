@@ -12,11 +12,7 @@ mod common {
     pub use super::super::common::*;
 }
 
-pub fn render<'a>(
-    block_field: &block::Field,
-    resource: &Resource,
-    world: &block::World,
-) -> Html<Msg> {
+pub fn render<'a>(block_field: &block::Field, resource: &Resource, world: &block::World) -> Html {
     modal::container(
         Attributes::new(),
         Events::new(),
@@ -76,7 +72,7 @@ pub fn render<'a>(
     )
 }
 
-fn selected_table(resource: &Resource, block_id: &BlockId, table: &block::Table) -> Html<Msg> {
+fn selected_table(resource: &Resource, block_id: &BlockId, table: &block::Table) -> Html {
     let [width, height] = table.size().clone();
     Html::div(
         Attributes::new()

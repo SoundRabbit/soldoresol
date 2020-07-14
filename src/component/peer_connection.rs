@@ -205,7 +205,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
     }
 }
 
-fn render(state: &State) -> Html<Msg> {
+fn render(state: &State) -> Html {
     if let Some(room) = &state.room {
         Html::component(
             room_connection::new(
@@ -230,7 +230,7 @@ fn render(state: &State) -> Html<Msg> {
     }
 }
 
-fn render_header(room_id: &String) -> Html<Msg> {
+fn render_header(room_id: &String) -> Html {
     Html::div(
         Attributes::new().class("panel grid"),
         Events::new(),
@@ -282,7 +282,7 @@ fn render_header(room_id: &String) -> Html<Msg> {
     )
 }
 
-fn render_body(rooms: &Vec<RoomData>) -> Html<Msg> {
+fn render_body(rooms: &Vec<RoomData>) -> Html {
     Html::div(
         Attributes::new()
             .class("scroll-v")

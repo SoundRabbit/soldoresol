@@ -1,6 +1,6 @@
 use kagura::prelude::*;
 
-pub fn none<Msg>(attrs: Attributes) -> Html<Msg> {
+pub fn none(attrs: Attributes) -> Html {
     Html::div(
         attrs.class("icon").class("icon-rounded"),
         Events::new(),
@@ -8,7 +8,7 @@ pub fn none<Msg>(attrs: Attributes) -> Html<Msg> {
     )
 }
 
-pub fn from_str<Msg>(attrs: Attributes, v: &str) -> Html<Msg> {
+pub fn from_str(attrs: Attributes, v: &str) -> Html {
     Html::div(
         attrs
             .class("icon")
@@ -22,7 +22,7 @@ pub fn from_str<Msg>(attrs: Attributes, v: &str) -> Html<Msg> {
     )
 }
 
-pub fn from_char<Msg>(attrs: Attributes, c: char) -> Html<Msg> {
+pub fn from_char(attrs: Attributes, c: char) -> Html {
     Html::div(
         attrs
             .class("icon")
@@ -34,7 +34,7 @@ pub fn from_char<Msg>(attrs: Attributes, c: char) -> Html<Msg> {
     )
 }
 
-pub fn from_img<Msg>(attrs: Attributes, url: impl Into<String>) -> Html<Msg> {
+pub fn from_img(attrs: Attributes, url: impl Into<String>) -> Html {
     Html::img(
         attrs
             .class("pure-img")

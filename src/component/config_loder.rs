@@ -155,7 +155,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
     }
 }
 
-fn render(state: &State) -> Html<Msg> {
+fn render(state: &State) -> Html {
     if let (Some(config), Some(database)) = (&state.config, &state.common_database) {
         Html::component(
             peer_connection::new(Rc::clone(config), Rc::clone(database)).subscribe(

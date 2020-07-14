@@ -25,7 +25,7 @@ pub fn render(
     personal_data: &model::PersonalData,
     selecting_tab_id: &BlockId,
     selecting_tab: &block::chat::Tab,
-) -> Html<Msg> {
+) -> Html {
     let take_num = chat_state.take_num();
     let is_grubbed = grubbed.is_some();
 
@@ -143,7 +143,7 @@ fn chat_item_list(
     resource: &Resource,
     selecting_tab: &block::chat::Tab,
     take_num: usize,
-) -> Html<Msg> {
+) -> Html {
     Html::div(
         Attributes::new()
             .style("align-self", "stretch")
@@ -165,7 +165,7 @@ fn chat_item_list(
     )
 }
 
-fn chat_item(resource: &Resource, timestamp: f64, item: &block::chat::Item) -> Html<Msg> {
+fn chat_item(resource: &Resource, timestamp: f64, item: &block::chat::Item) -> Html {
     Html::div(
         Attributes::new().class("pure-form chat-item"),
         Events::new(),
@@ -230,7 +230,7 @@ fn chat_tab_list(
     block_field: &block::Field,
     chat_data: &block::Chat,
     selecting_tab_id: &BlockId,
-) -> Html<Msg> {
+) -> Html {
     Html::div(
         Attributes::new()
             .class("keyvalue")
@@ -268,7 +268,7 @@ fn chat_tab_list(
     )
 }
 
-fn dicebot_menu(dicebot_state: &dicebot::State) -> Vec<Html<Msg>> {
+fn dicebot_menu(dicebot_state: &dicebot::State) -> Vec<Html> {
     vec![
         Html::div(
             Attributes::new().style("justify-self", "right"),
@@ -295,7 +295,7 @@ fn sender_list(
     resource: &Resource,
     personal_data: &model::PersonalData,
     chat_state: &chat::State,
-) -> Vec<Html<Msg>> {
+) -> Vec<Html> {
     vec![
         Html::div(
             Attributes::new().style("justify-self", "right"),
@@ -339,7 +339,7 @@ fn sender_item(
     sender_idx: usize,
     sender: &Sender,
     is_selected: bool,
-) -> Html<Msg> {
+) -> Html {
     use block::chat::item::Icon;
 
     let attrs = if is_selected {

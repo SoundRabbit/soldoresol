@@ -12,7 +12,7 @@ use std::collections::VecDeque;
 mod character_list;
 mod overlaper;
 
-pub fn render(z_index: u64, state: &State, world: &block::World) -> Html<Msg> {
+pub fn render(z_index: u64, state: &State, world: &block::World) -> Html {
     let some_modeless_is_grubbed = state.modeless().grubbed().is_some();
 
     Html::div(
@@ -68,7 +68,7 @@ pub fn render(z_index: u64, state: &State, world: &block::World) -> Html<Msg> {
     )
 }
 
-fn canvas() -> Html<Msg> {
+fn canvas() -> Html {
     Html::canvas(
         Attributes::new().id("table").class("cover cover-a"),
         Events::new(),
@@ -83,7 +83,7 @@ fn speech_bubble(
     camera: &Camera,
     canvas_size: &[f32; 2],
     pixel_ratio: f32,
-) -> Html<Msg> {
+) -> Html {
     let now = js_sys::Date::now();
     Html::div(
         Attributes::new().class("cover").class("cover-a"),
@@ -155,7 +155,7 @@ fn speech_bubble(
     )
 }
 
-fn hint() -> Html<Msg> {
+fn hint() -> Html {
     Html::div(
         Attributes::new()
             .class("text-color-secondary-d")
@@ -167,7 +167,7 @@ fn hint() -> Html<Msg> {
     )
 }
 
-fn info(info: &Vec<(String, String)>) -> Html<Msg> {
+fn info(info: &Vec<(String, String)>) -> Html {
     Html::div(
         Attributes::new()
             .class("keyvalue")

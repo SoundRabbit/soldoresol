@@ -173,7 +173,7 @@ fn update(wrapper: &mut StateWrapper, msg: Msg) -> Cmd<Msg, Sub> {
     }
 }
 
-fn render(wrapper: &StateWrapper) -> Html<Msg> {
+fn render(wrapper: &StateWrapper) -> Html {
     let state = wrapper.state.borrow();
 
     Html::canvas(

@@ -14,7 +14,7 @@ mod modal;
 mod modeless;
 mod side_menu;
 
-pub fn render(state: &State) -> Html<Msg> {
+pub fn render(state: &State) -> Html {
     Html::div(
         Attributes::new()
             .id("app")

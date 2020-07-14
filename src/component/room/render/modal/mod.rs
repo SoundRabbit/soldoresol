@@ -22,7 +22,7 @@ pub fn render(
     resource: &Resource,
     modals: &Vec<Modal>,
     state: &State,
-) -> Html<Msg> {
+) -> Html {
     let mut children = vec![];
     for modal in modals {
         let child = match modal {

@@ -20,7 +20,7 @@ pub fn render(
     modeless_id: model::modeless::ModelessId,
     modeless: &model::Modeless<Modeless>,
     grubbed: Option<model::modeless::ModelessId>,
-) -> Html<Msg> {
+) -> Html {
     match modeless.as_ref() {
         Modeless::Object {
             tabs,
@@ -71,9 +71,9 @@ fn frame(
     modeless_id: model::modeless::ModelessId,
     modeless: &model::Modeless<Modeless>,
     attributes: Attributes,
-    events: Events<Msg>,
-    children: Vec<Html<Msg>>,
-) -> Html<Msg> {
+    events: Events,
+    children: Vec<Html>,
+) -> Html {
     let attributes = attributes.style("z-index", modeless.z_index().to_string());
     modeless::frame(
         modeless,
@@ -159,7 +159,7 @@ fn frame(
     )
 }
 
-fn resizers() -> Vec<Html<Msg>> {
+fn resizers() -> Vec<Html> {
     vec![
         modeless::resizer::top(Attributes::new().string("data-position", "top")),
         modeless::resizer::left(Attributes::new().string("data-position", "left")),
@@ -176,9 +176,9 @@ fn header(
     modeless_id: model::modeless::ModelessId,
     grubbed: Option<model::modeless::ModelessId>,
     attributes: Attributes,
-    events: Events<Msg>,
-    header: Html<Msg>,
-) -> Html<Msg> {
+    events: Events,
+    header: Html,
+) -> Html {
     modeless::header(
         attributes
             .style("display", "grid")

@@ -1,12 +1,12 @@
 use crate::model;
 use kagura::prelude::*;
 
-pub fn frame<Msg, Modeless>(
+pub fn frame<Modeless>(
     modeless: &model::Modeless<Modeless>,
     attributes: Attributes,
-    events: Events<Msg>,
-    children: Vec<Html<Msg>>,
-) -> Html<Msg> {
+    events: Events,
+    children: Vec<Html>,
+) -> Html {
     Html::div(
         attributes
             .class("frame")
@@ -21,66 +21,54 @@ pub fn frame<Msg, Modeless>(
     )
 }
 
-pub fn header<Msg>(
-    attributes: Attributes,
-    events: Events<Msg>,
-    children: Vec<Html<Msg>>,
-) -> Html<Msg> {
+pub fn header(attributes: Attributes, events: Events, children: Vec<Html>) -> Html {
     Html::div(attributes.class("frame-header"), events, children)
 }
 
-pub fn body<Msg>(
-    attributes: Attributes,
-    events: Events<Msg>,
-    children: Vec<Html<Msg>>,
-) -> Html<Msg> {
+pub fn body(attributes: Attributes, events: Events, children: Vec<Html>) -> Html {
     Html::div(attributes.class("frame-body"), events, children)
 }
 
-pub fn footer<Msg>(
-    attributes: Attributes,
-    events: Events<Msg>,
-    children: Vec<Html<Msg>>,
-) -> Html<Msg> {
+pub fn footer(attributes: Attributes, events: Events, children: Vec<Html>) -> Html {
     Html::div(attributes.class("frame-footer"), events, children)
 }
 
 pub mod resizer {
     use kagura::prelude::*;
 
-    fn base<Msg>(attributes: Attributes) -> Html<Msg> {
+    fn base(attributes: Attributes) -> Html {
         Html::div(attributes, Events::new(), vec![])
     }
 
-    pub fn top<Msg>(attributes: Attributes) -> Html<Msg> {
+    pub fn top(attributes: Attributes) -> Html {
         base(attributes.class("frame-resizer frame-resizer-t"))
     }
 
-    pub fn left<Msg>(attributes: Attributes) -> Html<Msg> {
+    pub fn left(attributes: Attributes) -> Html {
         base(attributes.class("frame-resizer frame-resizer-l"))
     }
 
-    pub fn bottom<Msg>(attributes: Attributes) -> Html<Msg> {
+    pub fn bottom(attributes: Attributes) -> Html {
         base(attributes.class("frame-resizer frame-resizer-b"))
     }
 
-    pub fn right<Msg>(attributes: Attributes) -> Html<Msg> {
+    pub fn right(attributes: Attributes) -> Html {
         base(attributes.class("frame-resizer frame-resizer-r"))
     }
 
-    pub fn top_left<Msg>(attributes: Attributes) -> Html<Msg> {
+    pub fn top_left(attributes: Attributes) -> Html {
         base(attributes.class("frame-resizer frame-resizer-tl"))
     }
 
-    pub fn bottom_left<Msg>(attributes: Attributes) -> Html<Msg> {
+    pub fn bottom_left(attributes: Attributes) -> Html {
         base(attributes.class("frame-resizer frame-resizer-bl"))
     }
 
-    pub fn bottom_right<Msg>(attributes: Attributes) -> Html<Msg> {
+    pub fn bottom_right(attributes: Attributes) -> Html {
         base(attributes.class("frame-resizer frame-resizer-br"))
     }
 
-    pub fn top_right<Msg>(attributes: Attributes) -> Html<Msg> {
+    pub fn top_right(attributes: Attributes) -> Html {
         base(attributes.class("frame-resizer frame-resizer-tr"))
     }
 }

@@ -3,7 +3,7 @@ use super::Msg;
 use crate::{block::chat::item::Icon, resource::Data, Resource};
 use kagura::prelude::*;
 
-pub fn chat_icon(attrs: Attributes, icon: &Icon, alt: &str, resource: &Resource) -> Html<Msg> {
+pub fn chat_icon(attrs: Attributes, icon: &Icon, alt: &str, resource: &Resource) -> Html {
     match icon {
         Icon::None => icon::none(attrs),
         Icon::Resource(r_id) => {

@@ -14,7 +14,7 @@ pub fn render(
     is_grubbed: bool,
     character: &block::Character,
     character_id: &BlockId,
-) -> Html<Msg> {
+) -> Html {
     let [width, _, height] = character.size();
     let width = *width;
     let height = *height;
@@ -228,7 +228,7 @@ pub fn render(
     )
 }
 
-fn root_property(block_field: &block::Field, prop_id: &BlockId) -> Html<Msg> {
+fn root_property(block_field: &block::Field, prop_id: &BlockId) -> Html {
     if let Some(prop) = block_field.get::<block::Property>(prop_id) {
         match prop.value() {
             block::property::Value::Children(children) => Html::div(
@@ -272,7 +272,7 @@ fn property(
     parent_id: &BlockId,
     prop_id: &BlockId,
     prop: &block::Property,
-) -> Vec<Html<Msg>> {
+) -> Vec<Html> {
     match prop.value() {
         block::property::Value::None => vec![
             Html::div(
@@ -375,7 +375,7 @@ fn property(
     }
 }
 
-fn property_key(is_banner: bool, property_id: &BlockId, property: &block::Property) -> Html<Msg> {
+fn property_key(is_banner: bool, property_id: &BlockId, property: &block::Property) -> Html {
     let attributes = Attributes::new().class("centering-v-i");
     let attributes = if is_banner {
         attributes
@@ -412,7 +412,7 @@ fn property_key(is_banner: bool, property_id: &BlockId, property: &block::Proper
     )
 }
 
-fn btn_remove_property(parent_id: BlockId, child_id: BlockId) -> Html<Msg> {
+fn btn_remove_property(parent_id: BlockId, child_id: BlockId) -> Html {
     btn::danger(
         Attributes::new(),
         Events::new().on_click(move |_| Msg::RemoveProperty(parent_id, child_id)),
@@ -420,7 +420,7 @@ fn btn_remove_property(parent_id: BlockId, child_id: BlockId) -> Html<Msg> {
     )
 }
 
-fn btn_add_child_to_property(property_id: BlockId) -> Vec<Html<Msg>> {
+fn btn_add_child_to_property(property_id: BlockId) -> Vec<Html> {
     vec![
         btn::secondary(
             Attributes::new().class("keyvalueoption-banner-2"),

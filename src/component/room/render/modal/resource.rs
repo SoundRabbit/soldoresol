@@ -7,7 +7,7 @@ mod common {
     pub use super::super::common::*;
 }
 
-pub fn render(resource: &Resource) -> Html<Msg> {
+pub fn render(resource: &Resource) -> Html {
     modal::container(
         Attributes::new(),
         Events::new(),

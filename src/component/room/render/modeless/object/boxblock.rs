@@ -16,7 +16,7 @@ pub fn render(
     is_grubbed: bool,
     boxblock: &block::table_object::Boxblock,
     boxblock_id: &BlockId,
-) -> Html<Msg> {
+) -> Html {
     let [xw, yw, zw] = boxblock.size().clone();
     let color = boxblock.color();
     modeless::body(
@@ -71,7 +71,7 @@ fn set_size_input(
     boxblock_id: &BlockId,
     s: f32,
     on_input: impl FnOnce(f32) -> [f32; 3] + 'static,
-) -> Html<Msg> {
+) -> Html {
     Html::input(
         Attributes::new()
             .type_("number")
@@ -89,7 +89,7 @@ fn set_size_input(
     )
 }
 
-fn table_color(boxblock_id: &BlockId, alpha: u8, idx: usize) -> Html<Msg> {
+fn table_color(boxblock_id: &BlockId, alpha: u8, idx: usize) -> Html {
     color_picker::idx(idx, Msg::NoOp, {
         let boxblock_id = boxblock_id.clone();
         move |mut color| {

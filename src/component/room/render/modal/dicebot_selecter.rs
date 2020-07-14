@@ -7,7 +7,7 @@ mod common {
     pub use super::super::common::*;
 }
 
-pub fn render(dicebot_state: &dicebot::State) -> Html<Msg> {
+pub fn render(dicebot_state: &dicebot::State) -> Html {
     let dummy = vec![];
     let mut last_initial = '\0';
     let mut systems = vec![('\0', vec![])];

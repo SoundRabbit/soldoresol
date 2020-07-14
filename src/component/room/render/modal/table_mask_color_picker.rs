@@ -6,7 +6,7 @@ mod common {
     pub use super::super::common::*;
 }
 
-pub fn render(block_id: &BlockId) -> Html<Msg> {
+pub fn render(block_id: &BlockId) -> Html {
     common::color_picker({
         let block_id = block_id.clone();
         move |resource_id| Msg::NoOp

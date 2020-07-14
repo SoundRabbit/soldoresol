@@ -8,7 +8,7 @@ use crate::model;
 use kagura::prelude::*;
 use wasm_bindgen::JsCast;
 
-pub fn render(state: &State, modeless: &model::modeless::Collection<Modeless>) -> Html<Msg> {
+pub fn render(state: &State, modeless: &model::modeless::Collection<Modeless>) -> Html {
     let grubbed = modeless.grubbed();
     let table = state.table();
 

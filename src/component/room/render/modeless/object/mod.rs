@@ -22,7 +22,7 @@ pub fn render(
     tabs: &Vec<BlockId>,
     focused: usize,
     outlined: Option<&Color>,
-) -> Html<Msg> {
+) -> Html {
     let attributes = if let Some(color) = outlined {
         Attributes::new().style(
             "box-shadow",

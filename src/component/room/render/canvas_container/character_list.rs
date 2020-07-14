@@ -10,7 +10,7 @@ pub fn render<'a>(
     block_field: &block::Field,
     characters: impl Iterator<Item = &'a BlockId>,
     resource: &Resource,
-) -> Html<Msg> {
+) -> Html {
     Html::div(
         Attributes::new()
             .class("cover")
@@ -28,7 +28,7 @@ fn render_item(
     block_field: &block::Field,
     character: &block::Character,
     resource: &Resource,
-) -> Html<Msg> {
+) -> Html {
     Html::div(
         Attributes::new()
             .class("chat-item")
@@ -84,7 +84,7 @@ fn render_item(
     )
 }
 
-fn render_item_payload(block_field: &block::Field, props: Vec<&BlockId>) -> Vec<Html<Msg>> {
+fn render_item_payload(block_field: &block::Field, props: Vec<&BlockId>) -> Vec<Html> {
     block_field
         .listed::<block::Property>(props)
         .map(|(_, prop)| match prop.value() {

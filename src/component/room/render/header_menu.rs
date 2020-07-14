@@ -10,7 +10,7 @@ pub fn render(
     room_id: &String,
     headermenu_state: Option<&headermenu::State>,
     is_2d_mode: bool,
-) -> Html<Msg> {
+) -> Html {
     Html::div(
         Attributes::new()
             .style("z-index", z_index.to_string())

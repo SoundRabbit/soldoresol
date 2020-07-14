@@ -9,7 +9,7 @@ mod common {
     pub use super::super::common::*;
 }
 
-pub fn render(resource: &Resource, personal_data: &PersonalData) -> Html<Msg> {
+pub fn render(resource: &Resource, personal_data: &PersonalData) -> Html {
     modal::container(
         Attributes::new(),
         Events::new(),

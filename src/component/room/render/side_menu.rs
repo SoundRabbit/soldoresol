@@ -6,7 +6,7 @@ use crate::{
 };
 use kagura::prelude::*;
 
-pub fn render(z_index: u64, selecting_tool: &table::Tool) -> Html<Msg> {
+pub fn render(z_index: u64, selecting_tool: &table::Tool) -> Html {
     Html::div(
         Attributes::new()
             .class("panel")
@@ -67,7 +67,7 @@ pub fn render(z_index: u64, selecting_tool: &table::Tool) -> Html<Msg> {
     )
 }
 
-fn row_pen(selecting_tool: &table::Tool) -> Vec<Html<Msg>> {
+fn row_pen(selecting_tool: &table::Tool) -> Vec<Html> {
     row(
         selecting_tool.is_pen(),
         "fa-pen",
@@ -105,7 +105,7 @@ fn row_pen(selecting_tool: &table::Tool) -> Vec<Html<Msg>> {
     )
 }
 
-fn row_pen_menu(line_width: f64, color: Color) -> Vec<Html<Msg>> {
+fn row_pen_menu(line_width: f64, color: Color) -> Vec<Html> {
     vec![Html::div(
         Attributes::new().class("keyvalue"),
         Events::new(),
@@ -158,7 +158,7 @@ fn row_pen_menu(line_width: f64, color: Color) -> Vec<Html<Msg>> {
     )]
 }
 
-fn row_eraser(selecting_tool: &table::Tool) -> Vec<Html<Msg>> {
+fn row_eraser(selecting_tool: &table::Tool) -> Vec<Html> {
     row(
         selecting_tool.is_eracer(),
         "fa-eraser",
@@ -192,7 +192,7 @@ fn row_eraser(selecting_tool: &table::Tool) -> Vec<Html<Msg>> {
     )
 }
 
-fn row_eraser_menu(line_width: f64) -> Vec<Html<Msg>> {
+fn row_eraser_menu(line_width: f64) -> Vec<Html> {
     vec![
         Html::div(
             Attributes::new().class("keyvalue"),
@@ -226,7 +226,7 @@ fn row_eraser_menu(line_width: f64) -> Vec<Html<Msg>> {
     ]
 }
 
-fn row_tablemask(selecting_tool: &table::Tool) -> Vec<Html<Msg>> {
+fn row_tablemask(selecting_tool: &table::Tool) -> Vec<Html> {
     row(
         selecting_tool.is_tablemask(),
         "fa-clone",
@@ -279,7 +279,7 @@ fn row_tablemask_menu(
     mut color: Color,
     is_rounded: bool,
     is_inved: bool,
-) -> Vec<Html<Msg>> {
+) -> Vec<Html> {
     let [xw, yw] = size.clone();
     vec![Html::div(
         Attributes::new().class("keyvalue"),
@@ -365,7 +365,7 @@ fn row_tablemask_menu_type(
     text: impl Into<String>,
     is_rounded: bool,
     selected: bool,
-) -> Html<Msg> {
+) -> Html {
     btn::selectable(
         selected,
         Attributes::new(),
@@ -392,7 +392,7 @@ fn row_tablemask_menu_size(
     is_inved: bool,
     s: f32,
     on_input: impl FnOnce(f32) -> [f32; 2] + 'static,
-) -> Html<Msg> {
+) -> Html {
     Html::input(
         Attributes::new()
             .type_("number")
@@ -421,7 +421,7 @@ fn row_tablemask_menu_color(
     is_inved: bool,
     xw: f32,
     yw: f32,
-) -> Html<Msg> {
+) -> Html {
     color_picker::idx(idx, Msg::NoOp, {
         move |mut color| {
             Msg::SetSelectingTableTool(table::Tool::Tablemask {
@@ -435,7 +435,7 @@ fn row_tablemask_menu_color(
     })
 }
 
-fn row_boxblock(selecting_tool: &table::Tool) -> Vec<Html<Msg>> {
+fn row_boxblock(selecting_tool: &table::Tool) -> Vec<Html> {
     row(
         selecting_tool.is_boxblock(),
         "fa-cube",
@@ -475,7 +475,7 @@ fn row_boxblock(selecting_tool: &table::Tool) -> Vec<Html<Msg>> {
     )
 }
 
-fn row_boxblock_menu(size: &[f32; 3], color: Color) -> Vec<Html<Msg>> {
+fn row_boxblock_menu(size: &[f32; 3], color: Color) -> Vec<Html> {
     let [xw, yw, zw] = size.clone();
     vec![Html::div(
         Attributes::new().class("keyvalue"),
@@ -513,7 +513,7 @@ fn row_boxblock_menu_size(
     color: Color,
     s: f32,
     on_input: impl FnOnce(f32) -> [f32; 3] + 'static,
-) -> Html<Msg> {
+) -> Html {
     Html::input(
         Attributes::new()
             .type_("number")
@@ -534,7 +534,7 @@ fn row_boxblock_menu_size(
     )
 }
 
-fn row_boxblock_menu_color(idx: usize, xw: f32, yw: f32, zw: f32) -> Html<Msg> {
+fn row_boxblock_menu_color(idx: usize, xw: f32, yw: f32, zw: f32) -> Html {
     color_picker::idx(idx, Msg::NoOp, {
         move |color| {
             Msg::SetSelectingTableTool(table::Tool::Boxblock {
@@ -546,7 +546,7 @@ fn row_boxblock_menu_color(idx: usize, xw: f32, yw: f32, zw: f32) -> Html<Msg> {
     })
 }
 
-fn row_area(selecting_tool: &table::Tool) -> Vec<Html<Msg>> {
+fn row_area(selecting_tool: &table::Tool) -> Vec<Html> {
     row(
         selecting_tool.is_area(),
         "fa-chess-board",
@@ -599,7 +599,7 @@ fn row_area_menu(
     color_1: Color,
     color_2: Color,
     block_id: &Option<BlockId>,
-) -> Vec<Html<Msg>> {
+) -> Vec<Html> {
     vec![Html::div(
         Attributes::new().class("keyvalue"),
         Events::new(),
@@ -758,7 +758,7 @@ fn row_area_menu(
     )]
 }
 
-fn row_measure(selecting_tool: &table::Tool) -> Vec<Html<Msg>> {
+fn row_measure(selecting_tool: &table::Tool) -> Vec<Html> {
     row(
         selecting_tool.is_measure(),
         "fa-ruler",
@@ -798,7 +798,7 @@ fn row_measure(selecting_tool: &table::Tool) -> Vec<Html<Msg>> {
     )
 }
 
-fn row_measure_menu(color: Color, block_id: &Option<BlockId>) -> Vec<Html<Msg>> {
+fn row_measure_menu(color: Color, block_id: &Option<BlockId>) -> Vec<Html> {
     vec![Html::div(
         Attributes::new().class("keyvalue"),
         Events::new(),
@@ -834,9 +834,9 @@ fn row(
     selected: bool,
     icon: impl Into<String>,
     text: impl Into<String>,
-    btn_event: Events<Msg>,
-    option: Html<Msg>,
-) -> Vec<Html<Msg>> {
+    btn_event: Events,
+    option: Html,
+) -> Vec<Html> {
     vec![
         btn::selectable(
             selected,
@@ -848,7 +848,7 @@ fn row(
     ]
 }
 
-fn option(show_option: bool, events: Events<Msg>, menu: Vec<Html<Msg>>) -> Html<Msg> {
+fn option(show_option: bool, events: Events, menu: Vec<Html>) -> Html {
     dropdown::right_bottom(
         show_option,
         btn::transparent(
@@ -872,7 +872,7 @@ fn option(show_option: bool, events: Events<Msg>, menu: Vec<Html<Msg>>) -> Html<
     )
 }
 
-fn no_option() -> Html<Msg> {
+fn no_option() -> Html {
     btn::spacer(
         Attributes::new().flag("disabled"),
         Events::new(),
@@ -880,7 +880,7 @@ fn no_option() -> Html<Msg> {
     )
 }
 
-fn delm(text: impl Into<String>) -> Vec<Html<Msg>> {
+fn delm(text: impl Into<String>) -> Vec<Html> {
     vec![
         Html::hr(
             Attributes::new().class("keyvalue-banner"),

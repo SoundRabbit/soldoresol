@@ -1,6 +1,6 @@
 use kagura::prelude::*;
 
-pub fn i<Msg>(name: impl Into<String>) -> Html<Msg> {
+pub fn i(name: impl Into<String>) -> Html {
     Html::i(
         Attributes::new()
             .class("fas")

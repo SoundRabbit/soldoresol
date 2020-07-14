@@ -6,9 +6,9 @@ pub fn div<Msg: 'static>(
     on_close: impl FnMut() -> Msg + 'static,
     position: &[f64; 2],
     attributes: Attributes,
-    events: Events<Msg>,
-    children: Vec<Html<Msg>>,
-) -> Html<Msg> {
+    events: Events,
+    children: Vec<Html>,
+) -> Html {
     let on_close = Rc::new(RefCell::new(Box::new(on_close)));
     Html::div(
         Attributes::new()

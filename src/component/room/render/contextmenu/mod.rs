@@ -13,7 +13,7 @@ pub fn render(
     z_index: u64,
     block_field: &block::Field,
     contextmenu: &state::contextmenu::State,
-) -> Html<Msg> {
+) -> Html {
     match &contextmenu as &state::Contextmenu {
         state::Contextmenu::Default => default::render(z_index, contextmenu),
         state::Contextmenu::Area(block_id) => area::render(z_index, contextmenu, block_id),

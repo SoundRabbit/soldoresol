@@ -1,11 +1,7 @@
 use super::awesome;
 use kagura::prelude::*;
 
-pub fn primary<Msg>(
-    attributes: Attributes,
-    events: Events<Msg>,
-    children: Vec<Html<Msg>>,
-) -> Html<Msg> {
+pub fn primary(attributes: Attributes, events: Events, children: Vec<Html>) -> Html {
     Html::button(
         attributes.class("pure-button pure-button-primary"),
         events,
@@ -13,11 +9,7 @@ pub fn primary<Msg>(
     )
 }
 
-pub fn secondary<Msg>(
-    attributes: Attributes,
-    events: Events<Msg>,
-    children: Vec<Html<Msg>>,
-) -> Html<Msg> {
+pub fn secondary(attributes: Attributes, events: Events, children: Vec<Html>) -> Html {
     Html::button(
         attributes.class("pure-button pure-button-secondary"),
         events,
@@ -25,11 +17,7 @@ pub fn secondary<Msg>(
     )
 }
 
-pub fn info<Msg>(
-    attributes: Attributes,
-    events: Events<Msg>,
-    children: Vec<Html<Msg>>,
-) -> Html<Msg> {
+pub fn info(attributes: Attributes, events: Events, children: Vec<Html>) -> Html {
     Html::button(
         attributes.class("pure-button pure-button-info"),
         events,
@@ -37,11 +25,7 @@ pub fn info<Msg>(
     )
 }
 
-pub fn danger<Msg>(
-    attributes: Attributes,
-    events: Events<Msg>,
-    children: Vec<Html<Msg>>,
-) -> Html<Msg> {
+pub fn danger(attributes: Attributes, events: Events, children: Vec<Html>) -> Html {
     Html::button(
         attributes.class("pure-button pure-button-danger"),
         events,
@@ -49,11 +33,7 @@ pub fn danger<Msg>(
     )
 }
 
-pub fn success<Msg>(
-    attributes: Attributes,
-    events: Events<Msg>,
-    children: Vec<Html<Msg>>,
-) -> Html<Msg> {
+pub fn success(attributes: Attributes, events: Events, children: Vec<Html>) -> Html {
     Html::button(
         attributes.class("pure-button pure-button-success"),
         events,
@@ -61,11 +41,7 @@ pub fn success<Msg>(
     )
 }
 
-pub fn light<Msg>(
-    attributes: Attributes,
-    events: Events<Msg>,
-    children: Vec<Html<Msg>>,
-) -> Html<Msg> {
+pub fn light(attributes: Attributes, events: Events, children: Vec<Html>) -> Html {
     Html::button(
         attributes.class("pure-button").class("pure-button-light"),
         events,
@@ -73,11 +49,7 @@ pub fn light<Msg>(
     )
 }
 
-pub fn dark<Msg>(
-    attributes: Attributes,
-    events: Events<Msg>,
-    children: Vec<Html<Msg>>,
-) -> Html<Msg> {
+pub fn dark(attributes: Attributes, events: Events, children: Vec<Html>) -> Html {
     Html::button(
         attributes.class("pure-button").class("pure-button-dark"),
         events,
@@ -85,12 +57,12 @@ pub fn dark<Msg>(
     )
 }
 
-pub fn selectable<Msg>(
+pub fn selectable(
     is_selected: bool,
     attributes: Attributes,
-    events: Events<Msg>,
-    children: Vec<Html<Msg>>,
-) -> Html<Msg> {
+    events: Events,
+    children: Vec<Html>,
+) -> Html {
     if is_selected {
         Html::button(
             attributes.class("pure-button").class("pure-button-primary"),
@@ -106,7 +78,7 @@ pub fn selectable<Msg>(
     }
 }
 
-pub fn toggle<Msg>(is_toggled: bool, attributes: Attributes, events: Events<Msg>) -> Html<Msg> {
+pub fn toggle(is_toggled: bool, attributes: Attributes, events: Events) -> Html {
     if is_toggled {
         Html::span(attributes.class("toggle toggle-on"), events, vec![])
     } else {
@@ -114,7 +86,7 @@ pub fn toggle<Msg>(is_toggled: bool, attributes: Attributes, events: Events<Msg>
     }
 }
 
-pub fn close<Msg>(attributes: Attributes, events: Events<Msg>) -> Html<Msg> {
+pub fn close(attributes: Attributes, events: Events) -> Html {
     Html::button(
         attributes.class("pure-button pure-button-close"),
         events,
@@ -122,11 +94,7 @@ pub fn close<Msg>(attributes: Attributes, events: Events<Msg>) -> Html<Msg> {
     )
 }
 
-pub fn transparent<Msg>(
-    attributes: Attributes,
-    events: Events<Msg>,
-    children: Vec<Html<Msg>>,
-) -> Html<Msg> {
+pub fn transparent(attributes: Attributes, events: Events, children: Vec<Html>) -> Html {
     Html::button(
         attributes.class("pure-button pure-button-transparent"),
         events,
@@ -134,11 +102,7 @@ pub fn transparent<Msg>(
     )
 }
 
-pub fn spacer<Msg>(
-    attributes: Attributes,
-    events: Events<Msg>,
-    children: Vec<Html<Msg>>,
-) -> Html<Msg> {
+pub fn spacer(attributes: Attributes, events: Events, children: Vec<Html>) -> Html {
     Html::button(
         attributes.class("pure-button pure-button-spacer"),
         events,
@@ -146,7 +110,7 @@ pub fn spacer<Msg>(
     )
 }
 
-pub fn check<Msg>(is_checked: bool, attributes: Attributes, events: Events<Msg>) -> Html<Msg> {
+pub fn check(is_checked: bool, attributes: Attributes, events: Events) -> Html {
     if is_checked {
         Html::div(
             attributes.class("checkbox").class("checkbox-checked"),
@@ -159,7 +123,7 @@ pub fn check<Msg>(is_checked: bool, attributes: Attributes, events: Events<Msg>)
 }
 
 #[allow(dead_code)]
-pub fn add<Msg>(attributes: Attributes, events: Events<Msg>) -> Html<Msg> {
+pub fn add(attributes: Attributes, events: Events) -> Html {
     Html::button(
         attributes.class("app__add-btn").class("material-icons"),
         events,
@@ -167,7 +131,7 @@ pub fn add<Msg>(attributes: Attributes, events: Events<Msg>) -> Html<Msg> {
     )
 }
 
-pub fn tab<Msg>(is_selected: bool, events: Events<Msg>, name: impl Into<String>) -> Html<Msg> {
+pub fn tab(is_selected: bool, events: Events, name: impl Into<String>) -> Html {
     if is_selected {
         Html::span(
             Attributes::new().draggable(false),
@@ -197,11 +161,7 @@ pub fn tab<Msg>(is_selected: bool, events: Events<Msg>, name: impl Into<String>)
     }
 }
 
-pub fn frame_tab<Msg>(
-    is_selected: bool,
-    events: Events<Msg>,
-    name: impl Into<String>,
-) -> Html<Msg> {
+pub fn frame_tab(is_selected: bool, events: Events, name: impl Into<String>) -> Html {
     if is_selected {
         Html::span(
             Attributes::new().draggable(true),
@@ -231,11 +191,7 @@ pub fn frame_tab<Msg>(
     }
 }
 
-pub fn contextmenu_text<Msg>(
-    attributes: Attributes,
-    events: Events<Msg>,
-    text: impl Into<String>,
-) -> Html<Msg> {
+pub fn contextmenu_text(attributes: Attributes, events: Events, text: impl Into<String>) -> Html {
     Html::li(
         Attributes::new().class("pure-menu-item"),
         Events::new(),
@@ -247,11 +203,11 @@ pub fn contextmenu_text<Msg>(
     )
 }
 
-pub fn contextmenu_text_window<Msg>(
+pub fn contextmenu_text_window(
     attributes: Attributes,
-    events: Events<Msg>,
+    events: Events,
     text: impl Into<String>,
-) -> Html<Msg> {
+) -> Html {
     Html::li(
         Attributes::new().class("pure-menu-item"),
         Events::new(),
@@ -266,11 +222,7 @@ pub fn contextmenu_text_window<Msg>(
     )
 }
 
-pub fn headermenu<Msg>(
-    attributes: Attributes,
-    events: Events<Msg>,
-    children: Vec<Html<Msg>>,
-) -> Html<Msg> {
+pub fn headermenu(attributes: Attributes, events: Events, children: Vec<Html>) -> Html {
     Html::button(
         attributes
             .class("pure-button")

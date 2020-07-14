@@ -16,7 +16,7 @@ pub fn render(
     is_grubbed: bool,
     tablemask: &block::table_object::Tablemask,
     tablemask_id: &BlockId,
-) -> Html<Msg> {
+) -> Html {
     let [xw, yw, _] = tablemask.size().clone();
     let color = tablemask.color();
     let is_inved = tablemask.is_inved();
@@ -111,7 +111,7 @@ fn set_type_btn(
     text: impl Into<String>,
     is_rounded: bool,
     selected: bool,
-) -> Html<Msg> {
+) -> Html {
     btn::selectable(
         selected,
         Attributes::new(),
@@ -133,7 +133,7 @@ fn set_size_input(
     tablemask_id: &BlockId,
     s: f32,
     on_input: impl FnOnce(f32) -> [f32; 2] + 'static,
-) -> Html<Msg> {
+) -> Html {
     Html::input(
         Attributes::new()
             .type_("number")
@@ -151,7 +151,7 @@ fn set_size_input(
     )
 }
 
-fn table_color(tablemask_id: &BlockId, alpha: u8, idx: usize) -> Html<Msg> {
+fn table_color(tablemask_id: &BlockId, alpha: u8, idx: usize) -> Html {
     color_picker::idx(idx, Msg::NoOp, {
         let tablemask_id = tablemask_id.clone();
         move |mut color| {

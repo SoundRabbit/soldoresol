@@ -10,7 +10,7 @@ pub fn render(
     contextmenu: &state::contextmenu::State,
     block_id: &BlockId,
     boxblock: &block::table_object::Boxblock,
-) -> Html<Msg> {
+) -> Html {
     contextmenu::div(
         z_index,
         || Msg::CloseContextmenu,

@@ -26,7 +26,7 @@ macro_rules! color_column {
     };
 }
 
-pub fn major<Msg: 'static>(no_op: Msg, on_pick: impl FnOnce(Color) -> Msg + 'static) -> Html<Msg> {
+pub fn major<Msg: 'static>(no_op: Msg, on_pick: impl FnOnce(Color) -> Msg + 'static) -> Html {
     Html::div(
         Attributes::new().class("linear-h"),
         Events::new().on_click(move |e| {
@@ -56,7 +56,7 @@ pub fn idx<Msg: 'static>(
     idx: usize,
     no_op: Msg,
     on_pick: impl FnOnce(Color) -> Msg + 'static,
-) -> Html<Msg> {
+) -> Html {
     Html::div(
         Attributes::new().class("linear-h"),
         Events::new().on_click(move |e| {
@@ -80,7 +80,7 @@ pub fn idx<Msg: 'static>(
     )
 }
 
-pub fn all<Msg: 'static>(no_op: Msg, on_pick: impl FnOnce(Color) -> Msg + 'static) -> Html<Msg> {
+pub fn all<Msg: 'static>(no_op: Msg, on_pick: impl FnOnce(Color) -> Msg + 'static) -> Html {
     Html::div(
         Attributes::new().class("linear-v"),
         Events::new().on_click(move |e| {

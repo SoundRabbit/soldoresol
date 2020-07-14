@@ -109,7 +109,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
     }
 }
 
-fn render(state: &State) -> Html<Msg> {
+fn render(state: &State) -> Html {
     if let (RoomConnection::Opened(room), Some(room_database)) = (&state.room, &state.room_database)
     {
         Html::component(

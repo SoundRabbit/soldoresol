@@ -8,7 +8,7 @@ mod common {
     pub use super::super::common::*;
 }
 
-pub fn render(block_field: &block::Field, chat: &block::Chat) -> Html<Msg> {
+pub fn render(block_field: &block::Field, chat: &block::Chat) -> Html {
     modal::container(
         Attributes::new(),
         Events::new(),

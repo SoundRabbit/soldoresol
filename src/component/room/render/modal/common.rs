@@ -12,7 +12,7 @@ mod common {
     pub use super::super::super::common::*;
 }
 
-pub fn header(name: impl Into<String>) -> Html<Msg> {
+pub fn header(name: impl Into<String>) -> Html {
     modal::header(
         Attributes::new()
             .style("display", "grid")
@@ -39,7 +39,7 @@ pub fn header(name: impl Into<String>) -> Html<Msg> {
 pub fn select_image(
     resource: &Resource,
     on_select: impl FnOnce(ResourceId) -> Msg + 'static,
-) -> Html<Msg> {
+) -> Html {
     let on_select = Rc::new(RefCell::new(Some(Box::new(on_select))));
 
     modal::container(
@@ -100,7 +100,7 @@ pub fn select_image(
     )
 }
 
-pub fn color_picker(on_select: impl FnOnce(Color) -> Msg + 'static) -> Html<Msg> {
+pub fn color_picker(on_select: impl FnOnce(Color) -> Msg + 'static) -> Html {
     modal::container(
         Attributes::new(),
         Events::new(),
@@ -130,7 +130,7 @@ pub fn character_selecter(
     world: &block::World,
     selected: &HashSet<BlockId>,
     on_select: impl FnMut(BlockId, bool) -> Msg + 'static,
-) -> Html<Msg> {
+) -> Html {
     let on_select = Rc::new(RefCell::new(Box::new(on_select)));
 
     modal::container(

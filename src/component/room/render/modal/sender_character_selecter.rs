@@ -15,7 +15,7 @@ pub fn render(
     resource: &Resource,
     world: &block::World,
     chat: &chat::State,
-) -> Html<Msg> {
+) -> Html {
     common::character_selecter(
         block_field,
         resource,

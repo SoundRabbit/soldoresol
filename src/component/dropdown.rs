@@ -1,6 +1,6 @@
 use kagura::prelude::*;
 
-pub fn right_bottom<Msg>(is_showing: bool, btn: Html<Msg>, content: Html<Msg>) -> Html<Msg> {
+pub fn right_bottom(is_showing: bool, btn: Html, content: Html) -> Html {
     Html::span(
         Attributes::new()
             .class("dropdown")
@@ -11,7 +11,7 @@ pub fn right_bottom<Msg>(is_showing: bool, btn: Html<Msg>, content: Html<Msg>) -
     )
 }
 
-pub fn bottom_right<Msg>(is_showing: bool, btn: Html<Msg>, content: Html<Msg>) -> Html<Msg> {
+pub fn bottom_right(is_showing: bool, btn: Html, content: Html) -> Html {
     Html::span(
         Attributes::new()
             .class("dropdown")

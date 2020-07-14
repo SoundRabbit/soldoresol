@@ -4,7 +4,7 @@ use super::Msg;
 use crate::color_system;
 use kagura::prelude::*;
 
-pub fn render(z_index: u64, contextmenu: &state::contextmenu::State) -> Html<Msg> {
+pub fn render(z_index: u64, contextmenu: &state::contextmenu::State) -> Html {
     contextmenu::div(
         z_index,
         || Msg::CloseContextmenu,
