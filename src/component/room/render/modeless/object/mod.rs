@@ -95,6 +95,10 @@ pub fn render(
                                         e.stop_propagation();
                                         Msg::NoOp
                                     })
+                                    .on_mousemove(move |e| {
+                                        e.stop_propagation();
+                                        Msg::NoOp
+                                    })
                                     .on("dragstart", move |e| {
                                         let e = e.dyn_into::<web_sys::DragEvent>().unwrap();
                                         e.stop_propagation();
