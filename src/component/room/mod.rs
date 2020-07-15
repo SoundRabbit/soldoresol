@@ -2228,6 +2228,7 @@ fn property_from_udonarium_data(
         }
         Value::Children(children) => {
             let mut prop = block::Property::new(name);
+            prop.set_is_collapsed(false);
             prop.set_value(block::property::Value::Children(vec![]));
 
             for child in children {
