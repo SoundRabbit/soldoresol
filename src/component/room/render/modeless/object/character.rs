@@ -362,10 +362,18 @@ fn property(
                 Events::new(),
                 {
                     let mut prop_children = vec![];
-                    for (child_id, prop) in
-                        block_field.listed::<block::Property>(children.iter().collect())
-                    {
-                        prop_children.append(&mut property(block_field, &prop_id, &child_id, prop));
+
+                    if prop.is_collapsed() {
+                        for (child_id, prop) in
+                            block_field.listed::<block::Property>(children.iter().collect())
+                        {
+                            prop_children.append(&mut property(
+                                block_field,
+                                &prop_id,
+                                &child_id,
+                                prop,
+                            ));
+                        }
                     }
 
                     prop_children.append(&mut btn_add_child_to_property(prop_id.clone()));
@@ -387,31 +395,45 @@ fn property_key(is_banner: bool, property_id: &BlockId, property: &block::Proper
         attributes.class("keyvalue")
     };
     let is_selected = property.is_selected();
-    Html::div(
-        attributes,
-        Events::new(),
-        vec![
-            btn::check(
-                is_selected,
+    Html::div(attributes, Events::new(), {
+        let mut children = vec![];
+        children.push(btn::check(
+            is_selected,
+            Attributes::new(),
+            Events::new().on_click({
+                let property_id = property_id.clone();
+                move |_| Msg::SetPropertyIsSelected(property_id, !is_selected)
+            }),
+        ));
+        if is_banner {
+            let is_collapsed = property.is_collapsed();
+            let icon = if is_collapsed {
+                "fa-angle-down"
+            } else {
+                "fa-angle-right"
+            };
+            children.push(btn::transparent(
                 Attributes::new(),
                 Events::new().on_click({
                     let property_id = property_id.clone();
-                    move |_| Msg::SetPropertyIsSelected(property_id, !is_selected)
+                    move |_| Msg::SetPropertyIsCollapsed(property_id, !is_collapsed)
                 }),
-            ),
-            Html::input(
-                Attributes::new()
-                    .value(property.name())
-                    .type_("text")
-                    .class("key"),
-                Events::new().on_input({
-                    let property_id = property_id.clone();
-                    move |s| Msg::SetPropertyName(property_id, s)
-                }),
-                vec![],
-            ),
-        ],
-    )
+                vec![awesome::i(icon)],
+            ));
+        }
+        children.push(Html::input(
+            Attributes::new()
+                .value(property.name())
+                .type_("text")
+                .class("key"),
+            Events::new().on_input({
+                let property_id = property_id.clone();
+                move |s| Msg::SetPropertyName(property_id, s)
+            }),
+            vec![],
+        ));
+        children
+    })
 }
 
 fn btn_remove_property(parent_id: BlockId, child_id: BlockId) -> Html {

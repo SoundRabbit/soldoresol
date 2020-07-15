@@ -124,6 +124,7 @@ pub enum Msg {
     SetPropertyName(BlockId, String),
     SetPropertyValue(BlockId, block::property::Value),
     SetPropertyIsSelected(BlockId, bool),
+    SetPropertyIsCollapsed(BlockId, bool),
     RemoveProperty(BlockId, BlockId),
 
     // チャット関係
@@ -1429,6 +1430,18 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             );
 
             send_pack_cmd(state.block_field(), vec![&property_id])
+        }
+
+        Msg::SetPropertyIsCollapsed(property_id, is_collapsed) => {
+            state.block_field_mut().update(
+                &property_id,
+                timestamp(),
+                |property: &mut block::Property| {
+                    property.set_is_collapsed(is_collapsed);
+                },
+            );
+
+            state.dequeue()
         }
 
         Msg::RemoveProperty(parent_id, self_id) => {
