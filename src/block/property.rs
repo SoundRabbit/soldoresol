@@ -15,6 +15,7 @@ pub struct Property {
     name: String,
     is_selected: bool,
     value: Value,
+    is_collapsed: bool,
 }
 
 impl Value {
@@ -87,6 +88,7 @@ impl Property {
             name: name.into(),
             is_selected: false,
             value: Value::None,
+            is_collapsed: true,
         }
     }
 
@@ -112,6 +114,14 @@ impl Property {
 
     pub fn set_value(&mut self, value: Value) {
         self.value = value
+    }
+
+    pub fn is_collapsed(&self) -> bool {
+        self.is_collapsed
+    }
+
+    pub fn set_is_collapsed(&mut self, is_collapsed: bool) {
+        self.is_collapsed = is_collapsed;
     }
 
     pub fn add_child(&mut self, child_id: BlockId) {
@@ -160,6 +170,7 @@ impl Block for Property {
                     name,
                     is_selected,
                     value,
+                    is_collapsed: true,
                 }))
             } else {
                 None

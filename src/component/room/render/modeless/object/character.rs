@@ -236,17 +236,18 @@ fn root_property(block_field: &block::Field, prop_id: &BlockId) -> Html {
                     .class("container-a")
                     .class("keyvalueoption"),
                 Events::new(),
-                vec![
-                    block_field
-                        .listed::<block::Property>(children.iter().collect())
-                        .map(|(child_id, prop)| property(block_field, &prop_id, &child_id, prop))
-                        .flatten()
-                        .collect(),
-                    btn_add_child_to_property(prop_id.clone()),
-                ]
-                .into_iter()
-                .flatten()
-                .collect(),
+                {
+                    let mut prop_children = vec![];
+                    for (child_id, prop) in
+                        block_field.listed::<block::Property>(children.iter().collect())
+                    {
+                        prop_children.append(&mut property(block_field, &prop_id, &child_id, prop));
+                    }
+
+                    prop_children.append(&mut btn_add_child_to_property(prop_id.clone()));
+
+                    prop_children
+                },
             ),
             _ => Html::div(
                 Attributes::new()
@@ -359,17 +360,18 @@ fn property(
                     .class("keyvalueoption")
                     .class("keyvalueoption-banner"),
                 Events::new(),
-                vec![
-                    block_field
-                        .listed(children.iter().collect())
-                        .map(|(child_id, prop)| property(block_field, &prop_id, &child_id, prop))
-                        .flatten()
-                        .collect(),
-                    btn_add_child_to_property(prop_id.clone()),
-                ]
-                .into_iter()
-                .flatten()
-                .collect(),
+                {
+                    let mut prop_children = vec![];
+                    for (child_id, prop) in
+                        block_field.listed::<block::Property>(children.iter().collect())
+                    {
+                        prop_children.append(&mut property(block_field, &prop_id, &child_id, prop));
+                    }
+
+                    prop_children.append(&mut btn_add_child_to_property(prop_id.clone()));
+
+                    prop_children
+                },
             ),
         ],
     }
@@ -382,7 +384,7 @@ fn property_key(is_banner: bool, property_id: &BlockId, property: &block::Proper
             .class("keyvalueoption-banner-2")
             .class("keyvalue")
     } else {
-        attributes.class("linear-h")
+        attributes.class("keyvalue")
     };
     let is_selected = property.is_selected();
     Html::div(

@@ -15,8 +15,9 @@ pub fn render(z_index: u64, selecting_tool: &table::Tool) -> Html {
             .style("overflow", "visible")
             .style("z-index", z_index.to_string()),
         Events::new(),
-        vec![
-            row(
+        {
+            let mut children = vec![];
+            children.append(&mut row(
                 selecting_tool.is_selector(),
                 "fa-mouse-pointer",
                 "選択",
@@ -25,12 +26,12 @@ pub fn render(z_index: u64, selecting_tool: &table::Tool) -> Html {
                     table::Tool::Selector => no_option(),
                     _ => text::span(""),
                 },
-            ),
-            delm("描画"),
-            row_pen(selecting_tool),
-            row_eraser(selecting_tool),
-            delm("作成"),
-            row(
+            ));
+            children.append(&mut delm("描画"));
+            children.append(&mut row_pen(selecting_tool));
+            children.append(&mut row_eraser(selecting_tool));
+            children.append(&mut delm("作成"));
+            children.append(&mut row(
                 selecting_tool.is_character(),
                 "fa-user",
                 "キャラクター",
@@ -39,31 +40,14 @@ pub fn render(z_index: u64, selecting_tool: &table::Tool) -> Html {
                     table::Tool::Character => no_option(),
                     _ => text::span(""),
                 },
-            ),
-            row_tablemask(selecting_tool),
-            row_boxblock(selecting_tool),
-            row_area(selecting_tool),
-            // row(
-            //     selecting_tool.is_route(),
-            //     "fa-route",
-            //     "経路",
-            //     Events::new().on_click(|_| {
-            //         Msg::SetSelectingTableTool(table::Tool::Route {
-            //             block_id: None,
-            //             show_option_menu: false,
-            //         })
-            //     }),
-            //     match selecting_tool {
-            //         table::Tool::Route { .. } => option(false, Events::new(), vec![]),
-            //         _ => text::span(""),
-            //     },
-            // ),
-            delm("表示"),
-            row_measure(selecting_tool),
-        ]
-        .into_iter()
-        .flatten()
-        .collect(),
+            ));
+            children.append(&mut row_tablemask(selecting_tool));
+            children.append(&mut row_boxblock(selecting_tool));
+            children.append(&mut row_area(selecting_tool));
+            children.append(&mut delm("表示"));
+            children.append(&mut row_measure(selecting_tool));
+            children
+        },
     )
 }
 
