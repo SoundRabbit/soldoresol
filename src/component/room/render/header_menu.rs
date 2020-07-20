@@ -8,7 +8,7 @@ use kagura::prelude::*;
 pub fn render(
     z_index: u64,
     room_id: &String,
-    headermenu_state: Option<&headermenu::State>,
+    headermenu_state: &headermenu::State,
     is_2d_mode: bool,
 ) -> Html {
     Html::div(
@@ -58,23 +58,23 @@ pub fn render(
                 Events::new(),
                 vec![
                     dropdown::bottom_right(
-                        headermenu_state.is_some(),
+                        headermenu_state.is_config(),
                         btn::primary(
                             Attributes::new(),
                             Events::new().on_click({
-                                let is_showing = headermenu_state.is_some();
+                                let is_showing = headermenu_state.is_config();
                                 move |_| {
                                     if is_showing {
-                                        Msg::SetHeadermenuState(None)
+                                        Msg::SetHeadermenuState(headermenu::State::None)
                                     } else {
-                                        Msg::SetHeadermenuState(Some(headermenu::State::Config))
+                                        Msg::SetHeadermenuState(headermenu::State::Config)
                                     }
                                 }
                             }),
                             vec![
                                 awesome::i("fa-cogs"),
                                 Html::text(" 設定 "),
-                                if headermenu_state.is_some() {
+                                if headermenu_state.is_config() {
                                     awesome::i("fa-angle-up")
                                 } else {
                                     awesome::i("fa-angle-down")
@@ -87,7 +87,8 @@ pub fn render(
                                 .class("panel-dark")
                                 .class("pure-form")
                                 .class("linear-v"),
-                            Events::new().on_click(|_| Msg::SetHeadermenuState(None)),
+                            Events::new()
+                                .on_click(|_| Msg::SetHeadermenuState(headermenu::State::None)),
                             vec![
                                 btn::headermenu(
                                     Attributes::new().class("keyvalueoption"),
@@ -127,6 +128,49 @@ pub fn render(
                                     ],
                                 ),
                             ],
+                        ),
+                    ),
+                    dropdown::bottom_right(
+                        headermenu_state.is_resource(),
+                        btn::primary(
+                            Attributes::new(),
+                            Events::new().on_click({
+                                let is_showing = headermenu_state.is_resource();
+                                move |_| {
+                                    if is_showing {
+                                        Msg::SetHeadermenuState(headermenu::State::None)
+                                    } else {
+                                        Msg::SetHeadermenuState(headermenu::State::Resource)
+                                    }
+                                }
+                            }),
+                            vec![
+                                awesome::i("fa-folder"),
+                                Html::text(" リソース "),
+                                if headermenu_state.is_resource() {
+                                    awesome::i("fa-angle-up")
+                                } else {
+                                    awesome::i("fa-angle-down")
+                                },
+                            ],
+                        ),
+                        Html::div(
+                            Attributes::new()
+                                .class("panel")
+                                .class("panel-dark")
+                                .class("pure-form")
+                                .class("linear-v"),
+                            Events::new()
+                                .on_click(|_| Msg::SetHeadermenuState(headermenu::State::None)),
+                            vec![btn::headermenu(
+                                Attributes::new().class("keyvalueoption"),
+                                Events::new().on_click(|_| Msg::OpenModal(Modal::Resource)),
+                                vec![
+                                    awesome::i("fa-images"),
+                                    Html::text(" 画像データ "),
+                                    awesome::i("fa-external-link-alt"),
+                                ],
+                            )],
                         ),
                     ),
                     btn::primary(

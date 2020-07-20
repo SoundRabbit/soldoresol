@@ -55,7 +55,7 @@ pub struct State<M, S> {
     pixel_ratio: f32,
     canvas_size: [f32; 2],
     contextmenu: Option<contextmenu::State>,
-    headermenu: Option<headermenu::State>,
+    headermenu: headermenu::State,
     modeless: modeless::Collection<Modeless>,
     modal: Vec<Modal>,
     dicebot: dicebot::State,
@@ -104,7 +104,7 @@ impl<M, S> State<M, S> {
             pixel_ratio: 1.0,
             canvas_size: [0.0, 0.0],
             contextmenu: None,
-            headermenu: None,
+            headermenu: headermenu::State::None,
             modeless: modeless::Collection::new(),
             modal: vec![],
             dicebot: dicebot::State::new(),
@@ -284,11 +284,11 @@ impl<M, S> State<M, S> {
         self.contextmenu = None;
     }
 
-    pub fn headermenu(&self) -> Option<&headermenu::State> {
-        self.headermenu.as_ref()
+    pub fn headermenu(&self) -> &headermenu::State {
+        &self.headermenu
     }
 
-    pub fn set_headermenu(&mut self, headermenu: Option<headermenu::State>) {
+    pub fn set_headermenu(&mut self, headermenu: headermenu::State) {
         self.headermenu = headermenu;
     }
 

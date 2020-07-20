@@ -35,7 +35,7 @@ pub enum Msg {
     CloseContextmenu,
 
     // header menu
-    SetHeadermenuState(Option<state::headermenu::State>),
+    SetHeadermenuState(state::headermenu::State),
 
     // Modeless
     OpenModeless(state::Modeless),
