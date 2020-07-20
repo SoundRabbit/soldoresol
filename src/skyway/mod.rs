@@ -1,4 +1,4 @@
-use crate::{random_id::U128Id, JsObject};
+use crate::{random_id::U128Id, Color, JsObject};
 use js_sys::Array;
 use std::{collections::HashMap, rc::Rc};
 use wasm_bindgen::prelude::*;
@@ -83,10 +83,33 @@ impl Room {
 
 pub enum Msg {
     None,
-    SetContext { world: U128Id, chat: U128Id },
+    SetContext {
+        world: U128Id,
+        chat: U128Id,
+    },
     SetBlockPacks(HashMap<U128Id, JsValue>),
     SetResourcePacks(HashMap<U128Id, JsValue>),
     InsertChatItem(U128Id, U128Id, f64),
+    DrawLine {
+        texture: U128Id,
+        ax: f32,
+        ay: f32,
+        bx: f32,
+        by: f32,
+        color: Color,
+        line_width: f64,
+    },
+    EraceLine {
+        texture: U128Id,
+        ax: f32,
+        ay: f32,
+        bx: f32,
+        by: f32,
+        line_width: f64,
+    },
+    ClearTable {
+        texture: U128Id,
+    },
 }
 
 impl Msg {
@@ -97,6 +120,9 @@ impl Msg {
             Self::SetBlockPacks(..) => "SetBlockPacks",
             Self::SetResourcePacks(..) => "SetResourcePacks",
             Self::InsertChatItem(..) => "InsertChatItem",
+            Self::DrawLine { .. } => "DrawLine",
+            Self::EraceLine { .. } => "EraceLine",
+            Self::ClearTable { .. } => "ClearTable",
         }
     }
 }
@@ -124,6 +150,33 @@ impl Into<JsObject> for Msg {
             Self::InsertChatItem(tab_id, item, timestamp) => {
                 array![tab_id.to_jsvalue(), item.to_jsvalue(), timestamp].into()
             }
+            Self::DrawLine {
+                texture,
+                ax,
+                ay,
+                bx,
+                by,
+                color,
+                line_width,
+            } => array![
+                texture.to_jsvalue(),
+                ax,
+                ay,
+                bx,
+                by,
+                color.to_u32(),
+                line_width
+            ]
+            .into(),
+            Self::EraceLine {
+                texture,
+                ax,
+                ay,
+                bx,
+                by,
+                line_width,
+            } => array![texture.to_jsvalue(), ax, ay, bx, by, line_width].into(),
+            Self::ClearTable { texture } => texture.to_jsvalue(),
         };
         object! {
             type: type_name,
@@ -185,6 +238,75 @@ impl From<JsObject> for Msg {
                     let timestamp = payload.get(2).as_f64();
                     if let (Some(tab_id), Some(item), Some(timestamp)) = (tab_id, item, timestamp) {
                         Self::InsertChatItem(tab_id, item, timestamp)
+                    } else {
+                        Self::None
+                    }
+                }
+                "DrawLine" => {
+                    let payload = Array::from(payload.as_ref());
+                    let texture = U128Id::from_jsvalue(&payload.get(0));
+                    let ax = payload.get(1).as_f64().map(|x| x as f32);
+                    let ay = payload.get(2).as_f64().map(|x| x as f32);
+                    let bx = payload.get(3).as_f64().map(|x| x as f32);
+                    let by = payload.get(4).as_f64().map(|x| x as f32);
+                    let color = payload.get(5).as_f64().map(|x| Color::from(x as u32));
+                    let line_width = payload.get(6).as_f64();
+                    if let (
+                        Some(texture),
+                        Some(ax),
+                        Some(ay),
+                        Some(bx),
+                        Some(by),
+                        Some(color),
+                        Some(line_width),
+                    ) = (texture, ax, ay, bx, by, color, line_width)
+                    {
+                        Self::DrawLine {
+                            texture,
+                            ax,
+                            ay,
+                            bx,
+                            by,
+                            color,
+                            line_width,
+                        }
+                    } else {
+                        Self::None
+                    }
+                }
+                "EraceLine" => {
+                    let payload = Array::from(payload.as_ref());
+                    let texture = U128Id::from_jsvalue(&payload.get(0));
+                    let ax = payload.get(1).as_f64().map(|x| x as f32);
+                    let ay = payload.get(2).as_f64().map(|x| x as f32);
+                    let bx = payload.get(3).as_f64().map(|x| x as f32);
+                    let by = payload.get(4).as_f64().map(|x| x as f32);
+                    let line_width = payload.get(5).as_f64();
+                    if let (
+                        Some(texture),
+                        Some(ax),
+                        Some(ay),
+                        Some(bx),
+                        Some(by),
+                        Some(line_width),
+                    ) = (texture, ax, ay, bx, by, line_width)
+                    {
+                        Self::EraceLine {
+                            texture,
+                            ax,
+                            ay,
+                            bx,
+                            by,
+                            line_width,
+                        }
+                    } else {
+                        Self::None
+                    }
+                }
+                "ClearTable" => {
+                    let texture = U128Id::from_jsvalue(&payload);
+                    if let Some(texture) = texture {
+                        Self::ClearTable { texture }
                     } else {
                         Self::None
                     }

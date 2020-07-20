@@ -875,28 +875,17 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 let [ax, ay] = get_table_position(state, true, &a, state.pixel_ratio());
                 let [bx, by] = get_table_position(state, true, &b, state.pixel_ratio());
 
-                state.block_field_mut().update(
-                    &texture_id,
-                    timestamp(),
-                    |texture: &mut block::table::Texture| {
-                        let [ax, ay] = texture.texture_position(&[ax as f64, ay as f64]);
-                        let [bx, by] = texture.texture_position(&[bx as f64, by as f64]);
+                draw_line_to_table(state, &texture_id, ax, ay, bx, by, &color, line_width);
 
-                        let context = texture.context();
-
-                        context.set_line_width(line_width);
-                        context.set_line_cap("round");
-                        context.set_stroke_style(&color.to_jsvalue());
-                        context
-                            .set_global_composite_operation("source-over")
-                            .unwrap();
-                        context.begin_path();
-                        context.move_to(ax, ay);
-                        context.line_to(bx, by);
-                        context.fill();
-                        context.stroke();
-                    },
-                );
+                state.room().send(skyway::Msg::DrawLine {
+                    texture: texture_id.to_id(),
+                    ax,
+                    ay,
+                    bx,
+                    by,
+                    color,
+                    line_width,
+                });
 
                 render_canvas(state);
 
@@ -920,28 +909,16 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 let [ax, ay] = get_table_position(state, true, &a, state.pixel_ratio());
                 let [bx, by] = get_table_position(state, true, &b, state.pixel_ratio());
 
-                state.block_field_mut().update(
-                    &texture_id,
-                    timestamp(),
-                    |texture: &mut block::table::Texture| {
-                        let [ax, ay] = texture.texture_position(&[ax as f64, ay as f64]);
-                        let [bx, by] = texture.texture_position(&[bx as f64, by as f64]);
+                erace_line_of_texture(state, &texture_id, ax, ay, bx, by, line_width);
 
-                        let context = texture.context();
-
-                        context.set_line_width(line_width);
-                        context.set_line_cap("round");
-                        context.set_stroke_style(&color_system::gray(255, 9).to_jsvalue());
-                        context
-                            .set_global_composite_operation("destination-out")
-                            .unwrap();
-                        context.begin_path();
-                        context.move_to(ax, ay);
-                        context.line_to(bx, by);
-                        context.fill();
-                        context.stroke();
-                    },
-                );
+                state.room().send(skyway::Msg::EraceLine {
+                    texture: texture_id.to_id(),
+                    ax,
+                    ay,
+                    bx,
+                    by,
+                    line_width,
+                });
 
                 render_canvas(state);
 
@@ -969,6 +946,10 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                         texture.clear();
                     },
                 );
+
+                state.room().send(skyway::Msg::ClearTable {
+                    texture: texture_id.to_id(),
+                });
 
                 render_canvas(state);
 
@@ -1896,6 +1877,46 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     });
                 state.dequeue()
             }
+            skyway::Msg::DrawLine {
+                texture,
+                ax,
+                ay,
+                bx,
+                by,
+                color,
+                line_width,
+            } => {
+                let texture_id = state.block_field_mut().block_id(texture);
+                draw_line_to_table(state, &texture_id, ax, ay, bx, by, &color, line_width);
+                render_canvas(state);
+                state.dequeue()
+            }
+            skyway::Msg::EraceLine {
+                texture,
+                ax,
+                ay,
+                bx,
+                by,
+                line_width,
+            } => {
+                let texture_id = state.block_field_mut().block_id(texture);
+                erace_line_of_texture(state, &texture_id, ax, ay, bx, by, line_width);
+                render_canvas(state);
+                state.dequeue()
+            }
+            skyway::Msg::ClearTable { texture } => {
+                let texture_id = state.block_field_mut().block_id(texture);
+                state.block_field_mut().update(
+                    &texture_id,
+                    timestamp(),
+                    |texture: &mut block::table::Texture| {
+                        texture.clear();
+                    },
+                );
+
+                render_canvas(state);
+                state.dequeue()
+            }
         },
         Msg::PeerJoin(peer_id) => {
             state.peers_mut().insert(peer_id);
@@ -2254,4 +2275,71 @@ fn property_from_udonarium_data(
             Some(block_field.add(prop))
         }
     }
+}
+
+fn draw_line_to_table(
+    state: &mut State,
+    texture_id: &BlockId,
+    ax: f32,
+    ay: f32,
+    bx: f32,
+    by: f32,
+    color: &Color,
+    line_width: f64,
+) {
+    state.block_field_mut().update(
+        texture_id,
+        timestamp(),
+        |texture: &mut block::table::Texture| {
+            let [ax, ay] = texture.texture_position(&[ax as f64, ay as f64]);
+            let [bx, by] = texture.texture_position(&[bx as f64, by as f64]);
+
+            let context = texture.context();
+
+            context.set_line_width(line_width);
+            context.set_line_cap("round");
+            context.set_stroke_style(&color.to_jsvalue());
+            context
+                .set_global_composite_operation("source-over")
+                .unwrap();
+            context.begin_path();
+            context.move_to(ax, ay);
+            context.line_to(bx, by);
+            context.fill();
+            context.stroke();
+        },
+    );
+}
+
+fn erace_line_of_texture(
+    state: &mut State,
+    texture_id: &BlockId,
+    ax: f32,
+    ay: f32,
+    bx: f32,
+    by: f32,
+    line_width: f64,
+) {
+    state.block_field_mut().update(
+        &texture_id,
+        timestamp(),
+        |texture: &mut block::table::Texture| {
+            let [ax, ay] = texture.texture_position(&[ax as f64, ay as f64]);
+            let [bx, by] = texture.texture_position(&[bx as f64, by as f64]);
+
+            let context = texture.context();
+
+            context.set_line_width(line_width);
+            context.set_line_cap("round");
+            context.set_stroke_style(&color_system::gray(255, 9).to_jsvalue());
+            context
+                .set_global_composite_operation("destination-out")
+                .unwrap();
+            context.begin_path();
+            context.move_to(ax, ay);
+            context.line_to(bx, by);
+            context.fill();
+            context.stroke();
+        },
+    );
 }
