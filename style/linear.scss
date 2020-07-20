@@ -4,6 +4,10 @@
         grid-auto-columns: max-content;
         column-gap: 0.5em;
         grid-auto-flow: column;
+
+        &-eq {
+            grid-auto-columns: 1fr !important;
+        }
     }
 
     &-v {

@@ -280,7 +280,7 @@ fn property(
                 Attributes::new()
                     .class("keyvalueoption-banner-2")
                     .class("linear-h")
-                    .style("grid-auto-columns", "1fr"),
+                    .class("linear-h-eq"),
                 Events::new(),
                 vec![
                     btn::primary(
@@ -390,6 +390,7 @@ fn property_key(is_banner: bool, property_id: &BlockId, property: &block::Proper
     let attributes = if is_banner {
         attributes
             .class("keyvalueoption-banner-2")
+            .class("keyvalueoption-banner-2-collapse")
             .class("keyvalue")
     } else {
         attributes.class("keyvalue")

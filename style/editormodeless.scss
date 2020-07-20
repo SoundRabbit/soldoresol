@@ -12,6 +12,8 @@
     }
 
     & .keyvalueoption-banner-2 {
-        grid-template-columns: max-content max-content 1fr;
+        &-collapse {
+            grid-template-columns: max-content max-content 1fr;
+        }
     }
 }
