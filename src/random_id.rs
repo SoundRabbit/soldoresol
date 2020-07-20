@@ -12,10 +12,6 @@ pub fn u8vec(len: usize) -> Vec<u8> {
     id
 }
 
-pub fn hex(len: usize) -> String {
-    hex::encode(&u8vec(len))
-}
-
 pub fn base64url() -> String {
     base64::encode(&u8vec(3 * 6))
         .replace("+", r"@")
