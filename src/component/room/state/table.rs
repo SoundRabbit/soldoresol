@@ -191,6 +191,10 @@ impl State {
         self.is_2d_mode
     }
 
+    pub fn set_is_2d_mode(&mut self, is_2d_mode: bool) {
+        self.is_2d_mode = is_2d_mode;
+    }
+
     pub fn focused(&self) -> &Focused {
         &self.focused
     }

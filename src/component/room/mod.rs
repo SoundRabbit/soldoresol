@@ -63,6 +63,7 @@ pub enum Msg {
     RemoveTablemaskToCloseContextmenu(BlockId),
     RemoveAreaToCloseContextmenu(BlockId),
     RemoveBoxblockToCloseContextmenu(BlockId),
+    SetTableIs2dMode(bool),
 
     // Mouse
     SetLastMousePosition(bool, [f32; 2]),
@@ -641,6 +642,19 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             } else {
                 state.dequeue()
             }
+        }
+
+        Msg::SetTableIs2dMode(is_2d_mode) => {
+            state.table_mut().set_is_2d_mode(is_2d_mode);
+            if is_2d_mode {
+                state.camera_mut().set_x_axis_rotation(0.0);
+                state.camera_mut().set_z_axis_rotation(0.0);
+                state.camera_mut().set_field_of_view(30.0);
+            } else {
+                state.camera_mut().set_field_of_view(30.0);
+            }
+            render_canvas(state);
+            state.dequeue()
         }
 
         // Mouse

@@ -161,7 +161,7 @@ pub fn render(
                             btn::toggle(
                                 is_2d_mode,
                                 Attributes::new(),
-                                Events::new().on_click(move |_| Msg::NoOp),
+                                Events::new().on_click(move |_| Msg::SetTableIs2dMode(!is_2d_mode)),
                             ),
                         ],
                     )],
