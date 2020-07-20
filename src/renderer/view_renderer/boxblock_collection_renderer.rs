@@ -91,7 +91,8 @@ impl BoxblockCollectionRenderer {
             Some(&self.poly_index_buffer),
         );
 
-        gl.uniform3fv_with_f32_array(Some(&self.cube_program.u_light_location), &[1.0, -1.0, 1.0]);
+        gl.uniform3fv_with_f32_array(Some(&self.cube_program.u_light_location), &[0.5, -2.0, 1.0]);
+        gl.uniform1f(Some(&self.cube_program.u_shade_location), 0.2);
 
         for (_, boxblock) in
             block_field.listed::<block::table_object::Boxblock>(boxblocks.collect())

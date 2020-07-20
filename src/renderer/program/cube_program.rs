@@ -8,11 +8,12 @@ const VERTEX_SHADER: &str = r#"
     uniform mat4 u_invModel;
     uniform vec3 u_light;
     uniform vec4 u_maskColor;
+    uniform float u_shade;
     varying vec4 v_color;
 
     void main() {
         vec3 invLight = normalize(u_invModel * vec4(u_light, 0.0)).xyz;
-        float diffuse = clamp(dot(a_normal, invLight) * 0.1 + 0.9, 0.9, 1.0);
+        float diffuse = clamp(dot(a_normal, invLight) * u_shade + 1.0 - u_shade, 1.0 - u_shade, 1.0);
         v_color = u_maskColor * vec4(vec3(diffuse), 1.0);
 
         vec4 p = u_translate * a_vertex;
@@ -38,6 +39,7 @@ pub struct CubeProgram {
     pub u_inv_model_location: WebGlUniformLocation,
     pub u_light_location: WebGlUniformLocation,
     pub u_mask_color_location: WebGlUniformLocation,
+    pub u_shade_location: WebGlUniformLocation,
 }
 
 impl CubeProgram {
@@ -66,6 +68,7 @@ impl CubeProgram {
         let u_inv_model_location = gl.get_uniform_location(&program, "u_invModel").unwrap();
         let u_light_location = gl.get_uniform_location(&program, "u_light").unwrap();
         let u_mask_color_location = gl.get_uniform_location(&program, "u_maskColor").unwrap();
+        let u_shade_location = gl.get_uniform_location(&program, "u_shade").unwrap();
 
         Self {
             program,
@@ -75,6 +78,7 @@ impl CubeProgram {
             u_inv_model_location,
             u_light_location,
             u_mask_color_location,
+            u_shade_location,
         }
     }
 
