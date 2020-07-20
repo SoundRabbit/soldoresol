@@ -75,6 +75,7 @@ impl Block for Character {
         let position = array![self.position[0], self.position[1], self.position[2]];
         let texture_id = self
             .texture_id
+            .as_ref()
             .map(|r| r.to_jsvalue())
             .unwrap_or(JsValue::undefined());
         let name = self.name();

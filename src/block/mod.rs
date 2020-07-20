@@ -29,7 +29,7 @@ type Timestamp = f64;
 type BlockTable = HashMap<U128Id, FieldBlock>;
 
 #[allow(private_in_public)]
-#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+#[derive(Debug, PartialEq, Eq, Clone, Hash)]
 pub struct BlockId(U128Id);
 
 #[allow(private_in_public)]
@@ -53,7 +53,7 @@ impl BlockId {
     }
 
     pub fn to_id(&self) -> U128Id {
-        self.0
+        self.0.clone()
     }
 }
 
@@ -193,7 +193,7 @@ impl Field {
     #[allow(private_in_public)]
     pub fn add<T: Block + 'static>(&mut self, block: T) -> BlockId {
         let block_id = self.block_id(U128Id::new());
-        self.assign(block_id, Date::now(), block);
+        self.assign(block_id.clone(), Date::now(), block);
         block_id
     }
 
@@ -245,7 +245,7 @@ impl Field {
             .iter()
             .filter_map(|(id, fb)| {
                 if let Some(b) = fb.payload.as_ref().and_then(|p| p.downcast_ref::<T>()) {
-                    let block_id = BlockId::new(*id);
+                    let block_id = BlockId::new(id.clone());
                     Some((block_id, b))
                 } else {
                     None
@@ -303,7 +303,7 @@ impl Field {
 
     pub fn pack_all(&mut self) -> Promise<Vec<(BlockId, JsValue)>> {
         let mut keys = vec![];
-        for key in self.table.keys().map(|x| *x).collect::<Vec<_>>() {
+        for key in self.table.keys().map(|x| x.clone()).collect::<Vec<_>>() {
             let key = self.block_id(key);
             keys.push(key);
         }

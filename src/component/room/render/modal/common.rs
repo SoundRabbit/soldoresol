@@ -69,7 +69,7 @@ pub fn select_image(
                             Html::div(
                                 Attributes::new().class("grid-w-2 clickable"),
                                 Events::new().on_click({
-                                    let data_id = *data_id;
+                                    let data_id = data_id.clone();
                                     let on_select = Rc::clone(&on_select);
                                     move |_| {
                                         if let Some(on_select) = on_select.borrow_mut().take() {
@@ -158,7 +158,7 @@ pub fn character_selecter(
                                     {
                                         let icon = character
                                             .texture_id()
-                                            .map(|r_id| Icon::Resource(*r_id))
+                                            .map(|r_id| Icon::Resource(r_id.clone()))
                                             .unwrap_or(Icon::DefaultUser);
                                         common::chat_icon(
                                             Attributes::new().class("icon-medium"),

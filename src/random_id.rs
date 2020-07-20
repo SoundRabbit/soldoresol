@@ -1,3 +1,4 @@
+use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 
 pub fn u8vec(len: usize) -> Vec<u8> {
@@ -37,16 +38,17 @@ pub fn u32color() -> u32 {
     u32::from_be_bytes(buf)
 }
 
-#[derive(Clone, Copy, Hash, PartialEq, Eq, Debug)]
-pub struct U128Id(u32, u32, u32, u32);
+#[derive(Hash, PartialEq, Eq, Debug)]
+pub struct U128Id(Rc<(u32, u32, u32, u32)>);
 
 impl U128Id {
     pub fn new() -> Self {
-        Self(u32val(), u32val(), u32val(), u32val())
+        Self(Rc::new((u32val(), u32val(), u32val(), u32val())))
     }
 
     pub fn to_jsvalue(&self) -> JsValue {
-        array![self.0, self.1, self.2, self.3].into()
+        let i = self.0.as_ref();
+        array![i.0, i.1, i.2, i.3].into()
     }
 
     pub fn from_jsvalue(val: &JsValue) -> Option<Self> {
@@ -56,9 +58,15 @@ impl U128Id {
         let c = buf.get(0).as_f64();
         let d = buf.get(1).as_f64();
         if let (Some(a), Some(b), Some(c), Some(d)) = (a, b, c, d) {
-            Some(Self(a as u32, b as u32, c as u32, d as u32))
+            Some(Self(Rc::new((a as u32, b as u32, c as u32, d as u32))))
         } else {
             None
         }
+    }
+}
+
+impl Clone for U128Id {
+    fn clone(&self) -> Self {
+        Self(Rc::clone(&self.0))
     }
 }

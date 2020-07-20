@@ -22,7 +22,7 @@ impl Resource {
 
     pub fn add(&mut self, data: Data) -> ResourceId {
         let resource_id = U128Id::new();
-        self.assign(resource_id, data);
+        self.assign(resource_id.clone(), data);
         resource_id
     }
 
@@ -37,7 +37,7 @@ impl Resource {
     pub fn pack_all(&self) -> Promise<Vec<(ResourceId, JsValue)>> {
         let mut promises = vec![];
         for (key, data) in &self.data {
-            let key = *key;
+            let key = key.clone();
             promises.push(data.pack().map(move |data| data.map(|data| (key, data))))
         }
         Promise::some(promises)

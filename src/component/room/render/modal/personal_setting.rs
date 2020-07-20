@@ -35,7 +35,7 @@ pub fn render(resource: &Resource, personal_data: &PersonalData) -> Html {
                                     {
                                         let icon = personal_data
                                             .icon()
-                                            .map(|r_id| Icon::Resource(*r_id))
+                                            .map(|r_id| Icon::Resource(r_id.clone()))
                                             .unwrap_or(Icon::DefaultUser);
                                         common::chat_icon(
                                             Attributes::new().class("icon-large"),

@@ -147,7 +147,7 @@ impl TableTextureRenderer {
                 }),
             ) = (textures.get(texture_id), resource.get(texture_id))
             {
-                textures.insert(gl, *texture_id, &texture_data);
+                textures.insert(gl, texture_id.clone(), &texture_data);
             }
             if let Some(texture) = textures.get(texture_id) {
                 gl.bind_texture(web_sys::WebGlRenderingContext::TEXTURE_2D, Some(texture));

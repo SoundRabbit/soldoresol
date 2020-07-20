@@ -351,7 +351,7 @@ fn sender_item(
         Sender::User => {
             let icon = personal_data
                 .icon()
-                .map(|icon_id| Icon::Resource(*icon_id))
+                .map(|icon_id| Icon::Resource(icon_id.clone()))
                 .unwrap_or(Icon::DefaultUser);
             Some((icon, personal_data.name()))
         }
@@ -359,7 +359,7 @@ fn sender_item(
             if let Some(character) = block_field.get::<block::Character>(character_id) {
                 let icon = character
                     .texture_id()
-                    .map(|r_id| Icon::Resource(*r_id))
+                    .map(|r_id| Icon::Resource(r_id.clone()))
                     .unwrap_or(Icon::DefaultUser);
                 Some((icon, character.name()))
             } else {

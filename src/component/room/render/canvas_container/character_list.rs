@@ -44,7 +44,7 @@ fn render_item(
                 vec![{
                     let icon = character
                         .texture_id()
-                        .map(|r_id| Icon::Resource(*r_id))
+                        .map(|r_id| Icon::Resource(r_id.clone()))
                         .unwrap_or(Icon::DefaultUser);
                     common::chat_icon(
                         Attributes::new().class("icon-medium"),

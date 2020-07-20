@@ -125,7 +125,7 @@ impl Block for Table {
             size: array![self.size[0], self.size[1]],
             is_bind_to_grid: self.is_bind_to_grid,
             drawing_texture_id: self.drawing_texture_id.to_jsvalue(),
-            image_texture_id: self.image_texture_id.map(|id| id.to_jsvalue()),
+            image_texture_id: self.image_texture_id.as_ref().map(|id| id.to_jsvalue()),
             tablemasks: tablemasks,
             areas: areas,
             boxblocks: boxblocks

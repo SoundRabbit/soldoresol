@@ -1467,7 +1467,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 Sender::User => (
                     Some(state.personal_data().name().clone()),
                     None,
-                    state.personal_data().icon().map(|r_id| *r_id),
+                    state.personal_data().icon().map(|r_id| r_id.clone()),
                 ),
                 Sender::Character(character_id) => {
                     if let Some(character) =
@@ -1475,8 +1475,8 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     {
                         (
                             Some(character.name().clone()),
-                            Some(*character_id),
-                            character.texture_id().map(|r_id| *r_id),
+                            Some(character_id.clone()),
+                            character.texture_id().map(|r_id| r_id.clone()),
                         )
                     } else {
                         (None, None, None)
@@ -1485,7 +1485,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 _ => (None, None, None),
             };
             if let (Some(display_name), Some(tab)) = (display_name, state.selecting_chat_tab_id()) {
-                let tab = *tab;
+                let tab = tab.clone();
                 let text = state.chat_mut().drain_inputing_message();
                 let (left, _) = state.dicebot().delimit(&text);
                 let left = left.to_string();
@@ -1522,7 +1522,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                                     text.clone(),
                                     result,
                                 );
-                                Msg::InsertChatItem(tab, item, js_sys::Date::now())
+                                Msg::InsertChatItem(tab.clone(), item, js_sys::Date::now())
                             },
                         ))
                     } else {
@@ -1543,7 +1543,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state
                 .block_field_mut()
                 .update(&tab_id, None, |tab: &mut block::chat::Tab| {
-                    tab.insert(timestamp, item_id);
+                    tab.insert(timestamp, item_id.clone());
                 });
             state.room().send(skyway::Msg::InsertChatItem(
                 tab_id.to_id(),
@@ -1572,7 +1572,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             let tab = block::chat::Tab::new("タブ");
             let tab_id = state.block_field_mut().add(tab);
             state.update_chat_block(timestamp(), |chat| {
-                chat.push(tab_id);
+                chat.push(tab_id.clone());
             });
             send_pack_cmd(state.block_field(), vec![state.chat().block_id(), &tab_id])
         }
@@ -1780,7 +1780,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
             let property_id = state.block_field_mut().add(property);
 
-            let mut character = block::Character::new(property_id, name);
+            let mut character = block::Character::new(property_id.clone(), name);
 
             if let Some(texture) = texture {
                 let size_ratio = texture
@@ -1790,7 +1790,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
                 let promise = texture.pack();
                 let texture_id = state.resource_mut().add(texture);
-                character.set_texture_id(Some(texture_id));
+                character.set_texture_id(Some(texture_id.clone()));
 
                 state.enqueue(Cmd::task(move |resolve| {
                     promise.then(move |data| {
