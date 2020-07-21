@@ -100,15 +100,15 @@ pub fn render(
                                         awesome::i("fa-external-link-alt"),
                                     ],
                                 ),
-                                // btn::headermenu(
-                                //     Attributes::new().class("keyvalueoption"),
-                                //     Events::new(),
-                                //     vec![
-                                //         awesome::i("fa-layer-group"),
-                                //         Html::text(" ルーム設定 "),
-                                //         awesome::i("fa-external-link-alt"),
-                                //     ],
-                                // ),
+                                btn::headermenu(
+                                    Attributes::new().class("keyvalueoption"),
+                                    Events::new(),
+                                    vec![
+                                        awesome::i("fa-layer-group"),
+                                        Html::text(" ルーム設定 "),
+                                        awesome::i("fa-external-link-alt"),
+                                    ],
+                                ),
                                 // btn::headermenu(
                                 //     Attributes::new().class("keyvalueoption"),
                                 //     Events::new(),
