@@ -1,5 +1,4 @@
 use super::super::common;
-use super::Msg;
 use crate::{
     block::{self, chat::item::Icon, BlockId},
     Resource,

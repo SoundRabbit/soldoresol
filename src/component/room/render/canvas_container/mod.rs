@@ -1,4 +1,3 @@
-use super::state;
 use super::{Msg, State};
 use crate::{
     block,
@@ -7,7 +6,6 @@ use crate::{
     Resource,
 };
 use kagura::prelude::*;
-use std::collections::VecDeque;
 
 mod character_list;
 mod overlaper;
