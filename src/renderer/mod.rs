@@ -95,6 +95,7 @@ impl Renderer {
         resource: &Resource,
         canvas_size: &[f32; 2],
         floating_object: &Option<&BlockId>,
+        client_id: &String,
     ) {
         if Rc::strong_count(&self.gl) < 3 {
             if let Some(world) = block_field.get::<block::World>(world) {
@@ -105,6 +106,7 @@ impl Renderer {
                     block_field,
                     world,
                     resource,
+                    client_id,
                 );
 
                 self.mask_renderer.render(
@@ -113,6 +115,7 @@ impl Renderer {
                     block_field,
                     world,
                     floating_object,
+                    client_id,
                 );
 
                 let view_gl = Rc::clone(&self.gl);

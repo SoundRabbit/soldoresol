@@ -98,6 +98,7 @@ impl ViewRenderer {
         block_field: &block::Field,
         world: &block::World,
         resource: &Resource,
+        client_id: &String,
     ) {
         let vp_matrix = camera
             .perspective_matrix(&canvas_size)
@@ -145,6 +146,7 @@ impl ViewRenderer {
             &vp_matrix,
             block_field,
             world.characters(),
+            client_id,
         );
 
         gl.depth_func(web_sys::WebGlRenderingContext::ALWAYS);
@@ -161,6 +163,7 @@ impl ViewRenderer {
             world.characters(),
             &mut self.img_texture_buffer,
             resource,
+            client_id,
         );
     }
 }

@@ -70,6 +70,7 @@ impl CharacterCollectionRenderer {
         characters: impl Iterator<Item = &'a BlockId>,
         id_map: &mut HashMap<u32, TableBlock>,
         floating_object: &Option<&BlockId>,
+        client_id: &String,
     ) {
         gl.set_attribute(&self.vertexis_buffer_xy, &program.a_vertex_location, 3, 0);
         gl.set_attribute(
@@ -91,6 +92,7 @@ impl CharacterCollectionRenderer {
             if floating_object
                 .map(|object_id| character_id != *object_id)
                 .unwrap_or(true)
+                && character.is_showable(client_id)
             {
                 let s = character.size();
                 let p = character.position();

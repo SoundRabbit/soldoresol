@@ -54,26 +54,29 @@ impl CharacterTextureRenderer {
         characters: impl Iterator<Item = &'a BlockId>,
         textures: &mut super::TextureCollection,
         resource: &Resource,
+        client_id: &String,
     ) {
         let mut z_index: BTreeMap<OrderedFloat<f32>, Vec<(Array2<f32>, &block::Character)>> =
             BTreeMap::new();
         for (_, character) in block_field.listed::<block::Character>(characters.collect()) {
-            let s = character.size();
-            let model_matrix: Array2<f32> = ModelMatrix::new()
-                .with_scale(s)
-                .with_x_axis_rotation(camera.x_axis_rotation() - std::f32::consts::FRAC_PI_2)
-                .with_z_axis_rotation(camera.z_axis_rotation())
-                .with_movement(&character.position())
-                .into();
-            let mvp_matrix = vp_matrix.dot(&model_matrix);
+            if character.is_showable(client_id) {
+                let s = character.size();
+                let model_matrix: Array2<f32> = ModelMatrix::new()
+                    .with_scale(s)
+                    .with_x_axis_rotation(camera.x_axis_rotation() - std::f32::consts::FRAC_PI_2)
+                    .with_z_axis_rotation(camera.z_axis_rotation())
+                    .with_movement(&character.position())
+                    .into();
+                let mvp_matrix = vp_matrix.dot(&model_matrix);
 
-            let s = mvp_matrix.dot(&arr1(&[0.0, 0.0, 0.0, 1.0]));
-            let key = OrderedFloat(-s[2] / s[3]);
-            let value = (mvp_matrix, character);
-            if let Some(v) = z_index.get_mut(&key) {
-                v.push(value);
-            } else {
-                z_index.insert(key, vec![value]);
+                let s = mvp_matrix.dot(&arr1(&[0.0, 0.0, 0.0, 1.0]));
+                let key = OrderedFloat(-s[2] / s[3]);
+                let value = (mvp_matrix, character);
+                if let Some(v) = z_index.get_mut(&key) {
+                    v.push(value);
+                } else {
+                    z_index.insert(key, vec![value]);
+                }
             }
         }
 

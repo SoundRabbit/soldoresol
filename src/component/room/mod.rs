@@ -119,6 +119,7 @@ pub enum Msg {
     SetCharacterSize(BlockId, [Option<f32>; 2]),
     SetCharacterTextrureToCloseModal(BlockId, Option<ResourceId>),
     SetCharacterPosition(BlockId, [f32; 3]),
+    SetCharacterIsHidden(BlockId, bool),
 
     // property
     AddChildToProprty(BlockId),
@@ -176,6 +177,7 @@ pub enum Sub {
 pub fn new(
     peer: Rc<skyway::Peer>,
     room: Rc<skyway::Room>,
+    client_id: Rc<String>,
     common_database: Rc<web_sys::IdbDatabase>,
     room_database: Rc<web_sys::IdbDatabase>,
 ) -> Component<Msg, State, Sub> {
@@ -183,7 +185,7 @@ pub fn new(
         let peer = Rc::clone(&peer);
         let room = Rc::clone(&room);
         move || {
-            let state = State::new(peer, room, common_database, room_database);
+            let state = State::new(peer, room, client_id, common_database, room_database);
             let task = Cmd::task(|handler| {
                 handler(Msg::InitDomDependents);
             });
@@ -417,7 +419,11 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             ]));
             let prop_root = state.block_field_mut().add(prop_root);
 
-            let mut character = block::Character::new(prop_root.clone(), "キャラクター");
+            let mut character = block::Character::new(
+                prop_root.clone(),
+                "キャラクター",
+                state.client_id().as_ref().clone(),
+            );
             character.set_position([x, y, 0.0]);
             let character = state.block_field_mut().add(character);
 
@@ -1368,6 +1374,20 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             send_pack_cmd(state.block_field(), vec![&character_id])
         }
 
+        Msg::SetCharacterIsHidden(character_id, is_hidden) => {
+            state.block_field_mut().update(
+                &character_id,
+                timestamp(),
+                |character: &mut block::Character| {
+                    character.set_is_hidden(is_hidden);
+                },
+            );
+
+            render_canvas(state);
+
+            send_pack_cmd(state.block_field(), vec![&character_id])
+        }
+
         // Property
         Msg::AddChildToProprty(property_id) => {
             let child_property = block::Property::new("");
@@ -1780,7 +1800,11 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
             let property_id = state.block_field_mut().add(property);
 
-            let mut character = block::Character::new(property_id.clone(), name);
+            let mut character = block::Character::new(
+                property_id.clone(),
+                name,
+                state.client_id().as_ref().clone(),
+            );
 
             if let Some(texture) = texture {
                 let size_ratio = texture

@@ -49,6 +49,7 @@ impl CharacterMaskRenderer {
         vp_matrix: &Array2<f32>,
         block_field: &block::Field,
         characters: impl Iterator<Item = &'a BlockId>,
+        client_id: &String,
     ) {
         self.program.use_program(gl);
         gl.set_attribute(&self.vertexis_buffer, &self.program.a_vertex_location, 3, 0);
@@ -65,38 +66,42 @@ impl CharacterMaskRenderer {
         );
 
         for (_, character) in block_field.listed::<block::Character>(characters.collect()) {
-            let s = character.size();
-            let model_matrix: Array2<f32> = ModelMatrix::new()
-                .with_scale(&[s[0], s[1], 1.0])
-                .with_movement(character.position())
-                .into();
-            let mvp_matrix = vp_matrix.dot(&model_matrix);
-            let mvp_matrix = mvp_matrix.t();
+            if character.is_showable(client_id) {
+                let s = character.size();
+                let model_matrix: Array2<f32> = ModelMatrix::new()
+                    .with_scale(&[s[0], s[1], 1.0])
+                    .with_movement(character.position())
+                    .into();
+                let mvp_matrix = vp_matrix.dot(&model_matrix);
+                let mvp_matrix = mvp_matrix.t();
 
-            gl.uniform_matrix4fv_with_f32_array(
-                Some(&self.program.u_translate_location),
-                false,
-                &[
-                    mvp_matrix.row(0).to_vec(),
-                    mvp_matrix.row(1).to_vec(),
-                    mvp_matrix.row(2).to_vec(),
-                    mvp_matrix.row(3).to_vec(),
-                ]
-                .concat()
-                .into_iter()
-                .map(|a| a as f32)
-                .collect::<Vec<f32>>(),
-            );
-            gl.uniform4fv_with_f32_array(
-                Some(&self.program.u_mask_color_location),
-                &color_system::gray(192, 9).to_f32array(),
-            );
-            gl.draw_elements_with_i32(
-                web_sys::WebGlRenderingContext::TRIANGLES,
-                6,
-                web_sys::WebGlRenderingContext::UNSIGNED_SHORT,
-                0,
-            );
+                gl.uniform_matrix4fv_with_f32_array(
+                    Some(&self.program.u_translate_location),
+                    false,
+                    &[
+                        mvp_matrix.row(0).to_vec(),
+                        mvp_matrix.row(1).to_vec(),
+                        mvp_matrix.row(2).to_vec(),
+                        mvp_matrix.row(3).to_vec(),
+                    ]
+                    .concat()
+                    .into_iter()
+                    .map(|a| a as f32)
+                    .collect::<Vec<f32>>(),
+                );
+                let color = if character.is_hidden() {
+                    color_system::red(192, 9).to_f32array()
+                } else {
+                    color_system::gray(192, 9).to_f32array()
+                };
+                gl.uniform4fv_with_f32_array(Some(&self.program.u_mask_color_location), &color);
+                gl.draw_elements_with_i32(
+                    web_sys::WebGlRenderingContext::TRIANGLES,
+                    6,
+                    web_sys::WebGlRenderingContext::UNSIGNED_SHORT,
+                    0,
+                );
+            }
         }
     }
 }

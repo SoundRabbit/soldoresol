@@ -10,10 +10,16 @@ pub struct Character {
     background_color: Color,
     name: String,
     property_id: BlockId,
+    owner_client_id: String,
+    is_hidden: bool,
 }
 
 impl Character {
-    pub fn new(property_id: BlockId, name: impl Into<String>) -> Self {
+    pub fn new(
+        property_id: BlockId,
+        name: impl Into<String>,
+        owner_client_id: impl Into<String>,
+    ) -> Self {
         Self {
             size: [1.0, 1.0, 0.0],
             position: [0.0, 0.0, 0.0],
@@ -21,6 +27,8 @@ impl Character {
             background_color: Color::from(0),
             name: name.into(),
             property_id: property_id,
+            owner_client_id: owner_client_id.into(),
+            is_hidden: false,
         }
     }
 
@@ -67,6 +75,30 @@ impl Character {
     pub fn set_property_id(&mut self, property_id: BlockId) {
         self.property_id = property_id;
     }
+
+    pub fn owner_client_id(&self) -> &String {
+        &self.owner_client_id
+    }
+
+    pub fn is_hidden(&self) -> bool {
+        self.is_hidden
+    }
+
+    pub fn set_is_hidden(&mut self, is_hidden: bool) {
+        self.is_hidden = is_hidden;
+    }
+
+    pub fn is_showable(&self, client_id: &String) -> bool {
+        if self.is_hidden {
+            if *client_id == self.owner_client_id.as_ref() {
+                true
+            } else {
+                false
+            }
+        } else {
+            true
+        }
+    }
 }
 
 impl Block for Character {
@@ -80,13 +112,17 @@ impl Block for Character {
             .unwrap_or(JsValue::undefined());
         let name = self.name();
         let property_id = self.property_id.to_jsvalue();
+        let owner_client_id = self.owner_client_id();
+        let is_hidden = self.is_hidden();
 
         let data = object! {
             size: size,
             position: position,
             texture_id: texture_id,
             name: name,
-            property_id: property_id
+            property_id: property_id,
+            owner_client_id: owner_client_id,
+            is_hidden: is_hidden
         };
         let data: js_sys::Object = data.into();
         let data: JsValue = data.into();
@@ -103,9 +139,25 @@ impl Block for Character {
                 .get("property_id")
                 .and_then(|x| U128Id::from_jsvalue(&x))
                 .map(|x| field.block_id(x));
-            if let (Some(size), Some(position), Some(texture_id), Some(name), Some(property_id)) =
-                (size, position, texture_id, name, property_id)
-            {
+            let owner_client_id = val.get("owner_client_id").and_then(|x| x.as_string());
+            let is_hidden = val.get("is_hidden").and_then(|x| x.as_bool());
+            if let (
+                Some(size),
+                Some(position),
+                Some(texture_id),
+                Some(name),
+                Some(property_id),
+                Some(owner_client_id),
+                Some(is_hidden),
+            ) = (
+                size,
+                position,
+                texture_id,
+                name,
+                property_id,
+                owner_client_id,
+                is_hidden,
+            ) {
                 let size = if let (Some(x), Some(y), Some(z)) = (
                     size.get(0).as_f64().map(|x| x as f32),
                     size.get(1).as_f64().map(|x| x as f32),
@@ -133,6 +185,8 @@ impl Block for Character {
                         background_color: Color::from(0),
                         name,
                         property_id,
+                        owner_client_id,
+                        is_hidden,
                     }))
                 } else {
                     None

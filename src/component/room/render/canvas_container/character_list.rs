@@ -10,6 +10,7 @@ pub fn render<'a>(
     block_field: &block::Field,
     characters: impl Iterator<Item = &'a BlockId>,
     resource: &Resource,
+    client_id: &String,
 ) -> Html {
     Html::div(
         Attributes::new()
@@ -19,7 +20,13 @@ pub fn render<'a>(
         Events::new(),
         block_field
             .listed::<block::Character>(characters.collect())
-            .map(|(_, character)| render_item(block_field, character, resource))
+            .filter_map(|(_, character)| {
+                if character.is_showable(client_id) {
+                    Some(render_item(block_field, character, resource))
+                } else {
+                    None
+                }
+            })
             .collect(),
     )
 }

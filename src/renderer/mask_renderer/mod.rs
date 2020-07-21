@@ -116,6 +116,7 @@ impl MaskRenderer {
         block_field: &block::Field,
         world: &block::World,
         floating_object: &Option<&BlockId>,
+        client_id: &String,
     ) {
         crate::debug::log_2(self.canvas.width(), self.canvas.height());
 
@@ -182,6 +183,7 @@ impl MaskRenderer {
             world.characters(),
             &mut self.id_map,
             floating_object,
+            client_id,
         );
     }
 }

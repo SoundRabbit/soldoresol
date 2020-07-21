@@ -43,6 +43,7 @@ pub enum Modal {
 pub struct State<M, S> {
     peer: Rc<Peer>,
     room: Rc<Room>,
+    client_id: Rc<String>,
     peers: HashSet<String>,
     personal_data: model::PersonalData,
     resource: Resource,
@@ -77,6 +78,7 @@ impl<M, S> State<M, S> {
     pub fn new(
         peer: Rc<Peer>,
         room: Rc<Room>,
+        client_id: Rc<String>,
         common_database: Rc<web_sys::IdbDatabase>,
         room_database: Rc<web_sys::IdbDatabase>,
     ) -> Self {
@@ -92,6 +94,7 @@ impl<M, S> State<M, S> {
         Self {
             peer: peer,
             room: room,
+            client_id,
             peers: hash_set! {},
             personal_data: model::PersonalData::new(),
             resource: Resource::new(),
@@ -120,6 +123,10 @@ impl<M, S> State<M, S> {
 
     pub fn room(&self) -> Rc<Room> {
         Rc::clone(&self.room)
+    }
+
+    pub fn client_id(&self) -> Rc<String> {
+        Rc::clone(&self.client_id)
     }
 
     pub fn peers_mut(&mut self) -> &mut HashSet<String> {
@@ -239,6 +246,7 @@ impl<M, S> State<M, S> {
                 &self.resource,
                 &self.canvas_size,
                 &self.table.floating_object(),
+                &self.client_id,
             );
         }
     }

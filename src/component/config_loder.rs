@@ -13,7 +13,7 @@ pub fn new() -> Component<Msg, State, Sub> {
             hostname: hostname,
             config: None,
             common_database: None,
-            client_id: "".into(),
+            client_id: Rc::new("".into()),
         };
         let config_url = if is_dev_mode {
             "/config.dev.toml"
@@ -32,7 +32,7 @@ pub struct State {
     hostname: String,
     config: Option<Rc<Config>>,
     common_database: Option<Rc<web_sys::IdbDatabase>>,
-    client_id: String,
+    client_id: Rc<String>,
 }
 
 pub enum Msg {
@@ -122,7 +122,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
         Msg::SetCommonDatabaseWithClientId(common_database, client_id) => {
             state.common_database = Some(common_database);
-            state.client_id = client_id;
+            state.client_id = Rc::new(client_id);
             Cmd::none()
         }
         Msg::AddClientId(common_database) => idb::query(
@@ -158,11 +158,14 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 fn render(state: &State) -> Html {
     if let (Some(config), Some(database)) = (&state.config, &state.common_database) {
         Html::component(
-            peer_connection::new(Rc::clone(config), Rc::clone(database)).subscribe(
-                |sub| match sub {
-                    peer_connection::Sub::Reconnect => Msg::NoOp,
-                },
-            ),
+            peer_connection::new(
+                Rc::clone(config),
+                Rc::clone(&state.client_id),
+                Rc::clone(database),
+            )
+            .subscribe(|sub| match sub {
+                peer_connection::Sub::Reconnect => Msg::NoOp,
+            }),
         )
     } else {
         Html::div(

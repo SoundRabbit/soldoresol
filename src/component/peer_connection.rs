@@ -11,6 +11,7 @@ use wasm_bindgen::{prelude::*, JsCast};
 
 pub fn new(
     config: Rc<Config>,
+    client_id: Rc<String>,
     common_database: Rc<web_sys::IdbDatabase>,
 ) -> Component<Msg, State, Sub> {
     let peer = Rc::new(Peer::new(&config.skyway.key));
@@ -21,6 +22,7 @@ pub fn new(
                 peer_id: None,
                 room: None,
                 peer: peer,
+                client_id,
                 inputing_room_id: "".into(),
                 error_message: None,
                 room_id_regex: Regex::new(r"^[A-Za-z0-9@#]{24}$").unwrap(),
@@ -50,6 +52,7 @@ pub struct State {
     peer_id: Option<String>,
     room: Option<Rc<Room>>,
     peer: Rc<Peer>,
+    client_id: Rc<String>,
     inputing_room_id: String,
     error_message: Option<String>,
     room_id_regex: Regex,
@@ -212,6 +215,7 @@ fn render(state: &State) -> Html {
                 Rc::clone(&state.config),
                 Rc::clone(&state.peer),
                 Rc::clone(room),
+                Rc::clone(&state.client_id),
                 Rc::clone(&state.common_database),
             )
             .subscribe(|sub| match sub {

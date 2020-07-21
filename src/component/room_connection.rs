@@ -27,6 +27,7 @@ pub struct State {
     peer: Rc<Peer>,
     room: RoomConnection,
     config: Rc<Config>,
+    client_id: Rc<String>,
     common_database: Rc<web_sys::IdbDatabase>,
     room_database: Option<Rc<web_sys::IdbDatabase>>,
 }
@@ -45,6 +46,7 @@ pub fn new(
     config: Rc<Config>,
     peer: Rc<Peer>,
     room: Rc<Room>,
+    client_id: Rc<String>,
     common_database: Rc<web_sys::IdbDatabase>,
 ) -> Component<Msg, State, Sub> {
     let init = {
@@ -56,6 +58,7 @@ pub fn new(
             let state = State {
                 peer,
                 room: RoomConnection::UnOpened(room),
+                client_id,
                 config: config,
                 room_database: None,
                 common_database: common_database,
@@ -116,6 +119,7 @@ fn render(state: &State) -> Html {
             room::new(
                 Rc::clone(&state.peer),
                 Rc::clone(room),
+                Rc::clone(&state.client_id),
                 Rc::clone(&state.common_database),
                 Rc::clone(room_database),
             )

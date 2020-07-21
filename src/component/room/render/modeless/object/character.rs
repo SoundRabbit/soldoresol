@@ -216,6 +216,26 @@ pub fn render(
                                             }),
                                             vec![],
                                         ),
+                                        Html::div(Attributes::new(), Events::new(), vec![]),
+                                        Html::label(
+                                            Attributes::new(),
+                                            Events::new(),
+                                            vec![Html::text("非公開")],
+                                        ),
+                                        btn::toggle(
+                                            character.is_hidden(),
+                                            Attributes::new(),
+                                            Events::new().on_click({
+                                                let is_hidden = character.is_hidden();
+                                                let character_id = character_id.clone();
+                                                move |_| {
+                                                    Msg::SetCharacterIsHidden(
+                                                        character_id,
+                                                        !is_hidden,
+                                                    )
+                                                }
+                                            }),
+                                        ),
                                     ],
                                 ),
                                 root_property(block_field, character.property_id()),

@@ -62,7 +62,12 @@ pub fn render(z_index: u64, state: &State, world: &block::World) -> Html {
             },
             info(state.table().info()),
             hint(),
-            character_list::render(state.block_field(), world.characters(), state.resource()),
+            character_list::render(
+                state.block_field(),
+                world.characters(),
+                state.resource(),
+                &state.client_id(),
+            ),
             overlaper::render(state, state.modeless()),
         ],
     )
