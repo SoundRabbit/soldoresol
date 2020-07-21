@@ -97,6 +97,7 @@ pub enum Msg {
     // Table
     SetTableSize(BlockId, [f32; 2]),
     SetTableImage(BlockId, Option<ResourceId>),
+    SetTableName(BlockId, String),
 
     // PersonalData
     SetPersonalDataWithPlayerName(String),
@@ -1160,6 +1161,16 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             render_canvas(state);
 
             send_pack_cmd(state.block_field(), vec![&table])
+        }
+
+        Msg::SetTableName(table_id, name) => {
+            state
+                .block_field_mut()
+                .update(&table_id, timestamp(), |table: &mut block::Table| {
+                    table.set_name(name);
+                });
+
+            send_pack_cmd(state.block_field(), vec![&table_id])
         }
 
         // PersonalData

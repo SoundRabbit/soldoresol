@@ -36,6 +36,10 @@ impl Table {
         &self.name
     }
 
+    pub fn set_name(&mut self, name: String) {
+        self.name = name;
+    }
+
     pub fn size(&self) -> &[f32; 2] {
         &self.size
     }

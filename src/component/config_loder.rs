@@ -56,8 +56,13 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             {
                 let common_db_name = String::from("") + &config.client.db_prefix + ".common";
                 state.config = Some(Rc::new(config));
-                idb::open_db(common_db_name.as_str(), |database| {
-                    Msg::TryToSetCommonDatabase(Rc::new(database))
+                let promise = idb::open_db(common_db_name.as_str());
+                Cmd::task(move |resolve| {
+                    promise.then(move |database| {
+                        if let Some(database) = database {
+                            resolve(Msg::TryToSetCommonDatabase(Rc::new(database)))
+                        }
+                    })
                 })
             } else {
                 Cmd::none()
@@ -82,42 +87,45 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     }
                 }
             }
-            if !has_client {
-                idb::create_object_strage(&common_database, "client", |database| {
-                    Msg::TryToSetCommonDatabase(Rc::new(database))
-                })
-            } else if !has_rooms {
-                idb::create_object_strage(&common_database, "rooms", |database| {
-                    Msg::TryToSetCommonDatabase(Rc::new(database))
-                })
-            } else if !has_resources {
-                idb::create_object_strage(&common_database, "resources", |database| {
-                    Msg::TryToSetCommonDatabase(Rc::new(database))
-                })
-            } else if !has_characters {
-                idb::create_object_strage(&common_database, "characters", |database| {
-                    Msg::TryToSetCommonDatabase(Rc::new(database))
-                })
-            } else {
-                idb::query(
+            if has_client && has_rooms && has_resources && has_characters {
+                let promise = idb::query(
                     &common_database,
                     "client",
                     idb::Query::Get(&JsValue::from("client_id")),
-                    {
-                        let common_database = Rc::clone(&common_database);
-                        move |client_id| {
+                );
+                Cmd::task(move |resolve| {
+                    promise.then(move |client_id| {
+                        if let Some(client_id) = client_id {
                             if let Some(client_id) = client_id.as_string() {
-                                Msg::SetCommonDatabaseWithClientId(common_database, client_id)
+                                resolve(Msg::SetCommonDatabaseWithClientId(
+                                    common_database,
+                                    client_id,
+                                ))
                             } else {
-                                Msg::PutClientId(common_database)
+                                resolve(Msg::PutClientId(common_database))
                             }
+                        } else {
+                            resolve(Msg::AddClientId(common_database))
                         }
-                    },
-                    {
-                        let common_database = Rc::clone(&common_database);
-                        |_| Msg::AddClientId(common_database)
-                    },
-                )
+                    })
+                })
+            } else {
+                let promise = if !has_client {
+                    idb::create_object_strage(&common_database, "client")
+                } else if !has_rooms {
+                    idb::create_object_strage(&common_database, "rooms")
+                } else if !has_resources {
+                    idb::create_object_strage(&common_database, "resources")
+                } else {
+                    idb::create_object_strage(&common_database, "characters")
+                };
+                Cmd::task(move |resolve| {
+                    promise.then(move |database| {
+                        if let Some(database) = database {
+                            resolve(Msg::TryToSetCommonDatabase(Rc::new(database)))
+                        }
+                    })
+                })
             }
         }
         Msg::SetCommonDatabaseWithClientId(common_database, client_id) => {
@@ -125,32 +133,32 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.client_id = Rc::new(client_id);
             Cmd::none()
         }
-        Msg::AddClientId(common_database) => idb::query(
-            &common_database,
-            "client",
-            idb::Query::Add(
-                &JsValue::from("client_id"),
-                &JsValue::from(random_id::base64url()),
-            ),
-            {
-                let common_database = Rc::clone(&common_database);
-                move |_| Msg::TryToSetCommonDatabase(common_database)
-            },
-            |_| Msg::NoOp,
-        ),
-        Msg::PutClientId(common_database) => idb::query(
-            &common_database,
-            "client",
-            idb::Query::Put(
-                &JsValue::from("client_id"),
-                &JsValue::from(random_id::base64url()),
-            ),
-            {
-                let common_database = Rc::clone(&common_database);
-                move |_| Msg::TryToSetCommonDatabase(common_database)
-            },
-            |_| Msg::NoOp,
-        ),
+        Msg::AddClientId(common_database) => {
+            let promise = idb::query(
+                &common_database,
+                "client",
+                idb::Query::Add(
+                    &JsValue::from("client_id"),
+                    &JsValue::from(random_id::base64url()),
+                ),
+            );
+            Cmd::task(move |resolve| {
+                promise.then(move |_| resolve(Msg::TryToSetCommonDatabase(common_database)))
+            })
+        }
+        Msg::PutClientId(common_database) => {
+            let promise = idb::query(
+                &common_database,
+                "client",
+                idb::Query::Put(
+                    &JsValue::from("client_id"),
+                    &JsValue::from(random_id::base64url()),
+                ),
+            );
+            Cmd::task(move |resolve| {
+                promise.then(move |_| resolve(Msg::TryToSetCommonDatabase(common_database)))
+            })
+        }
         _ => Cmd::none(),
     }
 }

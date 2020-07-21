@@ -63,8 +63,13 @@ pub fn new(
                 room_database: None,
                 common_database: common_database,
             };
-            let task = idb::open_db(&room_db_name, |database| {
-                Msg::TryToSetRoomDatabase(Rc::new(database))
+
+            let task = Cmd::task(move |resolve| {
+                idb::open_db(&room_db_name).then(move |database| {
+                    if let Some(database) = database {
+                        resolve(Msg::TryToSetRoomDatabase(Rc::new(database)))
+                    }
+                })
             });
             (state, task)
         }
@@ -94,8 +99,13 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 }
             }
             if !has_room {
-                idb::create_object_strage(&room_database, state.room.id.as_str(), |database| {
-                    Msg::TryToSetRoomDatabase(Rc::new(database))
+                let promise = idb::create_object_strage(&room_database, state.room.id.as_str());
+                Cmd::task(move |resolve| {
+                    promise.then(move |database| {
+                        if let Some(database) = database {
+                            resolve(Msg::TryToSetRoomDatabase(Rc::new(database)))
+                        }
+                    })
                 })
             } else {
                 state.room_database = Some(room_database);

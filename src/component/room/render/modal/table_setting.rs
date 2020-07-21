@@ -89,7 +89,10 @@ fn selected_table(resource: &Resource, block_id: &BlockId, table: &block::Table)
                     Html::span(Attributes::new(), Events::new(), vec![Html::text("Name")]),
                     Html::input(
                         Attributes::new().value(table.name()).type_("text"),
-                        Events::new().on_input(move |s| Msg::NoOp),
+                        Events::new().on_input({
+                            let block_id = block_id.clone();
+                            move |s| Msg::SetTableName(block_id, s)
+                        }),
                         vec![],
                     ),
                 ],

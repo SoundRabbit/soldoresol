@@ -93,24 +93,30 @@ fn basic_room_data_object() -> JsValue {
 }
 
 fn request_room_ids_task(database: &web_sys::IdbDatabase) -> Cmd<Msg, Sub> {
-    idb::query(
-        &database,
-        "rooms",
-        idb::Query::GetAllKeys,
-        |x| Msg::SetRoomIdsWithJsValue(x),
-        |_| Msg::NoOp,
-    )
+    let promise = idb::query(&database, "rooms", idb::Query::GetAllKeys);
+    Cmd::task(move |resolve| {
+        promise.then(move |x| {
+            if let Some(x) = x {
+                resolve(Msg::SetRoomIdsWithJsValue(x))
+            }
+        })
+    })
 }
 
 fn request_room_task(database: &web_sys::IdbDatabase, room_id: Option<String>) -> Cmd<Msg, Sub> {
     if let Some(room_id) = room_id {
-        idb::query(
+        let promise = idb::query(
             &database,
             "rooms",
             idb::Query::Get(&JsValue::from(&room_id)),
-            |x| Msg::SetRoomWithJsValue(room_id, x),
-            |_| Msg::NoOp,
-        )
+        );
+        Cmd::task(move |resolve| {
+            promise.then(move |x| {
+                if let Some(x) = x {
+                    resolve(Msg::SetRoomWithJsValue(room_id, x))
+                }
+            })
+        })
     } else {
         Cmd::none()
     }
@@ -130,19 +136,20 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         Msg::TryToConnectToRoom(room_id) => {
             if state.room_id_regex.is_match(&room_id) {
                 let room_id = Rc::new(room_id);
-                idb::query(
+                let promise = idb::query(
                     &state.common_database,
                     "rooms",
                     idb::Query::Get(&JsValue::from(room_id.as_str())),
-                    {
-                        let room_id = Rc::clone(&room_id);
-                        move |_| Msg::ConnectToRoomAndPutDatabase(room_id)
-                    },
-                    {
-                        let room_id = Rc::clone(&room_id);
-                        move |_| Msg::ConnectToRoomAndAddDatabase(room_id)
-                    },
-                )
+                );
+                Cmd::task(move |resolve| {
+                    promise.then(move |x| {
+                        if x.is_some() {
+                            resolve(Msg::ConnectToRoomAndPutDatabase(room_id))
+                        } else {
+                            resolve(Msg::ConnectToRoomAndAddDatabase(room_id))
+                        }
+                    })
+                })
             } else if room_id.len() > 20 {
                 state.error_message = Some("ルームIDの文字数が多すぎます。".into());
                 Cmd::none()
@@ -162,20 +169,22 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.room = None;
             Cmd::sub(Sub::Reconnect)
         }
-        Msg::ConnectToRoomAndPutDatabase(room_id) => idb::query(
-            &state.common_database,
-            "rooms",
-            idb::Query::Put(&JsValue::from(room_id.as_str()), &basic_room_data_object()),
-            |_| Msg::ConnectToRoom(room_id),
-            |_| Msg::NoOp,
-        ),
-        Msg::ConnectToRoomAndAddDatabase(room_id) => idb::query(
-            &state.common_database,
-            "rooms",
-            idb::Query::Add(&JsValue::from(room_id.as_str()), &basic_room_data_object()),
-            |_| Msg::ConnectToRoom(room_id),
-            |_| Msg::NoOp,
-        ),
+        Msg::ConnectToRoomAndPutDatabase(room_id) => {
+            let promise = idb::query(
+                &state.common_database,
+                "rooms",
+                idb::Query::Put(&JsValue::from(room_id.as_str()), &basic_room_data_object()),
+            );
+            Cmd::task(move |resolve| promise.then(move |_| resolve(Msg::ConnectToRoom(room_id))))
+        }
+        Msg::ConnectToRoomAndAddDatabase(room_id) => {
+            let promise = idb::query(
+                &state.common_database,
+                "rooms",
+                idb::Query::Add(&JsValue::from(room_id.as_str()), &basic_room_data_object()),
+            );
+            Cmd::task(move |resolve| promise.then(move |_| resolve(Msg::ConnectToRoom(room_id))))
+        }
         Msg::ConnectToRoom(room_id) => {
             state.room = Some(Rc::new(Room::new(state.peer.join_room(&room_id), room_id)));
             state.inputing_room_id = "".into();
