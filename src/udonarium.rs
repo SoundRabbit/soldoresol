@@ -42,11 +42,11 @@ impl Character {
             let on_load = Closure::wrap(Box::new({
                 let resolve = Rc::clone(&resolve);
                 move |zip: JsValue| {
-                    if let Some((zip, file)) = zip
-                        .dyn_into::<JSZip>()
-                        .ok()
-                        .and_then(|zip| zip.file("data.xml").map(|file| (zip, file)))
-                    {
+                    if let Some((zip, file)) = zip.dyn_into::<JSZip>().ok().and_then(|zip| {
+                        zip.file("data.xml")
+                            .or(zip.file("data0.xml"))
+                            .map(|file| (zip, file))
+                    }) {
                         let on_load = Closure::wrap(Box::new({
                             let resolve = Rc::clone(&resolve);
                             let zip = Rc::new(zip);
