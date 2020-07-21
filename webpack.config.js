@@ -6,7 +6,7 @@ const HtmlWebpackInlineSourcePlugin = require("html-webpack-inline-source-plugin
 module.exports = {
     entry: "./assets",
     output: {
-        path: path.join(__dirname, "./docs")
+        path: path.join(__dirname, "./docs/beta")
     },
     resolve: {
         extensions: [".js"]
