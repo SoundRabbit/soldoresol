@@ -73,6 +73,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             let mut has_client = false;
             let mut has_rooms = false;
             let mut has_resources = false;
+            let mut has_tables = false;
             let mut has_characters = false;
             for i in 0..names.length() {
                 if let Some(name) = names.item(i) {
@@ -82,12 +83,14 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                         has_rooms = true;
                     } else if name == "resources" {
                         has_resources = true;
+                    } else if name == "tables" {
+                        has_tables = true;
                     } else if name == "characters" {
                         has_characters = true;
                     }
                 }
             }
-            if has_client && has_rooms && has_resources && has_characters {
+            if has_client && has_rooms && has_resources && has_characters && has_tables {
                 let promise = idb::query(
                     &common_database,
                     "client",
@@ -116,6 +119,8 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     idb::create_object_strage(&common_database, "rooms")
                 } else if !has_resources {
                     idb::create_object_strage(&common_database, "resources")
+                } else if !has_tables {
+                    idb::create_object_strage(&common_database, "tables")
                 } else {
                     idb::create_object_strage(&common_database, "characters")
                 };
