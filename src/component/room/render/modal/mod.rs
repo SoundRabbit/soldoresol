@@ -13,7 +13,6 @@ mod select_character_image;
 mod select_player_image;
 mod select_table_image;
 mod sender_character_selecter;
-mod table_mask_color_picker;
 mod table_setting;
 
 pub fn render(
@@ -54,7 +53,6 @@ pub fn render(
                     Html::none()
                 }
             }
-            Modal::TablemaskColorPicker(block_id) => table_mask_color_picker::render(block_id),
             Modal::TableSetting => {
                 if let Some(world) = block_field.get::<block::World>(state.world()) {
                     table_setting::render(block_field, resource, world)

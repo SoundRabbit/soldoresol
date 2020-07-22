@@ -91,7 +91,7 @@ pub fn query(database: &web_sys::IdbDatabase, object_name: &str, query: Query) -
     Promise::new(move |resolve| {
         let resolve = Rc::new(RefCell::new(Some(resolve)));
 
-        let a = Closure::once(Box::new({
+        let a = Closure::wrap(Box::new({
             let resolve = Rc::clone(&resolve);
             let request = Rc::clone(&request);
             move || {
@@ -103,20 +103,34 @@ pub fn query(database: &web_sys::IdbDatabase, object_name: &str, query: Query) -
                     resolve(Some(result));
                 }
             }
-        }));
+        }) as Box<dyn FnMut()>);
         request.set_onsuccess(Some(a.as_ref().unchecked_ref()));
         a.forget();
 
-        let a = Closure::once(Box::new({
+        let a = Closure::wrap(Box::new({
             let resolve = Rc::clone(&resolve);
-            let request = Rc::clone(&request);
             move || {
                 if let Some(resolve) = resolve.borrow_mut().take() {
                     resolve(None);
                 }
             }
-        }));
+        }) as Box<dyn FnMut()>);
         request.set_onerror(Some(a.as_ref().unchecked_ref()));
         a.forget();
+    })
+}
+
+pub fn assign(
+    database: Rc<web_sys::IdbDatabase>,
+    object_name: String,
+    key: JsValue,
+    value: JsValue,
+) -> Promise<JsValue> {
+    query(&database, &object_name, Query::Add(&key, &value)).and_then(move |x| {
+        if let Some(x) = x {
+            Promise::new(move |resolve| resolve(Some(x)))
+        } else {
+            query(&database, &object_name, Query::Add(&key, &value))
+        }
     })
 }

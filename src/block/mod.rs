@@ -307,14 +307,13 @@ impl Field {
             let key = self.block_id(key);
             keys.push(key);
         }
-        self.pack_listed(keys.iter().collect())
+        self.pack_listed(keys)
     }
 
-    pub fn pack_listed(&self, block_ids: Vec<&BlockId>) -> Promise<Vec<(BlockId, JsValue)>> {
+    pub fn pack_listed(&self, block_ids: Vec<BlockId>) -> Promise<Vec<(BlockId, JsValue)>> {
         let mut promises = vec![];
         for block_id in block_ids {
             if let Some(block) = self.table.get(&block_id.to_id()) {
-                let block_id = block_id.clone();
                 promises.push(block.pack().map(move |res| res.map(|val| (block_id, val))));
             }
         }

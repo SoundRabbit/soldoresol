@@ -32,7 +32,6 @@ pub enum Modal {
     SelectCharacterImage(BlockId),
     SelectPlayerImage,
     PersonalSetting,
-    TablemaskColorPicker(BlockId),
     SenderCharacterSelecter,
     TableSetting,
     ChatLog(BlockId),
@@ -62,6 +61,7 @@ pub struct State<M, S> {
     dicebot: dicebot::State,
     common_database: Rc<web_sys::IdbDatabase>,
     room_database: Rc<web_sys::IdbDatabase>,
+    table_database: Rc<web_sys::IdbDatabase>,
     cmd_queue: model::CmdQueue<M, S>,
 }
 
@@ -81,6 +81,7 @@ impl<M, S> State<M, S> {
         client_id: Rc<String>,
         common_database: Rc<web_sys::IdbDatabase>,
         room_database: Rc<web_sys::IdbDatabase>,
+        table_database: Rc<web_sys::IdbDatabase>,
     ) -> Self {
         let peers = hash_set! {peer.id()};
         let mut block_field = block::Field::new();
@@ -113,6 +114,7 @@ impl<M, S> State<M, S> {
             dicebot: dicebot::State::new(),
             common_database,
             room_database,
+            table_database,
             cmd_queue: model::CmdQueue::new(),
         }
     }
@@ -453,6 +455,14 @@ impl<M, S> State<M, S> {
 
     pub fn dicebot_mut(&mut self) -> &mut dicebot::State {
         &mut self.dicebot
+    }
+
+    pub fn common_database(&self) -> &Rc<web_sys::IdbDatabase> {
+        &self.common_database
+    }
+
+    pub fn table_database(&self) -> &Rc<web_sys::IdbDatabase> {
+        &self.table_database
     }
 
     pub fn dequeue(&mut self) -> Cmd<M, S> {

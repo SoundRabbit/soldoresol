@@ -117,7 +117,10 @@ fn selected_table(resource: &Resource, block_id: &BlockId, table: &block::Table)
                         vec![
                             btn::primary(
                                 Attributes::new(),
-                                Events::new(),
+                                Events::new().on_click({
+                                    let block_id = block_id.clone();
+                                    move |_| Msg::SaveTableToIdb(block_id)
+                                }),
                                 vec![Html::text("保存")],
                             ),
                             btn::primary(

@@ -137,7 +137,8 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 }
 
 fn render(state: &State) -> Html {
-    if let (RoomConnection::Opened(room), Some(room_database)) = (&state.room, &state.room_database)
+    if let (RoomConnection::Opened(room), Some(room_database), Some(table_database)) =
+        (&state.room, &state.room_database, &state.table_database)
     {
         Html::component(
             room::new(
@@ -146,6 +147,7 @@ fn render(state: &State) -> Html {
                 Rc::clone(&state.client_id),
                 Rc::clone(&state.common_database),
                 Rc::clone(room_database),
+                Rc::clone(table_database),
             )
             .subscribe(|sub| match sub {
                 room::Sub::DisconnectFromRoom => Msg::DisconnectFromRoom,

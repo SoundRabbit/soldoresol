@@ -43,6 +43,17 @@ impl Resource {
         Promise::some(promises)
             .map(|vals| vals.map(|vals| vals.into_iter().filter_map(|x| x).collect()))
     }
+
+    pub fn pack_listed(&self, ids: Vec<ResourceId>) -> Promise<Vec<(ResourceId, JsValue)>> {
+        let mut promises = vec![];
+        for key in ids {
+            if let Some(data) = self.data.get(&key) {
+                promises.push(data.pack().map(move |data| data.map(|data| (key, data))));
+            }
+        }
+        Promise::some(promises)
+            .map(|vals| vals.map(|vals| vals.into_iter().filter_map(|x| x).collect()))
+    }
 }
 
 impl Deref for Resource {
