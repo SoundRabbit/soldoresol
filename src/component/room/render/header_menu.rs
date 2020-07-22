@@ -96,7 +96,7 @@ pub fn render(
                                         .on_click(|_| Msg::OpenModal(Modal::PersonalSetting)),
                                     vec![
                                         awesome::i("fa-user-cog"),
-                                        Html::text(" プレイヤー設定 "),
+                                        Html::text(" プレイヤー情報 "),
                                         awesome::i("fa-external-link-alt"),
                                     ],
                                 ),
@@ -105,7 +105,7 @@ pub fn render(
                                     Events::new(),
                                     vec![
                                         awesome::i("fa-layer-group"),
-                                        Html::text(" ルーム設定 "),
+                                        Html::text(" ルーム "),
                                         awesome::i("fa-external-link-alt"),
                                     ],
                                 ),
@@ -123,7 +123,7 @@ pub fn render(
                                     Events::new().on_click(|_| Msg::OpenModal(Modal::TableSetting)),
                                     vec![
                                         awesome::i("fa-vector-square"),
-                                        Html::text(" テーブル設定 "),
+                                        Html::text(" テーブル "),
                                         awesome::i("fa-external-link-alt"),
                                     ],
                                 ),
