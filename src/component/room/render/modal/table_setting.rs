@@ -97,7 +97,9 @@ fn selected_table(resource: &Resource, block_id: &BlockId, table: &block::Table)
         Events::new(),
         vec![
             Html::div(
-                Attributes::new().class("keyvalueoption"),
+                Attributes::new()
+                    .class("keyvalueoption")
+                    .class("container-a"),
                 Events::new(),
                 vec![
                     Html::span(Attributes::new(), Events::new(), vec![Html::text("Name")]),
