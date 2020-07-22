@@ -36,6 +36,12 @@ impl World {
         self.tables.push(table);
     }
 
+    pub fn remove_table(&mut self, table_id: &BlockId) {
+        if let Some(pos) = self.tables.iter().position(|x| *x == *table_id) {
+            self.tables.remove(pos);
+        }
+    }
+
     pub fn characters(&self) -> impl Iterator<Item = &BlockId> {
         self.characters.iter()
     }

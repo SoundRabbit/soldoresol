@@ -30,22 +30,36 @@ pub fn render<'a>(block_field: &block::Field, resource: &Resource, world: &block
                     Events::new(),
                     vec![
                         Html::div(
-                            Attributes::new().class("linear-v").class("scroll-v"),
+                            Attributes::new()
+                                .class("keyvalue")
+                                .class("keyvalue-rev")
+                                .class("scroll-v"),
                             Events::new(),
                             vec![
                                 block_field
                                     .listed::<block::Table>(world.tables().collect())
                                     .map(|(table_id, table)| {
-                                        let table_id = table_id.clone();
-                                        btn::selectable(
-                                            table_id == *world.selecting_table(),
-                                            Attributes::new(),
-                                            Events::new().on_click(move |_| {
-                                                Msg::SetSelectingTable(table_id)
-                                            }),
-                                            vec![Html::text(table.name())],
-                                        )
+                                        vec![
+                                            btn::selectable(
+                                                table_id == *world.selecting_table(),
+                                                Attributes::new(),
+                                                Events::new().on_click({
+                                                    let table_id = table_id.clone();
+                                                    move |_| Msg::SetSelectingTable(table_id)
+                                                }),
+                                                vec![Html::text(table.name())],
+                                            ),
+                                            btn::danger(
+                                                Attributes::new(),
+                                                Events::new().on_click({
+                                                    let table_id = table_id.clone();
+                                                    move |_| Msg::RemoveTable(table_id)
+                                                }),
+                                                vec![awesome::i("fa-times")],
+                                            ),
+                                        ]
                                     })
+                                    .flatten()
                                     .collect(),
                                 vec![btn::secondary(
                                     Attributes::new(),

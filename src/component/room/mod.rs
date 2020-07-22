@@ -93,6 +93,7 @@ pub enum Msg {
     // World
     AddTable,
     SetSelectingTable(BlockId),
+    RemoveTable(BlockId),
 
     // Table
     SetTableSize(BlockId, [f32; 2]),
@@ -1124,6 +1125,17 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             render_canvas(state);
 
             send_pack_cmd(state.block_field(), vec![state.world()])
+        }
+        Msg::RemoveTable(table_id) => {
+            state.update_world(timestamp(), |world| {
+                world.remove_table(&table_id);
+            });
+
+            state.block_field_mut().remove(&table_id);
+
+            render_canvas(state);
+
+            send_pack_cmd(state.block_field(), vec![state.world(), &table_id])
         }
 
         // Table
