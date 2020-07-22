@@ -19,6 +19,15 @@ pub fn base64url() -> String {
         .replace("/", r"#")
 }
 
+pub fn u128val() -> u128 {
+    let mut buf = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    let id = u8vec(16);
+    for i in 0..16 {
+        buf[i] = id[i];
+    }
+    u128::from_be_bytes(buf)
+}
+
 pub fn u32val() -> u32 {
     let mut buf = [0, 0, 0, 0];
     let id = u8vec(4);
@@ -39,29 +48,31 @@ pub fn u32color() -> u32 {
 }
 
 #[derive(Hash, PartialEq, Eq, Debug)]
-pub struct U128Id(Rc<(u32, u32, u32, u32)>);
+pub struct U128Id(Rc<u128>);
 
 impl U128Id {
     pub fn new() -> Self {
-        Self(Rc::new((u32val(), u32val(), u32val(), u32val())))
+        Self(Rc::new(u128val()))
     }
 
     pub fn to_jsvalue(&self) -> JsValue {
-        let i = self.0.as_ref();
-        array![i.0, i.1, i.2, i.3].into()
+        JsValue::from(self.0.to_string())
     }
 
     pub fn from_jsvalue(val: &JsValue) -> Option<Self> {
-        let buf = js_sys::Array::from(val);
-        let a = buf.get(0).as_f64();
-        let b = buf.get(1).as_f64();
-        let c = buf.get(0).as_f64();
-        let d = buf.get(1).as_f64();
-        if let (Some(a), Some(b), Some(c), Some(d)) = (a, b, c, d) {
-            Some(Self(Rc::new((a as u32, b as u32, c as u32, d as u32))))
+        if let Some(val) = val.as_string().and_then(|x| x.parse().ok()) {
+            Some(Self(Rc::new(val)))
         } else {
             None
         }
+    }
+
+    pub fn to_u128(&self) -> u128 {
+        self.0.as_ref().clone()
+    }
+
+    pub fn from_u128(val: u128) -> Self {
+        Self(Rc::new(val))
     }
 }
 
