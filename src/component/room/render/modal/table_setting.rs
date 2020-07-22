@@ -83,7 +83,7 @@ fn selected_table(resource: &Resource, block_id: &BlockId, table: &block::Table)
         Events::new(),
         vec![
             Html::div(
-                Attributes::new().class("keyvalue"),
+                Attributes::new().class("keyvalueoption"),
                 Events::new(),
                 vec![
                     Html::span(Attributes::new(), Events::new(), vec![Html::text("Name")]),
@@ -95,6 +95,7 @@ fn selected_table(resource: &Resource, block_id: &BlockId, table: &block::Table)
                         }),
                         vec![],
                     ),
+                    btn::primary(Attributes::new(), Events::new(), vec![Html::text("保存")]),
                 ],
             ),
             Html::div(
