@@ -173,7 +173,7 @@ fn selected_table(resource: &Resource, block_id: &BlockId, table: &block::Table)
                         ],
                     ),
                     Html::div(
-                        Attributes::new().class("container-a"),
+                        Attributes::new(),
                         Events::new(),
                         vec![
                             Html::div(
