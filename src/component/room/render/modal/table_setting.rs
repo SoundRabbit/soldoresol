@@ -109,7 +109,22 @@ fn selected_table(resource: &Resource, block_id: &BlockId, table: &block::Table)
                         }),
                         vec![],
                     ),
-                    btn::primary(Attributes::new(), Events::new(), vec![Html::text("保存")]),
+                    Html::div(
+                        Attributes::new().class("linear-h"),
+                        Events::new(),
+                        vec![
+                            btn::primary(
+                                Attributes::new(),
+                                Events::new(),
+                                vec![Html::text("保存")],
+                            ),
+                            btn::primary(
+                                Attributes::new(),
+                                Events::new(),
+                                vec![Html::text("読み込み")],
+                            ),
+                        ],
+                    ),
                 ],
             ),
             Html::div(
