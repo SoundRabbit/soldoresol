@@ -30,10 +30,12 @@ pub struct State {
     client_id: Rc<String>,
     common_database: Rc<web_sys::IdbDatabase>,
     room_database: Option<Rc<web_sys::IdbDatabase>>,
+    table_database: Option<Rc<web_sys::IdbDatabase>>,
 }
 
 pub enum Msg {
     TryToSetRoomDatabase(Rc<web_sys::IdbDatabase>),
+    SetTableDatabase(Rc<web_sys::IdbDatabase>),
     SetConnectionAsOpened,
     DisconnectFromRoom,
 }
@@ -61,6 +63,7 @@ pub fn new(
                 client_id,
                 config: config,
                 room_database: None,
+                table_database: None,
                 common_database: common_database,
             };
 
@@ -109,8 +112,19 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 })
             } else {
                 state.room_database = Some(room_database);
-                Cmd::none()
+                let table_db_name = String::from("") + &state.config.client.db_prefix + ".table";
+                Cmd::task(move |resolve| {
+                    idb::open_db(&table_db_name).then(move |database| {
+                        if let Some(database) = database {
+                            resolve(Msg::SetTableDatabase(Rc::new(database)))
+                        }
+                    })
+                })
             }
+        }
+        Msg::SetTableDatabase(table_database) => {
+            state.table_database = Some(table_database);
+            Cmd::none()
         }
         Msg::SetConnectionAsOpened => {
             if let RoomConnection::UnOpened(room) = &state.room {
