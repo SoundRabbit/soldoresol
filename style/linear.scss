@@ -2,7 +2,7 @@
     &-h {
         display: grid;
         grid-auto-columns: max-content;
-        column-gap: 0.5em;
+        column-gap: .25em;
         grid-auto-flow: column;
 
         &-eq {
@@ -13,7 +13,7 @@
     &-v {
         display: grid;
         grid-auto-rows: max-content;
-        row-gap: 0.8em;
+        row-gap: 0.35em;
         grid-auto-flow: row;
 
         &-stretch {
