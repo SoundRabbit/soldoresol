@@ -122,7 +122,7 @@ pub fn query(database: &web_sys::IdbDatabase, object_name: &str, query: Query) -
 
 pub fn assign(
     database: Rc<web_sys::IdbDatabase>,
-    object_name: String,
+    object_name: Rc<String>,
     key: JsValue,
     value: JsValue,
 ) -> Promise<JsValue> {

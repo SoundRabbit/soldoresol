@@ -1,17 +1,26 @@
 use super::super::{btn, text};
-use crate::{block, idb, model, random_id::U128Id, JsObject, Promise, Timestamp};
+use crate::{
+    block::{self, BlockId},
+    idb, model,
+    random_id::U128Id,
+    JsObject, Promise, Timestamp,
+};
 use kagura::prelude::*;
-use std::rc::Rc;
+use std::{collections::HashMap, rc::Rc};
 use wasm_bindgen::{prelude::*, JsCast};
 
 pub type TableDb = Component<Msg, Props, State, Sub>;
 
 pub struct Props {
     pub common_db: Rc<web_sys::IdbDatabase>,
+    pub table_db: Rc<web_sys::IdbDatabase>,
+    pub block_field: block::Field,
 }
 
 pub struct State {
+    block_field: block::Field,
     common_db: Rc<web_sys::IdbDatabase>,
+    table_db: Rc<web_sys::IdbDatabase>,
     tables: Vec<(U128Id, Table)>,
     selecting_table: Option<U128Id>,
     cmd_queue: model::CmdQueue<Msg, Sub>,
@@ -22,15 +31,24 @@ struct Table {
     timestamp: Timestamp,
 }
 
+pub enum LoadMode {
+    Open,
+    Clone,
+}
+
 pub enum Msg {
+    NoOp,
     Close,
     SetTables(Vec<(U128Id, Table)>),
     SelectTable(U128Id),
+    LoadSelectingTable(LoadMode),
+    LoadTable(LoadMode, U128Id, HashMap<U128Id, JsValue>),
+    OpenTable(U128Id, HashMap<BlockId, block::FieldBlock>),
 }
 
 pub enum Sub {
     Close,
-    Open(U128Id),
+    Open(BlockId, HashMap<BlockId, block::FieldBlock>),
     Clone(U128Id),
 }
 
@@ -59,7 +77,9 @@ fn init(_: &mut TableDb, state: Option<State>, props: Props) -> (State, Cmd<Msg,
     if let Some(state) = state {
         (
             State {
+                block_field: props.block_field,
                 common_db: props.common_db,
+                table_db: props.table_db,
                 tables: state.tables,
                 selecting_table: state.selecting_table,
                 cmd_queue: state.cmd_queue,
@@ -68,7 +88,9 @@ fn init(_: &mut TableDb, state: Option<State>, props: Props) -> (State, Cmd<Msg,
         )
     } else {
         let state = State {
+            block_field: props.block_field,
             common_db: props.common_db,
+            table_db: props.table_db,
             tables: vec![],
             selecting_table: None,
             cmd_queue: model::CmdQueue::new(),
@@ -112,6 +134,7 @@ fn init(_: &mut TableDb, state: Option<State>, props: Props) -> (State, Cmd<Msg,
 
 fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
     match msg {
+        Msg::NoOp => state.cmd_queue.dequeue(),
         Msg::Close => {
             state.cmd_queue.enqueue(Cmd::sub(Sub::Close));
             state.cmd_queue.dequeue()
@@ -122,6 +145,91 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
         Msg::SelectTable(table_id) => {
             state.selecting_table = Some(table_id);
+            state.cmd_queue.dequeue()
+        }
+        Msg::LoadSelectingTable(load_mode) => {
+            if let Some(table_id) = state.selecting_table.as_ref() {
+                let table_db = Rc::clone(&state.table_db);
+                let table_id = table_id.clone();
+                let keys = idb::query(
+                    &state.table_db,
+                    &table_id.to_string(),
+                    idb::Query::GetAllKeys,
+                );
+                let cmd = Cmd::task(move |resolve| {
+                    keys.and_then({
+                        let table_id = table_id.clone();
+                        move |keys| {
+                            if let Some(keys) = keys {
+                                let keys = js_sys::Array::from(&keys).to_vec();
+                                let mut promises = vec![];
+                                for key in keys {
+                                    if let Some(block_id) = U128Id::from_jsvalue(&key) {
+                                        promises.push(
+                                            idb::query(
+                                                &table_db,
+                                                &table_id.to_string(),
+                                                idb::Query::Get(&key),
+                                            )
+                                            .map(|x| x.map(|x| (block_id, x))),
+                                        )
+                                    } else if key
+                                        .as_string()
+                                        .map(|key| key == "data")
+                                        .unwrap_or(false)
+                                    {
+                                        promises.push(
+                                            idb::query(
+                                                &table_db,
+                                                &table_id.to_string(),
+                                                idb::Query::Get(&JsValue::from("key")),
+                                            )
+                                            .map({
+                                                let table_id = table_id.clone();
+                                                move |x| x.map(|x| (table_id, x))
+                                            }),
+                                        )
+                                    }
+                                }
+                                Promise::some(promises)
+                            } else {
+                                Promise::new(|resolve| resolve(None))
+                            }
+                        }
+                    })
+                    .then(|tables| {
+                        if let Some(tables) = tables {
+                            let tables = tables.into_iter().filter_map(|x| x).collect();
+                            resolve(Msg::LoadTable(load_mode, table_id, tables));
+                        }
+                    });
+                });
+                state.cmd_queue.enqueue(cmd);
+            }
+            state.cmd_queue.dequeue()
+        }
+        Msg::LoadTable(load_mode, table_id, blocks) => {
+            let blocks = state.block_field.unpack_listed(blocks.into_iter());
+
+            let cmd = Cmd::task(move |resolve| {
+                blocks.then(move |blocks| {
+                    if let Some(blocks) = blocks {
+                        match load_mode {
+                            LoadMode::Open => resolve(Msg::OpenTable(table_id, blocks)),
+                            LoadMode::Clone => {}
+                        }
+                    }
+                })
+            });
+
+            state.cmd_queue.enqueue(cmd);
+            state.cmd_queue.dequeue()
+        }
+        Msg::OpenTable(table_id, blocks) => {
+            state.cmd_queue.enqueue(Cmd::sub(Sub::Open(
+                state.block_field.block_id(table_id),
+                blocks,
+            )));
             state.cmd_queue.dequeue()
         }
     }
@@ -204,7 +312,8 @@ fn render(state: &State, _: Vec<Html>) -> Html {
                                 Html::div(Attributes::new(), Events::new(), vec![]),
                                 btn::primary(
                                     Attributes::new(),
-                                    Events::new(),
+                                    Events::new()
+                                        .on_click(|_| Msg::LoadSelectingTable(LoadMode::Open)),
                                     vec![Html::text("読み込み")],
                                 ),
                             ],

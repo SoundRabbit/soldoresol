@@ -74,6 +74,10 @@ impl U128Id {
     pub fn from_u128(val: u128) -> Self {
         Self(Rc::new(val))
     }
+
+    pub fn to_string(&self) -> String {
+        self.0.to_string()
+    }
 }
 
 impl Clone for U128Id {

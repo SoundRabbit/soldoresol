@@ -1843,14 +1843,14 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     .then(move |x| {
                         if let Some((Some(mut table), Some(blocks), Some(resources))) = x {
                             if let Some(table) = table.pop() {
-                                let table_id = table.0.to_id().to_u128().to_string();
+                                let table_id = Rc::new(table.0.to_id().to_u128().to_string());
                                 let table = table.1;
                                 let save_blocks = {
-                                    let table_id = table_id.clone();
+                                    let table_id = Rc::clone(&table_id);
                                     move |table_database: Rc<web_sys::IdbDatabase>| {
                                         let mut transaction = idb::assign(
                                             Rc::clone(&table_database),
-                                            table_id.clone(),
+                                            Rc::clone(&table_id),
                                             JsValue::from("data"),
                                             table,
                                         );
@@ -1871,7 +1871,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                                             transaction = transaction.and_then(move |_| {
                                                 idb::assign(
                                                     common_database,
-                                                    "resources".into(),
+                                                    Rc::new(String::from("resources")),
                                                     r_id.to_jsvalue(),
                                                     data,
                                                 )
@@ -1888,8 +1888,8 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                                             transaction = transaction.and_then(move |_| {
                                                 idb::assign(
                                                     common_database,
-                                                    "tables".into(),
-                                                    JsValue::from(table_id),
+                                                    Rc::new(String::from("tables")),
+                                                    JsValue::from(table_id.as_str()),
                                                     value.into(),
                                                 )
                                             });
@@ -1901,7 +1901,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                                 let mut has_table_object = false;
                                 for i in 0..names.length() {
                                     if let Some(name) = names.item(i) {
-                                        if name == table_id {
+                                        if name == table_id.as_str() {
                                             has_table_object = true;
                                         }
                                     }
@@ -1910,7 +1910,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                                     save_blocks(Rc::clone(&table_database))
                                         .then(move |_| resolve(Msg::NoOp));
                                 } else {
-                                    idb::create_object_strage(&table_database, table_id)
+                                    idb::create_object_strage(&table_database, table_id.as_ref())
                                         .and_then(move |database| {
                                             save_blocks(Rc::new(database.unwrap()))
                                         })

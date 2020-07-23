@@ -66,7 +66,9 @@ pub fn render(
             Modal::TableDb(table_db) => Html::component(
                 table_db
                     .with(modal::table_db::Props {
+                        block_field: block_field.clone(),
                         common_db: Rc::clone(&state.common_database()),
+                        table_db: Rc::clone(&state.table_database()),
                     })
                     .subscribe(|sub| match sub {
                         modal::table_db::Sub::Close => Msg::CloseModal,
