@@ -1,6 +1,14 @@
 use crate::{js_object::JsObject, random_id::U128Id, Promise};
 use js_sys::Date;
-use std::{any::Any, collections::HashMap, hash::Hash, iter::Iterator};
+use std::{
+    any::Any,
+    cell::RefCell,
+    collections::HashMap,
+    hash::Hash,
+    iter::Iterator,
+    ops::{Deref, DerefMut},
+    rc::Rc,
+};
 use wasm_bindgen::{prelude::*, JsCast};
 
 pub mod character;
@@ -26,7 +34,7 @@ trait Block {
 type Timestamp = f64;
 
 #[allow(private_in_public)]
-type BlockTable = HashMap<U128Id, FieldBlock>;
+struct BlockTable(Rc<RefCell<HashMap<U128Id, FieldBlock>>>);
 
 #[allow(private_in_public)]
 #[derive(Debug, PartialEq, Eq, Clone, Hash)]
@@ -39,8 +47,34 @@ pub struct FieldBlock {
 }
 
 #[allow(private_in_public)]
+#[derive(Clone)]
 pub struct Field {
     table: BlockTable,
+}
+
+impl BlockTable {
+    fn new() -> Self {
+        Self(Rc::new(RefCell::new(HashMap::new())))
+    }
+}
+
+impl Clone for BlockTable {
+    fn clone(&self) -> Self {
+        Self(Rc::clone(&self.0))
+    }
+}
+
+impl Deref for BlockTable {
+    type Target = HashMap<U128Id, FieldBlock>;
+    fn deref(&self) -> &Self::Target {
+        unsafe { self.0.as_ptr().as_ref().unwrap() }
+    }
+}
+
+impl DerefMut for BlockTable {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        unsafe { self.0.as_ptr().as_mut().unwrap() }
+    }
 }
 
 impl BlockId {
@@ -182,7 +216,7 @@ impl FieldBlock {
 impl Field {
     pub fn new() -> Self {
         Self {
-            table: HashMap::new(),
+            table: BlockTable::new(),
         }
     }
 
