@@ -26,7 +26,7 @@ pub struct State {
     cmd_queue: model::CmdQueue<Msg, Sub>,
 }
 
-struct Table {
+pub struct Table {
     name: String,
     timestamp: Timestamp,
 }
@@ -37,7 +37,6 @@ pub enum LoadMode {
 }
 
 pub enum Msg {
-    NoOp,
     Close,
     SetTables(Vec<(U128Id, Table)>),
     SelectTable(U128Id),
@@ -134,7 +133,6 @@ fn init(_: &mut LoadTable, state: Option<State>, props: Props) -> (State, Cmd<Ms
 
 fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
     match msg {
-        Msg::NoOp => state.cmd_queue.dequeue(),
         Msg::Close => {
             state.cmd_queue.enqueue(Cmd::sub(Sub::Close));
             state.cmd_queue.dequeue()
