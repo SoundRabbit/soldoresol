@@ -1,0 +1,25 @@
+.vkeyvalue {
+    display: grid;
+    grid-template-rows: max-content 1fr;
+    grid-auto-columns: max-content;
+    column-gap: .25em;
+    row-gap: .35em;
+    justify-items: center;
+
+    &-rev {
+        grid-template-rows: 1fr max-content;
+    }
+
+    &-justify-start {
+        justify-items: start;
+    }
+
+    &-justify-stretch {
+        justify-content: stretch;
+        justify-items: stretch;
+    }
+
+    &>&-banner {
+        grid-column: span 2;
+    }
+}

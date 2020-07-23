@@ -30,8 +30,8 @@ pub enum Msg {
 
 pub enum Sub {
     Close,
-    OpenToClose(U128Id),
-    CloneToClose(U128Id),
+    Open(U128Id),
+    Clone(U128Id),
 }
 
 impl Table {
@@ -156,11 +156,17 @@ fn render(state: &State, _: Vec<Html>) -> Html {
                     ],
                 ),
                 super::body(
-                    Attributes::new().class("linear-v"),
+                    Attributes::new()
+                        .class("keyvalue")
+                        .class("keyvalue-rev")
+                        .class("keyvalue-align-stretch"),
                     Events::new(),
                     vec![
                         Html::div(
-                            Attributes::new().class("linear-v").class("container-a"),
+                            Attributes::new()
+                                .class("linear-v")
+                                .class("container-a")
+                                .class("scroll-y"),
                             Events::new(),
                             state
                                 .tables
@@ -173,7 +179,10 @@ fn render(state: &State, _: Vec<Html>) -> Html {
                                             .map(|t_id| *table_id == *t_id)
                                             .unwrap_or(false),
                                         Attributes::new().class("pure-button-list"),
-                                        Events::new(),
+                                        Events::new().on_click({
+                                            let table_id = table_id.clone();
+                                            move |_| Msg::SelectTable(table_id)
+                                        }),
                                         vec![
                                             text::div(&table.name),
                                             text::div(format!(
@@ -185,7 +194,21 @@ fn render(state: &State, _: Vec<Html>) -> Html {
                                 })
                                 .collect(),
                         ),
-                        Html::div(Attributes::new(), Events::new(), vec![]),
+                        Html::div(
+                            Attributes::new()
+                                .class("vkeyvalue")
+                                .class("vkeyvalue-rev")
+                                .class("container-a"),
+                            Events::new(),
+                            vec![
+                                Html::div(Attributes::new(), Events::new(), vec![]),
+                                btn::primary(
+                                    Attributes::new(),
+                                    Events::new(),
+                                    vec![Html::text("読み込み")],
+                                ),
+                            ],
+                        ),
                     ],
                 ),
                 super::footer(Attributes::new(), Events::new(), vec![]),
