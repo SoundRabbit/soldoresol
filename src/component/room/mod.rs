@@ -173,6 +173,7 @@ pub enum Msg {
 
     // IDB
     SaveTableToIdb(BlockId),
+    LoadToOpenTable(BlockId, HashMap<BlockId, block::FieldBlock>),
 
     // Udonarium互換
     LoadUdonariumCharacter(udonarium::Character),
@@ -1920,6 +1921,21 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                         }
                     });
             })
+        }
+        Msg::LoadToOpenTable(table_id, blocks) => {
+            let mut ids = vec![state.world().clone()];
+            state.update_world(timestamp(), |world| {
+                let selecting_table = world.selecting_table().clone();
+                world.replace_table(&selecting_table, table_id.clone());
+                world.set_selecting_table(table_id);
+            });
+            for (id, block) in blocks {
+                ids.push(id.clone());
+                state.block_field_mut().assign_fb(id, block);
+            }
+            render_canvas(state);
+
+            send_pack_cmd(state.block_field(), ids)
         }
 
         // Udonarium互換

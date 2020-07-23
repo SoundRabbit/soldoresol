@@ -42,6 +42,12 @@ impl World {
         }
     }
 
+    pub fn replace_table(&mut self, table_id_a: &BlockId, table_id_b: BlockId) {
+        if let Some(pos) = self.tables.iter().position(|x| *x == *table_id_a) {
+            self.tables[pos] = table_id_b;
+        }
+    }
+
     pub fn characters(&self) -> impl Iterator<Item = &BlockId> {
         self.characters.iter()
     }

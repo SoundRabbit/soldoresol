@@ -182,7 +182,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                                             idb::query(
                                                 &table_db,
                                                 &table_id.to_string(),
-                                                idb::Query::Get(&JsValue::from("key")),
+                                                idb::Query::Get(&JsValue::from("data")),
                                             )
                                             .map({
                                                 let table_id = table_id.clone();
