@@ -2,19 +2,29 @@ use super::room;
 use crate::{
     config::Config,
     idb,
-    skyway::{Peer, Room},
+    skyway::{self, Peer},
 };
 use kagura::prelude::*;
 use std::{ops::Deref, rc::Rc};
 use wasm_bindgen::{prelude::*, JsCast};
 
-enum RoomConnection {
-    UnOpened(Rc<Room>),
-    Opened(Rc<Room>),
+pub type RoomConnection = Component<Msg, Props, State, Sub>;
+
+pub struct Props {
+    pub config: Rc<Config>,
+    pub peer: Rc<Peer>,
+    pub room: Rc<skyway::Room>,
+    pub client_id: Rc<String>,
+    pub common_database: Rc<web_sys::IdbDatabase>,
 }
 
-impl Deref for RoomConnection {
-    type Target = Rc<Room>;
+enum Room {
+    UnOpened(Rc<skyway::Room>),
+    Opened(Rc<skyway::Room>),
+}
+
+impl Deref for Room {
+    type Target = Rc<skyway::Room>;
     fn deref(&self) -> &Self::Target {
         match self {
             Self::Opened(x) => &x,
@@ -25,7 +35,7 @@ impl Deref for RoomConnection {
 
 pub struct State {
     peer: Rc<Peer>,
-    room: RoomConnection,
+    room: Room,
     config: Rc<Config>,
     client_id: Rc<String>,
     common_database: Rc<web_sys::IdbDatabase>,
@@ -44,41 +54,33 @@ pub enum Sub {
     DisconnectFromRoom,
 }
 
-pub fn new(
-    config: Rc<Config>,
-    peer: Rc<Peer>,
-    room: Rc<Room>,
-    client_id: Rc<String>,
-    common_database: Rc<web_sys::IdbDatabase>,
-) -> Component<Msg, State, Sub> {
-    let init = {
-        let peer = Rc::clone(&peer);
-        let room = Rc::clone(&room);
-        move || {
-            let room_db_name = String::from("") + &config.client.db_prefix + ".room";
+pub fn new() -> RoomConnection {
+    Component::new(init, update, render)
+}
 
-            let state = State {
-                peer,
-                room: RoomConnection::UnOpened(room),
-                client_id,
-                config: config,
-                room_database: None,
-                table_database: None,
-                common_database: common_database,
-            };
+fn init(this: &mut RoomConnection, state: Option<State>, props: Props) -> (State, Cmd<Msg, Sub>) {
+    let room_db_name = String::from("") + &props.config.client.db_prefix + ".room";
 
-            let task = Cmd::task(move |resolve| {
-                idb::open_db(&room_db_name).then(move |database| {
-                    if let Some(database) = database {
-                        resolve(Msg::TryToSetRoomDatabase(Rc::new(database)))
-                    }
-                })
-            });
-            (state, task)
-        }
+    let state = State {
+        peer: props.peer,
+        room: Room::UnOpened(Rc::clone(&props.room)),
+        client_id: props.client_id,
+        config: props.config,
+        room_database: None,
+        table_database: None,
+        common_database: props.common_database,
     };
-    Component::new(init, update, render).batch({
-        let room = Rc::clone(&room);
+
+    let task = Cmd::task(move |resolve| {
+        idb::open_db(&room_db_name).then(move |database| {
+            if let Some(database) = database {
+                resolve(Msg::TryToSetRoomDatabase(Rc::new(database)))
+            }
+        })
+    });
+
+    this.batch({
+        let room = Rc::clone(&props.room);
         move |mut handler| {
             let a = Closure::wrap(
                 Box::new(move || handler(Msg::SetConnectionAsOpened)) as Box<dyn FnMut()>
@@ -86,7 +88,9 @@ pub fn new(
             room.payload.on("open", Some(a.as_ref().unchecked_ref()));
             a.forget();
         }
-    })
+    });
+
+    (state, task)
 }
 
 fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
@@ -127,8 +131,8 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             Cmd::none()
         }
         Msg::SetConnectionAsOpened => {
-            if let RoomConnection::UnOpened(room) = &state.room {
-                state.room = RoomConnection::Opened(Rc::clone(room));
+            if let Room::UnOpened(room) = &state.room {
+                state.room = Room::Opened(Rc::clone(room));
             }
             Cmd::none()
         }
@@ -137,21 +141,23 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 }
 
 fn render(state: &State) -> Html {
-    if let (RoomConnection::Opened(room), Some(room_database), Some(table_database)) =
+    if let (Room::Opened(room), Some(room_database), Some(table_database)) =
         (&state.room, &state.room_database, &state.table_database)
     {
         Html::component(
-            room::new(
-                Rc::clone(&state.peer),
-                Rc::clone(room),
-                Rc::clone(&state.client_id),
-                Rc::clone(&state.common_database),
-                Rc::clone(room_database),
-                Rc::clone(table_database),
-            )
-            .subscribe(|sub| match sub {
-                room::Sub::DisconnectFromRoom => Msg::DisconnectFromRoom,
-            }),
+            room::new()
+                .with(room::Props {
+                    peer: Rc::clone(&state.peer),
+                    room: Rc::clone(room),
+                    client_id: Rc::clone(&state.client_id),
+                    common_database: Rc::clone(&state.common_database),
+                    room_database: Rc::clone(room_database),
+                    table_database: Rc::clone(table_database),
+                })
+                .subscribe(|sub| match sub {
+                    room::Sub::DisconnectFromRoom => Msg::DisconnectFromRoom,
+                }),
+            vec![],
         )
     } else {
         Html::div(

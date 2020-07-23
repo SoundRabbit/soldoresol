@@ -9,43 +9,12 @@ use regex::Regex;
 use std::rc::Rc;
 use wasm_bindgen::{prelude::*, JsCast};
 
-pub fn new(
-    config: Rc<Config>,
-    client_id: Rc<String>,
-    common_database: Rc<web_sys::IdbDatabase>,
-) -> Component<Msg, State, Sub> {
-    let peer = Rc::new(Peer::new(&config.skyway.key));
-    let init = {
-        let peer = Rc::clone(&peer);
-        move || {
-            let state = State {
-                peer_id: None,
-                room: None,
-                peer: peer,
-                client_id,
-                inputing_room_id: "".into(),
-                error_message: None,
-                room_id_regex: Regex::new(r"^[A-Za-z0-9@#]{24}$").unwrap(),
-                common_database: Rc::clone(&common_database),
-                room_ids_buf: vec![],
-                rooms: vec![],
-                config: config,
-            };
-            let task = request_room_ids_task(&common_database);
-            (state, task)
-        }
-    };
-    Component::new(init, update, render).batch({
-        let peer = Rc::clone(&peer);
-        move |mut handler| {
-            let a = Closure::wrap(Box::new({
-                let peer = Rc::clone(&peer);
-                move || handler(Msg::SetPeerId(peer.id()))
-            }) as Box<dyn FnMut()>);
-            peer.on("open", Some(a.as_ref().unchecked_ref()));
-            a.forget();
-        }
-    })
+type PeerConnection = Component<Msg, Props, State, Sub>;
+
+pub struct Props {
+    pub config: Rc<Config>,
+    pub client_id: Rc<String>,
+    pub common_database: Rc<web_sys::IdbDatabase>,
 }
 
 pub struct State {
@@ -82,6 +51,42 @@ pub enum Msg {
 
 pub enum Sub {
     Reconnect,
+}
+
+pub fn new() -> PeerConnection {
+    Component::new(init, update, render)
+}
+
+fn init(this: &mut PeerConnection, state: Option<State>, props: Props) -> (State, Cmd<Msg, Sub>) {
+    let peer = Rc::new(Peer::new(&props.config.skyway.key));
+    let state = State {
+        peer_id: None,
+        room: None,
+        peer: Rc::clone(&peer),
+        client_id: props.client_id,
+        inputing_room_id: "".into(),
+        error_message: None,
+        room_id_regex: Regex::new(r"^[A-Za-z0-9@#]{24}$").unwrap(),
+        common_database: Rc::clone(&props.common_database),
+        room_ids_buf: vec![],
+        rooms: vec![],
+        config: props.config,
+    };
+    let task = request_room_ids_task(&props.common_database);
+
+    this.batch({
+        let peer = Rc::clone(&peer);
+        move |mut handler| {
+            let a = Closure::wrap(Box::new({
+                let peer = Rc::clone(&peer);
+                move || handler(Msg::SetPeerId(peer.id()))
+            }) as Box<dyn FnMut()>);
+            peer.on("open", Some(a.as_ref().unchecked_ref()));
+            a.forget();
+        }
+    });
+
+    (state, task)
 }
 
 fn basic_room_data_object() -> JsValue {
@@ -220,16 +225,18 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 fn render(state: &State) -> Html {
     if let Some(room) = &state.room {
         Html::component(
-            room_connection::new(
-                Rc::clone(&state.config),
-                Rc::clone(&state.peer),
-                Rc::clone(room),
-                Rc::clone(&state.client_id),
-                Rc::clone(&state.common_database),
-            )
-            .subscribe(|sub| match sub {
-                room_connection::Sub::DisconnectFromRoom => Msg::DisconnectFromRoom,
-            }),
+            room_connection::new()
+                .with(room_connection::Props {
+                    config: Rc::clone(&state.config),
+                    peer: Rc::clone(&state.peer),
+                    room: Rc::clone(room),
+                    client_id: Rc::clone(&state.client_id),
+                    common_database: Rc::clone(&state.common_database),
+                })
+                .subscribe(|sub| match sub {
+                    room_connection::Sub::DisconnectFromRoom => Msg::DisconnectFromRoom,
+                }),
+            vec![],
         )
     } else {
         Html::div(

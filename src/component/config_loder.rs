@@ -4,11 +4,13 @@ use kagura::prelude::*;
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 
-pub fn new() -> Component<Msg, State, Sub> {
-    let hostname = web_sys::window().unwrap().location().hostname().unwrap();
-    let is_dev_mode = hostname == "localhost";
+type ConfigLoader = Component<Msg, Props, State, Sub>;
 
-    let init = move || {
+pub fn new() -> ConfigLoader {
+    let init = move |_: &mut ConfigLoader, _: Option<State>, _: Props| {
+        let hostname = web_sys::window().unwrap().location().hostname().unwrap();
+        let is_dev_mode = hostname == "localhost";
+
         let state = State {
             hostname: hostname,
             config: None,
@@ -27,6 +29,8 @@ pub fn new() -> Component<Msg, State, Sub> {
     };
     Component::new(init, update, render)
 }
+
+pub struct Props {}
 
 pub struct State {
     hostname: String,
@@ -171,14 +175,16 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 fn render(state: &State) -> Html {
     if let (Some(config), Some(database)) = (&state.config, &state.common_database) {
         Html::component(
-            peer_connection::new(
-                Rc::clone(config),
-                Rc::clone(&state.client_id),
-                Rc::clone(database),
-            )
-            .subscribe(|sub| match sub {
-                peer_connection::Sub::Reconnect => Msg::NoOp,
-            }),
+            peer_connection::new()
+                .with(peer_connection::Props {
+                    config: Rc::clone(config),
+                    client_id: Rc::clone(&state.client_id),
+                    common_database: Rc::clone(database),
+                })
+                .subscribe(|sub| match sub {
+                    peer_connection::Sub::Reconnect => Msg::NoOp,
+                }),
+            vec![],
         )
     } else {
         Html::div(

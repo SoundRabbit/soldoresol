@@ -21,6 +21,17 @@ mod state;
 
 use render::render;
 
+pub type Room = Component<Msg, Props, State, Sub>;
+
+pub struct Props {
+    pub peer: Rc<skyway::Peer>,
+    pub room: Rc<skyway::Room>,
+    pub client_id: Rc<String>,
+    pub common_database: Rc<web_sys::IdbDatabase>,
+    pub room_database: Rc<web_sys::IdbDatabase>,
+    pub table_database: Rc<web_sys::IdbDatabase>,
+}
+
 pub type State = state::State<Msg, Sub>;
 
 pub enum Msg {
@@ -180,96 +191,88 @@ pub enum Sub {
     DisconnectFromRoom,
 }
 
-pub fn new(
-    peer: Rc<skyway::Peer>,
-    room: Rc<skyway::Room>,
-    client_id: Rc<String>,
-    common_database: Rc<web_sys::IdbDatabase>,
-    room_database: Rc<web_sys::IdbDatabase>,
-    table_database: Rc<web_sys::IdbDatabase>,
-) -> Component<Msg, State, Sub> {
-    let init = {
-        let peer = Rc::clone(&peer);
-        let room = Rc::clone(&room);
-        move || {
-            let state = State::new(
-                peer,
-                room,
-                client_id,
-                common_database,
-                room_database,
-                table_database,
-            );
-            let task = Cmd::task(|handler| {
-                handler(Msg::InitDomDependents);
-            });
-            (state, task)
-        }
-    };
+pub fn new() -> Room {
     Component::new(init, update, render)
-        .batch(|mut handler| {
-            let a = Closure::wrap(Box::new(move || {
-                handler(Msg::ResizeCanvas);
-            }) as Box<dyn FnMut()>);
-            web_sys::window()
-                .unwrap()
-                .set_onresize(Some(a.as_ref().unchecked_ref()));
-            a.forget();
-        })
-        .batch(batch::time::tick(1000, || Msg::Tick1000ms))
-        .batch({
-            let room = Rc::clone(&room);
-            move |mut handler| {
-                let a = Closure::wrap(Box::new({
-                    move |receive_data: Option<skyway::ReceiveData>| {
-                        let msg = receive_data
-                            .and_then(|receive_data| receive_data.data())
-                            .map(|receive_data| {
-                                web_sys::console::log_1(&JsValue::from(&receive_data));
-                                skyway::Msg::from(receive_data)
-                            })
-                            .and_then(|msg| {
-                                if let skyway::Msg::None = msg {
-                                    None
-                                } else {
-                                    Some(msg)
-                                }
-                            });
-                        if let Some(msg) = msg {
-                            web_sys::console::log_1(&JsValue::from(msg.type_name()));
-                            handler(Msg::ReceiveMsg(msg));
-                        } else {
-                            web_sys::console::log_1(&JsValue::from("faild to deserialize message"));
-                        }
+}
+
+fn init(this: &mut Room, state: Option<State>, props: Props) -> (State, Cmd<Msg, Sub>) {
+    let state = State::new(
+        Rc::clone(&props.peer),
+        Rc::clone(&props.room),
+        props.client_id,
+        props.common_database,
+        props.room_database,
+        props.table_database,
+    );
+
+    let task = Cmd::task(|handler| {
+        handler(Msg::InitDomDependents);
+    });
+
+    this.batch(|mut handler| {
+        let a = Closure::wrap(Box::new(move || {
+            handler(Msg::ResizeCanvas);
+        }) as Box<dyn FnMut()>);
+        web_sys::window()
+            .unwrap()
+            .set_onresize(Some(a.as_ref().unchecked_ref()));
+        a.forget();
+    });
+    this.batch(batch::time::tick(1000, || Msg::Tick1000ms));
+    this.batch({
+        let room = Rc::clone(&props.room);
+        move |mut handler| {
+            let a = Closure::wrap(Box::new({
+                move |receive_data: Option<skyway::ReceiveData>| {
+                    let msg = receive_data
+                        .and_then(|receive_data| receive_data.data())
+                        .map(|receive_data| {
+                            web_sys::console::log_1(&JsValue::from(&receive_data));
+                            skyway::Msg::from(receive_data)
+                        })
+                        .and_then(|msg| {
+                            if let skyway::Msg::None = msg {
+                                None
+                            } else {
+                                Some(msg)
+                            }
+                        });
+                    if let Some(msg) = msg {
+                        web_sys::console::log_1(&JsValue::from(msg.type_name()));
+                        handler(Msg::ReceiveMsg(msg));
+                    } else {
+                        web_sys::console::log_1(&JsValue::from("faild to deserialize message"));
                     }
-                })
-                    as Box<dyn FnMut(Option<skyway::ReceiveData>)>);
-                room.payload.on("data", Some(a.as_ref().unchecked_ref()));
-                a.forget();
-            }
-        })
-        .batch({
-            let room = Rc::clone(&room);
-            move |mut handler| {
-                let a = Closure::wrap(Box::new(move |peer_id: String| {
-                    handler(Msg::PeerJoin(peer_id));
-                }) as Box<dyn FnMut(String)>);
-                room.payload
-                    .on("peerJoin", Some(a.as_ref().unchecked_ref()));
-                a.forget();
-            }
-        })
-        .batch({
-            let room = Rc::clone(&room);
-            move |mut handler| {
-                let a = Closure::wrap(Box::new(move |peer_id: String| {
-                    handler(Msg::PeerLeave(peer_id));
-                }) as Box<dyn FnMut(String)>);
-                room.payload
-                    .on("peerLeave", Some(a.as_ref().unchecked_ref()));
-                a.forget();
-            }
-        })
+                }
+            })
+                as Box<dyn FnMut(Option<skyway::ReceiveData>)>);
+            room.payload.on("data", Some(a.as_ref().unchecked_ref()));
+            a.forget();
+        }
+    });
+    this.batch({
+        let room = Rc::clone(&props.room);
+        move |mut handler| {
+            let a = Closure::wrap(Box::new(move |peer_id: String| {
+                handler(Msg::PeerJoin(peer_id));
+            }) as Box<dyn FnMut(String)>);
+            room.payload
+                .on("peerJoin", Some(a.as_ref().unchecked_ref()));
+            a.forget();
+        }
+    });
+    this.batch({
+        let room = Rc::clone(&props.room);
+        move |mut handler| {
+            let a = Closure::wrap(Box::new(move |peer_id: String| {
+                handler(Msg::PeerLeave(peer_id));
+            }) as Box<dyn FnMut(String)>);
+            room.payload
+                .on("peerLeave", Some(a.as_ref().unchecked_ref()));
+            a.forget();
+        }
+    });
+    (state, task)
 }
 
 fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
