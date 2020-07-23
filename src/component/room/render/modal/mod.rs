@@ -63,16 +63,16 @@ pub fn render(
                 }
             }
             Modal::DicebotSelecter => dicebot_selecter::render(state.dicebot()),
-            Modal::TableDb(table_db) => Html::component(
-                table_db
-                    .with(modal::table_db::Props {
+            Modal::LoadTable(load_table) => Html::component(
+                load_table
+                    .with(modal::load_table::Props {
                         block_field: block_field.clone(),
                         common_db: Rc::clone(&state.common_database()),
                         table_db: Rc::clone(&state.table_database()),
                     })
                     .subscribe(|sub| match sub {
-                        modal::table_db::Sub::Close => Msg::CloseModal,
-                        modal::table_db::Sub::Open(table_id, blocks) => {
+                        modal::load_table::Sub::Close => Msg::CloseModal,
+                        modal::load_table::Sub::Open(table_id, blocks) => {
                             Msg::LoadToOpenTable(table_id, blocks)
                         }
                         _ => Msg::NoOp,

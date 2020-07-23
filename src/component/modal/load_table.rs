@@ -9,7 +9,7 @@ use kagura::prelude::*;
 use std::{collections::HashMap, rc::Rc};
 use wasm_bindgen::{prelude::*, JsCast};
 
-pub type TableDb = Component<Msg, Props, State, Sub>;
+pub type LoadTable = Component<Msg, Props, State, Sub>;
 
 pub struct Props {
     pub common_db: Rc<web_sys::IdbDatabase>,
@@ -69,11 +69,11 @@ impl Table {
     }
 }
 
-pub fn new() -> TableDb {
+pub fn new() -> LoadTable {
     Component::new(init, update, render)
 }
 
-fn init(_: &mut TableDb, state: Option<State>, props: Props) -> (State, Cmd<Msg, Sub>) {
+fn init(_: &mut LoadTable, state: Option<State>, props: Props) -> (State, Cmd<Msg, Sub>) {
     if let Some(state) = state {
         (
             State {

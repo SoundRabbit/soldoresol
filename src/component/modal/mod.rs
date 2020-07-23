@@ -1,8 +1,8 @@
 use kagura::prelude::*;
 
-pub mod table_db;
+pub mod load_table;
 
-pub use table_db::TableDb;
+pub use load_table::LoadTable;
 
 pub fn container(attributes: Attributes, events: Events, children: Vec<Html>) -> Html {
     Html::div(

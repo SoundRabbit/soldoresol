@@ -126,7 +126,7 @@ fn selected_table(resource: &Resource, block_id: &BlockId, table: &block::Table)
                             btn::primary(
                                 Attributes::new(),
                                 Events::new().on_click(|_| {
-                                    Msg::OpenModal(Modal::TableDb(modal::table_db::new()))
+                                    Msg::OpenModal(Modal::LoadTable(modal::load_table::new()))
                                 }),
                                 vec![Html::text("読み込み")],
                             ),

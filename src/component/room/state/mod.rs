@@ -38,7 +38,7 @@ pub enum Modal {
     ChatLog(BlockId),
     ChatTabEditor,
     DicebotSelecter,
-    TableDb(modal::TableDb),
+    LoadTable(modal::LoadTable),
 }
 
 pub struct State<M, S> {
