@@ -1830,13 +1830,19 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             let resources = state.resource().pack_listed(resources);
 
             let table_database = Rc::clone(state.table_database());
+
             let common_database = Rc::clone(state.common_database());
 
             Cmd::task(move |resolve| {
                 blocks
                     .and_then(move |blocks| table.map(move |table| Some((table, blocks))))
+                    .and_then(move |blocks| {
+                        resources.map(move |resources| {
+                            blocks.map(|(table, blocks)| (table, blocks, resources))
+                        })
+                    })
                     .then(move |x| {
-                        if let Some((Some(mut table), Some(blocks))) = x {
+                        if let Some((Some(mut table), Some(blocks), Some(resources))) = x {
                             if let Some(table) = table.pop() {
                                 let table_id = table.0.to_id().to_u128().to_string();
                                 let table = table.1;
@@ -1858,6 +1864,17 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                                                     table_id,
                                                     block_id.to_jsvalue(),
                                                     block,
+                                                )
+                                            });
+                                        }
+                                        for (r_id, data) in resources {
+                                            let common_database = Rc::clone(&common_database);
+                                            transaction = transaction.and_then(move |_| {
+                                                idb::assign(
+                                                    common_database,
+                                                    "resources".into(),
+                                                    r_id.to_jsvalue(),
+                                                    data,
                                                 )
                                             });
                                         }
