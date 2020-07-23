@@ -6,6 +6,7 @@ pub mod table;
 
 pub use contextmenu::Contextmenu;
 
+use super::super::modal;
 use crate::{
     block::{self, BlockId},
     model,
@@ -37,6 +38,7 @@ pub enum Modal {
     ChatLog(BlockId),
     ChatTabEditor,
     DicebotSelecter,
+    TableDb(modal::TableDb),
 }
 
 pub struct State<M, S> {

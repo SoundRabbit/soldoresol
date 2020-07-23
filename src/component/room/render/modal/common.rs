@@ -14,9 +14,7 @@ mod common {
 
 pub fn header(name: impl Into<String>) -> Html {
     modal::header(
-        Attributes::new()
-            .style("display", "grid")
-            .style("grid-template-columns", "1fr max-content"),
+        Attributes::new().class("keyvalue").class("keyvalue-rev"),
         Events::new(),
         vec![
             Html::div(

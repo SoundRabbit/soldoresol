@@ -35,6 +35,7 @@ mod random_id;
 mod renderer;
 mod resource;
 mod skyway;
+mod timestamp;
 mod udonarium;
 
 use color::Color;
@@ -43,6 +44,7 @@ use js_object::JsObject;
 use js_zip::JSZip;
 use promise::Promise;
 use resource::Resource;
+use timestamp::Timestamp;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen(start)]

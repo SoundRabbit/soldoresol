@@ -222,7 +222,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
     }
 }
 
-fn render(state: &State) -> Html {
+fn render(state: &State, _: Vec<Html>) -> Html {
     if let Some(room) = &state.room {
         Html::component(
             room_connection::new()

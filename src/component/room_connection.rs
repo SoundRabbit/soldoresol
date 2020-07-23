@@ -140,7 +140,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
     }
 }
 
-fn render(state: &State) -> Html {
+fn render(state: &State, _: Vec<Html>) -> Html {
     if let (Room::Opened(room), Some(room_database), Some(table_database)) =
         (&state.room, &state.room_database, &state.table_database)
     {

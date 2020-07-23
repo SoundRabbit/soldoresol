@@ -1805,7 +1805,10 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         Msg::SaveTableToIdb(table_id) => {
             let mut blocks = vec![];
             let mut resources = vec![];
+            let mut table_name = String::new();
             if let Some(table) = state.block_field().get::<block::Table>(&table_id) {
+                table_name = table.name().clone();
+
                 for block_id in table.tablemasks() {
                     blocks.push(block_id.clone());
                 }
@@ -1820,6 +1823,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     resources.push(image_texture_id.clone());
                 }
             }
+
             let blocks = state.block_field_mut().pack_listed(blocks);
             let table = state.block_field_mut().pack_listed(vec![table_id]);
             let resources = state.resource().pack_listed(resources);
@@ -1870,6 +1874,23 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                                                     "resources".into(),
                                                     r_id.to_jsvalue(),
                                                     data,
+                                                )
+                                            });
+                                        }
+                                        {
+                                            let common_database = Rc::clone(&common_database);
+                                            let table_id = table_id.clone();
+                                            let value: js_sys::Object = object! {
+                                                name: table_name.as_str(),
+                                                timestamp: js_sys::Date::now()
+                                            }
+                                            .into();
+                                            transaction = transaction.and_then(move |_| {
+                                                idb::assign(
+                                                    common_database,
+                                                    "tables".into(),
+                                                    JsValue::from(table_id),
+                                                    value.into(),
                                                 )
                                             });
                                         }

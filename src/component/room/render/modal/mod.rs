@@ -1,7 +1,9 @@
+use super::super::super::modal;
 use super::state::{self, Modal};
 use super::{Msg, State};
 use crate::{block, Resource};
 use kagura::prelude::*;
+use std::rc::Rc;
 
 mod chat_log;
 mod chat_tab_editor;
@@ -23,8 +25,8 @@ pub fn render(
     state: &State,
 ) -> Html {
     let mut children = vec![];
-    for modal in modals {
-        let child = match modal {
+    for a_modal in modals {
+        let child = match a_modal {
             Modal::ChatLog(block_id) => {
                 if let Some(tab) = block_field.get::<block::chat::Tab>(block_id) {
                     chat_log::render(block_field, resource, tab)
@@ -61,6 +63,17 @@ pub fn render(
                 }
             }
             Modal::DicebotSelecter => dicebot_selecter::render(state.dicebot()),
+            Modal::TableDb(table_db) => Html::component(
+                table_db
+                    .with(modal::table_db::Props {
+                        common_db: Rc::clone(&state.common_database()),
+                    })
+                    .subscribe(|sub| match sub {
+                        modal::table_db::Sub::Close => Msg::CloseModal,
+                        _ => Msg::NoOp,
+                    }),
+                vec![],
+            ),
         };
         children.push(child);
     }

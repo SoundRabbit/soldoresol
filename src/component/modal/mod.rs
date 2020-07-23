@@ -1,5 +1,9 @@
 use kagura::prelude::*;
 
+pub mod table_db;
+
+pub use table_db::TableDb;
+
 pub fn container(attributes: Attributes, events: Events, children: Vec<Html>) -> Html {
     Html::div(
         attributes.class("fullscreen bg-color-dark-t centering-v grid"),

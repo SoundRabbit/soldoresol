@@ -172,7 +172,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
     }
 }
 
-fn render(state: &State) -> Html {
+fn render(state: &State, _: Vec<Html>) -> Html {
     if let (Some(config), Some(database)) = (&state.config, &state.common_database) {
         Html::component(
             peer_connection::new()
