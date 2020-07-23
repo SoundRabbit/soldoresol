@@ -1095,7 +1095,6 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     &selecting_table,
                     timestamp(),
                     |table: &mut block::Table| {
-                        crate::debug::log_1("add area");
                         table.add_area(bid.clone());
                     },
                 );
@@ -1681,10 +1680,8 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             for i in 0..len {
                 if let Some(file) = file_list.item(i) {
                     let file_type = file.type_();
-                    crate::debug::log_1(&file_type);
                     if Data::is_able_to_load(&file_type) {
                         let blob: web_sys::Blob = file.into();
-                        crate::debug::log_1(&blob);
                         let promise = Data::from_blob(blob);
                         let task = Cmd::task(move |resolve| {
                             promise.then(|data| {
@@ -1750,10 +1747,6 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         )),
 
         Msg::SetBcdiceServerList(servers) => {
-            for server in servers.iter() {
-                crate::debug::log_1(server);
-            }
-
             state.dicebot_mut().bcdice_mut().set_servers(servers);
 
             if !state.dicebot().bcdice().server().is_empty() {
@@ -1801,7 +1794,6 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         )),
 
         Msg::SetBcdiceSystemInfo(system_info) => {
-            crate::debug::log_1(system_info.name());
             state
                 .dicebot_mut()
                 .bcdice_mut()

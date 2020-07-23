@@ -109,8 +109,6 @@ pub fn render(
                                             &tab_idx.to_string(),
                                         );
 
-                                        crate::debug::log_1("dragstart");
-
                                         Msg::GrubModelessTab(modeless_id, tab_idx)
                                     }),
                                 name,

@@ -247,9 +247,6 @@ impl Field {
         if let Some(field_block) = self.table.get_mut(&block_id.to_id()) {
             let timestamp = block.timestamp;
             let payload = block.payload;
-
-            crate::debug::log_1(format!("{}, {}", timestamp, field_block.timestamp));
-
             if field_block.timestamp < timestamp {
                 field_block.timestamp = timestamp;
                 field_block.payload = payload;

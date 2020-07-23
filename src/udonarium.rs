@@ -82,9 +82,6 @@ impl Character {
                 return Promise::new(|r| r(None));
             }
         };
-
-        crate::debug::log_1(texture_id.as_str());
-
         let files = js_sys::Object::keys(&self.zip.files());
         let mut file = None;
         let mut type_ = String::new();

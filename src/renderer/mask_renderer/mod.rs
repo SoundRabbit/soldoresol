@@ -118,8 +118,6 @@ impl MaskRenderer {
         floating_object: &Option<&BlockId>,
         client_id: &String,
     ) {
-        crate::debug::log_2(self.canvas.width(), self.canvas.height());
-
         let gl = &self.gl;
         let canvas = &self.canvas;
         canvas.set_width(canvas_size[0] as u32);

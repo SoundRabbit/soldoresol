@@ -111,7 +111,6 @@ fn speech_bubble(
                 let sz = character.size();
                 let pos =
                     Renderer::table_position(&[0.0, 0.0, sz[2]], pos, camera, canvas_size, true);
-                crate::debug::log_2(pos[0], pos[1]);
                 Html::div(
                     Attributes::new()
                         .class("speechbubble")
