@@ -79,6 +79,26 @@ pub fn render(
                     }),
                 vec![],
             ),
+            Modal::SaveTable(save_table) => {
+                if let Some(table_id) = state.selecting_table() {
+                    Html::component(
+                        save_table
+                            .with(modal::save_table::Props {
+                                table_db: Rc::clone(&state.table_database()),
+                                common_db: Rc::clone(&state.common_database()),
+                                block_field: state.block_field().clone(),
+                                resource: state.resource().clone(),
+                                table_id: table_id.clone(),
+                            })
+                            .subscribe(|sub| match sub {
+                                modal::save_table::Sub::Close => Msg::CloseModal,
+                            }),
+                        vec![],
+                    )
+                } else {
+                    Html::none()
+                }
+            }
         };
         children.push(child);
     }

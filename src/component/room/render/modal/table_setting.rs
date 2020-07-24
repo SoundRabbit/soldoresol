@@ -117,9 +117,8 @@ fn selected_table(resource: &Resource, block_id: &BlockId, table: &block::Table)
                         vec![
                             btn::primary(
                                 Attributes::new(),
-                                Events::new().on_click({
-                                    let block_id = block_id.clone();
-                                    move |_| Msg::SaveTableToIdb(block_id)
+                                Events::new().on_click(move |_| {
+                                    Msg::OpenModal(Modal::SaveTable(modal::save_table::new()))
                                 }),
                                 vec![Html::text("保存")],
                             ),

@@ -1,8 +1,10 @@
 use kagura::prelude::*;
 
 pub mod load_table;
+pub mod save_table;
 
 pub use load_table::LoadTable;
+pub use save_table::SaveTable;
 
 pub fn container(attributes: Attributes, events: Events, children: Vec<Html>) -> Html {
     Html::div(
