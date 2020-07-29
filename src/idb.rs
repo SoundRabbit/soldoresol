@@ -130,7 +130,7 @@ pub fn assign(
         if let Some(x) = x {
             Promise::new(move |resolve| resolve(Some(x)))
         } else {
-            query(&database, &object_name, Query::Add(&key, &value))
+            query(&database, &object_name, Query::Put(&key, &value))
         }
     })
 }
