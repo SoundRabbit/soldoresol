@@ -214,7 +214,7 @@ fn render(state: &State, _: Vec<Html>) -> Html {
         Attributes::new(),
         Events::new(),
         vec![super::frame(
-            12,
+            6,
             Attributes::new(),
             Events::new(),
             vec![
@@ -243,7 +243,11 @@ fn render(state: &State, _: Vec<Html>) -> Html {
                     if state.finished {
                         vec![
                             text::div("保存が完了しました。"),
-                            btn::primary(Attributes::new(), Events::new(), vec![Html::text("OK")]),
+                            btn::primary(
+                                Attributes::new(),
+                                Events::new().on_click(|_| Msg::Close),
+                                vec![Html::text("OK")],
+                            ),
                         ]
                     } else {
                         vec![text::div("保存中…")]
