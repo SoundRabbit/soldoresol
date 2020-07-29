@@ -27,11 +27,12 @@ pub struct State {
 
 pub enum Msg {
     Close,
-    Finish,
+    Finish(Option<Rc<web_sys::IdbDatabase>>),
 }
 
 pub enum Sub {
     Close,
+    DbVersionIsUpdated(Rc<web_sys::IdbDatabase>),
 }
 
 pub fn new() -> SaveTable {
@@ -100,6 +101,7 @@ fn init(state: Option<State>, props: Props) -> (State, Cmd<Msg, Sub>, Vec<Batch<
                                 }
                             }
                         }
+                        crate::debug::log_1(format!("has_table_object:{}", has_table_object));
                         if has_table_object {
                             save_blocks(
                                 Rc::clone(&table_db),
@@ -110,12 +112,14 @@ fn init(state: Option<State>, props: Props) -> (State, Cmd<Msg, Sub>, Vec<Batch<
                                 blocks,
                                 resources,
                             )
-                            .then(move |_| resolve(Msg::Finish));
+                            .then(move |_| resolve(Msg::Finish(None)));
                         } else {
-                            idb::create_object_strage(&table_db, table_id.as_ref())
-                                .and_then(move |database| {
+                            idb::create_object_strage(&table_db, table_id.as_ref()).then(
+                                move |database| {
+                                    crate::debug::log_1("save_blocks");
+                                    let database = Rc::new(database.unwrap());
                                     save_blocks(
-                                        Rc::new(database.unwrap()),
+                                        Rc::clone(&database),
                                         Rc::clone(&common_db),
                                         Rc::clone(&table_id),
                                         table_name,
@@ -123,8 +127,9 @@ fn init(state: Option<State>, props: Props) -> (State, Cmd<Msg, Sub>, Vec<Batch<
                                         blocks,
                                         resources,
                                     )
-                                })
-                                .then(move |_| resolve(Msg::Finish));
+                                    .then(move |_| resolve(Msg::Finish(Some(database))))
+                                },
+                            );
                         }
                     }
                 }
@@ -192,8 +197,13 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.cmd_queue.enqueue(Cmd::sub(Sub::Close));
             state.cmd_queue.dequeue()
         }
-        Msg::Finish => {
+        Msg::Finish(table_db) => {
             state.finished = true;
+            if let Some(table_db) = table_db {
+                state
+                    .cmd_queue
+                    .enqueue(Cmd::sub(Sub::DbVersionIsUpdated(table_db)));
+            }
             state.cmd_queue.dequeue()
         }
     }

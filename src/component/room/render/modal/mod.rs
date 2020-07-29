@@ -92,6 +92,9 @@ pub fn render(
                             })
                             .subscribe(|sub| match sub {
                                 modal::save_table::Sub::Close => Msg::CloseModal,
+                                modal::save_table::Sub::DbVersionIsUpdated(table_db) => {
+                                    Msg::UpdateTableDatabase(table_db)
+                                }
                             }),
                         vec![],
                     )

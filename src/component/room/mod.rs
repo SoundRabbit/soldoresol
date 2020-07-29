@@ -40,7 +40,7 @@ pub enum Msg {
     ResizeCanvas,
 
     // Subscribe
-    UpdateTableDatabase,
+    UpdateTableDatabase(Rc<web_sys::IdbDatabase>),
 
     // Tick
     Tick1000ms,
@@ -193,7 +193,7 @@ pub enum Msg {
 
 pub enum Sub {
     DisconnectFromRoom,
-    UpdateTableDatabase,
+    UpdateTableDatabase(Rc<web_sys::IdbDatabase>),
 }
 
 pub fn new() -> Room {
@@ -283,16 +283,6 @@ fn init(state: Option<State>, props: Props) -> (State, Cmd<Msg, Sub>, Vec<Batch<
                 a.forget();
             }
         }),
-        Batch::new({
-            let table_db = Rc::clone(&state.table_database());
-            move |mut handler| {
-                let a = Closure::wrap(
-                    Box::new(move || handler(Msg::UpdateTableDatabase)) as Box<dyn FnMut()>
-                );
-                table_db.set_onversionchange(Some(a.as_ref().unchecked_ref()));
-                a.forget();
-            }
-        }),
     ];
     (state, task, batch)
 }
@@ -332,7 +322,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
 
         // Subscribe
-        Msg::UpdateTableDatabase => Cmd::sub(Sub::UpdateTableDatabase),
+        Msg::UpdateTableDatabase(table_db) => Cmd::sub(Sub::UpdateTableDatabase(table_db)),
 
         // Tick
         Msg::Tick1000ms => state.dequeue(),

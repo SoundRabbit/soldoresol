@@ -123,6 +123,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             }
         }
         Msg::GetTableDatabase => {
+            crate::debug::log_1("GetTableDatabase");
             let table_db_name = String::from("") + &state.config.client.db_prefix + ".table";
             Cmd::task(move |resolve| {
                 idb::open_db(&table_db_name).then(move |database| {
@@ -133,6 +134,7 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             })
         }
         Msg::SetTableDatabase(table_database) => {
+            crate::debug::log_1("SetTableDatabase");
             state.table_database = Some(table_database);
             Cmd::none()
         }
@@ -163,7 +165,7 @@ fn render(state: &State, _: Vec<Html>) -> Html {
                 })
                 .subscribe(|sub| match sub {
                     room::Sub::DisconnectFromRoom => Msg::DisconnectFromRoom,
-                    room::Sub::UpdateTableDatabase => Msg::GetTableDatabase,
+                    room::Sub::UpdateTableDatabase(table_db) => Msg::SetTableDatabase(table_db),
                 }),
             vec![],
         )
