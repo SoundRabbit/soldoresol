@@ -10,7 +10,7 @@ use kagura::prelude::*;
 use std::{collections::HashMap, rc::Rc};
 use wasm_bindgen::{prelude::*, JsCast};
 
-pub type SaveTable = Component<Msg, Props, State, Sub>;
+pub type SaveTable = Component<Props, Sub>;
 
 pub struct Props {
     pub table_db: Rc<web_sys::IdbDatabase>,
@@ -38,9 +38,9 @@ pub fn new() -> SaveTable {
     Component::new(init, update, render)
 }
 
-fn init(_: &mut SaveTable, state: Option<State>, props: Props) -> (State, Cmd<Msg, Sub>) {
+fn init(state: Option<State>, props: Props) -> (State, Cmd<Msg, Sub>, Vec<Batch<Msg>>) {
     if let Some(state) = state {
-        return (state, Cmd::none());
+        return (state, Cmd::none(), vec![]);
     }
 
     let state = State {
@@ -131,7 +131,7 @@ fn init(_: &mut SaveTable, state: Option<State>, props: Props) -> (State, Cmd<Ms
             });
     });
 
-    (state, cmd)
+    (state, cmd, vec![])
 }
 
 fn save_blocks(

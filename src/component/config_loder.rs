@@ -4,29 +4,9 @@ use kagura::prelude::*;
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 
-type ConfigLoader = Component<Msg, Props, State, Sub>;
+type ConfigLoader = Component<Props, Sub>;
 
 pub fn new() -> ConfigLoader {
-    let init = move |_: &mut ConfigLoader, _: Option<State>, _: Props| {
-        let hostname = web_sys::window().unwrap().location().hostname().unwrap();
-        let is_dev_mode = hostname == "localhost";
-
-        let state = State {
-            hostname: hostname,
-            config: None,
-            common_database: None,
-            client_id: Rc::new("".into()),
-        };
-        let config_url = if is_dev_mode {
-            "/config.dev.toml"
-        } else {
-            "./config.toml"
-        };
-        let task = Cmd::task(task::http::get(config_url, task::http::Props::new(), |r| {
-            Msg::SetConfig(r)
-        }));
-        (state, task)
-    };
     Component::new(init, update, render)
 }
 
@@ -49,6 +29,27 @@ pub enum Msg {
 }
 
 pub enum Sub {}
+
+fn init(state: Option<State>, props: Props) -> (State, Cmd<Msg, Sub>, Vec<Batch<Msg>>) {
+    let hostname = web_sys::window().unwrap().location().hostname().unwrap();
+    let is_dev_mode = hostname == "localhost";
+
+    let state = State {
+        hostname: hostname,
+        config: None,
+        common_database: None,
+        client_id: Rc::new("".into()),
+    };
+    let config_url = if is_dev_mode {
+        "/config.dev.toml"
+    } else {
+        "./config.toml"
+    };
+    let task = Cmd::task(task::http::get(config_url, task::http::Props::new(), |r| {
+        Msg::SetConfig(r)
+    }));
+    (state, task, vec![])
+}
 
 fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
     match msg {

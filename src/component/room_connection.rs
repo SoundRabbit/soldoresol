@@ -8,7 +8,7 @@ use kagura::prelude::*;
 use std::{ops::Deref, rc::Rc};
 use wasm_bindgen::{prelude::*, JsCast};
 
-pub type RoomConnection = Component<Msg, Props, State, Sub>;
+pub type RoomConnection = Component<Props, Sub>;
 
 pub struct Props {
     pub config: Rc<Config>,
@@ -41,10 +41,12 @@ pub struct State {
     common_database: Rc<web_sys::IdbDatabase>,
     room_database: Option<Rc<web_sys::IdbDatabase>>,
     table_database: Option<Rc<web_sys::IdbDatabase>>,
+    room_component: room::Room,
 }
 
 pub enum Msg {
     TryToSetRoomDatabase(Rc<web_sys::IdbDatabase>),
+    GetTableDatabase,
     SetTableDatabase(Rc<web_sys::IdbDatabase>),
     SetConnectionAsOpened,
     DisconnectFromRoom,
@@ -58,7 +60,7 @@ pub fn new() -> RoomConnection {
     Component::new(init, update, render)
 }
 
-fn init(this: &mut RoomConnection, state: Option<State>, props: Props) -> (State, Cmd<Msg, Sub>) {
+fn init(state: Option<State>, props: Props) -> (State, Cmd<Msg, Sub>, Vec<Batch<Msg>>) {
     let room_db_name = String::from("") + &props.config.client.db_prefix + ".room";
 
     let state = State {
@@ -69,6 +71,7 @@ fn init(this: &mut RoomConnection, state: Option<State>, props: Props) -> (State
         room_database: None,
         table_database: None,
         common_database: props.common_database,
+        room_component: room::new(),
     };
 
     let task = Cmd::task(move |resolve| {
@@ -79,7 +82,7 @@ fn init(this: &mut RoomConnection, state: Option<State>, props: Props) -> (State
         })
     });
 
-    this.batch({
+    let batch = vec![Batch::new({
         let room = Rc::clone(&props.room);
         move |mut handler| {
             let a = Closure::wrap(
@@ -88,9 +91,9 @@ fn init(this: &mut RoomConnection, state: Option<State>, props: Props) -> (State
             room.payload.on("open", Some(a.as_ref().unchecked_ref()));
             a.forget();
         }
-    });
+    })];
 
-    (state, task)
+    (state, task, batch)
 }
 
 fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
@@ -116,15 +119,18 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 })
             } else {
                 state.room_database = Some(room_database);
-                let table_db_name = String::from("") + &state.config.client.db_prefix + ".table";
-                Cmd::task(move |resolve| {
-                    idb::open_db(&table_db_name).then(move |database| {
-                        if let Some(database) = database {
-                            resolve(Msg::SetTableDatabase(Rc::new(database)))
-                        }
-                    })
-                })
+                update(state, Msg::GetTableDatabase)
             }
+        }
+        Msg::GetTableDatabase => {
+            let table_db_name = String::from("") + &state.config.client.db_prefix + ".table";
+            Cmd::task(move |resolve| {
+                idb::open_db(&table_db_name).then(move |database| {
+                    if let Some(database) = database {
+                        resolve(Msg::SetTableDatabase(Rc::new(database)))
+                    }
+                })
+            })
         }
         Msg::SetTableDatabase(table_database) => {
             state.table_database = Some(table_database);
@@ -145,7 +151,8 @@ fn render(state: &State, _: Vec<Html>) -> Html {
         (&state.room, &state.room_database, &state.table_database)
     {
         Html::component(
-            room::new()
+            state
+                .room_component
                 .with(room::Props {
                     peer: Rc::clone(&state.peer),
                     room: Rc::clone(room),
@@ -156,6 +163,7 @@ fn render(state: &State, _: Vec<Html>) -> Html {
                 })
                 .subscribe(|sub| match sub {
                     room::Sub::DisconnectFromRoom => Msg::DisconnectFromRoom,
+                    room::Sub::UpdateTableDatabase => Msg::GetTableDatabase,
                 }),
             vec![],
         )

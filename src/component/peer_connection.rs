@@ -9,7 +9,7 @@ use regex::Regex;
 use std::rc::Rc;
 use wasm_bindgen::{prelude::*, JsCast};
 
-type PeerConnection = Component<Msg, Props, State, Sub>;
+type PeerConnection = Component<Props, Sub>;
 
 pub struct Props {
     pub config: Rc<Config>,
@@ -57,7 +57,7 @@ pub fn new() -> PeerConnection {
     Component::new(init, update, render)
 }
 
-fn init(this: &mut PeerConnection, state: Option<State>, props: Props) -> (State, Cmd<Msg, Sub>) {
+fn init(state: Option<State>, props: Props) -> (State, Cmd<Msg, Sub>, Vec<Batch<Msg>>) {
     let peer = Rc::new(Peer::new(&props.config.skyway.key));
     let state = State {
         peer_id: None,
@@ -74,7 +74,7 @@ fn init(this: &mut PeerConnection, state: Option<State>, props: Props) -> (State
     };
     let task = request_room_ids_task(&props.common_database);
 
-    this.batch({
+    let batch = vec![Batch::new({
         let peer = Rc::clone(&peer);
         move |mut handler| {
             let a = Closure::wrap(Box::new({
@@ -84,9 +84,9 @@ fn init(this: &mut PeerConnection, state: Option<State>, props: Props) -> (State
             peer.on("open", Some(a.as_ref().unchecked_ref()));
             a.forget();
         }
-    });
+    })];
 
-    (state, task)
+    (state, task, batch)
 }
 
 fn basic_room_data_object() -> JsValue {

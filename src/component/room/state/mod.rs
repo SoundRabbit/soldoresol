@@ -468,6 +468,10 @@ impl<M, S> State<M, S> {
         &self.table_database
     }
 
+    pub fn set_table_db(&mut self, table_db: Rc<web_sys::IdbDatabase>) {
+        self.table_database = table_db;
+    }
+
     pub fn dequeue(&mut self) -> Cmd<M, S> {
         self.cmd_queue.dequeue()
     }
