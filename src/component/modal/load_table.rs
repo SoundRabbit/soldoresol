@@ -3,6 +3,7 @@ use crate::{
     block::{self, BlockId},
     idb, model,
     random_id::U128Id,
+    resource::Data,
     JsObject, Promise, Timestamp,
 };
 use kagura::prelude::*;
@@ -29,6 +30,7 @@ pub struct State {
 pub struct Table {
     name: String,
     timestamp: Timestamp,
+    resources: Vec<U128Id>,
 }
 
 pub enum LoadMode {
@@ -41,13 +43,26 @@ pub enum Msg {
     SetTables(Vec<(U128Id, Table)>),
     SelectTable(U128Id),
     LoadSelectingTable(LoadMode),
-    LoadTable(LoadMode, U128Id, HashMap<U128Id, JsValue>),
-    OpenTable(U128Id, HashMap<BlockId, block::FieldBlock>),
+    LoadTable(
+        LoadMode,
+        U128Id,
+        HashMap<U128Id, JsValue>,
+        HashMap<U128Id, Data>,
+    ),
+    OpenTable(
+        U128Id,
+        HashMap<BlockId, block::FieldBlock>,
+        HashMap<U128Id, Data>,
+    ),
 }
 
 pub enum Sub {
     Close,
-    Open(BlockId, HashMap<BlockId, block::FieldBlock>),
+    Open(
+        BlockId,
+        HashMap<BlockId, block::FieldBlock>,
+        HashMap<U128Id, Data>,
+    ),
     Clone(U128Id),
 }
 
@@ -56,10 +71,18 @@ impl Table {
         val.dyn_ref::<JsObject>().and_then(|val| {
             let name = val.get("name").and_then(|x| x.as_string());
             let timestamp = val.get("timestamp").and_then(|x| x.as_f64());
-            if let (Some(name), Some(timestamp)) = (name, timestamp) {
+            let resources = val.get("resources").map(|x| {
+                js_sys::Array::from(&x)
+                    .to_vec()
+                    .into_iter()
+                    .filter_map(|x| U128Id::from_jsvalue(&x))
+                    .collect::<Vec<_>>()
+            });
+            if let (Some(name), Some(timestamp), Some(resources)) = (name, timestamp, resources) {
                 Some(Self {
                     name,
                     timestamp: Timestamp::from(timestamp),
+                    resources: resources,
                 })
             } else {
                 None
@@ -148,73 +171,37 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
         Msg::LoadSelectingTable(load_mode) => {
             if let Some(table_id) = state.selecting_table.as_ref() {
-                let table_db = Rc::clone(&state.table_db);
-                let table_id = table_id.clone();
-                let keys = idb::query(
-                    &state.table_db,
-                    &table_id.to_string(),
-                    idb::Query::GetAllKeys,
-                );
-                let cmd = Cmd::task(move |resolve| {
-                    keys.and_then({
+                if let Some(i) = state.tables.iter().position(|(t_id, _)| t_id == table_id) {
+                    let promise = load_table(
+                        Rc::clone(&state.common_db),
+                        Rc::clone(&state.table_db),
+                        table_id.clone(),
+                        &state.tables[i].1.resources,
+                    );
+
+                    let cmd = Cmd::task({
                         let table_id = table_id.clone();
-                        move |keys| {
-                            if let Some(keys) = keys {
-                                let keys = js_sys::Array::from(&keys).to_vec();
-                                let mut promises = vec![];
-                                for key in keys {
-                                    if let Some(block_id) = U128Id::from_jsvalue(&key) {
-                                        promises.push(
-                                            idb::query(
-                                                &table_db,
-                                                &table_id.to_string(),
-                                                idb::Query::Get(&key),
-                                            )
-                                            .map(|x| x.map(|x| (block_id, x))),
-                                        )
-                                    } else if key
-                                        .as_string()
-                                        .map(|key| key == "data")
-                                        .unwrap_or(false)
-                                    {
-                                        promises.push(
-                                            idb::query(
-                                                &table_db,
-                                                &table_id.to_string(),
-                                                idb::Query::Get(&JsValue::from("data")),
-                                            )
-                                            .map({
-                                                let table_id = table_id.clone();
-                                                move |x| x.map(|x| (table_id, x))
-                                            }),
-                                        )
-                                    }
+                        move |resolve| {
+                            promise.then(|x| {
+                                if let Some((blocks, resources)) = x {
+                                    resolve(Msg::LoadTable(load_mode, table_id, blocks, resources));
                                 }
-                                Promise::some(promises)
-                            } else {
-                                Promise::new(|resolve| resolve(None))
-                            }
-                        }
-                    })
-                    .then(|tables| {
-                        if let Some(tables) = tables {
-                            let tables = tables.into_iter().filter_map(|x| x).collect();
-                            resolve(Msg::LoadTable(load_mode, table_id, tables));
+                            });
                         }
                     });
-                });
-                state.cmd_queue.enqueue(cmd);
+                    state.cmd_queue.enqueue(cmd);
+                }
             }
             state.cmd_queue.dequeue()
         }
-        Msg::LoadTable(load_mode, table_id, blocks) => {
+        Msg::LoadTable(load_mode, table_id, blocks, resources) => {
             let blocks = state.block_field.unpack_listed(blocks.into_iter());
 
             let cmd = Cmd::task(move |resolve| {
                 blocks.then(move |blocks| {
                     if let Some(blocks) = blocks {
                         match load_mode {
-                            LoadMode::Open => resolve(Msg::OpenTable(table_id, blocks)),
+                            LoadMode::Open => resolve(Msg::OpenTable(table_id, blocks, resources)),
                             LoadMode::Clone => {}
                         }
                     }
@@ -224,14 +211,93 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.cmd_queue.enqueue(cmd);
             state.cmd_queue.dequeue()
         }
-        Msg::OpenTable(table_id, blocks) => {
+        Msg::OpenTable(table_id, blocks, resources) => {
             state.cmd_queue.enqueue(Cmd::sub(Sub::Open(
                 state.block_field.block_id(table_id),
                 blocks,
+                resources,
             )));
             state.cmd_queue.dequeue()
         }
     }
+}
+
+fn load_table(
+    common_db: Rc<web_sys::IdbDatabase>,
+    table_db: Rc<web_sys::IdbDatabase>,
+    table_id: U128Id,
+    resources: &Vec<U128Id>,
+) -> Promise<(HashMap<U128Id, JsValue>, HashMap<U128Id, Data>)> {
+    let mut promises = vec![];
+    for r_id in resources {
+        promises.push(
+            idb::query(&common_db, "resources", idb::Query::Get(&r_id.to_jsvalue()))
+                .and_then(|x| {
+                    if let Some(x) = x {
+                        Data::unpack(x)
+                    } else {
+                        Promise::new(|resolve| resolve(None))
+                    }
+                })
+                .map({
+                    let r_id = r_id.clone();
+                    move |x| x.map(|x| (r_id, x))
+                }),
+        );
+    }
+    let resources = Promise::some(promises);
+
+    idb::query(&table_db, &table_id.to_string(), idb::Query::GetAllKeys)
+        .and_then(move |keys| {
+            if let Some(keys) = keys {
+                let keys = js_sys::Array::from(&keys).to_vec();
+                let mut promises = vec![];
+                for key in keys {
+                    if let Some(block_id) = U128Id::from_jsvalue(&key) {
+                        promises.push(
+                            idb::query(&table_db, &table_id.to_string(), idb::Query::Get(&key))
+                                .map(|x| x.map(|x| (block_id, x))),
+                        )
+                    } else if key.as_string().map(|key| key == "data").unwrap_or(false) {
+                        promises.push(
+                            idb::query(
+                                &table_db,
+                                &table_id.to_string(),
+                                idb::Query::Get(&JsValue::from("data")),
+                            )
+                            .map({
+                                let table_id = table_id.clone();
+                                move |x| x.map(|x| (table_id, x))
+                            }),
+                        )
+                    }
+                }
+                Promise::some(promises)
+            } else {
+                Promise::new(|resolve| resolve(None))
+            }
+        })
+        .and_then(move |tables| {
+            if let Some(tables) = tables {
+                resources.map(move |resources| resources.map(|x| (tables, x)))
+            } else {
+                Promise::new(|resolve| resolve(None))
+            }
+        })
+        .map(|x| {
+            x.map(|(tables, resources)| {
+                (
+                    tables
+                        .into_iter()
+                        .filter_map(|x| x)
+                        .collect::<HashMap<_, _>>(),
+                    resources
+                        .into_iter()
+                        .filter_map(|x| x)
+                        .collect::<HashMap<_, _>>(),
+                )
+            })
+        })
 }
 
 fn render(state: &State, _: Vec<Html>) -> Html {

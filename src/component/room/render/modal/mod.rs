@@ -72,8 +72,8 @@ pub fn render(
                     })
                     .subscribe(|sub| match sub {
                         modal::load_table::Sub::Close => Msg::CloseModal,
-                        modal::load_table::Sub::Open(table_id, blocks) => {
-                            Msg::LoadToOpenTable(table_id, blocks)
+                        modal::load_table::Sub::Open(table_id, blocks, resources) => {
+                            Msg::LoadToOpenTable(table_id, blocks, resources)
                         }
                         _ => Msg::NoOp,
                     }),

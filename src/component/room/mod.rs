@@ -176,7 +176,11 @@ pub enum Msg {
 
     // IDB
     SaveTableToIdb(BlockId),
-    LoadToOpenTable(BlockId, HashMap<BlockId, block::FieldBlock>),
+    LoadToOpenTable(
+        BlockId,
+        HashMap<BlockId, block::FieldBlock>,
+        HashMap<U128Id, Data>,
+    ),
 
     // Udonarium互換
     LoadUdonariumCharacter(udonarium::Character),
@@ -1936,20 +1940,39 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     });
             })
         }
-        Msg::LoadToOpenTable(table_id, blocks) => {
-            let mut ids = vec![state.world().clone()];
+        Msg::LoadToOpenTable(table_id, blocks, resources) => {
+            let mut block_ids = vec![state.world().clone()];
             state.update_world(timestamp(), |world| {
                 let selecting_table = world.selecting_table().clone();
                 world.replace_table(&selecting_table, table_id.clone());
                 world.set_selecting_table(table_id);
             });
             for (id, block) in blocks {
-                ids.push(id.clone());
+                block_ids.push(id.clone());
                 state.block_field_mut().assign_fb(id, block);
             }
+
+            let mut r_ids = vec![];
+            for (r_id, data) in resources {
+                r_ids.push(r_id.clone());
+                state.resource_mut().assign(r_id, data);
+            }
+            let promise = state.resource().pack_listed(r_ids);
+
             render_canvas(state);
 
-            send_pack_cmd(state.block_field(), ids)
+            state.enqueue(send_pack_cmd(state.block_field(), block_ids));
+            state.enqueue(Cmd::task({
+                let room = state.room();
+                move |_| {
+                    promise.then(move |packs| {
+                        if let Some(packs) = packs {
+                            room.send(skyway::Msg::SetResourcePacks(packs.into_iter().collect()));
+                        }
+                    })
+                }
+            }));
+            state.dequeue()
         }
 
         // Udonarium互換

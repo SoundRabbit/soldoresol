@@ -160,8 +160,10 @@ fn save_blocks(
         transaction = transaction
             .and_then(move |_| idb::assign(table_db, table_id, block_id.to_jsvalue(), block));
     }
+    let r_ids = js_sys::Array::new();
     for (r_id, data) in resources {
         let common_db = Rc::clone(&common_db);
+        r_ids.push(&r_id.to_jsvalue());
         transaction = transaction.and_then(move |_| {
             idb::assign(
                 common_db,
@@ -176,7 +178,8 @@ fn save_blocks(
         let table_id = table_id.clone();
         let value: js_sys::Object = object! {
             name: table_name.as_str(),
-            timestamp: js_sys::Date::now()
+            timestamp: js_sys::Date::now(),
+            resources: r_ids
         }
         .into();
         transaction = transaction.and_then(move |_| {
