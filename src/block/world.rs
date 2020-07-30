@@ -7,7 +7,7 @@ use wasm_bindgen::{prelude::*, JsCast};
 pub struct World {
     selecting_table: BlockId,
     tables: Vec<BlockId>,
-    characters: HashSet<BlockId>,
+    characters: Vec<BlockId>,
 }
 
 impl World {
@@ -16,7 +16,7 @@ impl World {
         Self {
             selecting_table,
             tables,
-            characters: HashSet::new(),
+            characters: vec![],
         }
     }
 
@@ -52,12 +52,14 @@ impl World {
         self.characters.iter()
     }
 
-    pub fn add_character(&mut self, character: BlockId) {
-        self.characters.insert(character);
+    pub fn add_character(&mut self, character_id: BlockId) {
+        self.characters.push(character_id)
     }
 
-    pub fn remove_character(&mut self, character: &BlockId) {
-        self.characters.remove(character);
+    pub fn remove_character(&mut self, character_id: &BlockId) {
+        if let Some(pos) = self.characters.iter().position(|x| *x == *character_id) {
+            self.characters.remove(pos);
+        }
     }
 }
 
@@ -101,10 +103,10 @@ impl Block for World {
                     }
                 }
 
-                let mut characters = hash_set! {};
+                let mut characters = vec![];
                 for id in raw_characters.to_vec() {
                     if let Some(id) = U128Id::from_jsvalue(&id).map(|id| field.block_id(id)) {
-                        characters.insert(id);
+                        characters.push(id);
                     }
                 }
 
