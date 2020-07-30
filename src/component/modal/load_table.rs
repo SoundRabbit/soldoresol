@@ -228,24 +228,34 @@ fn load_table(
     table_id: U128Id,
     resources: &Vec<U128Id>,
 ) -> Promise<(HashMap<U128Id, JsValue>, HashMap<U128Id, Data>)> {
-    let mut promises = vec![];
+    let mut promises = Promise::new(|resolve| resolve(Some(vec![])));
     for r_id in resources {
-        promises.push(
-            idb::query(&common_db, "resources", idb::Query::Get(&r_id.to_jsvalue()))
-                .and_then(|x| {
-                    if let Some(x) = x {
-                        Data::unpack(x)
-                    } else {
-                        Promise::new(|resolve| resolve(None))
-                    }
-                })
-                .map({
-                    let r_id = r_id.clone();
-                    move |x| x.map(|x| (r_id, x))
-                }),
-        );
+        crate::debug::log_1(r_id.to_jsvalue());
+        promises = promises.and_then({
+            let r_id = r_id.clone();
+            let common_db = Rc::clone(&common_db);
+            move |resources| match resources {
+                Some(mut resources) => {
+                    idb::query(&common_db, "resources", idb::Query::Get(&r_id.to_jsvalue()))
+                        .and_then(|x| match x {
+                            Some(x) => Data::unpack(x),
+                            None => Promise::new(|resolve| resolve(None)),
+                        })
+                        .map({
+                            let r_id = r_id.clone();
+                            move |x| {
+                                x.map(|x| {
+                                    resources.push((r_id, x));
+                                    resources
+                                })
+                            }
+                        })
+                }
+                None => Promise::new(|resolve| resolve(None)),
+            }
+        });
     }
-    let resources = Promise::some(promises);
+    let resources = promises;
 
     idb::query(&table_db, &table_id.to_string(), idb::Query::GetAllKeys)
         .and_then(move |keys| {
@@ -291,10 +301,7 @@ fn load_table(
                         .into_iter()
                         .filter_map(|x| x)
                         .collect::<HashMap<_, _>>(),
-                    resources
-                        .into_iter()
-                        .filter_map(|x| x)
-                        .collect::<HashMap<_, _>>(),
+                    resources.into_iter().collect::<HashMap<_, _>>(),
                 )
             })
         })

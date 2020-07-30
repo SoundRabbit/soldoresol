@@ -99,6 +99,7 @@ pub fn query(database: &web_sys::IdbDatabase, object_name: &str, query: Query) -
                     Ok(x) => x,
                     Err(..) => JsValue::null(),
                 };
+                crate::debug::log_1(&result);
                 if let Some(resolve) = resolve.borrow_mut().take() {
                     resolve(Some(result));
                 }

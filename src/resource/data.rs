@@ -38,21 +38,23 @@ impl Data {
 
     pub fn unpack(val: JsValue) -> Promise<Self> {
         use crate::JsObject;
+        crate::debug::log_1(&val);
         let obj = val.dyn_into::<js_sys::Object>().unwrap();
         let obj = obj.dyn_into::<JsObject>().unwrap();
         let blob_type = obj.get("type").unwrap().as_string().unwrap();
-        let array_buffer = obj
-            .get("payload")
-            .unwrap()
-            .dyn_into::<js_sys::ArrayBuffer>()
-            .ok()
+        let payload = obj.get("payload").unwrap();
+        if let Some(array_buffer) = payload.dyn_ref::<js_sys::ArrayBuffer>() {
+            let blob = web_sys::Blob::new_with_buffer_source_sequence_and_options(
+                array![array_buffer].as_ref(),
+                web_sys::BlobPropertyBag::new().type_(blob_type.as_str()),
+            )
             .unwrap();
-        let blob = web_sys::Blob::new_with_buffer_source_sequence_and_options(
-            array![&array_buffer].as_ref(),
-            web_sys::BlobPropertyBag::new().type_(blob_type.as_str()),
-        )
-        .unwrap();
-        Self::from_blob(blob)
+            Self::from_blob(blob)
+        } else if let Ok(blob) = payload.dyn_into::<web_sys::Blob>() {
+            Self::from_blob(blob)
+        } else {
+            Promise::new(|resolve| resolve(None))
+        }
     }
 
     pub fn is_able_to_load(file_type: &str) -> bool {
