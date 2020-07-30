@@ -12,6 +12,14 @@ impl<T> Promise<T> {
         }
     }
 
+    pub fn none() -> Self {
+        Self::new(|resolve| resolve(None))
+    }
+
+    pub fn some(v: T) -> Self {
+        Self::new(move |resolve| resolve(Some(v)))
+    }
+
     pub fn then(self, resolve: impl FnOnce(Option<T>) -> () + 'static) {
         (self.task)(Box::new(resolve))
     }
@@ -32,29 +40,19 @@ impl<T> Promise<T> {
 }
 
 impl<T> Promise<T> {
-    pub fn some(tasks: Vec<Self>) -> Promise<Vec<Option<T>>> {
-        Promise::new(move |resolve| {
-            use std::{cell::RefCell, rc::Rc};
-            let results = Rc::new(RefCell::new(vec![]));
-            let mut resolve = Rc::new(Some(Box::new(resolve)));
-            let mut idx = 0;
-            for task in tasks {
-                results.borrow_mut().push(None);
-                task.then({
-                    let mut resolve = Rc::clone(&resolve);
-                    let results = Rc::clone(&results);
-                    move |result| {
-                        results.borrow_mut()[idx] = result;
-                        if let Some(resolve) = Rc::get_mut(&mut resolve).and_then(|r| r.take()) {
-                            resolve(Some(results.borrow_mut().drain(..).collect()));
-                        }
-                    }
-                });
-                idx += 1;
-            }
-            if let Some(resolve) = Rc::get_mut(&mut resolve).and_then(|r| r.take()) {
-                resolve(Some(results.borrow_mut().drain(..).collect()));
-            }
-        })
+    pub fn all(tasks: Vec<Self>) -> Promise<Vec<T>> {
+        let mut promise = Promise::some(vec![]);
+        for task in tasks {
+            promise = promise.and_then(move |x| match x {
+                Some(mut xs) => task.map(move |y| {
+                    y.map(|y| {
+                        xs.push(y);
+                        xs
+                    })
+                }),
+                None => Promise::none(),
+            });
+        }
+        promise
     }
 }

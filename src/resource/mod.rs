@@ -42,8 +42,7 @@ impl Resource {
             let key = key.clone();
             promises.push(data.pack().map(move |data| data.map(|data| (key, data))))
         }
-        Promise::some(promises)
-            .map(|vals| vals.map(|vals| vals.into_iter().filter_map(|x| x).collect()))
+        Promise::all(promises).map(|vals| vals.map(|vals| vals.into_iter().collect()))
     }
 
     pub fn pack_listed(&self, ids: Vec<ResourceId>) -> Promise<Vec<(ResourceId, JsValue)>> {
@@ -53,8 +52,7 @@ impl Resource {
                 promises.push(data.pack().map(move |data| data.map(|data| (key, data))));
             }
         }
-        Promise::some(promises)
-            .map(|vals| vals.map(|vals| vals.into_iter().filter_map(|x| x).collect()))
+        Promise::all(promises).map(|vals| vals.map(|vals| vals.into_iter().collect()))
     }
 }
 

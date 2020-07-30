@@ -67,13 +67,13 @@ impl Clone for BlockTable {
 impl Deref for BlockTable {
     type Target = HashMap<U128Id, FieldBlock>;
     fn deref(&self) -> &Self::Target {
-        unsafe { self.0.as_ptr().as_ref().unwrap() }
+        unsafe { &*self.0.as_ptr() }
     }
 }
 
 impl DerefMut for BlockTable {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        unsafe { self.0.as_ptr().as_mut().unwrap() }
+        unsafe { &mut *self.0.as_ptr() }
     }
 }
 
@@ -348,8 +348,7 @@ impl Field {
                 promises.push(block.pack().map(move |res| res.map(|val| (block_id, val))));
             }
         }
-        Promise::some(promises)
-            .map(|vals| vals.map(|vals| vals.into_iter().filter_map(|x| x).collect()))
+        Promise::all(promises).map(|vals| vals.map(|vals| vals.into_iter().collect()))
     }
 
     pub fn unpack_listed(
@@ -362,7 +361,6 @@ impl Field {
             promises
                 .push(FieldBlock::unpack(self, val).map(move |res| res.map(|val| (block_id, val))));
         }
-        Promise::some(promises)
-            .map(|vals| vals.map(|vals| vals.into_iter().filter_map(|x| x).collect()))
+        Promise::all(promises).map(|vals| vals.map(|vals| vals.into_iter().collect()))
     }
 }

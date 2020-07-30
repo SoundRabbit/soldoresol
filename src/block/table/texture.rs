@@ -98,27 +98,27 @@ impl Block for Texture {
                     resolve(Some(obj));
                 }
             }) as Box<dyn FnOnce(web_sys::Blob)>);
-            element.to_blob(a.as_ref().unchecked_ref());
+            element.to_blob(a.as_ref().unchecked_ref()).unwrap();
             a.forget();
         })
     }
 
-    fn unpack(field: &mut Field, val: JsValue) -> Promise<Box<Self>> {
+    fn unpack(_: &mut Field, val: JsValue) -> Promise<Box<Self>> {
         use crate::JsObject;
 
         let val = val.dyn_into::<JsObject>().unwrap();
-        let buffer = val
-            .get("buffer")
-            .unwrap()
-            .dyn_into::<js_sys::ArrayBuffer>()
+        let buffer = val.get("buffer").unwrap();
+        let buffer = if let Some(buffer) = buffer.dyn_ref::<js_sys::ArrayBuffer>() {
+            web_sys::Blob::new_with_buffer_source_sequence_and_options(
+                array![buffer].as_ref(),
+                web_sys::BlobPropertyBag::new().type_("image/png"),
+            )
             .ok()
-            .and_then(|buffer| {
-                web_sys::Blob::new_with_buffer_source_sequence_and_options(
-                    array![&buffer].as_ref(),
-                    web_sys::BlobPropertyBag::new().type_("image/png"),
-                )
-                .ok()
-            });
+        } else if let Ok(buffer) = buffer.dyn_into::<web_sys::Blob>() {
+            Some(buffer)
+        } else {
+            None
+        };
         let size = js_sys::Array::from(&val.get("size").unwrap()).to_vec();
         let size = [size[0].as_f64().unwrap(), size[1].as_f64().unwrap()];
 

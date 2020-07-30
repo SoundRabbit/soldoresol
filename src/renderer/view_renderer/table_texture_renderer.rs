@@ -5,6 +5,7 @@ use super::super::{
 };
 use crate::{
     block::{self},
+    random_id::U128Id,
     resource::Data,
     Color, Resource,
 };
@@ -17,6 +18,7 @@ pub struct TableTextureRenderer {
     polygon_texture_buffer: web_sys::WebGlTexture,
     table_texture_program: TableTextureProgram,
     texture_update_time: f64,
+    last_texture_id: U128Id,
 }
 
 impl TableTextureRenderer {
@@ -69,6 +71,7 @@ impl TableTextureRenderer {
             polygon_texture_buffer,
             table_texture_program,
             texture_update_time: 0.0,
+            last_texture_id: U128Id::new(),
         }
     }
 
@@ -114,7 +117,9 @@ impl TableTextureRenderer {
         if block_field
             .timestamp(drawing_texture_id)
             .map(|t| {
-                if *t > self.texture_update_time {
+                if *t > self.texture_update_time
+                    || self.last_texture_id != drawing_texture_id.to_id()
+                {
                     self.texture_update_time = *t;
                     true
                 } else {

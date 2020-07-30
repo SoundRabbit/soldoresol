@@ -175,7 +175,6 @@ pub enum Msg {
     SetBcdiceSystemInfo(bcdice::SystemInfo),
 
     // IDB
-    SaveTableToIdb(BlockId),
     LoadToOpenTable(
         BlockId,
         HashMap<BlockId, block::FieldBlock>,
@@ -1821,125 +1820,6 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
         }
 
         // IDB
-        Msg::SaveTableToIdb(table_id) => {
-            let mut blocks = vec![];
-            let mut resources = vec![];
-            let mut table_name = String::new();
-            if let Some(table) = state.block_field().get::<block::Table>(&table_id) {
-                table_name = table.name().clone();
-
-                for block_id in table.tablemasks() {
-                    blocks.push(block_id.clone());
-                }
-                for block_id in table.boxblocks() {
-                    blocks.push(block_id.clone());
-                }
-                for block_id in table.areas() {
-                    blocks.push(block_id.clone());
-                }
-                blocks.push(table.drawing_texture_id().clone());
-                if let Some(image_texture_id) = table.image_texture_id() {
-                    resources.push(image_texture_id.clone());
-                }
-            }
-
-            let blocks = state.block_field_mut().pack_listed(blocks);
-            let table = state.block_field_mut().pack_listed(vec![table_id]);
-            let resources = state.resource().pack_listed(resources);
-
-            let table_database = Rc::clone(state.table_database());
-
-            let common_database = Rc::clone(state.common_database());
-
-            Cmd::task(move |resolve| {
-                blocks
-                    .and_then(move |blocks| table.map(move |table| Some((table, blocks))))
-                    .and_then(move |blocks| {
-                        resources.map(move |resources| {
-                            blocks.map(|(table, blocks)| (table, blocks, resources))
-                        })
-                    })
-                    .then(move |x| {
-                        if let Some((Some(mut table), Some(blocks), Some(resources))) = x {
-                            if let Some(table) = table.pop() {
-                                let table_id = Rc::new(table.0.to_id().to_u128().to_string());
-                                let table = table.1;
-                                let save_blocks = {
-                                    let table_id = Rc::clone(&table_id);
-                                    move |table_database: Rc<web_sys::IdbDatabase>| {
-                                        let mut transaction = idb::assign(
-                                            Rc::clone(&table_database),
-                                            Rc::clone(&table_id),
-                                            JsValue::from("data"),
-                                            table,
-                                        );
-                                        for (block_id, block) in blocks {
-                                            let table_database = Rc::clone(&table_database);
-                                            let table_id = table_id.clone();
-                                            transaction = transaction.and_then(move |_| {
-                                                idb::assign(
-                                                    table_database,
-                                                    table_id,
-                                                    block_id.to_jsvalue(),
-                                                    block,
-                                                )
-                                            });
-                                        }
-                                        for (r_id, data) in resources {
-                                            let common_database = Rc::clone(&common_database);
-                                            transaction = transaction.and_then(move |_| {
-                                                idb::assign(
-                                                    common_database,
-                                                    Rc::new(String::from("resources")),
-                                                    r_id.to_jsvalue(),
-                                                    data,
-                                                )
-                                            });
-                                        }
-                                        {
-                                            let common_database = Rc::clone(&common_database);
-                                            let table_id = table_id.clone();
-                                            let value: js_sys::Object = object! {
-                                                name: table_name.as_str(),
-                                                timestamp: js_sys::Date::now()
-                                            }
-                                            .into();
-                                            transaction = transaction.and_then(move |_| {
-                                                idb::assign(
-                                                    common_database,
-                                                    Rc::new(String::from("tables")),
-                                                    JsValue::from(table_id.as_str()),
-                                                    value.into(),
-                                                )
-                                            });
-                                        }
-                                        transaction
-                                    }
-                                };
-                                let names = table_database.object_store_names();
-                                let mut has_table_object = false;
-                                for i in 0..names.length() {
-                                    if let Some(name) = names.item(i) {
-                                        if name == table_id.as_str() {
-                                            has_table_object = true;
-                                        }
-                                    }
-                                }
-                                if has_table_object {
-                                    save_blocks(Rc::clone(&table_database))
-                                        .then(move |_| resolve(Msg::NoOp));
-                                } else {
-                                    idb::create_object_strage(&table_database, table_id.as_ref())
-                                        .and_then(move |database| {
-                                            save_blocks(Rc::new(database.unwrap()))
-                                        })
-                                        .then(move |_| resolve(Msg::NoOp));
-                                }
-                            }
-                        }
-                    });
-            })
-        }
         Msg::LoadToOpenTable(table_id, blocks, resources) => {
             let mut block_ids = vec![state.world().clone()];
             state.update_world(timestamp(), |world| {
@@ -1957,11 +1837,13 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 r_ids.push(r_id.clone());
                 state.resource_mut().assign(r_id, data);
             }
-            let promise = state.resource().pack_listed(r_ids);
 
             render_canvas(state);
 
             state.enqueue(send_pack_cmd(state.block_field(), block_ids));
+
+            let promise = state.resource().pack_listed(r_ids);
+
             state.enqueue(Cmd::task({
                 let room = state.room();
                 move |_| {

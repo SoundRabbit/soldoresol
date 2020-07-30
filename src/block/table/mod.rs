@@ -105,17 +105,6 @@ impl Table {
             self.boxblocks.remove(idx);
         }
     }
-
-    pub fn pack_to_jsvalue(&self, field: &Field) {
-        let table = self.pack();
-        let mut tablemasks = vec![];
-        for id in &self.tablemasks {
-            if let Some(tablemask) = field.get::<super::table_object::Tablemask>(id) {
-                let id = id.to_jsvalue();
-                tablemasks.push(tablemask.pack().map(|x| x.map(|t| (id, t))));
-            }
-        }
-    }
 }
 
 impl Block for Table {

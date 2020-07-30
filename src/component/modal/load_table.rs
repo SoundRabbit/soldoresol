@@ -139,14 +139,14 @@ fn init(state: Option<State>, props: Props) -> (State, Cmd<Msg, Sub>, Vec<Batch<
                                 )
                             }
                         }
-                        Promise::some(promises)
+                        Promise::all(promises)
                     } else {
                         Promise::new(|resolve| resolve(None))
                     }
                 })
                 .then(|tables| {
                     if let Some(tables) = tables {
-                        let tables: Vec<_> = tables.into_iter().filter_map(|x| x).collect();
+                        let tables: Vec<_> = tables.into_iter().collect();
                         resolve(Msg::SetTables(tables));
                     }
                 });
@@ -282,7 +282,7 @@ fn load_table(
                         )
                     }
                 }
-                Promise::some(promises)
+                Promise::all(promises)
             } else {
                 Promise::new(|resolve| resolve(None))
             }
@@ -297,10 +297,7 @@ fn load_table(
         .map(|x| {
             x.map(|(tables, resources)| {
                 (
-                    tables
-                        .into_iter()
-                        .filter_map(|x| x)
-                        .collect::<HashMap<_, _>>(),
+                    tables.into_iter().collect::<HashMap<_, _>>(),
                     resources.into_iter().collect::<HashMap<_, _>>(),
                 )
             })
