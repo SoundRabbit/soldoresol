@@ -33,7 +33,8 @@ pub fn render<'a>(block_field: &block::Field, resource: &Resource, world: &block
                             Attributes::new()
                                 .class("keyvalue")
                                 .class("keyvalue-rev")
-                                .class("scroll-v"),
+                                .class("scroll-v")
+                                .style("width", "15em"),
                             Events::new(),
                             vec![
                                 block_field
@@ -42,7 +43,7 @@ pub fn render<'a>(block_field: &block::Field, resource: &Resource, world: &block
                                         vec![
                                             btn::selectable(
                                                 table_id == *world.selecting_table(),
-                                                Attributes::new(),
+                                                Attributes::new().class("pure-button-list"),
                                                 Events::new().on_click({
                                                     let table_id = table_id.clone();
                                                     move |_| Msg::SetSelectingTable(table_id)
