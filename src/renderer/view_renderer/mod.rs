@@ -129,7 +129,9 @@ impl ViewRenderer {
             self.area_collection_renderer
                 .render(gl, &vp_matrix, block_field, table.areas());
 
-            self.table_grid_renderer.render(gl, &vp_matrix, table);
+            if table.is_showing_grid() {
+                self.table_grid_renderer.render(gl, &vp_matrix, table);
+            }
 
             gl.depth_func(web_sys::WebGlRenderingContext::LEQUAL);
             self.boxblock_collection_renderer.render(

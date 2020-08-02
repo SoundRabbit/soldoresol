@@ -249,6 +249,31 @@ fn selected_table(resource: &Resource, block_id: &BlockId, table: &block::Table)
                                     ),
                                 ],
                             ),
+                            Html::div(
+                                Attributes::new().class("keyvalue").title(""),
+                                Events::new(),
+                                vec![
+                                    Html::span(
+                                        Attributes::new().class("text-label"),
+                                        Events::new(),
+                                        vec![Html::text("グリッドを表示")],
+                                    ),
+                                    btn::toggle(
+                                        table.is_showing_grid(),
+                                        Attributes::new(),
+                                        Events::new().on_click({
+                                            let is_showing_grid = table.is_showing_grid();
+                                            let block_id = block_id.clone();
+                                            move |_| {
+                                                Msg::SetTableIsShowingGrid(
+                                                    block_id,
+                                                    !is_showing_grid,
+                                                )
+                                            }
+                                        }),
+                                    ),
+                                ],
+                            ),
                         ],
                     ),
                 ],

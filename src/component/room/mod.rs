@@ -114,6 +114,7 @@ pub enum Msg {
     SetTableSize(BlockId, [f32; 2]),
     SetTableImage(BlockId, Option<ResourceId>),
     SetTableName(BlockId, String),
+    SetTableIsShowingGrid(BlockId, bool),
 
     // PersonalData
     SetPersonalDataWithPlayerName(String),
@@ -1216,6 +1217,18 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 .update(&table_id, timestamp(), |table: &mut block::Table| {
                     table.set_name(name);
                 });
+
+            send_pack_cmd(state.block_field(), vec![table_id])
+        }
+
+        Msg::SetTableIsShowingGrid(table_id, is_showing_grid) => {
+            state
+                .block_field_mut()
+                .update(&table_id, timestamp(), |table: &mut block::Table| {
+                    table.set_is_showing_grid(is_showing_grid);
+                });
+
+            render_canvas(state);
 
             send_pack_cmd(state.block_field(), vec![table_id])
         }

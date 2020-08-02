@@ -11,6 +11,7 @@ pub struct Table {
     name: String,
     size: [f32; 2],
     is_bind_to_grid: bool,
+    is_showing_grid: bool,
     drawing_texture_id: BlockId,
     image_texture_id: Option<ResourceId>,
     tablemasks: Vec<BlockId>,
@@ -24,6 +25,7 @@ impl Table {
             name: name.into(),
             size,
             is_bind_to_grid: true,
+            is_showing_grid: true,
             drawing_texture_id,
             image_texture_id: None,
             tablemasks: vec![],
@@ -50,6 +52,14 @@ impl Table {
 
     pub fn is_bind_to_grid(&self) -> bool {
         self.is_bind_to_grid
+    }
+
+    pub fn is_showing_grid(&self) -> bool {
+        self.is_showing_grid
+    }
+
+    pub fn set_is_showing_grid(&mut self, is_showing_grid: bool) {
+        self.is_showing_grid = is_showing_grid;
     }
 
     pub fn drawing_texture_id(&self) -> &BlockId {
@@ -128,6 +138,7 @@ impl Block for Table {
             name: &self.name,
             size: array![self.size[0], self.size[1]],
             is_bind_to_grid: self.is_bind_to_grid,
+            is_showing_grid: self.is_showing_grid,
             drawing_texture_id: self.drawing_texture_id.to_jsvalue(),
             image_texture_id: self.image_texture_id.as_ref().map(|id| id.to_jsvalue()),
             tablemasks: tablemasks,
@@ -146,6 +157,7 @@ impl Block for Table {
                 js_sys::Array::from(p.as_ref())
             });
             let is_bind_to_grid = val.get("is_bind_to_grid").and_then(|i| i.as_bool());
+            let is_showing_grid = val.get("is_showing_grid").and_then(|i| i.as_bool());
             let drawing_texture_id = val
                 .get("drawing_texture_id")
                 .and_then(|id| U128Id::from_jsvalue(&id))
@@ -170,6 +182,7 @@ impl Block for Table {
                 Some(name),
                 Some(size),
                 Some(is_bind_to_grid),
+                Some(is_showing_grid),
                 Some(drawing_texture_id),
                 Some(image_texture_id),
                 Some(raw_tablemasks),
@@ -179,6 +192,7 @@ impl Block for Table {
                 name,
                 size,
                 is_bind_to_grid,
+                is_showing_grid,
                 drawing_texture_id,
                 image_texture_id,
                 tablemasks,
@@ -220,6 +234,7 @@ impl Block for Table {
                         name,
                         size,
                         is_bind_to_grid,
+                        is_showing_grid,
                         drawing_texture_id,
                         image_texture_id,
                         tablemasks,
