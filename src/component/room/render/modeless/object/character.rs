@@ -34,7 +34,7 @@ pub fn render(
             Events::new(),
             vec![
                 Html::div(
-                    Attributes::new().class("keyvalueoption"),
+                    Attributes::new().class("keyvalue"),
                     Events::new(),
                     vec![
                         Html::span(Attributes::new(), Events::new(), vec![Html::text("Name")]),
@@ -45,11 +45,6 @@ pub fn render(
                                 move |s| Msg::SetCharacterName(character_id, s)
                             }),
                             vec![],
-                        ),
-                        btn::primary(
-                            Attributes::new(),
-                            Events::new().on_click(move |_| Msg::NoOp),
-                            vec![Html::text("保存")],
                         ),
                     ],
                 ),
@@ -187,34 +182,6 @@ pub fn render(
                                                 }
                                             }),
                                             vec![Html::text("画像に合わせる")],
-                                        ),
-                                        Html::label(
-                                            Attributes::new(),
-                                            Events::new(),
-                                            vec![Html::text("Z座標")],
-                                        ),
-                                        Html::input(
-                                            Attributes::new()
-                                                .type_("number")
-                                                .value(character.position()[2].to_string())
-                                                .string("step", "0.1"),
-                                            Events::new().on_input({
-                                                let character_id = character_id.clone();
-                                                let mut pos = character.position().clone();
-                                                move |height| {
-                                                    height
-                                                        .parse()
-                                                        .map(|z| {
-                                                            pos[2] = z;
-                                                            Msg::SetCharacterPosition(
-                                                                character_id,
-                                                                pos,
-                                                            )
-                                                        })
-                                                        .unwrap_or(Msg::NoOp)
-                                                }
-                                            }),
-                                            vec![],
                                         ),
                                         Html::div(Attributes::new(), Events::new(), vec![]),
                                         Html::label(
