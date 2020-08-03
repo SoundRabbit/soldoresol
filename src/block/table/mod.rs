@@ -1,10 +1,16 @@
 use super::{Block, BlockId, Field};
-use crate::{random_id::U128Id, resource::ResourceId, JsObject, Promise};
+use crate::{random_id::U128Id, resource::ResourceId, Color, JsObject, Promise};
 use wasm_bindgen::{prelude::*, JsCast};
 
 mod texture;
 
 pub use texture::Texture;
+
+#[derive(Clone)]
+pub struct Horizon {
+    radius: f32,
+    color: Color,
+}
 
 #[derive(Clone)]
 pub struct Table {
@@ -14,9 +20,48 @@ pub struct Table {
     is_showing_grid: bool,
     drawing_texture_id: BlockId,
     image_texture_id: Option<ResourceId>,
+    horizon: Option<Horizon>,
     tablemasks: Vec<BlockId>,
     areas: Vec<BlockId>,
     boxblocks: Vec<BlockId>,
+}
+
+impl Horizon {
+    pub fn new(radius: f32, color: Color) -> Self {
+        Self { radius, color }
+    }
+
+    pub fn radius(&self) -> f32 {
+        self.radius
+    }
+
+    pub fn set_radius(&mut self, radius: f32) {
+        self.radius = radius;
+    }
+
+    pub fn color(&self) -> Color {
+        self.color
+    }
+
+    pub fn set_color(&mut self, color: Color) {
+        self.color = color;
+    }
+
+    fn to_jsvalue(&self) -> JsValue {
+        let data = array![self.radius, self.color.to_u32()];
+        data.into()
+    }
+
+    fn from_jsvalue(data: &JsValue) -> Option<Self> {
+        let data = js_sys::Array::from(&data);
+        let radius = data.get(0).as_f64().map(|x| x as f32);
+        let color = data.get(1).as_f64().map(|x| Color::from(x as u32));
+        if let (Some(radius), Some(color)) = (radius, color) {
+            Some(Self { radius, color })
+        } else {
+            None
+        }
+    }
 }
 
 impl Table {
@@ -28,6 +73,7 @@ impl Table {
             is_showing_grid: true,
             drawing_texture_id,
             image_texture_id: None,
+            horizon: None,
             tablemasks: vec![],
             areas: vec![],
             boxblocks: vec![],
@@ -72,6 +118,18 @@ impl Table {
 
     pub fn set_image_texture_id(&mut self, image_texture_id: Option<ResourceId>) {
         self.image_texture_id = image_texture_id
+    }
+
+    pub fn horizon(&self) -> Option<&Horizon> {
+        self.horizon.as_ref()
+    }
+
+    pub fn horizon_mut(&mut self) -> Option<&mut Horizon> {
+        self.horizon.as_mut()
+    }
+
+    pub fn set_horizon(&mut self, horizon: Option<Horizon>) {
+        self.horizon = horizon;
     }
 
     pub fn tablemasks(&self) -> impl Iterator<Item = &BlockId> {
@@ -141,6 +199,7 @@ impl Block for Table {
             is_showing_grid: self.is_showing_grid,
             drawing_texture_id: self.drawing_texture_id.to_jsvalue(),
             image_texture_id: self.image_texture_id.as_ref().map(|id| id.to_jsvalue()),
+            horizon: self.horizon.as_ref().map(|x| x.to_jsvalue()),
             tablemasks: tablemasks,
             areas: areas,
             boxblocks: boxblocks
@@ -166,6 +225,7 @@ impl Block for Table {
                 val.get("image_texture_id")
                     .and_then(|id| U128Id::from_jsvalue(&id)),
             );
+            let horizon = val.get("horizon").and_then(|x| Horizon::from_jsvalue(&x));
             let tablemasks = val.get("tablemasks").map(|p| {
                 let p: js_sys::Object = p.into();
                 js_sys::Array::from(p.as_ref())
@@ -237,6 +297,7 @@ impl Block for Table {
                         is_showing_grid,
                         drawing_texture_id,
                         image_texture_id,
+                        horizon,
                         tablemasks,
                         areas,
                         boxblocks,
