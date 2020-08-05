@@ -1,10 +1,11 @@
+use super::BlockId;
 use std::collections::HashSet;
 
 #[derive(Clone)]
 pub struct Item {
     name: String,
     text: String,
-    tags: HashSet<String>,
+    tags: HashSet<BlockId>,
 }
 
 impl Item {
@@ -26,26 +27,26 @@ impl Item {
 
     pub fn tags<'a>(
         &self,
-        tag_index: impl Iterator<Item = &'a String>,
-    ) -> impl Iterator<Item = String> {
+        tag_index: impl Iterator<Item = &'a BlockId>,
+    ) -> impl Iterator<Item = BlockId> {
         let mut tags = vec![];
-        for tag_name in tag_index {
-            if self.has(tag_name) {
-                tags.push(tag_name.clone());
+        for tag_id in tag_index {
+            if self.has(tag_id) {
+                tags.push(tag_id.clone());
             }
         }
         tags.into_iter()
     }
 
-    pub fn has(&self, tag_name: &String) -> bool {
-        self.tags.get(tag_name).is_some()
+    pub fn has(&self, tag_id: &BlockId) -> bool {
+        self.tags.get(tag_id).is_some()
     }
 
-    pub fn add_tag(&mut self, tag_name: String) {
-        self.tags.insert(tag_name);
+    pub fn add_tag(&mut self, tag_id: BlockId) {
+        self.tags.insert(tag_id);
     }
 
-    pub fn remove_tag(&mut self, tag_name: &String) {
+    pub fn remove_tag(&mut self, tag_name: &BlockId) {
         self.tags.remove(tag_name);
     }
 }
