@@ -13,15 +13,18 @@ use wasm_bindgen::{prelude::*, JsCast};
 
 pub mod character;
 pub mod chat;
+pub mod memo;
 pub mod property;
 pub mod table;
 pub mod table_object;
+pub mod tag;
 pub mod world;
 
 pub use character::Character;
 pub use chat::Chat;
 pub use property::Property;
 pub use table::Table;
+pub use tag::Tag;
 pub use world::World;
 
 #[allow(private_in_public)]

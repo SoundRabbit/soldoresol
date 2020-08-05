@@ -8,6 +8,7 @@ pub struct World {
     selecting_table: BlockId,
     tables: Vec<BlockId>,
     characters: Vec<BlockId>,
+    tags: Vec<BlockId>,
 }
 
 impl World {
@@ -17,6 +18,7 @@ impl World {
             selecting_table,
             tables,
             characters: vec![],
+            tags: vec![],
         }
     }
 
@@ -69,15 +71,22 @@ impl Block for World {
         for table in &self.tables {
             tables.push(&table.to_jsvalue());
         }
+
         let characters = js_sys::Array::new();
         for character in &self.characters {
             characters.push(&character.to_jsvalue());
         }
 
+        let tags = js_sys::Array::new();
+        for tag in &self.tags {
+            tags.push(&tag.to_jsvalue());
+        }
+
         let data = object! {
             selecting_table: self.selecting_table.to_jsvalue(),
             tables: tables,
-            characters: characters
+            characters: characters,
+            tags: tags
         };
 
         let data: js_sys::Object = data.into();
@@ -93,8 +102,9 @@ impl Block for World {
                 .map(|x| field.block_id(x));
             let tables = val.get("tables").map(|x| js_sys::Array::from(&x));
             let characters = val.get("characters").map(|x| js_sys::Array::from(&x));
-            if let (Some(selecting_table), Some(raw_tables), Some(raw_characters)) =
-                (selecting_table, tables, characters)
+            let tags = val.get("tags").map(|x| js_sys::Array::from(&x));
+            if let (Some(selecting_table), Some(raw_tables), Some(raw_characters), Some(raw_tags)) =
+                (selecting_table, tables, characters, tags)
             {
                 let mut tables = vec![];
                 for id in raw_tables.to_vec() {
@@ -110,10 +120,18 @@ impl Block for World {
                     }
                 }
 
+                let mut tags = vec![];
+                for id in raw_tags.to_vec() {
+                    if let Some(id) = U128Id::from_jsvalue(&id).map(|id| field.block_id(id)) {
+                        tags.push(id);
+                    }
+                }
+
                 Some(Box::new(Self {
                     selecting_table,
                     tables,
                     characters,
+                    tags,
                 }))
             } else {
                 None
