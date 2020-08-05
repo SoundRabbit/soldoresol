@@ -104,8 +104,8 @@ pub fn render(
                                     Attributes::new().class("keyvalueoption"),
                                     Events::new(),
                                     vec![
-                                        awesome::i("fa-layer-group"),
-                                        Html::text(" ルーム "),
+                                        awesome::i("fa-tags"),
+                                        Html::text(" タグ "),
                                         awesome::i("fa-external-link-alt"),
                                     ],
                                 ),
