@@ -182,6 +182,15 @@ pub fn render(
                             awesome::i("fa-external-link-alt"),
                         ],
                     ),
+                    btn::primary(
+                        Attributes::new(),
+                        Events::new(),
+                        vec![
+                            awesome::i("fa-file-alt"),
+                            Html::text(" 共有メモ "),
+                            awesome::i("fa-external-link-alt"),
+                        ],
+                    ),
                 ],
             ),
             Html::div(
