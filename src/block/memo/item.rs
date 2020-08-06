@@ -1,5 +1,7 @@
-use super::BlockId;
+use super::{Block, BlockId, Field};
+use crate::Promise;
 use std::collections::HashSet;
+use wasm_bindgen::prelude::*;
 
 #[derive(Clone)]
 pub struct Item {
@@ -48,5 +50,15 @@ impl Item {
 
     pub fn remove_tag(&mut self, tag_name: &BlockId) {
         self.tags.remove(tag_name);
+    }
+}
+
+impl Block for Item {
+    fn pack(&self) -> Promise<JsValue> {
+        unimplemented!();
+    }
+
+    fn unpack(_: &mut Field, val: JsValue) -> Promise<Box<Self>> {
+        unimplemented!();
     }
 }

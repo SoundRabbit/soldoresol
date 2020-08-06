@@ -1,7 +1,8 @@
 mod item;
 
-use super::Block;
-use super::BlockId;
+use super::{Block, BlockId, Field};
+use crate::Promise;
+use wasm_bindgen::prelude::*;
 
 pub use item::Item;
 
@@ -25,5 +26,15 @@ impl Memo {
 
     pub fn remove_item(&mut self, item_idx: usize) {
         self.items.remove(item_idx);
+    }
+}
+
+impl Block for Memo {
+    fn pack(&self) -> Promise<JsValue> {
+        unimplemented!();
+    }
+
+    fn unpack(_: &mut Field, val: JsValue) -> Promise<Box<Self>> {
+        unimplemented!();
     }
 }

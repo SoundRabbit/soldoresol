@@ -13,6 +13,7 @@ use kagura::prelude::*;
 use wasm_bindgen::JsCast;
 
 mod chat;
+mod memo;
 mod object;
 
 pub fn render(

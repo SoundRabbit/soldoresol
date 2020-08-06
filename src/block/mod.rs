@@ -22,6 +22,7 @@ pub mod world;
 
 pub use character::Character;
 pub use chat::Chat;
+pub use memo::Memo;
 pub use property::Property;
 pub use table::Table;
 pub use tag::Tag;
