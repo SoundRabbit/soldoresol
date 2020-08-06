@@ -40,46 +40,42 @@ pub fn render<'a>(
             modeless::body(
                 Attributes::new()
                     .class("linear-v")
-                    .style("grid-template-rows", "1fr"),
+                    .class("linear-v-stretch")
+                    .class("scroll-v"),
                 Events::new().on_mousemove(move |e| {
                     if !is_grubbed {
                         e.stop_propagation();
                     }
                     Msg::NoOp
                 }),
-                vec![Html::div(
-                    Attributes::new()
-                        .class("linear-v")
-                        .class("linear-v-stretch")
-                        .style("align-self", "stretch")
-                        .style("grid-template-rows", "max-content max-content 1fr"),
-                    Events::new(),
-                    vec![
-                        world
-                            .memos()
-                            .filter_map(|memo_id| {
-                                block_field.get::<block::Memo>(memo_id).and_then(|item| {
-                                    if selecting_tag_id
-                                        .map(|tag_id| item.has(tag_id))
-                                        .unwrap_or(true)
-                                    {
-                                        Some(memo_item(memo_id, item))
-                                    } else {
-                                        None
-                                    }
-                                })
+                vec![
+                    world
+                        .memos()
+                        .filter_map(|memo_id| {
+                            block_field.get::<block::Memo>(memo_id).and_then(|item| {
+                                if selecting_tag_id
+                                    .map(|tag_id| item.has(tag_id))
+                                    .unwrap_or(true)
+                                {
+                                    Some(memo_item(memo_id, item))
+                                } else {
+                                    None
+                                }
                             })
-                            .collect(),
-                        vec![btn::secondary(
-                            Attributes::new(),
-                            Events::new(),
-                            vec![awesome::i("fa-plus")],
-                        )],
-                    ]
-                    .into_iter()
-                    .flatten()
-                    .collect(),
-                )],
+                        })
+                        .collect(),
+                    vec![btn::secondary(
+                        Attributes::new(),
+                        Events::new().on_click({
+                            let tag_id = selecting_tag_id.map(|x| x.clone());
+                            move |_| Msg::AddMemo(tag_id)
+                        }),
+                        vec![awesome::i("fa-plus")],
+                    )],
+                ]
+                .into_iter()
+                .flatten()
+                .collect(),
             ),
             modeless::footer(Attributes::new(), Events::new(), vec![]),
         ],
@@ -88,11 +84,28 @@ pub fn render<'a>(
 
 fn memo_item(memo_id: &BlockId, memo: &block::Memo) -> Html {
     Html::div(
-        Attributes::new().class("pure-form").class("container-a"),
+        Attributes::new()
+            .class("pure-form")
+            .class("container-a")
+            .class("keyvalue")
+            .class("keyvalue-rev"),
         Events::new(),
         vec![
             Html::input(Attributes::new().value(memo.name()), Events::new(), vec![]),
-            Html::textarea(Attributes::new().value(memo.text()), Events::new(), vec![]),
+            btn::danger(
+                Attributes::new(),
+                Events::new(),
+                vec![awesome::i("fa-times")],
+            ),
+            Html::textarea(
+                Attributes::new()
+                    .value(memo.text())
+                    .class("keyvalue-banner")
+                    .style("resize", "vertical")
+                    .nut("rows", 5),
+                Events::new(),
+                vec![],
+            ),
         ],
     )
 }
@@ -105,21 +118,32 @@ fn memo_tag_list<'a>(
     Html::div(
         Attributes::new(),
         Events::new(),
-        tags.filter_map(|tag_id| {
-            block_field
-                .get::<block::Tag>(tag_id)
-                .map(|tag| (tag_id, tag))
-        })
-        .map(|(tag_id, tag)| {
-            btn::frame_tab(
-                selecting_tag_id
-                    .map(|t_id| *tag_id == *t_id)
-                    .unwrap_or(false),
+        vec![
+            vec![btn::frame_tab(
+                selecting_tag_id.is_none(),
                 false,
                 Events::new(),
-                tag.name(),
-            )
-        })
+                "[全ての共有メモ]",
+            )],
+            tags.filter_map(|tag_id| {
+                block_field
+                    .get::<block::Tag>(tag_id)
+                    .map(|tag| (tag_id, tag))
+            })
+            .map(|(tag_id, tag)| {
+                btn::frame_tab(
+                    selecting_tag_id
+                        .map(|t_id| *tag_id == *t_id)
+                        .unwrap_or(false),
+                    false,
+                    Events::new(),
+                    tag.name(),
+                )
+            })
+            .collect(),
+        ]
+        .into_iter()
+        .flatten()
         .collect(),
     )
 }

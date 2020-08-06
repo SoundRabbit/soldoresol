@@ -70,6 +70,10 @@ impl World {
         self.memos.iter()
     }
 
+    pub fn add_memo(&mut self, memo_id: BlockId) {
+        self.memos.push(memo_id);
+    }
+
     pub fn tags(&self) -> impl Iterator<Item = &BlockId> {
         self.tags.iter()
     }

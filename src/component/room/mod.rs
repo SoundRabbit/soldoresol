@@ -109,6 +109,7 @@ pub enum Msg {
     AddTable,
     SetSelectingTable(BlockId),
     RemoveTable(BlockId),
+    AddMemo(Option<BlockId>),
 
     // Table
     SetTableSize(BlockId, [f32; 2]),
@@ -158,6 +159,8 @@ pub enum Msg {
     SetSelectingChatTabIdx(usize),
     SetChatTabName(BlockId, String),
     RemoveChatTab(BlockId),
+
+    // 共有メモ関係
 
     // ブロックフィールド
     AssignFieldBlocks(HashMap<BlockId, block::FieldBlock>),
@@ -1172,6 +1175,21 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             render_canvas(state);
 
             send_pack_cmd(state.block_field(), vec![state.world().clone(), table_id])
+        }
+        Msg::AddMemo(tag_id) => {
+            let mut memo = block::Memo::new();
+
+            if let Some(tag_id) = tag_id {
+                memo.add_tag(tag_id);
+            }
+
+            let memo_id = state.block_field_mut().add(memo);
+
+            state.update_world(timestamp(), |world| {
+                world.add_memo(memo_id);
+            });
+
+            state.dequeue()
         }
 
         // Table
