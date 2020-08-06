@@ -86,6 +86,7 @@ pub fn render(
                         .map(|(tab_idx, name)| {
                             btn::frame_tab(
                                 tab_idx == focused,
+                                true,
                                 Events::new()
                                     .on_click({
                                         let modeless_id = modeless_id.clone();

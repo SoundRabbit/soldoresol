@@ -38,9 +38,9 @@ pub fn render(
             super::header(
                 modeless_id,
                 grubbed,
-                Attributes::new(),
+                Attributes::new().class("frame-header-tab"),
                 Events::new(),
-                text::div("チャット"),
+                chat_tab_list(block_field, chat_data, selecting_tab_id),
             ),
             modeless::body(
                 Attributes::new()
@@ -60,7 +60,6 @@ pub fn render(
                             .style("grid-template-rows", "max-content max-content 1fr"),
                         Events::new(),
                         vec![
-                            chat_tab_list(block_field, chat_data, selecting_tab_id),
                             if selecting_tab.len() > take_num {
                                 btn::secondary(
                                     Attributes::new(),
@@ -232,39 +231,36 @@ fn chat_tab_list(
     selecting_tab_id: &BlockId,
 ) -> Html {
     Html::div(
-        Attributes::new()
-            .class("keyvalue")
-            .class("keyvalue-rev")
-            .class("keyvalue-align-stretch"),
+        Attributes::new(),
         Events::new(),
         vec![
-            Html::div(
-                Attributes::new().class("flex-h").class("aside"),
-                Events::new(),
-                chat_data
-                    .tabs()
-                    .iter()
-                    .enumerate()
-                    .filter_map(|(tab_idx, tab_id)| {
-                        block_field
-                            .get::<block::chat::Tab>(tab_id)
-                            .map(|tab| (tab_idx, tab_id, tab))
-                    })
-                    .map(|(tab_idx, tab_id, tab)| {
-                        btn::tab(
-                            *tab_id == *selecting_tab_id,
-                            Events::new().on_click(move |_| Msg::SetSelectingChatTabIdx(tab_idx)),
-                            tab.name(),
-                        )
-                    })
-                    .collect(),
-            ),
-            btn::secondary(
+            chat_data
+                .tabs()
+                .iter()
+                .enumerate()
+                .filter_map(|(tab_idx, tab_id)| {
+                    block_field
+                        .get::<block::chat::Tab>(tab_id)
+                        .map(|tab| (tab_idx, tab_id, tab))
+                })
+                .map(|(tab_idx, tab_id, tab)| {
+                    btn::frame_tab(
+                        *tab_id == *selecting_tab_id,
+                        false,
+                        Events::new().on_click(move |_| Msg::SetSelectingChatTabIdx(tab_idx)),
+                        tab.name(),
+                    )
+                })
+                .collect(),
+            vec![btn::transparent(
                 Attributes::new(),
                 Events::new().on_click(|_| Msg::OpenModal(Modal::ChatTabEditor)),
-                vec![Html::text("編集")],
-            ),
-        ],
+                vec![awesome::i("fa-plus")],
+            )],
+        ]
+        .into_iter()
+        .flatten()
+        .collect(),
     )
 }
 

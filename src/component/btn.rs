@@ -131,10 +131,15 @@ pub fn add(attributes: Attributes, events: Events) -> Html {
     )
 }
 
-pub fn tab(is_selected: bool, events: Events, name: impl Into<String>) -> Html {
+pub fn frame_tab(
+    is_selected: bool,
+    is_draggable: bool,
+    events: Events,
+    name: impl Into<String>,
+) -> Html {
     if is_selected {
         Html::span(
-            Attributes::new().draggable(false),
+            Attributes::new().draggable(is_draggable),
             events,
             vec![Html::span(
                 Attributes::new()
@@ -147,37 +152,7 @@ pub fn tab(is_selected: bool, events: Events, name: impl Into<String>) -> Html {
         )
     } else {
         Html::span(
-            Attributes::new().draggable(false),
-            events,
-            vec![Html::span(
-                Attributes::new()
-                    .class("pure-button")
-                    .class("pure-button-frametab")
-                    .class("pure-button-dark"),
-                Events::new(),
-                vec![Html::text(name)],
-            )],
-        )
-    }
-}
-
-pub fn frame_tab(is_selected: bool, events: Events, name: impl Into<String>) -> Html {
-    if is_selected {
-        Html::span(
-            Attributes::new().draggable(true),
-            events,
-            vec![Html::span(
-                Attributes::new()
-                    .class("pure-button")
-                    .class("pure-button-frametab")
-                    .class("pure-button-primary"),
-                Events::new(),
-                vec![Html::text(name)],
-            )],
-        )
-    } else {
-        Html::span(
-            Attributes::new().draggable(true),
+            Attributes::new().draggable(is_draggable),
             events,
             vec![Html::span(
                 Attributes::new()
