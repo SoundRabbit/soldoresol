@@ -50,24 +50,35 @@ pub fn render<'a>(
                 vec![Html::div(
                     Attributes::new()
                         .class("linear-v")
+                        .class("linear-v-stretch")
                         .style("align-self", "stretch")
                         .style("grid-template-rows", "max-content max-content 1fr"),
                     Events::new(),
-                    world
-                        .memos()
-                        .filter_map(|memo_id| {
-                            block_field.get::<block::Memo>(memo_id).and_then(|item| {
-                                if selecting_tag_id
-                                    .map(|tag_id| item.has(tag_id))
-                                    .unwrap_or(true)
-                                {
-                                    Some(memo_item(memo_id, item))
-                                } else {
-                                    None
-                                }
+                    vec![
+                        world
+                            .memos()
+                            .filter_map(|memo_id| {
+                                block_field.get::<block::Memo>(memo_id).and_then(|item| {
+                                    if selecting_tag_id
+                                        .map(|tag_id| item.has(tag_id))
+                                        .unwrap_or(true)
+                                    {
+                                        Some(memo_item(memo_id, item))
+                                    } else {
+                                        None
+                                    }
+                                })
                             })
-                        })
-                        .collect(),
+                            .collect(),
+                        vec![btn::secondary(
+                            Attributes::new(),
+                            Events::new(),
+                            vec![awesome::i("fa-plus")],
+                        )],
+                    ]
+                    .into_iter()
+                    .flatten()
+                    .collect(),
                 )],
             ),
             modeless::footer(Attributes::new(), Events::new(), vec![]),
@@ -94,31 +105,21 @@ fn memo_tag_list<'a>(
     Html::div(
         Attributes::new(),
         Events::new(),
-        vec![
-            tags.filter_map(|tag_id| {
-                block_field
-                    .get::<block::Tag>(tag_id)
-                    .map(|tag| (tag_id, tag))
-            })
-            .map(|(tag_id, tag)| {
-                btn::frame_tab(
-                    selecting_tag_id
-                        .map(|t_id| *tag_id == *t_id)
-                        .unwrap_or(false),
-                    false,
-                    Events::new(),
-                    tag.name(),
-                )
-            })
-            .collect(),
-            vec![btn::transparent(
-                Attributes::new(),
-                Events::new().on_click(|_| Msg::AddChatTab),
-                vec![awesome::i("fa-plus")],
-            )],
-        ]
-        .into_iter()
-        .flatten()
+        tags.filter_map(|tag_id| {
+            block_field
+                .get::<block::Tag>(tag_id)
+                .map(|tag| (tag_id, tag))
+        })
+        .map(|(tag_id, tag)| {
+            btn::frame_tab(
+                selecting_tag_id
+                    .map(|t_id| *tag_id == *t_id)
+                    .unwrap_or(false),
+                false,
+                Events::new(),
+                tag.name(),
+            )
+        })
         .collect(),
     )
 }
