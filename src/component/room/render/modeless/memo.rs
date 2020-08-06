@@ -19,9 +19,8 @@ pub fn render<'a>(
     modeless_id: model::modeless::ModelessId,
     modeless: &model::Modeless<Modeless>,
     grubbed: Option<model::modeless::ModelessId>,
-    tags: impl Iterator<Item = &'a BlockId>,
-    memo: &block::Memo,
-    selecting_tag_id: &BlockId,
+    world: &block::World,
+    selecting_tag_id: Option<&BlockId>,
 ) -> Html {
     let is_grubbed = grubbed.is_some();
 
@@ -36,7 +35,7 @@ pub fn render<'a>(
                 grubbed,
                 Attributes::new().class("frame-header-tab"),
                 Events::new(),
-                memo_tag_list(block_field, tags, selecting_tag_id),
+                memo_tag_list(block_field, world.tags(), selecting_tag_id),
             ),
             modeless::body(
                 Attributes::new()
@@ -54,17 +53,19 @@ pub fn render<'a>(
                         .style("align-self", "stretch")
                         .style("grid-template-rows", "max-content max-content 1fr"),
                     Events::new(),
-                    memo.items()
-                        .filter_map(|item_id| {
-                            block_field
-                                .get::<block::memo::Item>(item_id)
-                                .and_then(|item| {
-                                    if item.has(selecting_tag_id) {
-                                        Some(memo_item(item_id, item))
-                                    } else {
-                                        None
-                                    }
-                                })
+                    world
+                        .memos()
+                        .filter_map(|memo_id| {
+                            block_field.get::<block::Memo>(memo_id).and_then(|item| {
+                                if selecting_tag_id
+                                    .map(|tag_id| item.has(tag_id))
+                                    .unwrap_or(true)
+                                {
+                                    Some(memo_item(memo_id, item))
+                                } else {
+                                    None
+                                }
+                            })
                         })
                         .collect(),
                 )],
@@ -74,13 +75,13 @@ pub fn render<'a>(
     )
 }
 
-fn memo_item(item_id: &BlockId, item: &block::memo::Item) -> Html {
+fn memo_item(memo_id: &BlockId, memo: &block::Memo) -> Html {
     Html::div(
-        Attributes::new().class("pure-form container-a"),
+        Attributes::new().class("pure-form").class("container-a"),
         Events::new(),
         vec![
-            Html::input(Attributes::new().value(item.name()), Events::new(), vec![]),
-            Html::textarea(Attributes::new().value(item.text()), Events::new(), vec![]),
+            Html::input(Attributes::new().value(memo.name()), Events::new(), vec![]),
+            Html::textarea(Attributes::new().value(memo.text()), Events::new(), vec![]),
         ],
     )
 }
@@ -88,7 +89,7 @@ fn memo_item(item_id: &BlockId, item: &block::memo::Item) -> Html {
 fn memo_tag_list<'a>(
     block_field: &block::Field,
     tags: impl Iterator<Item = &'a BlockId>,
-    selecting_tag_id: &BlockId,
+    selecting_tag_id: Option<&BlockId>,
 ) -> Html {
     Html::div(
         Attributes::new(),
@@ -101,7 +102,9 @@ fn memo_tag_list<'a>(
             })
             .map(|(tag_id, tag)| {
                 btn::frame_tab(
-                    *tag_id == *selecting_tag_id,
+                    selecting_tag_id
+                        .map(|t_id| *tag_id == *t_id)
+                        .unwrap_or(false),
                     false,
                     Events::new(),
                     tag.name(),

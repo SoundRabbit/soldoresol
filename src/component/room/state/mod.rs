@@ -25,6 +25,9 @@ pub enum Modeless {
         outlined: Option<Color>,
     },
     Chat,
+    Memo {
+        focused: Option<BlockId>,
+    },
 }
 
 pub enum Modal {

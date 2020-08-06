@@ -4,13 +4,13 @@ use std::collections::HashSet;
 use wasm_bindgen::prelude::*;
 
 #[derive(Clone)]
-pub struct Item {
+pub struct Memo {
     name: String,
     text: String,
     tags: HashSet<BlockId>,
 }
 
-impl Item {
+impl Memo {
     pub fn new() -> Self {
         Self {
             name: String::new(),
@@ -53,7 +53,7 @@ impl Item {
     }
 }
 
-impl Block for Item {
+impl Block for Memo {
     fn pack(&self) -> Promise<JsValue> {
         unimplemented!();
     }

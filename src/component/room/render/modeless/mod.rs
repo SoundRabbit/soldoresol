@@ -65,6 +65,21 @@ pub fn render(
                 Html::none()
             }
         }
+        Modeless::Memo { focused } => {
+            if let Some(world) = state.block_field().get::<block::World>(state.world()) {
+                memo::render(
+                    state.block_field(),
+                    state.resource(),
+                    modeless_id,
+                    modeless,
+                    grubbed,
+                    world,
+                    focused.as_ref(),
+                )
+            } else {
+                Html::none()
+            }
+        }
     }
 }
 
