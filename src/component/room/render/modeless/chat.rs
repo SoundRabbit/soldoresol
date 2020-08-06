@@ -79,7 +79,7 @@ pub fn render(
                                             let selecting_tab_id = selecting_tab_id.clone();
                                             move |_| Msg::RemoveChatTab(selecting_tab_id)
                                         }),
-                                        vec![Html::text("削除")],
+                                        vec![awesome::i("fa-times")],
                                     ),
                                 ],
                             ),
