@@ -60,6 +60,29 @@ pub fn render(
                             .style("grid-template-rows", "max-content max-content 1fr"),
                         Events::new(),
                         vec![
+                            Html::div(
+                                Attributes::new().class("keyvalueoption").class("pure-form"),
+                                Events::new(),
+                                vec![
+                                    text::div("Name"),
+                                    Html::input(
+                                        Attributes::new().value(selecting_tab.name()),
+                                        Events::new().on_input({
+                                            let selecting_tab_id = selecting_tab_id.clone();
+                                            move |name| Msg::SetChatTabName(selecting_tab_id, name)
+                                        }),
+                                        vec![],
+                                    ),
+                                    btn::danger(
+                                        Attributes::new(),
+                                        Events::new().on_click({
+                                            let selecting_tab_id = selecting_tab_id.clone();
+                                            move |_| Msg::RemoveChatTab(selecting_tab_id)
+                                        }),
+                                        vec![Html::text("削除")],
+                                    ),
+                                ],
+                            ),
                             if selecting_tab.len() > take_num {
                                 btn::secondary(
                                     Attributes::new(),
@@ -254,7 +277,7 @@ fn chat_tab_list(
                 .collect(),
             vec![btn::transparent(
                 Attributes::new(),
-                Events::new().on_click(|_| Msg::OpenModal(Modal::ChatTabEditor)),
+                Events::new().on_click(|_| Msg::AddChatTab),
                 vec![awesome::i("fa-plus")],
             )],
         ]
