@@ -94,7 +94,10 @@ fn memo_item(memo_id: &BlockId, memo: &block::Memo) -> Html {
             Html::input(Attributes::new().value(memo.name()), Events::new(), vec![]),
             btn::danger(
                 Attributes::new(),
-                Events::new(),
+                Events::new().on_click({
+                    let memo_id = memo_id.clone();
+                    move |_| Msg::RemoveMemo(memo_id)
+                }),
                 vec![awesome::i("fa-times")],
             ),
             Html::textarea(

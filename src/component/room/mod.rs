@@ -110,6 +110,7 @@ pub enum Msg {
     SetSelectingTable(BlockId),
     RemoveTable(BlockId),
     AddMemo(Option<BlockId>),
+    RemoveMemo(BlockId),
 
     // Table
     SetTableSize(BlockId, [f32; 2]),
@@ -1188,6 +1189,15 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.update_world(timestamp(), |world| {
                 world.add_memo(memo_id);
             });
+
+            state.dequeue()
+        }
+        Msg::RemoveMemo(memo_id) => {
+            state.update_world(timestamp(), |world| {
+                world.remove_memo(&memo_id);
+            });
+
+            state.block_field_mut().remove(&memo_id);
 
             state.dequeue()
         }
