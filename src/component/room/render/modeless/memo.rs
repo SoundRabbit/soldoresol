@@ -91,7 +91,14 @@ fn memo_item(memo_id: &BlockId, memo: &block::Memo) -> Html {
             .class("keyvalue-rev"),
         Events::new(),
         vec![
-            Html::input(Attributes::new().value(memo.name()), Events::new(), vec![]),
+            Html::input(
+                Attributes::new().value(memo.name()),
+                Events::new().on_input({
+                    let memo_id = memo_id.clone();
+                    move |name| Msg::SetMemoName(memo_id, name)
+                }),
+                vec![],
+            ),
             btn::danger(
                 Attributes::new(),
                 Events::new().on_click({
@@ -106,7 +113,10 @@ fn memo_item(memo_id: &BlockId, memo: &block::Memo) -> Html {
                     .class("keyvalue-banner")
                     .style("resize", "vertical")
                     .nut("rows", 5),
-                Events::new(),
+                Events::new().on_input({
+                    let memo_id = memo_id.clone();
+                    move |text| Msg::SetMemoText(memo_id, text)
+                }),
                 vec![],
             ),
         ],

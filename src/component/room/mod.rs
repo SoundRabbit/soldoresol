@@ -162,6 +162,8 @@ pub enum Msg {
     RemoveChatTab(BlockId),
 
     // 共有メモ関係
+    SetMemoName(BlockId, String),
+    SetMemoText(BlockId, String),
 
     // ブロックフィールド
     AssignFieldBlocks(HashMap<BlockId, block::FieldBlock>),
@@ -1721,6 +1723,27 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                     }
                 }
             });
+            state.dequeue()
+        }
+
+        // 共有メモ
+        Msg::SetMemoName(memo_id, name) => {
+            state
+                .block_field_mut()
+                .update(&memo_id, timestamp(), |memo: &mut block::Memo| {
+                    memo.set_name(name);
+                });
+
+            state.dequeue()
+        }
+
+        Msg::SetMemoText(memo_id, text) => {
+            state
+                .block_field_mut()
+                .update(&memo_id, timestamp(), |memo: &mut block::Memo| {
+                    memo.set_text(text);
+                });
+
             state.dequeue()
         }
 
