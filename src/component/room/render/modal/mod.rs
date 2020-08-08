@@ -16,6 +16,7 @@ mod select_player_image;
 mod select_table_image;
 mod sender_character_selecter;
 mod table_setting;
+mod tag_setting;
 
 pub fn render(
     z_index: u64,
@@ -58,6 +59,13 @@ pub fn render(
             Modal::TableSetting => {
                 if let Some(world) = block_field.get::<block::World>(state.world()) {
                     table_setting::render(block_field, resource, world)
+                } else {
+                    Html::none()
+                }
+            }
+            Modal::TagSetting => {
+                if let Some(world) = block_field.get::<block::World>(state.world()) {
+                    tag_setting::render(block_field, resource, world)
                 } else {
                     Html::none()
                 }

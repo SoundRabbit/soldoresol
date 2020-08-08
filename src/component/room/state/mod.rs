@@ -38,6 +38,7 @@ pub enum Modal {
     PersonalSetting,
     SenderCharacterSelecter,
     TableSetting,
+    TagSetting,
     ChatLog(BlockId),
     ChatTabEditor,
     DicebotSelecter,

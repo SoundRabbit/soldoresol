@@ -102,7 +102,7 @@ pub fn render(
                                 ),
                                 btn::headermenu(
                                     Attributes::new().class("keyvalueoption"),
-                                    Events::new(),
+                                    Events::new().on_click(|_| Msg::OpenModal(Modal::TagSetting)),
                                     vec![
                                         awesome::i("fa-tags"),
                                         Html::text(" タグ "),
