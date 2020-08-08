@@ -109,6 +109,8 @@ pub enum Msg {
     AddTable,
     SetSelectingTable(BlockId),
     RemoveTable(BlockId),
+    AddTag,
+    RemoveTag(BlockId),
     AddMemo(Option<BlockId>),
     RemoveMemo(BlockId),
 
@@ -118,6 +120,9 @@ pub enum Msg {
     SetTableName(BlockId, String),
     SetTableIsShowingGrid(BlockId, bool),
     SetTableIsBindToGrid(BlockId, bool),
+
+    // Tag
+    SetTagName(BlockId, String),
 
     // PersonalData
     SetPersonalDataWithPlayerName(String),
@@ -1180,6 +1185,25 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
 
             send_pack_cmd(state.block_field(), vec![state.world().clone(), table_id])
         }
+        Msg::AddTag => {
+            let tag = block::Tag::new();
+            let tag_id = state.block_field_mut().add(tag);
+
+            state.update_world(timestamp(), |world| {
+                world.add_tag(tag_id);
+            });
+
+            state.dequeue()
+        }
+        Msg::RemoveTag(tag_id) => {
+            state.update_world(timestamp(), |world| {
+                world.remove_tag(&tag_id);
+            });
+
+            state.block_field_mut().remove(&tag_id);
+
+            state.dequeue()
+        }
         Msg::AddMemo(tag_id) => {
             let mut memo = block::Memo::new();
 
@@ -1274,6 +1298,17 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             render_canvas(state);
 
             send_pack_cmd(state.block_field(), vec![table_id])
+        }
+
+        // Tag
+        Msg::SetTagName(tag_id, name) => {
+            state
+                .block_field_mut()
+                .update(&tag_id, timestamp(), |tag: &mut block::Tag| {
+                    tag.set_name(name);
+                });
+
+            state.dequeue()
         }
 
         // PersonalData

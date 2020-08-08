@@ -84,6 +84,10 @@ impl World {
         self.tags.iter()
     }
 
+    pub fn add_tag(&mut self, tag_id: BlockId) {
+        self.tags.push(tag_id);
+    }
+
     pub fn remove_tag(&mut self, tag_id: &BlockId) {
         if let Some(pos) = self.characters.iter().position(|x| *x == *tag_id) {
             self.tags.remove(pos);

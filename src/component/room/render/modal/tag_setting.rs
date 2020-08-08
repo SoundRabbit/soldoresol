@@ -44,7 +44,7 @@ pub fn render<'a>(block_field: &block::Field, resource: &Resource, world: &block
                                             Attributes::new().value(tag.name()),
                                             Events::new().on_input({
                                                 let tag_id = tag_id.clone();
-                                                move |name| Msg::NoOp
+                                                move |name| Msg::SetTagName(tag_id, name)
                                             }),
                                             vec![],
                                         ),
@@ -52,7 +52,7 @@ pub fn render<'a>(block_field: &block::Field, resource: &Resource, world: &block
                                             Attributes::new(),
                                             Events::new().on_click({
                                                 let tag_id = tag_id.clone();
-                                                move |_| Msg::NoOp
+                                                move |_| Msg::RemoveTag(tag_id)
                                             }),
                                             vec![awesome::i("fa-times")],
                                         ),
@@ -62,7 +62,7 @@ pub fn render<'a>(block_field: &block::Field, resource: &Resource, world: &block
                             .collect(),
                         vec![btn::secondary(
                             Attributes::new(),
-                            Events::new().on_click(move |_| Msg::NoOp),
+                            Events::new().on_click(move |_| Msg::AddTag),
                             vec![awesome::i("fa-plus")],
                         )],
                     ]
