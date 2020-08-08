@@ -100,6 +100,10 @@ impl Table {
         self.is_bind_to_grid
     }
 
+    pub fn set_is_bind_to_grid(&mut self, is_bind_to_grid: bool) {
+        self.is_bind_to_grid = is_bind_to_grid;
+    }
+
     pub fn is_showing_grid(&self) -> bool {
         self.is_showing_grid
     }

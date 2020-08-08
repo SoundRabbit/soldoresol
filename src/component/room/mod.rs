@@ -117,6 +117,7 @@ pub enum Msg {
     SetTableImage(BlockId, Option<ResourceId>),
     SetTableName(BlockId, String),
     SetTableIsShowingGrid(BlockId, bool),
+    SetTableIsBindToGrid(BlockId, bool),
 
     // PersonalData
     SetPersonalDataWithPlayerName(String),
@@ -1256,6 +1257,18 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
                 .block_field_mut()
                 .update(&table_id, timestamp(), |table: &mut block::Table| {
                     table.set_is_showing_grid(is_showing_grid);
+                });
+
+            render_canvas(state);
+
+            send_pack_cmd(state.block_field(), vec![table_id])
+        }
+
+        Msg::SetTableIsBindToGrid(table_id, is_bind_to_grid) => {
+            state
+                .block_field_mut()
+                .update(&table_id, timestamp(), |table: &mut block::Table| {
+                    table.set_is_bind_to_grid(is_bind_to_grid);
                 });
 
             render_canvas(state);

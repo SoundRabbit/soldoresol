@@ -245,7 +245,16 @@ fn selected_table(resource: &Resource, block_id: &BlockId, table: &block::Table)
                                     btn::toggle(
                                         table.is_bind_to_grid(),
                                         Attributes::new(),
-                                        Events::new().on_click(move |_| Msg::NoOp),
+                                        Events::new().on_click({
+                                            let is_bind_to_grid = table.is_bind_to_grid();
+                                            let block_id = block_id.clone();
+                                            move |_| {
+                                                Msg::SetTableIsBindToGrid(
+                                                    block_id,
+                                                    !is_bind_to_grid,
+                                                )
+                                            }
+                                        }),
                                     ),
                                 ],
                             ),
