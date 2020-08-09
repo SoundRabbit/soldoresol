@@ -14,15 +14,21 @@ mod common {
 }
 
 pub fn render<'a>(
+    modeless_id: model::modeless::ModelessId,
     block_field: &block::Field,
     resource: &Resource,
-    modeless_id: model::modeless::ModelessId,
     modeless: &model::Modeless<Modeless>,
     grubbed: Option<model::modeless::ModelessId>,
     world: &block::World,
-    selecting_tag_id: Option<&BlockId>,
+    selecting_tab_idx: usize,
 ) -> Html {
     let is_grubbed = grubbed.is_some();
+    let tags = world.tags().collect::<Vec<_>>();
+    let selecting_tag_id = if selecting_tab_idx == 0 {
+        None
+    } else {
+        tags.get(selecting_tab_idx - 1).map(|x| x as &BlockId)
+    };
 
     super::frame(
         modeless_id,
@@ -35,7 +41,12 @@ pub fn render<'a>(
                 grubbed,
                 Attributes::new().class("frame-header-tab"),
                 Events::new(),
-                memo_tag_list(block_field, world.tags(), selecting_tag_id),
+                memo_tag_list(
+                    modeless_id,
+                    block_field,
+                    tags.iter().map(|x| x as &BlockId),
+                    selecting_tag_id,
+                ),
             ),
             modeless::body(
                 Attributes::new()
@@ -124,6 +135,7 @@ fn memo_item(memo_id: &BlockId, memo: &block::Memo) -> Html {
 }
 
 fn memo_tag_list<'a>(
+    modeless_id: model::modeless::ModelessId,
     block_field: &block::Field,
     tags: impl Iterator<Item = &'a BlockId>,
     selecting_tag_id: Option<&BlockId>,
@@ -135,25 +147,27 @@ fn memo_tag_list<'a>(
             vec![btn::frame_tab(
                 selecting_tag_id.is_none(),
                 false,
-                Events::new(),
+                Events::new().on_click(move |_| Msg::SetModelessTabIdx(modeless_id, 0)),
                 "[全ての共有メモ]",
             )],
-            tags.filter_map(|tag_id| {
-                block_field
-                    .get::<block::Tag>(tag_id)
-                    .map(|tag| (tag_id, tag))
-            })
-            .map(|(tag_id, tag)| {
-                btn::frame_tab(
-                    selecting_tag_id
-                        .map(|t_id| *tag_id == *t_id)
-                        .unwrap_or(false),
-                    false,
-                    Events::new(),
-                    tag.name(),
-                )
-            })
-            .collect(),
+            tags.enumerate()
+                .filter_map(|(idx, tag_id)| {
+                    block_field
+                        .get::<block::Tag>(tag_id)
+                        .map(|tag| (idx, tag_id, tag))
+                })
+                .map(|(idx, tag_id, tag)| {
+                    btn::frame_tab(
+                        selecting_tag_id
+                            .map(|t_id| *tag_id == *t_id)
+                            .unwrap_or(false),
+                        false,
+                        Events::new()
+                            .on_click(move |_| Msg::SetModelessTabIdx(modeless_id, idx + 1)),
+                        tag.name(),
+                    )
+                })
+                .collect(),
         ]
         .into_iter()
         .flatten()

@@ -26,7 +26,7 @@ pub enum Modeless {
     },
     Chat,
     Memo {
-        focused: Option<BlockId>,
+        focused: usize,
     },
 }
 
@@ -386,6 +386,9 @@ impl<M, S> State<M, S> {
         if let Some(modeless) = self.modeless.get_mut(modeless_id) {
             match modeless.as_mut() {
                 Modeless::Object { focused, .. } => {
+                    *focused = tab_idx;
+                }
+                Modeless::Memo { focused } => {
                     *focused = tab_idx;
                 }
                 _ => (),

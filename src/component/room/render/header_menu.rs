@@ -185,7 +185,7 @@ pub fn render(
                     btn::primary(
                         Attributes::new(),
                         Events::new()
-                            .on_click(|_| Msg::OpenModeless(Modeless::Memo { focused: None })),
+                            .on_click(|_| Msg::OpenModeless(Modeless::Memo { focused: 0 })),
                         vec![
                             awesome::i("fa-file-alt"),
                             Html::text(" 共有メモ "),
