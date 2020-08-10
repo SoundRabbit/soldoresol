@@ -41,12 +41,7 @@ pub fn render<'a>(
                 grubbed,
                 Attributes::new().class("frame-header-tab"),
                 Events::new(),
-                memo_tag_list(
-                    modeless_id,
-                    block_field,
-                    tags.iter().map(|x| x as &BlockId),
-                    selecting_tag_id,
-                ),
+                memo_tag_list(modeless_id, block_field, &tags, selecting_tag_id),
             ),
             modeless::body(
                 Attributes::new()
@@ -68,7 +63,7 @@ pub fn render<'a>(
                                     .map(|tag_id| item.has(tag_id))
                                     .unwrap_or(true)
                                 {
-                                    Some(memo_item(memo_id, item))
+                                    Some(memo_item(block_field, memo_id, item, &tags))
                                 } else {
                                     None
                                 }
@@ -93,7 +88,12 @@ pub fn render<'a>(
     )
 }
 
-fn memo_item(memo_id: &BlockId, memo: &block::Memo) -> Html {
+fn memo_item(
+    block_field: &block::Field,
+    memo_id: &BlockId,
+    memo: &block::Memo,
+    tags: &Vec<&BlockId>,
+) -> Html {
     Html::div(
         Attributes::new()
             .class("pure-form")
@@ -118,12 +118,36 @@ fn memo_item(memo_id: &BlockId, memo: &block::Memo) -> Html {
                 }),
                 vec![awesome::i("fa-times")],
             ),
+            Html::div(
+                Attributes::new()
+                    .class("keyvalue-banner")
+                    .class("keyvalueoption"),
+                Events::new(),
+                vec![
+                    text::div("タグ"),
+                    Html::div(
+                        Attributes::new().class("flex-h"),
+                        Events::new(),
+                        memo.tags(tags.iter().map(|x| x as &BlockId))
+                            .filter_map(|tag_id| tag_name(block_field, &tag_id))
+                            .map(|tag_name| {
+                                Html::div(
+                                    Attributes::new().class("tag"),
+                                    Events::new(),
+                                    vec![Html::text(tag_name)],
+                                )
+                            })
+                            .collect(),
+                    ),
+                    btn::secondary(Attributes::new(), Events::new(), vec![Html::text("編集")]),
+                ],
+            ),
             Html::textarea(
                 Attributes::new()
                     .value(memo.text())
                     .class("keyvalue-banner")
-                    .style("resize", "vertical")
-                    .nut("rows", 5),
+                    .style("resize", "none")
+                    .nut("rows", 10),
                 Events::new().on_input({
                     let memo_id = memo_id.clone();
                     move |text| Msg::SetMemoText(memo_id, text)
@@ -137,7 +161,7 @@ fn memo_item(memo_id: &BlockId, memo: &block::Memo) -> Html {
 fn memo_tag_list<'a>(
     modeless_id: model::modeless::ModelessId,
     block_field: &block::Field,
-    tags: impl Iterator<Item = &'a BlockId>,
+    tags: &Vec<&BlockId>,
     selecting_tag_id: Option<&BlockId>,
 ) -> Html {
     Html::div(
@@ -150,13 +174,13 @@ fn memo_tag_list<'a>(
                 Events::new().on_click(move |_| Msg::SetModelessTabIdx(modeless_id, 0)),
                 "[全ての共有メモ]",
             )],
-            tags.enumerate()
+            tags.iter()
+                .enumerate()
                 .filter_map(|(idx, tag_id)| {
-                    block_field
-                        .get::<block::Tag>(tag_id)
-                        .map(|tag| (idx, tag_id, tag))
+                    tag_name(block_field, tag_id)
+                        .map(|tag_name| (idx, tag_id as &BlockId, tag_name))
                 })
-                .map(|(idx, tag_id, tag)| {
+                .map(|(idx, tag_id, tag_name)| {
                     btn::frame_tab(
                         selecting_tag_id
                             .map(|t_id| *tag_id == *t_id)
@@ -164,7 +188,7 @@ fn memo_tag_list<'a>(
                         false,
                         Events::new()
                             .on_click(move |_| Msg::SetModelessTabIdx(modeless_id, idx + 1)),
-                        tag.name(),
+                        tag_name,
                     )
                 })
                 .collect(),
@@ -173,4 +197,8 @@ fn memo_tag_list<'a>(
         .flatten()
         .collect(),
     )
+}
+
+fn tag_name<'a>(block_field: &'a block::Field, tag_id: &BlockId) -> Option<&'a String> {
+    block_field.get::<block::Tag>(tag_id).map(|tag| tag.name())
 }
