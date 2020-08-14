@@ -21,7 +21,8 @@ pub fn render(state: &State, modeless: &model::modeless::Collection<Modeless>) -
             .on_click({
                 let selecting_tool = table.selecting_tool().clone();
                 move |e| {
-                    let mouse_pos = [e.offset_x() as f32, e.offset_y() as f32];
+                    let mouse_pos = super::offset_mouse_pos(&e);
+                    let mouse_pos = [mouse_pos[0] as f32, mouse_pos[1] as f32];
                     if e.alt_key() || e.ctrl_key() {
                         Msg::NoOp
                     } else {
@@ -56,7 +57,8 @@ pub fn render(state: &State, modeless: &model::modeless::Collection<Modeless>) -
                 let last_mouse_down_pos = table.last_mouse_down_position().clone();
                 let grubbed = grubbed.clone();
                 move |e| {
-                    let mouse_pos = [e.offset_x() as f32, e.offset_y() as f32];
+                    let mouse_pos = super::offset_mouse_pos(&e);
+                    let mouse_pos = [mouse_pos[0] as f32, mouse_pos[1] as f32];
                     if let Some(modeless_id) = grubbed {
                         let mouse_pos = [e.client_x() as f64, e.client_y() as f64];
                         Msg::DragModeless(modeless_id, mouse_pos)
@@ -160,7 +162,7 @@ pub fn render(state: &State, modeless: &model::modeless::Collection<Modeless>) -
                 let focused = table.focused().clone();
                 move |e| {
                     let page_mouse_coord = [e.page_x() as f64, e.page_y() as f64];
-                    let offset_mouse_coord = [e.offset_x() as f64, e.offset_y() as f64];
+                    let offset_mouse_coord = super::offset_mouse_pos(&e);
                     e.prevent_default();
                     e.stop_propagation();
 
@@ -204,15 +206,7 @@ pub fn render(state: &State, modeless: &model::modeless::Collection<Modeless>) -
                 {
                     e.prevent_default();
                     e.stop_propagation();
-                    let current_tagret = e
-                        .current_target()
-                        .unwrap()
-                        .dyn_into::<web_sys::HtmlElement>()
-                        .unwrap();
-                    let cr = current_tagret.get_bounding_client_rect();
-                    let x = cr.left();
-                    let y = cr.top();
-                    let mouse_pos = [e.client_x() as f64 - x, e.client_y() as f64 - y];
+                    let mouse_pos = super::offset_mouse_pos(&e);
                     Msg::DropModelessTab(mouse_pos)
                 } else {
                     Msg::NoOp

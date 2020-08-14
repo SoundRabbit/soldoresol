@@ -6,6 +6,7 @@ use crate::{
     Resource,
 };
 use kagura::prelude::*;
+use wasm_bindgen::JsCast;
 
 mod character_list;
 mod overlaper;
@@ -21,7 +22,9 @@ pub fn render(z_index: u64, state: &State, world: &block::World) -> Html {
         Events::new()
             .on_mousedown(move |e| {
                 if !some_modeless_is_grubbed {
-                    Msg::SetLastMouseDownPosition([e.offset_x() as f32, e.offset_y() as f32])
+                    let mouse_pos = offset_mouse_pos(&e);
+                    let mouse_pos = [mouse_pos[0] as f32, mouse_pos[1] as f32];
+                    Msg::SetLastMouseDownPosition(mouse_pos)
                 } else {
                     Msg::NoOp
                 }
@@ -29,9 +32,13 @@ pub fn render(z_index: u64, state: &State, world: &block::World) -> Html {
             .on_mousemove(move |e| {
                 if !some_modeless_is_grubbed {
                     if e.buttons() & 1 != 0 {
-                        Msg::SetLastMousePosition(false, [e.offset_x() as f32, e.offset_y() as f32])
+                        let mouse_pos = offset_mouse_pos(&e);
+                        let mouse_pos = [mouse_pos[0] as f32, mouse_pos[1] as f32];
+                        Msg::SetLastMousePosition(false, mouse_pos)
                     } else {
-                        Msg::SetLastMousePosition(true, [e.offset_x() as f32, e.offset_y() as f32])
+                        let mouse_pos = offset_mouse_pos(&e);
+                        let mouse_pos = [mouse_pos[0] as f32, mouse_pos[1] as f32];
+                        Msg::SetLastMousePosition(true, mouse_pos)
                     }
                 } else {
                     Msg::NoOp
@@ -39,7 +46,9 @@ pub fn render(z_index: u64, state: &State, world: &block::World) -> Html {
             })
             .on_mouseup(move |e| {
                 if !some_modeless_is_grubbed {
-                    Msg::SetLastMouseUpPosition([e.offset_x() as f32, e.offset_y() as f32])
+                    let mouse_pos = offset_mouse_pos(&e);
+                    let mouse_pos = [mouse_pos[0] as f32, mouse_pos[1] as f32];
+                    Msg::SetLastMouseUpPosition(mouse_pos)
                 } else {
                     Msg::NoOp
                 }
@@ -188,4 +197,16 @@ fn info(info: &Vec<(String, String)>) -> Html {
             .flatten()
             .collect(),
     )
+}
+
+fn offset_mouse_pos(e: &web_sys::MouseEvent) -> [f64; 2] {
+    let current_tagret = e
+        .current_target()
+        .unwrap()
+        .dyn_into::<web_sys::HtmlElement>()
+        .unwrap();
+    let cr = current_tagret.get_bounding_client_rect();
+    let x = cr.left();
+    let y = cr.top();
+    [e.client_x() as f64 - x, e.client_y() as f64 - y]
 }
