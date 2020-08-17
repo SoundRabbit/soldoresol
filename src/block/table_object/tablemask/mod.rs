@@ -3,6 +3,10 @@ use crate::Color;
 use crate::Promise;
 use wasm_bindgen::{prelude::*, JsCast};
 
+pub mod ellipse;
+pub mod line;
+pub mod rect;
+
 #[derive(Clone)]
 pub struct Tablemask {
     size: [f32; 3],
