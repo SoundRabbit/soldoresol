@@ -1,5 +1,6 @@
 use super::{Block, BlockId, Field};
 use crate::{random_id::U128Id, resource::ResourceId, Color, JsObject, Promise};
+use std::collections::HashSet;
 use wasm_bindgen::{prelude::*, JsCast};
 
 #[derive(Clone)]
@@ -198,5 +199,21 @@ impl Block for Character {
             None
         };
         Promise::new(move |resolve| resolve(self_))
+    }
+
+    fn dependents(&self, field: &Field) -> HashSet<BlockId> {
+        let mut deps = set! {};
+
+        if let Some(block) = field.get::<super::Property>(&self.property_id) {
+            let block_deps = block.dependents(field);
+
+            for block_dep in block_deps {
+                deps.insert(block_dep);
+            }
+
+            deps.insert(self.property_id.clone());
+        }
+
+        deps
     }
 }

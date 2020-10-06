@@ -1,5 +1,6 @@
-use super::{Block, Field};
-use crate::{color_system, random_id::U128Id, Color, JsObject, Promise};
+use super::{Block, BlockId, Field};
+use crate::{color_system, Color, JsObject, Promise};
+use std::collections::HashSet;
 use wasm_bindgen::{prelude::*, JsCast};
 
 pub struct Tag {
@@ -61,5 +62,9 @@ impl Block for Tag {
             None
         };
         Promise::new(move |resolve| resolve(self_))
+    }
+
+    fn dependents(&self, _: &Field) -> HashSet<BlockId> {
+        set! {}
     }
 }

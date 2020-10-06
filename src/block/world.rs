@@ -191,4 +191,50 @@ impl Block for World {
         };
         Promise::new(move |resolve| resolve(self_))
     }
+
+    fn dependents(&self, field: &Field) -> HashSet<BlockId> {
+        let mut deps = HashSet::new();
+
+        for block_id in &self.tables {
+            if let Some(block) = field.get::<super::Table>(block_id) {
+                let block_deps = block.dependents(field);
+                for block_dep in block_deps {
+                    deps.insert(block_dep);
+                }
+                deps.insert(block_id.clone());
+            }
+        }
+
+        for block_id in &self.characters {
+            if let Some(block) = field.get::<super::Character>(block_id) {
+                let block_deps = block.dependents(field);
+                for block_dep in block_deps {
+                    deps.insert(block_dep);
+                }
+                deps.insert(block_id.clone());
+            }
+        }
+
+        for block_id in &self.memos {
+            if let Some(block) = field.get::<super::Memo>(block_id) {
+                let block_deps = block.dependents(field);
+                for block_dep in block_deps {
+                    deps.insert(block_dep);
+                }
+                deps.insert(block_id.clone());
+            }
+        }
+
+        for block_id in &self.tags {
+            if let Some(block) = field.get::<super::Tag>(block_id) {
+                let block_deps = block.dependents(field);
+                for block_dep in block_deps {
+                    deps.insert(block_dep);
+                }
+                deps.insert(block_id.clone());
+            }
+        }
+
+        deps
+    }
 }

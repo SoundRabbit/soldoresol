@@ -1,5 +1,6 @@
 use super::{Block, BlockId, Field};
 use crate::{random_id::U128Id, JsObject, Promise};
+use std::collections::HashSet;
 use wasm_bindgen::{prelude::*, JsCast};
 
 #[derive(Clone)]
@@ -19,15 +20,6 @@ pub struct Property {
 }
 
 impl Value {
-    pub fn as_option_string(&self) -> Option<String> {
-        match &self {
-            Self::None => None,
-            Self::Children(..) => None,
-            Self::Num(x) => Some(x.to_string()),
-            Self::Str(x) => Some(x.to_string()),
-        }
-    }
-
     pub fn to_jsobject(&self) -> JsObject {
         match self {
             Self::None => object! {
@@ -180,22 +172,23 @@ impl Block for Property {
         };
         Promise::new(move |resolve| resolve(self_))
     }
-}
+    fn dependents(&self, field: &Field) -> HashSet<BlockId> {
+        if let Value::Children(child_ids) = &self.value {
+            let mut deps = HashSet::new();
 
-impl Field {
-    pub fn sainome_ref_of(&self, block_id: &BlockId) -> Option<sainome::Ref> {
-        if let Some(prop) = self.get::<Property>(block_id) {
-            let mut r = sainome::Ref::new(prop.value.as_option_string());
-            if let Value::Children(children) = &prop.value {
-                let children = self.listed::<Property>(children.iter().collect());
-                for (child_id, child) in children {
-                    let name = child.name.to_string();
-                    r.insert(name, self.sainome_ref_of(&child_id).unwrap());
+            for child_id in child_ids {
+                if let Some(child) = field.get::<Self>(child_id) {
+                    let child_deps = child.dependents(field);
+                    for child_dep in child_deps {
+                        deps.insert(child_dep);
+                    }
+                    deps.insert(child_id.clone());
                 }
             }
-            Some(r)
+
+            deps
         } else {
-            None
+            set! {}
         }
     }
 }

@@ -1,5 +1,6 @@
-use super::{Block, Field};
+use super::{Block, BlockId, Field};
 use crate::Promise;
+use std::collections::HashSet;
 use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::{prelude::*, JsCast};
 
@@ -152,5 +153,9 @@ impl Block for Texture {
         } else {
             Promise::new(|resolve| resolve(None))
         }
+    }
+
+    fn dependents(&self, _: &Field) -> HashSet<BlockId> {
+        set! {}
     }
 }

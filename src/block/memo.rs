@@ -69,4 +69,8 @@ impl Block for Memo {
     fn unpack(_: &mut Field, val: JsValue) -> Promise<Box<Self>> {
         unimplemented!();
     }
+
+    fn dependents(&self, field: &Field) -> HashSet<BlockId> {
+        unimplemented!();
+    }
 }

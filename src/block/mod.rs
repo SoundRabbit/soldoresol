@@ -3,7 +3,7 @@ use js_sys::Date;
 use std::{
     any::Any,
     cell::RefCell,
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     hash::Hash,
     iter::Iterator,
     ops::{Deref, DerefMut},
@@ -32,6 +32,7 @@ pub use world::World;
 trait Block {
     fn pack(&self) -> Promise<JsValue>;
     fn unpack(field: &mut Field, val: JsValue) -> Promise<Box<Self>>;
+    fn dependents(&self, field: &Field) -> HashSet<BlockId>;
 }
 
 #[allow(private_in_public)]
@@ -266,6 +267,16 @@ impl Field {
             .get(&block_id.to_id())
             .and_then(|fb| fb.payload.as_ref())
             .and_then(|p| p.downcast_ref::<T>())
+    }
+
+    #[allow(private_in_public)]
+    pub fn dependents_of<T: Block + 'static>(&self, block_id: &BlockId) -> HashSet<BlockId> {
+        self.table
+            .get(&block_id.to_id())
+            .and_then(|fb| fb.payload.as_ref())
+            .and_then(|p| p.downcast_ref::<T>())
+            .map(|p| p.dependents(self))
+            .unwrap_or(set! {})
     }
 
     pub fn remove(&mut self, block_id: &BlockId) {

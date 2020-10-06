@@ -1,6 +1,7 @@
-use super::{Block, Field};
+use super::{Block, BlockId, Field};
+use crate::Color;
 use crate::Promise;
-use crate::{color_system, Color};
+use std::collections::HashSet;
 use wasm_bindgen::prelude::*;
 
 #[derive(Clone)]
@@ -46,9 +47,13 @@ impl Measure {
 
 impl Block for Measure {
     fn pack(&self) -> Promise<JsValue> {
-        unimplemented!();
+        unreachable!();
     }
-    fn unpack(field: &mut Field, val: JsValue) -> Promise<Box<Self>> {
-        unimplemented!();
+    fn unpack(_: &mut Field, _: JsValue) -> Promise<Box<Self>> {
+        unreachable!();
+    }
+
+    fn dependents(&self, _: &Field) -> HashSet<BlockId> {
+        unreachable!();
     }
 }

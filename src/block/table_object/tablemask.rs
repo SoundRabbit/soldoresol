@@ -1,6 +1,7 @@
-use super::{Block, Field};
+use super::{Block, BlockId, Field};
 use crate::Color;
 use crate::Promise;
+use std::collections::HashSet;
 use wasm_bindgen::{prelude::*, JsCast};
 
 #[derive(Clone)]
@@ -156,5 +157,9 @@ impl Block for Tablemask {
                 resolve(None);
             }
         })
+    }
+
+    fn dependents(&self, _: &Field) -> HashSet<BlockId> {
+        set! {}
     }
 }

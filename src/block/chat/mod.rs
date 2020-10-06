@@ -1,5 +1,6 @@
 use super::{Block, BlockId, Field};
 use crate::{random_id::U128Id, Promise};
+use std::collections::HashSet;
 use std::ops::{Deref, DerefMut};
 use wasm_bindgen::prelude::*;
 
@@ -42,6 +43,21 @@ impl Block for Chat {
         }
         let chat = Self { tabs };
         Promise::new(|resolve| resolve(Some(Box::new(chat))))
+    }
+    fn dependents(&self, field: &Field) -> HashSet<BlockId> {
+        let mut deps = HashSet::new();
+
+        for block_id in &self.tabs {
+            if let Some(block) = field.get::<Tab>(block_id) {
+                let block_deps = block.dependents(field);
+                for block_dep in block_deps {
+                    deps.insert(block_dep);
+                }
+                deps.insert(block_id.clone());
+            }
+        }
+
+        deps
     }
 }
 

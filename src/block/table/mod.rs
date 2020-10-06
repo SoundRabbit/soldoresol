@@ -1,5 +1,6 @@
 use super::{Block, BlockId, Field};
 use crate::{random_id::U128Id, resource::ResourceId, Color, JsObject, Promise};
+use std::collections::HashSet;
 use wasm_bindgen::{prelude::*, JsCast};
 
 mod texture;
@@ -27,26 +28,6 @@ pub struct Table {
 }
 
 impl Horizon {
-    pub fn new(radius: f32, color: Color) -> Self {
-        Self { radius, color }
-    }
-
-    pub fn radius(&self) -> f32 {
-        self.radius
-    }
-
-    pub fn set_radius(&mut self, radius: f32) {
-        self.radius = radius;
-    }
-
-    pub fn color(&self) -> Color {
-        self.color
-    }
-
-    pub fn set_color(&mut self, color: Color) {
-        self.color = color;
-    }
-
     fn to_jsvalue(&self) -> JsValue {
         let data = array![self.radius, self.color.to_u32()];
         data.into()
@@ -122,18 +103,6 @@ impl Table {
 
     pub fn set_image_texture_id(&mut self, image_texture_id: Option<ResourceId>) {
         self.image_texture_id = image_texture_id
-    }
-
-    pub fn horizon(&self) -> Option<&Horizon> {
-        self.horizon.as_ref()
-    }
-
-    pub fn horizon_mut(&mut self) -> Option<&mut Horizon> {
-        self.horizon.as_mut()
-    }
-
-    pub fn set_horizon(&mut self, horizon: Option<Horizon>) {
-        self.horizon = horizon;
     }
 
     pub fn tablemasks(&self) -> impl Iterator<Item = &BlockId> {
@@ -316,5 +285,41 @@ impl Block for Table {
             None
         };
         Promise::new(move |resolve| resolve(self_))
+    }
+
+    fn dependents(&self, field: &Field) -> HashSet<BlockId> {
+        let mut deps = set! {};
+
+        for block_id in &self.tablemasks {
+            if let Some(block) = field.get::<super::Table>(block_id) {
+                let block_deps = block.dependents(field);
+                for block_dep in block_deps {
+                    deps.insert(block_dep);
+                }
+                deps.insert(block_id.clone());
+            }
+        }
+
+        for block_id in &self.areas {
+            if let Some(block) = field.get::<super::Character>(block_id) {
+                let block_deps = block.dependents(field);
+                for block_dep in block_deps {
+                    deps.insert(block_dep);
+                }
+                deps.insert(block_id.clone());
+            }
+        }
+
+        for block_id in &self.boxblocks {
+            if let Some(block) = field.get::<super::Memo>(block_id) {
+                let block_deps = block.dependents(field);
+                for block_dep in block_deps {
+                    deps.insert(block_dep);
+                }
+                deps.insert(block_id.clone());
+            }
+        }
+
+        deps
     }
 }

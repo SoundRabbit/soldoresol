@@ -2,6 +2,7 @@ use super::{Block, BlockId, Field};
 use crate::{random_id::U128Id, JsObject, Promise};
 use ordered_float::OrderedFloat;
 use std::collections::BTreeMap;
+use std::collections::HashSet;
 use wasm_bindgen::{prelude::*, JsCast};
 
 #[derive(Clone)]
@@ -82,5 +83,20 @@ impl Block for Tab {
             None
         };
         Promise::new(move |resolve| resolve(self_))
+    }
+    fn dependents(&self, field: &Field) -> HashSet<BlockId> {
+        let mut deps = set! {};
+
+        for (_, block_id) in &self.items {
+            if let Some(block) = field.get::<super::Item>(block_id) {
+                let block_deps = block.dependents(field);
+                for block_dep in block_deps {
+                    deps.insert(block_dep);
+                }
+                deps.insert(block_id.clone());
+            }
+        }
+
+        deps
     }
 }
