@@ -1,4 +1,5 @@
 use super::{Block, BlockId, Field};
+use crate::resource::ResourceId;
 use crate::Promise;
 use std::collections::HashSet;
 use wasm_bindgen::prelude::*;
@@ -71,6 +72,10 @@ impl Block for Memo {
     }
 
     fn dependents(&self, field: &Field) -> HashSet<BlockId> {
+        unimplemented!();
+    }
+
+    fn resources(&self, field: &Field) -> HashSet<ResourceId> {
         unimplemented!();
     }
 }

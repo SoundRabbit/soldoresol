@@ -1,5 +1,5 @@
 use super::{Block, BlockId, Field};
-use crate::{random_id::U128Id, JsObject, Promise};
+use crate::{random_id::U128Id, resource::ResourceId, JsObject, Promise};
 use std::collections::HashSet;
 use wasm_bindgen::{prelude::*, JsCast};
 
@@ -236,5 +236,47 @@ impl Block for World {
         }
 
         deps
+    }
+
+    fn resources(&self, field: &Field) -> HashSet<ResourceId> {
+        let mut reses = set! {};
+
+        for block_id in &self.tables {
+            if let Some(block) = field.get::<super::Table>(block_id) {
+                let block_reses = block.resources(field);
+                for block_res in block_reses {
+                    reses.insert(block_res);
+                }
+            }
+        }
+
+        for block_id in &self.characters {
+            if let Some(block) = field.get::<super::Character>(block_id) {
+                let block_reses = block.resources(field);
+                for block_res in block_reses {
+                    reses.insert(block_res);
+                }
+            }
+        }
+
+        for block_id in &self.memos {
+            if let Some(block) = field.get::<super::Memo>(block_id) {
+                let block_reses = block.resources(field);
+                for block_res in block_reses {
+                    reses.insert(block_res);
+                }
+            }
+        }
+
+        for block_id in &self.tags {
+            if let Some(block) = field.get::<super::Tag>(block_id) {
+                let block_reses = block.resources(field);
+                for block_res in block_reses {
+                    reses.insert(block_res);
+                }
+            }
+        }
+
+        reses
     }
 }

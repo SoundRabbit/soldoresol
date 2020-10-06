@@ -216,4 +216,22 @@ impl Block for Character {
 
         deps
     }
+
+    fn resources(&self, field: &Field) -> HashSet<ResourceId> {
+        let mut reses = set! {};
+
+        if let Some(r_id) = &self.texture_id {
+            reses.insert(r_id.clone());
+        }
+
+        if let Some(block) = field.get::<super::Property>(&self.property_id) {
+            let block_reses = block.resources(field);
+
+            for block_res in block_reses {
+                reses.insert(block_res);
+            }
+        }
+
+        reses
+    }
 }

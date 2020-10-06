@@ -1,4 +1,5 @@
 use super::{Block, BlockId, Field};
+use crate::resource::ResourceId;
 use crate::Color;
 use crate::Promise;
 use std::collections::HashSet;
@@ -160,6 +161,10 @@ impl Block for Tablemask {
     }
 
     fn dependents(&self, _: &Field) -> HashSet<BlockId> {
+        set! {}
+    }
+
+    fn resources(&self, _: &Field) -> HashSet<ResourceId> {
         set! {}
     }
 }

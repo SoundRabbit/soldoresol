@@ -1,4 +1,4 @@
-use crate::{js_object::JsObject, random_id::U128Id, Promise};
+use crate::{js_object::JsObject, random_id::U128Id, resource::ResourceId, Promise};
 use js_sys::Date;
 use std::{
     any::Any,
@@ -33,6 +33,7 @@ trait Block {
     fn pack(&self) -> Promise<JsValue>;
     fn unpack(field: &mut Field, val: JsValue) -> Promise<Box<Self>>;
     fn dependents(&self, field: &Field) -> HashSet<BlockId>;
+    fn resources(&self, field: &Field) -> HashSet<ResourceId>;
 }
 
 #[allow(private_in_public)]
@@ -276,6 +277,16 @@ impl Field {
             .and_then(|fb| fb.payload.as_ref())
             .and_then(|p| p.downcast_ref::<T>())
             .map(|p| p.dependents(self))
+            .unwrap_or(set! {})
+    }
+
+    #[allow(private_in_public)]
+    pub fn resources_of<T: Block + 'static>(&self, block_id: &BlockId) -> HashSet<ResourceId> {
+        self.table
+            .get(&block_id.to_id())
+            .and_then(|fb| fb.payload.as_ref())
+            .and_then(|p| p.downcast_ref::<T>())
+            .map(|p| p.resources(self))
             .unwrap_or(set! {})
     }
 

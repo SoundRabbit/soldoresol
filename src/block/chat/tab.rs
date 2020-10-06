@@ -1,5 +1,5 @@
 use super::{Block, BlockId, Field};
-use crate::{random_id::U128Id, JsObject, Promise};
+use crate::{random_id::U128Id, resource::ResourceId, JsObject, Promise};
 use ordered_float::OrderedFloat;
 use std::collections::BTreeMap;
 use std::collections::HashSet;
@@ -98,5 +98,20 @@ impl Block for Tab {
         }
 
         deps
+    }
+
+    fn resources(&self, field: &Field) -> HashSet<ResourceId> {
+        let mut reses = set! {};
+
+        for (_, block_id) in &self.items {
+            if let Some(block) = field.get::<super::Item>(block_id) {
+                let block_reses = block.resources(field);
+                for block_res in block_reses {
+                    reses.insert(block_res);
+                }
+            }
+        }
+
+        reses
     }
 }

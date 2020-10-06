@@ -1,4 +1,5 @@
 use super::{Block, BlockId, Field};
+use crate::resource::ResourceId;
 use crate::Promise;
 use std::collections::HashSet;
 use std::{cell::RefCell, rc::Rc};
@@ -156,6 +157,10 @@ impl Block for Texture {
     }
 
     fn dependents(&self, _: &Field) -> HashSet<BlockId> {
+        set! {}
+    }
+
+    fn resources(&self, _: &Field) -> HashSet<ResourceId> {
         set! {}
     }
 }

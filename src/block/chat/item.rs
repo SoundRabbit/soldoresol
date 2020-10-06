@@ -210,4 +210,23 @@ impl Block for Item {
 
         deps
     }
+
+    fn resources(&self, field: &Field) -> HashSet<ResourceId> {
+        let mut reses = set! {};
+
+        if let Icon::Resource(r_id) = &self.icon {
+            reses.insert(r_id.clone());
+        }
+
+        if let Sender::Character(block_id) = &self.sender {
+            if let Some(block) = field.get::<super::super::Character>(block_id) {
+                let block_reses = block.resources(field);
+                for block_res in block_reses {
+                    reses.insert(block_res);
+                }
+            }
+        }
+
+        reses
+    }
 }

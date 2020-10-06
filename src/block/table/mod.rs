@@ -290,6 +290,14 @@ impl Block for Table {
     fn dependents(&self, field: &Field) -> HashSet<BlockId> {
         let mut deps = set! {};
 
+        if let Some(block) = field.get::<Texture>(&self.drawing_texture_id) {
+            let block_deps = block.dependents(field);
+            for block_dep in block_deps {
+                deps.insert(block_dep);
+            }
+            deps.insert(self.drawing_texture_id.clone());
+        }
+
         for block_id in &self.tablemasks {
             if let Some(block) = field.get::<super::Table>(block_id) {
                 let block_deps = block.dependents(field);
@@ -321,5 +329,15 @@ impl Block for Table {
         }
 
         deps
+    }
+
+    fn resources(&self, _: &Field) -> HashSet<ResourceId> {
+        let mut reses = set! {};
+
+        if let Some(r_id) = &self.image_texture_id {
+            reses.insert(r_id.clone());
+        }
+
+        reses
     }
 }

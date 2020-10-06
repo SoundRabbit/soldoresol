@@ -1,4 +1,5 @@
 use super::{Block, BlockId, Field};
+use crate::resource::ResourceId;
 use crate::Color;
 use crate::JsObject;
 use crate::Promise;
@@ -199,6 +200,10 @@ impl Block for Area {
     }
 
     fn dependents(&self, _: &Field) -> HashSet<BlockId> {
+        set! {}
+    }
+
+    fn resources(&self, _: &Field) -> HashSet<ResourceId> {
         set! {}
     }
 }

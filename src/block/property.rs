@@ -1,5 +1,5 @@
 use super::{Block, BlockId, Field};
-use crate::{random_id::U128Id, JsObject, Promise};
+use crate::{random_id::U128Id, resource::ResourceId, JsObject, Promise};
 use std::collections::HashSet;
 use wasm_bindgen::{prelude::*, JsCast};
 
@@ -173,9 +173,9 @@ impl Block for Property {
         Promise::new(move |resolve| resolve(self_))
     }
     fn dependents(&self, field: &Field) -> HashSet<BlockId> {
-        if let Value::Children(child_ids) = &self.value {
-            let mut deps = HashSet::new();
+        let mut deps = set! {};
 
+        if let Value::Children(child_ids) = &self.value {
             for child_id in child_ids {
                 if let Some(child) = field.get::<Self>(child_id) {
                     let child_deps = child.dependents(field);
@@ -185,10 +185,24 @@ impl Block for Property {
                     deps.insert(child_id.clone());
                 }
             }
-
-            deps
-        } else {
-            set! {}
         }
+
+        deps
+    }
+    fn resources(&self, field: &Field) -> HashSet<ResourceId> {
+        let mut reses = set! {};
+
+        if let Value::Children(child_ids) = &self.value {
+            for child_id in child_ids {
+                if let Some(child) = field.get::<Self>(child_id) {
+                    let child_reses = child.resources(field);
+                    for child_res in child_reses {
+                        reses.insert(child_res);
+                    }
+                }
+            }
+        }
+
+        reses
     }
 }

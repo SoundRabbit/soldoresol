@@ -1,5 +1,5 @@
 use super::{Block, BlockId, Field};
-use crate::{color_system, Color, JsObject, Promise};
+use crate::{color_system, resource::ResourceId, Color, JsObject, Promise};
 use std::collections::HashSet;
 use wasm_bindgen::{prelude::*, JsCast};
 
@@ -65,6 +65,10 @@ impl Block for Tag {
     }
 
     fn dependents(&self, _: &Field) -> HashSet<BlockId> {
+        set! {}
+    }
+
+    fn resources(&self, _: &Field) -> HashSet<ResourceId> {
         set! {}
     }
 }

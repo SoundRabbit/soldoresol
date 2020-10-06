@@ -1,5 +1,5 @@
 use super::{Block, BlockId, Field};
-use crate::{random_id::U128Id, Promise};
+use crate::{random_id::U128Id, resource::ResourceId, Promise};
 use std::collections::HashSet;
 use std::ops::{Deref, DerefMut};
 use wasm_bindgen::prelude::*;
@@ -58,6 +58,21 @@ impl Block for Chat {
         }
 
         deps
+    }
+
+    fn resources(&self, field: &Field) -> HashSet<ResourceId> {
+        let mut reses = set! {};
+
+        for block_id in &self.tabs {
+            if let Some(block) = field.get::<Tab>(block_id) {
+                let block_reses = block.resources(field);
+                for block_res in block_reses {
+                    reses.insert(block_res);
+                }
+            }
+        }
+
+        reses
     }
 }
 
