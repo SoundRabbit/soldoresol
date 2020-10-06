@@ -41,7 +41,7 @@ pub fn canvas_from_image(img: &web_sys::HtmlImageElement) -> web_sys::HtmlCanvas
     canvas
 }
 
-macro_rules! hash_set {
+macro_rules! set {
     { $( $n:expr ),* } => {
         {
             use std::collections::HashSet;

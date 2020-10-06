@@ -90,7 +90,6 @@ impl<M, S> State<M, S> {
         room_database: Rc<web_sys::IdbDatabase>,
         table_database: Rc<web_sys::IdbDatabase>,
     ) -> Self {
-        let peers = hash_set! {peer.id()};
         let mut block_field = block::Field::new();
         let chat = chat::State::new(&mut block_field);
         let texture = block_field.add(block::table::Texture::new(&[4096, 4096], [20.0, 20.0]));
@@ -103,7 +102,7 @@ impl<M, S> State<M, S> {
             peer: peer,
             room: room,
             client_id,
-            peers: hash_set! {},
+            peers: set! {},
             personal_data: model::PersonalData::new(),
             resource: Resource::new(),
             block_field,
