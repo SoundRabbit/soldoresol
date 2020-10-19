@@ -1,33 +1,33 @@
-use crate::Promise;
+use js_sys::Promise;
 use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::{prelude::*, JsCast};
+use wasm_bindgen_futures::JsFuture;
 
-pub fn open_db(name: &str) -> Promise<web_sys::IdbDatabase> {
+pub async fn open_db(name: &str) -> Option<web_sys::IdbDatabase> {
     let request = web_sys::window().unwrap().indexed_db().unwrap().unwrap();
     let request = request.open(name).unwrap();
     let request = Rc::new(request);
-    Promise::new(move |resolve| {
+    JsFuture::from(Promise::new(&mut move |resolve, reject| {
         let a = Closure::once(Box::new({
             let request = Rc::clone(&request);
             move || {
-                let database = request
-                    .result()
-                    .unwrap()
-                    .dyn_into::<web_sys::IdbDatabase>()
-                    .unwrap();
-                resolve(Some(database));
+                let database = request.result().unwrap();
+                resolve.call1(&js_sys::global(), &database);
             }
         }));
         request.set_onsuccess(Some(a.as_ref().unchecked_ref()));
         a.forget();
-    })
+    }))
+    .await
+    .ok()
+    .and_then(|x| x.dyn_into::<web_sys::IdbDatabase>().ok())
 }
 
-pub fn create_object_strage(
+pub async fn create_object_strage(
     database: &web_sys::IdbDatabase,
     name: impl Into<String>,
-) -> Promise<web_sys::IdbDatabase> {
-    let name = name.into();
+) -> Option<web_sys::IdbDatabase> {
+    let name = Rc::new(name.into());
     let (database_name, version) = (database.name(), database.version());
     database.close();
     let request = web_sys::window().unwrap().indexed_db().unwrap().unwrap();
@@ -35,9 +35,12 @@ pub fn create_object_strage(
         .open_with_f64(database_name.as_str(), version + 1.0)
         .unwrap();
     let request = Rc::new(request);
-    Promise::new(move |resolve| {
-        let a = Closure::once(Box::new({
+    JsFuture::from(Promise::new(&mut move |resolve, reject| {
+        let resolve = Rc::new(resolve);
+        let a = Closure::wrap(Box::new({
             let request = Rc::clone(&request);
+            let resolve = Rc::clone(&resolve);
+            let name = Rc::clone(&name);
             move || {
                 let database = request
                     .result()
@@ -45,18 +48,24 @@ pub fn create_object_strage(
                     .dyn_into::<web_sys::IdbDatabase>()
                     .unwrap();
                 let object_store = database.create_object_store(name.as_ref()).unwrap();
-                let a = Closure::once(Box::new(move || {
-                    resolve(Some(database));
-                }));
+                let a = Closure::wrap(Box::new({
+                    let resolve = Rc::clone(&resolve);
+                    move || {
+                        resolve.call1(&js_sys::global(), &database);
+                    }
+                }) as Box<dyn FnMut()>);
                 object_store
                     .transaction()
                     .set_oncomplete(Some(a.as_ref().unchecked_ref()));
                 a.forget();
             }
-        }));
+        }) as Box<dyn FnMut()>);
         request.set_onupgradeneeded(Some(a.as_ref().unchecked_ref()));
         a.forget();
-    })
+    }))
+    .await
+    .ok()
+    .and_then(|x| x.dyn_into::<web_sys::IdbDatabase>().ok())
 }
 
 pub enum Query<'a> {
@@ -67,7 +76,11 @@ pub enum Query<'a> {
     GetAllKeys,
 }
 
-pub fn query(database: &web_sys::IdbDatabase, object_name: &str, query: Query) -> Promise<JsValue> {
+pub async fn query<'a>(
+    database: &web_sys::IdbDatabase,
+    object_name: &str,
+    query: Query<'a>,
+) -> Option<JsValue> {
     let mode = match &query {
         Query::Get(..) => web_sys::IdbTransactionMode::Readonly,
         Query::Add(..) => web_sys::IdbTransactionMode::Readwrite,
@@ -88,11 +101,8 @@ pub fn query(database: &web_sys::IdbDatabase, object_name: &str, query: Query) -
         Query::GetAllKeys => object_store.get_all_keys().unwrap(),
     };
     let request = Rc::new(request);
-    Promise::new(move |resolve| {
-        let resolve = Rc::new(RefCell::new(Some(resolve)));
-
+    JsFuture::from(Promise::new(&mut move |resolve, reject| {
         let a = Closure::wrap(Box::new({
-            let resolve = Rc::clone(&resolve);
             let request = Rc::clone(&request);
             move || {
                 let result = match request.result() {
@@ -100,38 +110,32 @@ pub fn query(database: &web_sys::IdbDatabase, object_name: &str, query: Query) -
                     Err(..) => JsValue::null(),
                 };
                 crate::debug::log_1(&result);
-                if let Some(resolve) = resolve.borrow_mut().take() {
-                    resolve(Some(result));
-                }
+                resolve.call1(&js_sys::global(), &result);
             }
         }) as Box<dyn FnMut()>);
         request.set_onsuccess(Some(a.as_ref().unchecked_ref()));
         a.forget();
 
-        let a = Closure::wrap(Box::new({
-            let resolve = Rc::clone(&resolve);
-            move || {
-                if let Some(resolve) = resolve.borrow_mut().take() {
-                    resolve(None);
-                }
-            }
+        let a = Closure::wrap(Box::new(move || {
+            reject.call1(&js_sys::global(), &JsValue::null());
         }) as Box<dyn FnMut()>);
         request.set_onerror(Some(a.as_ref().unchecked_ref()));
         a.forget();
-    })
+    }))
+    .await
+    .ok()
 }
 
-pub fn assign(
-    database: Rc<web_sys::IdbDatabase>,
-    object_name: Rc<String>,
-    key: JsValue,
-    value: JsValue,
-) -> Promise<JsValue> {
-    query(&database, &object_name, Query::Add(&key, &value)).and_then(move |x| {
-        if let Some(x) = x {
-            Promise::new(move |resolve| resolve(Some(x)))
-        } else {
-            query(&database, &object_name, Query::Put(&key, &value))
-        }
-    })
+pub async fn assign(
+    database: &web_sys::IdbDatabase,
+    object_name: &str,
+    key: &JsValue,
+    value: &JsValue,
+) -> Option<JsValue> {
+    let x = query(&database, &object_name, Query::Add(&key, &value)).await;
+    if x.is_some() {
+        x
+    } else {
+        query(&database, &object_name, Query::Put(&key, &value)).await
+    }
 }

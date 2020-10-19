@@ -13,6 +13,7 @@ extern crate serde_json;
 extern crate serde_yaml;
 extern crate toml;
 extern crate wasm_bindgen;
+extern crate wasm_bindgen_futures;
 extern crate web_sys;
 extern crate xmltree;
 
@@ -39,6 +40,7 @@ mod timestamp;
 mod udonarium;
 
 use color::Color;
+use component::{app, App};
 use config::Config;
 use js_object::JsObject;
 use js_zip::JSZip;
@@ -49,8 +51,5 @@ use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen(start)]
 pub fn main() {
-    kagura::run(
-        component::config_loder::new().with(component::config_loder::Props {}),
-        "app",
-    );
+    kagura::run::<component::App, _, _, _>("app", app::Props {}, vec![]);
 }
