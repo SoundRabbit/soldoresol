@@ -28,6 +28,9 @@ module.exports = {
                     {
                         loader: "sass-loader",
                         options: {
+                            sassOptions: {
+                                includePaths: [path.resolve(__dirname, './style')]
+                            },
                             sourceMap: true,
                         },
                     },
@@ -64,6 +67,7 @@ module.exports = {
             // forceMode: "development",
             forceMode: "production",
             target: "web",
+            args: "--log-level error",
         }),
         new HtmlWebpackInlineSourcePlugin(),
     ],

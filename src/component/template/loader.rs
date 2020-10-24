@@ -1,3 +1,4 @@
+use super::util::styled::{Style, Styled};
 use kagura::prelude::*;
 
 pub struct Props {}
@@ -21,11 +22,29 @@ impl Component for Loader {
 
     fn init(&mut self, _: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) {}
 
-    fn update(&mut self, msg: Self::Msg) -> Cmd<Msg, Sub> {
+    fn update(&mut self, _: Self::Msg) -> Cmd<Self::Msg, Self::Sub> {
         Cmd::none()
     }
 
     fn render(&self, _: Vec<Html>) -> Html {
-        Html::div(Attributes::new(), Events::new(), vec![])
+        Self::styled(Html::div(
+            Attributes::new(),
+            Events::new(),
+            vec![Html::span(
+                Attributes::new().class(Self::class("text")),
+                Events::new(),
+                vec![Html::text("loading...")],
+            )],
+        ))
+    }
+}
+
+impl Styled for Loader {
+    fn style() -> Style {
+        style! {
+            "text" {
+                "color": "red"
+            }
+        }
     }
 }

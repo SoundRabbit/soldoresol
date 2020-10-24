@@ -1,7 +1,6 @@
-use super::super::template::{loader, Loader};
+use super::template::{loader, Loader};
 use crate::Config;
 use kagura::prelude::*;
-use wasm_bindgen::prelude::*;
 
 mod task;
 
@@ -64,6 +63,6 @@ impl Component for Initializer {
     }
 
     fn render(&self, _: Vec<Html>) -> Html {
-        Loader::view(loader::Props {}, SubMap::empty(), vec![])
+        Loader::empty(loader::Props {}, Subscription::none())
     }
 }
