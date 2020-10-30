@@ -46,6 +46,7 @@ macro_rules! set {
         {
             use std::collections::HashSet;
 
+            #[allow(unused_mut)]
             let mut tmp = HashSet::new();
             $(
                 tmp.insert($n);

@@ -1,6 +1,8 @@
-use super::batch::{peer_connection, PeerConnection};
-use super::page::{initializer, Initializer};
-use super::page::{room_selector, RoomSelector};
+use super::batch::peer_connection::{self, PeerConnection};
+use super::page::{
+    initializer::{self, Initializer},
+    room_selector::{self, RoomSelector},
+};
 use super::util::State;
 use crate::skyway::{Peer, Room};
 use crate::Config;
@@ -24,6 +26,8 @@ pub struct App {
 
 impl Constructor for App {
     fn constructor(_: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) -> Self {
+        crate::debug::log_1(format!("construct {}", std::any::type_name::<Self>()));
+
         Self {
             config: None,
             common_database: None,
@@ -39,7 +43,9 @@ impl Component for App {
     type Msg = Msg;
     type Sub = Sub;
 
-    fn init(&mut self, _: Props, _: &mut ComponentBuilder<Msg, Sub>) {}
+    fn init(&mut self, _: Props, _: &mut ComponentBuilder<Msg, Sub>) {
+        crate::debug::log_1(format!("init {}", std::any::type_name::<Self>()));
+    }
 
     fn update(&mut self, msg: Msg) -> Cmd<Msg, Sub> {
         match msg {

@@ -2,7 +2,7 @@ use super::util::{Prop, State};
 use kagura::prelude::*;
 
 pub struct Props {
-    pub enable_mouse_event: bool,
+    pub tag: String,
 }
 
 pub enum Msg {
@@ -28,8 +28,8 @@ pub struct MouseBtnState {
     pub last_changed_position: [i32; 2],
 }
 
-pub struct Editor {
-    is_enable_mouse_event: bool,
+pub struct MouseCapture {
+    tag: String,
     mouse_state: State<MouseState>,
 }
 
@@ -55,22 +55,22 @@ impl MouseBtnState {
     }
 }
 
-impl Constructor for Editor {
+impl Constructor for MouseCapture {
     fn constructor(props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) -> Self {
         Self {
-            is_enable_mouse_event: props.enable_mouse_event,
+            tag: props.tag,
             mouse_state: State::new(MouseState::new()),
         }
     }
 }
 
-impl Component for Editor {
+impl Component for MouseCapture {
     type Props = Props;
     type Msg = Msg;
     type Sub = On;
 
     fn init(&mut self, props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) {
-        self.is_enable_mouse_event = props.enable_mouse_event;
+        self.tag = props.tag;
     }
 
     fn update(&mut self, msg: Self::Msg) -> Cmd<Self::Msg, Self::Sub> {
@@ -88,25 +88,22 @@ impl Component for Editor {
     }
 
     fn render(&self, children: Vec<Html>) -> Html {
-        Html::div(
-            Attributes::new().class("template--editor"),
-            if self.is_enable_mouse_event {
-                Events::new()
-                    .on_mousedown(|e| Msg::SetPressedBtn { btn: e.buttons() })
-                    .on_mouseup(|e| Msg::SetPressedBtn { btn: e.buttons() })
-                    .on_mousemove(|e| Msg::SetPressedBtnAndPosition {
-                        btn: e.buttons(),
-                        position: [e.page_x(), e.page_y()],
-                    })
-            } else {
-                Events::new()
-            },
+        Html::node(
+            &self.tag,
+            Attributes::new(),
+            Events::new()
+                .on_mousedown(|e| Msg::SetPressedBtn { btn: e.buttons() })
+                .on_mouseup(|e| Msg::SetPressedBtn { btn: e.buttons() })
+                .on_mousemove(|e| Msg::SetPressedBtnAndPosition {
+                    btn: e.buttons(),
+                    position: [e.page_x(), e.page_y()],
+                }),
             children,
         )
     }
 }
 
-impl Editor {
+impl MouseCapture {
     fn set_pressed_btn(&mut self, btn: u16) {
         let btn_1 = btn & 1 != 0;
         if btn_1 != self.mouse_state.btn_1.is_pressed {

@@ -1,3 +1,4 @@
+use super::util::styled::{Style, Styled};
 use kagura::prelude::*;
 
 pub struct Props {
@@ -9,9 +10,13 @@ pub enum Variant {
     Danger,
 }
 
-pub enum Msg {}
+pub enum Msg {
+    Clicked,
+}
 
-pub enum On {}
+pub enum On {
+    Click,
+}
 
 pub struct Btn {
     variant: Variant,
@@ -41,17 +46,30 @@ impl Component for Btn {
 
     fn init(&mut self, _: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) {}
 
-    fn update(&mut self, _: Self::Msg) -> Cmd<Self::Msg, Self::Sub> {
-        Cmd::none()
+    fn update(&mut self, msg: Self::Msg) -> Cmd<Self::Msg, Self::Sub> {
+        match msg {
+            Msg::Clicked => Cmd::sub(On::Click),
+        }
     }
 
     fn render(&self, children: Vec<Html>) -> Html {
-        Html::button(
+        Self::styled(Html::button(
             Attributes::new()
                 .class("pure-button")
-                .string("data-variant", format!("{}", &self.variant)),
-            Events::new(),
+                .class(Self::class(&format!("{}", &self.variant))),
+            Events::new().on_click(|_| Msg::Clicked),
             children,
-        )
+        ))
+    }
+}
+
+impl Styled for Btn {
+    fn style() -> Style {
+        style! {
+            "primary" {
+                "background-color": crate::color_system::blue(255, 5).to_string();
+                "color": crate::color_system::gray(255, 0).to_string();
+            }
+        }
     }
 }

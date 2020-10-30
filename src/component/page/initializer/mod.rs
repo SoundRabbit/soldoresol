@@ -1,4 +1,4 @@
-use super::template::{loader, Loader};
+use super::template::loader::{self, Loader};
 use crate::Config;
 use kagura::prelude::*;
 
@@ -57,7 +57,7 @@ impl Component for Initializer {
                 })
             }
             Msg::SetCommonDatabase(config, common_database, client_id) => {
-                Cmd::Sub(On::Load(config, common_database, client_id))
+                Cmd::sub(On::Load(config, common_database, client_id))
             }
         }
     }

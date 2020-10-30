@@ -1,4 +1,5 @@
 @import "color";
+@import "animation";
 
 html,
 body {
@@ -18,6 +19,7 @@ body {
 * {
     overflow: visible;
     z-index: 0;
+    box-sizing: border-box;
 }
 
 h1,

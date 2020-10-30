@@ -40,6 +40,12 @@ impl Color {
     }
 }
 
+impl std::fmt::Display for Color {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.to_string())
+    }
+}
+
 impl From<[u8; 4]> for Color {
     fn from(rgba: [u8; 4]) -> Self {
         Self {

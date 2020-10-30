@@ -1,5 +1,5 @@
 use js_sys::Promise;
-use std::{cell::RefCell, rc::Rc};
+use std::rc::Rc;
 use wasm_bindgen::{prelude::*, JsCast};
 use wasm_bindgen_futures::JsFuture;
 
@@ -7,12 +7,12 @@ pub async fn open_db(name: &str) -> Option<web_sys::IdbDatabase> {
     let request = web_sys::window().unwrap().indexed_db().unwrap().unwrap();
     let request = request.open(name).unwrap();
     let request = Rc::new(request);
-    JsFuture::from(Promise::new(&mut move |resolve, reject| {
+    JsFuture::from(Promise::new(&mut move |resolve, _| {
         let a = Closure::once(Box::new({
             let request = Rc::clone(&request);
             move || {
                 let database = request.result().unwrap();
-                resolve.call1(&js_sys::global(), &database);
+                let _ = resolve.call1(&js_sys::global(), &database);
             }
         }));
         request.set_onsuccess(Some(a.as_ref().unchecked_ref()));
@@ -35,7 +35,7 @@ pub async fn create_object_strage(
         .open_with_f64(database_name.as_str(), version + 1.0)
         .unwrap();
     let request = Rc::new(request);
-    JsFuture::from(Promise::new(&mut move |resolve, reject| {
+    JsFuture::from(Promise::new(&mut move |resolve, _| {
         let resolve = Rc::new(resolve);
         let a = Closure::wrap(Box::new({
             let request = Rc::clone(&request);
@@ -51,7 +51,7 @@ pub async fn create_object_strage(
                 let a = Closure::wrap(Box::new({
                     let resolve = Rc::clone(&resolve);
                     move || {
-                        resolve.call1(&js_sys::global(), &database);
+                        let _ = resolve.call1(&js_sys::global(), &database);
                     }
                 }) as Box<dyn FnMut()>);
                 object_store
@@ -110,14 +110,14 @@ pub async fn query<'a>(
                     Err(..) => JsValue::null(),
                 };
                 crate::debug::log_1(&result);
-                resolve.call1(&js_sys::global(), &result);
+                let _ = resolve.call1(&js_sys::global(), &result);
             }
         }) as Box<dyn FnMut()>);
         request.set_onsuccess(Some(a.as_ref().unchecked_ref()));
         a.forget();
 
         let a = Closure::wrap(Box::new(move || {
-            reject.call1(&js_sys::global(), &JsValue::null());
+            let _ = reject.call1(&js_sys::global(), &JsValue::null());
         }) as Box<dyn FnMut()>);
         request.set_onerror(Some(a.as_ref().unchecked_ref()));
         a.forget();

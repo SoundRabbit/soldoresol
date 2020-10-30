@@ -1,3 +1,4 @@
+use super::atom::loading_circle::{self, LoadingCircle};
 use super::util::styled::{Style, Styled};
 use kagura::prelude::*;
 
@@ -28,13 +29,16 @@ impl Component for Loader {
 
     fn render(&self, _: Vec<Html>) -> Html {
         Self::styled(Html::div(
-            Attributes::new(),
+            Attributes::new().class(Self::class("base")),
             Events::new(),
-            vec![Html::span(
-                Attributes::new().class(Self::class("text")),
-                Events::new(),
-                vec![Html::text("loading...")],
-            )],
+            vec![
+                LoadingCircle::empty(loading_circle::Variant::Dark, Subscription::none()),
+                Html::span(
+                    Attributes::new(),
+                    Events::new(),
+                    vec![Html::text("loading")],
+                ),
+            ],
         ))
     }
 }
@@ -42,8 +46,14 @@ impl Component for Loader {
 impl Styled for Loader {
     fn style() -> Style {
         style! {
-            "text" {
-                "color": "red"
+            "base" {
+                "display": "grid";
+                "height": "100%";
+                "grid-template-columns": "max-content max-content";
+                "justify-content": "center";
+                "align-content": "center";
+                "align-items": "center";
+                "column-gap": "0.1em";
             }
         }
     }

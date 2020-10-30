@@ -1,7 +1,4 @@
-pub mod editor;
+pub mod basic_app;
 pub mod loader;
-
-pub use editor::Editor;
-pub use loader::Loader;
 
 use super::*;

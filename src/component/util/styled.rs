@@ -72,28 +72,26 @@ impl Style {
     }
 
     fn write<C>(&self) {
-        let mut style_sheet = String::new();
+        Self::add_style_element();
+
         for (selector, definition_block) in &self.style {
+            let mut style_sheet = String::new();
             style_sheet += format!(".{}", styled_class::<C>(selector)).as_str();
             style_sheet += "{";
             for (property, value) in definition_block {
                 style_sheet += format!("{}:{};", property, value).as_str();
             }
             style_sheet += "}";
+
+            SHEET.with(move |sheet| {
+                if let Some(sheet) = sheet.borrow().as_ref() {
+                    let _ = sheet.insert_rule_with_index(
+                        style_sheet.as_str(),
+                        sheet.css_rules().unwrap().length(),
+                    );
+                }
+            });
         }
-
-        Self::add_style_element();
-
-        crate::debug::log_1(&style_sheet);
-
-        SHEET.with(move |sheet| {
-            if let Some(sheet) = sheet.borrow().as_ref() {
-                let _ = sheet.insert_rule_with_index(
-                    style_sheet.as_str(),
-                    sheet.css_rules().unwrap().length(),
-                );
-            }
-        });
     }
 
     fn add_style_element() {
@@ -131,7 +129,8 @@ impl Style {
 }
 
 macro_rules! style {
-    { $( $selector:literal { $( $property:literal : $value:expr );* } )* } => {{
+    { $( $selector:literal { $( $property:literal : $value:expr );*;} )* } => {{
+        #[allow(unused_mut)]
         let mut style = Style::new();
         $(
             $(

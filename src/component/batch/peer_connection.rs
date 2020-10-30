@@ -52,6 +52,6 @@ impl Component for PeerConnection {
     }
 
     fn render(&self, mut children: Vec<Html>) -> Html {
-        children.pop().unwrap_or(Html::none())
+        Html::fragment(children)
     }
 }
