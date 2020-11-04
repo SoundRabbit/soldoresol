@@ -1,36 +1,58 @@
 use super::template::loader::{self, Loader};
+use crate::skyway::Peer;
 use crate::Config;
 use kagura::prelude::*;
+use std::rc::Rc;
+use wasm_bindgen::{prelude::*, JsCast};
 
 mod task;
 
 pub struct Props {}
 
 pub enum Msg {
-    SetConfig(Config),
-    SetCommonDatabase(Config, web_sys::IdbDatabase, String),
+    Initialized(Config, web_sys::IdbDatabase, String, Peer, String),
 }
 
 pub enum On {
-    Load(Config, web_sys::IdbDatabase, String),
+    Load {
+        config: Config,
+        common_db: web_sys::IdbDatabase,
+        client_id: String,
+        peer: Peer,
+        peer_id: String,
+    },
 }
 
-pub struct Initializer {}
+pub struct Initializer {
+    config: Option<Config>,
+    common_database: Option<web_sys::IdbDatabase>,
+    client_id: Option<String>,
+    peer: Option<Rc<Peer>>,
+}
 
 impl Constructor for Initializer {
     fn constructor(_: Self::Props, builder: &mut ComponentBuilder<Self::Msg, Self::Sub>) -> Self {
         builder.set_cmd(Cmd::task(move |resolve| {
             wasm_bindgen_futures::spawn_local(async {
-                if let Some(config) = task::load_config().await {
-                    crate::debug::log_1("success to load config");
-                    resolve(Msg::SetConfig(config));
+                if let Some((config, common_db, client_id, peer, peer_id)) =
+                    task::initialize().await
+                {
+                    crate::debug::log_1("success to initialize");
+                    resolve(Msg::Initialized(
+                        config, common_db, client_id, peer, peer_id,
+                    ));
                 } else {
-                    crate::debug::log_1("faild to load config");
+                    crate::debug::log_1("faild to initialize");
                 }
             });
         }));
 
-        Self {}
+        Self {
+            config: None,
+            common_database: None,
+            client_id: None,
+            peer: None,
+        }
     }
 }
 
@@ -43,22 +65,13 @@ impl Component for Initializer {
 
     fn update(&mut self, msg: Self::Msg) -> Cmd<Self::Msg, Self::Sub> {
         match msg {
-            Msg::SetConfig(config) => {
-                let db_name = format!("{}.common", config.client.db_prefix);
-                Cmd::task(move |resolve| {
-                    wasm_bindgen_futures::spawn_local(async move {
-                        if let Some((common_database, client_id)) =
-                            task::initialize_common_db(&db_name).await
-                        {
-                            crate::debug::log_1("success to initialize common_db");
-                            resolve(Msg::SetCommonDatabase(config, common_database, client_id))
-                        }
-                    });
-                })
-            }
-            Msg::SetCommonDatabase(config, common_database, client_id) => {
-                Cmd::sub(On::Load(config, common_database, client_id))
-            }
+            Msg::Initialized(config, common_db, client_id, peer, peer_id) => Cmd::sub(On::Load {
+                config,
+                common_db,
+                client_id,
+                peer,
+                peer_id,
+            }),
         }
     }
 

@@ -111,3 +111,19 @@ pub fn red(alpha: u8, idx: usize) -> Color {
         _ => red(alpha, 5),
     }
 }
+
+pub fn pink(alpha: u8, idx: usize) -> Color {
+    match idx {
+        0 => Color::from([0xff, 0xee, 0xf8, alpha]),
+        1 => Color::from([0xfe, 0xdb, 0xf0, alpha]),
+        2 => Color::from([0xf9, 0xb3, 0xdd, alpha]),
+        3 => Color::from([0xf6, 0x92, 0xce, alpha]),
+        4 => Color::from([0xec, 0x6c, 0xb9, alpha]),
+        5 => Color::from([0xea, 0x4a, 0xaa, alpha]),
+        6 => Color::from([0xd0, 0x35, 0x92, alpha]),
+        7 => Color::from([0xb9, 0x3a, 0x86, alpha]),
+        8 => Color::from([0x99, 0x30, 0x6f, alpha]),
+        9 => Color::from([0x6d, 0x22, 0x4f, alpha]),
+        _ => pink(alpha, 5),
+    }
+}

@@ -12,19 +12,26 @@ use super::util::styled::{Style, Styled};
 use super::util::Prop;
 use kagura::prelude::*;
 mod task;
+use regex::Regex;
 
 pub struct Props {
-    pub common_database: Prop<web_sys::IdbDatabase>,
+    pub common_db: Prop<web_sys::IdbDatabase>,
 }
 
 pub enum Msg {
     SetRooms(Vec<RoomData>),
+    SetInputingRoomId(String),
+    ConnectToInputingRoomId,
 }
 
-pub enum On {}
+pub enum On {
+    Connect(String),
+}
 
 pub struct RoomSelector {
     rooms: Option<Vec<RoomData>>,
+    inputing_room_id: String,
+    room_id_validator: Regex,
     element_id: ElementId,
 }
 
@@ -44,13 +51,11 @@ impl Constructor for RoomSelector {
         props: Self::Props,
         builder: &mut ComponentBuilder<Self::Msg, Self::Sub>,
     ) -> Self {
-        crate::debug::log_1(format!("construct {}", std::any::type_name::<Self>()));
-
         builder.set_cmd(Cmd::task({
-            let common_database = props.common_database.clone();
+            let common_db = props.common_db.clone();
             move |resolve| {
                 wasm_bindgen_futures::spawn_local(async move {
-                    if let Some(rooms) = task::get_room_index(&common_database).await {
+                    if let Some(rooms) = task::get_room_index(&common_db).await {
                         crate::debug::log_1("success to load index of rooms");
                         resolve(Msg::SetRooms(rooms));
                     } else {
@@ -62,6 +67,8 @@ impl Constructor for RoomSelector {
 
         Self {
             rooms: None,
+            inputing_room_id: String::from(""),
+            room_id_validator: Regex::new(r"^[A-Za-z0-9@#]{24}$").unwrap(),
             element_id: ElementId {
                 input_room_id: format!("{:X}", crate::random_id::u128val()),
             },
@@ -74,15 +81,24 @@ impl Component for RoomSelector {
     type Msg = Msg;
     type Sub = On;
 
-    fn init(&mut self, _: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) {
-        crate::debug::log_1(format!("init {}", std::any::type_name::<Self>()));
-    }
+    fn init(&mut self, _: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) {}
 
     fn update(&mut self, msg: Self::Msg) -> Cmd<Self::Msg, Self::Sub> {
         match msg {
             Msg::SetRooms(rooms) => {
                 self.rooms = Some(rooms);
                 Cmd::none()
+            }
+            Msg::SetInputingRoomId(inputing_room_id) => {
+                self.inputing_room_id = inputing_room_id;
+                Cmd::none()
+            }
+            Msg::ConnectToInputingRoomId => {
+                if self.room_id_validator.is_match(&self.inputing_room_id) {
+                    Cmd::sub(On::Connect(self.inputing_room_id.clone()))
+                } else {
+                    Cmd::none()
+                }
             }
         }
     }
@@ -121,13 +137,21 @@ impl Component for RoomSelector {
                                         Html::input(
                                             Attributes::new()
                                                 .class("pure-input")
-                                                .id(&self.element_id.input_room_id),
-                                            Events::new(),
+                                                .id(&self.element_id.input_room_id)
+                                                .value(&self.inputing_room_id),
+                                            Events::new().on_input(Msg::SetInputingRoomId),
                                             vec![],
                                         ),
                                         Btn::with_children(
                                             btn::Props {
-                                                variant: btn::Variant::Primary,
+                                                variant: if self
+                                                    .room_id_validator
+                                                    .is_match(&self.inputing_room_id)
+                                                {
+                                                    btn::Variant::Primary
+                                                } else {
+                                                    btn::Variant::Disable
+                                                },
                                             },
                                             Subscription::none(),
                                             vec![Html::text("接続")],
@@ -162,70 +186,70 @@ impl Component for RoomSelector {
                                 )],
                             ),
                             Html::div(
-                                Attributes::new(),
+                                Attributes::new().class(Self::class("card-container")),
                                 Events::new(),
-                                rooms
-                                    .iter()
-                                    .map(|room| {
-                                        Card::with_children(
-                                            card::Props {},
-                                            Subscription::none(),
-                                            vec![
-                                                Html::h2(
-                                                    Attributes::new()
-                                                        .class(Self::class("room-name")),
-                                                    Events::new(),
-                                                    vec![Html::text(&room.name)],
-                                                ),
-                                                Html::aside(
-                                                    Attributes::new().class(Self::class("room-id")),
-                                                    Events::new(),
-                                                    vec![Html::text(&room.id)],
-                                                ),
-                                                Html::dl(
-                                                    Attributes::new(),
-                                                    Events::new(),
-                                                    vec![
-                                                        Html::dt(
-                                                            Attributes::new(),
-                                                            Events::new(),
-                                                            vec![Html::text("最終使用")],
-                                                        ),
-                                                        Html::dd(
-                                                            Attributes::new(),
-                                                            Events::new(),
-                                                            vec![Html::text(
-                                                                room.last_access_time
-                                                                    .to_locale_string(
-                                                                        "ja-JP",
-                                                                        object! {}.as_ref(),
-                                                                    )
-                                                                    .as_string()
-                                                                    .unwrap_or(String::from("")),
-                                                            )],
-                                                        ),
-                                                        Html::dt(
-                                                            Attributes::new(),
-                                                            Events::new(),
-                                                            vec![Html::text("メモ")],
-                                                        ),
-                                                        Html::dd(
-                                                            Attributes::new(),
-                                                            Events::new(),
-                                                            vec![Html::text(&room.description)],
-                                                        ),
-                                                    ],
-                                                ),
-                                            ],
-                                        )
-                                    })
-                                    .collect(),
+                                rooms.iter().map(|room| self.render_room(room)).collect(),
                             ),
                         ],
                     ),
                 ],
             ),
         })
+    }
+}
+
+impl RoomSelector {
+    fn render_room(&self, room: &RoomData) -> Html {
+        Html::div(
+            Attributes::new().class(Self::class("card")),
+            Events::new().on_click({
+                let room_id = room.id.clone();
+                move |_| Msg::SetInputingRoomId(room_id)
+            }),
+            vec![Card::with_children(
+                card::Props {},
+                Subscription::none(),
+                vec![
+                    Html::h2(
+                        Attributes::new().class(Self::class("room-name")),
+                        Events::new(),
+                        vec![Html::text(&room.name)],
+                    ),
+                    Html::aside(
+                        Attributes::new().class(Self::class("room-id")),
+                        Events::new(),
+                        vec![Html::text(&room.id)],
+                    ),
+                    Html::dl(
+                        Attributes::new(),
+                        Events::new(),
+                        vec![
+                            Html::dt(
+                                Attributes::new(),
+                                Events::new(),
+                                vec![Html::text("最終使用")],
+                            ),
+                            Html::dd(
+                                Attributes::new(),
+                                Events::new(),
+                                vec![Html::text(
+                                    room.last_access_time
+                                        .to_locale_string("ja-JP", object! {}.as_ref())
+                                        .as_string()
+                                        .unwrap_or(String::from("")),
+                                )],
+                            ),
+                            Html::dt(Attributes::new(), Events::new(), vec![Html::text("メモ")]),
+                            Html::dd(
+                                Attributes::new(),
+                                Events::new(),
+                                vec![Html::text(&room.description)],
+                            ),
+                        ],
+                    ),
+                ],
+            )],
+        )
     }
 }
 
@@ -252,6 +276,24 @@ impl Styled for RoomSelector {
             "right" {
                 "display": "flex";
                 "justify-content": "flex-end";
+            }
+
+            "body" {
+                "padding": "0.65em";
+            }
+
+            "card-container" {
+                "display": "flex";
+                "flex-wrap": "wrap";
+            }
+
+            "card" {
+                "max-width": "max-content";
+                "max-height": "max-content";
+            }
+
+            "card:hover" {
+                "cursor": "pointer";
             }
 
             "room-name" {

@@ -112,7 +112,7 @@ impl Component for Modal {
                                 ),
                                 Btn::with_child(
                                     btn::Props {
-                                        variant: btn::Variant::Primary,
+                                        variant: btn::Variant::Secondary,
                                     },
                                     Subscription::new(|sub| match sub {
                                         btn::On::Click => Msg::CloseSelf,

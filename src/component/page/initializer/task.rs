@@ -1,11 +1,40 @@
 use crate::idb;
 use crate::random_id;
+use crate::skyway::Peer;
 use crate::Config;
+use js_sys::Promise;
+use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
 
-pub async fn load_config() -> Option<Config> {
+pub async fn initialize() -> Option<(Config, web_sys::IdbDatabase, String, Peer, String)> {
+    let config = if let Some(config) = load_config().await {
+        config
+    } else {
+        return None;
+    };
+
+    let db_name = format!("{}.common", config.client.db_prefix);
+
+    let (common_db, client_id) = if let Some(db_props) = initialize_common_db(&db_name).await {
+        db_props
+    } else {
+        return None;
+    };
+
+    let peer = if let Some(peer) = initialize_peer_connection(&config.skyway.key).await {
+        peer
+    } else {
+        return None;
+    };
+
+    let peer_id = peer.id();
+
+    Some((config, common_db, client_id, peer, peer_id))
+}
+
+async fn load_config() -> Option<Config> {
     crate::debug::log_1("start to load config");
 
     let hostname = web_sys::window().unwrap().location().hostname().unwrap();
@@ -38,7 +67,7 @@ pub async fn load_config() -> Option<Config> {
     .ok()
 }
 
-pub async fn initialize_common_db(db_name: &str) -> Option<(web_sys::IdbDatabase, String)> {
+async fn initialize_common_db(db_name: &str) -> Option<(web_sys::IdbDatabase, String)> {
     let database = idb::open_db(db_name).await;
     if let Some(database) = database {
         let client_id = initialize_object_store(&database).await;
@@ -121,4 +150,22 @@ async fn assign_client_id(database: &web_sys::IdbDatabase) -> Option<String> {
     } else {
         None
     }
+}
+
+async fn initialize_peer_connection(key: &str) -> Option<Peer> {
+    let peer = Rc::new(Peer::new(key));
+
+    JsFuture::from(Promise::new(&mut move |resolve, _| {
+        let a = Closure::once(Box::new({
+            let peer = Rc::clone(&peer);
+            move || {
+                let _ = resolve.call1(&js_sys::global(), &peer);
+            }
+        }));
+        peer.on("open", Some(a.as_ref().unchecked_ref()));
+        a.forget();
+    }))
+    .await
+    .ok()
+    .and_then(|x| x.dyn_into::<Peer>().ok())
 }
