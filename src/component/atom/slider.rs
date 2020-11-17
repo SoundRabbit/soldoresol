@@ -8,6 +8,7 @@ pub struct Props {
 
 pub enum Msg {
     NoOp,
+    SetValue(f64),
     InputSliderValue(f64),
 }
 
@@ -53,30 +54,45 @@ impl Component for Slider {
     fn update(&mut self, msg: Self::Msg) -> Cmd<Self::Msg, Self::Sub> {
         match msg {
             Msg::NoOp => Cmd::none(),
+            Msg::SetValue(input_val) => {
+                let new_val = match &mut self.position {
+                    Position::Linear { val, .. } => {
+                        *val = input_val;
+                        *val
+                    }
+                    Position::Inf { val, .. } => {
+                        *val = input_val;
+                        *val
+                    }
+                };
+
+                Cmd::sub(On::Input(new_val))
+            }
             Msg::InputSliderValue(input_val) => {
                 let new_val = match &mut self.position {
                     Position::Linear { val, .. } => {
                         *val = input_val;
                         *val
                     }
-                    Position::Inf { val, mid, .. } => {
-                        *val = -(*mid) * (1.0 - input_val.min(1.0).max(0.0)).log2();
+                    Position::Inf { val, mid, step } => {
+                        *val = -(*mid) * (1.0 - input_val.min(0.999999999999).max(0.0)).log2();
+                        *val = (*step) * (*val / *step).ceil();
                         *val
                     }
                 };
-                Cmd::Sub(On::Input(new_val))
+                Cmd::sub(On::Input(new_val))
             }
         }
     }
 
     fn render(&self, _: Vec<Html>) -> Html {
-        let (min, max, val, step) = match &self.position {
+        let (min, max, val, slider_val, step, slider_step) = match &self.position {
             Position::Linear {
                 min,
                 max,
                 val,
                 step,
-            } => (*min, *max, *val, *step),
+            } => (*min, *max, *val, *val, *step, *step),
             Position::Inf { val, mid, step } => {
                 let val = val.max(0.0);
                 let prev = (val - step).max(0.0);
@@ -84,13 +100,15 @@ impl Component for Slider {
                 (
                     0.0_f64,
                     1.0_f64,
+                    val,
                     1.0_f64 - (0.5_f64).powf(val / mid),
+                    *step,
                     ((0.5_f64).powf(prev / mid) - (0.5_f64).powf(next / mid)) / 2.0,
                 )
             }
         };
 
-        let pos = ((val - min) / (max - min)).min(1.0).max(0.0);
+        let pos = ((slider_val - min) / (max - min)).min(1.0).max(0.0);
 
         Self::styled(Html::div(
             Attributes::new().class(Self::class("base")),
@@ -98,18 +116,11 @@ impl Component for Slider {
             vec![
                 Html::input(
                     Attributes::new()
-                        .type_("number")
-                        .class(Self::class("value")).style("left", format!("calc({}% - {}em + 0.5em)", pos * 100.0, pos * 5.0)),
-                    Events::new(),
-                    vec![],
-                ),
-                Html::input(
-                    Attributes::new()
                         .type_("range")
                         .string("min", min.to_string())
                         .string("max", max.to_string())
-                        .string("step", step.to_string())
-                        .value(val.to_string())
+                        .string("step", slider_step.to_string())
+                        .value(format!("{}", slider_val))
                         .class(Self::class("slider"))
                         .style(
                             "background",
@@ -131,10 +142,25 @@ impl Component for Slider {
                         .on("wheel", move |e| {
                             let e = e.dyn_into::<web_sys::WheelEvent>().unwrap();
                             if e.delta_y() < 0.0 {
-                                Msg::InputSliderValue(val + step)
+                                Msg::SetValue(val + step)
                             } else {
-                                Msg::InputSliderValue(val - step)
+                                Msg::SetValue(val - step)
                             }
+                        }),
+                    vec![],
+                ),
+                Html::input(
+                    Attributes::new()
+                        .type_("number")
+                        .string("step", format!("{}", step))
+                        .value(format!("{}", val))
+                        .class(Self::class("input"))
+                        .class(Self::class("value")),
+                    Events::new()
+                        .on_input(|val| {
+                                val.parse()
+                                .map(|val| Msg::SetValue(val))
+                                .unwrap_or(Msg::NoOp)
                         }),
                     vec![],
                 ),
@@ -147,8 +173,16 @@ impl Styled for Slider {
     fn style() -> Style {
         style! {
             "base" {
-                "position": "relative";
-                "padding": "2em 2em";
+                "display": "grid";
+                "grid-template-columns": "1fr max-content";
+                "grid-auto-rows": "max-content";
+                "grid-auto-flow": "column";
+                "align-items": "center";
+            }
+
+            "input" {
+                "width": "4em";
+                "outline": "none";
             }
 
             "slider" {
@@ -167,14 +201,6 @@ impl Styled for Slider {
                 "width": "1em";
                 "height": "1em";
                 "border-radius": "50%";
-            }
-
-            "value" {
-                "position": "absolute";
-                "width": "4em";
-                "top": "0";
-                "outline": "none";
-                "border": "none";
             }
         }
     }

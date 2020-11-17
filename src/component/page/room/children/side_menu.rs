@@ -169,19 +169,29 @@ impl SideMenu {
                         ),
                     ],
                 ),
-                Html::div(
-                    Attributes::new(),
-                    Events::new(),
-                    vec![Slider::empty(
-                        slider::Props {
-                            position: slider::Position::Inf {
-                                val: 50.0,
-                                mid: 50.0,
-                                step: 1.0,
-                            },
+                match self.tools.selected() {
+                    Some(TableTool::Pen {}) => self.render_sub_pen(),
+                    _ => Html::div(Attributes::new(), Events::new(), vec![]),
+                },
+            ],
+        )
+    }
+
+    fn render_sub_pen(&self) -> Html {
+        Html::div(
+            Attributes::new(),
+            Events::new(),
+            vec![
+                Html::div(Attributes::new(), Events::new(), vec![Html::text("線幅")]),
+                Slider::empty(
+                    slider::Props {
+                        position: slider::Position::Inf {
+                            val: 1.0,
+                            mid: 1.0,
+                            step: 0.01,
                         },
-                        Subscription::none(),
-                    )],
+                    },
+                    Subscription::none(),
                 ),
             ],
         )
