@@ -49,3 +49,9 @@ impl<T> Clone for Prop<T> {
         Self { payload }
     }
 }
+
+impl<T> AsRef<T> for Prop<T> {
+    fn as_ref(&self) -> &T {
+        &self
+    }
+}

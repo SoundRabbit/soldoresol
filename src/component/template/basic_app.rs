@@ -11,8 +11,6 @@ pub struct BasicApp;
 
 impl Constructor for BasicApp {
     fn constructor(_: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) -> Self {
-        crate::debug::log_1(format!("construct {}", std::any::type_name::<Self>()));
-
         Self {}
     }
 }
@@ -22,9 +20,7 @@ impl Component for BasicApp {
     type Msg = Msg;
     type Sub = On;
 
-    fn init(&mut self, _: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) {
-        crate::debug::log_1(format!("init {}", std::any::type_name::<Self>()));
-    }
+    fn init(&mut self, _: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) {}
 
     fn update(&mut self, _: Self::Msg) -> Cmd<Self::Msg, Self::Sub> {
         Cmd::none()
@@ -42,9 +38,14 @@ impl Component for BasicApp {
 impl Styled for BasicApp {
     fn style() -> Style {
         style! {
-            "base"{
+            "base" {
                 "display": "grid";
                 "grid-template-rows": "max-content 1fr";
+                "width": "100vw";
+                "height": "100vh";
+                "position": "absolute";
+                "top": "0px";
+                "left": "0px";
             }
         }
     }

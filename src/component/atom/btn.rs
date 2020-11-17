@@ -10,6 +10,7 @@ pub enum Variant {
     Secondary,
     Danger,
     Disable,
+    Dark,
 }
 
 pub enum Msg {
@@ -40,6 +41,7 @@ impl std::fmt::Display for Variant {
             Self::Secondary => write!(f, "secondary"),
             Self::Danger => write!(f, "danger"),
             Self::Disable => write!(f, "disable"),
+            Self::Dark => write!(f, "dark"),
         }
     }
 }
@@ -93,6 +95,11 @@ impl Styled for Btn {
 
             "secondary" {
                 "background-color": crate::color_system::gray(255, 5).to_string();
+                "color": crate::color_system::gray(255, 0).to_string();
+            }
+
+            "dark" {
+                "background-color": crate::color_system::gray(255, 9).to_string();
                 "color": crate::color_system::gray(255, 0).to_string();
             }
         }

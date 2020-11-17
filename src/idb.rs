@@ -132,10 +132,14 @@ pub async fn assign(
     key: &JsValue,
     value: &JsValue,
 ) -> Option<JsValue> {
-    let x = query(&database, &object_name, Query::Add(&key, &value)).await;
-    if x.is_some() {
-        x
+    if let Some(keys) = query(&database, &object_name, Query::GetAllKeys).await {
+        let keys = js_sys::Array::from(&keys).to_vec();
+        if keys.into_iter().position(|x| x.eq(key)).is_some() {
+            query(&database, &object_name, Query::Put(&key, &value)).await
+        } else {
+            query(&database, &object_name, Query::Add(&key, &value)).await
+        }
     } else {
-        query(&database, &object_name, Query::Put(&key, &value)).await
+        None
     }
 }

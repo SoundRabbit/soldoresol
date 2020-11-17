@@ -1,5 +1,6 @@
 extern crate base64;
 extern crate bincode;
+extern crate futures;
 extern crate hex;
 extern crate indexmap;
 extern crate kagura;
@@ -19,6 +20,8 @@ extern crate xmltree;
 
 #[macro_use]
 mod js_object;
+#[macro_use]
+mod libs;
 #[macro_use]
 mod util;
 

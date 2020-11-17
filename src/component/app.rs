@@ -1,9 +1,10 @@
 use super::page::{
     initializer::{self, Initializer},
+    room::{self, Room},
     room_selector::{self, RoomSelector},
 };
 use super::util::State;
-use crate::skyway::{Peer, Room};
+use crate::skyway::Peer;
 use crate::Config;
 use kagura::prelude::*;
 
@@ -49,9 +50,7 @@ impl Component for App {
     type Msg = Msg;
     type Sub = Sub;
 
-    fn init(&mut self, _: Props, _: &mut ComponentBuilder<Msg, Sub>) {
-        crate::debug::log_1(format!("init {}", std::any::type_name::<Self>()));
-    }
+    fn init(&mut self, _: Props, _: &mut ComponentBuilder<Msg, Sub>) {}
 
     fn update(&mut self, msg: Msg) -> Cmd<Msg, Sub> {
         match msg {
@@ -84,14 +83,27 @@ impl Component for App {
             &self.peer,
             &self.peer_id,
         ) {
-            RoomSelector::empty(
-                room_selector::Props {
-                    common_db: common_db.as_prop(),
-                },
-                Subscription::new(|sub| match sub {
-                    room_selector::On::Connect(room_id) => Msg::SetRoomId(room_id),
-                }),
-            )
+            if let Some(room_id) = &self.room_id {
+                Room::empty(
+                    room::Props {
+                        config: config.as_prop(),
+                        common_db: common_db.as_prop(),
+                        peer: peer.as_prop(),
+                        peer_id: peer_id.as_prop(),
+                        room_id: room_id.as_prop(),
+                    },
+                    Subscription::none(),
+                )
+            } else {
+                RoomSelector::empty(
+                    room_selector::Props {
+                        common_db: common_db.as_prop(),
+                    },
+                    Subscription::new(|sub| match sub {
+                        room_selector::On::Connect(room_id) => Msg::SetRoomId(room_id),
+                    }),
+                )
+            }
         } else {
             Initializer::empty(
                 initializer::Props {},

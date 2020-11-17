@@ -11,8 +11,9 @@ use super::template::{
 use super::util::styled::{Style, Styled};
 use super::util::Prop;
 use kagura::prelude::*;
-mod task;
 use regex::Regex;
+
+mod task;
 
 pub struct Props {
     pub common_db: Prop<web_sys::IdbDatabase>,
@@ -21,7 +22,8 @@ pub struct Props {
 pub enum Msg {
     SetRooms(Vec<RoomData>),
     SetInputingRoomId(String),
-    ConnectToInputingRoomId,
+    ConnectWithInputingRoomId,
+    ConnectWithNewRoomId,
 }
 
 pub enum On {
@@ -93,12 +95,16 @@ impl Component for RoomSelector {
                 self.inputing_room_id = inputing_room_id;
                 Cmd::none()
             }
-            Msg::ConnectToInputingRoomId => {
+            Msg::ConnectWithInputingRoomId => {
                 if self.room_id_validator.is_match(&self.inputing_room_id) {
                     Cmd::sub(On::Connect(self.inputing_room_id.clone()))
                 } else {
                     Cmd::none()
                 }
+            }
+            Msg::ConnectWithNewRoomId => {
+                let room_id = crate::random_id::base64url();
+                Cmd::sub(On::Connect(room_id))
             }
         }
     }
@@ -117,60 +123,7 @@ impl Component for RoomSelector {
                     Header::with_children(
                         header::Props::new(),
                         Subscription::none(),
-                        vec![Html::div(
-                            Attributes::new()
-                                .class(Self::class("header-row"))
-                                .class("pure-form"),
-                            Events::new(),
-                            vec![
-                                Html::div(
-                                    Attributes::new().class(Self::class("input-room-id")),
-                                    Events::new(),
-                                    vec![
-                                        Html::label(
-                                            Attributes::new()
-                                                .class(Self::class("label"))
-                                                .string("for", &self.element_id.input_room_id),
-                                            Events::new(),
-                                            vec![Html::text("接続先のルームID")],
-                                        ),
-                                        Html::input(
-                                            Attributes::new()
-                                                .class("pure-input")
-                                                .id(&self.element_id.input_room_id)
-                                                .value(&self.inputing_room_id),
-                                            Events::new().on_input(Msg::SetInputingRoomId),
-                                            vec![],
-                                        ),
-                                        Btn::with_children(
-                                            btn::Props {
-                                                variant: if self
-                                                    .room_id_validator
-                                                    .is_match(&self.inputing_room_id)
-                                                {
-                                                    btn::Variant::Primary
-                                                } else {
-                                                    btn::Variant::Disable
-                                                },
-                                            },
-                                            Subscription::none(),
-                                            vec![Html::text("接続")],
-                                        ),
-                                    ],
-                                ),
-                                Html::div(
-                                    Attributes::new().class(Self::class("right")),
-                                    Events::new(),
-                                    vec![Btn::with_children(
-                                        btn::Props {
-                                            variant: btn::Variant::Primary,
-                                        },
-                                        Subscription::none(),
-                                        vec![Html::text("新規ルームを作成")],
-                                    )],
-                                ),
-                            ],
-                        )],
+                        vec![self.render_header_row_0()],
                     ),
                     Html::div(
                         Attributes::new().class(Self::class("body")),
@@ -188,7 +141,10 @@ impl Component for RoomSelector {
                             Html::div(
                                 Attributes::new().class(Self::class("card-container")),
                                 Events::new(),
-                                rooms.iter().map(|room| self.render_room(room)).collect(),
+                                rooms
+                                    .iter()
+                                    .map(|room| self.render_roomcard(room))
+                                    .collect(),
                             ),
                         ],
                     ),
@@ -199,7 +155,69 @@ impl Component for RoomSelector {
 }
 
 impl RoomSelector {
-    fn render_room(&self, room: &RoomData) -> Html {
+    fn render_header_row_0(&self) -> Html {
+        Html::div(
+            Attributes::new()
+                .class(Self::class("header-row"))
+                .class("pure-form"),
+            Events::new(),
+            vec![
+                self.render_header_row_0_left(),
+                Html::div(
+                    Attributes::new().class(Self::class("right")),
+                    Events::new(),
+                    vec![Btn::with_children(
+                        btn::Props {
+                            variant: btn::Variant::Primary,
+                        },
+                        Subscription::new(|sub| match sub {
+                            btn::On::Click => Msg::ConnectWithNewRoomId,
+                        }),
+                        vec![Html::text("新規ルームを作成")],
+                    )],
+                ),
+            ],
+        )
+    }
+
+    fn render_header_row_0_left(&self) -> Html {
+        Html::div(
+            Attributes::new().class(Self::class("input-room-id")),
+            Events::new(),
+            vec![
+                Html::label(
+                    Attributes::new()
+                        .class(Self::class("label"))
+                        .string("for", &self.element_id.input_room_id),
+                    Events::new(),
+                    vec![Html::text("接続先のルームID")],
+                ),
+                Html::input(
+                    Attributes::new()
+                        .class("pure-input")
+                        .id(&self.element_id.input_room_id)
+                        .value(&self.inputing_room_id),
+                    Events::new().on_input(Msg::SetInputingRoomId),
+                    vec![],
+                ),
+                Btn::with_children(
+                    btn::Props {
+                        variant: if self.room_id_validator.is_match(&self.inputing_room_id) {
+                            btn::Variant::Primary
+                        } else {
+                            btn::Variant::Disable
+                        },
+                    },
+                    Subscription::new(|sub| match sub {
+                        btn::On::Click => Msg::ConnectWithInputingRoomId,
+                    }),
+                    vec![Html::text("接続")],
+                ),
+            ],
+        )
+    }
+
+    fn render_roomcard(&self, room: &RoomData) -> Html {
         Html::div(
             Attributes::new().class(Self::class("card")),
             Events::new().on_click({

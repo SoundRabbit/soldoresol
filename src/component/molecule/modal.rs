@@ -62,8 +62,6 @@ impl Clone for State {
 
 impl Constructor for Modal {
     fn constructor(props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) -> Self {
-        crate::debug::log_1(format!("construct {}", std::any::type_name::<Self>()));
-
         Self {
             state: props.state.unwrap_or(State::new()),
             header_title: props.header_title,
@@ -83,7 +81,6 @@ impl Component for Modal {
         }
         self.header_title = props.header_title;
         self.footer_message = props.footer_message;
-        crate::debug::log_1(format!("init {}", std::any::type_name::<Self>()));
     }
 
     fn update(&mut self, msg: Self::Msg) -> Cmd<Self::Msg, Self::Sub> {

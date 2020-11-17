@@ -65,22 +65,6 @@ extern "C" {
     pub fn data(this: &ReceiveData) -> Option<JsObject>;
 }
 
-pub struct Room {
-    pub id: Rc<String>,
-    pub payload: MeshRoom,
-}
-
-impl Room {
-    pub fn new(payload: MeshRoom, id: Rc<String>) -> Self {
-        Self { id, payload }
-    }
-
-    pub fn send(&self, msg: Msg) {
-        let msg: JsObject = msg.into();
-        self.payload.send(&msg)
-    }
-}
-
 pub enum Msg {
     None,
     SetContext {

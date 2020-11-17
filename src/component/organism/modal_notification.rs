@@ -19,8 +19,6 @@ pub struct ModalNotification {
 
 impl Constructor for ModalNotification {
     fn constructor(props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) -> Self {
-        crate::debug::log_1(format!("construct {}", std::any::type_name::<Self>()));
-
         Self {
             state: props.state.unwrap_or(modal::State::new()),
         }
@@ -33,8 +31,6 @@ impl Component for ModalNotification {
     type Sub = On;
 
     fn init(&mut self, props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) {
-        crate::debug::log_1(format!("init {}", std::any::type_name::<Self>()));
-
         if let Some(state) = props.state {
             self.state = state;
         }
