@@ -147,7 +147,7 @@ impl Styled for Modal {
                 "width": "100%";
                 "height": "100%";
                 "z-index": constant::z_index::modal.to_string();
-                "background-color": crate::color_system::gray(31, 9).to_string();
+                "background-color": crate::color_system::gray(13, 9).to_string();
                 "display": "grid";
                 "align-items": "center";
                 "justify-items": "center";
@@ -164,16 +164,16 @@ impl Styled for Modal {
                 "display": "grid";
                 "grid-template-columns": "1fr max-content";
                 "align-items": "center";
-                "color": crate::color_system::gray(255, 0).to_string();
-                "background-color": crate::color_system::gray(255, 8).to_string();
+                "color": crate::color_system::gray(100, 0).to_string();
+                "background-color": crate::color_system::gray(100, 8).to_string();
                 "padding-left": "1em";
             }
             "body" {
-                "background-color": crate::color_system::gray(255, 0).to_string();
+                "background-color": crate::color_system::gray(100, 0).to_string();
             }
             "footer" {
-                "color": crate::color_system::gray(255, 0).to_string();
-                "background-color": crate::color_system::gray(255, 8).to_string();
+                "color": crate::color_system::gray(100, 0).to_string();
+                "background-color": crate::color_system::gray(100, 8).to_string();
                 "padding" : ".5em 1em";
             }
         }

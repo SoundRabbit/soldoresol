@@ -18,7 +18,7 @@ impl Color {
             self.red as f32 / 255.0,
             self.green as f32 / 255.0,
             self.blue as f32 / 255.0,
-            self.alpha as f32 / 255.0,
+            self.alpha as f32 / 100.0,
         ]
     }
 
@@ -31,7 +31,7 @@ impl Color {
         let str = str + &self.red.to_string() + ",";
         let str = str + &self.green.to_string() + ",";
         let str = str + &self.blue.to_string() + ",";
-        let str = str + &(self.alpha as f64 / 255.0).to_string() + ")";
+        let str = str + &(self.alpha as f64 / 100.0).to_string() + ")";
         str
     }
 
@@ -63,7 +63,7 @@ impl From<[f32; 4]> for Color {
             red: (rgba[0] * 255.0) as u8,
             green: (rgba[1] * 255.0) as u8,
             blue: (rgba[2] * 255.0) as u8,
-            alpha: (rgba[3] * 255.0) as u8,
+            alpha: (rgba[3] * 100.0) as u8,
         }
     }
 }

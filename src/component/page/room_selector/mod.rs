@@ -315,11 +315,11 @@ impl Styled for RoomSelector {
             }
 
             "room-name" {
-                "border-bottom": format!("0.1em solid {}", crate::color_system::gray(255, 9));
+                "border-bottom": format!("0.1em solid {}", crate::color_system::gray(100, 9));
             }
 
             "room-id" {
-                "background-color": crate::color_system::gray(255, 2).to_string();
+                "background-color": crate::color_system::gray(100, 2).to_string();
                 "padding": "0.25em";
                 "border-radius": "2px";
             }

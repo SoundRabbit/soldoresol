@@ -65,17 +65,17 @@ impl Styled for LoadingCircle {
             }
 
             "dark" {
-                "border-top": format!("0.2em solid {}", crate::color_system::blue(255, 6).to_string());
-                "border-left": format!("0.2em solid {}", crate::color_system::blue(191, 6).to_string());
-                "border-bottom": format!("0.2em solid {}", crate::color_system::blue(127, 6).to_string());
-                "border-right": format!("0.2em solid {}", crate::color_system::blue(63, 6).to_string());
+                "border-top": format!("0.2em solid {}", crate::color_system::blue(100, 6).to_string());
+                "border-left": format!("0.2em solid {}", crate::color_system::blue(75, 6).to_string());
+                "border-bottom": format!("0.2em solid {}", crate::color_system::blue(50, 6).to_string());
+                "border-right": format!("0.2em solid {}", crate::color_system::blue(25, 6).to_string());
             }
 
             "light" {
-                "border-top": format!("0.2em solid {}", crate::color_system::blue(255, 3).to_string());
-                "border-left": format!("0.2em solid {}", crate::color_system::blue(191, 3).to_string());
-                "border-bottom": format!("0.2em solid {}", crate::color_system::blue(127, 3).to_string());
-                "border-right": format!("0.2em solid {}", crate::color_system::blue(63, 3).to_string());
+                "border-top": format!("0.2em solid {}", crate::color_system::blue(100, 3).to_string());
+                "border-left": format!("0.2em solid {}", crate::color_system::blue(75, 3).to_string());
+                "border-bottom": format!("0.2em solid {}", crate::color_system::blue(50, 3).to_string());
+                "border-right": format!("0.2em solid {}", crate::color_system::blue(25, 3).to_string());
             }
         }
     }

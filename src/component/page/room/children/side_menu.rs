@@ -2,6 +2,7 @@ use super::super::model::table::TableTool;
 use super::atom::btn::{self, Btn};
 use super::atom::fa;
 use super::atom::slider::{self, Slider};
+use super::molecule::color_pallet::{self, ColorPallet};
 use super::util::styled::{Style, Styled};
 use super::util::Prop;
 use crate::libs::select_list::SelectList;
@@ -171,6 +172,7 @@ impl SideMenu {
                 ),
                 match self.tools.selected() {
                     Some(TableTool::Pen {}) => self.render_sub_pen(),
+                    Some(TableTool::Shape {}) => self.render_sub_shape(),
                     _ => Html::div(Attributes::new(), Events::new(), vec![]),
                 },
             ],
@@ -179,7 +181,7 @@ impl SideMenu {
 
     fn render_sub_pen(&self) -> Html {
         Html::div(
-            Attributes::new(),
+            Attributes::new().class(Self::class("sub-body")),
             Events::new(),
             vec![
                 Html::div(Attributes::new(), Events::new(), vec![Html::text("線幅")]),
@@ -187,13 +189,48 @@ impl SideMenu {
                     slider::Props {
                         position: slider::Position::Inf {
                             val: 1.0,
-                            mid: 1.0,
+                            mid: 2.0,
                             step: 0.01,
                         },
+                        range_is_editable: false,
+                    },
+                    Subscription::none(),
+                ),
+                ColorPallet::empty(
+                    color_pallet::Props {
+                        ..Default::default()
                     },
                     Subscription::none(),
                 ),
             ],
+        )
+    }
+
+    fn render_sub_shape(&self) -> Html {
+        Html::div(
+            Attributes::new().class(Self::class("sub-body")),
+            Events::new(),
+            vec![Html::div(
+                Attributes::new().class(Self::class("sub-tool-list")),
+                Events::new(),
+                vec![
+                    Html::div(
+                        Attributes::new().class(Self::class("sub-tool")),
+                        Events::new(),
+                        vec![fa::i("fa-slash"), Html::text("直線")],
+                    ),
+                    Html::div(
+                        Attributes::new().class(Self::class("sub-tool")),
+                        Events::new(),
+                        vec![fa::far_i("fa-square"), Html::text("長方形")],
+                    ),
+                    Html::div(
+                        Attributes::new().class(Self::class("sub-tool")),
+                        Events::new(),
+                        vec![fa::far_i("fa-circle"), Html::text("楕円")],
+                    ),
+                ],
+            )],
         )
     }
 }
@@ -202,8 +239,8 @@ impl Styled for SideMenu {
     fn style() -> Style {
         style! {
             "base" {
-                "background-color": format!("{}", crate::color_system::gray(255,8));
-                "color": format!("{}", crate::color_system::gray(255,0));
+                "background-color": format!("{}", crate::color_system::gray(100,8));
+                "color": format!("{}", crate::color_system::gray(100,0));
                 "position": "relative";
             }
 
@@ -215,7 +252,7 @@ impl Styled for SideMenu {
                 "align-content": "start";
                 "align-items": "center";
                 "height": "100%";
-                "border-right": format!("0.1em solid {}", crate::color_system::gray(255, 9));
+                "border-right": format!("0.1em solid {}", crate::color_system::gray(100, 9));
             }
 
             "sub" {
@@ -229,14 +266,14 @@ impl Styled for SideMenu {
             }
 
             "sub--opend" {
-                "background-color": format!("{}", crate::color_system::gray(255,8));
+                "background-color": format!("{}", crate::color_system::gray(100,8));
                 "min-width": "20rem";
                 "max-width": "10vw";
                 "height": "100%";
                 "display": "grid";
                 "grid-template-rows": "max-content 1fr";
                 "grid-template-columns": "1fr";
-                "border-right": format!("0.1em solid {}", crate::color_system::gray(255, 9));
+                "border-right": format!("0.1em solid {}", crate::color_system::gray(100, 9));
             }
 
             "sub-header" {
@@ -244,7 +281,11 @@ impl Styled for SideMenu {
                 "grid-template-columns": "1fr max-content";
                 "align-items": "center";
                 "padding": "0.65em";
-                "border-bottom": format!("0.1em solid {}", crate::color_system::gray(255, 9));
+                "border-bottom": format!("0.1em solid {}", crate::color_system::gray(100, 9));
+            }
+
+            "sub-body" {
+                "padding": "0.65em";
             }
         }
     }

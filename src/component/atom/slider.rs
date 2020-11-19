@@ -4,6 +4,7 @@ use wasm_bindgen::{prelude::*, JsCast};
 
 pub struct Props {
     pub position: Position,
+    pub range_is_editable: bool,
 }
 
 pub enum Msg {
@@ -18,6 +19,7 @@ pub enum On {
 
 pub struct Slider {
     position: Position,
+    range_is_editable: bool,
 }
 
 pub enum Position {
@@ -34,10 +36,25 @@ pub enum Position {
     },
 }
 
+impl Default for Props {
+    fn default() -> Self {
+        Self {
+            position: Position::Linear {
+                min: 0.0,
+                max: 100.0,
+                val: 50.0,
+                step: 1.0,
+            },
+            range_is_editable: true,
+        }
+    }
+}
+
 impl Constructor for Slider {
     fn constructor(props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) -> Self {
         Self {
             position: props.position,
+            range_is_editable: props.range_is_editable,
         }
     }
 }
@@ -48,7 +65,8 @@ impl Component for Slider {
     type Sub = On;
 
     fn init(&mut self, props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) {
-        // self.position = props.position;
+        self.position = props.position;
+        self.range_is_editable = props.range_is_editable;
     }
 
     fn update(&mut self, msg: Self::Msg) -> Cmd<Self::Msg, Self::Sub> {
@@ -56,28 +74,19 @@ impl Component for Slider {
             Msg::NoOp => Cmd::none(),
             Msg::SetValue(input_val) => {
                 let new_val = match &mut self.position {
-                    Position::Linear { val, .. } => {
-                        *val = input_val;
-                        *val
-                    }
-                    Position::Inf { val, .. } => {
-                        *val = input_val;
-                        *val
-                    }
+                    Position::Linear { .. } => input_val,
+                    Position::Inf { .. } => input_val,
                 };
 
                 Cmd::sub(On::Input(new_val))
             }
             Msg::InputSliderValue(input_val) => {
                 let new_val = match &mut self.position {
-                    Position::Linear { val, .. } => {
-                        *val = input_val;
-                        *val
-                    }
-                    Position::Inf { val, mid, step } => {
-                        *val = -(*mid) * (1.0 - input_val.min(0.999999999999).max(0.0)).log2();
-                        *val = (*step) * (*val / *step).ceil();
-                        *val
+                    Position::Linear { .. } => input_val,
+                    Position::Inf { mid, step, .. } => {
+                        let val = -(*mid) * (1.0 - input_val.min(1.0 - 1e-15).max(0.0)).log2();
+                        let val = (*step) * (val / *step).ceil();
+                        val
                     }
                 };
                 Cmd::sub(On::Input(new_val))
@@ -111,7 +120,7 @@ impl Component for Slider {
         let pos = ((slider_val - min) / (max - min)).min(1.0).max(0.0);
 
         Self::styled(Html::div(
-            Attributes::new().class(Self::class("base")),
+            Attributes::new().class("pure-form").class(Self::class("base")),
             Events::new(),
             vec![
                 Html::input(
@@ -164,8 +173,96 @@ impl Component for Slider {
                         }),
                     vec![],
                 ),
+                match &self.position {
+                    Position::Linear {min,max, ..} => self.render_range_linear(*min, *max),
+                    Position::Inf {mid, ..} => self.render_range_inf(*mid)
+                }
             ],
         ))
+    }
+}
+
+impl Slider {
+    fn render_range_linear(&self, min: f64, max: f64) -> Html {
+        Html::div(
+            Attributes::new()
+                .class(Self::class("range"))
+                .class(Self::class("range--linear")),
+            Events::new(),
+            vec![
+                Html::div(
+                    Attributes::new()
+                        .class(Self::class("allow"))
+                        .class(Self::class("allow--left")),
+                    Events::new(),
+                    vec![Html::input(
+                        {
+                            let attrs = Attributes::new()
+                                .type_("number")
+                                .value(format!("{}", min))
+                                .class(Self::class("input"));
+                            if self.range_is_editable {
+                                attrs
+                            } else {
+                                attrs.flag("readonly")
+                            }
+                        },
+                        Events::new(),
+                        vec![],
+                    )],
+                ),
+                Html::div(
+                    Attributes::new()
+                        .class(Self::class("allow"))
+                        .class(Self::class("allow--right")),
+                    Events::new(),
+                    vec![Html::input(
+                        {
+                            let attrs = Attributes::new()
+                                .type_("number")
+                                .value(format!("{}", max))
+                                .class(Self::class("input"));
+                            if self.range_is_editable {
+                                attrs
+                            } else {
+                                attrs.flag("readonly")
+                            }
+                        },
+                        Events::new(),
+                        vec![],
+                    )],
+                ),
+            ],
+        )
+    }
+    fn render_range_inf(&self, mid: f64) -> Html {
+        Html::div(
+            Attributes::new()
+                .class(Self::class("range"))
+                .class(Self::class("range--inf")),
+            Events::new(),
+            vec![Html::div(
+                Attributes::new()
+                    .class(Self::class("allow"))
+                    .class(Self::class("allow--center")),
+                Events::new(),
+                vec![Html::input(
+                    {
+                        let attrs = Attributes::new()
+                            .type_("number")
+                            .value(format!("{}", mid))
+                            .class(Self::class("input"));
+                        if self.range_is_editable {
+                            attrs
+                        } else {
+                            attrs.flag("readonly")
+                        }
+                    },
+                    Events::new(),
+                    vec![],
+                )],
+            )],
+        )
     }
 }
 
@@ -176,12 +273,12 @@ impl Styled for Slider {
                 "display": "grid";
                 "grid-template-columns": "1fr max-content";
                 "grid-auto-rows": "max-content";
-                "grid-auto-flow": "column";
                 "align-items": "center";
+                "column-gap": "0.35em";
             }
 
             "input" {
-                "width": "4em";
+                "width": "5em";
                 "outline": "none";
             }
 
@@ -192,15 +289,55 @@ impl Styled for Slider {
                 "appearance": "none";
                 "border-radius": "0.5em";
                 "outline": "none";
+                "font-size": "1.3em";
             }
 
             "slider::-webkit-slider-thumb" {
                 "-webkit-appearance": "none";
                 "appearance": "none";
-                "background-color": format!("{}", crate::color_system::gray(255, 5));
+                "background-color": format!("{}", crate::color_system::gray(100, 5));
                 "width": "1em";
                 "height": "1em";
                 "border-radius": "50%";
+            }
+
+            "range" {
+                "display": "flex";
+                "align-items": "center";
+            }
+
+            "range--linear" {
+                "justify-content": "space-between";
+            }
+
+            "range--inf" {
+                "justify-content": "center";
+            }
+
+            "allow" {
+                "position": "relative";
+            }
+
+            "allow:before" {
+                "content":"\"\"";
+                "position": "absolute";
+                "border": "0.5em solid transparent";
+                "border-bottom": format!("0.5em solid {}", crate::color_system::gray(100, 0));
+            }
+
+            "allow--left:before" {
+                "top": "-1em";
+                "left": "0";
+            }
+
+            "allow--center:before" {
+                "top": "-1em";
+                "left": "calc(50% - 0.5em)";
+            }
+
+            "allow--right:before" {
+                "top": "-1em";
+                "left": "calc(100% - 1em)";
             }
         }
     }

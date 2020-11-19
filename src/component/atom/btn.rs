@@ -89,18 +89,18 @@ impl Styled for Btn {
     fn style() -> Style {
         style! {
             "primary" {
-                "background-color": crate::color_system::blue(255, 5).to_string();
-                "color": crate::color_system::gray(255, 0).to_string();
+                "background-color": crate::color_system::blue(100, 5).to_string();
+                "color": crate::color_system::gray(100, 0).to_string();
             }
 
             "secondary" {
-                "background-color": crate::color_system::gray(255, 5).to_string();
-                "color": crate::color_system::gray(255, 0).to_string();
+                "background-color": crate::color_system::gray(100, 5).to_string();
+                "color": crate::color_system::gray(100, 0).to_string();
             }
 
             "dark" {
-                "background-color": crate::color_system::gray(255, 9).to_string();
-                "color": crate::color_system::gray(255, 0).to_string();
+                "background-color": crate::color_system::gray(100, 9).to_string();
+                "color": crate::color_system::gray(100, 0).to_string();
             }
         }
     }

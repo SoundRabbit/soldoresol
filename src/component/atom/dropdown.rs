@@ -41,10 +41,10 @@ impl Styled for Dropdown {
     fn style() -> Style {
         style! {
             "base"{
-                "background-color": crate::color_system::gray(255, 0).to_string();
-                "color": crate::color_system::gray(255, 9).to_string();
+                "background-color": crate::color_system::gray(100, 0).to_string();
+                "color": crate::color_system::gray(100, 9).to_string();
                 "padding": ".4em";
-                "box-shadow": format!("0px 0px 1px 1px {}", crate::color_system::gray(63, 9));
+                "box-shadow": format!("0px 0px 1px 1px {}", crate::color_system::gray(25, 9));
                 "margin": "2px";
                 "border-radius": "2px";
             }
