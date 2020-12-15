@@ -1,9 +1,6 @@
-use super::{Block, BlockId, Field};
-use crate::{random_id::U128Id, resource::ResourceId, JsObject, Promise};
-use std::collections::HashSet;
+use super::BlockId;
 use wasm_bindgen::{prelude::*, JsCast};
 
-#[derive(Debug)]
 pub struct World {
     selecting_table: BlockId,
     tables: Vec<BlockId>,
@@ -14,7 +11,7 @@ pub struct World {
 
 impl World {
     pub fn new(selecting_table: BlockId) -> Self {
-        let tables = vec![selecting_table.clone()];
+        let tables = vec![BlockId::clone(&selecting_table)];
         Self {
             selecting_table,
             tables,
@@ -93,190 +90,12 @@ impl World {
             self.tags.remove(pos);
         }
     }
-}
 
-impl Block for World {
-    fn pack(&self) -> Promise<JsValue> {
-        let tables = js_sys::Array::new();
-        for table in &self.tables {
-            tables.push(&table.to_jsvalue());
-        }
-
-        let characters = js_sys::Array::new();
-        for character in &self.characters {
-            characters.push(&character.to_jsvalue());
-        }
-
-        let memos = js_sys::Array::new();
-        for memo in &self.memos {
-            memos.push(&memo.to_jsvalue());
-        }
-
-        let tags = js_sys::Array::new();
-        for tag in &self.tags {
-            tags.push(&tag.to_jsvalue());
-        }
-
-        let data = object! {
-            selecting_table: self.selecting_table.to_jsvalue(),
-            tables: tables,
-            characters: characters,
-            memos: memos,
-            tags: tags
-        };
-
-        let data: js_sys::Object = data.into();
-        let data: JsValue = data.into();
-
-        Promise::new(|resolve| resolve(Some(data)))
-    }
-    fn unpack(field: &mut Field, val: JsValue) -> Promise<Box<Self>> {
-        let self_ = if let Ok(val) = val.dyn_into::<JsObject>() {
-            let selecting_table = val
-                .get("selecting_table")
-                .and_then(|x| U128Id::from_jsvalue(&x))
-                .map(|x| field.block_id(x));
-            let tables = val.get("tables").map(|x| js_sys::Array::from(&x));
-            let characters = val.get("characters").map(|x| js_sys::Array::from(&x));
-            let memos = val.get("memos").map(|x| js_sys::Array::from(&x));
-            let tags = val.get("tags").map(|x| js_sys::Array::from(&x));
-            if let (
-                Some(selecting_table),
-                Some(raw_tables),
-                Some(raw_characters),
-                Some(raw_memos),
-                Some(raw_tags),
-            ) = (selecting_table, tables, characters, memos, tags)
-            {
-                let mut tables = vec![];
-                for id in raw_tables.to_vec() {
-                    if let Some(id) = U128Id::from_jsvalue(&id).map(|id| field.block_id(id)) {
-                        tables.push(id);
-                    }
-                }
-
-                let mut characters = vec![];
-                for id in raw_characters.to_vec() {
-                    if let Some(id) = U128Id::from_jsvalue(&id).map(|id| field.block_id(id)) {
-                        characters.push(id);
-                    }
-                }
-
-                let mut memos = vec![];
-                for id in raw_memos.to_vec() {
-                    if let Some(id) = U128Id::from_jsvalue(&id).map(|id| field.block_id(id)) {
-                        memos.push(id);
-                    }
-                }
-
-                let mut tags = vec![];
-                for id in raw_tags.to_vec() {
-                    if let Some(id) = U128Id::from_jsvalue(&id).map(|id| field.block_id(id)) {
-                        tags.push(id);
-                    }
-                }
-
-                Some(Box::new(Self {
-                    selecting_table,
-                    tables,
-                    characters,
-                    memos,
-                    tags,
-                }))
-            } else {
-                None
-            }
-        } else {
-            None
-        };
-        Promise::new(move |resolve| resolve(self_))
+    pub async fn pack(&self) -> JsValue {
+        unimplemented!();
     }
 
-    fn dependents(&self, field: &Field) -> HashSet<BlockId> {
-        let mut deps = HashSet::new();
-
-        for block_id in &self.tables {
-            if let Some(block) = field.get::<super::Table>(block_id) {
-                let block_deps = block.dependents(field);
-                for block_dep in block_deps {
-                    deps.insert(block_dep);
-                }
-                deps.insert(block_id.clone());
-            }
-        }
-
-        for block_id in &self.characters {
-            if let Some(block) = field.get::<super::Character>(block_id) {
-                let block_deps = block.dependents(field);
-                for block_dep in block_deps {
-                    deps.insert(block_dep);
-                }
-                deps.insert(block_id.clone());
-            }
-        }
-
-        for block_id in &self.memos {
-            if let Some(block) = field.get::<super::Memo>(block_id) {
-                let block_deps = block.dependents(field);
-                for block_dep in block_deps {
-                    deps.insert(block_dep);
-                }
-                deps.insert(block_id.clone());
-            }
-        }
-
-        for block_id in &self.tags {
-            if let Some(block) = field.get::<super::Tag>(block_id) {
-                let block_deps = block.dependents(field);
-                for block_dep in block_deps {
-                    deps.insert(block_dep);
-                }
-                deps.insert(block_id.clone());
-            }
-        }
-
-        deps
-    }
-
-    fn resources(&self, field: &Field) -> HashSet<ResourceId> {
-        let mut reses = set! {};
-
-        for block_id in &self.tables {
-            if let Some(block) = field.get::<super::Table>(block_id) {
-                let block_reses = block.resources(field);
-                for block_res in block_reses {
-                    reses.insert(block_res);
-                }
-            }
-        }
-
-        for block_id in &self.characters {
-            if let Some(block) = field.get::<super::Character>(block_id) {
-                let block_reses = block.resources(field);
-                for block_res in block_reses {
-                    reses.insert(block_res);
-                }
-            }
-        }
-
-        for block_id in &self.memos {
-            if let Some(block) = field.get::<super::Memo>(block_id) {
-                let block_reses = block.resources(field);
-                for block_res in block_reses {
-                    reses.insert(block_res);
-                }
-            }
-        }
-
-        for block_id in &self.tags {
-            if let Some(block) = field.get::<super::Tag>(block_id) {
-                let block_reses = block.resources(field);
-                for block_res in block_reses {
-                    reses.insert(block_res);
-                }
-            }
-        }
-
-        reses
+    pub async fn unpack(_val: JsValue) -> Option<Self> {
+        unimplemented!();
     }
 }

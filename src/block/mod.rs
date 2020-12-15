@@ -1,392 +1,274 @@
-use crate::{js_object::JsObject, random_id::U128Id, resource::ResourceId, Promise};
+use crate::random_id::U128Id;
+use crate::JsObject;
+use async_std::sync::Mutex;
+use futures::future::join_all;
 use js_sys::Date;
-use std::{
-    any::Any,
-    cell::RefCell,
-    collections::{HashMap, HashSet},
-    hash::Hash,
-    iter::Iterator,
-    ops::{Deref, DerefMut},
-    rc::Rc,
-};
+use std::cell::RefCell;
+use std::collections::{HashMap, HashSet};
+use std::rc::Rc;
+use std::sync::Arc;
 use wasm_bindgen::{prelude::*, JsCast};
 
-pub mod character;
-pub mod chat;
-pub mod memo;
-pub mod property;
-pub mod table;
-pub mod table_object;
-pub mod tag;
 pub mod world;
-
-pub use character::Character;
-pub use chat::Chat;
-pub use memo::Memo;
-pub use property::Property;
-pub use table::Table;
-pub use tag::Tag;
 pub use world::World;
 
-#[allow(private_in_public)]
-trait Block {
-    fn pack(&self) -> Promise<JsValue>;
-    fn unpack(field: &mut Field, val: JsValue) -> Promise<Box<Self>>;
-    fn dependents(&self, field: &Field) -> HashSet<BlockId>;
-    fn resources(&self, field: &Field) -> HashSet<ResourceId>;
+trait TryRef<T> {
+    fn try_ref(&self) -> Option<&T>;
 }
 
-#[allow(private_in_public)]
+trait TryMut<T> {
+    fn try_mut(&mut self) -> Option<&mut T>;
+}
+
+enum ImplBlock {
+    World(world::World),
+    None,
+}
+
+pub struct Block {
+    payload: Rc<ImplBlock>,
+}
+
+#[derive(Debug, PartialEq, Eq, Hash)]
+pub struct BlockId {
+    id: U128Id,
+}
+
 type Timestamp = f64;
 
-#[allow(private_in_public)]
-struct BlockTable(Rc<RefCell<HashMap<U128Id, FieldBlock>>>);
-
-#[allow(private_in_public)]
-#[derive(Debug, PartialEq, Eq, Clone, Hash)]
-pub struct BlockId(U128Id);
-
-#[allow(private_in_public)]
-pub struct FieldBlock {
+struct ArenaBlock {
     timestamp: Timestamp,
-    payload: Option<Box<dyn Any>>,
+    payload: Block,
 }
 
-#[allow(private_in_public)]
-#[derive(Clone)]
-pub struct Field {
-    table: BlockTable,
+struct Arena {
+    table: Arc<Mutex<HashMap<BlockId, Arc<Mutex<ArenaBlock>>>>>,
 }
 
-impl BlockTable {
-    fn new() -> Self {
-        Self(Rc::new(RefCell::new(HashMap::new())))
+impl ImplBlock {
+    fn is_none(&self) -> bool {
+        match self {
+            Self::None => true,
+            _ => false,
+        }
+    }
+
+    async fn pack(&self) -> JsValue {
+        unimplemented!();
+    }
+
+    async fn unpack() -> Option<Self> {
+        unimplemented!();
     }
 }
 
-impl Clone for BlockTable {
-    fn clone(&self) -> Self {
-        Self(Rc::clone(&self.0))
+impl TryRef<world::World> for ImplBlock {
+    fn try_ref(&self) -> Option<&world::World> {
+        match self {
+            Self::World(x) => Some(x),
+            _ => None,
+        }
     }
 }
 
-impl Deref for BlockTable {
-    type Target = HashMap<U128Id, FieldBlock>;
-    fn deref(&self) -> &Self::Target {
-        unsafe { &*self.0.as_ptr() }
+impl TryMut<world::World> for ImplBlock {
+    fn try_mut(&mut self) -> Option<&mut world::World> {
+        match self {
+            Self::World(x) => Some(x),
+            _ => None,
+        }
     }
 }
 
-impl DerefMut for BlockTable {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        unsafe { &mut *self.0.as_ptr() }
+impl Block {
+    fn new(payload: ImplBlock) -> Self {
+        Self {
+            payload: Rc::new(payload),
+        }
+    }
+
+    pub fn is_none(&self) -> bool {
+        self.payload.is_none()
+    }
+
+    fn clone(this: &Self) -> Self {
+        let payload = Rc::clone(&this.payload);
+        Self { payload }
+    }
+
+    fn as_ref(&self) -> &ImplBlock {
+        &self.payload.as_ref()
+    }
+}
+
+impl<T> TryRef<T> for Block
+where
+    ImplBlock: TryRef<T>,
+{
+    fn try_ref(&self) -> Option<&T> {
+        self.payload.try_ref()
+    }
+}
+
+impl<T> TryMut<T> for Block
+where
+    ImplBlock: TryMut<T>,
+{
+    fn try_mut(&mut self) -> Option<&mut T> {
+        Rc::get_mut(&mut self.payload).and_then(|impl_block| impl_block.try_mut())
     }
 }
 
 impl BlockId {
     fn new(id: U128Id) -> Self {
-        Self(id)
+        Self { id }
     }
 
     pub fn to_jsvalue(&self) -> JsValue {
-        self.0.to_jsvalue()
+        self.id.to_jsvalue()
     }
 
     pub fn to_id(&self) -> U128Id {
-        self.0.clone()
+        U128Id::clone(&self.id)
+    }
+
+    pub fn clone(this: &Self) -> Self {
+        Self {
+            id: U128Id::clone(&this.id),
+        }
     }
 }
 
-impl FieldBlock {
-    fn new<T: Block + 'static>(timestamp: f64, block: T) -> Self {
+impl ArenaBlock {
+    fn new(timestamp: f64, block: Block) -> Self {
         Self {
             timestamp: timestamp,
-            payload: Some(Box::new(block)),
+            payload: block,
         }
     }
 
-    fn pack(&self) -> Promise<JsValue> {
-        let payload = self.payload.as_ref();
-        let (promise, type_name) = if let Some(payload) =
-            payload.and_then(|p| p.downcast_ref::<Chat>())
-        {
-            (payload.pack(), "Chat")
-        } else if let Some(payload) = payload.and_then(|p| p.downcast_ref::<chat::Item>()) {
-            (payload.pack(), "chat::Item")
-        } else if let Some(payload) = payload.and_then(|p| p.downcast_ref::<chat::Tab>()) {
-            (payload.pack(), "chat::Tab")
-        } else if let Some(payload) = payload.and_then(|p| p.downcast_ref::<Table>()) {
-            (payload.pack(), "Table")
-        } else if let Some(payload) = payload.and_then(|p| p.downcast_ref::<table::Texture>()) {
-            (payload.pack(), "table::Texture")
-        } else if let Some(payload) = payload.and_then(|p| p.downcast_ref::<table_object::Area>()) {
-            (payload.pack(), "table_object::Area")
-        } else if let Some(payload) =
-            payload.and_then(|p| p.downcast_ref::<table_object::Boxblock>())
-        {
-            (payload.pack(), "table_object::Boxblock")
-        } else if let Some(payload) =
-            payload.and_then(|p| p.downcast_ref::<table_object::Tablemask>())
-        {
-            (payload.pack(), "table_object::Tablemask")
-        } else if let Some(payload) = payload.and_then(|p| p.downcast_ref::<Character>()) {
-            (payload.pack(), "Character")
-        } else if let Some(payload) = payload.and_then(|p| p.downcast_ref::<Property>()) {
-            (payload.pack(), "Property")
-        } else if let Some(payload) = payload.and_then(|p| p.downcast_ref::<World>()) {
-            (payload.pack(), "World")
-        } else {
-            (
-                Promise::new(|resolve| resolve(Some(js_sys::Object::new().into()))),
-                "_",
-            )
+    async fn pack(&self) -> JsValue {
+        let (payload, type_name) = match self.payload.as_ref() {
+            ImplBlock::World(world) => (world.pack().await, "World"),
+            ImplBlock::None => (object! {}.into(), "None"),
         };
-        let timestamp = self.timestamp;
-        let promise = promise.map(move |x| {
-            x.map(|payload| {
-                object! {
-                    type_name: type_name,
-                    timestamp: timestamp,
-                    payload: payload
-                }
-            })
-        });
-        promise.map(|x| {
-            x.map(|x| {
-                let x: js_sys::Object = x.into();
-                x.into()
-            })
+
+        (object! {
+            type_name: type_name,
+            timestamp: self.timestamp,
+            payload: payload
         })
+        .into()
     }
 
-    fn unpack(field: &mut Field, val: JsValue) -> Promise<Self> {
-        if let Ok(val) = val.dyn_into::<JsObject>() {
-            let type_name = val.get("type_name").and_then(|x| x.as_string());
-            let timestamp = val.get("timestamp").and_then(|x| x.as_f64());
-            let payload = val.get("payload").map(|x| {
-                let x: js_sys::Object = x.into();
-                let x: JsValue = x.into();
-                x
-            });
-            if let (Some(type_name), Some(timestamp), Some(payload)) =
-                (type_name, timestamp, payload)
-            {
-                let promise = match type_name.as_str() {
-                    "Chat" => Chat::unpack(field, payload).map(|x| x.map(|x| x as Box<dyn Any>)),
-                    "chat::Item" => {
-                        chat::Item::unpack(field, payload).map(|x| x.map(|x| x as Box<dyn Any>))
-                    }
-                    "chat::Tab" => {
-                        chat::Tab::unpack(field, payload).map(|x| x.map(|x| x as Box<dyn Any>))
-                    }
-                    "Table" => Table::unpack(field, payload).map(|x| x.map(|x| x as Box<dyn Any>)),
-                    "table::Texture" => {
-                        table::Texture::unpack(field, payload).map(|x| x.map(|x| x as Box<dyn Any>))
-                    }
-                    "table_object::Area" => table_object::Area::unpack(field, payload)
-                        .map(|x| x.map(|x| x as Box<dyn Any>)),
-                    "table_object::Boxblock" => table_object::Boxblock::unpack(field, payload)
-                        .map(|x| x.map(|x| x as Box<dyn Any>)),
-                    "table_object::Tablemask" => table_object::Tablemask::unpack(field, payload)
-                        .map(|x| x.map(|x| x as Box<dyn Any>)),
-                    "Character" => {
-                        Character::unpack(field, payload).map(|x| x.map(|x| x as Box<dyn Any>))
-                    }
-                    "Property" => {
-                        Property::unpack(field, payload).map(|x| x.map(|x| x as Box<dyn Any>))
-                    }
-                    "World" => World::unpack(field, payload).map(|x| x.map(|x| x as Box<dyn Any>)),
-                    _ => Promise::new(|resolve| resolve(None)),
-                };
-                promise.map(move |x| {
-                    Some(
-                        x.map(|payload| Self {
-                            timestamp,
-                            payload: Some(payload),
-                        })
-                        .unwrap_or(Self {
-                            timestamp,
-                            payload: None,
-                        }),
-                    )
-                })
-            } else {
-                Promise::new(|resolve| resolve(None))
-            }
-        } else {
-            Promise::new(|resolve| resolve(None))
-        }
+    async fn unpack(val: JsValue) -> Option<Self> {
+        let val = unwrap_option!(val.dyn_into::<JsObject>().ok());
+
+        let type_name = unwrap_option!(val.get("type_name").and_then(|x| x.as_string()));
+        let timestamp = unwrap_option!(val.get("timestamp").and_then(|x| x.as_f64()));
+        let payload = unwrap_option!(val.get("payload").map(|x| {
+            let x: js_sys::Object = x.into();
+            let x: JsValue = x.into();
+            x
+        }));
+
+        let payload = match type_name.as_str() {
+            "World" => world::World::unpack(payload)
+                .await
+                .map(|x| ImplBlock::World(x)),
+            "None" => Some(ImplBlock::None),
+            _ => None,
+        };
+
+        let payload = unwrap_option!(payload);
+
+        Some(Self {
+            timestamp,
+            payload: Block::new(payload),
+        })
     }
 }
 
-impl Field {
+impl Arena {
     pub fn new() -> Self {
         Self {
-            table: BlockTable::new(),
+            table: Arc::new(Mutex::new(HashMap::new())),
         }
     }
 
-    pub fn block_id(&mut self, id: U128Id) -> BlockId {
-        BlockId::new(id)
+    pub fn clone(this: &Self) -> Self {
+        Self {
+            table: Arc::clone(&this.table),
+        }
     }
 
-    #[allow(private_in_public)]
-    pub fn add<T: Block + 'static>(&mut self, block: T) -> BlockId {
-        let block_id = self.block_id(U128Id::new());
-        self.assign(block_id.clone(), Date::now(), block);
-        block_id
+    async fn get(&self, block_id: &BlockId) -> Option<Arc<Mutex<ArenaBlock>>> {
+        let table = self.table.lock().await;
+        table.get(block_id).map(|x| Arc::clone(x))
     }
 
-    #[allow(private_in_public)]
-    pub fn assign<T: Block + 'static>(
-        &mut self,
-        block_id: BlockId,
-        timestamp: Timestamp,
-        block: T,
-    ) {
-        let block = FieldBlock::new(timestamp, block);
-        self.assign_fb(block_id, block);
-    }
-
-    #[allow(private_in_public)]
-    pub fn assign_fb(&mut self, block_id: BlockId, block: FieldBlock) {
-        if let Some(field_block) = self.table.get_mut(&block_id.to_id()) {
-            let timestamp = block.timestamp;
-            let payload = block.payload;
-            if field_block.timestamp < timestamp {
-                field_block.timestamp = timestamp;
-                field_block.payload = payload;
+    pub async fn assign_arena_block(&mut self, block_id: BlockId, new_arena_block: ArenaBlock) {
+        if let Some(arena_block) = self.table.lock().await.get(&block_id) {
+            let mut arena_block = arena_block.lock().await;
+            if arena_block.timestamp < new_arena_block.timestamp {
+                arena_block.timestamp = new_arena_block.timestamp;
+                arena_block.payload = new_arena_block.payload;
             }
         } else {
-            self.table.insert(block_id.to_id(), block);
+            self.table
+                .lock()
+                .await
+                .insert(block_id, Arc::new(Mutex::new(new_arena_block)));
         }
     }
 
-    #[allow(private_in_public)]
-    pub fn get<T: Block + 'static>(&self, block_id: &BlockId) -> Option<&T> {
-        self.table
-            .get(&block_id.to_id())
-            .and_then(|fb| fb.payload.as_ref())
-            .and_then(|p| p.downcast_ref::<T>())
+    pub async fn map<T, U>(&self, block_id: &BlockId, f: impl FnOnce(&T) -> U) -> Option<U>
+    where
+        Block: TryRef<T>,
+    {
+        let arena_block = unwrap_option!(self.get(&block_id).await);
+        let arena_block = arena_block.lock().await;
+        let block = unwrap_option!(arena_block.payload.try_ref());
+        Some(f(block))
     }
 
-    #[allow(private_in_public)]
-    pub fn dependents_of<T: Block + 'static>(&self, block_id: &BlockId) -> HashSet<BlockId> {
-        self.table
-            .get(&block_id.to_id())
-            .and_then(|fb| fb.payload.as_ref())
-            .and_then(|p| p.downcast_ref::<T>())
-            .map(|p| p.dependents(self))
-            .unwrap_or(set! {})
-    }
-
-    #[allow(private_in_public)]
-    pub fn resources_of<T: Block + 'static>(&self, block_id: &BlockId) -> HashSet<ResourceId> {
-        self.table
-            .get(&block_id.to_id())
-            .and_then(|fb| fb.payload.as_ref())
-            .and_then(|p| p.downcast_ref::<T>())
-            .map(|p| p.resources(self))
-            .unwrap_or(set! {})
-    }
-
-    pub fn remove(&mut self, block_id: &BlockId) {
-        self.table.get_mut(&block_id.to_id()).map(|fb| {
-            fb.payload = None;
-        });
-    }
-
-    #[allow(private_in_public)]
-    pub fn all<T: Block + 'static>(&self) -> Vec<(BlockId, &T)> {
-        self.table
-            .iter()
-            .filter_map(|(id, fb)| {
-                if let Some(b) = fb.payload.as_ref().and_then(|p| p.downcast_ref::<T>()) {
-                    let block_id = BlockId::new(id.clone());
-                    Some((block_id, b))
-                } else {
-                    None
-                }
-            })
-            .collect()
-    }
-
-    #[allow(private_in_public)]
-    pub fn listed<T: Block + 'static>(
+    pub async fn iter_map_with_ids<T, U>(
         &self,
-        block_ids: Vec<&BlockId>,
-    ) -> impl Iterator<Item = (BlockId, &T)> {
+        block_ids: impl Iterator<Item = BlockId>,
+        mut f: impl FnMut(BlockId, &T) -> U,
+    ) -> impl Iterator<Item = U>
+    where
+        Block: TryRef<T>,
+    {
         let mut blocks = vec![];
-        for block_id in block_ids {
-            if let Some(block) = self.get(block_id) {
-                blocks.push((block_id.clone(), block))
-            }
-        }
-        blocks.into_iter()
-    }
-
-    #[allow(private_in_public)]
-    pub fn update<T: Block + 'static>(
-        &mut self,
-        block_id: &BlockId,
-        timestamp: Option<Timestamp>,
-        f: impl FnOnce(&mut T),
-    ) -> Option<&mut Self> {
-        self.table
-            .get_mut(&block_id.to_id())
-            .and_then(|fb| {
-                if let Some(timestamp) = timestamp {
-                    if fb.timestamp < timestamp {
-                        fb.timestamp = timestamp;
-                        fb.payload.as_mut()
-                    } else {
-                        None
-                    }
-                } else {
-                    fb.payload.as_mut()
+        {
+            let table = self.table.lock().await;
+            for block_id in block_ids {
+                if let Some(arena_block) = table.get(&block_id) {
+                    blocks.push((block_id, Arc::clone(arena_block)));
                 }
-            })
-            .and_then(|p| p.downcast_mut::<T>())
-            .map(move |b| {
-                f(b);
-                None
-            })
-            .unwrap_or(Some(self))
-    }
-
-    pub fn timestamp(&self, block_id: &BlockId) -> Option<&Timestamp> {
-        self.table.get(&block_id.to_id()).map(|b| &b.timestamp)
-    }
-
-    pub fn pack_all(&mut self) -> Promise<Vec<(BlockId, JsValue)>> {
-        let mut keys = vec![];
-        for key in self.table.keys().map(|x| x.clone()).collect::<Vec<_>>() {
-            let key = self.block_id(key);
-            keys.push(key);
-        }
-        self.pack_listed(keys)
-    }
-
-    pub fn pack_listed(&self, block_ids: Vec<BlockId>) -> Promise<Vec<(BlockId, JsValue)>> {
-        let mut promises = vec![];
-        for block_id in block_ids {
-            if let Some(block) = self.table.get(&block_id.to_id()) {
-                promises.push(block.pack().map(move |res| res.map(|val| (block_id, val))));
             }
         }
-        Promise::all(promises).map(|vals| vals.map(|vals| vals.into_iter().collect()))
+        let mut mapped = vec![];
+        for (block_id, arena_block) in blocks {
+            if let Some(block) = arena_block.lock().await.payload.try_ref() {
+                mapped.push(f(block_id, block));
+            }
+        }
+        mapped.into_iter()
     }
 
-    pub fn unpack_listed(
-        &mut self,
-        blocks: impl Iterator<Item = (U128Id, JsValue)>,
-    ) -> Promise<HashMap<BlockId, FieldBlock>> {
-        let mut promises = vec![];
-        for (block_id, val) in blocks {
-            let block_id = self.block_id(block_id);
-            promises
-                .push(FieldBlock::unpack(self, val).map(move |res| res.map(|val| (block_id, val))));
-        }
-        Promise::all(promises).map(|vals| vals.map(|vals| vals.into_iter().collect()))
+    pub async fn iter_map<T, U>(&self, f: impl FnMut(BlockId, &T) -> U) -> impl Iterator<Item = U>
+    where
+        Block: TryRef<T>,
+    {
+        let keys = self
+            .table
+            .lock()
+            .await
+            .keys()
+            .map(|x| BlockId::clone(x))
+            .collect::<Vec<_>>();
+        self.iter_map_with_ids(keys.into_iter(), f).await
     }
 }

@@ -214,20 +214,26 @@ impl SideMenu {
                 Attributes::new().class(Self::class("sub-tool-list")),
                 Events::new(),
                 vec![
-                    Html::div(
-                        Attributes::new().class(Self::class("sub-tool")),
-                        Events::new(),
-                        vec![fa::i("fa-slash"), Html::text("直線")],
+                    Btn::with_children(
+                        btn::Props {
+                            variant: btn::Variant::Dark,
+                        },
+                        Subscription::none(),
+                        vec![fa::i("fa-slash"), Html::text(" 直線")],
                     ),
-                    Html::div(
-                        Attributes::new().class(Self::class("sub-tool")),
-                        Events::new(),
-                        vec![fa::far_i("fa-square"), Html::text("長方形")],
+                    Btn::with_children(
+                        btn::Props {
+                            variant: btn::Variant::Dark,
+                        },
+                        Subscription::none(),
+                        vec![fa::far_i("fa-square"), Html::text(" 長方形")],
                     ),
-                    Html::div(
-                        Attributes::new().class(Self::class("sub-tool")),
-                        Events::new(),
-                        vec![fa::far_i("fa-circle"), Html::text("楕円")],
+                    Btn::with_children(
+                        btn::Props {
+                            variant: btn::Variant::Dark,
+                        },
+                        Subscription::none(),
+                        vec![fa::far_i("fa-circle"), Html::text(" 楕円")],
                     ),
                 ],
             )],
@@ -286,6 +292,14 @@ impl Styled for SideMenu {
 
             "sub-body" {
                 "padding": "0.65em";
+            }
+
+            "sub-tool-list" {
+                "display": "grid";
+                "grid-template-columns": "1fr 1fr";
+                "grid-auto-flow": "row";
+                "column-gap": "0.65em";
+                "row-gap": "0.65em";
             }
         }
     }

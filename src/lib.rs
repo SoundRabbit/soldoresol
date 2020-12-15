@@ -1,5 +1,8 @@
+extern crate async_std;
+extern crate async_trait;
 extern crate base64;
 extern crate bincode;
+extern crate downcast_rs;
 extern crate futures;
 extern crate hex;
 extern crate indexmap;
@@ -43,30 +46,27 @@ mod dicebot;
 mod idb;
 #[allow(dead_code)]
 mod js_zip;
-#[allow(dead_code)]
-mod model;
-#[allow(dead_code)]
-mod promise;
+// #[allow(dead_code)]
+// mod model;
 #[allow(dead_code)]
 mod random_id;
-#[allow(dead_code)]
-mod renderer;
+// #[allow(dead_code)]
+// mod renderer;
 #[allow(dead_code)]
 mod resource;
 #[allow(dead_code)]
 mod skyway;
 #[allow(dead_code)]
 mod timestamp;
-#[allow(dead_code)]
-mod udonarium;
+// #[allow(dead_code)]
+// mod udonarium;
 
 use color::Color;
 use component::{app, App};
 use config::Config;
 use js_object::JsObject;
 use js_zip::JSZip;
-use promise::Promise;
-use resource::Resource;
+// use resource::Resource;
 use timestamp::Timestamp;
 use wasm_bindgen::prelude::*;
 

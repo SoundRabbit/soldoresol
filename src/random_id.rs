@@ -78,10 +78,8 @@ impl U128Id {
     pub fn to_string(&self) -> String {
         self.0.to_string()
     }
-}
 
-impl Clone for U128Id {
-    fn clone(&self) -> Self {
-        Self(Rc::clone(&self.0))
+    pub fn clone(this: &Self) -> Self {
+        Self(Rc::clone(&this.0))
     }
 }

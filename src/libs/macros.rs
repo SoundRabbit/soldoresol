@@ -13,6 +13,21 @@ macro_rules! set {
     };
 }
 
+macro_rules! map {
+    { $( $n:ident : $v:expr ),* } => {
+        {
+            use std::collections::HashMap;
+
+            #[allow(unused_mut)]
+            let mut tmp = HashMap::new();
+            $(
+                tmp.insert($n, $v);
+            )*
+            tmp
+        }
+    };
+}
+
 macro_rules! join_some {
     ($($x:expr), *) => {{
         #[allow(unused_mut)]
@@ -30,4 +45,32 @@ macro_rules! join_some {
             None
         }
     }};
+}
+
+macro_rules! unwrap_option {
+    ($x:expr) => {
+        if let Some(x) = $x {
+            x
+        } else {
+            return None;
+        }
+    };
+}
+
+macro_rules! first_of {
+    ($x:expr) => {
+        if let Some(x) = $x {
+            Some(x)
+        } else {
+            None
+        }
+    };
+
+    ($x:expr,$($xs:expr),*) => {
+        if let Some(x) = $x {
+            Some(x)
+        } else {
+            first_of!($($xs:expr),*)
+        }
+    };
 }
