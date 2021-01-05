@@ -1,7 +1,8 @@
 use super::atom::heading::{self, Heading};
 use super::atom::slider::{self, Slider};
 use super::util::styled::{Style, Styled};
-use crate::Color;
+use crate::libs::color::color_system;
+use crate::libs::color::Color;
 use kagura::prelude::*;
 
 pub struct Props {
@@ -45,14 +46,14 @@ impl Default for Props {
 impl Pallet {
     fn to_color(&self) -> Color {
         match self {
-            Pallet::Gray(idx) => crate::color_system::gray(100, *idx),
-            Pallet::Red(idx) => crate::color_system::red(100, *idx),
-            Pallet::Orange(idx) => crate::color_system::orange(100, *idx),
-            Pallet::Yellow(idx) => crate::color_system::yellow(100, *idx),
-            Pallet::Green(idx) => crate::color_system::green(100, *idx),
-            Pallet::Blue(idx) => crate::color_system::blue(100, *idx),
-            Pallet::Purple(idx) => crate::color_system::purple(100, *idx),
-            Pallet::Pink(idx) => crate::color_system::pink(100, *idx),
+            Pallet::Gray(idx) => color_system::gray(100, *idx),
+            Pallet::Red(idx) => color_system::red(100, *idx),
+            Pallet::Orange(idx) => color_system::orange(100, *idx),
+            Pallet::Yellow(idx) => color_system::yellow(100, *idx),
+            Pallet::Green(idx) => color_system::green(100, *idx),
+            Pallet::Blue(idx) => color_system::blue(100, *idx),
+            Pallet::Purple(idx) => color_system::purple(100, *idx),
+            Pallet::Pink(idx) => color_system::pink(100, *idx),
         }
     }
 }
@@ -194,11 +195,11 @@ impl Styled for ColorPallet {
             }
 
             "cell--selected-dark" {
-                "box-shadow": format!("0 0 0.1em 0.1em {} inset", crate::color_system::gray(100, 9));
+                "box-shadow": format!("0 0 0.1em 0.1em {} inset", color_system::gray(100, 9));
             }
 
             "cell--selected-light" {
-                "box-shadow": format!("0 0 0.1em 0.1em {} inset", crate::color_system::gray(100, 0));
+                "box-shadow": format!("0 0 0.1em 0.1em {} inset", color_system::gray(100, 0));
             }
         }
     }

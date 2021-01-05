@@ -1,4 +1,4 @@
-use crate::Color;
+use super::Color;
 
 pub fn gray(alpha: u8, idx: usize) -> Color {
     match idx {

@@ -1,5 +1,6 @@
 use super::BlockId;
 use crate::resource::ResourceId;
+use wasm_bindgen::JsCast;
 
 pub struct Texture {
     element: web_sys::HtmlCanvasElement,
@@ -10,8 +11,8 @@ pub struct Texture {
 }
 
 impl Texture {
-    fn create_context(&self) -> web_sys::CanvasRenderingContext2d {
-        self.element
+    fn create_context(element: &web_sys::HtmlCanvasElement) -> web_sys::CanvasRenderingContext2d {
+        element
             .get_context("2d")
             .unwrap()
             .unwrap()
@@ -30,7 +31,7 @@ impl Texture {
             .unwrap();
         element.set_width(buffer_size[0]);
         element.set_height(buffer_size[1]);
-        let context = self.create_context();
+        let context = Self::create_context(&element);
 
         let this = Self {
             element,
@@ -43,6 +44,10 @@ impl Texture {
         this.set_size(size);
 
         this
+    }
+
+    pub fn element(&self) -> &web_sys::HtmlCanvasElement {
+        &self.element
     }
 
     pub fn set_size(&mut self, size: [f64; 2]) {

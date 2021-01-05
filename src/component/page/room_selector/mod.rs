@@ -72,7 +72,7 @@ impl Constructor for RoomSelector {
             inputing_room_id: String::from(""),
             room_id_validator: Regex::new(r"^[A-Za-z0-9@#]{24}$").unwrap(),
             element_id: ElementId {
-                input_room_id: format!("{:X}", crate::random_id::u128val()),
+                input_room_id: format!("{:X}", crate::libs::random_id::u128val()),
             },
         }
     }
@@ -103,7 +103,7 @@ impl Component for RoomSelector {
                 }
             }
             Msg::ConnectWithNewRoomId => {
-                let room_id = crate::random_id::base64url();
+                let room_id = crate::libs::random_id::base64url();
                 Cmd::sub(On::Connect(room_id))
             }
         }
@@ -315,11 +315,11 @@ impl Styled for RoomSelector {
             }
 
             "room-name" {
-                "border-bottom": format!("0.1em solid {}", crate::color_system::gray(100, 9));
+                "border-bottom": format!("0.1em solid {}", crate::libs::color::color_system::gray(100, 9));
             }
 
             "room-id" {
-                "background-color": crate::color_system::gray(100, 2).to_string();
+                "background-color": crate::libs::color::color_system::gray(100, 2).to_string();
                 "padding": "0.25em";
                 "border-radius": "2px";
             }

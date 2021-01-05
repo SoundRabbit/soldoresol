@@ -1,16 +1,14 @@
 use crate::random_id::U128Id;
 use crate::JsObject;
 use async_std::sync::Mutex;
-use futures::future::join_all;
-use js_sys::Date;
-use std::cell::RefCell;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
+use std::future::Future;
 use std::rc::Rc;
 use std::sync::Arc;
 use wasm_bindgen::{prelude::*, JsCast};
 
+pub mod table;
 pub mod world;
-pub use world::World;
 
 trait TryRef<T> {
     fn try_ref(&self) -> Option<&T>;
@@ -22,6 +20,8 @@ trait TryMut<T> {
 
 enum ImplBlock {
     World(world::World),
+    Table(table::Table),
+    TableTexture(table::texture::Texture),
     None,
 }
 
@@ -41,7 +41,7 @@ struct ArenaBlock {
     payload: Block,
 }
 
-struct Arena {
+pub struct Arena {
     table: Arc<Mutex<HashMap<BlockId, Arc<Mutex<ArenaBlock>>>>>,
 }
 
@@ -71,10 +71,46 @@ impl TryRef<world::World> for ImplBlock {
     }
 }
 
+impl TryRef<table::Table> for ImplBlock {
+    fn try_ref(&self) -> Option<&table::Table> {
+        match self {
+            Self::Table(x) => Some(x),
+            _ => None,
+        }
+    }
+}
+
+impl TryRef<table::texture::Texture> for ImplBlock {
+    fn try_ref(&self) -> Option<&table::texture::Texture> {
+        match self {
+            Self::TableTexture(x) => Some(x),
+            _ => None,
+        }
+    }
+}
+
 impl TryMut<world::World> for ImplBlock {
     fn try_mut(&mut self) -> Option<&mut world::World> {
         match self {
             Self::World(x) => Some(x),
+            _ => None,
+        }
+    }
+}
+
+impl TryMut<table::Table> for ImplBlock {
+    fn try_mut(&mut self) -> Option<&mut table::Table> {
+        match self {
+            Self::Table(x) => Some(x),
+            _ => None,
+        }
+    }
+}
+
+impl TryMut<table::texture::Texture> for ImplBlock {
+    fn try_mut(&mut self) -> Option<&mut table::texture::Texture> {
+        match self {
+            Self::TableTexture(x) => Some(x),
             _ => None,
         }
     }
@@ -222,14 +258,21 @@ impl Arena {
         }
     }
 
-    pub async fn map<T, U>(&self, block_id: &BlockId, f: impl FnOnce(&T) -> U) -> Option<U>
+    pub async fn timestamp_of(&self, block_id: &BlockId) -> Option<Timestamp> {
+        let arena_block = unwrap_option!(self.get(block_id).await);
+        let arena_block = arena_block.lock().await;
+        Some(arena_block.timestamp)
+    }
+
+    pub async fn map<T, U, A>(&self, block_id: &BlockId, f: impl FnOnce(&T) -> A) -> Option<U>
     where
         Block: TryRef<T>,
+        A: Future<Output = U>,
     {
         let arena_block = unwrap_option!(self.get(&block_id).await);
         let arena_block = arena_block.lock().await;
         let block = unwrap_option!(arena_block.payload.try_ref());
-        Some(f(block))
+        Some(f(block).await)
     }
 
     pub async fn iter_map_with_ids<T, U>(

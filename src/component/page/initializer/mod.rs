@@ -1,6 +1,6 @@
 use super::template::loader::{self, Loader};
-use crate::skyway::Peer;
-use crate::Config;
+use crate::libs::skyway::Peer;
+use crate::model::config::Config;
 use kagura::prelude::*;
 use std::rc::Rc;
 use wasm_bindgen::{prelude::*, JsCast};

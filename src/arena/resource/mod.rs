@@ -12,14 +12,20 @@ pub use data::Data;
 
 pub type ResourceId = U128Id;
 
-pub struct Resource {
+pub struct Arena {
     table: Rc<RefCell<HashMap<ResourceId, Data>>>,
 }
 
-impl Resource {
+impl Arena {
     pub fn new() -> Self {
         Self {
             table: Rc::new(RefCell::new(HashMap::new())),
+        }
+    }
+
+    pub fn clone(this: &Self) -> Self {
+        Self {
+            table: Rc::clone(&this.table),
         }
     }
 
@@ -31,10 +37,6 @@ impl Resource {
 
     pub fn assign(&mut self, resource_id: ResourceId, data: Data) {
         self.table.borrow_mut().insert(resource_id, data);
-    }
-
-    pub fn all(&self) -> impl Iterator<Item = (&ResourceId, &Data)> {
-        self.iter()
     }
 
     pub async fn pack_all(&self) -> HashMap<ResourceId, JsValue> {
@@ -62,19 +64,5 @@ impl Resource {
             }
         }
         join_all(futures).await.into_iter().collect()
-    }
-}
-
-impl Deref for Resource {
-    type Target = HashMap<ResourceId, Data>;
-    fn deref(&self) -> &Self::Target {
-        unsafe { self.table.as_ptr().as_ref().unwrap() }
-    }
-}
-
-impl Clone for Resource {
-    fn clone(&self) -> Self {
-        let table = Rc::clone(&self.table);
-        Self { table: table }
     }
 }

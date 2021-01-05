@@ -1,4 +1,5 @@
 use super::util::styled::{Style, Styled};
+use crate::libs::color::color_system;
 use kagura::prelude::*;
 
 pub struct Props {}
@@ -41,10 +42,10 @@ impl Styled for Card {
     fn style() -> Style {
         style! {
             "base"{
-                "background-color": crate::color_system::gray(100, 0).to_string();
-                "color": crate::color_system::gray(100, 9).to_string();
+                "background-color": color_system::gray(100, 0).to_string();
+                "color": color_system::gray(100, 9).to_string();
                 "padding": ".4em";
-                "box-shadow": format!("0px 0px 1px 1px {}", crate::color_system::gray(25, 9));
+                "box-shadow": format!("0px 0px 1px 1px {}", color_system::gray(25, 9));
                 "margin": "2px";
                 "border-radius": "2px";
             }

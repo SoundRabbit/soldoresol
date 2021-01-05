@@ -4,10 +4,10 @@ use super::super::{
     ModelMatrix,
 };
 use crate::{
-    block::{self},
+    block,
     random_id::U128Id,
-    resource::Data,
-    Color, Resource,
+    resource::{self, Data},
+    Color,
 };
 use ndarray::Array2;
 
@@ -75,14 +75,14 @@ impl TableTextureRenderer {
         }
     }
 
-    pub fn render(
+    pub async fn render(
         &mut self,
         gl: &WebGlRenderingContext,
         vp_matrix: &Array2<f32>,
-        block_field: &block::Field,
-        table: &block::Table,
+        block_arena: &block::Arena,
+        resource_arena: &resource::Arena,
+        table: &block::table::Table,
         textures: &mut super::TextureCollection,
-        resource: &Resource,
     ) {
         let [height, width] = table.size();
         let (height, width) = (*height, *width);
@@ -114,13 +114,14 @@ impl TableTextureRenderer {
         );
 
         let drawing_texture_id = table.drawing_texture_id();
-        if block_field
-            .timestamp(drawing_texture_id)
-            .map(|t| {
-                if *t > self.texture_update_time
+        if block_arena
+            .timestamp_of(drawing_texture_id)
+            .await
+            .map(|timestamp| {
+                if timestamp > self.texture_update_time
                     || self.last_texture_id != drawing_texture_id.to_id()
                 {
-                    self.texture_update_time = *t;
+                    self.texture_update_time = timestamp;
                     true
                 } else {
                     false
@@ -128,29 +129,34 @@ impl TableTextureRenderer {
             })
             .unwrap_or(false)
         {
-            if let Some(texture) = block_field.get::<block::table::Texture>(drawing_texture_id) {
-                gl.tex_image_2d_with_u32_and_u32_and_canvas(
-                    web_sys::WebGlRenderingContext::TEXTURE_2D,
-                    0,
-                    web_sys::WebGlRenderingContext::RGBA as i32,
-                    web_sys::WebGlRenderingContext::RGBA,
-                    web_sys::WebGlRenderingContext::UNSIGNED_BYTE,
-                    texture.element(),
-                )
-                .unwrap();
-            }
+            block_arena
+                .map(drawing_texture_id, {
+                    let gl = WebGlRenderingContext::clone(gl);
+                    move |texture: &block::table::texture::Texture| async move {
+                        gl.tex_image_2d_with_u32_and_u32_and_canvas(
+                            web_sys::WebGlRenderingContext::TEXTURE_2D,
+                            0,
+                            web_sys::WebGlRenderingContext::RGBA as i32,
+                            web_sys::WebGlRenderingContext::RGBA,
+                            web_sys::WebGlRenderingContext::UNSIGNED_BYTE,
+                            texture.element(),
+                        )
+                        .unwrap();
+                    }
+                })
+                .await;
         }
 
         gl.active_texture(web_sys::WebGlRenderingContext::TEXTURE1);
         let mut texture_1_is_active = false;
-        if let Some(texture_id) = table.image_texture_id() {
+        if let Some(texture_id) = table.background_texture_id() {
             if let (
                 None,
                 Some(Data::Image {
                     element: texture_data,
                     ..
                 }),
-            ) = (textures.get(texture_id), resource.get(texture_id))
+            ) = (textures.get(texture_id), resource_arena.get(texture_id))
             {
                 textures.insert(gl, texture_id.clone(), &texture_data);
             }

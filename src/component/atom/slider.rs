@@ -1,4 +1,5 @@
 use super::util::styled::{Style, Styled};
+use crate::libs::color::color_system;
 use kagura::prelude::*;
 use wasm_bindgen::{prelude::*, JsCast};
 
@@ -135,10 +136,10 @@ impl Component for Slider {
                             "background",
                             format!(
                                 "linear-gradient(to right, {} calc({}% - {}em + 0.5em), {} {}% 100%)",
-                                crate::color_system::blue(255, 5),
+                                color_system::blue(255, 5),
                                 pos * 100.0,
                                 pos,
-                                crate::color_system::gray(255, 3),
+                                color_system::gray(255, 3),
                                 pos * 100.0
                             ),
                         ),
@@ -295,7 +296,7 @@ impl Styled for Slider {
             "slider::-webkit-slider-thumb" {
                 "-webkit-appearance": "none";
                 "appearance": "none";
-                "background-color": format!("{}", crate::color_system::gray(100, 5));
+                "background-color": format!("{}", color_system::gray(100, 5));
                 "width": "1em";
                 "height": "1em";
                 "border-radius": "50%";
@@ -322,7 +323,7 @@ impl Styled for Slider {
                 "content":"\"\"";
                 "position": "absolute";
                 "border": "0.5em solid transparent";
-                "border-bottom": format!("0.5em solid {}", crate::color_system::gray(100, 0));
+                "border-bottom": format!("0.5em solid {}", color_system::gray(100, 0));
             }
 
             "allow--left:before" {

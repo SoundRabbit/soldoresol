@@ -1,7 +1,7 @@
-use crate::idb;
-use crate::random_id;
-use crate::skyway::Peer;
-use crate::Config;
+use crate::libs::idb;
+use crate::libs::random_id;
+use crate::libs::skyway::Peer;
+use crate::model::config::Config;
 use js_sys::Promise;
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;

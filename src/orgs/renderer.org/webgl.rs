@@ -1,9 +1,10 @@
 use std::ops::Deref;
+use std::rc::Rc;
 
 pub struct WebGlF32Vbo(web_sys::WebGlBuffer);
 pub struct WebGlI16Ibo(web_sys::WebGlBuffer);
 pub struct WebGlAttributeLocation(pub u32);
-pub struct WebGlRenderingContext(pub web_sys::WebGlRenderingContext);
+pub struct WebGlRenderingContext(Rc<web_sys::WebGlRenderingContext>);
 
 impl Deref for WebGlF32Vbo {
     type Target = web_sys::WebGlBuffer;
@@ -37,6 +38,10 @@ impl Deref for WebGlRenderingContext {
 }
 
 impl WebGlRenderingContext {
+    pub fn clone(this: &Self) -> Self {
+        Self(Rc::clone(&this.0))
+    }
+
     pub fn create_vbo_with_f32array(&self, data: &[f32]) -> WebGlF32Vbo {
         let buffer = self.create_buffer().unwrap();
         self.bind_buffer(web_sys::WebGlRenderingContext::ARRAY_BUFFER, Some(&buffer));

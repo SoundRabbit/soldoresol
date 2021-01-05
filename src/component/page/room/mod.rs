@@ -1,7 +1,7 @@
 use super::template::loader::{self, Loader};
 use super::util::{Prop, State};
-use crate::skyway::{MeshRoom, Peer};
-use crate::Config;
+use crate::libs::skyway::{MeshRoom, Peer};
+use crate::model::config::Config;
 use kagura::prelude::*;
 use wasm_bindgen::{prelude::*, JsCast};
 

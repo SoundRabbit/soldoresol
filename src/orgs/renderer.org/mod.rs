@@ -7,7 +7,7 @@ mod webgl;
 
 use crate::{
     block::{self, BlockId},
-    Resource,
+    resource,
 };
 pub use camera::Camera;
 use mask_renderer::MaskRenderer;
@@ -87,51 +87,57 @@ impl Renderer {
         ]
     }
 
-    pub fn render(
+    pub async fn render(
         &mut self,
-        block_field: &block::Field,
-        world: &BlockId,
+        block_arena: &block::Arena,
+        resource_arena: &resource::Arena,
+        world_id: &BlockId,
         camera: &Camera,
-        resource: &Resource,
         canvas_size: &[f32; 2],
         floating_object: &Option<&BlockId>,
         client_id: &String,
     ) {
         if Rc::strong_count(&self.gl) < 3 {
-            if let Some(world) = block_field.get::<block::World>(world) {
-                self.view_renderer.render(
-                    &self.gl,
-                    &canvas_size,
-                    &camera,
-                    block_field,
-                    world,
-                    resource,
-                    client_id,
-                );
+            block_arena
+                .map(world_id, {
+                    let block_arena = block::Arena::clone(&block_arena);
+                    let resource_arena = resource::Arena::clone(&resource_arena);
+                    move |world: &block::world::World| async move {
+                        self.view_renderer.render(
+                            &self.gl,
+                            &canvas_size,
+                            &camera,
+                            &block_arena,
+                            &resource_arena,
+                            world,
+                            client_id,
+                        );
 
-                self.mask_renderer.render(
-                    &canvas_size,
-                    &camera,
-                    block_field,
-                    world,
-                    floating_object,
-                    client_id,
-                );
+                        self.mask_renderer.render(
+                            &canvas_size,
+                            &camera,
+                            block_arena,
+                            world,
+                            floating_object,
+                            client_id,
+                        );
 
-                let view_gl = Rc::clone(&self.gl);
-                let mask_gl = self.mask_renderer.gl();
+                        let view_gl = Rc::clone(&self.gl);
+                        let mask_gl = self.mask_renderer.gl();
 
-                let a = Closure::once(Box::new(move || {
-                    view_gl.flush();
-                    mask_gl.flush();
-                }) as Box<dyn FnOnce()>);
+                        let a = Closure::once(Box::new(move || {
+                            view_gl.flush();
+                            mask_gl.flush();
+                        }) as Box<dyn FnOnce()>);
 
-                let _ = web_sys::window()
-                    .unwrap()
-                    .request_animation_frame(a.as_ref().unchecked_ref());
+                        let _ = web_sys::window()
+                            .unwrap()
+                            .request_animation_frame(a.as_ref().unchecked_ref());
 
-                a.forget();
-            }
+                        a.forget();
+                    }
+                })
+                .await;
         }
     }
 }

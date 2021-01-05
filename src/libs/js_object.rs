@@ -17,7 +17,7 @@ macro_rules! object {
         {
             #[allow(unused_imports)]
             use wasm_bindgen::{prelude::*, JsCast};
-            use crate::JsObject;
+            use crate::libs::js_object::JsObject;
 
             let tmp = js_sys::Object::new().dyn_into::<JsObject>().unwrap();
             $(

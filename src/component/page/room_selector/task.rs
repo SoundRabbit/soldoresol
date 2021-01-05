@@ -1,6 +1,6 @@
 use super::RoomData;
-use crate::idb;
-use crate::JsObject;
+use crate::libs::idb;
+use crate::libs::js_object::JsObject;
 use wasm_bindgen::{prelude::*, JsCast};
 
 pub async fn get_room_index(common_database: &web_sys::IdbDatabase) -> Option<Vec<RoomData>> {

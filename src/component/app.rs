@@ -4,8 +4,8 @@ use super::page::{
     room_selector::{self, RoomSelector},
 };
 use super::util::State;
-use crate::skyway::Peer;
-use crate::Config;
+use crate::libs::skyway::Peer;
+use crate::model::config::Config;
 use kagura::prelude::*;
 
 pub struct Props {}

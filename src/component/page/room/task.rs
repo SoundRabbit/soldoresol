@@ -1,7 +1,7 @@
 use super::super::util::{Prop, State};
-use crate::idb;
-use crate::skyway::MeshRoom;
-use crate::Config;
+use crate::libs::idb;
+use crate::libs::skyway::MeshRoom;
+use crate::model::config::Config;
 use futures::join;
 use js_sys::Promise;
 use wasm_bindgen::prelude::*;

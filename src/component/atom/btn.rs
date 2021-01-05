@@ -1,4 +1,5 @@
 use super::util::styled::{Style, Styled};
+use crate::libs::color::color_system;
 use kagura::prelude::*;
 
 pub struct Props {
@@ -89,18 +90,18 @@ impl Styled for Btn {
     fn style() -> Style {
         style! {
             "primary" {
-                "background-color": crate::color_system::blue(100, 5).to_string();
-                "color": crate::color_system::gray(100, 0).to_string();
+                "background-color": color_system::blue(100, 5).to_string();
+                "color": color_system::gray(100, 0).to_string();
             }
 
             "secondary" {
-                "background-color": crate::color_system::gray(100, 5).to_string();
-                "color": crate::color_system::gray(100, 0).to_string();
+                "background-color": color_system::gray(100, 5).to_string();
+                "color": color_system::gray(100, 0).to_string();
             }
 
             "dark" {
-                "background-color": crate::color_system::gray(100, 9).to_string();
-                "color": crate::color_system::gray(100, 0).to_string();
+                "background-color": color_system::gray(100, 9).to_string();
+                "color": color_system::gray(100, 0).to_string();
             }
         }
     }

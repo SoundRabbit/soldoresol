@@ -9,7 +9,7 @@ use super::{
     model::table::TableTool,
 };
 use crate::libs::select_list::SelectList;
-use crate::skyway::{MeshRoom, Peer};
+use crate::libs::skyway::{MeshRoom, Peer};
 use kagura::prelude::*;
 
 pub struct Props {
@@ -47,7 +47,7 @@ impl Constructor for Implement {
             room: props.room,
             room_id: props.room_id,
             element_id: ElementId {
-                header_room_id: format!("{:X}", crate::random_id::u128val()),
+                header_room_id: format!("{:X}", crate::libs::random_id::u128val()),
             },
 
             table_tools: State::new(SelectList::new(

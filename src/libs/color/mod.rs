@@ -1,4 +1,5 @@
 use wasm_bindgen::prelude::*;
+pub mod color_system;
 
 #[derive(Clone, Copy)]
 pub struct Color {

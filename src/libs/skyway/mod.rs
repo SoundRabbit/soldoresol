@@ -1,4 +1,4 @@
-use crate::{random_id::U128Id, Color, JsObject};
+use super::{color::Color, js_object::JsObject, random_id::U128Id};
 use js_sys::Array;
 use std::{collections::HashMap, rc::Rc};
 use wasm_bindgen::prelude::*;

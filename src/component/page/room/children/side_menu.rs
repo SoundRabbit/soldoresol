@@ -245,8 +245,8 @@ impl Styled for SideMenu {
     fn style() -> Style {
         style! {
             "base" {
-                "background-color": format!("{}", crate::color_system::gray(100,8));
-                "color": format!("{}", crate::color_system::gray(100,0));
+                "background-color": format!("{}", crate::libs::color::color_system::gray(100,8));
+                "color": format!("{}", crate::libs::color::color_system::gray(100,0));
                 "position": "relative";
             }
 
@@ -258,7 +258,7 @@ impl Styled for SideMenu {
                 "align-content": "start";
                 "align-items": "center";
                 "height": "100%";
-                "border-right": format!("0.1em solid {}", crate::color_system::gray(100, 9));
+                "border-right": format!("0.1em solid {}", crate::libs::color::color_system::gray(100, 9));
             }
 
             "sub" {
@@ -272,14 +272,14 @@ impl Styled for SideMenu {
             }
 
             "sub--opend" {
-                "background-color": format!("{}", crate::color_system::gray(100,8));
+                "background-color": format!("{}", crate::libs::color::color_system::gray(100,8));
                 "min-width": "20rem";
                 "max-width": "10vw";
                 "height": "100%";
                 "display": "grid";
                 "grid-template-rows": "max-content 1fr";
                 "grid-template-columns": "1fr";
-                "border-right": format!("0.1em solid {}", crate::color_system::gray(100, 9));
+                "border-right": format!("0.1em solid {}", crate::libs::color::color_system::gray(100, 9));
             }
 
             "sub-header" {
@@ -287,7 +287,7 @@ impl Styled for SideMenu {
                 "grid-template-columns": "1fr max-content";
                 "align-items": "center";
                 "padding": "0.65em";
-                "border-bottom": format!("0.1em solid {}", crate::color_system::gray(100, 9));
+                "border-bottom": format!("0.1em solid {}", crate::libs::color::color_system::gray(100, 9));
             }
 
             "sub-body" {

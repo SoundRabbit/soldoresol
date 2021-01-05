@@ -9,9 +9,8 @@ mod tablemask_collection_renderer;
 
 use super::{webgl::WebGlRenderingContext, Camera};
 use crate::{
-    block::{self},
-    resource::ResourceId,
-    Resource,
+    block,
+    resource::{self, ResourceId},
 };
 use area_collection_renderer::AreaCollectionRenderer;
 use boxblock_collection_renderer::BoxblockCollectionRenderer;
@@ -90,14 +89,14 @@ impl ViewRenderer {
         }
     }
 
-    pub fn render(
+    pub async fn render(
         &mut self,
         gl: &WebGlRenderingContext,
         canvas_size: &[f32; 2],
         camera: &Camera,
-        block_field: &block::Field,
-        world: &block::World,
-        resource: &Resource,
+        block_arena: &block::Arena,
+        resource_arena: &resource::Arena,
+        world: &block::world::World,
         client_id: &String,
     ) {
         let vp_matrix = camera
@@ -110,37 +109,47 @@ impl ViewRenderer {
                 | web_sys::WebGlRenderingContext::STENCIL_BUFFER_BIT,
         );
         gl.depth_func(web_sys::WebGlRenderingContext::ALWAYS);
-        if let Some(table) = block_field.get::<block::Table>(world.selecting_table()) {
-            self.table_texture_renderer.render(
-                gl,
-                &vp_matrix,
-                block_field,
-                table,
-                &mut self.img_texture_buffer,
-                resource,
-            );
-            self.tablemask_collection_renderer.render(
-                gl,
-                &vp_matrix,
-                block_field,
-                table,
-                table.tablemasks(),
-            );
-            self.area_collection_renderer
-                .render(gl, &vp_matrix, block_field, table.areas());
+        block_arena
+            .map(world.selecting_table(), {
+                let block_arena = block::Arena::clone(block_arena);
+                let resource_arena = resource::Arena::clone(resource_arena);
+                move |table: &block::table::Table| async move {
+                    self.table_texture_renderer.render(
+                        gl,
+                        &vp_matrix,
+                        &block_field,
+                        &resource_arena,
+                        table,
+                        &mut self.img_texture_buffer,
+                    );
+                    self.tablemask_collection_renderer.render(
+                        gl,
+                        &vp_matrix,
+                        block_field,
+                        table,
+                        table.tablemasks(),
+                    );
+                    self.area_collection_renderer.render(
+                        gl,
+                        &vp_matrix,
+                        block_field,
+                        table.areas(),
+                    );
 
-            if table.is_showing_grid() {
-                self.table_grid_renderer.render(gl, &vp_matrix, table);
-            }
+                    if table.is_showing_grid() {
+                        self.table_grid_renderer.render(gl, &vp_matrix, table);
+                    }
 
-            gl.depth_func(web_sys::WebGlRenderingContext::LEQUAL);
-            self.boxblock_collection_renderer.render(
-                gl,
-                &vp_matrix,
-                block_field,
-                table.boxblocks(),
-            );
-        }
+                    gl.depth_func(web_sys::WebGlRenderingContext::LEQUAL);
+                    self.boxblock_collection_renderer.render(
+                        gl,
+                        &vp_matrix,
+                        block_field,
+                        table.boxblocks(),
+                    );
+                }
+            })
+            .await;
 
         self.character_mask_renderer.render(
             gl,

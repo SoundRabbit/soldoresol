@@ -49,7 +49,7 @@ impl Component for ModalNotification {
         if self.state.is_showing() {
             Self::styled(Modal::with_children(
                 modal::Props {
-                    state: Some(self.state.clone()),
+                    state: Some(modal::State::clone(&self.state)),
                     header_title: String::from("更新情報"),
                     footer_message: String::from("開発者 twitter：@SoundRabbit_"),
                 },

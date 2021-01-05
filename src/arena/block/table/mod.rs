@@ -1,7 +1,8 @@
 use super::BlockId;
+use crate::resource::ResourceId;
 use wasm_bindgen::{prelude::*, JsCast};
 
-mod texture;
+pub mod texture;
 
 pub struct Table {
     name: String,
@@ -60,12 +61,12 @@ impl Table {
         &self.drawing_texture_id
     }
 
-    pub fn image_texture_id(&self) -> Option<&ResourceId> {
-        self.image_texture_id.as_ref()
+    pub fn background_texture_id(&self) -> Option<&ResourceId> {
+        self.background_texture_id.as_ref()
     }
 
-    pub fn set_image_texture_id(&mut self, image_texture_id: Option<ResourceId>) {
-        self.image_texture_id = image_texture_id
+    pub fn set_background_texture_id(&mut self, background_texture_id: Option<ResourceId>) {
+        self.background_texture_id = background_texture_id
     }
 
     async fn pack(&self) -> JsValue {
