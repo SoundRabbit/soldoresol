@@ -1,4 +1,6 @@
+use async_std::sync::Mutex;
 use kagura::prelude::*;
+use lazy_static::lazy_static;
 use std::any;
 use std::cell::RefCell;
 use std::collections::hash_map::DefaultHasher;
@@ -6,8 +8,13 @@ use std::collections::HashSet;
 use std::hash::Hasher;
 use wasm_bindgen::JsCast;
 
-thread_local! {static STYLED: RefCell<HashSet<u64>> = RefCell::new(set!{})}
-thread_local! {static SHEET: RefCell<Option<web_sys::CssStyleSheet>> = RefCell::new(None)}
+lazy_static! {
+    static ref STYLED: Mutex<HashSet<u64>> = Mutex::new(set! {});
+}
+
+thread_local! {
+    static SHEET: RefCell<Option<web_sys::CssStyleSheet>> = RefCell::new(None);
+}
 
 fn hash_of_type<C>() -> u64 {
     let mut hasher = DefaultHasher::new();
@@ -24,12 +31,13 @@ fn styled_class<C>(class_name: &str) -> String {
 pub trait Styled: Constructor {
     fn style() -> Style;
     fn styled(node: Html) -> Html {
-        STYLED.with(|styled| {
+        wasm_bindgen_futures::spawn_local(async {
+            let mut styled = STYLED.lock().await;
             let component_id = hash_of_type::<Self>();
-            if styled.borrow().get(&component_id).is_none() {
+            if styled.get(&component_id).is_none() {
                 let style = Self::style();
                 style.write::<Self>();
-                styled.borrow_mut().insert(component_id);
+                styled.insert(component_id);
             }
         });
 
@@ -83,7 +91,7 @@ impl Style {
             }
             style_sheet += "}";
 
-            SHEET.with(move |sheet| {
+            SHEET.with(|sheet| {
                 if let Some(sheet) = sheet.borrow().as_ref() {
                     let _ = sheet.insert_rule_with_index(
                         style_sheet.as_str(),

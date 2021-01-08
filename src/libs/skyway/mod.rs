@@ -3,7 +3,7 @@ use js_sys::Array;
 use std::{collections::HashMap, rc::Rc};
 use wasm_bindgen::prelude::*;
 
-#[wasm_bindgen(raw_module = "../src/skyway/skyway.js")]
+#[wasm_bindgen(raw_module = "../src/libs/skyway/skyway.js")]
 extern "C" {
     pub type Peer;
 

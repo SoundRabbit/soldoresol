@@ -9,6 +9,7 @@ extern crate indexmap;
 extern crate isaribi;
 extern crate kagura;
 extern crate kanaria;
+extern crate lazy_static;
 extern crate ndarray;
 extern crate ordered_float;
 extern crate regex;
