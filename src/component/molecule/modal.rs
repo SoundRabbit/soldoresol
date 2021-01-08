@@ -175,6 +175,18 @@ impl Styled for Modal {
                 "background-color": color_system::gray(100, 8).to_string();
                 "padding" : ".5em 1em";
             }
+
+            @media "(orientation: portrait), (max-width: 60rem)" {
+                "base" {
+                    "width": "95%";
+                }
+            }
+
+            @media "(max-height: 60rem)" {
+                "base" {
+                    "height": "80%";
+                }
+            }
         }
     }
 }

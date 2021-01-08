@@ -325,7 +325,12 @@ impl Styled for RoomSelector {
                 "border-radius": "2px";
             }
 
-            @media "max-width: 40rem" {
+            @media "(max-width: 40rem)" {
+                "header-row" {
+                    "display": "flex";
+                    "flex-direction": "column-reverse";
+                }
+
                 "input-room-id" {
                     "grid-template-columns": "1fr max-content";
                     "grid-auto-rows": "max-content";
@@ -333,6 +338,10 @@ impl Styled for RoomSelector {
 
                 "input-room-id-label" {
                     "grid-column": "1 / -1";
+                }
+
+                "card-container" {
+                    "justify-content": "center";
                 }
             }
         }
