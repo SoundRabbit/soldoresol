@@ -188,6 +188,7 @@ impl RoomSelector {
                 Html::label(
                     Attributes::new()
                         .class(Self::class("label"))
+                        .class(Self::class("input-room-id-label"))
                         .string("for", &self.element_id.input_room_id),
                     Events::new(),
                     vec![Html::text("接続先のルームID")],
@@ -322,6 +323,17 @@ impl Styled for RoomSelector {
                 "background-color": crate::libs::color::color_system::gray(100, 2).to_string();
                 "padding": "0.25em";
                 "border-radius": "2px";
+            }
+
+            @media "max-width: 40rem" {
+                "input-room-id" {
+                    "grid-template-columns": "1fr max-content";
+                    "grid-auto-rows": "max-content";
+                }
+
+                "input-room-id-label" {
+                    "grid-column": "1 / -1";
+                }
             }
         }
     }
