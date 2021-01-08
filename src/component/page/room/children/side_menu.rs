@@ -35,7 +35,7 @@ impl Constructor for SideMenu {
         Self {
             tools: props.tools,
             selected_idx: selected_idx,
-            show_sub: true,
+            show_sub: false,
         }
     }
 }
@@ -248,6 +248,7 @@ impl Styled for SideMenu {
                 "background-color": format!("{}", crate::libs::color::color_system::gray(100,8));
                 "color": format!("{}", crate::libs::color::color_system::gray(100,0));
                 "position": "relative";
+                "height": "100%";
             }
 
             "main" {

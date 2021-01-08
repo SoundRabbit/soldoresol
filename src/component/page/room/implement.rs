@@ -5,9 +5,12 @@ use super::{
     super::template::basic_app::{self, BasicApp},
     super::util::styled::{Style, Styled},
     super::util::{Prop, State},
+    children::room_modeless::{self, RoomModeless},
     children::side_menu::{self, SideMenu},
     model::table::TableTool,
 };
+use crate::libs::modeless_list::ModelessList;
+use crate::libs::random_id::U128Id;
 use crate::libs::select_list::SelectList;
 use crate::libs::skyway::{MeshRoom, Peer};
 use kagura::prelude::*;
@@ -21,6 +24,7 @@ pub struct Props {
 
 pub enum Msg {
     SetTableToolIdx { idx: usize },
+    OpenNewModeless { content: room_modeless::Content },
 }
 
 pub enum On {}
@@ -33,6 +37,7 @@ pub struct Implement {
     element_id: ElementId,
 
     table_tools: State<SelectList<TableTool>>,
+    modeless_list: ModelessList<State<room_modeless::Content>>,
 }
 
 struct ElementId {
@@ -60,6 +65,7 @@ impl Constructor for Implement {
                 ],
                 0,
             )),
+            modeless_list: ModelessList::new(),
         }
     }
 }
@@ -77,6 +83,11 @@ impl Component for Implement {
                 self.table_tools.set_selected_idx(idx);
                 Cmd::none()
             }
+
+            Msg::OpenNewModeless { content } => {
+                self.modeless_list.push(State::new(content));
+                Cmd::none()
+            }
         }
     }
 
@@ -88,21 +99,35 @@ impl Component for Implement {
                 Header::with_children(
                     header::Props::new(),
                     Subscription::none(),
-                    vec![self.render_header_row_0()],
+                    vec![
+                        self.render_header_row_0(),
+                        self.render_header_controller_menu(),
+                    ],
                 ),
                 Html::div(
                     Attributes::new().class(Self::class("body")),
                     Events::new(),
-                    vec![SideMenu::empty(
-                        side_menu::Props {
-                            tools: self.table_tools.as_prop(),
-                        },
-                        Subscription::new(|sub| match sub {
-                            side_menu::On::ChangeSelectedIdx { idx } => {
-                                Msg::SetTableToolIdx { idx }
-                            }
-                        }),
-                    )],
+                    vec![
+                        Html::div(
+                            Attributes::new().class(Self::class("side-menu")),
+                            Events::new(),
+                            vec![SideMenu::empty(
+                                side_menu::Props {
+                                    tools: self.table_tools.as_prop(),
+                                },
+                                Subscription::new(|sub| match sub {
+                                    side_menu::On::ChangeSelectedIdx { idx } => {
+                                        Msg::SetTableToolIdx { idx }
+                                    }
+                                }),
+                            )],
+                        ),
+                        Html::div(
+                            Attributes::new().class(Self::class("main")),
+                            Events::new(),
+                            vec![self.render_modeless_container()],
+                        ),
+                    ],
                 ),
             ],
         ))
@@ -144,6 +169,48 @@ impl Implement {
             ],
         )
     }
+
+    fn render_header_controller_menu(&self) -> Html {
+        Html::div(
+            Attributes::new().class(Self::class("header-controller-menu")),
+            Events::new(),
+            vec![Btn::with_children(
+                btn::Props {
+                    variant: btn::Variant::Primary,
+                },
+                Subscription::new(|sub| match sub {
+                    btn::On::Click => Msg::OpenNewModeless {
+                        content: room_modeless::Content::ChatPanel,
+                    },
+                }),
+                vec![fa::i("fa-comment"), Html::text("チャットパネル")],
+            )],
+        )
+    }
+
+    fn render_modeless_container(&self) -> Html {
+        Html::div(
+            Attributes::new().class(Self::class("modeless-container")),
+            Events::new(),
+            self.modeless_list
+                .iter()
+                .map(|m| {
+                    if let Some((modeless_id, z_index, content)) = m.as_ref() {
+                        RoomModeless::empty(
+                            room_modeless::Props {
+                                modeless_id: U128Id::clone(&modeless_id),
+                                z_index: *z_index,
+                                content: content.as_prop(),
+                            },
+                            Subscription::none(),
+                        )
+                    } else {
+                        Html::div(Attributes::new(), Events::new(), vec![])
+                    }
+                })
+                .collect(),
+        )
+    }
 }
 
 impl Styled for Implement {
@@ -163,6 +230,25 @@ impl Styled for Implement {
             "body" {
                 "display": "grid";
                 "grid-template-columns": "max-content 1fr";
+            }
+
+            "side-menu" {
+                "z-index": "1";
+                "min-height": "max-content";
+                "min-width": "max-content";
+            }
+
+            "main" {
+                "position": "relative";
+            }
+
+            "modeless-container" {
+                "position": "absolute";
+                "top": "0";
+                "left": "0";
+                "width": "100%";
+                "height": "100%";
+                "z-index": "0";
             }
         }
     }

@@ -11,16 +11,19 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 pub struct Props {
-    pub state: Option<State>,
+    pub size: [f32; 2],
+    pub loc: [f32; 2],
+    pub z_index: usize,
 }
 
-pub struct State {
-    payload: Rc<RefCell<ImplState>>,
-}
-
-struct ImplState {
-    size: [f64; 2],
-    loc: [f64; 2],
+impl Default for Props {
+    fn default() -> Self {
+        Self {
+            size: [30.0, 30.0],
+            loc: [0.0, 0.0],
+            z_index: 0,
+        }
+    }
 }
 
 pub enum Msg {
@@ -32,32 +35,17 @@ pub enum On {
 }
 
 pub struct Modeless {
-    state: State,
-}
-
-impl State {
-    pub fn new() -> Self {
-        Self {
-            payload: Rc::new(RefCell::new(ImplState {
-                size: [30.0, 30.0],
-                loc: [0.0, 0.0],
-            })),
-        }
-    }
-}
-
-impl Clone for State {
-    fn clone(&self) -> Self {
-        Self {
-            payload: Rc::clone(&self.payload),
-        }
-    }
+    size: [f32; 2],
+    loc: [f32; 2],
+    z_index: usize,
 }
 
 impl Constructor for Modeless {
     fn constructor(props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) -> Self {
         Self {
-            state: props.state.unwrap_or(State::new()),
+            z_index: props.z_index,
+            loc: props.loc,
+            size: props.size,
         }
     }
 }
@@ -68,9 +56,7 @@ impl Component for Modeless {
     type Sub = On;
 
     fn init(&mut self, props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) {
-        if let Some(state) = props.state {
-            self.state = state;
-        }
+        self.z_index = props.z_index;
     }
 
     fn update(&mut self, msg: Self::Msg) -> Cmd<Self::Msg, Self::Sub> {
@@ -79,49 +65,111 @@ impl Component for Modeless {
         }
     }
 
-    fn render(&self, children: Vec<Html>) -> Html {
-        Html::none()
+    fn render(&self, mut children: Vec<Html>) -> Html {
+        children.push(self.render_rsz("rsz-t"));
+        children.push(self.render_rsz("rsz-tl"));
+        children.push(self.render_rsz("rsz-l"));
+        children.push(self.render_rsz("rsz-bl"));
+        children.push(self.render_rsz("rsz-b"));
+        children.push(self.render_rsz("rsz-br"));
+        children.push(self.render_rsz("rsz-r"));
+        children.push(self.render_rsz("rsz-tr"));
+        Self::styled(Html::div(
+            Attributes::new()
+                .class(Self::class("base"))
+                .style("z-index", format!("{}", self.z_index))
+                .style("left", format!("{}%", self.loc[0]))
+                .style("top", format!("{}%", self.loc[1]))
+                .style("width", format!("{}%", self.size[0]))
+                .style("height", format!("{}%", self.size[1])),
+            Events::new(),
+            children,
+        ))
+    }
+}
+
+impl Modeless {
+    fn render_rsz(&self, name: &str) -> Html {
+        Html::div(
+            Attributes::new().class(Self::class(name)),
+            Events::new(),
+            vec![],
+        )
     }
 }
 
 impl Styled for Modeless {
     fn style() -> Style {
         style! {
-            "background" {
-                "position": "absolute";
-                "top": "0";
-                "left": "0";
-                "width": "100%";
-                "height": "100%";
-                "z-index": constant::z_index::modal.to_string();
-                "background-color": color_system::gray(13, 9).to_string();
-                "display": "grid";
-                "align-items": "center";
-                "justify-items": "center";
-            }
             "base" {
-                "width": "50%";
-                "height": "50%";
-                "display": "grid";
-                "grid-template-rows": "max-content 1fr max-content";
-                "border-radius": "2px";
+                "position": "absolute";
                 "overflow": "hidden";
+                "border-radius": "2px";
+                "border": format!("1px solid {}", color_system::gray(255, 9));
             }
-            "header" {
-                "display": "grid";
-                "grid-template-columns": "1fr max-content";
-                "align-items": "center";
-                "color": color_system::gray(100, 0).to_string();
-                "background-color": color_system::gray(100, 8).to_string();
-                "padding-left": "1em";
+
+            "rsz-t" {
+                "position": "absolute";
+                "top": "-0.5rem";
+                "left": "0.5rem";
+                "width": "calc(100% - 1rem)";
+                "height": "1rem";
             }
-            "body" {
-                "background-color": color_system::gray(100, 0).to_string();
+
+            "rsz-tl" {
+                "position": "absolute";
+                "top": "-0.5rem";
+                "left": "-0.5rem";
+                "width": "1rem";
+                "height": "1rem";
             }
-            "footer" {
-                "color": color_system::gray(100, 0).to_string();
-                "background-color": color_system::gray(100, 8).to_string();
-                "padding" : ".5em 1em";
+
+            "rsz-l" {
+                "position": "absolute";
+                "top": "0.5rem";
+                "left": "-0.5rem";
+                "width": "1rem";
+                "height": "calc(100% - 1rem)";
+            }
+
+            "rsz-bl" {
+                "position": "absolute";
+                "top": "calc(100% - 0.5rem)";
+                "left": "-0.5rem";
+                "width": "1rem";
+                "height": "1rem";
+            }
+
+            "rsz-b" {
+                "position": "absolute";
+                "top": "calc(100% - 0.5rem)";
+                "left": "0.5rem";
+                "width": "calc(100% - 1rem)";
+                "height": "1rem";
+            }
+
+            "rsz-br" {
+                "position": "absolute";
+                "top": "calc(100% - 0.5rem)";
+                "left": "calc(100% - 0.5rem)";
+                "width": "1rem";
+                "height": "1rem";
+            }
+
+            "rsz-r" {
+                "position": "absolute";
+                "top": "0.5rem";
+                "left": "calc(100% - 0.5rem)";
+                "width": "1rem";
+                "height": "calc(100% - 1rem)";
+            }
+
+            "rsz-tr" {
+                "position": "absolute";
+                "top": "-0.5rem";
+                "left": "calc(100% - 0.5rem)";
+                "width": "1rem";
+                "height": "1rem";
             }
         }
     }
