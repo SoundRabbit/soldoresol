@@ -25,6 +25,7 @@ pub struct Props {
 pub enum Msg {
     SetTableToolIdx { idx: usize },
     OpenNewModeless { content: room_modeless::Content },
+    SetModelessContainerElement { element: web_sys::Element },
 }
 
 pub enum On {}
@@ -38,6 +39,7 @@ pub struct Implement {
 
     table_tools: State<SelectList<TableTool>>,
     modeless_list: ModelessList<State<room_modeless::Content>>,
+    modeless_container_element: Option<State<web_sys::Element>>,
 }
 
 struct ElementId {
@@ -66,6 +68,7 @@ impl Constructor for Implement {
                 0,
             )),
             modeless_list: ModelessList::new(),
+            modeless_container_element: None,
         }
     }
 }
@@ -86,6 +89,11 @@ impl Component for Implement {
 
             Msg::OpenNewModeless { content } => {
                 self.modeless_list.push(State::new(content));
+                Cmd::none()
+            }
+
+            Msg::SetModelessContainerElement { element } => {
+                self.modeless_container_element = Some(State::new(element));
                 Cmd::none()
             }
         }
@@ -189,27 +197,37 @@ impl Implement {
     }
 
     fn render_modeless_container(&self) -> Html {
-        Html::div(
-            Attributes::new().class(Self::class("modeless-container")),
-            Events::new(),
-            self.modeless_list
-                .iter()
-                .map(|m| {
-                    if let Some((modeless_id, z_index, content)) = m.as_ref() {
-                        RoomModeless::empty(
-                            room_modeless::Props {
-                                modeless_id: U128Id::clone(&modeless_id),
-                                z_index: *z_index,
-                                content: content.as_prop(),
-                            },
-                            Subscription::none(),
-                        )
-                    } else {
-                        Html::div(Attributes::new(), Events::new(), vec![])
-                    }
-                })
-                .collect(),
-        )
+        if let Some(modeless_container_element) = self.modeless_container_element.as_ref() {
+            Html::div(
+                Attributes::new().class(Self::class("modeless-container")),
+                Events::new(),
+                self.modeless_list
+                    .iter()
+                    .map(|m| {
+                        if let Some((modeless_id, z_index, content)) = m.as_ref() {
+                            RoomModeless::empty(
+                                room_modeless::Props {
+                                    modeless_id: U128Id::clone(&modeless_id),
+                                    z_index: *z_index,
+                                    content: content.as_prop(),
+                                    container_element: modeless_container_element.as_prop(),
+                                },
+                                Subscription::none(),
+                            )
+                        } else {
+                            Html::div(Attributes::new(), Events::new(), vec![])
+                        }
+                    })
+                    .collect(),
+            )
+        } else {
+            Html::div(
+                Attributes::new().class(Self::class("modeless-container")),
+                Events::new()
+                    .rendered(Some(|element| Msg::SetModelessContainerElement { element })),
+                vec![],
+            )
+        }
     }
 }
 
@@ -249,6 +267,7 @@ impl Styled for Implement {
                 "width": "100%";
                 "height": "100%";
                 "z-index": "0";
+                "overflow": "hidden";
             }
         }
     }

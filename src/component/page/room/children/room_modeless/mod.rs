@@ -14,6 +14,7 @@ pub struct Props {
     pub content: Prop<Content>,
     pub z_index: usize,
     pub modeless_id: U128Id,
+    pub container_element: Prop<web_sys::Element>,
 }
 
 pub enum Msg {}
@@ -22,8 +23,9 @@ pub enum On {}
 
 pub struct RoomModeless {
     content: Prop<Content>,
-    pub z_index: usize,
-    pub modeless_id: U128Id,
+    z_index: usize,
+    modeless_id: U128Id,
+    container_element: Prop<web_sys::Element>,
 }
 
 impl Constructor for RoomModeless {
@@ -32,6 +34,7 @@ impl Constructor for RoomModeless {
             content: props.content,
             z_index: props.z_index,
             modeless_id: props.modeless_id,
+            container_element: props.container_element,
         }
     }
 }
@@ -53,6 +56,7 @@ impl Component for RoomModeless {
         Self::styled(Modeless::with_children(
             modeless::Props {
                 z_index: self.z_index,
+                container_element: Some(Prop::clone(&self.container_element)),
                 ..Default::default()
             },
             Subscription::none(),
