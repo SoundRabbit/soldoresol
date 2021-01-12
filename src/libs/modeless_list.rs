@@ -63,4 +63,14 @@ impl<T> ModelessList<T> {
             .collect::<Vec<_>>()
             .into_iter()
     }
+
+    pub fn get(&self, modeless_id: &U128Id) -> Option<&T> {
+        let (_, t) = unwrap!(self.table.get(modeless_id));
+        Some(t)
+    }
+
+    pub fn get_mut(&mut self, modeless_id: &U128Id) -> Option<&mut T> {
+        let (_, t) = unwrap!(self.table.get_mut(modeless_id));
+        Some(t)
+    }
 }

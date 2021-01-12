@@ -26,6 +26,26 @@ impl<T> SelectList<T> {
     pub fn selected_mut(&mut self) -> Option<&mut T> {
         self.payload.get_mut(self.selected_idx)
     }
+
+    pub fn remove(&mut self, idx: usize) -> Option<T> {
+        if self.payload.len() > idx {
+            if self.selected_idx + 1 == self.payload.len() && self.selected_idx > 0 {
+                self.selected_idx -= 1;
+            }
+            Some(self.payload.remove(idx))
+        } else {
+            None
+        }
+    }
+
+    pub fn push(&mut self, v: T) {
+        if self.payload.len() < 1 {
+            self.payload.push(v);
+            self.selected_idx = 0;
+        } else {
+            self.payload.push(v);
+        }
+    }
 }
 
 impl<T> std::ops::Deref for SelectList<T> {

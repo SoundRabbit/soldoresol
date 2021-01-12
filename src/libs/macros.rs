@@ -47,12 +47,22 @@ macro_rules! join_some {
     }};
 }
 
-macro_rules! unwrap_option {
+macro_rules! unwrap {
     ($x:expr) => {
         if let Some(x) = $x {
             x
         } else {
             return None;
+        }
+    };
+}
+
+macro_rules! unwrap_or {
+    ($x:expr ; $y:expr) => {
+        if let Some(x) = $x {
+            x
+        } else {
+            return $y;
         }
     };
 }

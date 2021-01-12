@@ -23,9 +23,14 @@ pub struct Props {
 }
 
 pub enum Msg {
+    NoOp,
     SetTableToolIdx { idx: usize },
     OpenNewModeless { content: room_modeless::Content },
+    FocusModeless { modeless_id: U128Id },
+    CloseModeless { modeless_id: U128Id },
     SetModelessContainerElement { element: web_sys::Element },
+    SetDraggingModelessTab { modeless_id: U128Id, tab_idx: usize },
+    MoveModelessTab { modeless_id: Option<U128Id> },
 }
 
 pub enum On {}
@@ -38,8 +43,9 @@ pub struct Implement {
     element_id: ElementId,
 
     table_tools: State<SelectList<TableTool>>,
-    modeless_list: ModelessList<State<room_modeless::Content>>,
+    modeless_list: ModelessList<State<SelectList<room_modeless::Content>>>,
     modeless_container_element: Option<State<web_sys::Element>>,
+    dragging_modeless_tab: Option<(U128Id, usize)>,
 }
 
 struct ElementId {
@@ -69,6 +75,7 @@ impl Constructor for Implement {
             )),
             modeless_list: ModelessList::new(),
             modeless_container_element: None,
+            dragging_modeless_tab: None,
         }
     }
 }
@@ -82,18 +89,70 @@ impl Component for Implement {
 
     fn update(&mut self, msg: Self::Msg) -> Cmd<Self::Msg, Self::Sub> {
         match msg {
+            Msg::NoOp => Cmd::none(),
+
             Msg::SetTableToolIdx { idx } => {
                 self.table_tools.set_selected_idx(idx);
                 Cmd::none()
             }
 
             Msg::OpenNewModeless { content } => {
-                self.modeless_list.push(State::new(content));
+                self.modeless_list
+                    .push(State::new(SelectList::new(vec![content], 0)));
+                Cmd::none()
+            }
+
+            Msg::CloseModeless { modeless_id } => {
+                self.modeless_list.remove(&modeless_id);
+                Cmd::none()
+            }
+
+            Msg::FocusModeless { modeless_id } => {
+                self.modeless_list.focus(&modeless_id);
                 Cmd::none()
             }
 
             Msg::SetModelessContainerElement { element } => {
                 self.modeless_container_element = Some(State::new(element));
+                Cmd::none()
+            }
+
+            Msg::SetDraggingModelessTab {
+                modeless_id,
+                tab_idx,
+            } => {
+                crate::debug::log_1("SetDraggingModelessTab");
+                self.dragging_modeless_tab = Some((modeless_id, tab_idx));
+                Cmd::none()
+            }
+
+            Msg::MoveModelessTab { modeless_id: to_id } => {
+                if let Some((from_id, from_idx)) = self.dragging_modeless_tab.take() {
+                    let tab = if let Some(tab) = self
+                        .modeless_list
+                        .get_mut(&from_id)
+                        .and_then(|c| c.remove(from_idx))
+                    {
+                        Some(tab)
+                    } else {
+                        None
+                    };
+                    if let Some(tab) = tab {
+                        if let Some(to_content) =
+                            to_id.and_then(|to_id| self.modeless_list.get_mut(&to_id))
+                        {
+                            to_content.push(tab);
+                        } else {
+                            self.modeless_list
+                                .push(State::new(SelectList::new(vec![tab], 0)));
+                        }
+                    }
+                    if let Some(from_content) = self.modeless_list.get(&from_id) {
+                        if from_content.len() < 1 {
+                            self.modeless_list.remove(&from_id);
+                        }
+                    }
+                }
                 Cmd::none()
             }
         }
@@ -207,12 +266,31 @@ impl Implement {
                         if let Some((modeless_id, z_index, content)) = m.as_ref() {
                             RoomModeless::empty(
                                 room_modeless::Props {
-                                    modeless_id: U128Id::clone(&modeless_id),
                                     z_index: *z_index,
                                     content: content.as_prop(),
                                     container_element: modeless_container_element.as_prop(),
                                 },
-                                Subscription::none(),
+                                Subscription::new({
+                                    let modeless_id = U128Id::clone(&modeless_id);
+                                    |sub| match sub {
+                                        room_modeless::On::Focus => {
+                                            Msg::FocusModeless { modeless_id }
+                                        }
+                                        room_modeless::On::Close => {
+                                            Msg::CloseModeless { modeless_id }
+                                        }
+                                        room_modeless::On::DragTabStart { tab_idx } => {
+                                            crate::debug::log_1("room_modeless::On::DragTabStart");
+                                            Msg::SetDraggingModelessTab {
+                                                modeless_id,
+                                                tab_idx,
+                                            }
+                                        }
+                                        room_modeless::On::DropTab => Msg::MoveModelessTab {
+                                            modeless_id: Some(modeless_id),
+                                        },
+                                    }
+                                }),
                             )
                         } else {
                             Html::div(Attributes::new(), Events::new(), vec![])

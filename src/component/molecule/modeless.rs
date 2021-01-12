@@ -41,11 +41,10 @@ pub enum Msg {
         page_x: i32,
         page_y: i32,
     },
-    CloseSelf,
 }
 
 pub enum On {
-    Close,
+    Focus,
 }
 
 pub struct Modeless {
@@ -128,14 +127,13 @@ impl Component for Modeless {
     fn update(&mut self, msg: Self::Msg) -> Cmd<Self::Msg, Self::Sub> {
         match msg {
             Msg::NoOp => Cmd::none(),
-            Msg::CloseSelf => Cmd::sub(On::Close),
             Msg::DragStart {
                 page_x,
                 page_y,
                 drag_type,
             } => {
                 self.dragging = Some(([page_x, page_y], drag_type));
-                Cmd::none()
+                Cmd::sub(On::Focus)
             }
             Msg::DragEnd => {
                 self.dragging = None;
@@ -291,15 +289,15 @@ impl Styled for Modeless {
                 "height": "100%";
                 "overflow": "hidden";
                 "border-radius": "2px";
-                "border": format!("1px solid {}", color_system::gray(255, 9));
+                "box-shadow": format!("0 0 0.1rem 0.1rem {}", color_system::gray(255, 9));
             }
 
             "rsz-top" {
                 "position": "absolute";
-                "top": "-0.5rem";
+                "top": "-1rem";
                 "left": "0";
                 "width": "100%";
-                "height": "0.5rem";
+                "height": "1rem";
             }
 
             "rsz-top:hover" {
@@ -308,10 +306,10 @@ impl Styled for Modeless {
 
             "rsz-top-left" {
                 "position": "absolute";
-                "top": "-0.5rem";
-                "left": "-0.5rem";
-                "width": "0.5rem";
-                "height": "0.5rem";
+                "top": "-1rem";
+                "left": "-1rem";
+                "width": "1rem";
+                "height": "1rem";
             }
 
             "rsz-top-left:hover" {
@@ -321,8 +319,8 @@ impl Styled for Modeless {
             "rsz-left" {
                 "position": "absolute";
                 "top": "0";
-                "left": "-0.5rem";
-                "width": "0.5rem";
+                "left": "-1rem";
+                "width": "1rem";
                 "height": "100%";
             }
 
@@ -333,9 +331,9 @@ impl Styled for Modeless {
             "rsz-bottom-left" {
                 "position": "absolute";
                 "top": "100%";
-                "left": "-0.5rem";
-                "width": "0.5rem";
-                "height": "0.5rem";
+                "left": "-1rem";
+                "width": "1rem";
+                "height": "1rem";
             }
 
             "rsz-bottom-left:hover" {
@@ -347,7 +345,7 @@ impl Styled for Modeless {
                 "top": "100%";
                 "left": "0";
                 "width": "100%";
-                "height": "0.5rem";
+                "height": "1rem";
             }
 
             "rsz-bottom:hover" {
@@ -358,8 +356,8 @@ impl Styled for Modeless {
                 "position": "absolute";
                 "top": "100%";
                 "left": "100%";
-                "width": "0.5rem";
-                "height": "0.5rem";
+                "width": "1rem";
+                "height": "1rem";
             }
 
             "rsz-bottom-right:hover" {
@@ -370,7 +368,7 @@ impl Styled for Modeless {
                 "position": "absolute";
                 "top": "0";
                 "left": "100%";
-                "width": "0.5rem";
+                "width": "1rem";
                 "height": "100%";
             }
 
@@ -380,10 +378,10 @@ impl Styled for Modeless {
 
             "rsz-top-right" {
                 "position": "absolute";
-                "top": "-0.5rem";
+                "top": "-1rem";
                 "left": "100%";
-                "width": "0.5rem";
-                "height": "0.5rem";
+                "width": "1rem";
+                "height": "1rem";
             }
 
             "rsz-top-right:hover" {
