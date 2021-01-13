@@ -211,17 +211,23 @@ impl Component for Modeless {
                     if self.loc[1] < 0.0 {
                         self.loc[1] = 0.0;
                     }
-                    if self.loc[0] + self.size[0] > 1.0 {
-                        self.loc[0] = 1.0 - self.size[0];
+                    if self.size[0] > 1.0 {
+                        self.size[0] = 1.0;
                     }
-                    if self.loc[1] + self.size[1] > 1.0 {
-                        self.loc[1] = 1.0 - self.size[1];
+                    if self.size[1] > 1.0 {
+                        self.size[1] = 1.0;
                     }
                     if self.size[0] < 0.1 {
                         self.size[0] = 0.1;
                     }
                     if self.size[1] < 0.1 {
                         self.size[1] = 0.1;
+                    }
+                    if self.loc[0] + self.size[0] > 1.0 {
+                        self.loc[0] = 1.0 - self.size[0];
+                    }
+                    if self.loc[1] + self.size[1] > 1.0 {
+                        self.loc[1] = 1.0 - self.size[1];
                     }
 
                     dragging.0[0] = page_x;
@@ -288,14 +294,18 @@ impl Modeless {
     fn render_rsz(&self, drag_direction: DragDirection) -> Html {
         Html::div(
             Attributes::new().class(Self::class(&format!("rsz-{}", &drag_direction))),
-            Events::new().on_mousedown(|e| {
-                e.stop_propagation();
-                Msg::DragStart {
-                    page_x: e.page_x(),
-                    page_y: e.page_y(),
-                    drag_type: DragType::Resize(drag_direction),
-                }
-            }),
+            Events::new()
+                .on_mousedown(|e| {
+                    e.stop_propagation();
+                    Msg::DragStart {
+                        page_x: e.page_x(),
+                        page_y: e.page_y(),
+                        drag_type: DragType::Resize(drag_direction),
+                    }
+                })
+                .on_mouseup(|_| Msg::DragEnd)
+                .on_mousemove(on_drag!(self.dragging.is_some()))
+                .on_mouseleave(on_drag!(self.dragging.is_some())),
             vec![],
         )
     }
