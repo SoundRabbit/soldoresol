@@ -14,6 +14,7 @@ use crate::libs::random_id::U128Id;
 use crate::libs::select_list::SelectList;
 use crate::libs::skyway::{MeshRoom, Peer};
 use kagura::prelude::*;
+use wasm_bindgen::JsCast;
 
 pub struct Props {
     pub peer: Prop<Peer>,
@@ -24,13 +25,37 @@ pub struct Props {
 
 pub enum Msg {
     NoOp,
-    SetTableToolIdx { idx: usize },
-    OpenNewModeless { content: room_modeless::Content },
-    FocusModeless { modeless_id: U128Id },
-    CloseModeless { modeless_id: U128Id },
-    SetModelessContainerElement { element: web_sys::Element },
-    SetDraggingModelessTab { modeless_id: U128Id, tab_idx: usize },
-    MoveModelessTab { modeless_id: Option<U128Id> },
+    SetTableToolIdx {
+        idx: usize,
+    },
+    OpenNewModeless {
+        content: room_modeless::Content,
+    },
+    FocusModeless {
+        modeless_id: U128Id,
+    },
+    CloseModeless {
+        modeless_id: U128Id,
+    },
+    SetModelessContainerElement {
+        element: web_sys::Element,
+    },
+    SetDraggingModelessTab {
+        modeless_id: U128Id,
+        tab_idx: usize,
+    },
+    MoveModelessTab {
+        modeless_id: U128Id,
+        tab_idx: Option<usize>,
+    },
+    DropModelessTab {
+        page_x: i32,
+        page_y: i32,
+    },
+    SelectModelessTab {
+        modeless_id: U128Id,
+        tab_idx: usize,
+    },
 }
 
 pub enum On {}
@@ -43,9 +68,15 @@ pub struct Implement {
     element_id: ElementId,
 
     table_tools: State<SelectList<TableTool>>,
-    modeless_list: ModelessList<State<SelectList<room_modeless::Content>>>,
+    modeless_list: ModelessList<ModelessContent>,
     modeless_container_element: Option<State<web_sys::Element>>,
     dragging_modeless_tab: Option<(U128Id, usize)>,
+}
+
+struct ModelessContent {
+    content: State<SelectList<room_modeless::Content>>,
+    page_x: i32,
+    page_y: i32,
 }
 
 struct ElementId {
@@ -97,8 +128,11 @@ impl Component for Implement {
             }
 
             Msg::OpenNewModeless { content } => {
-                self.modeless_list
-                    .push(State::new(SelectList::new(vec![content], 0)));
+                self.modeless_list.push(ModelessContent {
+                    content: State::new(SelectList::new(vec![content], 0)),
+                    page_x: 0,
+                    page_y: 0,
+                });
                 Cmd::none()
             }
 
@@ -126,32 +160,71 @@ impl Component for Implement {
                 Cmd::none()
             }
 
-            Msg::MoveModelessTab { modeless_id: to_id } => {
+            Msg::MoveModelessTab {
+                modeless_id: to_id,
+                tab_idx,
+            } => {
                 if let Some((from_id, from_idx)) = self.dragging_modeless_tab.take() {
                     let tab = if let Some(tab) = self
                         .modeless_list
                         .get_mut(&from_id)
-                        .and_then(|c| c.remove(from_idx))
+                        .and_then(|c| c.content.remove(from_idx))
+                    {
+                        Some(tab)
+                    } else {
+                        None
+                    };
+                    if let Some((tab, to_content)) =
+                        join_some!(tab, self.modeless_list.get_mut(&to_id))
+                    {
+                        if let Some(tab_idx) = tab_idx {
+                            to_content.content.insert(tab_idx, tab);
+                        } else {
+                            to_content.content.push(tab);
+                        }
+                    }
+                    if let Some(from_content) = self.modeless_list.get(&from_id) {
+                        if from_content.content.len() < 1 {
+                            self.modeless_list.remove(&from_id);
+                        }
+                    }
+                }
+                Cmd::none()
+            }
+
+            Msg::DropModelessTab { page_x, page_y } => {
+                if let Some((from_id, from_idx)) = self.dragging_modeless_tab.take() {
+                    let tab = if let Some(tab) = self
+                        .modeless_list
+                        .get_mut(&from_id)
+                        .and_then(|c| c.content.remove(from_idx))
                     {
                         Some(tab)
                     } else {
                         None
                     };
                     if let Some(tab) = tab {
-                        if let Some(to_content) =
-                            to_id.and_then(|to_id| self.modeless_list.get_mut(&to_id))
-                        {
-                            to_content.push(tab);
-                        } else {
-                            self.modeless_list
-                                .push(State::new(SelectList::new(vec![tab], 0)));
-                        }
+                        self.modeless_list.push(ModelessContent {
+                            content: State::new(SelectList::new(vec![tab], 0)),
+                            page_x,
+                            page_y,
+                        });
                     }
                     if let Some(from_content) = self.modeless_list.get(&from_id) {
-                        if from_content.len() < 1 {
+                        if from_content.content.len() < 1 {
                             self.modeless_list.remove(&from_id);
                         }
                     }
+                }
+                Cmd::none()
+            }
+
+            Msg::SelectModelessTab {
+                modeless_id,
+                tab_idx,
+            } => {
+                if let Some(modeless) = self.modeless_list.get_mut(&modeless_id) {
+                    modeless.content.set_selected_idx(tab_idx);
                 }
                 Cmd::none()
             }
@@ -247,7 +320,9 @@ impl Implement {
                 },
                 Subscription::new(|sub| match sub {
                     btn::On::Click => Msg::OpenNewModeless {
-                        content: room_modeless::Content::ChatPanel,
+                        content: room_modeless::Content::ChatPanel(
+                            crate::libs::random_id::u32val().to_string(),
+                        ),
                     },
                 }),
                 vec![fa::i("fa-comment"), Html::text("チャットパネル")],
@@ -259,16 +334,36 @@ impl Implement {
         if let Some(modeless_container_element) = self.modeless_container_element.as_ref() {
             Html::div(
                 Attributes::new().class(Self::class("modeless-container")),
-                Events::new(),
+                Events::new()
+                    .on("dragover", |e| {
+                        e.prevent_default();
+                        Msg::NoOp
+                    })
+                    .on("drop", move |e| {
+                        let e = unwrap_or!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
+                        let data_transfer = unwrap_or!(e.data_transfer(); Msg::NoOp);
+                        let data = unwrap_or!(data_transfer.get_data("text/plain").ok(); Msg::NoOp);
+                        if data == RoomModeless::tag_id() {
+                            e.prevent_default();
+                            e.stop_propagation();
+                            let page_x = e.page_x();
+                            let page_y = e.page_y();
+                            Msg::DropModelessTab { page_x, page_y }
+                        } else {
+                            Msg::NoOp
+                        }
+                    }),
                 self.modeless_list
                     .iter()
                     .map(|m| {
-                        if let Some((modeless_id, z_index, content)) = m.as_ref() {
+                        if let Some((modeless_id, z_index, modeless)) = m.as_ref() {
                             RoomModeless::empty(
                                 room_modeless::Props {
                                     z_index: *z_index,
-                                    content: content.as_prop(),
+                                    content: modeless.content.as_prop(),
                                     container_element: modeless_container_element.as_prop(),
+                                    page_x: modeless.page_x,
+                                    page_y: modeless.page_y,
                                 },
                                 Subscription::new({
                                     let modeless_id = U128Id::clone(&modeless_id);
@@ -280,15 +375,23 @@ impl Implement {
                                             Msg::CloseModeless { modeless_id }
                                         }
                                         room_modeless::On::DragTabStart { tab_idx } => {
-                                            crate::debug::log_1("room_modeless::On::DragTabStart");
                                             Msg::SetDraggingModelessTab {
                                                 modeless_id,
                                                 tab_idx,
                                             }
                                         }
-                                        room_modeless::On::DropTab => Msg::MoveModelessTab {
-                                            modeless_id: Some(modeless_id),
-                                        },
+                                        room_modeless::On::DropTab { tab_idx } => {
+                                            Msg::MoveModelessTab {
+                                                modeless_id,
+                                                tab_idx,
+                                            }
+                                        }
+                                        room_modeless::On::SelectTab { tab_idx } => {
+                                            Msg::SelectModelessTab {
+                                                modeless_id,
+                                                tab_idx,
+                                            }
+                                        }
                                     }
                                 }),
                             )

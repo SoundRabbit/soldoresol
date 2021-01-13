@@ -11,11 +11,13 @@ pub struct Props {
 
 pub enum Msg {
     NoOp,
-    DragStart,
+    Sub(On),
 }
 
 pub enum On {
     DragStart,
+    Click,
+    Drop(web_sys::DragEvent),
 }
 
 pub struct TabBtn {
@@ -44,7 +46,7 @@ impl Component for TabBtn {
     fn update(&mut self, msg: Self::Msg) -> Cmd<Self::Msg, Self::Sub> {
         match msg {
             Msg::NoOp => Cmd::none(),
-            Msg::DragStart => Cmd::sub(On::DragStart),
+            Msg::Sub(sub) => Cmd::sub(sub),
         }
     }
 
@@ -52,6 +54,7 @@ impl Component for TabBtn {
         Self::styled(Html::div(
             Attributes::new().class(Self::class("base")).draggable(true),
             Events::new()
+                .on_click(|_| Msg::Sub(On::Click))
                 .on_mousedown(|e| {
                     e.stop_propagation();
                     Msg::NoOp
@@ -63,8 +66,12 @@ impl Component for TabBtn {
                         e.stop_propagation();
                         let data_transfer = unwrap_or!(e.data_transfer(); Msg::NoOp);
                         unwrap_or!(data_transfer.set_data("text/plain", &data).ok(); Msg::NoOp);
-                        Msg::DragStart
+                        Msg::Sub(On::DragStart)
                     }
+                })
+                .on("drop", |e| {
+                    let e = unwrap_or!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
+                    Msg::Sub(On::Drop(e))
                 }),
             vec![Html::div(
                 Attributes::new()

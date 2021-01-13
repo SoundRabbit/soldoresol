@@ -11,13 +11,15 @@ use kagura::prelude::*;
 use wasm_bindgen::{prelude::*, JsCast};
 
 pub enum Content {
-    ChatPanel,
+    ChatPanel(String),
 }
 
 pub struct Props {
     pub content: Prop<SelectList<Content>>,
     pub z_index: usize,
     pub container_element: Prop<web_sys::Element>,
+    pub page_x: i32,
+    pub page_y: i32,
 }
 
 pub enum Msg {
@@ -29,13 +31,16 @@ pub enum On {
     Close,
     Focus,
     DragTabStart { tab_idx: usize },
-    DropTab,
+    DropTab { tab_idx: Option<usize> },
+    SelectTab { tab_idx: usize },
 }
 
 pub struct RoomModeless {
     content: Prop<SelectList<Content>>,
     z_index: usize,
     container_element: Prop<web_sys::Element>,
+    page_x: i32,
+    page_y: i32,
 }
 
 impl Constructor for RoomModeless {
@@ -44,6 +49,8 @@ impl Constructor for RoomModeless {
             content: props.content,
             z_index: props.z_index,
             container_element: props.container_element,
+            page_x: props.page_x,
+            page_y: props.page_y,
         }
     }
 }
@@ -57,6 +64,8 @@ impl Component for RoomModeless {
         self.content = props.content;
         self.z_index = props.z_index;
         self.container_element = props.container_element;
+        self.page_x = props.page_x;
+        self.page_y = props.page_y;
     }
 
     fn update(&mut self, msg: Self::Msg) -> Cmd<Self::Msg, Self::Sub> {
@@ -74,6 +83,8 @@ impl Component for RoomModeless {
             modeless::Props {
                 z_index: self.z_index,
                 container_element: Some(Prop::clone(&self.container_element)),
+                page_x: self.page_x,
+                page_y: self.page_y,
                 ..Default::default()
             },
             Subscription::new(|sub| match sub {
@@ -82,21 +93,14 @@ impl Component for RoomModeless {
             Html::div(
                 Attributes::new().class(Self::class("base")),
                 Events::new(),
-                vec![
-                    self.render_header(),
-                    Html::div(
-                        Attributes::new().class(Self::class("body")),
-                        Events::new(),
-                        vec![],
-                    ),
-                ],
+                vec![self.render_header(), self.render_content()],
             ),
         ))
     }
 }
 
 impl RoomModeless {
-    fn id() -> String {
+    pub fn tag_id() -> String {
         use std::any;
         any::type_name::<Self>().to_string()
     }
@@ -113,10 +117,10 @@ impl RoomModeless {
                     let e = unwrap_or!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
                     let data_transfer = unwrap_or!(e.data_transfer(); Msg::NoOp);
                     let data = unwrap_or!(data_transfer.get_data("text/plain").ok(); Msg::NoOp);
-                    if data == Self::id() {
+                    if data == Self::tag_id() {
                         e.prevent_default();
                         e.stop_propagation();
-                        Msg::Sub(On::DropTab)
+                        Msg::Sub(On::DropTab { tab_idx: None })
                     } else {
                         Msg::NoOp
                     }
@@ -144,24 +148,47 @@ impl RoomModeless {
         self.content
             .iter()
             .enumerate()
-            .map(|(tab_idx, _a_content)| {
+            .map(|(tab_idx, a_content)| {
                 let is_selected = tab_idx == self.content.selected_idx();
-                TabBtn::with_children(
-                    tab_btn::Props {
-                        is_selected,
-                        data: Self::id(),
-                    },
-                    Subscription::new(move |sub| match sub {
-                        tab_btn::On::DragStart => Msg::Sub(On::DragTabStart { tab_idx }),
-                    }),
-                    vec![Html::text(format!("タブ[{}]", tab_idx))],
+                let name = match a_content {
+                    Content::ChatPanel(name) => name
+                };
+                Html::div(
+                    Attributes::new().class(Self::class("header-tab-btn")),
+                    Events::new(),
+                    vec![TabBtn::with_children(
+                        tab_btn::Props {
+                            is_selected,
+                            data: Self::tag_id(),
+                        },
+                        Subscription::new(move |sub| match sub {
+                            tab_btn::On::Click => Msg::Sub(On::SelectTab { tab_idx }),
+                            tab_btn::On::DragStart => Msg::Sub(On::DragTabStart { tab_idx }),
+                            tab_btn::On::Drop(e) => {
+                                let data_transfer = unwrap_or!(e.data_transfer(); Msg::NoOp);
+                                let data = unwrap_or!(data_transfer.get_data("text/plain").ok(); Msg::NoOp);
+                                if data == Self::tag_id() {
+                                    e.prevent_default();
+                                    e.stop_propagation();
+                                    Msg::Sub(On::DropTab { tab_idx: Some(tab_idx) })
+                                } else {
+                                    Msg::NoOp
+                                }
+                            },
+                        }),
+                        vec![Html::text(name)],
+                    )],
                 )
             })
             .collect()
     }
 
     fn render_content(&self) -> Html {
-        Html::none()
+        Html::div(
+            Attributes::new().class(Self::class("body")),
+            Events::new(),
+            vec![],
+        )
     }
 }
 
@@ -187,6 +214,7 @@ impl Styled for RoomModeless {
                 "overflow": "hidden";
                 "flex-wrap": "wrap";
             }
+
 
             "body" {
                 "background-color": format!("{}", color_system::gray(255, 0));

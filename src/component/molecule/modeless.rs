@@ -13,7 +13,8 @@ use std::rc::Rc;
 
 pub struct Props {
     pub size: [f32; 2],
-    pub loc: [f32; 2],
+    pub page_x: i32,
+    pub page_y: i32,
     pub z_index: usize,
     pub container_element: Option<Prop<web_sys::Element>>,
 }
@@ -22,9 +23,10 @@ impl Default for Props {
     fn default() -> Self {
         Self {
             size: [0.3, 0.3],
-            loc: [0.0, 0.0],
             z_index: 0,
             container_element: None,
+            page_x: 0,
+            page_y: 0,
         }
     }
 }
@@ -55,12 +57,12 @@ pub struct Modeless {
     container_element: Option<Prop<web_sys::Element>>,
 }
 
-enum DragType {
+pub enum DragType {
     Move,
     Resize(DragDirection),
 }
 
-enum DragDirection {
+pub enum DragDirection {
     Top,
     Left,
     Bottom,
@@ -88,9 +90,20 @@ impl std::fmt::Display for DragDirection {
 
 impl Constructor for Modeless {
     fn constructor(props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) -> Self {
+        let loc = if let Some(el) = props.container_element.as_ref() {
+            let rect = el.get_bounding_client_rect();
+            let client_x = props.page_x as f64 - rect.left();
+            let client_y = props.page_y as f64 - rect.top();
+            let loc_x = client_x / rect.width();
+            let loc_y = client_y / rect.height();
+            [(loc_x as f32).max(0.0), (loc_y as f32).max(0.0)]
+        } else {
+            [0.0, 0.0]
+        };
+
         Self {
             z_index: props.z_index,
-            loc: props.loc,
+            loc: loc,
             size: props.size,
             dragging: None,
             container_element: props.container_element,
