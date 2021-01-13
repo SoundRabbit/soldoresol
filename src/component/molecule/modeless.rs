@@ -81,7 +81,7 @@ impl std::fmt::Display for DragDirection {
             Self::Right => write!(f, "right"),
             Self::Bottom => write!(f, "bottom"),
             Self::TopLeft => write!(f, "top-left"),
-            Self::TopRight => write!(f, "right-bottom"),
+            Self::TopRight => write!(f, "top-right"),
             Self::BottomLeft => write!(f, "bottom-left"),
             Self::BottomRight => write!(f, "bottom-right"),
         }
@@ -329,9 +329,9 @@ impl Styled for Modeless {
 
             "rsz-top" {
                 "position": "absolute";
-                "top": "-0.5rem";
-                "left": "0.5";
-                "width": "calc(100% - 1em)";
+                "top": "-0.9rem";
+                "left": "0.1rem";
+                "width": "calc(100% - 0.2rem)";
                 "height": "1rem";
             }
 
@@ -341,8 +341,8 @@ impl Styled for Modeless {
 
             "rsz-top-left" {
                 "position": "absolute";
-                "top": "-0.5rem";
-                "left": "-0.5rem";
+                "top": "-0.9rem";
+                "left": "-0.9rem";
                 "width": "1rem";
                 "height": "1rem";
             }
@@ -353,10 +353,10 @@ impl Styled for Modeless {
 
             "rsz-left" {
                 "position": "absolute";
-                "top": "0.5rem";
-                "left": "-0.5rem";
+                "top": "0.1rem";
+                "left": "-0.9rem";
                 "width": "1rem";
-                "height": "calc(100% - 1rem)";
+                "height": "calc(100% - 0.2rem)";
             }
 
             "rsz-left:hover" {
@@ -365,8 +365,8 @@ impl Styled for Modeless {
 
             "rsz-bottom-left" {
                 "position": "absolute";
-                "top": "calc(100% - 0.5rem)";
-                "left": "-0.5rem";
+                "top": "calc(100% - 0.2rem)";
+                "left": "-0.9rem";
                 "width": "1rem";
                 "height": "1rem";
             }
@@ -377,9 +377,9 @@ impl Styled for Modeless {
 
             "rsz-bottom" {
                 "position": "absolute";
-                "top": "calc(100% - 0.5rem)";
-                "left": "0";
-                "width": "calc(100% - 1rem)";
+                "top": "calc(100% - 0.2rem)";
+                "left": "0.1rem";
+                "width": "calc(100% - 0.2rem)";
                 "height": "1rem";
             }
 
@@ -389,8 +389,8 @@ impl Styled for Modeless {
 
             "rsz-bottom-right" {
                 "position": "absolute";
-                "top": "calc(100% - 0.5rem)";
-                "left": "calc(100% - 0.5rem)";
+                "top": "calc(100% - 0.2rem)";
+                "left": "calc(100% - 0.2rem)";
                 "width": "1rem";
                 "height": "1rem";
             }
@@ -401,10 +401,10 @@ impl Styled for Modeless {
 
             "rsz-right" {
                 "position": "absolute";
-                "top": "0.5rem";
-                "left": "calc(100% - 0.5rem)";
+                "top": "0.1rem";
+                "left": "calc(100% - 0.2rem)";
                 "width": "1rem";
-                "height": "calc(100% - 1rem)";
+                "height": "calc(100% - 0.2rem)";
             }
 
             "rsz-right:hover" {
@@ -413,8 +413,8 @@ impl Styled for Modeless {
 
             "rsz-top-right" {
                 "position": "absolute";
-                "top": "-0.5rem";
-                "left": "calc(100% - 0.5rem)";
+                "top": "-0.9rem";
+                "left": "calc(100% - 0.2rem)";
                 "width": "1rem";
                 "height": "1rem";
             }
