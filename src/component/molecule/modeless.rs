@@ -211,10 +211,10 @@ impl Component for Modeless {
                     if self.loc[1] < 0.0 {
                         self.loc[1] = 0.0;
                     }
-                    if self.loc[0] + self.size[0] >= 1.0 {
+                    if self.loc[0] + self.size[0] > 1.0 {
                         self.loc[0] = 1.0 - self.size[0];
                     }
-                    if self.loc[1] + self.size[1] >= 1.0 {
+                    if self.loc[1] + self.size[1] > 1.0 {
                         self.loc[1] = 1.0 - self.size[1];
                     }
                     if self.size[0] < 0.1 {
@@ -227,6 +227,18 @@ impl Component for Modeless {
                     dragging.0[0] = page_x;
                     dragging.0[1] = page_y;
                 }
+
+                if let Some(container_element) = self.container_element.as_ref() {
+                    let rect = container_element.get_bounding_client_rect();
+                    if page_x < rect.left() as i32
+                        || page_x > rect.right() as i32
+                        || page_y < rect.top() as i32
+                        || page_y > rect.bottom() as i32
+                    {
+                        self.dragging = None;
+                    }
+                }
+
                 Cmd::none()
             }
         }
@@ -307,9 +319,9 @@ impl Styled for Modeless {
 
             "rsz-top" {
                 "position": "absolute";
-                "top": "-1rem";
-                "left": "0";
-                "width": "100%";
+                "top": "-0.5rem";
+                "left": "0.5";
+                "width": "calc(100% - 1em)";
                 "height": "1rem";
             }
 
@@ -319,8 +331,8 @@ impl Styled for Modeless {
 
             "rsz-top-left" {
                 "position": "absolute";
-                "top": "-1rem";
-                "left": "-1rem";
+                "top": "-0.5rem";
+                "left": "-0.5rem";
                 "width": "1rem";
                 "height": "1rem";
             }
@@ -331,10 +343,10 @@ impl Styled for Modeless {
 
             "rsz-left" {
                 "position": "absolute";
-                "top": "0";
-                "left": "-1rem";
+                "top": "0.5rem";
+                "left": "-0.5rem";
                 "width": "1rem";
-                "height": "100%";
+                "height": "calc(100% - 1rem)";
             }
 
             "rsz-left:hover" {
@@ -343,8 +355,8 @@ impl Styled for Modeless {
 
             "rsz-bottom-left" {
                 "position": "absolute";
-                "top": "100%";
-                "left": "-1rem";
+                "top": "calc(100% - 0.5rem)";
+                "left": "-0.5rem";
                 "width": "1rem";
                 "height": "1rem";
             }
@@ -355,9 +367,9 @@ impl Styled for Modeless {
 
             "rsz-bottom" {
                 "position": "absolute";
-                "top": "100%";
+                "top": "calc(100% - 0.5rem)";
                 "left": "0";
-                "width": "100%";
+                "width": "calc(100% - 1rem)";
                 "height": "1rem";
             }
 
@@ -367,8 +379,8 @@ impl Styled for Modeless {
 
             "rsz-bottom-right" {
                 "position": "absolute";
-                "top": "100%";
-                "left": "100%";
+                "top": "calc(100% - 0.5rem)";
+                "left": "calc(100% - 0.5rem)";
                 "width": "1rem";
                 "height": "1rem";
             }
@@ -379,10 +391,10 @@ impl Styled for Modeless {
 
             "rsz-right" {
                 "position": "absolute";
-                "top": "0";
-                "left": "100%";
+                "top": "0.5rem";
+                "left": "calc(100% - 0.5rem)";
                 "width": "1rem";
-                "height": "100%";
+                "height": "calc(100% - 1rem)";
             }
 
             "rsz-right:hover" {
@@ -391,8 +403,8 @@ impl Styled for Modeless {
 
             "rsz-top-right" {
                 "position": "absolute";
-                "top": "-1rem";
-                "left": "100%";
+                "top": "-0.5rem";
+                "left": "calc(100% - 0.5rem)";
                 "width": "1rem";
                 "height": "1rem";
             }
