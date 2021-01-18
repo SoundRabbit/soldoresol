@@ -10,6 +10,8 @@ use crate::libs::select_list::SelectList;
 use kagura::prelude::*;
 use wasm_bindgen::{prelude::*, JsCast};
 
+pub mod chat_tab;
+
 pub enum Content {
     ChatPanel(String),
 }

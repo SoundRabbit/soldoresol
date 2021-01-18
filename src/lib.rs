@@ -26,6 +26,7 @@ extern crate xmltree;
 #[macro_use]
 mod libs;
 
+mod arena;
 mod component;
 mod debug;
 mod model;

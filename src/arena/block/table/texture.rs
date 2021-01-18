@@ -1,6 +1,6 @@
 use super::BlockId;
-use crate::resource::ResourceId;
-use wasm_bindgen::JsCast;
+use crate::arena::resource::ResourceId;
+use wasm_bindgen::{prelude::*, JsCast};
 
 pub struct Texture {
     element: web_sys::HtmlCanvasElement,
@@ -33,7 +33,7 @@ impl Texture {
         element.set_height(buffer_size[1]);
         let context = Self::create_context(&element);
 
-        let this = Self {
+        let mut this = Self {
             element,
             context,
             pixel_ratio: [1.0, 1.0],
@@ -60,5 +60,9 @@ impl Texture {
 
         self.pixel_ratio = new_pixel_ratio;
         self.size = size;
+    }
+
+    pub async fn pack(&self) -> JsValue {
+        (object! {}).into()
     }
 }

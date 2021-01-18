@@ -1,5 +1,5 @@
 use super::BlockId;
-use crate::resource::ResourceId;
+use crate::arena::resource::ResourceId;
 use wasm_bindgen::{prelude::*, JsCast};
 
 pub mod texture;
@@ -69,11 +69,11 @@ impl Table {
         self.background_texture_id = background_texture_id
     }
 
-    async fn pack(&self) -> JsValue {
+    pub async fn pack(&self) -> JsValue {
         unimplemented!();
     }
 
-    async fn unpack(_val: JsValue) -> Self {
+    pub async fn unpack(_val: JsValue) -> Self {
         unimplemented!();
     }
 }

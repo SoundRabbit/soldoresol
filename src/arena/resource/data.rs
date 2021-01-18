@@ -1,3 +1,4 @@
+use crate::libs::js_object::JsObject;
 use async_trait::async_trait;
 use js_sys::Promise;
 use std::rc::Rc;
@@ -35,7 +36,6 @@ impl Data {
     }
 
     pub async fn unpack(val: JsValue) -> Option<Self> {
-        use crate::JsObject;
         let obj = val.dyn_into::<js_sys::Object>().unwrap();
         let obj = obj.dyn_into::<JsObject>().unwrap();
         let blob_type = obj.get("type").unwrap().as_string().unwrap();
@@ -66,7 +66,7 @@ impl Data {
 
     pub async fn from_blob(blob: web_sys::Blob) -> Option<Self> {
         if Self::prefix_of(&blob.type_()) == "image" {
-            let image = Rc::new(crate::util::html_image_element());
+            let image = Rc::new(crate::libs::element::html_image_element());
             let object_url = web_sys::Url::create_object_url_with_blob(&blob).unwrap_or("".into());
             let object_url = Rc::new(object_url);
             JsFuture::from(Promise::new({

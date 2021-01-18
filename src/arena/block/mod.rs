@@ -1,12 +1,12 @@
-use crate::random_id::U128Id;
-use crate::JsObject;
-use async_std::sync::Mutex;
+use crate::libs::js_object::JsObject;
+use crate::libs::random_id::U128Id;
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::future::Future;
 use std::rc::Rc;
-use std::sync::Arc;
 use wasm_bindgen::{prelude::*, JsCast};
 
+pub mod chat;
 pub mod table;
 pub mod world;
 
@@ -18,15 +18,14 @@ trait TryMut<T> {
     fn try_mut(&mut self) -> Option<&mut T>;
 }
 
-enum ImplBlock {
+enum Block {
     World(world::World),
     Table(table::Table),
     TableTexture(table::texture::Texture),
+    Chat(chat::Chat),
+    ChatTab(chat::tab::Tab),
+    ChatMessage(chat::message::Message),
     None,
-}
-
-pub struct Block {
-    payload: Rc<ImplBlock>,
 }
 
 #[derive(Debug, PartialEq, Eq, Hash)]
@@ -38,14 +37,14 @@ type Timestamp = f64;
 
 struct ArenaBlock {
     timestamp: Timestamp,
-    payload: Block,
+    payload: Rc<Block>,
 }
 
 pub struct Arena {
-    table: Arc<Mutex<HashMap<BlockId, Arc<Mutex<ArenaBlock>>>>>,
+    table: Rc<RefCell<HashMap<BlockId, ArenaBlock>>>,
 }
 
-impl ImplBlock {
+impl Block {
     fn is_none(&self) -> bool {
         match self {
             Self::None => true,
@@ -62,7 +61,7 @@ impl ImplBlock {
     }
 }
 
-impl TryRef<world::World> for ImplBlock {
+impl TryRef<world::World> for Block {
     fn try_ref(&self) -> Option<&world::World> {
         match self {
             Self::World(x) => Some(x),
@@ -71,7 +70,7 @@ impl TryRef<world::World> for ImplBlock {
     }
 }
 
-impl TryRef<table::Table> for ImplBlock {
+impl TryRef<table::Table> for Block {
     fn try_ref(&self) -> Option<&table::Table> {
         match self {
             Self::Table(x) => Some(x),
@@ -80,7 +79,7 @@ impl TryRef<table::Table> for ImplBlock {
     }
 }
 
-impl TryRef<table::texture::Texture> for ImplBlock {
+impl TryRef<table::texture::Texture> for Block {
     fn try_ref(&self) -> Option<&table::texture::Texture> {
         match self {
             Self::TableTexture(x) => Some(x),
@@ -89,7 +88,34 @@ impl TryRef<table::texture::Texture> for ImplBlock {
     }
 }
 
-impl TryMut<world::World> for ImplBlock {
+impl TryRef<chat::Chat> for Block {
+    fn try_ref(&self) -> Option<&chat::Chat> {
+        match self {
+            Self::Chat(x) => Some(x),
+            _ => None,
+        }
+    }
+}
+
+impl TryRef<chat::tab::Tab> for Block {
+    fn try_ref(&self) -> Option<&chat::tab::Tab> {
+        match self {
+            Self::ChatTab(x) => Some(x),
+            _ => None,
+        }
+    }
+}
+
+impl TryRef<chat::message::Message> for Block {
+    fn try_ref(&self) -> Option<&chat::message::Message> {
+        match self {
+            Self::ChatMessage(x) => Some(x),
+            _ => None,
+        }
+    }
+}
+
+impl TryMut<world::World> for Block {
     fn try_mut(&mut self) -> Option<&mut world::World> {
         match self {
             Self::World(x) => Some(x),
@@ -98,7 +124,7 @@ impl TryMut<world::World> for ImplBlock {
     }
 }
 
-impl TryMut<table::Table> for ImplBlock {
+impl TryMut<table::Table> for Block {
     fn try_mut(&mut self) -> Option<&mut table::Table> {
         match self {
             Self::Table(x) => Some(x),
@@ -107,7 +133,7 @@ impl TryMut<table::Table> for ImplBlock {
     }
 }
 
-impl TryMut<table::texture::Texture> for ImplBlock {
+impl TryMut<table::texture::Texture> for Block {
     fn try_mut(&mut self) -> Option<&mut table::texture::Texture> {
         match self {
             Self::TableTexture(x) => Some(x),
@@ -116,42 +142,30 @@ impl TryMut<table::texture::Texture> for ImplBlock {
     }
 }
 
-impl Block {
-    fn new(payload: ImplBlock) -> Self {
-        Self {
-            payload: Rc::new(payload),
+impl TryMut<chat::Chat> for Block {
+    fn try_mut(&mut self) -> Option<&mut chat::Chat> {
+        match self {
+            Self::Chat(x) => Some(x),
+            _ => None,
         }
     }
+}
 
-    pub fn is_none(&self) -> bool {
-        self.payload.is_none()
-    }
-
-    fn clone(this: &Self) -> Self {
-        let payload = Rc::clone(&this.payload);
-        Self { payload }
-    }
-
-    fn as_ref(&self) -> &ImplBlock {
-        &self.payload.as_ref()
+impl TryMut<chat::tab::Tab> for Block {
+    fn try_mut(&mut self) -> Option<&mut chat::tab::Tab> {
+        match self {
+            Self::ChatTab(x) => Some(x),
+            _ => None,
+        }
     }
 }
 
-impl<T> TryRef<T> for Block
-where
-    ImplBlock: TryRef<T>,
-{
-    fn try_ref(&self) -> Option<&T> {
-        self.payload.try_ref()
-    }
-}
-
-impl<T> TryMut<T> for Block
-where
-    ImplBlock: TryMut<T>,
-{
-    fn try_mut(&mut self) -> Option<&mut T> {
-        Rc::get_mut(&mut self.payload).and_then(|impl_block| impl_block.try_mut())
+impl TryMut<chat::message::Message> for Block {
+    fn try_mut(&mut self) -> Option<&mut chat::message::Message> {
+        match self {
+            Self::ChatMessage(x) => Some(x),
+            _ => None,
+        }
     }
 }
 
@@ -179,14 +193,20 @@ impl ArenaBlock {
     fn new(timestamp: f64, block: Block) -> Self {
         Self {
             timestamp: timestamp,
-            payload: block,
+            payload: Rc::new(block),
         }
     }
 
     async fn pack(&self) -> JsValue {
-        let (payload, type_name) = match self.payload.as_ref() {
-            ImplBlock::World(world) => (world.pack().await, "World"),
-            ImplBlock::None => (object! {}.into(), "None"),
+        let payload = Rc::clone(&self.payload);
+        let (payload, type_name) = match payload.as_ref() {
+            Block::World(x) => (x.pack().await, "World"),
+            Block::Table(x) => (x.pack().await, "Table"),
+            Block::TableTexture(x) => (x.pack().await, "TableTexture"),
+            Block::Chat(x) => (object! {}.into(), "None"),
+            Block::ChatTab(x) => (object! {}.into(), "None"),
+            Block::ChatMessage(x) => (object! {}.into(), "None"),
+            Block::None => (object! {}.into(), "None"),
         };
 
         (object! {
@@ -198,29 +218,27 @@ impl ArenaBlock {
     }
 
     async fn unpack(val: JsValue) -> Option<Self> {
-        let val = unwrap_option!(val.dyn_into::<JsObject>().ok());
+        let val = unwrap_or!(val.dyn_into::<JsObject>().ok(); None);
 
-        let type_name = unwrap_option!(val.get("type_name").and_then(|x| x.as_string()));
-        let timestamp = unwrap_option!(val.get("timestamp").and_then(|x| x.as_f64()));
-        let payload = unwrap_option!(val.get("payload").map(|x| {
+        let type_name = unwrap_or!(val.get("type_name").and_then(|x| x.as_string()); None);
+        let timestamp = unwrap_or!(val.get("timestamp").and_then(|x| x.as_f64()); None);
+        let payload = unwrap_or!(val.get("payload").map(|x| {
             let x: js_sys::Object = x.into();
             let x: JsValue = x.into();
             x
-        }));
+        }); None);
 
         let payload = match type_name.as_str() {
-            "World" => world::World::unpack(payload)
-                .await
-                .map(|x| ImplBlock::World(x)),
-            "None" => Some(ImplBlock::None),
+            "World" => world::World::unpack(payload).await.map(|x| Block::World(x)),
+            "None" => Some(Block::None),
             _ => None,
         };
 
-        let payload = unwrap_option!(payload);
+        let payload = unwrap_or!(payload; None);
 
         Some(Self {
             timestamp,
-            payload: Block::new(payload),
+            payload: Rc::new(payload),
         })
     }
 }
@@ -228,51 +246,41 @@ impl ArenaBlock {
 impl Arena {
     pub fn new() -> Self {
         Self {
-            table: Arc::new(Mutex::new(HashMap::new())),
+            table: Rc::new(RefCell::new(HashMap::new())),
         }
     }
 
     pub fn clone(this: &Self) -> Self {
         Self {
-            table: Arc::clone(&this.table),
+            table: Rc::clone(&this.table),
         }
     }
 
-    async fn get(&self, block_id: &BlockId) -> Option<Arc<Mutex<ArenaBlock>>> {
-        let table = self.table.lock().await;
-        table.get(block_id).map(|x| Arc::clone(x))
-    }
-
-    pub async fn assign_arena_block(&mut self, block_id: BlockId, new_arena_block: ArenaBlock) {
-        if let Some(arena_block) = self.table.lock().await.get(&block_id) {
-            let mut arena_block = arena_block.lock().await;
+    pub fn assign_arena_block(&mut self, block_id: BlockId, new_arena_block: ArenaBlock) {
+        if let Some(arena_block) = self.table.borrow_mut().get_mut(&block_id) {
             if arena_block.timestamp < new_arena_block.timestamp {
                 arena_block.timestamp = new_arena_block.timestamp;
                 arena_block.payload = new_arena_block.payload;
             }
         } else {
-            self.table
-                .lock()
-                .await
-                .insert(block_id, Arc::new(Mutex::new(new_arena_block)));
+            self.table.borrow_mut().insert(block_id, new_arena_block);
         }
     }
 
-    pub async fn timestamp_of(&self, block_id: &BlockId) -> Option<Timestamp> {
-        let arena_block = unwrap_option!(self.get(block_id).await);
-        let arena_block = arena_block.lock().await;
+    pub fn timestamp_of(&self, block_id: &BlockId) -> Option<Timestamp> {
+        let table = self.table.borrow();
+        let arena_block = unwrap_or!(table.get(block_id); None);
         Some(arena_block.timestamp)
     }
 
-    pub async fn map<T, U, A>(&self, block_id: &BlockId, f: impl FnOnce(&T) -> A) -> Option<U>
+    pub fn map<T, U>(&self, block_id: &BlockId, f: impl FnOnce(&T) -> U) -> Option<U>
     where
         Block: TryRef<T>,
-        A: Future<Output = U>,
     {
-        let arena_block = unwrap_option!(self.get(&block_id).await);
-        let arena_block = arena_block.lock().await;
-        let block = unwrap_option!(arena_block.payload.try_ref());
-        Some(f(block).await)
+        let table = self.table.borrow();
+        let arena_block = unwrap_or!(table.get(block_id); None);
+        let block = unwrap_or!(arena_block.payload.try_ref(); None);
+        Some(f(block))
     }
 
     pub async fn iter_map_with_ids<T, U>(
@@ -283,35 +291,35 @@ impl Arena {
     where
         Block: TryRef<T>,
     {
-        let mut blocks = vec![];
-        {
-            let table = self.table.lock().await;
-            for block_id in block_ids {
-                if let Some(arena_block) = table.get(&block_id) {
-                    blocks.push((block_id, Arc::clone(arena_block)));
-                }
-            }
-        }
         let mut mapped = vec![];
-        for (block_id, arena_block) in blocks {
-            if let Some(block) = arena_block.lock().await.payload.try_ref() {
-                mapped.push(f(block_id, block));
+        {
+            for block_id in block_ids {
+                if let Some(block) = self
+                    .table
+                    .borrow()
+                    .get(&block_id)
+                    .and_then(|ab| ab.payload.try_ref())
+                {
+                    mapped.push(f(block_id, &block));
+                }
             }
         }
         mapped.into_iter()
     }
 
-    pub async fn iter_map<T, U>(&self, f: impl FnMut(BlockId, &T) -> U) -> impl Iterator<Item = U>
+    pub fn iter_map<T, U>(&self, mut f: impl FnMut(BlockId, &T) -> U) -> impl Iterator<Item = U>
     where
         Block: TryRef<T>,
     {
-        let keys = self
-            .table
-            .lock()
-            .await
-            .keys()
-            .map(|x| BlockId::clone(x))
-            .collect::<Vec<_>>();
-        self.iter_map_with_ids(keys.into_iter(), f).await
+        self.table
+            .borrow()
+            .iter()
+            .filter_map(move |(block_id, ab)| {
+                ab.payload
+                    .try_ref()
+                    .map(|block| f(BlockId::clone(&block_id), block))
+            })
+            .collect::<Vec<_>>()
+            .into_iter()
     }
 }

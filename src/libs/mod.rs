@@ -4,6 +4,7 @@ pub mod macros;
 pub mod js_object;
 
 pub mod color;
+pub mod element;
 pub mod idb;
 pub mod modeless_list;
 pub mod random_id;
