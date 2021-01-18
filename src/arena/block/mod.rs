@@ -28,22 +28,6 @@ enum Block {
     None,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash)]
-pub struct BlockId {
-    id: U128Id,
-}
-
-type Timestamp = f64;
-
-struct ArenaBlock {
-    timestamp: Timestamp,
-    payload: Rc<Block>,
-}
-
-pub struct Arena {
-    table: Rc<RefCell<HashMap<BlockId, ArenaBlock>>>,
-}
-
 impl Block {
     fn is_none(&self) -> bool {
         match self {
@@ -169,6 +153,11 @@ impl TryMut<chat::message::Message> for Block {
     }
 }
 
+#[derive(Debug, PartialEq, Eq, Hash)]
+pub struct BlockId {
+    id: U128Id,
+}
+
 impl BlockId {
     fn new(id: U128Id) -> Self {
         Self { id }
@@ -187,6 +176,13 @@ impl BlockId {
             id: U128Id::clone(&this.id),
         }
     }
+}
+
+type Timestamp = f64;
+
+struct ArenaBlock {
+    timestamp: Timestamp,
+    payload: Rc<Block>,
 }
 
 impl ArenaBlock {
@@ -243,6 +239,14 @@ impl ArenaBlock {
     }
 }
 
+pub trait Insert<T> {
+    fn insert(&mut self, block: T) -> BlockId;
+}
+
+pub struct Arena {
+    table: Rc<RefCell<HashMap<BlockId, ArenaBlock>>>,
+}
+
 impl Arena {
     pub fn new() -> Self {
         Self {
@@ -256,14 +260,25 @@ impl Arena {
         }
     }
 
-    pub fn assign_arena_block(&mut self, block_id: BlockId, new_arena_block: ArenaBlock) {
-        if let Some(arena_block) = self.table.borrow_mut().get_mut(&block_id) {
+    fn insert(&mut self, block: Block) -> BlockId {
+        let block_id = BlockId::new(U128Id::new());
+        let arena_block = ArenaBlock::new(js_sys::Date::now(), block);
+
+        self.assign_arena_block(BlockId::clone(&block_id), arena_block);
+
+        block_id
+    }
+
+    fn assign_arena_block(&mut self, block_id: BlockId, new_arena_block: ArenaBlock) {
+        crate::debug::log_1("assign arena block");
+        let mut table = self.table.borrow_mut();
+        if let Some(arena_block) = table.get_mut(&block_id) {
             if arena_block.timestamp < new_arena_block.timestamp {
                 arena_block.timestamp = new_arena_block.timestamp;
                 arena_block.payload = new_arena_block.payload;
             }
         } else {
-            self.table.borrow_mut().insert(block_id, new_arena_block);
+            table.insert(block_id, new_arena_block);
         }
     }
 
@@ -321,5 +336,17 @@ impl Arena {
             })
             .collect::<Vec<_>>()
             .into_iter()
+    }
+}
+
+impl Insert<chat::Chat> for Arena {
+    fn insert(&mut self, block: chat::Chat) -> BlockId {
+        self.insert(Block::Chat(block))
+    }
+}
+
+impl Insert<chat::tab::Tab> for Arena {
+    fn insert(&mut self, block: chat::tab::Tab) -> BlockId {
+        self.insert(Block::ChatTab(block))
     }
 }

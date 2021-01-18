@@ -47,10 +47,16 @@ impl Component for ChatTab {
         Self::styled(
             self.block_arena
                 .map(&self.tab_id, |tab: &block::chat::tab::Tab| {
-                    Html::div(Attributes::new(), Events::new(), vec![])
+                    self.render_tab(tab)
                 })
                 .unwrap_or(Html::none()),
         )
+    }
+}
+
+impl ChatTab {
+    fn render_tab(&self, tab: &block::chat::tab::Tab) -> Html {
+        Html::div(Attributes::new(), Events::new(), vec![])
     }
 }
 

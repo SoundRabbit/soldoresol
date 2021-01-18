@@ -4,6 +4,7 @@ use super::atom::tab_btn::{self, TabBtn};
 use super::molecule::modeless::{self, Modeless};
 use super::util::styled::{Style, Styled};
 use super::util::Prop;
+use crate::arena::block::{self, BlockId};
 use crate::libs::color::color_system;
 use crate::libs::random_id::U128Id;
 use crate::libs::select_list::SelectList;
@@ -13,7 +14,7 @@ use wasm_bindgen::{prelude::*, JsCast};
 pub mod chat_tab;
 
 pub enum Content {
-    ChatPanel(String),
+    ChatTab(BlockId),
 }
 
 pub struct Props {
@@ -22,6 +23,7 @@ pub struct Props {
     pub container_element: Prop<web_sys::Element>,
     pub page_x: i32,
     pub page_y: i32,
+    pub block_arena: block::Arena,
 }
 
 pub enum Msg {
@@ -43,6 +45,7 @@ pub struct RoomModeless {
     container_element: Prop<web_sys::Element>,
     page_x: i32,
     page_y: i32,
+    block_arena: block::Arena,
 }
 
 impl Constructor for RoomModeless {
@@ -53,6 +56,7 @@ impl Constructor for RoomModeless {
             container_element: props.container_element,
             page_x: props.page_x,
             page_y: props.page_y,
+            block_arena: props.block_arena,
         }
     }
 }
@@ -68,6 +72,7 @@ impl Component for RoomModeless {
         self.container_element = props.container_element;
         self.page_x = props.page_x;
         self.page_y = props.page_y;
+        self.block_arena = props.block_arena;
     }
 
     fn update(&mut self, msg: Self::Msg) -> Cmd<Self::Msg, Self::Sub> {
@@ -152,8 +157,13 @@ impl RoomModeless {
             .enumerate()
             .map(|(tab_idx, a_content)| {
                 let is_selected = tab_idx == self.content.selected_idx();
-                let name = match a_content {
-                    Content::ChatPanel(name) => name
+                let tab_heading = match a_content {
+                    Content::ChatTab(tab_id) => vec![
+                        fa::i("fa-comment"), 
+                        Html::text(self.block_arena.map(tab_id, |tab: &block::chat::tab::Tab| {
+                            format!(" {}", tab.name())
+                        }).unwrap_or(String::new()))
+                    ]
                 };
                 Html::div(
                     Attributes::new().class(Self::class("header-tab-btn")),
@@ -178,7 +188,7 @@ impl RoomModeless {
                                 }
                             },
                         }),
-                        vec![Html::text(name)],
+                        tab_heading,
                     )],
                 )
             })

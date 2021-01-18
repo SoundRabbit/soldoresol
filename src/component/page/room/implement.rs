@@ -9,6 +9,7 @@ use super::{
     children::side_menu::{self, SideMenu},
     model::table::TableTool,
 };
+use crate::arena::block::{self, BlockId, Insert};
 use crate::libs::modeless_list::ModelessList;
 use crate::libs::random_id::U128Id;
 use crate::libs::select_list::SelectList;
@@ -31,6 +32,7 @@ pub enum Msg {
     OpenNewModeless {
         content: room_modeless::Content,
     },
+    OpenNewChatModeless,
     FocusModeless {
         modeless_id: U128Id,
     },
@@ -71,6 +73,10 @@ pub struct Implement {
     modeless_list: ModelessList<ModelessContent>,
     modeless_container_element: Option<State<web_sys::Element>>,
     dragging_modeless_tab: Option<(U128Id, usize)>,
+
+    block_arena: block::Arena,
+
+    chat_id: BlockId,
 }
 
 struct ModelessContent {
@@ -85,6 +91,18 @@ struct ElementId {
 
 impl Constructor for Implement {
     fn constructor(props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) -> Self {
+        crate::debug::log_1("create block arena");
+        let mut block_arena = block::Arena::new();
+
+        crate::debug::log_1("create chat block");
+        let chat = block::chat::Chat::new(vec![
+            block_arena.insert(block::chat::tab::Tab::new(String::from("メイン"))),
+            block_arena.insert(block::chat::tab::Tab::new(String::from("サブ"))),
+        ]);
+
+        crate::debug::log_1("insert chat block");
+        let chat_id = block_arena.insert(chat);
+
         Self {
             peer: props.peer,
             peer_id: props.peer_id,
@@ -107,6 +125,10 @@ impl Constructor for Implement {
             modeless_list: ModelessList::new(),
             modeless_container_element: None,
             dragging_modeless_tab: None,
+
+            block_arena,
+
+            chat_id,
         }
     }
 }
@@ -130,6 +152,24 @@ impl Component for Implement {
             Msg::OpenNewModeless { content } => {
                 self.modeless_list.push(ModelessContent {
                     content: State::new(SelectList::new(vec![content], 0)),
+                    page_x: 0,
+                    page_y: 0,
+                });
+                Cmd::none()
+            }
+
+            Msg::OpenNewChatModeless => {
+                let tabs = self
+                    .block_arena
+                    .map(&self.chat_id, |chat: &block::chat::Chat| {
+                        chat.tabs()
+                            .iter()
+                            .map(|tab_id| room_modeless::Content::ChatTab(BlockId::clone(&tab_id)))
+                            .collect::<Vec<_>>()
+                    })
+                    .unwrap_or(vec![]);
+                self.modeless_list.push(ModelessContent {
+                    content: State::new(SelectList::new(tabs, 0)),
                     page_x: 0,
                     page_y: 0,
                 });
@@ -319,13 +359,9 @@ impl Implement {
                     variant: btn::Variant::Primary,
                 },
                 Subscription::new(|sub| match sub {
-                    btn::On::Click => Msg::OpenNewModeless {
-                        content: room_modeless::Content::ChatPanel(
-                            crate::libs::random_id::u32val().to_string(),
-                        ),
-                    },
+                    btn::On::Click => Msg::OpenNewChatModeless,
                 }),
-                vec![fa::i("fa-comment"), Html::text("チャットパネル")],
+                vec![fa::i("fa-comment"), Html::text(" チャットパネル")],
             )],
         )
     }
@@ -364,6 +400,7 @@ impl Implement {
                                     container_element: modeless_container_element.as_prop(),
                                     page_x: modeless.page_x,
                                     page_y: modeless.page_y,
+                                    block_arena: block::Arena::clone(&self.block_arena),
                                 },
                                 Subscription::new({
                                     let modeless_id = U128Id::clone(&modeless_id);
