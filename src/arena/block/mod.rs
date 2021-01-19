@@ -23,7 +23,7 @@ enum Block {
     Table(table::Table),
     TableTexture(table::texture::Texture),
     Chat(chat::Chat),
-    ChatTab(chat::tab::Tab),
+    ChatChannel(chat::channel::Channel),
     ChatMessage(chat::message::Message),
     None,
 }
@@ -81,10 +81,10 @@ impl TryRef<chat::Chat> for Block {
     }
 }
 
-impl TryRef<chat::tab::Tab> for Block {
-    fn try_ref(&self) -> Option<&chat::tab::Tab> {
+impl TryRef<chat::channel::Channel> for Block {
+    fn try_ref(&self) -> Option<&chat::channel::Channel> {
         match self {
-            Self::ChatTab(x) => Some(x),
+            Self::ChatChannel(x) => Some(x),
             _ => None,
         }
     }
@@ -135,10 +135,10 @@ impl TryMut<chat::Chat> for Block {
     }
 }
 
-impl TryMut<chat::tab::Tab> for Block {
-    fn try_mut(&mut self) -> Option<&mut chat::tab::Tab> {
+impl TryMut<chat::channel::Channel> for Block {
+    fn try_mut(&mut self) -> Option<&mut chat::channel::Channel> {
         match self {
-            Self::ChatTab(x) => Some(x),
+            Self::ChatChannel(x) => Some(x),
             _ => None,
         }
     }
@@ -200,7 +200,7 @@ impl ArenaBlock {
             Block::Table(x) => (x.pack().await, "Table"),
             Block::TableTexture(x) => (x.pack().await, "TableTexture"),
             Block::Chat(x) => (object! {}.into(), "None"),
-            Block::ChatTab(x) => (object! {}.into(), "None"),
+            Block::ChatChannel(x) => (object! {}.into(), "None"),
             Block::ChatMessage(x) => (object! {}.into(), "None"),
             Block::None => (object! {}.into(), "None"),
         };
@@ -345,8 +345,8 @@ impl Insert<chat::Chat> for Arena {
     }
 }
 
-impl Insert<chat::tab::Tab> for Arena {
-    fn insert(&mut self, block: chat::tab::Tab) -> BlockId {
-        self.insert(Block::ChatTab(block))
+impl Insert<chat::channel::Channel> for Arena {
+    fn insert(&mut self, block: chat::channel::Channel) -> BlockId {
+        self.insert(Block::ChatChannel(block))
     }
 }

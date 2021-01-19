@@ -1,5 +1,6 @@
 pub mod btn;
 pub mod card;
+pub mod dropdown;
 pub mod fa;
 pub mod frame;
 pub mod header;

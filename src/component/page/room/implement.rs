@@ -1,5 +1,6 @@
 use super::{
     super::atom::btn::{self, Btn},
+    super::atom::dropdown::{self, Dropdown},
     super::atom::fa,
     super::atom::header::{self, Header},
     super::template::basic_app::{self, BasicApp},
@@ -96,8 +97,8 @@ impl Constructor for Implement {
 
         crate::debug::log_1("create chat block");
         let chat = block::chat::Chat::new(vec![
-            block_arena.insert(block::chat::tab::Tab::new(String::from("メイン"))),
-            block_arena.insert(block::chat::tab::Tab::new(String::from("サブ"))),
+            block_arena.insert(block::chat::channel::Channel::new(String::from("メイン"))),
+            block_arena.insert(block::chat::channel::Channel::new(String::from("サブ"))),
         ]);
 
         crate::debug::log_1("insert chat block");
@@ -162,9 +163,11 @@ impl Component for Implement {
                 let tabs = self
                     .block_arena
                     .map(&self.chat_id, |chat: &block::chat::Chat| {
-                        chat.tabs()
+                        chat.channels()
                             .iter()
-                            .map(|tab_id| room_modeless::Content::ChatTab(BlockId::clone(&tab_id)))
+                            .map(|channel_id| {
+                                room_modeless::Content::ChatChannel(BlockId::clone(&channel_id))
+                            })
                             .collect::<Vec<_>>()
                     })
                     .unwrap_or(vec![]);
@@ -354,14 +357,22 @@ impl Implement {
         Html::div(
             Attributes::new().class(Self::class("header-controller-menu")),
             Events::new(),
-            vec![Btn::with_children(
-                btn::Props {
-                    variant: btn::Variant::Primary,
+            vec![Dropdown::with_children(
+                dropdown::Props {
+                    text: String::from("チャット"),
+                    direction: dropdown::Direction::BottomRight,
+                    ..Default::default()
                 },
-                Subscription::new(|sub| match sub {
-                    btn::On::Click => Msg::OpenNewChatModeless,
-                }),
-                vec![fa::i("fa-comment"), Html::text(" チャットパネル")],
+                Subscription::none(),
+                vec![Btn::with_children(
+                    btn::Props {
+                        variant: btn::Variant::Primary,
+                    },
+                    Subscription::new(|sub| match sub {
+                        btn::On::Click => Msg::OpenNewChatModeless,
+                    }),
+                    vec![fa::i("fa-comments"), Html::text(" 全てのチャンネルを表示")],
+                )],
             )],
         )
     }

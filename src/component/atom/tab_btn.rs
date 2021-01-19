@@ -98,6 +98,9 @@ impl Styled for TabBtn {
             "btn" {
                 "border-radius": "2px 2px 0 0";
                 "color": color_system::gray(100, 0).to_string();
+                "max-width": "12em";
+                "overflow": "hidden";
+                "text-overflow": "ellipsis";
             }
 
             r#"btn[data-tab-selected="true"]"# {

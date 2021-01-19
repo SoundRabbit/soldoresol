@@ -1,4 +1,5 @@
 use super::atom::btn::{self, Btn};
+use super::atom::dropdown::{self, Dropdown};
 use super::atom::fa;
 use super::atom::tab_btn::{self, TabBtn};
 use super::molecule::modeless::{self, Modeless};
@@ -11,10 +12,12 @@ use crate::libs::select_list::SelectList;
 use kagura::prelude::*;
 use wasm_bindgen::{prelude::*, JsCast};
 
-pub mod chat_tab;
+pub mod chat_channel;
+
+use chat_channel::ChatChannel;
 
 pub enum Content {
-    ChatTab(BlockId),
+    ChatChannel(BlockId),
 }
 
 pub struct Props {
@@ -152,16 +155,16 @@ impl RoomModeless {
     }
 
     fn render_header_tabs(&self) -> Vec<Html> {
-        self.content
+        let mut tabs = self.content
             .iter()
             .enumerate()
             .map(|(tab_idx, a_content)| {
                 let is_selected = tab_idx == self.content.selected_idx();
                 let tab_heading = match a_content {
-                    Content::ChatTab(tab_id) => vec![
+                    Content::ChatChannel(channel_id) => vec![
                         fa::i("fa-comment"), 
-                        Html::text(self.block_arena.map(tab_id, |tab: &block::chat::tab::Tab| {
-                            format!(" {}", tab.name())
+                        Html::text(self.block_arena.map(channel_id, |channel: &block::chat::channel::Channel| {
+                            format!(" {}", channel.name())
                         }).unwrap_or(String::new()))
                     ]
                 };
@@ -192,14 +195,41 @@ impl RoomModeless {
                     )],
                 )
             })
-            .collect()
+            .collect::<Vec<_>>();
+
+        tabs.push(Dropdown::with_children(
+            dropdown::Props {
+                text: String::from("追加"),
+                variant: btn::Variant::Secondary,
+                ..Default::default()
+            },
+            Subscription::none(),
+            vec![Btn::with_children(
+                btn::Props {
+                    variant: btn::Variant::Primary,
+                },
+                Subscription::none(),
+                vec![fa::i("fa-comment"), Html::text(" 新規チャンネル")],
+            )],
+        ));
+
+        tabs
     }
 
     fn render_content(&self) -> Html {
         Html::div(
             Attributes::new().class(Self::class("body")),
             Events::new(),
-            vec![],
+            vec![match self.content.selected() {
+                Some(Content::ChatChannel(channel_id)) => ChatChannel::empty(
+                    chat_channel::Props {
+                        block_arena: block::Arena::clone(&self.block_arena),
+                        channel_id: BlockId::clone(channel_id),
+                    },
+                    Subscription::none(),
+                ),
+                _ => Html::none(),
+            }],
         )
     }
 }
@@ -223,10 +253,8 @@ impl Styled for RoomModeless {
 
             "header-tab-container" {
                 "display": "flex";
-                "overflow": "hidden";
                 "flex-wrap": "wrap";
             }
-
 
             "body" {
                 "background-color": format!("{}", color_system::gray(255, 0));

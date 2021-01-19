@@ -61,6 +61,8 @@ impl Styled for Header {
                 "background-color": color_system::gray(255, 8).to_string();
                 "color": color_system::gray(255, 0).to_string();
                 "padding": ".65em";
+                "row-gap": ".65em";
+                "display": "grid";
             }
         }
     }

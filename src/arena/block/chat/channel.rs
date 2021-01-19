@@ -1,11 +1,11 @@
 use super::super::BlockId;
 
-pub struct Tab {
+pub struct Channel {
     name: String,
     messages: Vec<BlockId>,
 }
 
-impl Tab {
+impl Channel {
     pub fn new(name: String) -> Self {
         Self {
             name,

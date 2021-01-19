@@ -6,6 +6,7 @@ pub struct Props {
     pub variant: Variant,
 }
 
+#[derive(Clone)]
 pub enum Variant {
     Primary,
     Secondary,

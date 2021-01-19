@@ -195,7 +195,6 @@ impl RoomSelector {
                 ),
                 Html::input(
                     Attributes::new()
-                        .class("pure-input")
                         .id(&self.element_id.input_room_id)
                         .value(&self.inputing_room_id),
                     Events::new().on_input(Msg::SetInputingRoomId),

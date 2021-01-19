@@ -1,5 +1,5 @@
+pub mod channel;
 pub mod message;
-pub mod tab;
 
 use super::BlockId;
 
@@ -12,7 +12,7 @@ impl Chat {
         Self { tabs: tabs }
     }
 
-    pub fn tabs(&self) -> &Vec<BlockId> {
+    pub fn channels(&self) -> &Vec<BlockId> {
         &self.tabs
     }
 }
