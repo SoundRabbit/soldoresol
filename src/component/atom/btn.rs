@@ -13,6 +13,8 @@ pub enum Variant {
     Danger,
     Disable,
     Dark,
+    TransparentDark,
+    Menu,
 }
 
 pub enum Msg {
@@ -44,6 +46,8 @@ impl std::fmt::Display for Variant {
             Self::Danger => write!(f, "danger"),
             Self::Disable => write!(f, "disable"),
             Self::Dark => write!(f, "dark"),
+            Self::TransparentDark => write!(f, "transparent-dark"),
+            Self::Menu => write!(f, "menu"),
         }
     }
 }
@@ -103,6 +107,17 @@ impl Styled for Btn {
             "dark" {
                 "background-color": color_system::gray(100, 9).to_string();
                 "color": color_system::gray(100, 0).to_string();
+            }
+
+            "transparent-dark" {
+                "background-color": "transparent";
+                "color": color_system::gray(100, 0).to_string();
+            }
+
+            "menu" {
+                "background-color": color_system::gray(100, 9).to_string();
+                "color": color_system::gray(100, 0).to_string();
+                "text-align": "left";
             }
         }
     }

@@ -385,6 +385,7 @@ impl Implement {
             dropdown::Props {
                 text: String::from("チャット"),
                 direction: dropdown::Direction::BottomRight,
+                variant: btn::Variant::Dark,
                 ..Default::default()
             },
             Subscription::none(),
@@ -393,43 +394,43 @@ impl Implement {
                     text: String::from("チャンネル"),
                     direction: dropdown::Direction::RightBottom,
                     toggle_type: dropdown::ToggleType::Hover,
+                    variant: btn::Variant::Menu,
                     ..Default::default()
                 },
                 Subscription::none(),
                 vec![
-                    Btn::with_children(
+                    vec![Btn::with_children(
                         btn::Props {
-                            variant: btn::Variant::Primary,
+                            variant: btn::Variant::Menu,
                         },
                         Subscription::new(|sub| match sub {
                             btn::On::Click => Msg::OpenNewChatModeless,
                         }),
                         vec![fa::i("fa-comments"), Html::text(" 全てのチャンネル")],
-                    ),
-                    Html::fragment(
-                        channel_names
-                            .into_iter()
-                            .map(|(channel_id, channel_name)| {
-                                Btn::with_children(
-                                    btn::Props {
-                                        variant: btn::Variant::Primary,
+                    )],
+                    channel_names
+                        .into_iter()
+                        .map(|(channel_id, channel_name)| {
+                            Btn::with_children(
+                                btn::Props {
+                                    variant: btn::Variant::Menu,
+                                },
+                                Subscription::new(|sub| match sub {
+                                    btn::On::Click => Msg::OpenNewModeless {
+                                        content: room_modeless::Content::ChatChannel(channel_id),
                                     },
-                                    Subscription::new(|sub| match sub {
-                                        btn::On::Click => Msg::OpenNewModeless {
-                                            content: room_modeless::Content::ChatChannel(
-                                                channel_id,
-                                            ),
-                                        },
-                                    }),
-                                    vec![
-                                        fa::i("fa-comment"),
-                                        Html::text(format!(" {}", channel_name)),
-                                    ],
-                                )
-                            })
-                            .collect(),
-                    ),
-                ],
+                                }),
+                                vec![
+                                    fa::i("fa-comment"),
+                                    Html::text(format!(" {}", channel_name)),
+                                ],
+                            )
+                        })
+                        .collect(),
+                ]
+                .into_iter()
+                .flatten()
+                .collect(),
             )],
         )
     }

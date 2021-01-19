@@ -124,9 +124,18 @@ impl Dropdown {
         Msg::ToggleTo(true)
     }
 
+    fn base_class_option(&self) -> &str {
+        match &self.variant {
+            btn::Variant::Menu => "base-menu",
+            _ => "base-default",
+        }
+    }
+
     fn render_toggle_by_click(&self, children: Vec<Html>) -> Html {
         Html::div(
-            Attributes::new().class(Self::class("base")),
+            Attributes::new()
+                .class(Self::class("base"))
+                .class(Self::class(self.base_class_option())),
             Events::new().on("click", Self::toggle),
             vec![
                 self.render_toggle_btn(),
@@ -137,7 +146,9 @@ impl Dropdown {
     }
     fn render_toggle_by_hover(&self, children: Vec<Html>) -> Html {
         Html::div(
-            Attributes::new().class(Self::class("base")),
+            Attributes::new()
+                .class(Self::class("base"))
+                .class(Self::class(self.base_class_option())),
             Events::new()
                 .on("mouseenter", Self::toggle_to_drop)
                 .on("mouseleave", Self::toggle_to_up),
@@ -185,6 +196,13 @@ impl Styled for Dropdown {
         style! {
             "base" {
                 "position": "relative";
+            }
+
+            "base-menu" {
+                "justify-self": "stretch";
+            }
+
+            "base-default" {
                 "max-width": "max-content";
             }
 
@@ -208,13 +226,20 @@ impl Styled for Dropdown {
             "content" {
                 "position": "absolute";
                 "z-index": format!("{}", super::constant::z_index::mask + 1);
+                "grid-template-columns": "max-content";
+                "grid-auto-rows": "max-content";
+                "grid-auto-flow": "rows";
+                "row-gap": "0.05rem";
+                "justify-items": "stretch";
+                "background-color": crate::libs::color::color_system::gray(100, 0).to_string();
+                "border-radius": "2px";
             }
 
             r#"content[data-toggled="false"]"# {
                 "display": "none";
             }
             r#"content[data-toggled="true"]"# {
-                "display": "block";
+                "display": "grid";
             }
 
             "content-bottom-left" {

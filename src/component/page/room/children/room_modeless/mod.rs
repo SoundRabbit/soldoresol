@@ -200,16 +200,16 @@ impl RoomModeless {
         tabs.push(Dropdown::with_children(
             dropdown::Props {
                 text: String::from("追加"),
-                variant: btn::Variant::Secondary,
+                variant: btn::Variant::TransparentDark,
                 ..Default::default()
             },
             Subscription::none(),
             vec![Btn::with_children(
                 btn::Props {
-                    variant: btn::Variant::Primary,
+                    variant: btn::Variant::Menu,
                 },
                 Subscription::none(),
-                vec![fa::i("fa-comment"), Html::text(" 新規チャンネル")],
+                vec![fa::i("fa-chat"), Html::text(" 新規チャンネル")],
             )],
         ));
 
