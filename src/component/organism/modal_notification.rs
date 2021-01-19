@@ -3,9 +3,7 @@ use super::molecule::modal::{self, Modal};
 use super::util::styled::{Style, Styled};
 use kagura::prelude::*;
 
-pub struct Props {
-    pub state: Option<modal::State>,
-}
+pub struct Props {}
 
 pub enum Msg {
     CloseSelf,
@@ -14,14 +12,12 @@ pub enum Msg {
 pub enum On {}
 
 pub struct ModalNotification {
-    state: modal::State,
+    is_showing: bool,
 }
 
 impl Constructor for ModalNotification {
     fn constructor(props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) -> Self {
-        Self {
-            state: props.state.unwrap_or(modal::State::new()),
-        }
+        Self { is_showing: true }
     }
 }
 
@@ -30,26 +26,21 @@ impl Component for ModalNotification {
     type Msg = Msg;
     type Sub = On;
 
-    fn init(&mut self, props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) {
-        if let Some(state) = props.state {
-            self.state = state;
-        }
-    }
+    fn init(&mut self, _: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) {}
 
     fn update(&mut self, msg: Self::Msg) -> Cmd<Self::Msg, Self::Sub> {
         match msg {
             Msg::CloseSelf => {
-                self.state.set_is_showing(false);
+                self.is_showing = false;
                 Cmd::none()
             }
         }
     }
 
     fn render(&self, _: Vec<Html>) -> Html {
-        if self.state.is_showing() {
+        if self.is_showing {
             Self::styled(Modal::with_children(
                 modal::Props {
-                    state: Some(modal::State::clone(&self.state)),
                     header_title: String::from("更新情報"),
                     footer_message: String::from("開発者 twitter：@SoundRabbit_"),
                 },

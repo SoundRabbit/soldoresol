@@ -10,17 +10,8 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 pub struct Props {
-    pub state: Option<State>,
     pub header_title: String,
     pub footer_message: String,
-}
-
-pub struct State {
-    payload: Rc<RefCell<ImplState>>,
-}
-
-struct ImplState {
-    is_showing: bool,
 }
 
 pub enum Msg {
@@ -32,37 +23,13 @@ pub enum On {
 }
 
 pub struct Modal {
-    state: State,
     header_title: String,
     footer_message: String,
-}
-
-impl State {
-    pub fn new() -> Self {
-        Self {
-            payload: Rc::new(RefCell::new(ImplState { is_showing: true })),
-        }
-    }
-
-    pub fn is_showing(&self) -> bool {
-        self.payload.borrow().is_showing
-    }
-
-    pub fn set_is_showing(&mut self, value: bool) {
-        self.payload.borrow_mut().is_showing = value;
-    }
-
-    pub fn clone(this: &Self) -> Self {
-        Self {
-            payload: Rc::clone(&this.payload),
-        }
-    }
 }
 
 impl Constructor for Modal {
     fn constructor(props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) -> Self {
         Self {
-            state: props.state.unwrap_or(State::new()),
             header_title: props.header_title,
             footer_message: props.footer_message,
         }
@@ -75,9 +42,6 @@ impl Component for Modal {
     type Sub = On;
 
     fn init(&mut self, props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) {
-        if let Some(state) = props.state {
-            self.state = state;
-        }
         self.header_title = props.header_title;
         self.footer_message = props.footer_message;
     }
@@ -89,50 +53,46 @@ impl Component for Modal {
     }
 
     fn render(&self, children: Vec<Html>) -> Html {
-        if self.state.is_showing() {
-            Self::styled(Html::div(
-                Attributes::new().class(Self::class("background")),
+        Self::styled(Html::div(
+            Attributes::new().class(Self::class("background")),
+            Events::new(),
+            vec![Html::div(
+                Attributes::new().class(Self::class("base")),
                 Events::new(),
-                vec![Html::div(
-                    Attributes::new().class(Self::class("base")),
-                    Events::new(),
-                    vec![
-                        Html::div(
-                            Attributes::new().class(Self::class("header")),
-                            Events::new(),
-                            vec![
-                                Html::div(
-                                    Attributes::new(),
-                                    Events::new(),
-                                    vec![Html::text(&self.header_title)],
-                                ),
-                                Btn::with_child(
-                                    btn::Props {
-                                        variant: btn::Variant::Secondary,
-                                    },
-                                    Subscription::new(|sub| match sub {
-                                        btn::On::Click => Msg::CloseSelf,
-                                    }),
-                                    fa::i("fa-times"),
-                                ),
-                            ],
-                        ),
-                        Html::div(
-                            Attributes::new().class(Self::class("body")),
-                            Events::new(),
-                            children,
-                        ),
-                        Html::div(
-                            Attributes::new().class(Self::class("footer")),
-                            Events::new(),
-                            vec![Html::text(&self.footer_message)],
-                        ),
-                    ],
-                )],
-            ))
-        } else {
-            Html::none()
-        }
+                vec![
+                    Html::div(
+                        Attributes::new().class(Self::class("header")),
+                        Events::new(),
+                        vec![
+                            Html::div(
+                                Attributes::new(),
+                                Events::new(),
+                                vec![Html::text(&self.header_title)],
+                            ),
+                            Btn::with_child(
+                                btn::Props {
+                                    variant: btn::Variant::Secondary,
+                                },
+                                Subscription::new(|sub| match sub {
+                                    btn::On::Click => Msg::CloseSelf,
+                                }),
+                                fa::i("fa-times"),
+                            ),
+                        ],
+                    ),
+                    Html::div(
+                        Attributes::new().class(Self::class("body")),
+                        Events::new(),
+                        children,
+                    ),
+                    Html::div(
+                        Attributes::new().class(Self::class("footer")),
+                        Events::new(),
+                        vec![Html::text(&self.footer_message)],
+                    ),
+                ],
+            )],
+        ))
     }
 }
 

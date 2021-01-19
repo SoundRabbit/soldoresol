@@ -91,6 +91,7 @@ impl Component for App {
                         peer: peer.as_prop(),
                         peer_id: peer_id.as_prop(),
                         room_id: room_id.as_prop(),
+                        client_id: client_id.as_prop(),
                     },
                     Subscription::none(),
                 )

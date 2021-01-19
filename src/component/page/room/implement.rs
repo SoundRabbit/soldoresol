@@ -6,6 +6,7 @@ use super::{
     super::template::basic_app::{self, BasicApp},
     super::util::styled::{Style, Styled},
     super::util::{Prop, State},
+    children::modal_new_channel::{self, ModalNewChannel},
     children::room_modeless::{self, RoomModeless},
     children::side_menu::{self, SideMenu},
     model::table::TableTool,
@@ -23,12 +24,16 @@ pub struct Props {
     pub peer_id: Prop<String>,
     pub room: Prop<MeshRoom>,
     pub room_id: Prop<String>,
+    pub client_id: Prop<String>,
 }
 
 pub enum Msg {
     NoOp,
     SetTableToolIdx {
         idx: usize,
+    },
+    OpenNewModal {
+        modal: Modal,
     },
     OpenNewModeless {
         content: room_modeless::Content,
@@ -68,6 +73,8 @@ pub struct Implement {
     peer_id: Prop<String>,
     room: Prop<MeshRoom>,
     room_id: Prop<String>,
+    client_id: Prop<String>,
+
     element_id: ElementId,
 
     table_tools: State<SelectList<TableTool>>,
@@ -78,6 +85,8 @@ pub struct Implement {
     block_arena: block::Arena,
 
     chat_id: BlockId,
+
+    modal: Modal,
 }
 
 struct ModelessContent {
@@ -88,6 +97,11 @@ struct ModelessContent {
 
 struct ElementId {
     header_room_id: String,
+}
+
+enum Modal {
+    None,
+    NewChannel,
 }
 
 impl Constructor for Implement {
@@ -109,6 +123,8 @@ impl Constructor for Implement {
             peer_id: props.peer_id,
             room: props.room,
             room_id: props.room_id,
+            client_id: props.client_id,
+
             element_id: ElementId {
                 header_room_id: format!("{:X}", crate::libs::random_id::u128val()),
             },
@@ -130,6 +146,8 @@ impl Constructor for Implement {
             block_arena,
 
             chat_id,
+
+            modal: Modal::None,
         }
     }
 }
@@ -147,6 +165,11 @@ impl Component for Implement {
 
             Msg::SetTableToolIdx { idx } => {
                 self.table_tools.set_selected_idx(idx);
+                Cmd::none()
+            }
+
+            Msg::OpenNewModal { modal } => {
+                self.modal = modal;
                 Cmd::none()
             }
 
@@ -279,6 +302,7 @@ impl Component for Implement {
             basic_app::Props {},
             Subscription::none(),
             vec![
+                self.render_modal(),
                 Header::with_children(
                     header::Props::new(),
                     Subscription::none(),
@@ -318,6 +342,20 @@ impl Component for Implement {
 }
 
 impl Implement {
+    fn render_modal(&self) -> Html {
+        match &self.modal {
+            Modal::None => Html::none(),
+            Modal::NewChannel => ModalNewChannel::empty(
+                modal_new_channel::Props {
+                    client_id: self.client_id.clone(),
+                },
+                Subscription::new(|sub| match sub {
+                    modal_new_channel::On::Close => Msg::OpenNewModal { modal: Modal::None },
+                }),
+            ),
+        }
+    }
+
     fn render_header_row_0(&self) -> Html {
         Html::div(
             Attributes::new()
@@ -389,49 +427,73 @@ impl Implement {
                 ..Default::default()
             },
             Subscription::none(),
-            vec![Dropdown::with_children(
-                dropdown::Props {
-                    text: String::from("チャンネル"),
-                    direction: dropdown::Direction::RightBottom,
-                    toggle_type: dropdown::ToggleType::Hover,
-                    variant: btn::Variant::Menu,
-                    ..Default::default()
-                },
-                Subscription::none(),
-                vec![
-                    vec![Btn::with_children(
-                        btn::Props {
-                            variant: btn::Variant::Menu,
-                        },
-                        Subscription::new(|sub| match sub {
-                            btn::On::Click => Msg::OpenNewChatModeless,
-                        }),
-                        vec![fa::i("fa-comments"), Html::text(" 全てのチャンネル")],
-                    )],
-                    channel_names
-                        .into_iter()
-                        .map(|(channel_id, channel_name)| {
-                            Btn::with_children(
-                                btn::Props {
-                                    variant: btn::Variant::Menu,
-                                },
-                                Subscription::new(|sub| match sub {
-                                    btn::On::Click => Msg::OpenNewModeless {
-                                        content: room_modeless::Content::ChatChannel(channel_id),
+            vec![
+                Dropdown::with_children(
+                    dropdown::Props {
+                        text: String::from("チャンネル"),
+                        direction: dropdown::Direction::RightBottom,
+                        toggle_type: dropdown::ToggleType::Hover,
+                        variant: btn::Variant::Menu,
+                        ..Default::default()
+                    },
+                    Subscription::none(),
+                    vec![
+                        vec![Btn::with_children(
+                            btn::Props {
+                                variant: btn::Variant::Menu,
+                            },
+                            Subscription::new(|sub| match sub {
+                                btn::On::Click => Msg::OpenNewChatModeless,
+                            }),
+                            vec![fa::i("fa-comments"), Html::text(" 全てのチャンネル")],
+                        )],
+                        channel_names
+                            .into_iter()
+                            .map(|(channel_id, channel_name)| {
+                                Btn::with_children(
+                                    btn::Props {
+                                        variant: btn::Variant::Menu,
                                     },
-                                }),
-                                vec![
-                                    fa::i("fa-comment"),
-                                    Html::text(format!(" {}", channel_name)),
-                                ],
-                            )
-                        })
-                        .collect(),
-                ]
-                .into_iter()
-                .flatten()
-                .collect(),
-            )],
+                                    Subscription::new(|sub| match sub {
+                                        btn::On::Click => Msg::OpenNewModeless {
+                                            content: room_modeless::Content::ChatChannel(
+                                                channel_id,
+                                            ),
+                                        },
+                                    }),
+                                    vec![
+                                        fa::i("fa-comment"),
+                                        Html::text(format!(" {}", channel_name)),
+                                    ],
+                                )
+                            })
+                            .collect(),
+                    ]
+                    .into_iter()
+                    .flatten()
+                    .collect(),
+                ),
+                Btn::with_children(
+                    btn::Props {
+                        variant: btn::Variant::Menu,
+                    },
+                    Subscription::new(|sub| match sub {
+                        btn::On::Click => Msg::OpenNewModal {
+                            modal: Modal::NewChannel,
+                        },
+                    }),
+                    vec![fa::i("fa-plus"), Html::text(" 新規チャンネル")],
+                ),
+                Btn::with_children(
+                    btn::Props {
+                        variant: btn::Variant::Menu,
+                    },
+                    Subscription::new(|sub| match sub {
+                        btn::On::Click => Msg::OpenNewChatModeless,
+                    }),
+                    vec![fa::i("fa-cog"), Html::text(" チャンネル設定")],
+                ),
+            ],
         )
     }
 

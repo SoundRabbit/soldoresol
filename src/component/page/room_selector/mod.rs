@@ -116,10 +116,7 @@ impl Component for RoomSelector {
                 basic_app::Props {},
                 Subscription::none(),
                 vec![
-                    ModalNotification::empty(
-                        modal_notification::Props { state: None },
-                        Subscription::none(),
-                    ),
+                    ModalNotification::empty(modal_notification::Props {}, Subscription::none()),
                     Header::with_children(
                         header::Props::new(),
                         Subscription::none(),

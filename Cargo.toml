@@ -67,6 +67,7 @@ features = [
     "HtmlElement",
     "HtmlImageElement",
     "HtmlInputElement",
+    "HtmlSelectElement",
     "HtmlStyleElement",
     "HtmlTextAreaElement",
     "IdbDatabase",

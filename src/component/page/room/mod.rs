@@ -18,6 +18,7 @@ pub struct Props {
     pub peer: Prop<Peer>,
     pub peer_id: Prop<String>,
     pub room_id: Prop<String>,
+    pub client_id: Prop<String>,
 }
 
 pub enum Msg {
@@ -39,6 +40,7 @@ pub struct Room {
     peer_id: Prop<String>,
     room: Option<State<MeshRoom>>,
     room_id: Prop<String>,
+    client_id: Prop<String>,
 }
 
 impl Constructor for Room {
@@ -75,6 +77,7 @@ impl Constructor for Room {
             peer_id: props.peer_id,
             room: None,
             room_id: props.room_id,
+            client_id: props.client_id,
         }
     }
 }
@@ -109,6 +112,7 @@ impl Component for Room {
                     peer_id: self.peer_id.clone(),
                     room: room.as_prop(),
                     room_id: self.room_id.clone(),
+                    client_id: self.client_id.clone(),
                 },
                 Subscription::none(),
             )

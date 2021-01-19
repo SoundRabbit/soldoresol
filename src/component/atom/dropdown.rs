@@ -162,10 +162,11 @@ impl Dropdown {
                 variant: self.variant.clone(),
             },
             Subscription::none(),
-            vec![
-                Html::text(format!("{} ", &self.text)),
-                self.direction.render_caret(),
-            ],
+            vec![Html::div(
+                Attributes::new().class(Self::class("btn")),
+                Events::new(),
+                vec![Html::text(&self.text), self.direction.render_caret()],
+            )],
         )
     }
 
@@ -200,10 +201,18 @@ impl Styled for Dropdown {
 
             "base-menu" {
                 "justify-self": "stretch";
+                "display": "grid";
             }
 
             "base-default" {
                 "max-width": "max-content";
+            }
+
+            "btn" {
+                "display": "grid";
+                "grid-template-columns": "1fr max-content";
+                "align-items": "center";
+                "column-gap": "1ch";
             }
 
             "mask" {

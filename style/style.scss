@@ -17,6 +17,12 @@ body {
     font-size: 0.9rem;
 }
 
+input,
+select,
+button {
+    line-height: 1.5;
+}
+
 * {
     overflow: visible;
     box-sizing: border-box;
@@ -53,4 +59,8 @@ hr {
 ::-webkit-scrollbar-thumb {
     background-color: $gray-300;
     border-radius: 0.5ch;
+}
+
+.pure-form select {
+    height: max-content;
 }
