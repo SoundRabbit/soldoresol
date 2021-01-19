@@ -357,22 +357,79 @@ impl Implement {
         Html::div(
             Attributes::new().class(Self::class("header-controller-menu")),
             Events::new(),
+            vec![self.render_header_controller_menu_chat()],
+        )
+    }
+
+    fn render_header_controller_menu_chat(&self) -> Html {
+        let channel_names = self
+            .block_arena
+            .map(&self.chat_id, |chat: &block::chat::Chat| {
+                let mut channels = vec![];
+
+                for channel_id in chat.channels() {
+                    let channel_name = self
+                        .block_arena
+                        .map(channel_id, |channel: &block::chat::channel::Channel| {
+                            channel.name().clone()
+                        })
+                        .unwrap_or(String::new());
+                    channels.push((BlockId::clone(&channel_id), channel_name));
+                }
+
+                channels
+            })
+            .unwrap_or(vec![]);
+
+        Dropdown::with_children(
+            dropdown::Props {
+                text: String::from("チャット"),
+                direction: dropdown::Direction::BottomRight,
+                ..Default::default()
+            },
+            Subscription::none(),
             vec![Dropdown::with_children(
                 dropdown::Props {
-                    text: String::from("チャット"),
-                    direction: dropdown::Direction::BottomRight,
+                    text: String::from("チャンネル"),
+                    direction: dropdown::Direction::RightBottom,
+                    toggle_type: dropdown::ToggleType::Hover,
                     ..Default::default()
                 },
                 Subscription::none(),
-                vec![Btn::with_children(
-                    btn::Props {
-                        variant: btn::Variant::Primary,
-                    },
-                    Subscription::new(|sub| match sub {
-                        btn::On::Click => Msg::OpenNewChatModeless,
-                    }),
-                    vec![fa::i("fa-comments"), Html::text(" 全てのチャンネルを表示")],
-                )],
+                vec![
+                    Btn::with_children(
+                        btn::Props {
+                            variant: btn::Variant::Primary,
+                        },
+                        Subscription::new(|sub| match sub {
+                            btn::On::Click => Msg::OpenNewChatModeless,
+                        }),
+                        vec![fa::i("fa-comments"), Html::text(" 全てのチャンネル")],
+                    ),
+                    Html::fragment(
+                        channel_names
+                            .into_iter()
+                            .map(|(channel_id, channel_name)| {
+                                Btn::with_children(
+                                    btn::Props {
+                                        variant: btn::Variant::Primary,
+                                    },
+                                    Subscription::new(|sub| match sub {
+                                        btn::On::Click => Msg::OpenNewModeless {
+                                            content: room_modeless::Content::ChatChannel(
+                                                channel_id,
+                                            ),
+                                        },
+                                    }),
+                                    vec![
+                                        fa::i("fa-comment"),
+                                        Html::text(format!(" {}", channel_name)),
+                                    ],
+                                )
+                            })
+                            .collect(),
+                    ),
+                ],
             )],
         )
     }
