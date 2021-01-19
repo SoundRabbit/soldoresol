@@ -66,7 +66,7 @@ impl Component for ModalNotification {
                                     Html::p(
                                         Attributes::new(),
                                         Events::new(),
-                                        vec![Html::text("更新：2020-01-19")],
+                                        vec![Html::text("更新：2020-01-20")],
                                     ),
                                     Html::h3(
                                         Attributes::new(),
