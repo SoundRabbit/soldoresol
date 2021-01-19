@@ -70,12 +70,12 @@ impl Component for ModalNotification {
                                     Html::h2(
                                         Attributes::new(),
                                         Events::new(),
-                                        vec![Html::text("Soldoresol v0.2.0 (beta)")],
+                                        vec![Html::text("Soldoresol dev")],
                                     ),
                                     Html::p(
                                         Attributes::new(),
                                         Events::new(),
-                                        vec![Html::text("更新：2020-11-07")],
+                                        vec![Html::text("更新：2020-01-19")],
                                     ),
                                     Html::h3(
                                         Attributes::new(),
@@ -85,11 +85,20 @@ impl Component for ModalNotification {
                                     Html::ul(
                                         Attributes::new(),
                                         Events::new(),
-                                        vec![Html::li(
-                                            Attributes::new(),
-                                            Events::new(),
-                                            vec![Html::text("Kagura フレームワークの更新")],
-                                        )],
+                                        vec![
+                                            Html::li(
+                                                Attributes::new(),
+                                                Events::new(),
+                                                vec![Html::text("UIデザインの変更")],
+                                            ),
+                                            Html::li(
+                                                Attributes::new(),
+                                                Events::new(),
+                                                vec![Html::text(
+                                                    "ほぼすべての機能が動かなくなった",
+                                                )],
+                                            ),
+                                        ],
                                     ),
                                 ],
                             )],
