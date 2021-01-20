@@ -9,6 +9,7 @@ use wasm_bindgen::{prelude::*, JsCast};
 mod children;
 mod implement;
 mod model;
+mod renderer;
 mod task;
 
 use implement::Implement;
