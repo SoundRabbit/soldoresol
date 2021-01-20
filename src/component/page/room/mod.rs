@@ -3,6 +3,7 @@ use super::util::{Prop, State};
 use crate::libs::skyway::{MeshRoom, Peer};
 use crate::model::config::Config;
 use kagura::prelude::*;
+use std::rc::Rc;
 use wasm_bindgen::{prelude::*, JsCast};
 
 mod children;
@@ -13,34 +14,34 @@ mod task;
 use implement::Implement;
 
 pub struct Props {
-    pub config: Prop<Config>,
-    pub common_db: Prop<web_sys::IdbDatabase>,
-    pub peer: Prop<Peer>,
-    pub peer_id: Prop<String>,
-    pub room_id: Prop<String>,
-    pub client_id: Prop<String>,
+    pub config: Rc<Config>,
+    pub common_db: Rc<web_sys::IdbDatabase>,
+    pub peer: Rc<Peer>,
+    pub peer_id: Rc<String>,
+    pub room_id: Rc<String>,
+    pub client_id: Rc<String>,
 }
 
 pub enum Msg {
     Initialized {
         room_db: web_sys::IdbDatabase,
         table_db: web_sys::IdbDatabase,
-        room: State<MeshRoom>,
+        room: Rc<MeshRoom>,
     },
 }
 
 pub enum On {}
 
 pub struct Room {
-    config: Prop<Config>,
-    common_db: Prop<web_sys::IdbDatabase>,
-    room_db: Option<State<web_sys::IdbDatabase>>,
-    table_db: Option<State<web_sys::IdbDatabase>>,
-    peer: Prop<Peer>,
-    peer_id: Prop<String>,
-    room: Option<State<MeshRoom>>,
-    room_id: Prop<String>,
-    client_id: Prop<String>,
+    config: Rc<Config>,
+    common_db: Rc<web_sys::IdbDatabase>,
+    room_db: Option<Rc<web_sys::IdbDatabase>>,
+    table_db: Option<Rc<web_sys::IdbDatabase>>,
+    peer: Rc<Peer>,
+    peer_id: Rc<String>,
+    room: Option<Rc<MeshRoom>>,
+    room_id: Rc<String>,
+    client_id: Rc<String>,
 }
 
 impl Constructor for Room {
@@ -96,8 +97,8 @@ impl Component for Room {
                 table_db,
                 room,
             } => {
-                self.room_db = Some(State::new(room_db));
-                self.table_db = Some(State::new(table_db));
+                self.room_db = Some(Rc::new(room_db));
+                self.table_db = Some(Rc::new(table_db));
                 self.room = Some(room);
                 Cmd::none()
             }
@@ -108,11 +109,11 @@ impl Component for Room {
         if let Some(room) = &self.room {
             Implement::empty(
                 implement::Props {
-                    peer: self.peer.clone(),
-                    peer_id: self.peer_id.clone(),
-                    room: room.as_prop(),
-                    room_id: self.room_id.clone(),
-                    client_id: self.client_id.clone(),
+                    peer: Rc::clone(&self.peer),
+                    peer_id: Rc::clone(&self.peer_id),
+                    room: Rc::clone(&room),
+                    room_id: Rc::clone(&self.room_id),
+                    client_id: Rc::clone(&self.client_id),
                 },
                 Subscription::none(),
             )

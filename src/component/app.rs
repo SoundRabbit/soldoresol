@@ -3,10 +3,10 @@ use super::page::{
     room::{self, Room},
     room_selector::{self, RoomSelector},
 };
-use super::util::State;
 use crate::libs::skyway::Peer;
 use crate::model::config::Config;
 use kagura::prelude::*;
+use std::rc::Rc;
 
 pub struct Props {}
 
@@ -24,12 +24,12 @@ pub enum Msg {
 pub enum Sub {}
 
 pub struct App {
-    config: Option<State<Config>>,
-    common_db: Option<State<web_sys::IdbDatabase>>,
-    client_id: Option<State<String>>,
-    peer: Option<State<Peer>>,
-    peer_id: Option<State<String>>,
-    room_id: Option<State<String>>,
+    config: Option<Rc<Config>>,
+    common_db: Option<Rc<web_sys::IdbDatabase>>,
+    client_id: Option<Rc<String>>,
+    peer: Option<Rc<Peer>>,
+    peer_id: Option<Rc<String>>,
+    room_id: Option<Rc<String>>,
 }
 
 impl Constructor for App {
@@ -61,15 +61,15 @@ impl Component for App {
                 peer,
                 peer_id,
             } => {
-                self.config = Some(State::new(config));
-                self.common_db = Some(State::new(common_db));
-                self.client_id = Some(State::new(client_id));
-                self.peer = Some(State::new(peer));
-                self.peer_id = Some(State::new(peer_id));
+                self.config = Some(Rc::new(config));
+                self.common_db = Some(Rc::new(common_db));
+                self.client_id = Some(Rc::new(client_id));
+                self.peer = Some(Rc::new(peer));
+                self.peer_id = Some(Rc::new(peer_id));
                 Cmd::none()
             }
             Msg::SetRoomId(room_id) => {
-                self.room_id = Some(State::new(room_id));
+                self.room_id = Some(Rc::new(room_id));
                 Cmd::none()
             }
         }
@@ -86,19 +86,19 @@ impl Component for App {
             if let Some(room_id) = &self.room_id {
                 Room::empty(
                     room::Props {
-                        config: config.as_prop(),
-                        common_db: common_db.as_prop(),
-                        peer: peer.as_prop(),
-                        peer_id: peer_id.as_prop(),
-                        room_id: room_id.as_prop(),
-                        client_id: client_id.as_prop(),
+                        config: Rc::clone(&config),
+                        common_db: Rc::clone(&common_db),
+                        peer: Rc::clone(&peer),
+                        peer_id: Rc::clone(&peer_id),
+                        room_id: Rc::clone(&room_id),
+                        client_id: Rc::clone(&client_id),
                     },
                     Subscription::none(),
                 )
             } else {
                 RoomSelector::empty(
                     room_selector::Props {
-                        common_db: common_db.as_prop(),
+                        common_db: Rc::clone(&common_db),
                     },
                     Subscription::new(|sub| match sub {
                         room_selector::On::Connect(room_id) => Msg::SetRoomId(room_id),

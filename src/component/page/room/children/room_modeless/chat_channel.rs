@@ -5,7 +5,7 @@ use async_std::sync::{Arc, Mutex};
 use kagura::prelude::*;
 
 pub struct Props {
-    pub block_arena: block::Arena,
+    pub block_arena: block::ArenaRef,
     pub channel_id: block::BlockId,
 }
 
@@ -14,7 +14,7 @@ pub enum Msg {}
 pub enum On {}
 
 pub struct ChatChannel {
-    block_arena: block::Arena,
+    block_arena: block::ArenaRef,
     channel_id: block::BlockId,
     element_id: ElementId,
 }

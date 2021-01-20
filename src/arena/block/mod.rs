@@ -239,6 +239,25 @@ impl ArenaBlock {
     }
 }
 
+pub struct ArenaRef {
+    arena: Arena,
+}
+
+impl ArenaRef {
+    pub fn clone(this: &Self) -> Self {
+        Self {
+            arena: Arena::clone(&this.arena),
+        }
+    }
+}
+
+impl std::ops::Deref for ArenaRef {
+    type Target = Arena;
+    fn deref(&self) -> &Self::Target {
+        &self.arena
+    }
+}
+
 pub trait Insert<T> {
     fn insert(&mut self, block: T) -> BlockId;
 }
@@ -254,7 +273,7 @@ impl Arena {
         }
     }
 
-    pub fn clone(this: &Self) -> Self {
+    fn clone(this: &Self) -> Self {
         Self {
             table: Rc::clone(&this.table),
         }
@@ -279,6 +298,12 @@ impl Arena {
             }
         } else {
             table.insert(block_id, new_arena_block);
+        }
+    }
+
+    pub fn as_ref(&self) -> ArenaRef {
+        ArenaRef {
+            arena: Self::clone(self),
         }
     }
 

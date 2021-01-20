@@ -12,19 +12,21 @@ use super::{
     model::table::TableTool,
 };
 use crate::arena::block::{self, BlockId, Insert};
+use crate::arena::player::{self, Player};
 use crate::libs::modeless_list::ModelessList;
 use crate::libs::random_id::U128Id;
 use crate::libs::select_list::SelectList;
 use crate::libs::skyway::{MeshRoom, Peer};
 use kagura::prelude::*;
+use std::rc::Rc;
 use wasm_bindgen::JsCast;
 
 pub struct Props {
-    pub peer: Prop<Peer>,
-    pub peer_id: Prop<String>,
-    pub room: Prop<MeshRoom>,
-    pub room_id: Prop<String>,
-    pub client_id: Prop<String>,
+    pub peer: Rc<Peer>,
+    pub peer_id: Rc<String>,
+    pub room: Rc<MeshRoom>,
+    pub room_id: Rc<String>,
+    pub client_id: Rc<String>,
 }
 
 pub enum Msg {
@@ -69,11 +71,11 @@ pub enum Msg {
 pub enum On {}
 
 pub struct Implement {
-    peer: Prop<Peer>,
-    peer_id: Prop<String>,
-    room: Prop<MeshRoom>,
-    room_id: Prop<String>,
-    client_id: Prop<String>,
+    peer: Rc<Peer>,
+    peer_id: Rc<String>,
+    room: Rc<MeshRoom>,
+    room_id: Rc<String>,
+    client_id: Rc<String>,
 
     element_id: ElementId,
 
@@ -83,6 +85,7 @@ pub struct Implement {
     dragging_modeless_tab: Option<(U128Id, usize)>,
 
     block_arena: block::Arena,
+    player_arena: player::Arena,
 
     chat_id: BlockId,
 
@@ -106,17 +109,17 @@ enum Modal {
 
 impl Constructor for Implement {
     fn constructor(props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) -> Self {
-        crate::debug::log_1("create block arena");
         let mut block_arena = block::Arena::new();
 
-        crate::debug::log_1("create chat block");
         let chat = block::chat::Chat::new(vec![
             block_arena.insert(block::chat::channel::Channel::new(String::from("メイン"))),
             block_arena.insert(block::chat::channel::Channel::new(String::from("サブ"))),
         ]);
 
-        crate::debug::log_1("insert chat block");
         let chat_id = block_arena.insert(chat);
+
+        let mut player_arena = player::Arena::new();
+        player_arena.insert(Rc::clone(&props.client_id), Player::new());
 
         Self {
             peer: props.peer,
@@ -144,6 +147,7 @@ impl Constructor for Implement {
             dragging_modeless_tab: None,
 
             block_arena,
+            player_arena,
 
             chat_id,
 
@@ -347,7 +351,7 @@ impl Implement {
             Modal::None => Html::none(),
             Modal::NewChannel => ModalNewChannel::empty(
                 modal_new_channel::Props {
-                    client_id: self.client_id.clone(),
+                    client_id: Rc::clone(&self.client_id),
                 },
                 Subscription::new(|sub| match sub {
                     modal_new_channel::On::Close => Msg::OpenNewModal { modal: Modal::None },
@@ -531,7 +535,7 @@ impl Implement {
                                     container_element: modeless_container_element.as_prop(),
                                     page_x: modeless.page_x,
                                     page_y: modeless.page_y,
-                                    block_arena: block::Arena::clone(&self.block_arena),
+                                    block_arena: self.block_arena.as_ref(),
                                 },
                                 Subscription::new({
                                     let modeless_id = U128Id::clone(&modeless_id);

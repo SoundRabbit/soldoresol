@@ -9,14 +9,14 @@ use super::template::{
     loader::{self, Loader},
 };
 use super::util::styled::{Style, Styled};
-use super::util::Prop;
 use kagura::prelude::*;
 use regex::Regex;
+use std::rc::Rc;
 
 mod task;
 
 pub struct Props {
-    pub common_db: Prop<web_sys::IdbDatabase>,
+    pub common_db: Rc<web_sys::IdbDatabase>,
 }
 
 pub enum Msg {

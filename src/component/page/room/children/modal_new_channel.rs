@@ -1,14 +1,15 @@
+use super::atom::text;
 use super::molecule::modal::{self, Modal};
 use super::util::styled::{Style, Styled};
-use super::util::{Prop, State};
 use crate::arena::block;
 use kagura::prelude::*;
+use std::rc::Rc;
 use wasm_bindgen::JsCast;
 
-use block::chat::channel::ChannelType;
+use block::chat::channel::{ChannelPermission, ChannelType};
 
 pub struct Props {
-    pub client_id: Prop<String>,
+    pub client_id: Rc<String>,
 }
 
 pub enum Msg {
@@ -22,7 +23,7 @@ pub enum On {
 }
 
 pub struct ModalNewChannel {
-    client_id: Prop<String>,
+    client_id: Rc<String>,
     channel_type: ChannelType,
 }
 
@@ -71,51 +72,9 @@ impl Component for ModalNewChannel {
                     .class(Self::class("item")),
                 Events::new(),
                 vec![
-                    vec![
-                        Html::label(
-                            Attributes::new(),
-                            Events::new(),
-                            vec![Html::text("チャンネル名")],
-                        ),
-                        Html::input(Attributes::new(), Events::new(), vec![]),
-                    ],
-                    vec![
-                        Html::label(
-                            Attributes::new(),
-                            Events::new(),
-                            vec![Html::text("チャンネルタイプ")],
-                        ),
-                        Html::select(
-                            Attributes::new(),
-                            Events::new().on("change", 
-                            {
-                                let client_id = self.client_id.to_string();
-                                move |e| {
-                                    let target = unwrap_or!(e.target(); Msg::NoOp);
-                                    let target = unwrap_or!(target.dyn_into::<web_sys::HtmlSelectElement>().ok(); Msg::NoOp);
-                                    let value = target.value();
-
-                                    if value == "public" {
-                                        Msg::SetChannelType(ChannelType::Public)
-                                    } else if value == "private" {
-                                        Msg::SetChannelType(ChannelType::Private{client_id: client_id})
-                                    } else {
-                                        Msg::NoOp
-                                    }
-                                }
-                            }),
-                            vec![
-                                Self::render_select_option(
-                                    "public",
-                                    "公開チャンネル",
-                                ),
-                                Self::render_select_option(
-                                    "private",
-                                    "非公開チャンネル",
-                                ),
-                            ],
-                        ),
-                    ],
+                    self.render_channel_name_input(),
+                    self.render_channel_type_select(),
+                    self.render_channel_type_explanation(),
                 ]
                 .into_iter()
                 .flatten()
@@ -132,6 +91,93 @@ impl ModalNewChannel {
             Events::new(),
             vec![Html::text(text)],
         )
+    }
+
+    fn render_channel_name_input(&self) -> Vec<Html> {
+        vec![
+            Html::label(
+                Attributes::new(),
+                Events::new(),
+                vec![Html::text("チャンネル名")],
+            ),
+            Html::input(Attributes::new(), Events::new(), vec![]),
+        ]
+    }
+
+    fn render_channel_type_select(&self) -> Vec<Html> {
+        vec![
+            Html::label(
+                Attributes::new(),
+                Events::new(),
+                vec![Html::text("チャンネルタイプ")],
+            ),
+            Html::select(
+                Attributes::new(),
+                Events::new().on("change", 
+                {
+                    let client_id = Rc::clone(&self.client_id);
+                    move |e| {
+                        let target = unwrap_or!(e.target(); Msg::NoOp);
+                        let target = unwrap_or!(target.dyn_into::<web_sys::HtmlSelectElement>().ok(); Msg::NoOp);
+                        let value = target.value();
+
+                        if value == "public" {
+                            Msg::SetChannelType(ChannelType::Public)
+                        } else if value == "private" {
+                            Msg::SetChannelType(ChannelType::Private{client_id: client_id, read: ChannelPermission::EveryOne, write: ChannelPermission::EveryOne})
+                        } else {
+                            Msg::NoOp
+                        }
+                    }
+                }),
+                vec![
+                    Self::render_select_option(
+                        "public",
+                        "公開チャンネル",
+                    ),
+                    Self::render_select_option(
+                        "private",
+                        "非公開チャンネル",
+                    ),
+                ],
+            ),
+        ]
+    }
+
+    fn render_channel_type_explanation(&self) -> Vec<Html> {
+        vec![
+            Html::div(Attributes::new(), Events::new(), vec![]),
+            Html::div(
+                Attributes::new().class(Self::class("item")),
+                Events::new(),
+                vec![
+                    vec![
+                        text::span("閲覧"),
+                        text::span(match &self.channel_type {
+                            ChannelType::Private { .. } => "許可されたプレイヤー",
+                            ChannelType::Public => "全てのプレイヤー",
+                        }),
+                    ],
+                    vec![
+                        text::span("投稿"),
+                        text::span(match &self.channel_type {
+                            ChannelType::Private { .. } => "許可されたプレイヤー",
+                            ChannelType::Public => "全てのプレイヤー",
+                        }),
+                    ],
+                    vec![
+                        text::span("パーミッションの編集"),
+                        text::span(match &self.channel_type {
+                            ChannelType::Private { .. } => "このクライアントのみ可",
+                            ChannelType::Public => "不可",
+                        }),
+                    ],
+                ]
+                .into_iter()
+                .flatten()
+                .collect(),
+            ),
+        ]
     }
 }
 

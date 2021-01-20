@@ -4,19 +4,20 @@ use crate::libs::skyway::MeshRoom;
 use crate::model::config::Config;
 use futures::join;
 use js_sys::Promise;
+use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
 
 pub async fn initialize(
-    config: Prop<Config>,
-    common_db: Prop<web_sys::IdbDatabase>,
+    config: Rc<Config>,
+    common_db: Rc<web_sys::IdbDatabase>,
     room: MeshRoom,
-    room_id: Prop<String>,
-) -> Option<(web_sys::IdbDatabase, web_sys::IdbDatabase, State<MeshRoom>)> {
+    room_id: Rc<String>,
+) -> Option<(web_sys::IdbDatabase, web_sys::IdbDatabase, Rc<MeshRoom>)> {
     let props = join!(
-        initialize_room_db(config.clone(), room_id.clone()),
-        initialize_table_db(config.clone()),
+        initialize_room_db(Rc::clone(&config), Rc::clone(&room_id)),
+        initialize_table_db(Rc::clone(&config)),
         initialize_room_connection(room)
     );
 
@@ -39,8 +40,8 @@ pub async fn initialize(
 }
 
 async fn initialize_room_db(
-    config: Prop<Config>,
-    room_id: Prop<String>,
+    config: Rc<Config>,
+    room_id: Rc<String>,
 ) -> Option<web_sys::IdbDatabase> {
     let room_db_name = format!("{}.room", config.client.db_prefix);
 
@@ -67,7 +68,7 @@ async fn initialize_room_db(
     Some(room_db)
 }
 
-async fn initialize_table_db(config: Prop<Config>) -> Option<web_sys::IdbDatabase> {
+async fn initialize_table_db(config: Rc<Config>) -> Option<web_sys::IdbDatabase> {
     let table_db_name = format!("{}.table", config.client.db_prefix);
     idb::open_db(&table_db_name).await
 }
@@ -85,11 +86,11 @@ fn object_store_names(db: &web_sys::IdbDatabase) -> Vec<String> {
     res
 }
 
-pub async fn initialize_room_connection(room: MeshRoom) -> Option<State<MeshRoom>> {
-    let room = State::new(room);
+pub async fn initialize_room_connection(room: MeshRoom) -> Option<Rc<MeshRoom>> {
+    let room = Rc::new(room);
 
     JsFuture::from(Promise::new({
-        let room = room.as_prop();
+        let room = Rc::clone(&room);
         &mut move |resolve, _| {
             let a = Closure::wrap(Box::new(move || {
                 let _ = resolve.call1(&js_sys::global(), &JsValue::null());

@@ -9,5 +9,6 @@ pub mod loading_circle;
 pub mod mouse_capture;
 pub mod slider;
 pub mod tab_btn;
+pub mod text;
 
 use super::*;

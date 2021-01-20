@@ -119,6 +119,10 @@ impl Styled for Btn {
                 "color": color_system::gray(100, 0).to_string();
                 "text-align": "left";
             }
+
+            "menu:hover" {
+                "background-color": color_system::blue(100, 5).to_string();
+            }
         }
     }
 }

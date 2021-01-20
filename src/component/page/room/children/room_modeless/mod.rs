@@ -26,7 +26,7 @@ pub struct Props {
     pub container_element: Prop<web_sys::Element>,
     pub page_x: i32,
     pub page_y: i32,
-    pub block_arena: block::Arena,
+    pub block_arena: block::ArenaRef,
 }
 
 pub enum Msg {
@@ -48,7 +48,7 @@ pub struct RoomModeless {
     container_element: Prop<web_sys::Element>,
     page_x: i32,
     page_y: i32,
-    block_arena: block::Arena,
+    block_arena: block::ArenaRef,
 }
 
 impl Constructor for RoomModeless {
@@ -223,7 +223,7 @@ impl RoomModeless {
             vec![match self.content.selected() {
                 Some(Content::ChatChannel(channel_id)) => ChatChannel::empty(
                     chat_channel::Props {
-                        block_arena: block::Arena::clone(&self.block_arena),
+                        block_arena: block::ArenaRef::clone(&self.block_arena),
                         channel_id: BlockId::clone(channel_id),
                     },
                     Subscription::none(),
