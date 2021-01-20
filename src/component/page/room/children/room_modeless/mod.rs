@@ -26,6 +26,7 @@ pub struct Props {
     pub container_element: Prop<web_sys::Element>,
     pub page_x: i32,
     pub page_y: i32,
+    pub minimized: bool,
     pub block_arena: block::ArenaRef,
 }
 
@@ -36,6 +37,8 @@ pub enum Msg {
 
 pub enum On {
     Close,
+    Minimize,
+    Restore,
     Focus,
     DragTabStart { tab_idx: usize },
     DropTab { tab_idx: Option<usize> },
@@ -48,6 +51,7 @@ pub struct RoomModeless {
     container_element: Prop<web_sys::Element>,
     page_x: i32,
     page_y: i32,
+    minimized: bool,
     block_arena: block::ArenaRef,
 }
 
@@ -59,6 +63,7 @@ impl Constructor for RoomModeless {
             container_element: props.container_element,
             page_x: props.page_x,
             page_y: props.page_y,
+            minimized: props.minimized,
             block_arena: props.block_arena,
         }
     }
@@ -75,6 +80,7 @@ impl Component for RoomModeless {
         self.container_element = props.container_element;
         self.page_x = props.page_x;
         self.page_y = props.page_y;
+        self.minimized = props.minimized;
         self.block_arena = props.block_arena;
     }
 
@@ -89,7 +95,26 @@ impl Component for RoomModeless {
     }
 
     fn render(&self, _: Vec<Html>) -> Html {
-        Self::styled(Modeless::with_child(
+        Self::styled(if self.minimized {
+            self.render_minimized()
+        } else {
+            self.render_stored()
+        })
+    }
+}
+
+impl RoomModeless {
+    pub fn tag_id() -> String {
+        use std::any;
+        any::type_name::<Self>().to_string()
+    }
+
+    fn render_minimized(&self) -> Html {
+        self.render_header()
+    }
+
+    fn render_stored(&self) -> Html {
+        Modeless::with_child(
             modeless::Props {
                 z_index: self.z_index,
                 container_element: Some(Prop::clone(&self.container_element)),
@@ -105,19 +130,51 @@ impl Component for RoomModeless {
                 Events::new(),
                 vec![self.render_header(), self.render_content()],
             ),
-        ))
+        )
     }
-}
 
-impl RoomModeless {
-    pub fn tag_id() -> String {
-        use std::any;
-        any::type_name::<Self>().to_string()
+    fn render_controller_sotored() -> Vec<Html> {
+        vec![
+            Btn::with_child(
+                btn::Props {
+                    variant: btn::Variant::Secondary,
+                },
+                Subscription::new(|sub| match sub {
+                    btn::On::Click => Msg::Sub(On::Minimize),
+                }),
+                fa::i("fa-window-minimize"),
+            ),
+            Btn::with_child(
+                btn::Props {
+                    variant: btn::Variant::Secondary,
+                },
+                Subscription::new(|sub| match sub {
+                    btn::On::Click => Msg::Sub(On::Close),
+                }),
+                fa::i("fa-times"),
+            ),
+        ]
+    }
+
+    fn render_controller_minimized() -> Vec<Html> {
+        vec![Btn::with_child(
+            btn::Props {
+                variant: btn::Variant::Secondary,
+            },
+            Subscription::new(|sub| match sub {
+                btn::On::Click => Msg::Sub(On::Restore),
+            }),
+            fa::i("fa-window-restore"),
+        )]
     }
 
     fn render_header(&self) -> Html {
+        let order = if self.minimized { self.z_index } else { 0 };
+
         Html::div(
-            Attributes::new().class(Self::class("header")),
+            Attributes::new()
+                .class(Self::class("header"))
+                .style("order", order.to_string()),
             Events::new()
                 .on("dragover", |e| {
                     e.prevent_default();
@@ -136,21 +193,20 @@ impl RoomModeless {
                     }
                 }),
             vec![
-                Html::div(
+                vec![Html::div(
                     Attributes::new().class(Self::class("header-tab-container")),
                     Events::new(),
                     self.render_header_tabs(),
-                ),
-                Btn::with_child(
-                    btn::Props {
-                        variant: btn::Variant::Secondary,
-                    },
-                    Subscription::new(|sub| match sub {
-                        btn::On::Click => Msg::Sub(On::Close),
-                    }),
-                    fa::i("fa-times"),
-                ),
-            ],
+                )],
+                if self.minimized {
+                    Self::render_controller_minimized()
+                } else {
+                    Self::render_controller_sotored()
+                },
+            ]
+            .into_iter()
+            .flatten()
+            .collect(),
         )
     }
 
@@ -247,7 +303,9 @@ impl Styled for RoomModeless {
 
             "header" {
                 "display": "grid";
-                "grid-template-columns": "1fr max-content";
+                "grid-template-columns": "1fr";
+                "grid-auto-colmuns": "max-content";
+                "grid-auto-flow": "column";
                 "background-color": format!("{}", color_system::gray(255, 8));
             }
 

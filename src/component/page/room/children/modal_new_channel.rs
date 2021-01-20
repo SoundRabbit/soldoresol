@@ -1,3 +1,4 @@
+use super::atom::btn::{self, Btn};
 use super::atom::text;
 use super::molecule::modal::{self, Modal};
 use super::util::styled::{Style, Styled};
@@ -68,17 +69,33 @@ impl Component for ModalNewChannel {
             Html::div(
                 Attributes::new()
                     .class("pure-form")
-                    .class(Self::class("base"))
-                    .class(Self::class("item")),
+                    .class(Self::class("base")),
                 Events::new(),
                 vec![
-                    self.render_channel_name_input(),
-                    self.render_channel_type_select(),
-                    self.render_channel_type_explanation(),
-                ]
-                .into_iter()
-                .flatten()
-                .collect(),
+                    Html::div(
+                        Attributes::new().class(Self::class("item")),
+                        Events::new(),
+                        vec![
+                            self.render_channel_name_input(),
+                            self.render_channel_type_select(),
+                            self.render_channel_type_explanation(),
+                        ]
+                        .into_iter()
+                        .flatten()
+                        .collect(),
+                    ),
+                    Html::div(
+                        Attributes::new().class(Self::class("centering")),
+                        Events::new(),
+                        vec![Btn::with_child(
+                            btn::Props {
+                                variant: btn::Variant::Primary,
+                            },
+                            Subscription::none(),
+                            Html::text("新規チャンネルを作成"),
+                        )],
+                    ),
+                ],
             ),
         ))
     }
@@ -189,6 +206,10 @@ impl Styled for ModalNewChannel {
                 "height": "100%";
                 "overflow-y": "scroll";
                 "padding": ".65rem";
+                "display": "grid";
+                "grid-template-rows": "1fr max-content";
+                "grid-auto-flow": "row";
+                "row-gap": ".65rem";
             }
 
             "item" {
@@ -198,6 +219,11 @@ impl Styled for ModalNewChannel {
                 "align-items": "center";
                 "column-gap": ".35rem";
                 "row-gap": ".65rem";
+            }
+
+            "centering" {
+                "display": "grid";
+                "justify-items": "center";
             }
         }
     }

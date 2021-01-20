@@ -47,6 +47,12 @@ pub enum Msg {
     CloseModeless {
         modeless_id: U128Id,
     },
+    MinimizeModeless {
+        modeless_id: U128Id,
+    },
+    RestoreModeless {
+        modeless_id: U128Id,
+    },
     SetModelessContainerElement {
         element: web_sys::Element,
     },
@@ -96,6 +102,7 @@ struct ModelessContent {
     content: State<SelectList<room_modeless::Content>>,
     page_x: i32,
     page_y: i32,
+    minimized: bool,
 }
 
 struct ElementId {
@@ -182,6 +189,7 @@ impl Component for Implement {
                     content: State::new(SelectList::new(vec![content], 0)),
                     page_x: 0,
                     page_y: 0,
+                    minimized: false,
                 });
                 Cmd::none()
             }
@@ -202,12 +210,27 @@ impl Component for Implement {
                     content: State::new(SelectList::new(tabs, 0)),
                     page_x: 0,
                     page_y: 0,
+                    minimized: false,
                 });
                 Cmd::none()
             }
 
             Msg::CloseModeless { modeless_id } => {
                 self.modeless_list.remove(&modeless_id);
+                Cmd::none()
+            }
+
+            Msg::MinimizeModeless { modeless_id } => {
+                if let Some(modeless) = self.modeless_list.get_mut(&modeless_id) {
+                    modeless.minimized = true;
+                }
+                Cmd::none()
+            }
+
+            Msg::RestoreModeless { modeless_id } => {
+                if let Some(modeless) = self.modeless_list.get_mut(&modeless_id) {
+                    modeless.minimized = false;
+                }
                 Cmd::none()
             }
 
@@ -278,6 +301,7 @@ impl Component for Implement {
                             content: State::new(SelectList::new(vec![tab], 0)),
                             page_x,
                             page_y,
+                            minimized: false,
                         });
                     }
                     if let Some(from_content) = self.modeless_list.get(&from_id) {
@@ -535,6 +559,7 @@ impl Implement {
                                     container_element: modeless_container_element.as_prop(),
                                     page_x: modeless.page_x,
                                     page_y: modeless.page_y,
+                                    minimized: modeless.minimized,
                                     block_arena: self.block_arena.as_ref(),
                                 },
                                 Subscription::new({
@@ -545,6 +570,12 @@ impl Implement {
                                         }
                                         room_modeless::On::Close => {
                                             Msg::CloseModeless { modeless_id }
+                                        }
+                                        room_modeless::On::Minimize => {
+                                            Msg::MinimizeModeless { modeless_id }
+                                        }
+                                        room_modeless::On::Restore => {
+                                            Msg::RestoreModeless { modeless_id }
                                         }
                                         room_modeless::On::DragTabStart { tab_idx } => {
                                             Msg::SetDraggingModelessTab {
@@ -621,6 +652,12 @@ impl Styled for Implement {
                 "height": "100%";
                 "z-index": "0";
                 "overflow": "hidden";
+                "display": "grid";
+                "grid-template-columns": "max-content";
+                "grid-auto-rows": "max-content";
+                "grid-auto-flow": "max-content";
+                "justify-content": "start";
+                "align-content": "end";
             }
         }
     }
