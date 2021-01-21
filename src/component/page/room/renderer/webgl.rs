@@ -10,6 +10,10 @@ use program::Program;
 pub enum ProgramType {
     AreaProgram,
     CharacterProgram,
+    OffscreenProgram,
+    TablemaskProgram,
+    TablegridProgram,
+    TabletextureProgram,
 }
 
 pub struct WebGlF32Vbo(web_sys::WebGlBuffer);
@@ -195,6 +199,18 @@ impl WebGlRenderingContext {
                 }
                 ProgramType::CharacterProgram => {
                     Box::new(program::CharacterProgram::new(&self)) as Box<dyn Program>
+                }
+                ProgramType::OffscreenProgram => {
+                    Box::new(program::OffscreenProgram::new(&self)) as Box<dyn Program>
+                }
+                ProgramType::TablegridProgram => {
+                    Box::new(program::TablegridProgram::new(&self)) as Box<dyn Program>
+                }
+                ProgramType::TablemaskProgram => {
+                    Box::new(program::TablemaskProgram::new(&self)) as Box<dyn Program>
+                }
+                ProgramType::TabletextureProgram => {
+                    Box::new(program::TabletextureProgram::new(&self)) as Box<dyn Program>
                 }
             };
             self.program_table.insert(program_type.clone(), program);
