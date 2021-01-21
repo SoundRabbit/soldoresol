@@ -3,19 +3,61 @@ use super::WebGlRenderingContext;
 use web_sys::WebGlProgram;
 use web_sys::WebGlUniformLocation;
 
-pub trait Program {
-    fn as_program(&self) -> &WebGlProgram;
-    fn attr_vertex(&self) -> Option<&WebGlAttributeLocation>;
-    fn attr_tex_coord(&self) -> Option<&WebGlAttributeLocation>;
+pub enum ObjectType {
+    Area,
+    Boxblock,
+    Character,
 }
 
-pub struct CharacterProgram {
-    program: WebGlProgram,
-    a_vertex_location: WebGlAttributeLocation,
-    a_texture_coord_location: WebGlAttributeLocation,
-    u_translate_location: WebGlUniformLocation,
-    u_bg_color_location: WebGlUniformLocation,
-    u_texture_location: WebGlUniformLocation,
+impl ObjectType {
+    fn as_uni(&self) -> i32 {
+        match self {
+            Self::Area => 0,
+            Self::Boxblock => 1,
+            Self::Character => 2,
+        }
+    }
+}
+
+macro_rules! accesser {
+    (program) => {
+        fn as_program(&self) -> &web_sys::WebGlProgram {
+            &self.program
+        }
+    };
+
+    (None as $a:ident : $t:ty) => {
+        fn $a(&self) -> Option<&$t> {
+            None
+        }
+    };
+
+    ($n:ident as $a:ident : $t:ty) => {
+        fn $a(&self) -> Option<&$t> {
+            Some(&self.$n)
+        }
+    };
+}
+
+pub trait Program {
+    fn as_program(&self) -> &WebGlProgram;
+
+    accesser!(None as attr_normal: WebGlAttributeLocation);
+    accesser!(None as attr_tex_coord: WebGlAttributeLocation);
+    accesser!(None as attr_vertex: WebGlAttributeLocation);
+
+    accesser!(None as unif_area_size: WebGlUniformLocation);
+    accesser!(None as unif_bg_color: WebGlUniformLocation);
+    accesser!(None as unif_bg_color_1: WebGlUniformLocation);
+    accesser!(None as unif_bg_color_2: WebGlUniformLocation);
+    accesser!(None as unif_flag_round: WebGlUniformLocation);
+    accesser!(None as unif_inv_model: WebGlUniformLocation);
+    accesser!(None as unif_light: WebGlUniformLocation);
+    accesser!(None as unif_object_type: WebGlUniformLocation);
+    accesser!(None as unif_point_size: WebGlUniformLocation);
+    accesser!(None as unif_shade_intensity: WebGlUniformLocation);
+    accesser!(None as unif_texture: WebGlUniformLocation);
+    accesser!(None as unif_translate: WebGlUniformLocation);
 }
 
 fn compile_shader(
@@ -78,6 +120,122 @@ fn create_program(
     program
 }
 
+/*----------AreaProgram----------*/
+
+pub struct AreaProgram {
+    program: web_sys::WebGlProgram,
+    pub a_vertex_location: WebGlAttributeLocation,
+    pub a_texture_coord_location: WebGlAttributeLocation,
+    pub u_translate_location: WebGlUniformLocation,
+    pub u_bg_color_1_location: WebGlUniformLocation,
+    pub u_bg_color_2_location: WebGlUniformLocation,
+    pub u_area_size_location: WebGlUniformLocation,
+    pub u_flag_round_location: WebGlUniformLocation,
+}
+
+impl AreaProgram {
+    fn new(gl: &WebGlRenderingContext) -> Self {
+        let vert = include_str!("./shader/area.vert");
+        let frag = include_str!("./shader/area.frag");
+        let program = create_program(gl, vert, frag);
+
+        let a_vertex_location =
+            WebGlAttributeLocation(gl.get_attrib_location(&program, "a_vertex") as u32);
+        let a_texture_coord_location =
+            WebGlAttributeLocation(gl.get_attrib_location(&program, "a_textureCoord") as u32);
+        let u_translate_location = gl.get_uniform_location(&program, "u_translate").unwrap();
+        let u_bg_color_1_location = gl.get_uniform_location(&program, "u_bgColor1").unwrap();
+        let u_bg_color_2_location = gl.get_uniform_location(&program, "u_bgColor2").unwrap();
+        let u_area_size_location = gl.get_uniform_location(&program, "u_areaSize").unwrap();
+        let u_flag_round_location = gl.get_uniform_location(&program, "u_flagRound").unwrap();
+
+        Self {
+            program,
+            a_vertex_location,
+            a_texture_coord_location,
+            u_translate_location,
+            u_bg_color_1_location,
+            u_bg_color_2_location,
+            u_area_size_location,
+            u_flag_round_location,
+        }
+    }
+}
+
+impl Program for AreaProgram {
+    accesser!(program);
+    accesser!(a_texture_coord_location as attr_tex_coord: WebGlAttributeLocation);
+    accesser!(a_vertex_location as attr_vertex: WebGlAttributeLocation);
+    accesser!(u_area_size_location as unif_area_size: WebGlUniformLocation);
+    accesser!(u_bg_color_1_location as unif_bg_color_1: WebGlUniformLocation);
+    accesser!(u_bg_color_2_location as unif_bg_color_2: WebGlUniformLocation);
+    accesser!(u_flag_round_location as unif_flag_round: WebGlUniformLocation);
+    accesser!(u_translate_location as unif_translate: WebGlUniformLocation);
+}
+
+/*----------BoxblockProgram----------*/
+
+pub struct BoxblockProgram {
+    program: web_sys::WebGlProgram,
+    a_vertex_location: WebGlAttributeLocation,
+    a_normal_location: WebGlAttributeLocation,
+    u_translate_location: WebGlUniformLocation,
+    u_inv_model_location: WebGlUniformLocation,
+    u_light_location: WebGlUniformLocation,
+    u_bg_color_location: WebGlUniformLocation,
+    u_shade_intensity_location: WebGlUniformLocation,
+}
+
+impl BoxblockProgram {
+    pub fn new(gl: &WebGlRenderingContext) -> Self {
+        let vert = include_str!("./shader/boxblock.vert");
+        let frag = include_str!("./shader/boxblock.frag");
+        let program = create_program(gl, vert, frag);
+
+        let a_vertex_location =
+            WebGlAttributeLocation(gl.get_attrib_location(&program, "a_vertex") as u32);
+        let a_normal_location =
+            WebGlAttributeLocation(gl.get_attrib_location(&program, "a_normal") as u32);
+        let u_translate_location = gl.get_uniform_location(&program, "u_translate").unwrap();
+        let u_inv_model_location = gl.get_uniform_location(&program, "u_invModel").unwrap();
+        let u_light_location = gl.get_uniform_location(&program, "u_light").unwrap();
+        let u_bg_color_location = gl.get_uniform_location(&program, "u_bgColor").unwrap();
+        let u_shade_intensity_location = gl
+            .get_uniform_location(&program, "u_shadeIntensity")
+            .unwrap();
+
+        Self {
+            program,
+            a_vertex_location,
+            a_normal_location,
+            u_translate_location,
+            u_inv_model_location,
+            u_light_location,
+            u_bg_color_location,
+            u_shade_intensity_location,
+        }
+    }
+}
+
+impl Program for BoxblockProgram {
+    accesser!(program);
+    accesser!(a_vertex_location as attr_vertex: WebGlAttributeLocation);
+    accesser!(a_normal_location as attr_normal: WebGlAttributeLocation);
+    accesser!(u_bg_color_location as unif_bg_color: WebGlUniformLocation);
+    accesser!(u_inv_model_location as unif_inv_model: WebGlUniformLocation);
+}
+
+/*----------CharacterProgram----------*/
+
+pub struct CharacterProgram {
+    program: WebGlProgram,
+    a_vertex_location: WebGlAttributeLocation,
+    a_texture_coord_location: WebGlAttributeLocation,
+    u_translate_location: WebGlUniformLocation,
+    u_bg_color_location: WebGlUniformLocation,
+    u_texture_location: WebGlUniformLocation,
+}
+
 impl CharacterProgram {
     pub fn new(gl: &WebGlRenderingContext) -> Self {
         let vert = include_str!("./shader/character.vert");
@@ -104,15 +262,95 @@ impl CharacterProgram {
 }
 
 impl Program for CharacterProgram {
-    fn as_program(&self) -> &web_sys::WebGlProgram {
-        &self.program
-    }
+    accesser!(program);
+    accesser!(a_texture_coord_location as attr_tex_coord: WebGlAttributeLocation);
+    accesser!(a_vertex_location as attr_vertex: WebGlAttributeLocation);
+    accesser!(u_bg_color_location as unif_bg_color: WebGlUniformLocation);
+    accesser!(u_texture_location as unif_texture: WebGlUniformLocation);
+    accesser!(u_translate_location as unif_translate: WebGlUniformLocation);
+}
 
-    fn attr_vertex(&self) -> Option<&WebGlAttributeLocation> {
-        Some(&self.a_vertex_location)
-    }
+/*----------OffscreenProgram----------*/
 
-    fn attr_tex_coord(&self) -> Option<&WebGlAttributeLocation> {
-        Some(&self.a_texture_coord_location)
+pub struct OffscreenProgram {
+    program: web_sys::WebGlProgram,
+    a_vertex_location: WebGlAttributeLocation,
+    a_texture_coord_location: WebGlAttributeLocation,
+    u_translate_location: WebGlUniformLocation,
+    u_bg_color_location: WebGlUniformLocation,
+    u_flag_round_location: WebGlUniformLocation,
+}
+
+impl OffscreenProgram {
+    pub fn new(gl: &WebGlRenderingContext) -> Self {
+        let vert = include_str!("./shader/offscreen.vert");
+        let frag = include_str!("./shader/offscreen.frag");
+        let program = create_program(gl, vert, frag);
+
+        let a_vertex_location =
+            WebGlAttributeLocation(gl.get_attrib_location(&program, "a_vertex") as u32);
+        let a_texture_coord_location =
+            WebGlAttributeLocation(gl.get_attrib_location(&program, "a_textureCoord") as u32);
+        let u_translate_location = gl.get_uniform_location(&program, "u_translate").unwrap();
+        let u_bg_color_location = gl.get_uniform_location(&program, "u_maskColor").unwrap();
+        let u_flag_round_location = gl.get_uniform_location(&program, "u_flagRound").unwrap();
+
+        Self {
+            program,
+            a_texture_coord_location,
+            a_vertex_location,
+            u_bg_color_location,
+            u_flag_round_location,
+            u_translate_location,
+        }
     }
+}
+
+impl Program for OffscreenProgram {
+    accesser!(program);
+    accesser!(a_texture_coord_location as attr_tex_coord: WebGlAttributeLocation);
+    accesser!(a_vertex_location as attr_vertex: WebGlAttributeLocation);
+    accesser!(u_bg_color_location as unif_bg_color: WebGlUniformLocation);
+    accesser!(u_flag_round_location as unif_flag_round: WebGlUniformLocation);
+    accesser!(u_translate_location as unif_translate: WebGlUniformLocation);
+}
+
+/*----------TablegridProgram----------*/
+
+pub struct TablegridProgram {
+    program: web_sys::WebGlProgram,
+    a_vertex_location: WebGlAttributeLocation,
+    u_translate_location: WebGlUniformLocation,
+    u_point_size_location: WebGlUniformLocation,
+    u_bg_color_location: WebGlUniformLocation,
+}
+
+impl TablegridProgram {
+    pub fn new(gl: &WebGlRenderingContext) -> Self {
+        let vert = include_str!("./shader/tablegrid.vert");
+        let frag = include_str!("./shader/tablegrid.frag");
+        let program = create_program(gl, vert, frag);
+
+        let a_vertex_location =
+            WebGlAttributeLocation(gl.get_attrib_location(&program, "a_vertex") as u32);
+        let u_translate_location = gl.get_uniform_location(&program, "u_translate").unwrap();
+        let u_point_size_location = gl.get_uniform_location(&program, "u_pointSize").unwrap();
+        let u_bg_color_location = gl.get_uniform_location(&program, "u_bgColor").unwrap();
+
+        Self {
+            program,
+            a_vertex_location,
+            u_bg_color_location,
+            u_point_size_location,
+            u_translate_location,
+        }
+    }
+}
+
+impl Program for TablegridProgram {
+    accesser!(program);
+    accesser!(a_vertex_location as attr_vertex: WebGlAttributeLocation);
+    accesser!(u_bg_color_location as unif_bg_color: WebGlUniformLocation);
+    accesser!(u_point_size_location as unif_point_size: WebGlUniformLocation);
+    accesser!(u_translate_location as unif_translate: WebGlUniformLocation);
 }

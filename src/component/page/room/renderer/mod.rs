@@ -9,8 +9,8 @@ use webgl::WebGlRenderingContext;
 pub struct Renderer {
     view_canvas: Rc<web_sys::HtmlCanvasElement>,
     view_gl: WebGlRenderingContext,
-    mask_canvas: Rc<web_sys::HtmlCanvasElement>,
-    mask_gl: WebGlRenderingContext,
+    offscreen_canvas: Rc<web_sys::HtmlCanvasElement>,
+    offscreen_gl: WebGlRenderingContext,
 }
 
 impl Renderer {
@@ -44,33 +44,33 @@ impl Renderer {
         view_gl.clear_color(0.0, 0.0, 0.0, 0.0);
         view_gl.clear_stencil(0);
 
-        let mask_canvas = Rc::new(crate::libs::element::html_canvas_element());
-        mask_canvas.set_width(view_canvas.width());
-        mask_canvas.set_height(view_canvas.height());
+        let offscreen_canvas = Rc::new(crate::libs::element::html_canvas_element());
+        offscreen_canvas.set_width(view_canvas.width());
+        offscreen_canvas.set_height(view_canvas.height());
         let option: JsValue = object! {preserveDrawingBuffer: true}.into();
-        let mask_gl = mask_canvas
+        let offscreen_gl = offscreen_canvas
             .get_context_with_context_options("webgl", &option)
             .unwrap()
             .unwrap()
             .dyn_into::<web_sys::WebGlRenderingContext>()
             .unwrap();
-        let mask_gl = WebGlRenderingContext::new(mask_gl);
+        let offscreen_gl = WebGlRenderingContext::new(offscreen_gl);
 
-        mask_gl.enable(web_sys::WebGlRenderingContext::DEPTH_TEST);
-        mask_gl.depth_func(web_sys::WebGlRenderingContext::ALWAYS);
-        mask_gl.enable(web_sys::WebGlRenderingContext::BLEND);
-        mask_gl.blend_func(
+        offscreen_gl.enable(web_sys::WebGlRenderingContext::DEPTH_TEST);
+        offscreen_gl.depth_func(web_sys::WebGlRenderingContext::ALWAYS);
+        offscreen_gl.enable(web_sys::WebGlRenderingContext::BLEND);
+        offscreen_gl.blend_func(
             web_sys::WebGlRenderingContext::SRC_ALPHA,
             web_sys::WebGlRenderingContext::ONE_MINUS_SRC_ALPHA,
         );
-        mask_gl.enable(web_sys::WebGlRenderingContext::CULL_FACE);
-        mask_gl.cull_face(web_sys::WebGlRenderingContext::BACK);
+        offscreen_gl.enable(web_sys::WebGlRenderingContext::CULL_FACE);
+        offscreen_gl.cull_face(web_sys::WebGlRenderingContext::BACK);
 
         Self {
             view_canvas,
             view_gl,
-            mask_canvas,
-            mask_gl,
+            offscreen_canvas,
+            offscreen_gl,
         }
     }
 }
