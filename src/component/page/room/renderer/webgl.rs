@@ -19,6 +19,7 @@ pub struct WebGlRenderingContext {
     gl: Rc<web_sys::WebGlRenderingContext>,
     using_program: Option<ProgramType>,
     program_table: HashMap<ProgramType, Box<dyn Program>>,
+    depth_func: u32,
 }
 
 impl Deref for WebGlF32Vbo {
@@ -112,15 +113,24 @@ impl WebGlRenderingContext {
     }
 
     pub fn new(gl: web_sys::WebGlRenderingContext) -> Self {
+        gl.depth_func(web_sys::WebGlRenderingContext::ALWAYS);
+
         Self {
             gl: Rc::new(gl),
             using_program: None,
             program_table: HashMap::new(),
+            depth_func: web_sys::WebGlRenderingContext::ALWAYS,
         }
     }
 
     pub fn gl(&self) -> Rc<web_sys::WebGlRenderingContext> {
         Rc::clone(&self.gl)
+    }
+
+    pub fn depth_func(&self, func: u32) {
+        if self.depth_func != func {
+            self.depth_func(func);
+        }
     }
 
     pub fn create_vbo_with_f32array(&self, data: &[f32]) -> WebGlF32Vbo {
@@ -221,5 +231,8 @@ impl WebGlRenderingContext {
     setter!(unif unif_point_size: 1f as set_unif_point_size);
     setter!(unif unif_shade_intensity: 1f as set_unif_shade_intensity);
     setter!(unif unif_texture: 1i as set_unif_texture);
+    setter!(unif unif_texture_1: 1i as set_unif_texture_1);
+    setter!(unif unif_texture_2: 1i as set_unif_texture_2);
+    setter!(unif unif_texture_2_is_available: 1i as set_unif_texture_2_is_available);
     setter!(unif unif_translate: 4fv as set_unif_translate);
 }

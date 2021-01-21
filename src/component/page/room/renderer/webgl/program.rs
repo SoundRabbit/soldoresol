@@ -57,6 +57,9 @@ pub trait Program {
     accesser!(None as unif_point_size: WebGlUniformLocation);
     accesser!(None as unif_shade_intensity: WebGlUniformLocation);
     accesser!(None as unif_texture: WebGlUniformLocation);
+    accesser!(None as unif_texture_1: WebGlUniformLocation);
+    accesser!(None as unif_texture_2: WebGlUniformLocation);
+    accesser!(None as unif_texture_2_is_available: WebGlUniformLocation);
     accesser!(None as unif_translate: WebGlUniformLocation);
 }
 
@@ -353,4 +356,108 @@ impl Program for TablegridProgram {
     accesser!(u_bg_color_location as unif_bg_color: WebGlUniformLocation);
     accesser!(u_point_size_location as unif_point_size: WebGlUniformLocation);
     accesser!(u_translate_location as unif_translate: WebGlUniformLocation);
+}
+
+/*----------TablegridProgram----------*/
+
+pub struct TabletextureProgram {
+    program: web_sys::WebGlProgram,
+    a_vertex_location: WebGlAttributeLocation,
+    a_texture_coord_location: WebGlAttributeLocation,
+    u_translate_location: WebGlUniformLocation,
+    u_bg_color_location: WebGlUniformLocation,
+    u_texture_1_location: WebGlUniformLocation,
+    u_texture_2_location: WebGlUniformLocation,
+    u_texture_2_is_available_location: WebGlUniformLocation,
+}
+
+impl TabletextureProgram {
+    pub fn new(gl: &WebGlRenderingContext) -> Self {
+        let vert = include_str!("./shader/tabletexture.vert");
+        let frag = include_str!("./shader/tabletexture.frag");
+        let program = create_program(gl, vert, frag);
+
+        let a_vertex_location =
+            WebGlAttributeLocation(gl.get_attrib_location(&program, "a_vertex") as u32);
+        let a_texture_coord_location =
+            WebGlAttributeLocation(gl.get_attrib_location(&program, "a_textureCoord") as u32);
+        let u_translate_location = gl.get_uniform_location(&program, "u_translate").unwrap();
+        let u_bg_color_location = gl.get_uniform_location(&program, "u_bgColor").unwrap();
+        let u_texture_1_location = gl.get_uniform_location(&program, "u_texture1").unwrap();
+        let u_texture_2_location = gl.get_uniform_location(&program, "u_texture2").unwrap();
+        let u_texture_2_is_available_location = gl
+            .get_uniform_location(&program, "u_texture2IsAvailable")
+            .unwrap();
+
+        Self {
+            program,
+            a_texture_coord_location,
+            a_vertex_location,
+            u_bg_color_location,
+            u_texture_2_location,
+            u_texture_1_location,
+            u_texture_2_is_available_location,
+            u_translate_location,
+        }
+    }
+}
+
+impl Program for TabletextureProgram {
+    accesser!(program);
+
+    accesser!(a_texture_coord_location as attr_tex_coord: WebGlAttributeLocation);
+    accesser!(a_vertex_location as attr_vertex: WebGlAttributeLocation);
+    accesser!(u_bg_color_location as unif_bg_color: WebGlUniformLocation);
+    accesser!(u_texture_1_location as unif_texture_1: WebGlUniformLocation);
+    accesser!(u_texture_2_location as unif_texture_2: WebGlUniformLocation);
+    accesser!(
+        u_texture_2_is_available_location as unif_texture_2_is_available: WebGlUniformLocation
+    );
+    accesser!(u_translate_location as unif_translate: WebGlUniformLocation);
+}
+
+/*----------TablemaskProgram----------*/
+
+pub struct TablemaskProgram {
+    program: web_sys::WebGlProgram,
+    a_vertex_location: WebGlAttributeLocation,
+    a_texture_coord_location: WebGlAttributeLocation,
+    u_translate_location: WebGlUniformLocation,
+    u_bg_color_location: WebGlUniformLocation,
+    u_flag_round_location: WebGlUniformLocation,
+}
+
+impl TablemaskProgram {
+    pub fn new(gl: &WebGlRenderingContext) -> Self {
+        let vert = include_str!("./shader/tablemask.vert");
+        let frag = include_str!("./shader/tablemask.frag");
+        let program = create_program(gl, vert, frag);
+
+        let a_vertex_location =
+            WebGlAttributeLocation(gl.get_attrib_location(&program, "a_vertex") as u32);
+        let a_texture_coord_location =
+            WebGlAttributeLocation(gl.get_attrib_location(&program, "a_textureCoord") as u32);
+        let u_translate_location = gl.get_uniform_location(&program, "u_translate").unwrap();
+        let u_bg_color_location = gl.get_uniform_location(&program, "u_bgColor").unwrap();
+        let u_flag_round_location = gl.get_uniform_location(&program, "u_flagRound").unwrap();
+
+        Self {
+            program,
+            a_vertex_location,
+            a_texture_coord_location,
+            u_translate_location,
+            u_bg_color_location,
+            u_flag_round_location,
+        }
+    }
+}
+
+impl Program for TablemaskProgram {
+    accesser!(program);
+
+    accesser!(a_texture_coord_location as attr_tex_coord: WebGlAttributeLocation);
+    accesser!(a_vertex_location as attr_vertex: WebGlAttributeLocation);
+    accesser!(u_bg_color_location as unif_bg_color: WebGlUniformLocation);
+    accesser!(u_translate_location as unif_translate: WebGlUniformLocation);
+    accesser!(u_flag_round_location as unif_flag_round: WebGlUniformLocation);
 }
