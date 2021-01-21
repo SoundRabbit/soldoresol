@@ -134,7 +134,7 @@ pub struct AreaProgram {
 }
 
 impl AreaProgram {
-    fn new(gl: &WebGlRenderingContext) -> Self {
+    pub fn new(gl: &WebGlRenderingContext) -> Self {
         let vert = include_str!("./shader/area.vert");
         let frag = include_str!("./shader/area.frag");
         let program = create_program(gl, vert, frag);

@@ -8,6 +8,7 @@ use program::Program;
 
 #[derive(Hash, PartialEq, Eq, Clone)]
 pub enum ProgramType {
+    AreaProgram,
     CharacterProgram,
 }
 
@@ -49,6 +50,56 @@ impl Deref for WebGlRenderingContext {
     fn deref(&self) -> &web_sys::WebGlRenderingContext {
         &self.gl
     }
+}
+
+macro_rules! setter {
+    (attr $n:ident: WebGlF32Vbo as $a:ident) => {
+        pub fn $a(&self, vertex_buffer: &WebGlF32Vbo, size: i32, stride: i32) {
+            if let Some(attr_loc) = self.program().and_then(|p| p.$n()) {
+                self.set_attr_f32vbo(vertex_buffer, attr_loc, size, stride);
+            }
+        }
+    };
+
+    (unif $n:ident: 1i as $a:ident) => {
+        pub fn $a(&self, data: i32) {
+            if let Some(unif_loc) = self.program().and_then(|p| p.$n()) {
+                self.uniform1i(Some(unif_loc), data);
+            }
+        }
+    };
+
+    (unif $n:ident: 1f as $a:ident) => {
+        pub fn $a(&self, data: f32) {
+            if let Some(unif_loc) = self.program().and_then(|p| p.$n()) {
+                self.uniform1f(Some(unif_loc), data);
+            }
+        }
+    };
+
+    (unif $n:ident: 2fv as $a:ident) => {
+        pub fn $a(&self, data: &[f32]) {
+            if let Some(unif_loc) = self.program().and_then(|p| p.$n()) {
+                self.uniform2fv_with_f32_array(Some(unif_loc), data);
+            }
+        }
+    };
+
+    (unif $n:ident: 3fv as $a:ident) => {
+        pub fn $a(&self, data: &[f32]) {
+            if let Some(unif_loc) = self.program().and_then(|p| p.$n()) {
+                self.uniform3fv_with_f32_array(Some(unif_loc), data);
+            }
+        }
+    };
+
+    (unif $n:ident: 4fv as $a:ident) => {
+        pub fn $a(&self, data: &[f32]) {
+            if let Some(unif_loc) = self.program().and_then(|p| p.$n()) {
+                self.uniform4fv_with_f32_array(Some(unif_loc), data);
+            }
+        }
+    };
 }
 
 impl WebGlRenderingContext {
@@ -129,30 +180,46 @@ impl WebGlRenderingContext {
     pub fn use_program(&mut self, program_type: ProgramType) {
         if !self.program_table.contains_key(&program_type) {
             let program = match &program_type {
-                ProgramType::CharacterProgram => program::CharacterProgram::new(&self),
+                ProgramType::AreaProgram => {
+                    Box::new(program::AreaProgram::new(&self)) as Box<dyn Program>
+                }
+                ProgramType::CharacterProgram => {
+                    Box::new(program::CharacterProgram::new(&self)) as Box<dyn Program>
+                }
             };
-            self.program_table
-                .insert(program_type.clone(), Box::new(program) as Box<dyn Program>);
+            self.program_table.insert(program_type.clone(), program);
         }
 
-        let program = self
-            .program_table
-            .get(&program_type)
-            .map(|p| p.as_program());
-        self.gl.use_program(program);
+        if self
+            .using_program
+            .as_ref()
+            .map(|up| *up != program_type)
+            .unwrap_or(true)
+        {
+            let program = self
+                .program_table
+                .get(&program_type)
+                .map(|p| p.as_program());
+            self.gl.use_program(program);
+        }
 
         self.using_program = Some(program_type);
     }
 
-    pub fn set_attr_vertex(&self, vertex_buffer: &WebGlF32Vbo, size: i32, stride: i32) {
-        if let Some(attr_loc) = self.program().and_then(|p| p.attr_vertex()) {
-            self.set_attr_f32vbo(vertex_buffer, attr_loc, size, stride);
-        }
-    }
+    setter!(attr attr_tex_coord: WebGlF32Vbo as set_attr_tex_coord);
+    setter!(attr attr_vertex: WebGlF32Vbo as set_attr_vertex);
+    setter!(attr attr_normal: WebGlF32Vbo as set_attr_normal);
 
-    pub fn set_attr_tex_coord(&self, tex_coord_buffer: &WebGlF32Vbo, size: i32, stride: i32) {
-        if let Some(attr_loc) = self.program().and_then(|p| p.attr_tex_coord()) {
-            self.set_attr_f32vbo(tex_coord_buffer, attr_loc, size, stride);
-        }
-    }
+    setter!(unif unif_area_size: 2fv as set_unif_area_size);
+    setter!(unif unif_bg_color: 4fv as set_unif_bg_color);
+    setter!(unif unif_bg_color_1: 4fv as set_unif_bg_color_1);
+    setter!(unif unif_bg_color_2: 4fv as set_unif_bg_color_2);
+    setter!(unif unif_flag_round: 1i as set_unif_flag_round);
+    setter!(unif unif_inv_model: 4fv as set_unif_inv_model);
+    setter!(unif unif_light: 3fv as set_unif_light);
+    setter!(unif unif_object_type: 1i as set_unif_object_type);
+    setter!(unif unif_point_size: 1f as set_unif_point_size);
+    setter!(unif unif_shade_intensity: 1f as set_unif_shade_intensity);
+    setter!(unif unif_texture: 1i as set_unif_texture);
+    setter!(unif unif_translate: 4fv as set_unif_translate);
 }
