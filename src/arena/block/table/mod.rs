@@ -1,11 +1,12 @@
 use super::BlockId;
 use crate::arena::resource::ResourceId;
+use std::rc::Rc;
 use wasm_bindgen::{prelude::*, JsCast};
 
 pub mod texture;
 
 pub struct Table {
-    name: String,
+    name: Rc<String>,
     size: [f32; 2],
     is_bind_to_grid: bool,
     is_showing_grid: bool,
@@ -16,7 +17,7 @@ pub struct Table {
 impl Table {
     pub fn new(drawing_texture_id: BlockId, size: [f32; 2], name: impl Into<String>) -> Self {
         Self {
-            name: name.into(),
+            name: Rc::new(name.into()),
             size,
             is_bind_to_grid: true,
             is_showing_grid: true,
@@ -25,12 +26,26 @@ impl Table {
         }
     }
 
+    pub fn clone(this: &Self) -> Self {
+        Self {
+            name: Rc::clone(&this.name),
+            size: this.size.clone(),
+            is_bind_to_grid: this.is_bind_to_grid,
+            is_showing_grid: this.is_showing_grid,
+            drawing_texture_id: BlockId::clone(&this.drawing_texture_id),
+            background_texture_id: this
+                .background_texture_id
+                .as_ref()
+                .map(|r_id| ResourceId::clone(r_id)),
+        }
+    }
+
     pub fn name(&self) -> &String {
         &self.name
     }
 
     pub fn set_name(&mut self, name: String) {
-        self.name = name;
+        self.name = Rc::new(name);
     }
 
     pub fn size(&self) -> &[f32; 2] {

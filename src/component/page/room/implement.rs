@@ -96,6 +96,10 @@ pub enum Msg {
     LoadResourceData {
         data: Vec<resource::Data>,
     },
+    CreateNewChannel {
+        channel_name: String,
+        channel_type: block::chat::channel::ChannelType,
+    },
 }
 
 pub enum On {}
@@ -155,8 +159,14 @@ impl Constructor for Implement {
         let mut block_arena = block::Arena::new();
 
         let chat = block::chat::Chat::new(vec![
-            block_arena.insert(block::chat::channel::Channel::new(String::from("メイン"))),
-            block_arena.insert(block::chat::channel::Channel::new(String::from("サブ"))),
+            block_arena.insert(block::chat::channel::Channel::new(
+                String::from("メイン"),
+                block::chat::channel::ChannelType::Public,
+            )),
+            block_arena.insert(block::chat::channel::Channel::new(
+                String::from("サブ"),
+                block::chat::channel::ChannelType::Public,
+            )),
         ]);
 
         let chat_id = block_arena.insert(chat);
@@ -441,6 +451,23 @@ impl Component for Implement {
                 }
                 Cmd::none()
             }
+
+            Msg::CreateNewChannel {
+                channel_name,
+                channel_type,
+            } => {
+                let channel = block::chat::channel::Channel::new(channel_name, channel_type);
+                let channel_id = self.block_arena.insert(channel);
+
+                self.block_arena
+                    .update(&self.chat_id, move |chat: &mut block::chat::Chat| {
+                        chat.push_channel(channel_id);
+                    });
+
+                self.modal = Modal::None;
+
+                Cmd::none()
+            }
         }
     }
 
@@ -549,6 +576,13 @@ impl Implement {
                 },
                 Subscription::new(|sub| match sub {
                     modal_new_channel::On::Close => Msg::OpenNewModal { modal: Modal::None },
+                    modal_new_channel::On::CreateNewChannel {
+                        channel_name,
+                        channel_type,
+                    } => Msg::CreateNewChannel {
+                        channel_name,
+                        channel_type,
+                    },
                 }),
             ),
             Modal::ImportedFiles => ModalImportedFiles::empty(

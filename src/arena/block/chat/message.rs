@@ -5,6 +5,16 @@ pub enum Sender {
     Player { client_id: Rc<String> },
 }
 
+impl Sender {
+    pub fn clone(this: &Self) -> Self {
+        match this {
+            Self::Player { client_id } => Self::Player {
+                client_id: Rc::clone(client_id),
+            },
+        }
+    }
+}
+
 pub struct Message {
     sender: Sender,
     text: Rc<String>,
@@ -17,6 +27,18 @@ impl Message {
             sender,
             text: Rc::new(String::from("")),
             replies: vec![],
+        }
+    }
+
+    pub fn clone(this: &Self) -> Self {
+        Self {
+            sender: Sender::clone(&this.sender),
+            text: Rc::clone(&this.text),
+            replies: this
+                .replies
+                .iter()
+                .map(|b_id| BlockId::clone(b_id))
+                .collect(),
         }
     }
 

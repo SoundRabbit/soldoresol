@@ -16,15 +16,22 @@ pub struct Props {
 pub enum Msg {
     NoOp,
     Sub(On),
+    SetChannelName(String),
     SetChannelType(ChannelType),
+    CreateNewChannel,
 }
 
 pub enum On {
     Close,
+    CreateNewChannel {
+        channel_name: String,
+        channel_type: ChannelType,
+    },
 }
 
 pub struct ModalNewChannel {
     client_id: Rc<String>,
+    channel_name: String,
     channel_type: ChannelType,
 }
 
@@ -32,6 +39,7 @@ impl Constructor for ModalNewChannel {
     fn constructor(props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) -> Self {
         Self {
             channel_type: ChannelType::Public,
+            channel_name: String::from("新規チャンネル"),
             client_id: props.client_id,
         }
     }
@@ -50,9 +58,23 @@ impl Component for ModalNewChannel {
         match msg {
             Msg::NoOp => Cmd::none(),
             Msg::Sub(sub) => Cmd::sub(sub),
+            Msg::SetChannelName(channel_name) => {
+                self.channel_name = channel_name;
+                Cmd::none()
+            }
             Msg::SetChannelType(channel_type) => {
                 self.channel_type = channel_type;
                 Cmd::none()
+            }
+            Msg::CreateNewChannel => {
+                let mut channel_name = String::from("");
+                let mut channel_type = ChannelType::Public;
+                std::mem::swap(&mut channel_name, &mut self.channel_name);
+                std::mem::swap(&mut channel_type, &mut self.channel_type);
+                Cmd::sub(On::CreateNewChannel {
+                    channel_name,
+                    channel_type,
+                })
             }
         }
     }
@@ -91,7 +113,9 @@ impl Component for ModalNewChannel {
                             btn::Props {
                                 variant: btn::Variant::Primary,
                             },
-                            Subscription::none(),
+                            Subscription::new(|sub| match sub {
+                                btn::On::Click => Msg::CreateNewChannel,
+                            }),
                             Html::text("新規チャンネルを作成"),
                         )],
                     ),
@@ -117,7 +141,11 @@ impl ModalNewChannel {
                 Events::new(),
                 vec![Html::text("チャンネル名")],
             ),
-            Html::input(Attributes::new(), Events::new(), vec![]),
+            Html::input(
+                Attributes::new().value(&self.channel_name),
+                Events::new().on_input(Msg::SetChannelName),
+                vec![],
+            ),
         ]
     }
 

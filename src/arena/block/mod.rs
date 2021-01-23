@@ -29,6 +29,18 @@ impl Block {
         }
     }
 
+    fn clone(this: &Self) -> Self {
+        match this {
+            Self::World(block) => Self::World(world::World::clone(block)),
+            Self::Table(block) => Self::Table(table::Table::clone(block)),
+            Self::TableTexture(block) => Self::TableTexture(table::texture::Texture::clone(block)),
+            Self::Chat(block) => Self::Chat(chat::Chat::clone(block)),
+            Self::ChatChannel(block) => Self::ChatChannel(chat::channel::Channel::clone(block)),
+            Self::ChatMessage(block) => Self::ChatMessage(chat::message::Message::clone(block)),
+            Self::None => Self::None,
+        }
+    }
+
     async fn pack(&self) -> JsValue {
         unimplemented!();
     }
@@ -179,20 +191,26 @@ type Timestamp = f64;
 
 struct ArenaBlock {
     timestamp: Timestamp,
-    payload: Rc<Block>,
+    payload: Block,
 }
 
 impl ArenaBlock {
     fn new(timestamp: f64, block: Block) -> Self {
         Self {
             timestamp: timestamp,
-            payload: Rc::new(block),
+            payload: block,
+        }
+    }
+
+    fn clone(this: &Self) -> Self {
+        Self {
+            timestamp: this.timestamp,
+            payload: Block::clone(&this.payload),
         }
     }
 
     async fn pack(&self) -> JsValue {
-        let payload = Rc::clone(&self.payload);
-        let (payload, type_name) = match payload.as_ref() {
+        let (payload, type_name) = match &self.payload {
             Block::World(x) => (x.pack().await, "World"),
             Block::Table(x) => (x.pack().await, "Table"),
             Block::TableTexture(x) => (x.pack().await, "TableTexture"),
@@ -231,7 +249,7 @@ impl ArenaBlock {
 
         Some(Self {
             timestamp,
-            payload: Rc::new(payload),
+            payload: payload,
         })
     }
 }
@@ -354,6 +372,19 @@ impl Arena {
             })
             .collect::<Vec<_>>()
             .into_iter()
+    }
+
+    pub fn update<T>(&mut self, block_id: &BlockId, f: impl FnOnce(&mut T))
+    where
+        Block: TryMut<T>,
+    {
+        let mut table = self.table.borrow_mut();
+        if let Some(arena_block) = table.get_mut(&block_id) {
+            if let Some(block) = arena_block.payload.try_mut() {
+                arena_block.timestamp = js_sys::Date::now();
+                f(block);
+            }
+        }
     }
 }
 

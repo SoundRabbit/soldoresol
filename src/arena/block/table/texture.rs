@@ -1,10 +1,11 @@
 use super::BlockId;
 use crate::arena::resource::ResourceId;
+use std::rc::Rc;
 use wasm_bindgen::{prelude::*, JsCast};
 
 pub struct Texture {
-    element: web_sys::HtmlCanvasElement,
-    context: web_sys::CanvasRenderingContext2d,
+    element: Rc<web_sys::HtmlCanvasElement>,
+    context: Rc<web_sys::CanvasRenderingContext2d>,
     size: [f64; 2],
     buffer_size: [f64; 2],
     pixel_ratio: [f64; 2],
@@ -29,9 +30,11 @@ impl Texture {
             .unwrap()
             .dyn_into::<web_sys::HtmlCanvasElement>()
             .unwrap();
+        let element = Rc::new(element);
         element.set_width(buffer_size[0]);
         element.set_height(buffer_size[1]);
         let context = Self::create_context(&element);
+        let context = Rc::new(context);
 
         let mut this = Self {
             element,
@@ -44,6 +47,16 @@ impl Texture {
         this.set_size(size);
 
         this
+    }
+
+    pub fn clone(this: &Self) -> Self {
+        Self {
+            element: Rc::clone(&this.element),
+            context: Rc::clone(&this.context),
+            size: this.size.clone(),
+            buffer_size: this.buffer_size.clone(),
+            pixel_ratio: this.pixel_ratio.clone(),
+        }
     }
 
     pub fn element(&self) -> &web_sys::HtmlCanvasElement {
