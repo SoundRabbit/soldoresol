@@ -1,2 +1,2 @@
-mod camera;
-mod model;
+pub mod camera;
+pub mod model;

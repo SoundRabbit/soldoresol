@@ -163,6 +163,10 @@ impl BlockId {
         Self { id }
     }
 
+    pub fn none() -> Self {
+        Self { id: U128Id::none() }
+    }
+
     pub fn to_jsvalue(&self) -> JsValue {
         self.id.to_jsvalue()
     }
@@ -361,6 +365,24 @@ impl Arena {
             })
             .collect::<Vec<_>>()
             .into_iter()
+    }
+}
+
+impl Insert<world::World> for Arena {
+    fn insert(&mut self, block: world::World) -> BlockId {
+        self.insert(Block::World(block))
+    }
+}
+
+impl Insert<table::Table> for Arena {
+    fn insert(&mut self, block: table::Table) -> BlockId {
+        self.insert(Block::Table(block))
+    }
+}
+
+impl Insert<table::texture::Texture> for Arena {
+    fn insert(&mut self, block: table::texture::Texture) -> BlockId {
+        self.insert(Block::TableTexture(block))
     }
 }
 

@@ -10,6 +10,7 @@ use super::{
     children::room_modeless::{self, RoomModeless},
     children::side_menu::{self, SideMenu},
     model::table::TableTool,
+    renderer::{CameraMatrix, Renderer},
 };
 use crate::arena::block::{self, BlockId, Insert};
 use crate::arena::player::{self, Player};
@@ -19,7 +20,7 @@ use crate::libs::select_list::SelectList;
 use crate::libs::skyway::{MeshRoom, Peer};
 use kagura::prelude::*;
 use std::rc::Rc;
-use wasm_bindgen::JsCast;
+use wasm_bindgen::{prelude::*, JsCast};
 
 pub struct Props {
     pub peer: Rc<Peer>,
@@ -29,8 +30,18 @@ pub struct Props {
     pub client_id: Rc<String>,
 }
 
+pub enum Awaiting<T> {
+    Pending(T),
+    Ready(T),
+}
+
 pub enum Msg {
     NoOp,
+    SetCanvasElement {
+        canvas: web_sys::HtmlCanvasElement,
+    },
+    ResetCanvasSize,
+    RenderCanvas,
     SetTableToolIdx {
         idx: usize,
     },
@@ -93,7 +104,11 @@ pub struct Implement {
     block_arena: block::Arena,
     player_arena: player::Arena,
 
+    renderer: Option<Renderer>,
+    camera_matrix: CameraMatrix,
+
     chat_id: BlockId,
+    world_id: BlockId,
 
     modal: Modal,
 }
@@ -124,6 +139,17 @@ impl Constructor for Implement {
         ]);
 
         let chat_id = block_arena.insert(chat);
+
+        let drawing_texture_id = block_arena.insert(block::table::texture::Texture::new(
+            &[1024, 1024],
+            [20.0, 20.0],
+        ));
+        let table_id = block_arena.insert(block::table::Table::new(
+            drawing_texture_id,
+            [20.0, 20.0],
+            "最初のテーブル",
+        ));
+        let world_id = block_arena.insert(block::world::World::new(table_id));
 
         let mut player_arena = player::Arena::new();
         player_arena.insert(Rc::clone(&props.client_id), Player::new());
@@ -156,7 +182,11 @@ impl Constructor for Implement {
             block_arena,
             player_arena,
 
+            renderer: None,
+            camera_matrix: CameraMatrix::new(),
+
             chat_id,
+            world_id,
 
             modal: Modal::None,
         }
@@ -173,6 +203,35 @@ impl Component for Implement {
     fn update(&mut self, msg: Self::Msg) -> Cmd<Self::Msg, Self::Sub> {
         match msg {
             Msg::NoOp => Cmd::none(),
+
+            Msg::SetCanvasElement { canvas } => {
+                self.renderer = Some(Renderer::new(Rc::new(canvas)));
+                Cmd::task(move |resolve| {
+                    let a = Closure::once(
+                        Box::new(move || resolve(Msg::ResetCanvasSize)) as Box<dyn FnOnce()>
+                    );
+                    let _ = web_sys::window()
+                        .unwrap()
+                        .request_animation_frame(a.as_ref().unchecked_ref());
+                    a.forget();
+                })
+            }
+
+            Msg::ResetCanvasSize => {
+                if let Some(renderer) = &mut self.renderer {
+                    renderer.reset_size();
+                    self.gl_render_async()
+                } else {
+                    Cmd::none()
+                }
+            }
+
+            Msg::RenderCanvas => {
+                if let Some(renderer) = &mut self.renderer {
+                    renderer.render(&self.block_arena, &self.world_id, &self.camera_matrix);
+                }
+                Cmd::none()
+            }
 
             Msg::SetTableToolIdx { idx } => {
                 self.table_tools.set_selected_idx(idx);
@@ -360,7 +419,7 @@ impl Component for Implement {
                         Html::div(
                             Attributes::new().class(Self::class("main")),
                             Events::new(),
-                            vec![self.render_modeless_container()],
+                            vec![self.render_canvas(), self.render_modeless_container()],
                         ),
                     ],
                 ),
@@ -370,6 +429,17 @@ impl Component for Implement {
 }
 
 impl Implement {
+    fn gl_render_async(&mut self) -> Cmd<Msg, On> {
+        Cmd::task(move |resolve| {
+            let a =
+                Closure::once(Box::new(move || resolve(Msg::RenderCanvas)) as Box<dyn FnOnce()>);
+            let _ = web_sys::window()
+                .unwrap()
+                .request_animation_frame(a.as_ref().unchecked_ref());
+            a.forget();
+        })
+    }
+
     fn render_modal(&self) -> Html {
         match &self.modal {
             Modal::None => Html::none(),
@@ -525,6 +595,22 @@ impl Implement {
         )
     }
 
+    fn render_canvas(&self) -> Html {
+        Html::canvas(
+            Attributes::new().class(Self::class("canvas")),
+            Events::new().rendered(if self.renderer.is_none() {
+                Some(|el: web_sys::Element| {
+                    let canvas =
+                        unwrap_or!(el.dyn_into::<web_sys::HtmlCanvasElement>().ok(); Msg::NoOp);
+                    Msg::SetCanvasElement { canvas: canvas }
+                })
+            } else {
+                None
+            }),
+            vec![],
+        )
+    }
+
     fn render_modeless_container(&self) -> Html {
         if let Some(modeless_container_element) = self.modeless_container_element.as_ref() {
             Html::div(
@@ -642,6 +728,14 @@ impl Styled for Implement {
 
             "main" {
                 "position": "relative";
+            }
+
+            "canvas" {
+                "position": "absolute";
+                "top": "0";
+                "left": "0";
+                "width": "100%";
+                "height": "100%";
             }
 
             "modeless-container" {

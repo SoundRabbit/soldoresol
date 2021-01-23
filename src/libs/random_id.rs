@@ -52,7 +52,15 @@ pub struct U128Id(Rc<u128>);
 
 impl U128Id {
     pub fn new() -> Self {
-        Self(Rc::new(u128val()))
+        let mut id = 0;
+        while id == 0 {
+            id = u128val();
+        }
+        Self(Rc::new(id))
+    }
+
+    pub fn none() -> Self {
+        Self(Rc::new(0))
     }
 
     pub fn to_jsvalue(&self) -> JsValue {

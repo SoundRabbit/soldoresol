@@ -273,6 +273,42 @@ impl Program for CharacterProgram {
     accesser!(u_translate_location as unif_translate: WebGlUniformLocation);
 }
 
+/*----------DefaultProgram----------*/
+
+pub struct DefaultProgram {
+    program: web_sys::WebGlProgram,
+    a_vertex_location: WebGlAttributeLocation,
+    u_translate_location: WebGlUniformLocation,
+    u_bg_color_location: WebGlUniformLocation,
+}
+
+impl DefaultProgram {
+    pub fn new(gl: &WebGlRenderingContext) -> Self {
+        let vert = include_str!("./shader/default.vert");
+        let frag = include_str!("./shader/default.frag");
+        let program = create_program(gl, vert, frag);
+
+        let a_vertex_location =
+            WebGlAttributeLocation(gl.get_attrib_location(&program, "a_vertex") as u32);
+        let u_translate_location = gl.get_uniform_location(&program, "u_translate").unwrap();
+        let u_bg_color_location = gl.get_uniform_location(&program, "u_bgColor").unwrap();
+
+        Self {
+            program,
+            a_vertex_location,
+            u_translate_location,
+            u_bg_color_location,
+        }
+    }
+}
+
+impl Program for DefaultProgram {
+    accesser!(program);
+    accesser!(a_vertex_location as attr_vertex: WebGlAttributeLocation);
+    accesser!(u_bg_color_location as unif_bg_color: WebGlUniformLocation);
+    accesser!(u_translate_location as unif_translate: WebGlUniformLocation);
+}
+
 /*----------OffscreenProgram----------*/
 
 pub struct OffscreenProgram {
@@ -295,7 +331,7 @@ impl OffscreenProgram {
         let a_texture_coord_location =
             WebGlAttributeLocation(gl.get_attrib_location(&program, "a_textureCoord") as u32);
         let u_translate_location = gl.get_uniform_location(&program, "u_translate").unwrap();
-        let u_bg_color_location = gl.get_uniform_location(&program, "u_maskColor").unwrap();
+        let u_bg_color_location = gl.get_uniform_location(&program, "u_bgColor").unwrap();
         let u_flag_round_location = gl.get_uniform_location(&program, "u_flagRound").unwrap();
 
         Self {

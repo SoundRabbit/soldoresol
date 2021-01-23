@@ -10,6 +10,7 @@ use program::Program;
 pub enum ProgramType {
     AreaProgram,
     CharacterProgram,
+    DefaultProgram,
     OffscreenProgram,
     TablemaskProgram,
     TablegridProgram,
@@ -102,6 +103,24 @@ macro_rules! setter {
         pub fn $a(&self, data: &[f32]) {
             if let Some(unif_loc) = self.program().and_then(|p| p.$n()) {
                 self.uniform4fv_with_f32_array(Some(unif_loc), data);
+            }
+        }
+    };
+
+    (unif $n:ident: matrix4fv as $a:ident) => {
+        pub fn $a(&self, data: ndarray::Array2<f32>) {
+            if let Some(unif_loc) = self.program().and_then(|p| p.$n()) {
+                self.uniform_matrix4fv_with_f32_array(
+                    Some(unif_loc),
+                    false,
+                    &[
+                        data.row(0).to_vec(),
+                        data.row(1).to_vec(),
+                        data.row(2).to_vec(),
+                        data.row(3).to_vec(),
+                    ]
+                    .concat(),
+                );
             }
         }
     };
@@ -200,6 +219,9 @@ impl WebGlRenderingContext {
                 ProgramType::CharacterProgram => {
                     Box::new(program::CharacterProgram::new(&self)) as Box<dyn Program>
                 }
+                ProgramType::DefaultProgram => {
+                    Box::new(program::DefaultProgram::new(&self)) as Box<dyn Program>
+                }
                 ProgramType::OffscreenProgram => {
                     Box::new(program::OffscreenProgram::new(&self)) as Box<dyn Program>
                 }
@@ -241,7 +263,7 @@ impl WebGlRenderingContext {
     setter!(unif unif_bg_color_1: 4fv as set_unif_bg_color_1);
     setter!(unif unif_bg_color_2: 4fv as set_unif_bg_color_2);
     setter!(unif unif_flag_round: 1i as set_unif_flag_round);
-    setter!(unif unif_inv_model: 4fv as set_unif_inv_model);
+    setter!(unif unif_inv_model: matrix4fv as set_unif_inv_model);
     setter!(unif unif_light: 3fv as set_unif_light);
     setter!(unif unif_object_type: 1i as set_unif_object_type);
     setter!(unif unif_point_size: 1f as set_unif_point_size);
@@ -250,5 +272,5 @@ impl WebGlRenderingContext {
     setter!(unif unif_texture_1: 1i as set_unif_texture_1);
     setter!(unif unif_texture_2: 1i as set_unif_texture_2);
     setter!(unif unif_texture_2_is_available: 1i as set_unif_texture_2_is_available);
-    setter!(unif unif_translate: 4fv as set_unif_translate);
+    setter!(unif unif_translate: matrix4fv as set_unif_translate);
 }
