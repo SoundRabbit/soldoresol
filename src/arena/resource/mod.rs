@@ -65,7 +65,7 @@ impl Arena {
         }
     }
 
-    fn as_ref(&self) -> ArenaRef {
+    pub fn as_ref(&self) -> ArenaRef {
         ArenaRef {
             arena: Self::clone(&self),
         }
@@ -89,6 +89,21 @@ impl Arena {
             }
         }
         None
+    }
+
+    pub fn all_of<T>(&self) -> impl Iterator<Item = (ResourceId, Rc<T>)>
+    where
+        Data: TryRef<Rc<T>>,
+    {
+        self.table
+            .borrow()
+            .iter()
+            .filter_map(|(r_id, data)| {
+                data.try_ref()
+                    .map(|data| (ResourceId::clone(r_id), Rc::clone(data)))
+            })
+            .collect::<Vec<_>>()
+            .into_iter()
     }
 
     pub fn add(&mut self, data: Data) -> ResourceId {

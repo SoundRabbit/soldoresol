@@ -28,7 +28,7 @@ fn styled_class<C>(class_name: &str) -> String {
     format!("_{:X}__{}", hasher.finish(), class_name)
 }
 
-pub trait Styled: Constructor {
+pub trait Styled: Sized {
     fn style() -> Style;
     fn styled(node: Html) -> Html {
         wasm_bindgen_futures::spawn_local(async {

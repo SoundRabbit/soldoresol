@@ -11,7 +11,7 @@ pub mod chat;
 pub mod table;
 pub mod world;
 
-enum Block {
+pub enum Block {
     World(world::World),
     Table(table::Table),
     TableTexture(table::texture::Texture),

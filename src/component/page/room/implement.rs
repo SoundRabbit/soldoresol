@@ -6,6 +6,7 @@ use super::{
     super::template::basic_app::{self, BasicApp},
     super::util::styled::{Style, Styled},
     super::util::{Prop, State},
+    children::modal_imported_files::{self, ModalImportedFiles},
     children::modal_new_channel::{self, ModalNewChannel},
     children::room_modeless::{self, RoomModeless},
     children::side_menu::{self, SideMenu},
@@ -88,6 +89,13 @@ pub enum Msg {
     SetOverlay {
         overlay: Overlay,
     },
+    LoadFile {
+        files: Vec<web_sys::File>,
+        overlay: Option<Overlay>,
+    },
+    LoadResourceData {
+        data: Vec<resource::Data>,
+    },
 }
 
 pub enum On {}
@@ -134,6 +142,7 @@ struct ElementId {
 enum Modal {
     None,
     NewChannel,
+    ImportedFiles,
 }
 
 enum Overlay {
@@ -405,6 +414,33 @@ impl Component for Implement {
                 self.overlay = overlay;
                 Cmd::none()
             }
+
+            Msg::LoadFile { files, overlay } => {
+                if let Some(overlay) = overlay {
+                    self.overlay = overlay;
+                }
+                Cmd::task(move |resolve| {
+                    wasm_bindgen_futures::spawn_local(async move {
+                        let mut tasks = vec![];
+                        for file in files {
+                            tasks.push(resource::Data::from_blob(file.into()));
+                        }
+                        let data = futures::future::join_all(tasks)
+                            .await
+                            .into_iter()
+                            .filter_map(|x| x)
+                            .collect::<Vec<_>>();
+                        resolve(Msg::LoadResourceData { data })
+                    })
+                })
+            }
+
+            Msg::LoadResourceData { data } => {
+                for a_data in data {
+                    self.resource_arena.add(a_data);
+                }
+                Cmd::none()
+            }
         }
     }
 
@@ -425,7 +461,30 @@ impl Component for Implement {
                             Msg::NoOp
                         }
                     }
-                    basic_app::On::Drop(e) => Msg::NoOp,
+                    basic_app::On::Drop(e) => {
+                        if !tab_is_dragging {
+                            let data_transfer = unwrap_or!(e.data_transfer(); Msg::NoOp);
+                            let file_list = unwrap_or!(data_transfer.files(); Msg::NoOp);
+
+                            e.prevent_default();
+
+                            let mut files = vec![];
+                            let file_num = file_list.length();
+
+                            for i in 0..file_num {
+                                if let Some(file) = file_list.item(i) {
+                                    files.push(file);
+                                }
+                            }
+
+                            Msg::LoadFile {
+                                files,
+                                overlay: Some(Overlay::None),
+                            }
+                        } else {
+                            Msg::NoOp
+                        }
+                    }
                 }
             }),
             vec![
@@ -492,6 +551,12 @@ impl Implement {
                     modal_new_channel::On::Close => Msg::OpenNewModal { modal: Modal::None },
                 }),
             ),
+            Modal::ImportedFiles => ModalImportedFiles::empty(
+                modal_imported_files::Props {
+                    resource_arena: self.resource_arena.as_ref(),
+                },
+                Subscription::none(),
+            ),
         }
     }
 
@@ -556,7 +621,10 @@ impl Implement {
         Html::div(
             Attributes::new().class(Self::class("header-controller-menu")),
             Events::new(),
-            vec![self.render_header_controller_menu_chat()],
+            vec![
+                self.render_header_controller_menu_chat(),
+                self.render_header_controller_menu_file(),
+            ],
         )
     }
 
@@ -655,6 +723,29 @@ impl Implement {
                     vec![fa::i("fa-cog"), Html::text(" チャンネル設定")],
                 ),
             ],
+        )
+    }
+
+    fn render_header_controller_menu_file(&self) -> Html {
+        Dropdown::with_children(
+            dropdown::Props {
+                text: String::from("ファイル"),
+                direction: dropdown::Direction::BottomRight,
+                variant: btn::Variant::Dark,
+                ..Default::default()
+            },
+            Subscription::none(),
+            vec![Btn::with_children(
+                btn::Props {
+                    variant: btn::Variant::Menu,
+                },
+                Subscription::new(|sub| match sub {
+                    btn::On::Click => Msg::OpenNewModal {
+                        modal: Modal::ImportedFiles,
+                    },
+                }),
+                vec![fa::i("fa-file"), Html::text(" 全てのファイル")],
+            )],
         )
     }
 
@@ -796,6 +887,13 @@ impl Styled for Implement {
             "header-room-id" {
                 "display": "grid";
                 "grid-template-columns": "max-content 1fr";
+                "column-gap": "0.65em";
+            }
+
+            "header-controller-menu" {
+                "display": "grid";
+                "grid-auto-columns": "max-content";
+                "grid-auto-flow": "column";
                 "column-gap": "0.65em";
             }
 
