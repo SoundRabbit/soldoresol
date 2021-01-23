@@ -1,6 +1,9 @@
 use super::matrix::model::ModelMatrix;
+use super::tex_table::TexTable;
 use super::webgl::{ProgramType, WebGlF32Vbo, WebGlI16Ibo, WebGlRenderingContext};
 use crate::arena::block::{self, BlockId};
+use crate::arena::resource;
+use crate::libs::random_id::U128Id;
 use ndarray::Array2;
 
 pub struct Tabletexture {
@@ -8,12 +11,13 @@ pub struct Tabletexture {
     polygon_index_buffer: WebGlI16Ibo,
     polygon_texture_coord_buffer: WebGlF32Vbo,
     polygon_texture_buffer: web_sys::WebGlTexture,
+    polygon_texture_id: U128Id,
     texture_update_time: f64,
     last_texture_id: BlockId,
 }
 
 impl Tabletexture {
-    pub fn new(gl: &WebGlRenderingContext) -> Self {
+    pub fn new(gl: &WebGlRenderingContext, tex_table: &mut TexTable) -> Self {
         let polygon_vertexis_buffer = gl.create_vbo_with_f32array(
             &[
                 [0.5, 0.5, 0.0],
@@ -28,6 +32,9 @@ impl Tabletexture {
         let polygon_index_buffer = gl.create_ibo_with_i16array(&[0, 1, 2, 3, 2, 1]);
         let polygon_texture_buffer = gl.create_texture().unwrap();
 
+        let polygon_texture_id = U128Id::new();
+        let (_, tex_flag) = tex_table.use_custom(&polygon_texture_id);
+        gl.active_texture(tex_flag);
         gl.bind_texture(
             web_sys::WebGlRenderingContext::TEXTURE_2D,
             Some(&polygon_texture_buffer),
@@ -59,6 +66,7 @@ impl Tabletexture {
             polygon_texture_coord_buffer,
             polygon_index_buffer,
             polygon_texture_buffer,
+            polygon_texture_id,
             texture_update_time: 0.0,
             last_texture_id: BlockId::none(),
         }
@@ -67,8 +75,10 @@ impl Tabletexture {
     pub fn render(
         &mut self,
         gl: &mut WebGlRenderingContext,
+        tex_table: &mut TexTable,
         vp_matrix: &Array2<f32>,
         block_arena: &block::Arena,
+        resource_arena: &resource::Arena,
         table: &block::table::Table,
     ) {
         let table_size = {
@@ -85,8 +95,9 @@ impl Tabletexture {
             Some(&self.polygon_index_buffer),
         );
 
-        gl.active_texture(web_sys::WebGlRenderingContext::TEXTURE0);
-        gl.set_unif_texture_1(0);
+        let (tex_idx, tex_flag) = tex_table.use_custom(&self.polygon_texture_id);
+        gl.active_texture(tex_flag);
+        gl.set_unif_texture_1(tex_idx);
         gl.bind_texture(
             web_sys::WebGlRenderingContext::TEXTURE_2D,
             Some(&self.polygon_texture_buffer),

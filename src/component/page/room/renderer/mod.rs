@@ -1,4 +1,5 @@
 use crate::arena::block::{self, BlockId};
+use crate::arena::resource::{self};
 use std::rc::Rc;
 use wasm_bindgen::{prelude::*, JsCast};
 
@@ -19,6 +20,8 @@ pub struct Renderer {
 
     canvas_size: [f32; 2],
     device_pixel_ratio: f32,
+
+    tex_table: tex_table::TexTable,
 
     render_view_tablegrid: view::tablegrid::Tablegrid,
     render_view_tabletexture: view::tabletexture::Tabletexture,
@@ -93,8 +96,11 @@ impl Renderer {
         offscreen_gl.enable(web_sys::WebGlRenderingContext::CULL_FACE);
         offscreen_gl.cull_face(web_sys::WebGlRenderingContext::BACK);
 
+        let mut tex_table = tex_table::TexTable::new(&view_gl);
+
         let render_view_tablegrid = view::tablegrid::Tablegrid::new(&view_gl);
-        let render_view_tabletexture = view::tabletexture::Tabletexture::new(&view_gl);
+        let render_view_tabletexture =
+            view::tabletexture::Tabletexture::new(&view_gl, &mut tex_table);
 
         Self {
             view_canvas,
@@ -103,6 +109,7 @@ impl Renderer {
             offscreen_gl,
             canvas_size,
             device_pixel_ratio,
+            tex_table,
             render_view_tablegrid,
             render_view_tabletexture,
         }
@@ -125,6 +132,7 @@ impl Renderer {
     pub fn render(
         &mut self,
         block_arena: &block::Arena,
+        resource_arena: &resource::Arena,
         world_id: &BlockId,
         camera_matrix: &matrix::camera::Camera,
     ) {
@@ -136,8 +144,10 @@ impl Renderer {
             block_arena.map(world.selecting_table(), |table: &block::table::Table| {
                 self.render_view_tabletexture.render(
                     &mut self.view_gl,
+                    &mut self.tex_table,
                     &vp_matrix,
                     block_arena,
+                    resource_arena,
                     table,
                 );
             });

@@ -1,4 +1,5 @@
 use crate::libs::js_object::JsObject;
+use crate::libs::try_ref::TryRef;
 use async_trait::async_trait;
 use js_sys::Promise;
 use std::rc::Rc;
@@ -10,26 +11,32 @@ trait LoadFrom<T> {
     async fn load_from(x: T) -> Data;
 }
 
+pub struct ImageData {
+    element: Rc<web_sys::HtmlImageElement>,
+    blob: Rc<web_sys::Blob>,
+    url: Rc<String>,
+}
+
+impl ImageData {
+    pub fn element(&self) -> Rc<web_sys::HtmlImageElement> {
+        Rc::clone(&self.element)
+    }
+
+    pub fn url(&self) -> Rc<String> {
+        Rc::clone(&self.url)
+    }
+}
+
 pub enum Data {
-    Image {
-        element: Rc<web_sys::HtmlImageElement>,
-        blob: Rc<web_sys::Blob>,
-        url: Rc<String>,
-    },
+    Image(Rc<ImageData>),
 }
 
 impl Data {
-    pub fn as_image(&self) -> Option<Rc<web_sys::HtmlImageElement>> {
-        match self {
-            Self::Image { element, .. } => Some(Rc::clone(element)),
-        }
-    }
-
     pub async fn pack(&self) -> JsValue {
         match self {
-            Self::Image { blob, .. } => (object! {
-                type: blob.type_(),
-                payload: blob.as_ref()
+            Self::Image(data) => (object! {
+                type: data.blob.type_(),
+                payload: data.blob.as_ref()
             })
             .into(),
         }
@@ -69,7 +76,7 @@ impl Data {
             let image = Rc::new(crate::libs::element::html_image_element());
             let object_url = web_sys::Url::create_object_url_with_blob(&blob).unwrap_or("".into());
             let object_url = Rc::new(object_url);
-            JsFuture::from(Promise::new({
+            let _ = JsFuture::from(Promise::new({
                 let image = Rc::clone(&image);
                 let object_url = Rc::clone(&object_url);
                 &mut move |resolve, _| {
@@ -83,13 +90,21 @@ impl Data {
             }))
             .await;
 
-            Some(Self::Image {
+            Some(Self::Image(Rc::new(ImageData {
                 element: image,
                 blob: Rc::new(blob),
                 url: object_url,
-            })
+            })))
         } else {
             None
+        }
+    }
+}
+
+impl TryRef<Rc<ImageData>> for Data {
+    fn try_ref(&self) -> Option<&Rc<ImageData>> {
+        match self {
+            Self::Image(data) => Some(data),
         }
     }
 }

@@ -12,8 +12,10 @@ use super::{
     model::table::TableTool,
     renderer::{CameraMatrix, Renderer},
 };
-use crate::arena::block::{self, BlockId, Insert};
+use crate::arena::block::{self, BlockId};
 use crate::arena::player::{self, Player};
+use crate::arena::resource::{self, ResourceId};
+use crate::arena::Insert;
 use crate::libs::modeless_list::ModelessList;
 use crate::libs::random_id::U128Id;
 use crate::libs::select_list::SelectList;
@@ -103,6 +105,7 @@ pub struct Implement {
 
     block_arena: block::Arena,
     player_arena: player::Arena,
+    resource_arena: resource::Arena,
 
     renderer: Option<Renderer>,
     camera_matrix: CameraMatrix,
@@ -181,6 +184,7 @@ impl Constructor for Implement {
 
             block_arena,
             player_arena,
+            resource_arena: resource::Arena::new(),
 
             renderer: None,
             camera_matrix: CameraMatrix::new(),
@@ -228,7 +232,12 @@ impl Component for Implement {
 
             Msg::RenderCanvas => {
                 if let Some(renderer) = &mut self.renderer {
-                    renderer.render(&self.block_arena, &self.world_id, &self.camera_matrix);
+                    renderer.render(
+                        &self.block_arena,
+                        &self.resource_arena,
+                        &self.world_id,
+                        &self.camera_matrix,
+                    );
                 }
                 Cmd::none()
             }

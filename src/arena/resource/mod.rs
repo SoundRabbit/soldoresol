@@ -1,4 +1,5 @@
 use crate::libs::random_id::U128Id;
+use crate::libs::try_ref::TryRef;
 use futures::future::join_all;
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
@@ -9,6 +10,7 @@ use wasm_bindgen::prelude::*;
 mod data;
 
 pub use data::Data;
+pub use data::ImageData;
 
 #[derive(Hash, PartialEq, Eq)]
 pub struct ResourceId {
@@ -20,10 +22,29 @@ impl ResourceId {
         Self { id: U128Id::new() }
     }
 
-    fn clone(this: &Self) -> Self {
+    pub fn clone(this: &Self) -> Self {
         Self {
             id: U128Id::clone(&this.id),
         }
+    }
+}
+
+pub struct ArenaRef {
+    arena: Arena,
+}
+
+impl ArenaRef {
+    pub fn clone(this: &Self) -> Self {
+        Self {
+            arena: Arena::clone(&this.arena),
+        }
+    }
+}
+
+impl std::ops::Deref for ArenaRef {
+    type Target = Arena;
+    fn deref(&self) -> &Self::Target {
+        &self.arena
     }
 }
 
@@ -38,10 +59,36 @@ impl Arena {
         }
     }
 
-    pub fn clone(this: &Self) -> Self {
+    fn clone(this: &Self) -> Self {
         Self {
             table: Rc::clone(&this.table),
         }
+    }
+
+    fn as_ref(&self) -> ArenaRef {
+        ArenaRef {
+            arena: Self::clone(&self),
+        }
+    }
+
+    pub fn get(&self, resource_id: &ResourceId) -> Option<Rc<Data>> {
+        if let Some(data) = self.table.borrow().get(resource_id) {
+            Some(Rc::clone(data))
+        } else {
+            None
+        }
+    }
+
+    pub fn get_as<T>(&self, resource_id: &ResourceId) -> Option<Rc<T>>
+    where
+        Data: TryRef<Rc<T>>,
+    {
+        if let Some(data) = self.table.borrow().get(resource_id) {
+            if let Some(data) = data.try_ref() {
+                return Some(Rc::clone(data));
+            }
+        }
+        None
     }
 
     pub fn add(&mut self, data: Data) -> ResourceId {

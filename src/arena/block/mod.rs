@@ -1,22 +1,15 @@
+use super::Insert;
 use crate::libs::js_object::JsObject;
 use crate::libs::random_id::U128Id;
+use crate::libs::try_ref::{TryMut, TryRef};
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::future::Future;
 use std::rc::Rc;
 use wasm_bindgen::{prelude::*, JsCast};
 
 pub mod chat;
 pub mod table;
 pub mod world;
-
-trait TryRef<T> {
-    fn try_ref(&self) -> Option<&T>;
-}
-
-trait TryMut<T> {
-    fn try_mut(&mut self) -> Option<&mut T>;
-}
 
 enum Block {
     World(world::World),
@@ -262,10 +255,6 @@ impl std::ops::Deref for ArenaRef {
     }
 }
 
-pub trait Insert<T> {
-    fn insert(&mut self, block: T) -> BlockId;
-}
-
 pub struct Arena {
     table: Rc<RefCell<HashMap<BlockId, ArenaBlock>>>,
 }
@@ -369,30 +358,35 @@ impl Arena {
 }
 
 impl Insert<world::World> for Arena {
+    type Id = BlockId;
     fn insert(&mut self, block: world::World) -> BlockId {
         self.insert(Block::World(block))
     }
 }
 
 impl Insert<table::Table> for Arena {
+    type Id = BlockId;
     fn insert(&mut self, block: table::Table) -> BlockId {
         self.insert(Block::Table(block))
     }
 }
 
 impl Insert<table::texture::Texture> for Arena {
+    type Id = BlockId;
     fn insert(&mut self, block: table::texture::Texture) -> BlockId {
         self.insert(Block::TableTexture(block))
     }
 }
 
 impl Insert<chat::Chat> for Arena {
+    type Id = BlockId;
     fn insert(&mut self, block: chat::Chat) -> BlockId {
         self.insert(Block::Chat(block))
     }
 }
 
 impl Insert<chat::channel::Channel> for Arena {
+    type Id = BlockId;
     fn insert(&mut self, block: chat::channel::Channel) -> BlockId {
         self.insert(Block::ChatChannel(block))
     }
