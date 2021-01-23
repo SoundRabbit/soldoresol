@@ -85,6 +85,9 @@ pub enum Msg {
         modeless_id: U128Id,
         tab_idx: usize,
     },
+    SetOverlay {
+        overlay: Overlay,
+    },
 }
 
 pub enum On {}
@@ -114,6 +117,7 @@ pub struct Implement {
     world_id: BlockId,
 
     modal: Modal,
+    overlay: Overlay,
 }
 
 struct ModelessContent {
@@ -130,6 +134,11 @@ struct ElementId {
 enum Modal {
     None,
     NewChannel,
+}
+
+enum Overlay {
+    None,
+    DragFile,
 }
 
 impl Constructor for Implement {
@@ -193,6 +202,7 @@ impl Constructor for Implement {
             world_id,
 
             modal: Modal::None,
+            overlay: Overlay::None,
         }
     }
 }
@@ -390,15 +400,35 @@ impl Component for Implement {
                 }
                 Cmd::none()
             }
+
+            Msg::SetOverlay { overlay } => {
+                self.overlay = overlay;
+                Cmd::none()
+            }
         }
     }
 
     fn render(&self, _: Vec<Html>) -> Html {
         Self::styled(BasicApp::with_children(
             basic_app::Props {},
-            Subscription::none(),
+            Subscription::new({
+                let tab_is_dragging = self.dragging_modeless_tab.is_some();
+                move |sub| match sub {
+                    basic_app::On::DragLeave(_) => Msg::NoOp,
+                    basic_app::On::DragOver(e) => {
+                        if !tab_is_dragging {
+                            e.prevent_default();
+                            Msg::SetOverlay {
+                                overlay: Overlay::DragFile,
+                            }
+                        } else {
+                            Msg::NoOp
+                        }
+                    }
+                    basic_app::On::Drop(e) => Msg::NoOp,
+                }
+            }),
             vec![
-                self.render_modal(),
                 Header::with_children(
                     header::Props::new(),
                     Subscription::none(),
@@ -432,6 +462,8 @@ impl Component for Implement {
                         ),
                     ],
                 ),
+                self.render_modal(),
+                self.render_overlay(),
             ],
         ))
     }
@@ -459,6 +491,28 @@ impl Implement {
                 Subscription::new(|sub| match sub {
                     modal_new_channel::On::Close => Msg::OpenNewModal { modal: Modal::None },
                 }),
+            ),
+        }
+    }
+
+    fn render_overlay(&self) -> Html {
+        match &self.overlay {
+            Overlay::None => Html::none(),
+            Overlay::DragFile => Html::div(
+                Attributes::new()
+                    .class(Self::class("overlay"))
+                    .class(Self::class("overlay-file-import")),
+                Events::new().on_dragleave(|_| Msg::SetOverlay {
+                    overlay: Overlay::None,
+                }),
+                vec![Html::div(
+                    Attributes::new().class(Self::class("overlay-file-import-text")),
+                    Events::new(),
+                    vec![
+                        fa::i("fa-file-import"),
+                        Html::text("ファイルをドロップして追加"),
+                    ],
+                )],
             ),
         }
     }
@@ -713,6 +767,27 @@ impl Implement {
 impl Styled for Implement {
     fn style() -> Style {
         style! {
+            "overlay" {
+                "position": "fixed";
+                "top": "0";
+                "left": "0";
+                "height": "100vh";
+                "width": "100vw";
+                "z-index": format!("{}", super::super::constant::z_index::overlay);
+            }
+
+            "overlay-file-import" {
+                "background-color": format!("{}", crate::libs::color::color_system::gray(25, 9));
+            }
+
+            "overlay-file-import-text" {
+                "position": "absolute";
+                "color": format!("{}", crate::libs::color::color_system::gray(100, 0));
+                "font-size": "4rem";
+                "bottom": "1em";
+                "right": "1em";
+            }
+
             "header-row" {
                 "display": "grid";
                 "grid-template-columns": "1fr 1fr";

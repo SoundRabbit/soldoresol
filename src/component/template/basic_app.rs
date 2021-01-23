@@ -1,11 +1,19 @@
 use super::util::styled::{Style, Styled};
 use kagura::prelude::*;
+use wasm_bindgen::{prelude::*, JsCast};
 
 pub struct Props {}
 
-pub enum Msg {}
+pub enum Msg {
+    NoOp,
+    Sub(On),
+}
 
-pub enum On {}
+pub enum On {
+    DragLeave(web_sys::DragEvent),
+    DragOver(web_sys::DragEvent),
+    Drop(web_sys::DragEvent),
+}
 
 pub struct BasicApp;
 
@@ -22,14 +30,29 @@ impl Component for BasicApp {
 
     fn init(&mut self, _: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) {}
 
-    fn update(&mut self, _: Self::Msg) -> Cmd<Self::Msg, Self::Sub> {
-        Cmd::none()
+    fn update(&mut self, msg: Self::Msg) -> Cmd<Self::Msg, Self::Sub> {
+        match msg {
+            Msg::NoOp => Cmd::none(),
+            Msg::Sub(sub) => Cmd::sub(sub),
+        }
     }
 
     fn render(&self, children: Vec<Html>) -> Html {
         Self::styled(Html::div(
             Attributes::new().class(Self::class("base")),
-            Events::new(),
+            Events::new()
+                .on("dragleave", |e| {
+                    let e = unwrap_or!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
+                    Msg::Sub(On::DragLeave(e))
+                })
+                .on("dragover", |e| {
+                    let e = unwrap_or!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
+                    Msg::Sub(On::DragOver(e))
+                })
+                .on("drop", |e| {
+                    let e = unwrap_or!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
+                    Msg::Sub(On::Drop(e))
+                }),
             children,
         ))
     }
@@ -46,6 +69,7 @@ impl Styled for BasicApp {
                 "position": "absolute";
                 "top": "0px";
                 "left": "0px";
+                "z-index": "0";
             }
         }
     }
