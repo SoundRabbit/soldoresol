@@ -3,6 +3,7 @@ use std::rc::Rc;
 use wasm_bindgen::{prelude::*, JsCast};
 
 mod matrix;
+mod tex_table;
 mod view;
 mod webgl;
 
