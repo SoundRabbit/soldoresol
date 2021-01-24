@@ -47,6 +47,8 @@ pub enum Msg {
 
 pub enum On {
     Focus,
+    Move(i32, i32),
+    Resize([f32; 2]),
 }
 
 pub struct Modeless {
@@ -153,13 +155,15 @@ impl Component for Modeless {
                 Cmd::none()
             }
             Msg::Drag { page_x, page_y } => {
+                let cmd;
                 if let Some((dragging, container_element)) =
                     join_some!(self.dragging.as_mut(), self.container_element.as_ref())
                 {
                     let mov_x = (page_x - dragging.0[0]) as f32;
                     let mov_y = (page_y - dragging.0[1]) as f32;
-                    let container_width = container_element.client_width() as f32;
-                    let container_height = container_element.client_height() as f32;
+                    let container_element = container_element.get_bounding_client_rect();
+                    let container_width = container_element.width() as f32;
+                    let container_height = container_element.height() as f32;
 
                     let mov_x = mov_x / container_width;
                     let mov_y = mov_y / container_height;
@@ -232,6 +236,19 @@ impl Component for Modeless {
 
                     dragging.0[0] = page_x;
                     dragging.0[1] = page_y;
+
+                    cmd = match &dragging.1 {
+                        DragType::Move => {
+                            let client_x = (self.loc[0] * container_width).round() as i32;
+                            let client_y = (self.loc[1] * container_height).round() as i32;
+                            let page_x = client_x + container_element.left() as i32;
+                            let page_y = client_y + container_element.top() as i32;
+                            Cmd::sub(On::Move(page_x, page_y))
+                        }
+                        _ => Cmd::sub(On::Resize(self.size.clone())),
+                    }
+                } else {
+                    cmd = Cmd::none();
                 }
 
                 if let Some(container_element) = self.container_element.as_ref() {
@@ -245,7 +262,7 @@ impl Component for Modeless {
                     }
                 }
 
-                Cmd::none()
+                cmd
             }
         }
     }

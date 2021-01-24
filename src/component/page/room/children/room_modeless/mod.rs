@@ -33,6 +33,8 @@ pub struct Props {
 pub enum Msg {
     NoOp,
     Sub(On),
+    SetLocation { page_x: i32, page_y: i32 },
+    SetSize { size: [f32; 2] },
 }
 
 pub enum On {
@@ -51,6 +53,7 @@ pub struct RoomModeless {
     container_element: Prop<web_sys::Element>,
     page_x: i32,
     page_y: i32,
+    size: [f32; 2],
     minimized: bool,
     block_arena: block::ArenaRef,
 }
@@ -63,6 +66,7 @@ impl Constructor for RoomModeless {
             container_element: props.container_element,
             page_x: props.page_x,
             page_y: props.page_y,
+            size: [0.3, 0.3],
             minimized: props.minimized,
             block_arena: props.block_arena,
         }
@@ -78,8 +82,6 @@ impl Component for RoomModeless {
         self.content = props.content;
         self.z_index = props.z_index;
         self.container_element = props.container_element;
-        self.page_x = props.page_x;
-        self.page_y = props.page_y;
         self.minimized = props.minimized;
         self.block_arena = props.block_arena;
     }
@@ -90,6 +92,15 @@ impl Component for RoomModeless {
             Msg::Sub(sub) => {
                 crate::debug::log_1("Msg::Sub");
                 Cmd::sub(sub)
+            }
+            Msg::SetLocation { page_x, page_y } => {
+                self.page_x = page_x;
+                self.page_y = page_y;
+                Cmd::none()
+            }
+            Msg::SetSize { size } => {
+                self.size = size;
+                Cmd::none()
             }
         }
     }
@@ -120,10 +131,13 @@ impl RoomModeless {
                 container_element: Some(Prop::clone(&self.container_element)),
                 page_x: self.page_x,
                 page_y: self.page_y,
+                size: self.size.clone(),
                 ..Default::default()
             },
             Subscription::new(|sub| match sub {
                 modeless::On::Focus => Msg::Sub(On::Focus),
+                modeless::On::Move(page_x, page_y) => Msg::SetLocation { page_x, page_y },
+                modeless::On::Resize(size) => Msg::SetSize { size },
             }),
             Html::div(
                 Attributes::new().class(Self::class("base")),
