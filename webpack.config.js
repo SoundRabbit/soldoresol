@@ -69,7 +69,7 @@ module.exports = {
             target: "web",
             args: "--log-level error",
         }),
-        // new HtmlWebpackInlineSourcePlugin(),
+        new HtmlWebpackInlineSourcePlugin(),
     ],
     devServer: {
         historyApiFallback: true,

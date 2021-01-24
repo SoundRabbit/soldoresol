@@ -66,7 +66,7 @@ impl Component for ModalNotification {
                                     Html::p(
                                         Attributes::new(),
                                         Events::new(),
-                                        vec![Html::text("更新：2020-01-20")],
+                                        vec![Html::text("更新：2020-01-24")],
                                     ),
                                     Html::h3(
                                         Attributes::new(),
@@ -76,20 +76,13 @@ impl Component for ModalNotification {
                                     Html::ul(
                                         Attributes::new(),
                                         Events::new(),
-                                        vec![
-                                            Html::li(
-                                                Attributes::new(),
-                                                Events::new(),
-                                                vec![Html::text("UIデザインの変更")],
-                                            ),
-                                            Html::li(
-                                                Attributes::new(),
-                                                Events::new(),
-                                                vec![Html::text(
-                                                    "ほぼすべての機能が動かなくなった",
-                                                )],
-                                            ),
-                                        ],
+                                        vec![Html::li(
+                                            Attributes::new(),
+                                            Events::new(),
+                                            vec![Html::text(
+                                                "ペンを使用して、テーブル上に描画できるようにする",
+                                            )],
+                                        )],
                                     ),
                                 ],
                             )],
