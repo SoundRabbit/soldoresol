@@ -3,6 +3,7 @@ use super::{
     super::atom::dropdown::{self, Dropdown},
     super::atom::fa,
     super::atom::header::{self, Header},
+    super::molecule::color_pallet::Pallet,
     super::template::basic_app::{self, BasicApp},
     super::util::styled::{Style, Styled},
     super::util::{Prop, State},
@@ -10,7 +11,7 @@ use super::{
     children::modal_new_channel::{self, ModalNewChannel},
     children::room_modeless::{self, RoomModeless},
     children::side_menu::{self, SideMenu},
-    model::table::TableTool,
+    model::table::{PenTool, TableTool},
     renderer::{CameraMatrix, Renderer},
 };
 use crate::arena::block::{self, BlockId};
@@ -45,8 +46,14 @@ pub enum Msg {
     },
     ResetCanvasSize,
     RenderCanvas,
+    UpdateMouseState {
+        e: web_sys::MouseEvent,
+    },
     SetTableToolIdx {
         idx: usize,
+    },
+    SetSelectingTableTool {
+        tool: TableTool,
     },
     OpenNewModal {
         modal: Modal,
@@ -104,6 +111,29 @@ pub enum Msg {
 
 pub enum On {}
 
+struct MouseState {
+    is_dragging: bool,
+    changing_point: [f32; 2],
+    last_point: [f32; 2],
+}
+
+impl MouseState {
+    fn update(&mut self, e: web_sys::MouseEvent) {
+        let buttons = e.buttons();
+        let page_x = e.page_x() as f32;
+        let page_y = e.page_y() as f32;
+
+        let is_dragging = (buttons & 1) != 0;
+
+        if self.is_dragging != is_dragging {
+            self.changing_point = [page_x, page_y];
+            self.is_dragging = is_dragging;
+        }
+
+        self.last_point = [page_x, page_y];
+    }
+}
+
 pub struct Implement {
     peer: Rc<Peer>,
     peer_id: Rc<String>,
@@ -130,6 +160,11 @@ pub struct Implement {
 
     modal: Modal,
     overlay: Overlay,
+
+    mouse_state: MouseState,
+    canvas: Option<Rc<web_sys::HtmlCanvasElement>>,
+    canvas_pos: [f32; 2],
+    canvas_size: [f32; 2],
 }
 
 struct ModelessContent {
@@ -212,8 +247,12 @@ impl Constructor for Implement {
             table_tools: State::new(SelectList::new(
                 vec![
                     TableTool::Selector,
-                    TableTool::Hr(String::from("描画")),
-                    TableTool::Pen,
+                    TableTool::Hr(Rc::new(String::from("描画"))),
+                    TableTool::Pen(PenTool {
+                        line_width: 1.0,
+                        alpha: 100,
+                        pallet: Pallet::Gray(9),
+                    }),
                     TableTool::Shape,
                     TableTool::Eraser,
                 ],
@@ -235,6 +274,15 @@ impl Constructor for Implement {
 
             modal: Modal::None,
             overlay: Overlay::None,
+
+            mouse_state: MouseState {
+                is_dragging: false,
+                changing_point: [0.0, 0.0],
+                last_point: [0.0, 0.0],
+            },
+            canvas: None,
+            canvas_pos: [0.0, 0.0],
+            canvas_size: [1.0, 1.0],
         }
     }
 }
@@ -251,7 +299,18 @@ impl Component for Implement {
             Msg::NoOp => Cmd::none(),
 
             Msg::SetCanvasElement { canvas } => {
-                self.renderer = Some(Renderer::new(Rc::new(canvas)));
+                let canvas = Rc::new(canvas);
+                self.renderer = Some(Renderer::new(Rc::clone(&canvas)));
+
+                let client_rect = canvas.get_bounding_client_rect();
+                let client_left = client_rect.left() as f32;
+                let client_top = client_rect.top() as f32;
+                let client_width = client_rect.width() as f32;
+                let client_height = client_rect.height() as f32;
+                self.canvas_pos = [client_left, client_top];
+                self.canvas_size = [client_width, client_height];
+
+                self.canvas = Some(canvas);
                 Cmd::task(move |resolve| {
                     let a = Closure::once(
                         Box::new(move || resolve(Msg::ResetCanvasSize)) as Box<dyn FnOnce()>
@@ -264,6 +323,15 @@ impl Component for Implement {
             }
 
             Msg::ResetCanvasSize => {
+                if let Some(canvas) = &self.canvas {
+                    let client_rect = canvas.get_bounding_client_rect();
+                    let client_left = client_rect.left() as f32;
+                    let client_top = client_rect.top() as f32;
+                    let client_width = client_rect.width() as f32;
+                    let client_height = client_rect.height() as f32;
+                    self.canvas_pos = [client_left, client_top];
+                    self.canvas_size = [client_width, client_height];
+                }
                 if let Some(renderer) = &mut self.renderer {
                     renderer.reset_size();
                     self.gl_render_async()
@@ -284,8 +352,86 @@ impl Component for Implement {
                 Cmd::none()
             }
 
+            Msg::UpdateMouseState { e } => {
+                let mut need_update = false;
+                let page_x = e.page_x() as f32;
+                let page_y = e.page_y() as f32;
+                let client_x = page_x - self.canvas_pos[0];
+                let client_y = page_y - self.canvas_pos[1];
+                let last_point = &self.mouse_state.last_point;
+
+                match self.table_tools.selected() {
+                    Some(TableTool::Pen(pen)) => {
+                        if self.mouse_state.is_dragging {
+                            let selecting_table_id = self.block_arena.map(
+                                &self.world_id,
+                                |world: &block::world::World| {
+                                    BlockId::clone(&world.selecting_table())
+                                },
+                            );
+                            let texture_id = selecting_table_id.and_then(|b_id| {
+                                self.block_arena.map(&b_id, |table: &block::table::Table| {
+                                    BlockId::clone(&table.drawing_texture_id())
+                                })
+                            });
+                            if let Some(texture_id) = texture_id {
+                                let a = self.camera_matrix.collision_point_on_xy_plane(
+                                    &self.canvas_size,
+                                    &[
+                                        last_point[0] - self.canvas_pos[0],
+                                        last_point[1] - self.canvas_pos[1],
+                                    ],
+                                );
+                                let b = self.camera_matrix.collision_point_on_xy_plane(
+                                    &self.canvas_size,
+                                    &[client_x, client_y],
+                                );
+                                self.block_arena.update(
+                                    &texture_id,
+                                    |texture: &mut block::table::texture::Texture| {
+                                        let a =
+                                            texture.texture_position(&[a[0] as f64, a[1] as f64]);
+                                        let b =
+                                            texture.texture_position(&[b[0] as f64, b[1] as f64]);
+                                        let context = texture.context();
+
+                                        context.begin_path();
+                                        context.set_stroke_style(
+                                            &pen.pallet.color(pen.alpha).to_jsvalue(),
+                                        );
+                                        context.set_line_cap("round");
+                                        context.set_line_width(pen.line_width);
+                                        context.move_to(a[0], a[1]);
+                                        context.line_to(b[0], b[1]);
+                                        context.stroke();
+
+                                        need_update = true;
+                                    },
+                                );
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+
+                self.mouse_state.update(e);
+
+                if need_update {
+                    self.gl_render_async()
+                } else {
+                    Cmd::none()
+                }
+            }
+
             Msg::SetTableToolIdx { idx } => {
                 self.table_tools.set_selected_idx(idx);
+                Cmd::none()
+            }
+
+            Msg::SetSelectingTableTool { tool } => {
+                if let Some(selecting_tool) = self.table_tools.selected_mut() {
+                    *selecting_tool = tool;
+                }
                 Cmd::none()
             }
 
@@ -550,6 +696,9 @@ impl Component for Implement {
                                 Subscription::new(|sub| match sub {
                                     side_menu::On::ChangeSelectedIdx { idx } => {
                                         Msg::SetTableToolIdx { idx }
+                                    }
+                                    side_menu::On::SetSelectedTool { tool } => {
+                                        Msg::SetSelectingTableTool { tool }
                                     }
                                 }),
                             )],
@@ -819,6 +968,18 @@ impl Implement {
             Html::div(
                 Attributes::new().class(Self::class("modeless-container")),
                 Events::new()
+                    .on("mousedown", |e| {
+                        let e = unwrap_or!(e.dyn_into::<web_sys::MouseEvent>().ok(); Msg::NoOp);
+                        Msg::UpdateMouseState { e }
+                    })
+                    .on("mouseup", |e| {
+                        let e = unwrap_or!(e.dyn_into::<web_sys::MouseEvent>().ok(); Msg::NoOp);
+                        Msg::UpdateMouseState { e }
+                    })
+                    .on("mousemove", |e| {
+                        let e = unwrap_or!(e.dyn_into::<web_sys::MouseEvent>().ok(); Msg::NoOp);
+                        Msg::UpdateMouseState { e }
+                    })
                     .on("dragover", |e| {
                         e.prevent_default();
                         Msg::NoOp

@@ -162,6 +162,9 @@ impl Camera {
         inv.dot(&arr1(&[p[0] * w, p[1] * w, screen_z, w]))
     }
 
+    /**
+     * 3点r, r+s, r+tで貼られる面との衝突点を求める
+     */
     pub fn collision_point(
         &self,
         canvas_size: &[f32; 2],

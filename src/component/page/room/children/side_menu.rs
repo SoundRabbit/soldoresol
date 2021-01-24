@@ -1,4 +1,4 @@
-use super::super::model::table::TableTool;
+use super::super::model::table::{PenTool, TableTool};
 use super::atom::btn::{self, Btn};
 use super::atom::fa;
 use super::atom::slider::{self, Slider};
@@ -13,12 +13,14 @@ pub struct Props {
 }
 
 pub enum Msg {
+    Sub(On),
     SetSelectedIdx(usize),
     SetShowSub(bool),
 }
 
 pub enum On {
     ChangeSelectedIdx { idx: usize },
+    SetSelectedTool { tool: TableTool },
 }
 
 pub struct SideMenu {
@@ -55,6 +57,7 @@ impl Component for SideMenu {
 
     fn update(&mut self, msg: Self::Msg) -> Cmd<Self::Msg, Self::Sub> {
         match msg {
+            Msg::Sub(sub) => Cmd::Sub(sub),
             Msg::SetSelectedIdx(idx) => {
                 if idx != self.tools.selected_idx() {
                     Cmd::sub(On::ChangeSelectedIdx { idx })
@@ -90,7 +93,7 @@ impl SideMenu {
                     TableTool::Hr(text) => Html::div(
                         Attributes::new().class(Self::class("main-hr")),
                         Events::new(),
-                        vec![Html::text(text)],
+                        vec![Html::text(text as &String)],
                     ),
                     _ => Btn::with_child(
                         btn::Props {
@@ -106,7 +109,7 @@ impl SideMenu {
                         fa::i(match table_tool {
                             TableTool::Hr(..) => unreachable!(),
                             TableTool::Selector => "fa-mouse-pointer",
-                            TableTool::Pen => "fa-pen",
+                            TableTool::Pen(..) => "fa-pen",
                             TableTool::Shape => "fa-shapes",
                             TableTool::Eraser => "fa-eraser",
                         }),
@@ -171,7 +174,7 @@ impl SideMenu {
                     ],
                 ),
                 match self.tools.selected() {
-                    Some(TableTool::Pen {}) => self.render_sub_pen(),
+                    Some(TableTool::Pen(tool)) => self.render_sub_pen(tool),
                     Some(TableTool::Shape {}) => self.render_sub_shape(),
                     _ => Html::div(Attributes::new(), Events::new(), vec![]),
                 },
@@ -179,7 +182,7 @@ impl SideMenu {
         )
     }
 
-    fn render_sub_pen(&self) -> Html {
+    fn render_sub_pen(&self, tool: &PenTool) -> Html {
         Html::div(
             Attributes::new().class(Self::class("sub-body")),
             Events::new(),
@@ -188,19 +191,41 @@ impl SideMenu {
                 Slider::empty(
                     slider::Props {
                         position: slider::Position::Inf {
-                            val: 1.0,
+                            val: tool.line_width,
                             mid: 2.0,
                             step: 0.01,
                         },
                         range_is_editable: false,
                     },
-                    Subscription::none(),
+                    Subscription::new({
+                        let mut tool = PenTool::clone(tool);
+                        move |sub| match sub {
+                            slider::On::Input(val) => {
+                                tool.line_width = val;
+                                Msg::Sub(On::SetSelectedTool {
+                                    tool: TableTool::Pen(tool),
+                                })
+                            }
+                        }
+                    }),
                 ),
                 ColorPallet::empty(
                     color_pallet::Props {
-                        ..Default::default()
+                        default_selected: tool.pallet.clone(),
+                        alpha: tool.alpha,
                     },
-                    Subscription::none(),
+                    Subscription::new({
+                        let mut tool = PenTool::clone(tool);
+                        move |sub| match sub {
+                            color_pallet::On::SetColor(pallet, alpha) => {
+                                tool.pallet = pallet;
+                                tool.alpha = alpha;
+                                Msg::Sub(On::SetSelectedTool {
+                                    tool: TableTool::Pen(tool),
+                                })
+                            }
+                        }
+                    }),
                 ),
             ],
         )

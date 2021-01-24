@@ -27,7 +27,9 @@ pub enum Msg {
     SetColor(Pallet),
 }
 
-pub enum On {}
+pub enum On {
+    SetColor(Pallet, u8),
+}
 
 pub struct ColorPallet {
     alpha: u8,
@@ -45,15 +47,19 @@ impl Default for Props {
 
 impl Pallet {
     fn to_color(&self) -> Color {
+        self.color(100)
+    }
+
+    pub fn color(&self, alpha: u8) -> Color {
         match self {
-            Pallet::Gray(idx) => color_system::gray(100, *idx),
-            Pallet::Red(idx) => color_system::red(100, *idx),
-            Pallet::Orange(idx) => color_system::orange(100, *idx),
-            Pallet::Yellow(idx) => color_system::yellow(100, *idx),
-            Pallet::Green(idx) => color_system::green(100, *idx),
-            Pallet::Blue(idx) => color_system::blue(100, *idx),
-            Pallet::Purple(idx) => color_system::purple(100, *idx),
-            Pallet::Pink(idx) => color_system::pink(100, *idx),
+            Pallet::Gray(idx) => color_system::gray(alpha, *idx),
+            Pallet::Red(idx) => color_system::red(alpha, *idx),
+            Pallet::Orange(idx) => color_system::orange(alpha, *idx),
+            Pallet::Yellow(idx) => color_system::yellow(alpha, *idx),
+            Pallet::Green(idx) => color_system::green(alpha, *idx),
+            Pallet::Blue(idx) => color_system::blue(alpha, *idx),
+            Pallet::Purple(idx) => color_system::purple(alpha, *idx),
+            Pallet::Pink(idx) => color_system::pink(alpha, *idx),
         }
     }
 }
@@ -80,11 +86,11 @@ impl Component for ColorPallet {
         match msg {
             Msg::SetAlpha(alpha) => {
                 self.alpha = alpha;
-                Cmd::none()
+                Cmd::sub(On::SetColor(self.selected.clone(), self.alpha))
             }
             Msg::SetColor(pallet) => {
                 self.selected = pallet;
-                Cmd::none()
+                Cmd::sub(On::SetColor(self.selected.clone(), self.alpha))
             }
         }
     }

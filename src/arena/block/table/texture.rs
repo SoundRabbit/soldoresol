@@ -1,5 +1,6 @@
 use super::BlockId;
 use crate::arena::resource::ResourceId;
+use crate::libs::color::Color;
 use std::rc::Rc;
 use wasm_bindgen::{prelude::*, JsCast};
 
@@ -63,6 +64,10 @@ impl Texture {
         &self.element
     }
 
+    pub fn context(&self) -> &web_sys::CanvasRenderingContext2d {
+        &self.context
+    }
+
     pub fn set_size(&mut self, size: [f64; 2]) {
         let new_pixel_ratio = [self.buffer_size[0] / size[0], self.buffer_size[1] / size[1]];
 
@@ -73,6 +78,10 @@ impl Texture {
 
         self.pixel_ratio = new_pixel_ratio;
         self.size = size;
+    }
+
+    pub fn texture_position(&self, p: &[f64; 2]) -> [f64; 2] {
+        [(p[0] + self.size[0] / 2.0), -(p[1] - self.size[1] / 2.0)]
     }
 
     pub async fn pack(&self) -> JsValue {
