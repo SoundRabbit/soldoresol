@@ -155,7 +155,10 @@ enum Overlay {
 }
 
 impl Constructor for Implement {
-    fn constructor(props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) -> Self {
+    fn constructor(
+        props: Self::Props,
+        builder: &mut ComponentBuilder<Self::Msg, Self::Sub>,
+    ) -> Self {
         let mut block_arena = block::Arena::new();
 
         let chat = block::chat::Chat::new(vec![
@@ -184,6 +187,16 @@ impl Constructor for Implement {
 
         let mut player_arena = player::Arena::new();
         player_arena.insert(Rc::clone(&props.client_id), Player::new());
+
+        builder.add_batch(|mut resolve| {
+            let a = Closure::wrap(Box::new(move || {
+                resolve(Msg::ResetCanvasSize);
+            }) as Box<dyn FnMut()>);
+            web_sys::window()
+                .unwrap()
+                .set_onresize(Some(a.as_ref().unchecked_ref()));
+            a.forget();
+        });
 
         Self {
             peer: props.peer,
@@ -305,8 +318,8 @@ impl Component for Implement {
                     .unwrap_or(vec![]);
                 self.modeless_list.push(ModelessContent {
                     content: State::new(SelectList::new(tabs, 0)),
-                    page_x: 0,
-                    page_y: 0,
+                    page_x: 128,
+                    page_y: 128,
                     minimized: false,
                 });
                 Cmd::none()
