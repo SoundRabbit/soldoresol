@@ -7,9 +7,13 @@ pub struct Props {
     pub resource_arena: resource::ArenaRef,
 }
 
-pub enum Msg {}
+pub enum Msg {
+    Sub(On),
+}
 
-pub enum On {}
+pub enum On {
+    Close,
+}
 
 pub struct ModalImportedFiles {
     resource_arena: resource::ArenaRef,
@@ -34,7 +38,9 @@ impl Component for ModalImportedFiles {
     fn init(&mut self, props: Self::Props, builder: &mut ComponentBuilder<Self::Msg, Self::Sub>) {}
 
     fn update(&mut self, msg: Self::Msg) -> Cmd<Self::Msg, Self::Sub> {
-        Cmd::none()
+        match msg {
+            Msg::Sub(sub) => Cmd::sub(sub),
+        }
     }
 
     fn render(&self, _: Vec<Html>) -> Html {
@@ -43,7 +49,9 @@ impl Component for ModalImportedFiles {
                 header_title: String::from("ファイル"),
                 footer_message: String::from(""),
             },
-            Subscription::none(),
+            Subscription::new(|sub| match sub {
+                modal::On::Close => Msg::Sub(On::Close),
+            }),
             Html::div(
                 Attributes::new(),
                 Events::new(),

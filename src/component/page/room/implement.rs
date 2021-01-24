@@ -589,7 +589,9 @@ impl Implement {
                 modal_imported_files::Props {
                     resource_arena: self.resource_arena.as_ref(),
                 },
-                Subscription::none(),
+                Subscription::new(|sub| match sub {
+                    modal_imported_files::On::Close => Msg::OpenNewModal { modal: Modal::None },
+                }),
             ),
         }
     }
