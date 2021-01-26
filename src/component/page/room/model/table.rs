@@ -35,24 +35,15 @@ impl CloneRef for TableTool {
     }
 }
 
+#[derive(Clone)]
 pub struct PenTool {
     pub line_width: f64,
     pub pallet: Pallet,
     pub alpha: u8,
 }
 
-impl CloneRef for PenTool {
-    fn clone(this: &Self) -> Self {
-        Self {
-            line_width: this.line_width,
-            pallet: this.pallet,
-            alpha: this.alpha,
-        }
-    }
-}
-
 pub enum ShapeTool {
-    Line,
+    Line(LineShapeTool),
     Rect,
     Ellipse,
 }
@@ -60,7 +51,7 @@ pub enum ShapeTool {
 impl ShapeTool {
     pub fn name(&self) -> &'static str {
         match self {
-            Self::Line => "直線",
+            Self::Line(..) => "直線",
             Self::Rect => "長方形",
             Self::Ellipse => "楕円",
         }
@@ -70,9 +61,16 @@ impl ShapeTool {
 impl CloneRef for ShapeTool {
     fn clone(this: &Self) -> Self {
         match this {
-            Self::Line => Self::Line,
+            Self::Line(x) => Self::Line(LineShapeTool::clone(x)),
             Self::Rect => Self::Rect,
             Self::Ellipse => Self::Ellipse,
         }
     }
+}
+
+#[derive(Clone)]
+pub struct LineShapeTool {
+    pub line_width: f64,
+    pub pallet: Pallet,
+    pub alpha: u8,
 }

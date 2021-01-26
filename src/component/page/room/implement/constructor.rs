@@ -1,7 +1,7 @@
 use super::super::{
     super::molecule::color_pallet::Pallet,
     super::util::State,
-    model::table::{PenTool, ShapeTool, TableTool},
+    model::table::{LineShapeTool, PenTool, ShapeTool, TableTool},
     renderer::CameraMatrix,
 };
 use super::{ElementId, Implement, Modal, MouseState, Msg, On, Overlay, Props};
@@ -84,7 +84,15 @@ impl Implement {
                         pallet: Pallet::Gray(9),
                     }),
                     TableTool::Shape(SelectList::new(
-                        vec![ShapeTool::Line, ShapeTool::Rect, ShapeTool::Ellipse],
+                        vec![
+                            ShapeTool::Line(LineShapeTool {
+                                line_width: 1.0,
+                                alpha: 100,
+                                pallet: Pallet::Gray(9),
+                            }),
+                            ShapeTool::Rect,
+                            ShapeTool::Ellipse,
+                        ],
                         0,
                     )),
                     TableTool::Eraser,
@@ -112,7 +120,9 @@ impl Implement {
                 is_dragging: false,
                 is_changed_dragging_state: false,
                 changing_point: [0.0, 0.0],
+                last_changing_point: [0.0, 0.0],
                 last_point: [0.0, 0.0],
+                now_point: [0.0, 0.0],
             },
             canvas: None,
             canvas_pos: [0.0, 0.0],

@@ -108,7 +108,9 @@ struct MouseState {
     is_dragging: bool,
     is_changed_dragging_state: bool,
     changing_point: [f32; 2],
+    last_changing_point: [f32; 2],
     last_point: [f32; 2],
+    now_point: [f32; 2],
 }
 
 impl MouseState {
@@ -120,6 +122,7 @@ impl MouseState {
         let is_dragging = (buttons & 1) != 0;
 
         if self.is_dragging != is_dragging {
+            std::mem::swap(&mut self.last_changing_point, &mut self.changing_point);
             self.changing_point = [page_x, page_y];
             self.is_changed_dragging_state = true;
             self.is_dragging = is_dragging;
@@ -127,7 +130,8 @@ impl MouseState {
             self.is_changed_dragging_state = false;
         }
 
-        self.last_point = [page_x, page_y];
+        std::mem::swap(&mut self.last_point, &mut self.now_point);
+        self.now_point = [page_x, page_y];
     }
 }
 

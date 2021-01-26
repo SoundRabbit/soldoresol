@@ -263,7 +263,7 @@ impl SideMenu {
                                 }
                             }),
                             match shape_tool {
-                                ShapeTool::Line => vec![fa::i("fa-slash"), Html::text(" 直線")],
+                                ShapeTool::Line(..) => vec![fa::i("fa-slash"), Html::text(" 直線")],
                                 ShapeTool::Rect => {
                                     vec![fa::far_i("fa-square"), Html::text(" 長方形")]
                                 }
