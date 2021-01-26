@@ -1,7 +1,7 @@
 use super::super::{
     super::molecule::color_pallet::Pallet,
     super::util::State,
-    model::table::{LineShapeTool, PenTool, ShapeTool, TableTool},
+    model::table::{LineShapeTool, PenTool, RectShapeTool, ShapeTool, TableTool},
     renderer::CameraMatrix,
 };
 use super::{ElementId, Implement, Modal, MouseState, Msg, On, Overlay, Props};
@@ -86,11 +86,17 @@ impl Implement {
                     TableTool::Shape(SelectList::new(
                         vec![
                             ShapeTool::Line(LineShapeTool {
-                                line_width: 1.0,
+                                line_width: 0.5,
                                 alpha: 100,
                                 pallet: Pallet::Gray(9),
                             }),
-                            ShapeTool::Rect,
+                            ShapeTool::Rect(RectShapeTool {
+                                line_width: 0.5,
+                                line_alpha: 100,
+                                line_pallet: Pallet::Gray(9),
+                                fill_alpha: 100,
+                                fill_pallet: Pallet::Gray(0),
+                            }),
                             ShapeTool::Ellipse,
                         ],
                         0,

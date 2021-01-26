@@ -198,6 +198,89 @@ impl Implement {
                         }
                     }
                 }
+                Some(ShapeTool::Rect(rect)) => {
+                    if self.mouse_state.is_dragging {
+                        if let Some(drawing_texture_id) = drawing_texture_id {
+                            let a = self.camera_matrix.collision_point_on_xy_plane(
+                                &self.canvas_size,
+                                &[changing_client_x, changing_client_y],
+                            );
+                            let b = self.camera_matrix.collision_point_on_xy_plane(
+                                &self.canvas_size,
+                                &[client_x, client_y],
+                            );
+                            self.block_arena.map_mut(
+                                &drawing_texture_id,
+                                |texture: &mut block::table::texture::Texture| {
+                                    let a = texture.texture_position(&[a[0] as f64, a[1] as f64]);
+                                    let b = texture.texture_position(&[b[0] as f64, b[1] as f64]);
+                                    let context = texture.context();
+                                    let sz = texture.buffer_size();
+                                    context.clear_rect(0.0, 0.0, sz[0], sz[1]);
+                                    context.set_stroke_style(
+                                        &rect.line_pallet.color(rect.line_alpha).to_jsvalue(),
+                                    );
+                                    context.set_fill_style(
+                                        &rect.fill_pallet.color(rect.fill_alpha).to_jsvalue(),
+                                    );
+                                    context.set_line_cap("round");
+                                    context.set_line_width(rect.line_width);
+                                    context.set_line_join("round");
+                                    context.fill_rect(a[0], a[1], b[0] - a[0], b[1] - a[1]);
+                                    context.stroke_rect(a[0], a[1], b[0] - a[0], b[1] - a[1]);
+
+                                    need_update = true;
+                                },
+                            );
+                        }
+                    } else if self.mouse_state.is_changed_dragging_state {
+                        if let Some((drawing_texture_id, drawed_texture_id)) =
+                            join_some!(drawing_texture_id, drawed_texture_id)
+                        {
+                            let a = self.camera_matrix.collision_point_on_xy_plane(
+                                &self.canvas_size,
+                                &[last_changing_client_x, last_changing_client_y],
+                            );
+                            let b = self.camera_matrix.collision_point_on_xy_plane(
+                                &self.canvas_size,
+                                &[client_x, client_y],
+                            );
+
+                            self.block_arena.map_mut(
+                                &drawing_texture_id,
+                                |texture: &mut block::table::texture::Texture| {
+                                    let context = texture.context();
+                                    let sz = texture.buffer_size();
+                                    context.clear_rect(0.0, 0.0, sz[0], sz[1]);
+                                    need_update = true;
+                                },
+                            );
+
+                            self.block_arena.map_mut(
+                                &drawed_texture_id,
+                                |texture: &mut block::table::texture::Texture| {
+                                    let a = texture.texture_position(&[a[0] as f64, a[1] as f64]);
+                                    let b = texture.texture_position(&[b[0] as f64, b[1] as f64]);
+                                    let context = texture.context();
+                                    let sz = texture.buffer_size();
+                                    context.set_stroke_style(
+                                        &rect.line_pallet.color(rect.line_alpha).to_jsvalue(),
+                                    );
+                                    context.set_fill_style(
+                                        &rect.fill_pallet.color(rect.fill_alpha).to_jsvalue(),
+                                    );
+                                    context.set_line_cap("round");
+                                    context.set_line_width(rect.line_width);
+                                    context.set_line_join("round");
+                                    context.fill_rect(a[0], a[1], b[0] - a[0], b[1] - a[1]);
+                                    context.stroke_rect(a[0], a[1], b[0] - a[0], b[1] - a[1]);
+
+                                    need_update = true;
+                                },
+                            );
+                        }
+                    }
+                }
                 _ => {}
             },
             _ => {}
