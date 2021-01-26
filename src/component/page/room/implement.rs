@@ -113,6 +113,7 @@ pub enum On {}
 
 struct MouseState {
     is_dragging: bool,
+    is_changed_dragging_state: bool,
     changing_point: [f32; 2],
     last_point: [f32; 2],
 }
@@ -127,7 +128,10 @@ impl MouseState {
 
         if self.is_dragging != is_dragging {
             self.changing_point = [page_x, page_y];
+            self.is_changed_dragging_state = true;
             self.is_dragging = is_dragging;
+        } else {
+            self.is_changed_dragging_state = false;
         }
 
         self.last_point = [page_x, page_y];
@@ -165,6 +169,7 @@ pub struct Implement {
     canvas: Option<Rc<web_sys::HtmlCanvasElement>>,
     canvas_pos: [f32; 2],
     canvas_size: [f32; 2],
+    drawing_line: Vec<[f64; 2]>,
 }
 
 struct ModelessContent {
@@ -209,13 +214,20 @@ impl Constructor for Implement {
 
         let chat_id = block_arena.insert(chat);
 
+        let tex_size = [4096, 4096];
+        let tbl_size = [20.0, 20.0];
         let drawing_texture_id = block_arena.insert(block::table::texture::Texture::new(
-            &[1024, 1024],
-            [20.0, 20.0],
+            &tex_size,
+            tbl_size.clone(),
+        ));
+        let darwed_texture_id = block_arena.insert(block::table::texture::Texture::new(
+            &tex_size,
+            tbl_size.clone(),
         ));
         let table_id = block_arena.insert(block::table::Table::new(
             drawing_texture_id,
-            [20.0, 20.0],
+            darwed_texture_id,
+            [tbl_size[0] as f32, tbl_size[1] as f32],
             "最初のテーブル",
         ));
         let world_id = block_arena.insert(block::world::World::new(table_id));
@@ -277,12 +289,14 @@ impl Constructor for Implement {
 
             mouse_state: MouseState {
                 is_dragging: false,
+                is_changed_dragging_state: false,
                 changing_point: [0.0, 0.0],
                 last_point: [0.0, 0.0],
             },
             canvas: None,
             canvas_pos: [0.0, 0.0],
             canvas_size: [1.0, 1.0],
+            drawing_line: vec![],
         }
     }
 }
@@ -386,7 +400,7 @@ impl Component for Implement {
                                     &self.canvas_size,
                                     &[client_x, client_y],
                                 );
-                                self.block_arena.update(
+                                let p = self.block_arena.map_mut(
                                     &texture_id,
                                     |texture: &mut block::table::texture::Texture| {
                                         let a =
@@ -406,8 +420,81 @@ impl Component for Implement {
                                         context.stroke();
 
                                         need_update = true;
+
+                                        (a, b)
                                     },
                                 );
+
+                                if let Some((a, b)) = p {
+                                    if self.mouse_state.is_changed_dragging_state {
+                                        self.drawing_line = vec![a, b];
+                                    } else {
+                                        self.drawing_line.push(a);
+                                    }
+                                }
+                            }
+                        } else if self.mouse_state.is_changed_dragging_state
+                            && self.drawing_line.len() >= 2
+                        {
+                            let mut points = self
+                                .drawing_line
+                                .drain(..)
+                                .collect::<std::collections::VecDeque<_>>();
+
+                            let selecting_table_id = self.block_arena.map(
+                                &self.world_id,
+                                |world: &block::world::World| {
+                                    BlockId::clone(&world.selecting_table())
+                                },
+                            );
+                            let drawing_texture_id = selecting_table_id.as_ref().and_then(|b_id| {
+                                self.block_arena.map(&b_id, |table: &block::table::Table| {
+                                    BlockId::clone(&table.drawing_texture_id())
+                                })
+                            });
+                            let drawed_texture_id = selecting_table_id.as_ref().and_then(|b_id| {
+                                self.block_arena.map(&b_id, |table: &block::table::Table| {
+                                    BlockId::clone(&table.drawed_texture_id())
+                                })
+                            });
+
+                            if let Some((drawing_texture_id, drawed_texture_id)) =
+                                join_some!(drawing_texture_id, drawed_texture_id)
+                            {
+                                self.block_arena.map_mut(
+                                    &drawing_texture_id,
+                                    |texture: &mut block::table::texture::Texture| {
+                                        let context = texture.context();
+                                        let sz = texture.buffer_size();
+                                        context.clear_rect(0.0, 0.0, sz[0], sz[1]);
+                                    },
+                                );
+
+                                self.block_arena.map_mut(
+                                    &drawed_texture_id,
+                                    |texture: &mut block::table::texture::Texture| {
+                                        let context = texture.context();
+
+                                        let a = points.pop_front().unwrap();
+
+                                        context.begin_path();
+                                        context.set_stroke_style(
+                                            &pen.pallet.color(pen.alpha).to_jsvalue(),
+                                        );
+                                        context.set_line_cap("round");
+                                        context.set_line_width(pen.line_width);
+                                        context.set_line_join("round");
+                                        context.move_to(a[0], a[1]);
+
+                                        for b in points {
+                                            context.line_to(b[0], b[1]);
+                                        }
+
+                                        context.stroke();
+                                    },
+                                );
+
+                                need_update = true;
                             }
                         }
                     }
@@ -619,7 +706,7 @@ impl Component for Implement {
                 let channel_id = self.block_arena.insert(channel);
 
                 self.block_arena
-                    .update(&self.chat_id, move |chat: &mut block::chat::Chat| {
+                    .map_mut(&self.chat_id, move |chat: &mut block::chat::Chat| {
                         chat.push_channel(channel_id);
                     });
 

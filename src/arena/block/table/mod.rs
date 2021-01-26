@@ -11,17 +11,24 @@ pub struct Table {
     is_bind_to_grid: bool,
     is_showing_grid: bool,
     drawing_texture_id: BlockId,
+    drawed_texture_id: BlockId,
     background_texture_id: Option<ResourceId>,
 }
 
 impl Table {
-    pub fn new(drawing_texture_id: BlockId, size: [f32; 2], name: impl Into<String>) -> Self {
+    pub fn new(
+        drawing_texture_id: BlockId,
+        drawed_texture_id: BlockId,
+        size: [f32; 2],
+        name: impl Into<String>,
+    ) -> Self {
         Self {
             name: Rc::new(name.into()),
             size,
             is_bind_to_grid: true,
             is_showing_grid: true,
             drawing_texture_id,
+            drawed_texture_id,
             background_texture_id: None,
         }
     }
@@ -33,6 +40,7 @@ impl Table {
             is_bind_to_grid: this.is_bind_to_grid,
             is_showing_grid: this.is_showing_grid,
             drawing_texture_id: BlockId::clone(&this.drawing_texture_id),
+            drawed_texture_id: BlockId::clone(&this.drawed_texture_id),
             background_texture_id: this
                 .background_texture_id
                 .as_ref()
@@ -74,6 +82,10 @@ impl Table {
 
     pub fn drawing_texture_id(&self) -> &BlockId {
         &self.drawing_texture_id
+    }
+
+    pub fn drawed_texture_id(&self) -> &BlockId {
+        &self.drawed_texture_id
     }
 
     pub fn background_texture_id(&self) -> Option<&ResourceId> {

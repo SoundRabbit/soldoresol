@@ -374,7 +374,7 @@ impl Arena {
             .into_iter()
     }
 
-    pub fn update<T>(&mut self, block_id: &BlockId, f: impl FnOnce(&mut T))
+    pub fn map_mut<T, U>(&mut self, block_id: &BlockId, f: impl FnOnce(&mut T) -> U) -> Option<U>
     where
         Block: TryMut<T>,
     {
@@ -382,9 +382,10 @@ impl Arena {
         if let Some(arena_block) = table.get_mut(&block_id) {
             if let Some(block) = arena_block.payload.try_mut() {
                 arena_block.timestamp = js_sys::Date::now();
-                f(block);
+                return Some(f(block));
             }
         }
+        None
     }
 }
 

@@ -448,6 +448,7 @@ pub struct TabletextureProgram {
     a_texture_coord_location: WebGlAttributeLocation,
     u_translate_location: WebGlUniformLocation,
     u_bg_color_location: WebGlUniformLocation,
+    u_texture_location: WebGlUniformLocation,
     u_texture_1_location: WebGlUniformLocation,
     u_texture_2_location: WebGlUniformLocation,
     u_texture_2_is_available_location: WebGlUniformLocation,
@@ -465,6 +466,7 @@ impl TabletextureProgram {
             WebGlAttributeLocation(gl.get_attrib_location(&program, "a_textureCoord") as u32);
         let u_translate_location = gl.get_uniform_location(&program, "u_translate").unwrap();
         let u_bg_color_location = gl.get_uniform_location(&program, "u_bgColor").unwrap();
+        let u_texture_location = gl.get_uniform_location(&program, "u_texture").unwrap();
         let u_texture_1_location = gl.get_uniform_location(&program, "u_texture1").unwrap();
         let u_texture_2_location = gl.get_uniform_location(&program, "u_texture2").unwrap();
         let u_texture_2_is_available_location = gl
@@ -476,6 +478,7 @@ impl TabletextureProgram {
             a_texture_coord_location,
             a_vertex_location,
             u_bg_color_location,
+            u_texture_location,
             u_texture_2_location,
             u_texture_1_location,
             u_texture_2_is_available_location,
@@ -490,6 +493,7 @@ impl Program for TabletextureProgram {
     accesser!(a_texture_coord_location as attr_tex_coord: WebGlAttributeLocation);
     accesser!(a_vertex_location as attr_vertex: WebGlAttributeLocation);
     accesser!(u_bg_color_location as unif_bg_color: WebGlUniformLocation);
+    accesser!(u_texture_location as unif_texture: WebGlUniformLocation);
     accesser!(u_texture_1_location as unif_texture_1: WebGlUniformLocation);
     accesser!(u_texture_2_location as unif_texture_2: WebGlUniformLocation);
     accesser!(

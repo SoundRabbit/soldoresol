@@ -68,6 +68,10 @@ impl Texture {
         &self.context
     }
 
+    pub fn buffer_size(&self) -> &[f64; 2] {
+        &self.buffer_size
+    }
+
     pub fn set_size(&mut self, size: [f64; 2]) {
         let new_pixel_ratio = [self.buffer_size[0] / size[0], self.buffer_size[1] / size[1]];
 
