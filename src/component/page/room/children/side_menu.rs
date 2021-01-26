@@ -186,7 +186,9 @@ impl SideMenu {
 
     fn render_sub_pen(&self, tool: &PenTool) -> Html {
         Html::div(
-            Attributes::new().class(Self::class("sub-body")),
+            Attributes::new()
+                .class(Self::class("sub-body"))
+                .class(Self::class("sub-menu")),
             Events::new(),
             vec![
                 Html::div(Attributes::new(), Events::new(), vec![Html::text("線幅")]),
@@ -394,7 +396,7 @@ impl SideMenu {
                 TabMenu::with_children(
                     tab_menu::Props {
                         selected: 0,
-                        tabs: vec![String::from("線"), String::from("塗りつぶし")],
+                        tabs: vec![String::from("色 1"), String::from("色 2")],
                         controlled: false,
                     },
                     Subscription::none(),
@@ -510,6 +512,15 @@ impl Styled for SideMenu {
                 "grid-auto-flow": "row";
                 "column-gap": "0.65em";
                 "row-gap": "0.65em";
+                "padding-bottom": "0.65em";
+            }
+
+            "sub-menu" {
+                "display": "grid";
+                "grid-template-columns": "1fr";
+                "grid-auto-rows": "max-content";
+                "grid-auto-flow": "row";
+                "row-gap": "0.65rem";
             }
         }
     }

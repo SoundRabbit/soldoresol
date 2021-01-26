@@ -20,16 +20,15 @@ pub enum On {
 pub struct TabMenu {
     selected_idx: usize,
     tabs: Vec<String>,
+    is_controlled: bool,
 }
 
 impl Constructor for TabMenu {
-    fn constructor(
-        props: Self::Props,
-        builder: &mut ComponentBuilder<Self::Msg, Self::Sub>,
-    ) -> Self {
+    fn constructor(props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) -> Self {
         Self {
             selected_idx: props.selected,
             tabs: props.tabs,
+            is_controlled: props.controlled,
         }
     }
 }
@@ -39,7 +38,11 @@ impl Component for TabMenu {
     type Msg = Msg;
     type Sub = On;
 
-    fn init(&mut self, props: Self::Props, builder: &mut ComponentBuilder<Self::Msg, Self::Sub>) {}
+    fn init(&mut self, props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) {
+        if self.is_controlled {
+            self.selected_idx = props.selected;
+        }
+    }
 
     fn update(&mut self, msg: Self::Msg) -> Cmd<Self::Msg, Self::Sub> {
         match msg {
@@ -57,7 +60,7 @@ impl Component for TabMenu {
             Events::new(),
             vec![
                 Html::div(
-                    Attributes::new(),
+                    Attributes::new().class(Self::class("tabs")),
                     Events::new(),
                     self.tabs
                         .iter()
@@ -86,6 +89,10 @@ impl Component for TabMenu {
 
 impl Styled for TabMenu {
     fn style() -> Style {
-        style! {}
+        style! {
+            "tabs" {
+                "display": "flex";
+            }
+        }
     }
 }
