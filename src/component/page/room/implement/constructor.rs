@@ -1,0 +1,120 @@
+use super::super::{
+    super::molecule::color_pallet::Pallet,
+    super::util::State,
+    model::table::{PenTool, TableTool},
+    renderer::CameraMatrix,
+};
+use super::{ElementId, Implement, Modal, MouseState, Msg, On, Overlay, Props};
+use crate::arena::block;
+use crate::arena::player::{self, Player};
+use crate::arena::resource;
+use crate::arena::Insert;
+use crate::libs::modeless_list::ModelessList;
+use crate::libs::select_list::SelectList;
+use kagura::prelude::*;
+use std::rc::Rc;
+use wasm_bindgen::{prelude::*, JsCast};
+
+impl Implement {
+    pub fn constructor(props: Props, builder: &mut ComponentBuilder<Msg, On>) -> Self {
+        let mut block_arena = block::Arena::new();
+
+        let chat = block::chat::Chat::new(vec![
+            block_arena.insert(block::chat::channel::Channel::new(
+                String::from("メイン"),
+                block::chat::channel::ChannelType::Public,
+            )),
+            block_arena.insert(block::chat::channel::Channel::new(
+                String::from("サブ"),
+                block::chat::channel::ChannelType::Public,
+            )),
+        ]);
+
+        let chat_id = block_arena.insert(chat);
+
+        let tex_size = [4096, 4096];
+        let tbl_size = [20.0, 20.0];
+        let drawing_texture_id = block_arena.insert(block::table::texture::Texture::new(
+            &tex_size,
+            tbl_size.clone(),
+        ));
+        let darwed_texture_id = block_arena.insert(block::table::texture::Texture::new(
+            &tex_size,
+            tbl_size.clone(),
+        ));
+        let table_id = block_arena.insert(block::table::Table::new(
+            drawing_texture_id,
+            darwed_texture_id,
+            [tbl_size[0] as f32, tbl_size[1] as f32],
+            "最初のテーブル",
+        ));
+        let world_id = block_arena.insert(block::world::World::new(table_id));
+
+        let mut player_arena = player::Arena::new();
+        player_arena.insert(Rc::clone(&props.client_id), Player::new());
+
+        builder.add_batch(|mut resolve| {
+            let a = Closure::wrap(Box::new(move || {
+                resolve(Msg::ResetCanvasSize);
+            }) as Box<dyn FnMut()>);
+            web_sys::window()
+                .unwrap()
+                .set_onresize(Some(a.as_ref().unchecked_ref()));
+            a.forget();
+        });
+
+        Self {
+            peer: props.peer,
+            peer_id: props.peer_id,
+            room: props.room,
+            room_id: props.room_id,
+            client_id: props.client_id,
+
+            element_id: ElementId {
+                header_room_id: format!("{:X}", crate::libs::random_id::u128val()),
+            },
+
+            table_tools: State::new(SelectList::new(
+                vec![
+                    TableTool::Selector,
+                    TableTool::Hr(Rc::new(String::from("描画"))),
+                    TableTool::Pen(PenTool {
+                        line_width: 1.0,
+                        alpha: 100,
+                        pallet: Pallet::Gray(9),
+                    }),
+                    TableTool::Shape,
+                    TableTool::Eraser,
+                ],
+                0,
+            )),
+            modeless_list: ModelessList::new(),
+            modeless_container_element: None,
+            dragging_modeless_tab: None,
+
+            block_arena,
+            player_arena,
+            resource_arena: resource::Arena::new(),
+
+            renderer: None,
+            camera_matrix: CameraMatrix::new(),
+
+            chat_id,
+            world_id,
+
+            modal: Modal::None,
+            overlay: Overlay::None,
+
+            mouse_state: MouseState {
+                is_dragging: false,
+                is_changed_dragging_state: false,
+                changing_point: [0.0, 0.0],
+                last_point: [0.0, 0.0],
+            },
+            canvas: None,
+            canvas_pos: [0.0, 0.0],
+            canvas_size: [1.0, 1.0],
+            drawing_line: vec![],
+        }
+    }
+}
