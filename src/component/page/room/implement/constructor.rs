@@ -1,7 +1,7 @@
 use super::super::{
     super::molecule::color_pallet::Pallet,
     super::util::State,
-    model::table::{LineShapeTool, PenTool, RectShapeTool, ShapeTool, TableTool},
+    model::table::{EllipseShapeTool, LineShapeTool, PenTool, RectShapeTool, ShapeTool, TableTool},
     renderer::CameraMatrix,
 };
 use super::{ElementId, Implement, Modal, MouseState, Msg, On, Overlay, Props};
@@ -97,7 +97,13 @@ impl Implement {
                                 fill_alpha: 100,
                                 fill_pallet: Pallet::Gray(0),
                             }),
-                            ShapeTool::Ellipse,
+                            ShapeTool::Ellipse(EllipseShapeTool {
+                                line_width: 0.5,
+                                line_alpha: 100,
+                                line_pallet: Pallet::Gray(9),
+                                fill_alpha: 100,
+                                fill_pallet: Pallet::Gray(0),
+                            }),
                         ],
                         0,
                     )),

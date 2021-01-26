@@ -45,7 +45,7 @@ pub struct PenTool {
 pub enum ShapeTool {
     Line(LineShapeTool),
     Rect(RectShapeTool),
-    Ellipse,
+    Ellipse(EllipseShapeTool),
 }
 
 impl ShapeTool {
@@ -53,7 +53,7 @@ impl ShapeTool {
         match self {
             Self::Line(..) => "直線",
             Self::Rect(..) => "長方形",
-            Self::Ellipse => "楕円",
+            Self::Ellipse(..) => "楕円",
         }
     }
 }
@@ -63,7 +63,7 @@ impl CloneRef for ShapeTool {
         match this {
             Self::Line(x) => Self::Line(LineShapeTool::clone(x)),
             Self::Rect(x) => Self::Rect(RectShapeTool::clone(x)),
-            Self::Ellipse => Self::Ellipse,
+            Self::Ellipse(x) => Self::Ellipse(EllipseShapeTool::clone(x)),
         }
     }
 }
@@ -77,6 +77,15 @@ pub struct LineShapeTool {
 
 #[derive(Clone)]
 pub struct RectShapeTool {
+    pub line_width: f64,
+    pub line_pallet: Pallet,
+    pub line_alpha: u8,
+    pub fill_pallet: Pallet,
+    pub fill_alpha: u8,
+}
+
+#[derive(Clone)]
+pub struct EllipseShapeTool {
     pub line_width: f64,
     pub line_pallet: Pallet,
     pub line_alpha: u8,

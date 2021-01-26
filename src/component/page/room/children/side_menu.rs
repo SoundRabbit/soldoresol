@@ -267,7 +267,7 @@ impl SideMenu {
                                 ShapeTool::Rect(..) => {
                                     vec![fa::far_i("fa-square"), Html::text(" 長方形")]
                                 }
-                                ShapeTool::Ellipse => {
+                                ShapeTool::Ellipse(..) => {
                                     vec![fa::far_i("fa-circle"), Html::text(" 楕円")]
                                 }
                             },
