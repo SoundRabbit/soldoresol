@@ -245,6 +245,7 @@ impl RoomModeless {
                         tab_btn::Props {
                             is_selected,
                             data: Self::tag_id(),
+                            draggable: true,
                         },
                         Subscription::new(move |sub| match sub {
                             tab_btn::On::Click => Msg::Sub(On::SelectTab { tab_idx }),

@@ -1,8 +1,9 @@
-use super::super::model::table::{PenTool, ShapeTool, TableTool};
+use super::super::model::table::{FillShapeTool, LineShapeTool, PenTool, ShapeTool, TableTool};
 use super::atom::btn::{self, Btn};
 use super::atom::fa;
 use super::atom::slider::{self, Slider};
 use super::molecule::color_pallet::{self, ColorPallet};
+use super::molecule::tab_menu::{self, TabMenu};
 use super::util::styled::{Style, Styled};
 use super::util::Prop;
 use crate::libs::clone_ref::CloneRef;
@@ -236,45 +237,215 @@ impl SideMenu {
         Html::div(
             Attributes::new().class(Self::class("sub-body")),
             Events::new(),
-            vec![Html::div(
-                Attributes::new().class(Self::class("sub-tool-list")),
-                Events::new(),
-                tools
-                    .iter()
-                    .enumerate()
-                    .map(|(tool_idx, shape_tool)| {
-                        Btn::with_children(
-                            btn::Props {
-                                variant: if tool_idx == tools.selected_idx() {
-                                    btn::Variant::Primary
-                                } else {
-                                    btn::Variant::Dark
+            vec![
+                Html::div(
+                    Attributes::new().class(Self::class("sub-tool-list")),
+                    Events::new(),
+                    tools
+                        .iter()
+                        .enumerate()
+                        .map(|(tool_idx, shape_tool)| {
+                            Btn::with_children(
+                                btn::Props {
+                                    variant: if tool_idx == tools.selected_idx() {
+                                        btn::Variant::Primary
+                                    } else {
+                                        btn::Variant::Dark
+                                    },
                                 },
+                                Subscription::new({
+                                    let mut tools = SelectList::clone(tools);
+                                    move |sub| match sub {
+                                        btn::On::Click => {
+                                            tools.set_selected_idx(tool_idx);
+                                            Msg::Sub(On::SetSelectedTool {
+                                                tool: TableTool::Shape(tools),
+                                            })
+                                        }
+                                    }
+                                }),
+                                match shape_tool {
+                                    ShapeTool::Line(..) => {
+                                        vec![fa::i("fa-slash"), Html::text(" 直線")]
+                                    }
+                                    ShapeTool::Rect(..) => {
+                                        vec![fa::far_i("fa-square"), Html::text(" 長方形")]
+                                    }
+                                    ShapeTool::Ellipse(..) => {
+                                        vec![fa::far_i("fa-circle"), Html::text(" 楕円")]
+                                    }
+                                },
+                            )
+                        })
+                        .collect(),
+                ),
+                match tools.selected() {
+                    Some(ShapeTool::Line(line_shape)) => {
+                        self.render_sub_shape_line(line_shape, tools)
+                    }
+                    Some(ShapeTool::Rect(fill_shape)) => {
+                        self.render_sub_shape_fill(fill_shape, tools)
+                    }
+                    Some(ShapeTool::Ellipse(fill_shape)) => {
+                        self.render_sub_shape_fill(fill_shape, tools)
+                    }
+                    _ => Html::none(),
+                },
+            ],
+        )
+    }
+
+    fn render_sub_shape_line(
+        &self,
+        line_shape: &LineShapeTool,
+        tools: &SelectList<ShapeTool>,
+    ) -> Html {
+        Html::div(
+            Attributes::new(),
+            Events::new(),
+            vec![
+                Html::div(Attributes::new(), Events::new(), vec![Html::text("線幅")]),
+                Slider::empty(
+                    slider::Props {
+                        position: slider::Position::Inf {
+                            val: line_shape.line_width,
+                            mid: 2.0,
+                            step: 0.01,
+                        },
+                        range_is_editable: false,
+                    },
+                    Subscription::new({
+                        let mut line_shape = LineShapeTool::clone(line_shape);
+                        let mut tools = SelectList::clone(tools);
+                        move |sub| match sub {
+                            slider::On::Input(val) => {
+                                line_shape.line_width = val;
+                                if let Some(tool) = tools.selected_mut() {
+                                    *tool = ShapeTool::Line(line_shape);
+                                }
+                                Msg::Sub(On::SetSelectedTool {
+                                    tool: TableTool::Shape(tools),
+                                })
+                            }
+                        }
+                    }),
+                ),
+                ColorPallet::empty(
+                    color_pallet::Props {
+                        default_selected: line_shape.pallet.clone(),
+                        alpha: line_shape.alpha,
+                    },
+                    Subscription::new({
+                        let mut line_shape = LineShapeTool::clone(line_shape);
+                        let mut tools = SelectList::clone(tools);
+                        move |sub| match sub {
+                            color_pallet::On::SetColor(pallet, alpha) => {
+                                line_shape.pallet = pallet;
+                                line_shape.alpha = alpha;
+                                if let Some(tool) = tools.selected_mut() {
+                                    *tool = ShapeTool::Line(line_shape);
+                                }
+                                Msg::Sub(On::SetSelectedTool {
+                                    tool: TableTool::Shape(tools),
+                                })
+                            }
+                        }
+                    }),
+                ),
+            ],
+        )
+    }
+
+    fn render_sub_shape_fill(
+        &self,
+        fill_shape: &FillShapeTool,
+        tools: &SelectList<ShapeTool>,
+    ) -> Html {
+        Html::div(
+            Attributes::new(),
+            Events::new(),
+            vec![
+                Html::div(Attributes::new(), Events::new(), vec![Html::text("線幅")]),
+                Slider::empty(
+                    slider::Props {
+                        position: slider::Position::Inf {
+                            val: fill_shape.line_width,
+                            mid: 2.0,
+                            step: 0.01,
+                        },
+                        range_is_editable: false,
+                    },
+                    Subscription::new({
+                        let mut fill_shape = FillShapeTool::clone(fill_shape);
+                        let mut tools = SelectList::clone(tools);
+                        move |sub| match sub {
+                            slider::On::Input(val) => {
+                                fill_shape.line_width = val;
+                                if let Some(tool) = tools.selected_mut() {
+                                    tool.set_fill(fill_shape);
+                                }
+                                Msg::Sub(On::SetSelectedTool {
+                                    tool: TableTool::Shape(tools),
+                                })
+                            }
+                        }
+                    }),
+                ),
+                TabMenu::with_children(
+                    tab_menu::Props {
+                        selected: 0,
+                        tabs: vec![String::from("線"), String::from("塗りつぶし")],
+                        controlled: false,
+                    },
+                    Subscription::none(),
+                    vec![
+                        ColorPallet::empty(
+                            color_pallet::Props {
+                                default_selected: fill_shape.line_pallet.clone(),
+                                alpha: fill_shape.line_alpha,
                             },
                             Subscription::new({
+                                let mut fill_shape = FillShapeTool::clone(fill_shape);
                                 let mut tools = SelectList::clone(tools);
                                 move |sub| match sub {
-                                    btn::On::Click => {
-                                        tools.set_selected_idx(tool_idx);
+                                    color_pallet::On::SetColor(pallet, alpha) => {
+                                        fill_shape.line_pallet = pallet;
+                                        fill_shape.line_alpha = alpha;
+                                        if let Some(tool) = tools.selected_mut() {
+                                            tool.set_fill(fill_shape);
+                                        }
                                         Msg::Sub(On::SetSelectedTool {
                                             tool: TableTool::Shape(tools),
                                         })
                                     }
                                 }
                             }),
-                            match shape_tool {
-                                ShapeTool::Line(..) => vec![fa::i("fa-slash"), Html::text(" 直線")],
-                                ShapeTool::Rect(..) => {
-                                    vec![fa::far_i("fa-square"), Html::text(" 長方形")]
-                                }
-                                ShapeTool::Ellipse(..) => {
-                                    vec![fa::far_i("fa-circle"), Html::text(" 楕円")]
-                                }
+                        ),
+                        ColorPallet::empty(
+                            color_pallet::Props {
+                                default_selected: fill_shape.fill_pallet.clone(),
+                                alpha: fill_shape.fill_alpha,
                             },
-                        )
-                    })
-                    .collect(),
-            )],
+                            Subscription::new({
+                                let mut fill_shape = FillShapeTool::clone(fill_shape);
+                                let mut tools = SelectList::clone(tools);
+                                move |sub| match sub {
+                                    color_pallet::On::SetColor(pallet, alpha) => {
+                                        fill_shape.fill_pallet = pallet;
+                                        fill_shape.fill_alpha = alpha;
+                                        if let Some(tool) = tools.selected_mut() {
+                                            tool.set_fill(fill_shape);
+                                        }
+                                        Msg::Sub(On::SetSelectedTool {
+                                            tool: TableTool::Shape(tools),
+                                        })
+                                    }
+                                }
+                            }),
+                        ),
+                    ],
+                ),
+            ],
         )
     }
 }

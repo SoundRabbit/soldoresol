@@ -7,6 +7,7 @@ use wasm_bindgen::JsCast;
 pub struct Props {
     pub is_selected: bool,
     pub data: String,
+    pub draggable: bool,
 }
 
 pub enum Msg {
@@ -23,6 +24,7 @@ pub enum On {
 pub struct TabBtn {
     is_selected: bool,
     data: Rc<String>,
+    draggable: bool,
 }
 
 impl Constructor for TabBtn {
@@ -30,6 +32,7 @@ impl Constructor for TabBtn {
         Self {
             is_selected: props.is_selected,
             data: Rc::new(props.data),
+            draggable: props.draggable,
         }
     }
 }
@@ -41,6 +44,8 @@ impl Component for TabBtn {
 
     fn init(&mut self, props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) {
         self.is_selected = props.is_selected;
+        self.data = Rc::new(props.data);
+        self.draggable = props.draggable;
     }
 
     fn update(&mut self, msg: Self::Msg) -> Cmd<Self::Msg, Self::Sub> {
@@ -52,7 +57,9 @@ impl Component for TabBtn {
 
     fn render(&self, children: Vec<Html>) -> Html {
         Self::styled(Html::div(
-            Attributes::new().class(Self::class("base")).draggable(true),
+            Attributes::new()
+                .class(Self::class("base"))
+                .draggable(self.draggable),
             Events::new()
                 .on_click(|_| Msg::Sub(On::Click))
                 .on_mousedown(|e| {

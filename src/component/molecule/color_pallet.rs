@@ -10,7 +10,7 @@ pub struct Props {
     pub default_selected: Pallet,
 }
 
-#[derive(PartialEq, Clone, Copy)]
+#[derive(PartialEq, Clone, Copy, Eq)]
 pub enum Pallet {
     Gray(usize),
     Red(usize),
@@ -34,6 +34,7 @@ pub enum On {
 pub struct ColorPallet {
     alpha: u8,
     selected: Pallet,
+    default_selected: Pallet,
 }
 
 impl Default for Props {
@@ -68,7 +69,8 @@ impl Constructor for ColorPallet {
     fn constructor(props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) -> Self {
         Self {
             alpha: props.alpha,
-            selected: props.default_selected,
+            selected: props.default_selected.clone(),
+            default_selected: props.default_selected.clone(),
         }
     }
 }
@@ -79,7 +81,12 @@ impl Component for ColorPallet {
     type Sub = On;
 
     fn init(&mut self, props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) {
-        // self.alpha = props.alpha;
+        self.alpha = props.alpha;
+
+        if self.default_selected != props.default_selected {
+            self.default_selected = props.default_selected.clone();
+            self.selected = props.default_selected.clone();
+        }
     }
 
     fn update(&mut self, msg: Self::Msg) -> Cmd<Self::Msg, Self::Sub> {

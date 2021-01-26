@@ -309,7 +309,7 @@ impl Implement {
                                     context.set_line_width(ellipse.line_width);
                                     context.set_line_join("round");
                                     context.begin_path();
-                                    context.ellipse(
+                                    let _ = context.ellipse(
                                         a[0],
                                         a[1],
                                         (b[0] - a[0]).abs(),
@@ -318,8 +318,8 @@ impl Implement {
                                         0.0,
                                         2.0 * std::f64::consts::PI,
                                     );
-                                    context.stroke();
                                     context.fill();
+                                    context.stroke();
 
                                     need_update = true;
                                 },
@@ -364,7 +364,7 @@ impl Implement {
                                     context.set_line_width(ellipse.line_width);
                                     context.set_line_join("round");
                                     context.begin_path();
-                                    context.ellipse(
+                                    let _ = context.ellipse(
                                         a[0],
                                         a[1],
                                         (b[0] - a[0]).abs(),
@@ -373,8 +373,8 @@ impl Implement {
                                         0.0,
                                         2.0 * std::f64::consts::PI,
                                     );
-                                    context.stroke();
                                     context.fill();
+                                    context.stroke();
 
                                     need_update = true;
                                 },

@@ -44,8 +44,8 @@ pub struct PenTool {
 
 pub enum ShapeTool {
     Line(LineShapeTool),
-    Rect(RectShapeTool),
-    Ellipse(EllipseShapeTool),
+    Rect(FillShapeTool),
+    Ellipse(FillShapeTool),
 }
 
 impl ShapeTool {
@@ -56,14 +56,32 @@ impl ShapeTool {
             Self::Ellipse(..) => "楕円",
         }
     }
+
+    pub fn set_line(&mut self, line: LineShapeTool) {
+        match self {
+            Self::Line(x) => {
+                *x = line;
+            }
+            _ => {}
+        }
+    }
+
+    pub fn set_fill(&mut self, fill: FillShapeTool) {
+        match self {
+            Self::Ellipse(x) | Self::Rect(x) => {
+                *x = fill;
+            }
+            _ => {}
+        }
+    }
 }
 
 impl CloneRef for ShapeTool {
     fn clone(this: &Self) -> Self {
         match this {
             Self::Line(x) => Self::Line(LineShapeTool::clone(x)),
-            Self::Rect(x) => Self::Rect(RectShapeTool::clone(x)),
-            Self::Ellipse(x) => Self::Ellipse(EllipseShapeTool::clone(x)),
+            Self::Rect(x) => Self::Rect(FillShapeTool::clone(x)),
+            Self::Ellipse(x) => Self::Ellipse(FillShapeTool::clone(x)),
         }
     }
 }
@@ -76,16 +94,7 @@ pub struct LineShapeTool {
 }
 
 #[derive(Clone)]
-pub struct RectShapeTool {
-    pub line_width: f64,
-    pub line_pallet: Pallet,
-    pub line_alpha: u8,
-    pub fill_pallet: Pallet,
-    pub fill_alpha: u8,
-}
-
-#[derive(Clone)]
-pub struct EllipseShapeTool {
+pub struct FillShapeTool {
     pub line_width: f64,
     pub line_pallet: Pallet,
     pub line_alpha: u8,
