@@ -1,3 +1,5 @@
+use crate::libs::clone_ref::CloneRef;
+
 pub struct SelectList<T> {
     payload: Vec<T>,
     selected_idx: usize,
@@ -58,5 +60,17 @@ impl<T> std::ops::Deref for SelectList<T> {
 impl<T> std::ops::DerefMut for SelectList<T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.payload
+    }
+}
+
+impl<T> CloneRef for SelectList<T>
+where
+    T: CloneRef,
+{
+    fn clone(this: &Self) -> Self {
+        Self {
+            payload: this.payload.iter().map(|x| T::clone(x)).collect(),
+            selected_idx: this.selected_idx,
+        }
     }
 }

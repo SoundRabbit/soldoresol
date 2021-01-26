@@ -1,10 +1,11 @@
-use super::super::model::table::{PenTool, TableTool};
+use super::super::model::table::{PenTool, ShapeTool, TableTool};
 use super::atom::btn::{self, Btn};
 use super::atom::fa;
 use super::atom::slider::{self, Slider};
 use super::molecule::color_pallet::{self, ColorPallet};
 use super::util::styled::{Style, Styled};
 use super::util::Prop;
+use crate::libs::clone_ref::CloneRef;
 use crate::libs::select_list::SelectList;
 use kagura::prelude::*;
 
@@ -110,7 +111,7 @@ impl SideMenu {
                             TableTool::Hr(..) => unreachable!(),
                             TableTool::Selector => "fa-mouse-pointer",
                             TableTool::Pen(..) => "fa-pen",
-                            TableTool::Shape => "fa-shapes",
+                            TableTool::Shape(..) => "fa-shapes",
                             TableTool::Eraser => "fa-eraser",
                         }),
                     ),
@@ -175,7 +176,7 @@ impl SideMenu {
                 ),
                 match self.tools.selected() {
                     Some(TableTool::Pen(tool)) => self.render_sub_pen(tool),
-                    Some(TableTool::Shape {}) => self.render_sub_shape(),
+                    Some(TableTool::Shape(tool)) => self.render_sub_shape(tool),
                     _ => Html::div(Attributes::new(), Events::new(), vec![]),
                 },
             ],
@@ -231,36 +232,48 @@ impl SideMenu {
         )
     }
 
-    fn render_sub_shape(&self) -> Html {
+    fn render_sub_shape(&self, tools: &SelectList<ShapeTool>) -> Html {
         Html::div(
             Attributes::new().class(Self::class("sub-body")),
             Events::new(),
             vec![Html::div(
                 Attributes::new().class(Self::class("sub-tool-list")),
                 Events::new(),
-                vec![
-                    Btn::with_children(
-                        btn::Props {
-                            variant: btn::Variant::Dark,
-                        },
-                        Subscription::none(),
-                        vec![fa::i("fa-slash"), Html::text(" 直線")],
-                    ),
-                    Btn::with_children(
-                        btn::Props {
-                            variant: btn::Variant::Dark,
-                        },
-                        Subscription::none(),
-                        vec![fa::far_i("fa-square"), Html::text(" 長方形")],
-                    ),
-                    Btn::with_children(
-                        btn::Props {
-                            variant: btn::Variant::Dark,
-                        },
-                        Subscription::none(),
-                        vec![fa::far_i("fa-circle"), Html::text(" 楕円")],
-                    ),
-                ],
+                tools
+                    .iter()
+                    .enumerate()
+                    .map(|(tool_idx, shape_tool)| {
+                        Btn::with_children(
+                            btn::Props {
+                                variant: if tool_idx == tools.selected_idx() {
+                                    btn::Variant::Primary
+                                } else {
+                                    btn::Variant::Dark
+                                },
+                            },
+                            Subscription::new({
+                                let mut tools = SelectList::clone(tools);
+                                move |sub| match sub {
+                                    btn::On::Click => {
+                                        tools.set_selected_idx(tool_idx);
+                                        Msg::Sub(On::SetSelectedTool {
+                                            tool: TableTool::Shape(tools),
+                                        })
+                                    }
+                                }
+                            }),
+                            match shape_tool {
+                                ShapeTool::Line => vec![fa::i("fa-slash"), Html::text(" 直線")],
+                                ShapeTool::Rect => {
+                                    vec![fa::far_i("fa-square"), Html::text(" 長方形")]
+                                }
+                                ShapeTool::Ellipse => {
+                                    vec![fa::far_i("fa-circle"), Html::text(" 楕円")]
+                                }
+                            },
+                        )
+                    })
+                    .collect(),
             )],
         )
     }

@@ -1,7 +1,7 @@
 use super::super::{
     super::molecule::color_pallet::Pallet,
     super::util::State,
-    model::table::{PenTool, TableTool},
+    model::table::{PenTool, ShapeTool, TableTool},
     renderer::CameraMatrix,
 };
 use super::{ElementId, Implement, Modal, MouseState, Msg, On, Overlay, Props};
@@ -83,7 +83,10 @@ impl Implement {
                         alpha: 100,
                         pallet: Pallet::Gray(9),
                     }),
-                    TableTool::Shape,
+                    TableTool::Shape(SelectList::new(
+                        vec![ShapeTool::Line, ShapeTool::Rect, ShapeTool::Ellipse],
+                        0,
+                    )),
                     TableTool::Eraser,
                 ],
                 0,
