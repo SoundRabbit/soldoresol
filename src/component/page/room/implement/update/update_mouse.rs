@@ -306,8 +306,8 @@ impl Implement {
                                     let _ = context.ellipse(
                                         a[0],
                                         a[1],
-                                        (b[0] - a[0]).abs(),
-                                        (b[1] - a[1]).abs(),
+                                        (b[0] - a[0]).abs() * 2f64.sqrt(),
+                                        (b[1] - a[1]).abs() * 2f64.sqrt(),
                                         0.0,
                                         0.0,
                                         2.0 * std::f64::consts::PI,
@@ -361,8 +361,8 @@ impl Implement {
                                     let _ = context.ellipse(
                                         a[0],
                                         a[1],
-                                        (b[0] - a[0]).abs(),
-                                        (b[1] - a[1]).abs(),
+                                        (b[0] - a[0]).abs() * 2f64.sqrt(),
+                                        (b[1] - a[1]).abs() * 2f64.sqrt(),
                                         0.0,
                                         0.0,
                                         2.0 * std::f64::consts::PI,
