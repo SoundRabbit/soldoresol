@@ -110,7 +110,14 @@ impl Tabletexture {
             self.last_drawed_texture_id = BlockId::clone(table.drawed_texture_id());
         }
 
-        gl.set_unif_texture_2_is_available(0);
+        let mut texture_2_is_available = 0;
+        if let Some(r_id) = table.background_texture_id() {
+            if let Some(tex_idx) = tex_table.use_resource(gl, resource_arena, r_id) {
+                texture_2_is_available = 1;
+                gl.set_unif_texture_2(tex_idx);
+            }
+        }
+        gl.set_unif_texture_2_is_available(texture_2_is_available);
 
         let model_matrix: Array2<f32> = ModelMatrix::new()
             .with_scale(&[table_size[0], table_size[1], 1.0])

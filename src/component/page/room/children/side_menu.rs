@@ -3,11 +3,13 @@ use super::atom::btn::{self, Btn};
 use super::atom::fa;
 use super::atom::slider::{self, Slider};
 use super::atom::text;
+use super::modal_imported_files::{self, ModalImportedFiles};
 use super::molecule::color_pallet::{self, ColorPallet};
 use super::molecule::tab_menu::{self, TabMenu};
 use super::util::styled::{Style, Styled};
 use super::util::Prop;
 use crate::arena::block::{self, BlockId};
+use crate::arena::resource::{self, ResourceId};
 use crate::libs::clone_ref::CloneRef;
 use crate::libs::color::Pallet;
 use crate::libs::select_list::SelectList;
@@ -16,6 +18,7 @@ use kagura::prelude::*;
 pub struct Props {
     pub tools: Prop<SelectList<TableTool>>,
     pub block_arena: block::ArenaRef,
+    pub resource_arena: resource::ArenaRef,
     pub selecting_table_id: BlockId,
 }
 
@@ -23,6 +26,8 @@ pub enum Msg {
     Sub(On),
     SetSelectedIdx(usize),
     SetShowSub(bool),
+    SetModal(Modal),
+    CloseModalSub(On),
 }
 
 pub enum On {
@@ -37,6 +42,7 @@ pub enum On {
         size: Option<[f32; 2]>,
         grid_color: Option<Pallet>,
         background_color: Option<Pallet>,
+        background_image: Option<Option<ResourceId>>,
     },
 }
 
@@ -44,9 +50,16 @@ pub struct SideMenu {
     tools: Prop<SelectList<TableTool>>,
     selected_idx: usize,
     block_arena: block::ArenaRef,
+    resource_arena: resource::ArenaRef,
     selecting_table_id: BlockId,
 
     show_sub: bool,
+    modal: Modal,
+}
+
+pub enum Modal {
+    None,
+    SelectTableBackgroundImage,
 }
 
 impl Constructor for SideMenu {
@@ -57,9 +70,11 @@ impl Constructor for SideMenu {
             tools: props.tools,
             selected_idx: selected_idx,
             block_arena: props.block_arena,
+            resource_arena: props.resource_arena,
             selecting_table_id: props.selecting_table_id,
 
             show_sub: false,
+            modal: Modal::None,
         }
     }
 }
@@ -92,6 +107,14 @@ impl Component for SideMenu {
                 self.show_sub = show_sub;
                 Cmd::none()
             }
+            Msg::SetModal(modal) => {
+                self.modal = modal;
+                Cmd::none()
+            }
+            Msg::CloseModalSub(sub) => {
+                self.modal = Modal::None;
+                Cmd::sub(sub)
+            }
         }
     }
 
@@ -99,12 +122,44 @@ impl Component for SideMenu {
         Self::styled(Html::div(
             Attributes::new().class(Self::class("base")),
             Events::new(),
-            vec![self.render_main(), self.render_sub()],
+            vec![
+                self.render_main(),
+                self.render_sub(),
+                match &self.modal {
+                    Modal::None => Html::none(),
+                    Modal::SelectTableBackgroundImage => {
+                        self.render_modal_select_table_background_image()
+                    }
+                },
+            ],
         ))
     }
 }
 
 impl SideMenu {
+    fn render_modal_select_table_background_image(&self) -> Html {
+        ModalImportedFiles::empty(
+            modal_imported_files::Props {
+                resource_arena: resource::ArenaRef::clone(&self.resource_arena),
+            },
+            Subscription::new({
+                let table_id = BlockId::clone(&self.selecting_table_id);
+                move |sub| match sub {
+                    modal_imported_files::On::Close => Msg::SetModal(Modal::None),
+                    modal_imported_files::On::SelectFile(r_id) => {
+                        Msg::CloseModalSub(On::ChangeTableProps {
+                            table_id,
+                            size: None,
+                            grid_color: None,
+                            background_color: None,
+                            background_image: Some(Some(r_id)),
+                        })
+                    }
+                }
+            }),
+        )
+    }
+
     fn render_main(&self) -> Html {
         Html::div(
             Attributes::new().class(Self::class("main")),
@@ -209,11 +264,14 @@ impl SideMenu {
 
     fn render_sub_table_editor(&self) -> Html {
         Html::div(
-            Attributes::new(),
+            Attributes::new()
+                .class(Self::class("sub-body"))
+                .class(Self::class("sub-menu")),
             Events::new(),
             self.block_arena
                 .map(&self.selecting_table_id, |table: &block::table::Table| {
                     let [width, height] = *table.size();
+                    let bg_image_id = table.background_texture_id();
                     vec![
                         text::div("幅（x方向）"),
                         Slider::empty(
@@ -233,6 +291,7 @@ impl SideMenu {
                                         size: Some([width as f32, height]),
                                         grid_color: None,
                                         background_color: None,
+                                        background_image: None,
                                     }),
                                 }
                             }),
@@ -255,6 +314,7 @@ impl SideMenu {
                                         size: Some([width, height as f32]),
                                         grid_color: None,
                                         background_color: None,
+                                        background_image: None,
                                     }),
                                 }
                             }),
@@ -280,6 +340,7 @@ impl SideMenu {
                                                     size: None,
                                                     grid_color: Some(color),
                                                     background_color: None,
+                                                    background_image: None,
                                                 })
                                             }
                                         }
@@ -298,12 +359,34 @@ impl SideMenu {
                                                     size: None,
                                                     grid_color: None,
                                                     background_color: Some(color),
+                                                    background_image: None,
                                                 })
                                             }
                                         }
                                     }),
                                 ),
                             ],
+                        ),
+                        bg_image_id
+                            .and_then(|r_id| {
+                                self.resource_arena.get_as::<resource::ImageData>(r_id)
+                            })
+                            .map(|bg_image| {
+                                Html::img(
+                                    Attributes::new().src(bg_image.url().as_ref()),
+                                    Events::new(),
+                                    vec![],
+                                )
+                            })
+                            .unwrap_or(Html::none()),
+                        Btn::with_child(
+                            btn::Props {
+                                variant: btn::Variant::Primary,
+                            },
+                            Subscription::new(|sub| match sub {
+                                btn::On::Click => Msg::SetModal(Modal::SelectTableBackgroundImage),
+                            }),
+                            Html::text("画像を選択する"),
                         ),
                     ]
                 })
@@ -636,10 +719,16 @@ impl Styled for SideMenu {
 
             "sub-menu" {
                 "display": "grid";
-                "grid-template-columns": "1fr";
+                "grid-template-columns": "100%";
                 "grid-auto-rows": "max-content";
                 "grid-auto-flow": "row";
                 "row-gap": "0.65rem";
+                "justify-items": "stretch";
+                "overflow-y": "scroll";
+            }
+
+            "sub-menu img" {
+                "width": "100%";
             }
         }
     }

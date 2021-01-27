@@ -88,6 +88,7 @@ impl Implement {
                                 side_menu::Props {
                                     tools: self.table_tools.as_prop(),
                                     block_arena: self.block_arena.as_ref(),
+                                    resource_arena: self.resource_arena.as_ref(),
                                     selecting_table_id: BlockId::clone(&selecting_table_id),
                                 },
                                 Subscription::new(|sub| match sub {
@@ -102,11 +103,13 @@ impl Implement {
                                         size,
                                         grid_color,
                                         background_color,
+                                        background_image,
                                     } => Msg::UpdateTableProps {
                                         table_id,
                                         size,
                                         grid_color,
                                         background_color,
+                                        background_image,
                                     },
                                 }),
                             )],
@@ -148,6 +151,7 @@ impl Implement {
                 },
                 Subscription::new(|sub| match sub {
                     modal_imported_files::On::Close => Msg::OpenNewModal { modal: Modal::None },
+                    modal_imported_files::On::SelectFile(_) => Msg::NoOp,
                 }),
             ),
         }

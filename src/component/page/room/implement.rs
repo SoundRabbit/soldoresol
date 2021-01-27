@@ -7,7 +7,7 @@ use super::{
 };
 use crate::arena::block::{self, BlockId};
 use crate::arena::player;
-use crate::arena::resource;
+use crate::arena::resource::{self, ResourceId};
 use crate::libs::color::Pallet;
 use crate::libs::modeless_list::ModelessList;
 use crate::libs::random_id::U128Id;
@@ -110,6 +110,7 @@ pub enum Msg {
         size: Option<[f32; 2]>,
         grid_color: Option<Pallet>,
         background_color: Option<Pallet>,
+        background_image: Option<Option<ResourceId>>,
     },
 }
 

@@ -37,7 +37,7 @@ impl TexTable {
             .unwrap() as i32)
             .min(32);
         let mut unused_tex_idx = VecDeque::new();
-        for i in 1..max_tex_num {
+        for i in 0..max_tex_num {
             unused_tex_idx.push_back(i);
         }
 
@@ -52,8 +52,8 @@ impl TexTable {
 
     pub fn use_resource(
         &mut self,
-        gl: WebGlRenderingContext,
-        resource_arena: &resource::ArenaRef,
+        gl: &WebGlRenderingContext,
+        resource_arena: &resource::Arena,
         resource_id: &ResourceId,
     ) -> Option<i32> {
         let tex_id = TextureId::ResourceId(ResourceId::clone(resource_id));
@@ -68,6 +68,7 @@ impl TexTable {
                 let tex_idx = self.use_idx();
                 gl.active_texture(Self::tex_flag(tex_idx));
                 gl.bind_texture(web_sys::WebGlRenderingContext::TEXTURE_2D, Some(&tex_buf));
+                self.tex_idx.insert(TextureId::clone(&tex_id), tex_idx);
                 self.used_tex_idx.push_back((tex_idx, tex_id));
                 Some(tex_idx)
             } else {
@@ -106,6 +107,9 @@ impl TexTable {
                         web_sys::WebGlRenderingContext::UNSIGNED_BYTE,
                         &data.element(),
                     );
+                    self.tex_table
+                        .insert(ResourceId::clone(&resource_id), Rc::new(tex_buf));
+                    self.tex_idx.insert(TextureId::clone(&tex_id), tex_idx);
                     self.used_tex_idx.push_back((tex_idx, tex_id));
                     Some(tex_idx)
                 } else {

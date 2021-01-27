@@ -1,6 +1,6 @@
 use super::molecule::modal::{self, Modal};
 use super::util::styled::{Style, Styled};
-use crate::arena::resource::{self};
+use crate::arena::resource::{self, ResourceId};
 use kagura::prelude::*;
 
 pub struct Props {
@@ -13,6 +13,7 @@ pub enum Msg {
 
 pub enum On {
     Close,
+    SelectFile(ResourceId),
 }
 
 pub struct ModalImportedFiles {
@@ -57,10 +58,13 @@ impl Component for ModalImportedFiles {
                 Events::new(),
                 self.resource_arena
                     .all_of::<resource::ImageData>()
-                    .map(|(_, img)| {
+                    .map(|(r_id, img)| {
                         Html::img(
                             Attributes::new().src(&img.url() as &String),
-                            Events::new(),
+                            Events::new().on_click({
+                                let r_id = ResourceId::clone(&r_id);
+                                move |_| Msg::Sub(On::SelectFile(r_id))
+                            }),
                             vec![],
                         )
                     })

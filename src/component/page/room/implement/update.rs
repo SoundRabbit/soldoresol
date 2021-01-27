@@ -298,6 +298,7 @@ impl Implement {
                 size,
                 grid_color,
                 background_color,
+                background_image,
             } => {
                 let mut is_updated = self
                     .block_arena
@@ -311,6 +312,11 @@ impl Implement {
 
                         if let Some(background_color) = background_color {
                             table.set_background_color(background_color);
+                            is_updated = true;
+                        }
+
+                        if let Some(background_image) = background_image {
+                            table.set_background_texture_id(background_image);
                             is_updated = true;
                         }
 
