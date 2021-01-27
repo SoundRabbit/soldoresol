@@ -65,6 +65,7 @@ impl Implement {
                 if let Some(renderer) = &mut self.renderer {
                     renderer.render(
                         &self.block_arena,
+                        &self.local_block_arena,
                         &self.resource_arena,
                         &self.world_id,
                         &self.camera_matrix,

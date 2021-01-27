@@ -44,7 +44,7 @@ impl Implement {
                         let b = self
                             .camera_matrix
                             .collision_point_on_xy_plane(&self.canvas_size, &[client_x, client_y]);
-                        let p = self.block_arena.map_mut(
+                        let p = self.local_block_arena.map_mut(
                             &drawing_texture_id,
                             |texture: &mut block::table::texture::Texture| {
                                 let a = texture.texture_position(&[a[0] as f64, a[1] as f64]);
@@ -83,7 +83,7 @@ impl Implement {
                     if let Some((drawing_texture_id, drawed_texture_id)) =
                         join_some!(drawing_texture_id, drawed_texture_id)
                     {
-                        self.block_arena.map_mut(
+                        self.local_block_arena.map_mut(
                             &drawing_texture_id,
                             |texture: &mut block::table::texture::Texture| {
                                 let context = texture.context();
@@ -130,7 +130,7 @@ impl Implement {
                                 &self.canvas_size,
                                 &[client_x, client_y],
                             );
-                            self.block_arena.map_mut(
+                            self.local_block_arena.map_mut(
                                 &drawing_texture_id,
                                 |texture: &mut block::table::texture::Texture| {
                                     let a = texture.texture_position(&[a[0] as f64, a[1] as f64]);
@@ -163,7 +163,7 @@ impl Implement {
                                 &[client_x, client_y],
                             );
 
-                            self.block_arena.map_mut(
+                            self.local_block_arena.map_mut(
                                 &drawing_texture_id,
                                 |texture: &mut block::table::texture::Texture| {
                                     let context = texture.context();
@@ -205,7 +205,7 @@ impl Implement {
                                 &self.canvas_size,
                                 &[client_x, client_y],
                             );
-                            self.block_arena.map_mut(
+                            self.local_block_arena.map_mut(
                                 &drawing_texture_id,
                                 |texture: &mut block::table::texture::Texture| {
                                     let a = texture.texture_position(&[a[0] as f64, a[1] as f64]);
@@ -241,7 +241,7 @@ impl Implement {
                                 &[client_x, client_y],
                             );
 
-                            self.block_arena.map_mut(
+                            self.local_block_arena.map_mut(
                                 &drawing_texture_id,
                                 |texture: &mut block::table::texture::Texture| {
                                     let context = texture.context();
@@ -285,7 +285,7 @@ impl Implement {
                                 &self.canvas_size,
                                 &[client_x, client_y],
                             );
-                            self.block_arena.map_mut(
+                            self.local_block_arena.map_mut(
                                 &drawing_texture_id,
                                 |texture: &mut block::table::texture::Texture| {
                                     let a = texture.texture_position(&[a[0] as f64, a[1] as f64]);
@@ -332,7 +332,7 @@ impl Implement {
                                 &[client_x, client_y],
                             );
 
-                            self.block_arena.map_mut(
+                            self.local_block_arena.map_mut(
                                 &drawing_texture_id,
                                 |texture: &mut block::table::texture::Texture| {
                                     let context = texture.context();

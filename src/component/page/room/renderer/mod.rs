@@ -132,6 +132,7 @@ impl Renderer {
     pub fn render(
         &mut self,
         block_arena: &block::Arena,
+        local_block_arena: &block::Arena,
         resource_arena: &resource::Arena,
         world_id: &BlockId,
         camera_matrix: &matrix::camera::Camera,
@@ -147,13 +148,13 @@ impl Renderer {
                     &mut self.tex_table,
                     &vp_matrix,
                     block_arena,
+                    local_block_arena,
                     resource_arena,
                     table,
                 );
             });
 
             block_arena.map(world.selecting_table(), |table: &block::table::Table| {
-                crate::debug::log_1("render selecting table");
                 self.render_view_tablegrid
                     .render(&mut self.view_gl, &vp_matrix, table)
             });

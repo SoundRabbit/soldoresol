@@ -157,6 +157,7 @@ pub struct Implement {
     dragging_modeless_tab: Option<(U128Id, usize)>,
 
     block_arena: block::Arena,
+    local_block_arena: block::Arena,
     player_arena: player::Arena,
     resource_arena: resource::Arena,
 

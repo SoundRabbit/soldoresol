@@ -60,6 +60,7 @@ impl Tabletexture {
         tex_table: &mut TexTable,
         vp_matrix: &Array2<f32>,
         block_arena: &block::Arena,
+        local_block_arena: &block::Arena,
         resource_arena: &resource::Arena,
         table: &block::table::Table,
     ) {
@@ -79,7 +80,7 @@ impl Tabletexture {
 
         let (tex_idx, tex_update_time) = Self::update_texture(
             gl,
-            block_arena,
+            local_block_arena,
             tex_table,
             &self.last_drawing_texture_id,
             table.drawing_texture_id(),

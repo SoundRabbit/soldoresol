@@ -18,6 +18,7 @@ use wasm_bindgen::{prelude::*, JsCast};
 impl Implement {
     pub fn constructor(props: Props, builder: &mut ComponentBuilder<Msg, On>) -> Self {
         let mut block_arena = block::Arena::new();
+        let mut local_block_arena = block::Arena::new();
 
         let chat = block::chat::Chat::new(vec![
             block_arena.insert(block::chat::channel::Channel::new(
@@ -34,7 +35,7 @@ impl Implement {
 
         let tex_size = [4096, 4096];
         let tbl_size = [20.0, 20.0];
-        let drawing_texture_id = block_arena.insert(block::table::texture::Texture::new(
+        let drawing_texture_id = local_block_arena.insert(block::table::texture::Texture::new(
             &tex_size,
             tbl_size.clone(),
         ));
@@ -111,6 +112,7 @@ impl Implement {
             dragging_modeless_tab: None,
 
             block_arena,
+            local_block_arena,
             player_arena,
             resource_arena: resource::Arena::new(),
 
