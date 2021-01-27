@@ -15,6 +15,7 @@ pub struct Table {
     drawed_texture_id: BlockId,
     background_texture_id: Option<ResourceId>,
     background_color: Pallet,
+    grid_color: Pallet,
 }
 
 impl Table {
@@ -33,6 +34,7 @@ impl Table {
             drawed_texture_id,
             background_texture_id: None,
             background_color: Pallet::gray(0).a(0),
+            grid_color: Pallet::gray(9).a(100),
         }
     }
 
@@ -49,6 +51,7 @@ impl Table {
                 .as_ref()
                 .map(|r_id| ResourceId::clone(r_id)),
             background_color: this.background_color,
+            grid_color: this.grid_color,
         }
     }
 
@@ -106,6 +109,14 @@ impl Table {
 
     pub fn set_background_color(&mut self, color: Pallet) {
         self.background_color = color;
+    }
+
+    pub fn grid_color(&self) -> &Pallet {
+        &self.grid_color
+    }
+
+    pub fn set_grid_color(&mut self, color: Pallet) {
+        self.grid_color = color;
     }
 
     pub async fn pack(&self) -> JsValue {

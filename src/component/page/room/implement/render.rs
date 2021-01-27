@@ -19,6 +19,13 @@ use wasm_bindgen::JsCast;
 
 impl Implement {
     pub fn render(&self, _: Vec<Html>) -> Html {
+        let selecting_table_id = self
+            .block_arena
+            .map(&self.world_id, |world: &block::world::World| {
+                BlockId::clone(world.selecting_table())
+            })
+            .unwrap_or(BlockId::none());
+
         BasicApp::with_children(
             basic_app::Props {},
             Subscription::new({
@@ -80,6 +87,8 @@ impl Implement {
                             vec![SideMenu::empty(
                                 side_menu::Props {
                                     tools: self.table_tools.as_prop(),
+                                    block_arena: self.block_arena.as_ref(),
+                                    selecting_table_id: BlockId::clone(&selecting_table_id),
                                 },
                                 Subscription::new(|sub| match sub {
                                     side_menu::On::ChangeSelectedIdx { idx } => {
@@ -88,6 +97,17 @@ impl Implement {
                                     side_menu::On::SetSelectedTool { tool } => {
                                         Msg::SetSelectingTableTool { tool }
                                     }
+                                    side_menu::On::ChangeTableProps {
+                                        table_id,
+                                        size,
+                                        grid_color,
+                                        background_color,
+                                    } => Msg::UpdateTableProps {
+                                        table_id,
+                                        size,
+                                        grid_color,
+                                        background_color,
+                                    },
                                 }),
                             )],
                         ),

@@ -8,6 +8,7 @@ use super::{
 use crate::arena::block::{self, BlockId};
 use crate::arena::player;
 use crate::arena::resource;
+use crate::libs::color::Pallet;
 use crate::libs::modeless_list::ModelessList;
 use crate::libs::random_id::U128Id;
 use crate::libs::select_list::SelectList;
@@ -99,6 +100,12 @@ pub enum Msg {
     CreateNewChannel {
         channel_name: String,
         channel_type: block::chat::channel::ChannelType,
+    },
+    UpdateTableProps {
+        table_id: BlockId,
+        size: Option<[f32; 2]>,
+        grid_color: Option<Pallet>,
+        background_color: Option<Pallet>,
     },
 }
 

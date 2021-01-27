@@ -286,6 +286,69 @@ impl Implement {
 
                 Cmd::none()
             }
+
+            Msg::UpdateTableProps {
+                table_id,
+                size,
+                grid_color,
+                background_color,
+            } => {
+                let mut is_updated = self
+                    .block_arena
+                    .map_mut(&table_id, |table: &mut block::table::Table| {
+                        let mut is_updated = false;
+
+                        if let Some(grid_color) = grid_color {
+                            table.set_grid_color(grid_color);
+                            is_updated = true;
+                        }
+
+                        if let Some(background_color) = background_color {
+                            table.set_background_color(background_color);
+                            is_updated = true;
+                        }
+
+                        is_updated
+                    })
+                    .unwrap_or(false);
+
+                if let Some(size) = size {
+                    let tex_size = [size[0] as f64, size[1] as f64];
+
+                    let (drawing_texture_id, drawed_texture_id) = self
+                        .block_arena
+                        .map_mut(&table_id, |table: &mut block::table::Table| {
+                            table.set_size(size);
+                            (
+                                BlockId::clone(table.drawing_texture_id()),
+                                BlockId::clone(table.drawed_texture_id()),
+                            )
+                        })
+                        .unwrap_or((BlockId::none(), BlockId::none()));
+
+                    self.block_arena.map_mut(
+                        &drawing_texture_id,
+                        |tex: &mut block::table::texture::Texture| {
+                            tex.set_size(tex_size.clone());
+                        },
+                    );
+
+                    self.block_arena.map_mut(
+                        &drawed_texture_id,
+                        |tex: &mut block::table::texture::Texture| {
+                            tex.set_size(tex_size.clone());
+                        },
+                    );
+
+                    is_updated = true;
+                }
+
+                if is_updated {
+                    self.gl_render_async()
+                } else {
+                    Cmd::none()
+                }
+            }
         }
     }
 

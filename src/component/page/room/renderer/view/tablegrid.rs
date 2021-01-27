@@ -59,7 +59,7 @@ impl Tablegrid {
         gl.set_unif_translate(mvp_matrix.reversed_axes());
         gl.set_unif_point_size(1.0);
         gl.line_width(5.0);
-        gl.set_unif_bg_color(&crate::libs::color::color_system::gray(100, 9).to_f32array());
+        gl.set_unif_bg_color(&table.grid_color().to_color().to_f32array());
 
         gl.draw_elements_with_i32(
             web_sys::WebGlRenderingContext::LINES,

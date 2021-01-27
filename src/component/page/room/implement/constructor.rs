@@ -77,6 +77,7 @@ impl Implement {
             table_tools: State::new(SelectList::new(
                 vec![
                     TableTool::Selector,
+                    TableTool::TableEditor,
                     TableTool::Hr(Rc::new(String::from("描画"))),
                     TableTool::Pen(PenTool {
                         line_width: 1.0,

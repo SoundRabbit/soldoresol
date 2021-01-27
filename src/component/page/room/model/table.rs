@@ -6,6 +6,7 @@ use std::rc::Rc;
 pub enum TableTool {
     Hr(Rc<String>),
     Selector,
+    TableEditor,
     Pen(PenTool),
     Shape(SelectList<ShapeTool>),
     Eraser,
@@ -19,6 +20,7 @@ impl TableTool {
             Self::Pen(..) => "ペン",
             Self::Selector => "選択",
             Self::Shape(..) => "図形",
+            Self::TableEditor => "テーブル編集",
         }
     }
 }
@@ -28,6 +30,7 @@ impl CloneRef for TableTool {
         match this {
             Self::Hr(x) => Self::Hr(<Rc<_> as Clone>::clone(x)),
             Self::Selector => Self::Selector,
+            Self::TableEditor => Self::TableEditor,
             Self::Pen(x) => Self::Pen(PenTool::clone(x)),
             Self::Shape(x) => Self::Shape(SelectList::clone(x)),
             Self::Eraser => Self::Eraser,

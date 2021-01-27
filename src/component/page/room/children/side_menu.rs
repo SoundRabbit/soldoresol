@@ -2,16 +2,21 @@ use super::super::model::table::{FillShapeTool, LineShapeTool, PenTool, ShapeToo
 use super::atom::btn::{self, Btn};
 use super::atom::fa;
 use super::atom::slider::{self, Slider};
+use super::atom::text;
 use super::molecule::color_pallet::{self, ColorPallet};
 use super::molecule::tab_menu::{self, TabMenu};
 use super::util::styled::{Style, Styled};
 use super::util::Prop;
+use crate::arena::block::{self, BlockId};
 use crate::libs::clone_ref::CloneRef;
+use crate::libs::color::Pallet;
 use crate::libs::select_list::SelectList;
 use kagura::prelude::*;
 
 pub struct Props {
     pub tools: Prop<SelectList<TableTool>>,
+    pub block_arena: block::ArenaRef,
+    pub selecting_table_id: BlockId,
 }
 
 pub enum Msg {
@@ -21,13 +26,25 @@ pub enum Msg {
 }
 
 pub enum On {
-    ChangeSelectedIdx { idx: usize },
-    SetSelectedTool { tool: TableTool },
+    ChangeSelectedIdx {
+        idx: usize,
+    },
+    SetSelectedTool {
+        tool: TableTool,
+    },
+    ChangeTableProps {
+        table_id: BlockId,
+        size: Option<[f32; 2]>,
+        grid_color: Option<Pallet>,
+        background_color: Option<Pallet>,
+    },
 }
 
 pub struct SideMenu {
     tools: Prop<SelectList<TableTool>>,
     selected_idx: usize,
+    block_arena: block::ArenaRef,
+    selecting_table_id: BlockId,
 
     show_sub: bool,
 }
@@ -39,6 +56,9 @@ impl Constructor for SideMenu {
         Self {
             tools: props.tools,
             selected_idx: selected_idx,
+            block_arena: props.block_arena,
+            selecting_table_id: props.selecting_table_id,
+
             show_sub: false,
         }
     }
@@ -51,6 +71,7 @@ impl Component for SideMenu {
 
     fn init(&mut self, props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) {
         self.tools = props.tools;
+        self.block_arena = props.block_arena;
         if self.selected_idx != self.tools.selected_idx() {
             self.selected_idx = self.tools.selected_idx();
             self.show_sub = true;
@@ -111,6 +132,7 @@ impl SideMenu {
                         fa::i(match table_tool {
                             TableTool::Hr(..) => unreachable!(),
                             TableTool::Selector => "fa-mouse-pointer",
+                            TableTool::TableEditor => "fa-vector-square",
                             TableTool::Pen(..) => "fa-pen",
                             TableTool::Shape(..) => "fa-shapes",
                             TableTool::Eraser => "fa-eraser",
@@ -178,9 +200,114 @@ impl SideMenu {
                 match self.tools.selected() {
                     Some(TableTool::Pen(tool)) => self.render_sub_pen(tool),
                     Some(TableTool::Shape(tool)) => self.render_sub_shape(tool),
+                    Some(TableTool::TableEditor) => self.render_sub_table_editor(),
                     _ => Html::div(Attributes::new(), Events::new(), vec![]),
                 },
             ],
+        )
+    }
+
+    fn render_sub_table_editor(&self) -> Html {
+        Html::div(
+            Attributes::new(),
+            Events::new(),
+            self.block_arena
+                .map(&self.selecting_table_id, |table: &block::table::Table| {
+                    let [width, height] = *table.size();
+                    vec![
+                        text::div("幅（x方向）"),
+                        Slider::empty(
+                            slider::Props {
+                                position: slider::Position::Inf {
+                                    val: width as f64,
+                                    mid: 20.0,
+                                    step: 1.0,
+                                },
+                                range_is_editable: false,
+                            },
+                            Subscription::new({
+                                let table_id = BlockId::clone(&self.selecting_table_id);
+                                move |sub| match sub {
+                                    slider::On::Input(width) => Msg::Sub(On::ChangeTableProps {
+                                        table_id,
+                                        size: Some([width as f32, height]),
+                                        grid_color: None,
+                                        background_color: None,
+                                    }),
+                                }
+                            }),
+                        ),
+                        text::div("奥行き（y方向）"),
+                        Slider::empty(
+                            slider::Props {
+                                position: slider::Position::Inf {
+                                    val: height as f64,
+                                    mid: 20.0,
+                                    step: 1.0,
+                                },
+                                range_is_editable: false,
+                            },
+                            Subscription::new({
+                                let table_id = BlockId::clone(&self.selecting_table_id);
+                                move |sub| match sub {
+                                    slider::On::Input(height) => Msg::Sub(On::ChangeTableProps {
+                                        table_id,
+                                        size: Some([width, height as f32]),
+                                        grid_color: None,
+                                        background_color: None,
+                                    }),
+                                }
+                            }),
+                        ),
+                        TabMenu::with_children(
+                            tab_menu::Props {
+                                selected: 0,
+                                tabs: vec![String::from("色 1"), String::from("色 2")],
+                                controlled: false,
+                            },
+                            Subscription::none(),
+                            vec![
+                                ColorPallet::empty(
+                                    color_pallet::Props {
+                                        default_selected: table.grid_color().clone(),
+                                    },
+                                    Subscription::new({
+                                        let table_id = BlockId::clone(&self.selecting_table_id);
+                                        move |sub| match sub {
+                                            color_pallet::On::SelectColor(color) => {
+                                                Msg::Sub(On::ChangeTableProps {
+                                                    table_id,
+                                                    size: None,
+                                                    grid_color: Some(color),
+                                                    background_color: None,
+                                                })
+                                            }
+                                        }
+                                    }),
+                                ),
+                                ColorPallet::empty(
+                                    color_pallet::Props {
+                                        default_selected: table.background_color().clone(),
+                                    },
+                                    Subscription::new({
+                                        let table_id = BlockId::clone(&self.selecting_table_id);
+                                        move |sub| match sub {
+                                            color_pallet::On::SelectColor(color) => {
+                                                Msg::Sub(On::ChangeTableProps {
+                                                    table_id,
+                                                    size: None,
+                                                    grid_color: None,
+                                                    background_color: Some(color),
+                                                })
+                                            }
+                                        }
+                                    }),
+                                ),
+                            ],
+                        ),
+                    ]
+                })
+                .unwrap_or(vec![]),
         )
     }
 
