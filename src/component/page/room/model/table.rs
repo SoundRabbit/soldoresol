@@ -1,5 +1,5 @@
-use super::super::super::molecule::color_pallet::Pallet;
 use crate::libs::clone_ref::CloneRef;
+use crate::libs::color::Pallet;
 use crate::libs::select_list::SelectList;
 use std::rc::Rc;
 
@@ -39,7 +39,6 @@ impl CloneRef for TableTool {
 pub struct PenTool {
     pub line_width: f64,
     pub pallet: Pallet,
-    pub alpha: u8,
 }
 
 pub enum ShapeTool {
@@ -90,14 +89,11 @@ impl CloneRef for ShapeTool {
 pub struct LineShapeTool {
     pub line_width: f64,
     pub pallet: Pallet,
-    pub alpha: u8,
 }
 
 #[derive(Clone)]
 pub struct FillShapeTool {
     pub line_width: f64,
     pub line_pallet: Pallet,
-    pub line_alpha: u8,
     pub fill_pallet: Pallet,
-    pub fill_alpha: u8,
 }

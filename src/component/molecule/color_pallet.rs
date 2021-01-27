@@ -1,38 +1,22 @@
 use super::atom::heading::{self, Heading};
 use super::atom::slider::{self, Slider};
 use super::util::styled::{Style, Styled};
-use crate::libs::color::color_system;
-use crate::libs::color::Color;
+use crate::libs::color::{pallet, Pallet};
 use kagura::prelude::*;
 
 pub struct Props {
-    pub alpha: u8,
     pub default_selected: Pallet,
 }
 
-#[derive(PartialEq, Clone, Copy, Eq)]
-pub enum Pallet {
-    Gray(usize),
-    Red(usize),
-    Orange(usize),
-    Yellow(usize),
-    Green(usize),
-    Blue(usize),
-    Purple(usize),
-    Pink(usize),
-}
-
 pub enum Msg {
-    SetAlpha(u8),
     SetColor(Pallet),
 }
 
 pub enum On {
-    SetColor(Pallet, u8),
+    SelectColor(Pallet),
 }
 
 pub struct ColorPallet {
-    alpha: u8,
     selected: Pallet,
     default_selected: Pallet,
 }
@@ -40,27 +24,7 @@ pub struct ColorPallet {
 impl Default for Props {
     fn default() -> Self {
         Self {
-            alpha: 100,
-            default_selected: Pallet::Gray(9),
-        }
-    }
-}
-
-impl Pallet {
-    fn to_color(&self) -> Color {
-        self.color(100)
-    }
-
-    pub fn color(&self, alpha: u8) -> Color {
-        match self {
-            Pallet::Gray(idx) => color_system::gray(alpha, *idx),
-            Pallet::Red(idx) => color_system::red(alpha, *idx),
-            Pallet::Orange(idx) => color_system::orange(alpha, *idx),
-            Pallet::Yellow(idx) => color_system::yellow(alpha, *idx),
-            Pallet::Green(idx) => color_system::green(alpha, *idx),
-            Pallet::Blue(idx) => color_system::blue(alpha, *idx),
-            Pallet::Purple(idx) => color_system::purple(alpha, *idx),
-            Pallet::Pink(idx) => color_system::pink(alpha, *idx),
+            default_selected: Pallet::gray(9).a(100),
         }
     }
 }
@@ -68,7 +32,6 @@ impl Pallet {
 impl Constructor for ColorPallet {
     fn constructor(props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) -> Self {
         Self {
-            alpha: props.alpha,
             selected: props.default_selected.clone(),
             default_selected: props.default_selected.clone(),
         }
@@ -81,8 +44,6 @@ impl Component for ColorPallet {
     type Sub = On;
 
     fn init(&mut self, props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) {
-        self.alpha = props.alpha;
-
         if self.default_selected != props.default_selected {
             self.default_selected = props.default_selected.clone();
             self.selected = props.default_selected.clone();
@@ -91,13 +52,9 @@ impl Component for ColorPallet {
 
     fn update(&mut self, msg: Self::Msg) -> Cmd<Self::Msg, Self::Sub> {
         match msg {
-            Msg::SetAlpha(alpha) => {
-                self.alpha = alpha;
-                Cmd::sub(On::SetColor(self.selected.clone(), self.alpha))
-            }
             Msg::SetColor(pallet) => {
                 self.selected = pallet;
-                Cmd::sub(On::SetColor(self.selected.clone(), self.alpha))
+                Cmd::sub(On::SelectColor(self.selected.clone()))
             }
         }
     }
@@ -117,27 +74,32 @@ impl Component for ColorPallet {
                         position: slider::Position::Linear {
                             min: 0.0,
                             max: 100.0,
-                            val: self.alpha as f64,
+                            val: self.selected.alpha as f64,
                             step: 1.0,
                         },
                         range_is_editable: false,
                     },
-                    Subscription::new(|sub| match sub {
-                        slider::On::Input(alpha) => Msg::SetAlpha(alpha.round() as u8),
+                    Subscription::new({
+                        let selected = self.selected.clone();
+                        move |sub| match sub {
+                            slider::On::Input(alpha) => {
+                                Msg::SetColor(selected.a(alpha.round() as u8))
+                            }
+                        }
                     }),
                 ),
                 Html::div(
                     Attributes::new().class(Self::class("table")),
                     Events::new(),
                     vec![
-                        self.render_column(Pallet::Gray),
-                        self.render_column(Pallet::Red),
-                        self.render_column(Pallet::Orange),
-                        self.render_column(Pallet::Yellow),
-                        self.render_column(Pallet::Green),
-                        self.render_column(Pallet::Blue),
-                        self.render_column(Pallet::Purple),
-                        self.render_column(Pallet::Pink),
+                        self.render_column(pallet::Kind::Gray),
+                        self.render_column(pallet::Kind::Red),
+                        self.render_column(pallet::Kind::Orange),
+                        self.render_column(pallet::Kind::Yellow),
+                        self.render_column(pallet::Kind::Green),
+                        self.render_column(pallet::Kind::Blue),
+                        self.render_column(pallet::Kind::Purple),
+                        self.render_column(pallet::Kind::Pink),
                     ],
                 ),
             ],
@@ -146,11 +108,17 @@ impl Component for ColorPallet {
 }
 
 impl ColorPallet {
-    fn render_column(&self, pallet_gen: fn(usize) -> Pallet) -> Html {
+    fn render_column(&self, kind: pallet::Kind) -> Html {
         let mut cells = vec![];
+        let mut pallet = Pallet {
+            alpha: 100,
+            idx: 0,
+            kind: kind,
+        };
 
         for idx in 0..10 {
-            cells.push(self.render_cell(pallet_gen(idx), idx >= 6));
+            pallet.idx = idx;
+            cells.push(self.render_cell(pallet, idx >= 6));
         }
 
         Html::fragment(cells)
@@ -163,7 +131,7 @@ impl ColorPallet {
             .class(Self::class("cell"))
             .style("background-color", color.to_string());
 
-        let attrs = if self.selected == pallet {
+        let attrs = if self.selected.kind == pallet.kind && self.selected.idx == pallet.idx {
             if is_dark {
                 attrs.class(Self::class("cell--selected-light"))
             } else {
@@ -208,11 +176,11 @@ impl Styled for ColorPallet {
             }
 
             "cell--selected-dark" {
-                "box-shadow": format!("0 0 0.1em 0.1em {} inset", color_system::gray(100, 9));
+                "box-shadow": format!("0 0 0.1em 0.1em {} inset", Pallet::gray(9).a(100));
             }
 
             "cell--selected-light" {
-                "box-shadow": format!("0 0 0.1em 0.1em {} inset", color_system::gray(100, 0));
+                "box-shadow": format!("0 0 0.1em 0.1em {} inset", Pallet::gray(0).a(100));
             }
         }
     }

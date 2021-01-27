@@ -216,14 +216,12 @@ impl SideMenu {
                 ColorPallet::empty(
                     color_pallet::Props {
                         default_selected: tool.pallet.clone(),
-                        alpha: tool.alpha,
                     },
                     Subscription::new({
                         let mut tool = PenTool::clone(tool);
                         move |sub| match sub {
-                            color_pallet::On::SetColor(pallet, alpha) => {
+                            color_pallet::On::SelectColor(pallet) => {
                                 tool.pallet = pallet;
-                                tool.alpha = alpha;
                                 Msg::Sub(On::SetSelectedTool {
                                     tool: TableTool::Pen(tool),
                                 })
@@ -303,7 +301,7 @@ impl SideMenu {
         tools: &SelectList<ShapeTool>,
     ) -> Html {
         Html::div(
-            Attributes::new(),
+            Attributes::new().class(Self::class("sub-menu")),
             Events::new(),
             vec![
                 Html::div(Attributes::new(), Events::new(), vec![Html::text("線幅")]),
@@ -335,15 +333,13 @@ impl SideMenu {
                 ColorPallet::empty(
                     color_pallet::Props {
                         default_selected: line_shape.pallet.clone(),
-                        alpha: line_shape.alpha,
                     },
                     Subscription::new({
                         let mut line_shape = LineShapeTool::clone(line_shape);
                         let mut tools = SelectList::clone(tools);
                         move |sub| match sub {
-                            color_pallet::On::SetColor(pallet, alpha) => {
+                            color_pallet::On::SelectColor(pallet) => {
                                 line_shape.pallet = pallet;
-                                line_shape.alpha = alpha;
                                 if let Some(tool) = tools.selected_mut() {
                                     *tool = ShapeTool::Line(line_shape);
                                 }
@@ -364,7 +360,7 @@ impl SideMenu {
         tools: &SelectList<ShapeTool>,
     ) -> Html {
         Html::div(
-            Attributes::new(),
+            Attributes::new().class(Self::class("sub-menu")),
             Events::new(),
             vec![
                 Html::div(Attributes::new(), Events::new(), vec![Html::text("線幅")]),
@@ -404,15 +400,13 @@ impl SideMenu {
                         ColorPallet::empty(
                             color_pallet::Props {
                                 default_selected: fill_shape.line_pallet.clone(),
-                                alpha: fill_shape.line_alpha,
                             },
                             Subscription::new({
                                 let mut fill_shape = FillShapeTool::clone(fill_shape);
                                 let mut tools = SelectList::clone(tools);
                                 move |sub| match sub {
-                                    color_pallet::On::SetColor(pallet, alpha) => {
+                                    color_pallet::On::SelectColor(pallet) => {
                                         fill_shape.line_pallet = pallet;
-                                        fill_shape.line_alpha = alpha;
                                         if let Some(tool) = tools.selected_mut() {
                                             tool.set_fill(fill_shape);
                                         }
@@ -426,15 +420,13 @@ impl SideMenu {
                         ColorPallet::empty(
                             color_pallet::Props {
                                 default_selected: fill_shape.fill_pallet.clone(),
-                                alpha: fill_shape.fill_alpha,
                             },
                             Subscription::new({
                                 let mut fill_shape = FillShapeTool::clone(fill_shape);
                                 let mut tools = SelectList::clone(tools);
                                 move |sub| match sub {
-                                    color_pallet::On::SetColor(pallet, alpha) => {
+                                    color_pallet::On::SelectColor(pallet) => {
                                         fill_shape.fill_pallet = pallet;
-                                        fill_shape.fill_alpha = alpha;
                                         if let Some(tool) = tools.selected_mut() {
                                             tool.set_fill(fill_shape);
                                         }

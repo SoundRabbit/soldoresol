@@ -1,5 +1,4 @@
 use super::super::{
-    super::molecule::color_pallet::Pallet,
     super::util::State,
     model::table::{FillShapeTool, LineShapeTool, PenTool, ShapeTool, TableTool},
     renderer::CameraMatrix,
@@ -9,6 +8,7 @@ use crate::arena::block;
 use crate::arena::player::{self, Player};
 use crate::arena::resource;
 use crate::arena::Insert;
+use crate::libs::color::Pallet;
 use crate::libs::modeless_list::ModelessList;
 use crate::libs::select_list::SelectList;
 use kagura::prelude::*;
@@ -80,29 +80,23 @@ impl Implement {
                     TableTool::Hr(Rc::new(String::from("描画"))),
                     TableTool::Pen(PenTool {
                         line_width: 1.0,
-                        alpha: 100,
-                        pallet: Pallet::Gray(9),
+                        pallet: Pallet::gray(9).a(100),
                     }),
                     TableTool::Shape(SelectList::new(
                         vec![
                             ShapeTool::Line(LineShapeTool {
                                 line_width: 0.5,
-                                alpha: 100,
-                                pallet: Pallet::Gray(9),
+                                pallet: Pallet::gray(9).a(100),
                             }),
                             ShapeTool::Rect(FillShapeTool {
                                 line_width: 0.5,
-                                line_alpha: 100,
-                                line_pallet: Pallet::Gray(9),
-                                fill_alpha: 100,
-                                fill_pallet: Pallet::Gray(0),
+                                line_pallet: Pallet::gray(9).a(100),
+                                fill_pallet: Pallet::gray(0).a(100),
                             }),
                             ShapeTool::Ellipse(FillShapeTool {
                                 line_width: 0.5,
-                                line_alpha: 100,
-                                line_pallet: Pallet::Gray(9),
-                                fill_alpha: 100,
-                                fill_pallet: Pallet::Gray(0),
+                                line_pallet: Pallet::gray(9).a(100),
+                                fill_pallet: Pallet::gray(0).a(100),
                             }),
                         ],
                         0,

@@ -1,5 +1,6 @@
 use super::BlockId;
 use crate::arena::resource::ResourceId;
+use crate::libs::color::Pallet;
 use std::rc::Rc;
 use wasm_bindgen::{prelude::*, JsCast};
 
@@ -13,6 +14,7 @@ pub struct Table {
     drawing_texture_id: BlockId,
     drawed_texture_id: BlockId,
     background_texture_id: Option<ResourceId>,
+    background_color: Pallet,
 }
 
 impl Table {
@@ -30,6 +32,7 @@ impl Table {
             drawing_texture_id,
             drawed_texture_id,
             background_texture_id: None,
+            background_color: Pallet::gray(0).a(0),
         }
     }
 
@@ -45,6 +48,7 @@ impl Table {
                 .background_texture_id
                 .as_ref()
                 .map(|r_id| ResourceId::clone(r_id)),
+            background_color: this.background_color,
         }
     }
 
@@ -94,6 +98,14 @@ impl Table {
 
     pub fn set_background_texture_id(&mut self, background_texture_id: Option<ResourceId>) {
         self.background_texture_id = background_texture_id
+    }
+
+    pub fn background_color(&self) -> &Pallet {
+        &self.background_color
+    }
+
+    pub fn set_background_color(&mut self, color: Pallet) {
+        self.background_color = color;
     }
 
     pub async fn pack(&self) -> JsValue {

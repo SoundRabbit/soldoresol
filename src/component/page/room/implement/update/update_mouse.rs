@@ -52,7 +52,7 @@ impl Implement {
                                 let context = texture.context();
 
                                 context.begin_path();
-                                context.set_stroke_style(&pen.pallet.color(pen.alpha).to_jsvalue());
+                                context.set_stroke_style(&pen.pallet.to_color().to_jsvalue());
                                 context.set_line_cap("round");
                                 context.set_line_width(pen.line_width);
                                 context.move_to(a[0], a[1]);
@@ -100,7 +100,7 @@ impl Implement {
                                 let a = points.pop_front().unwrap();
 
                                 context.begin_path();
-                                context.set_stroke_style(&pen.pallet.color(pen.alpha).to_jsvalue());
+                                context.set_stroke_style(&pen.pallet.to_color().to_jsvalue());
                                 context.set_line_cap("round");
                                 context.set_line_width(pen.line_width);
                                 context.set_line_join("round");
@@ -139,9 +139,7 @@ impl Implement {
                                     let sz = texture.buffer_size();
                                     context.clear_rect(0.0, 0.0, sz[0], sz[1]);
                                     context.begin_path();
-                                    context.set_stroke_style(
-                                        &line.pallet.color(line.alpha).to_jsvalue(),
-                                    );
+                                    context.set_stroke_style(&line.pallet.to_color().to_jsvalue());
                                     context.set_line_cap("round");
                                     context.set_line_width(line.line_width);
                                     context.move_to(a[0], a[1]);
@@ -183,9 +181,7 @@ impl Implement {
                                     let context = texture.context();
 
                                     context.begin_path();
-                                    context.set_stroke_style(
-                                        &line.pallet.color(line.alpha).to_jsvalue(),
-                                    );
+                                    context.set_stroke_style(&line.pallet.to_color().to_jsvalue());
                                     context.set_line_cap("round");
                                     context.set_line_width(line.line_width);
                                     context.move_to(a[0], a[1]);
@@ -218,11 +214,10 @@ impl Implement {
                                     let sz = texture.buffer_size();
                                     context.clear_rect(0.0, 0.0, sz[0], sz[1]);
                                     context.set_stroke_style(
-                                        &rect.line_pallet.color(rect.line_alpha).to_jsvalue(),
+                                        &rect.line_pallet.to_color().to_jsvalue(),
                                     );
-                                    context.set_fill_style(
-                                        &rect.fill_pallet.color(rect.fill_alpha).to_jsvalue(),
-                                    );
+                                    context
+                                        .set_fill_style(&rect.fill_pallet.to_color().to_jsvalue());
                                     context.set_line_cap("round");
                                     context.set_line_width(rect.line_width);
                                     context.set_line_join("round");
@@ -263,11 +258,10 @@ impl Implement {
                                     let b = texture.texture_position(&[b[0] as f64, b[1] as f64]);
                                     let context = texture.context();
                                     context.set_stroke_style(
-                                        &rect.line_pallet.color(rect.line_alpha).to_jsvalue(),
+                                        &rect.line_pallet.to_color().to_jsvalue(),
                                     );
-                                    context.set_fill_style(
-                                        &rect.fill_pallet.color(rect.fill_alpha).to_jsvalue(),
-                                    );
+                                    context
+                                        .set_fill_style(&rect.fill_pallet.to_color().to_jsvalue());
                                     context.set_line_cap("round");
                                     context.set_line_width(rect.line_width);
                                     context.set_line_join("round");
@@ -300,10 +294,10 @@ impl Implement {
                                     let sz = texture.buffer_size();
                                     context.clear_rect(0.0, 0.0, sz[0], sz[1]);
                                     context.set_stroke_style(
-                                        &ellipse.line_pallet.color(ellipse.line_alpha).to_jsvalue(),
+                                        &ellipse.line_pallet.to_color().to_jsvalue(),
                                     );
                                     context.set_fill_style(
-                                        &ellipse.fill_pallet.color(ellipse.fill_alpha).to_jsvalue(),
+                                        &ellipse.fill_pallet.to_color().to_jsvalue(),
                                     );
                                     context.set_line_cap("round");
                                     context.set_line_width(ellipse.line_width);
@@ -355,10 +349,10 @@ impl Implement {
                                     let b = texture.texture_position(&[b[0] as f64, b[1] as f64]);
                                     let context = texture.context();
                                     context.set_stroke_style(
-                                        &ellipse.line_pallet.color(ellipse.line_alpha).to_jsvalue(),
+                                        &ellipse.line_pallet.to_color().to_jsvalue(),
                                     );
                                     context.set_fill_style(
-                                        &ellipse.fill_pallet.color(ellipse.fill_alpha).to_jsvalue(),
+                                        &ellipse.fill_pallet.to_color().to_jsvalue(),
                                     );
                                     context.set_line_cap("round");
                                     context.set_line_width(ellipse.line_width);

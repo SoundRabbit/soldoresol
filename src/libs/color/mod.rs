@@ -1,5 +1,7 @@
 use wasm_bindgen::prelude::*;
 pub mod color_system;
+pub mod pallet;
+pub use pallet::Pallet;
 
 #[derive(Clone, Copy)]
 pub struct Color {
