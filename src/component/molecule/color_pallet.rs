@@ -111,7 +111,7 @@ impl ColorPallet {
     fn render_column(&self, kind: pallet::Kind) -> Html {
         let mut cells = vec![];
         let mut pallet = Pallet {
-            alpha: 100,
+            alpha: self.selected.alpha,
             idx: 0,
             kind: kind,
         };
@@ -125,7 +125,7 @@ impl ColorPallet {
     }
 
     fn render_cell(&self, pallet: Pallet, is_dark: bool) -> Html {
-        let color = pallet.to_color();
+        let color = pallet.clone().a(100).to_color();
 
         let attrs = Attributes::new()
             .class(Self::class("cell"))
