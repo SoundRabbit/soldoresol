@@ -332,7 +332,7 @@ impl Implement {
                         })
                         .unwrap_or((BlockId::none(), BlockId::none()));
 
-                    self.block_arena.map_mut(
+                    self.local_block_arena.map_mut(
                         &drawing_texture_id,
                         |tex: &mut block::table::texture::Texture| {
                             tex.set_size(tex_size.clone());
