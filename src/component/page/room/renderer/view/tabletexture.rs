@@ -110,6 +110,8 @@ impl Tabletexture {
             self.last_drawed_texture_id = BlockId::clone(table.drawed_texture_id());
         }
 
+        gl.set_unif_texture_2_is_available(0);
+
         let model_matrix: Array2<f32> = ModelMatrix::new()
             .with_scale(&[table_size[0], table_size[1], 1.0])
             .into();
