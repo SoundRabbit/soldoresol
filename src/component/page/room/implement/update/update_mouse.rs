@@ -378,7 +378,20 @@ impl Implement {
                 }
                 _ => {}
             },
-            _ => {}
+            _ => {
+                if self.mouse_state.is_dragging {
+                    let mov_x = (client_x - last_client_x) as f32;
+                    let mov_y = (client_y - last_client_y) as f32;
+                    let intensity = 0.05;
+                    let mov = self.camera_matrix.movement();
+                    self.camera_matrix.set_movement([
+                        mov[0] - mov_x * intensity,
+                        mov[1] + mov_y * intensity,
+                        mov[2],
+                    ]);
+                    need_update = true;
+                }
+            }
         }
         need_update
     }
