@@ -3,7 +3,7 @@ use super::super::{
     model::table::{FillShapeTool, LineShapeTool, PenTool, ShapeTool, TableTool},
     renderer::CameraMatrix,
 };
-use super::{ElementId, Implement, Modal, MouseState, Msg, On, Overlay, Props};
+use super::{ElementId, Implement, KeyState, Modal, MouseState, Msg, On, Overlay, Props};
 use crate::arena::block;
 use crate::arena::player::{self, Player};
 use crate::arena::resource;
@@ -61,6 +61,61 @@ impl Implement {
             web_sys::window()
                 .unwrap()
                 .set_onresize(Some(a.as_ref().unchecked_ref()));
+            a.forget();
+        });
+        builder.add_batch(|mut resolve| {
+            let a = Closure::wrap(Box::new(move |e| {
+                resolve(Msg::UpdateMouseState { e });
+            }) as Box<dyn FnMut(web_sys::MouseEvent)>);
+            web_sys::window()
+                .unwrap()
+                .set_onmousedown(Some(a.as_ref().unchecked_ref()));
+            a.forget();
+        });
+        builder.add_batch(|mut resolve| {
+            let a = Closure::wrap(Box::new(move |e| {
+                resolve(Msg::UpdateMouseState { e });
+            }) as Box<dyn FnMut(web_sys::MouseEvent)>);
+            web_sys::window()
+                .unwrap()
+                .set_onmouseup(Some(a.as_ref().unchecked_ref()));
+            a.forget();
+        });
+        builder.add_batch(|mut resolve| {
+            let a = Closure::wrap(Box::new(move |e| {
+                resolve(Msg::UpdateMouseState { e });
+            }) as Box<dyn FnMut(web_sys::MouseEvent)>);
+            web_sys::window()
+                .unwrap()
+                .set_onmousemove(Some(a.as_ref().unchecked_ref()));
+            a.forget();
+        });
+        builder.add_batch(|mut resolve| {
+            let a = Closure::wrap(Box::new(move |e: web_sys::KeyboardEvent| {
+                e.prevent_default();
+                e.stop_propagation();
+                resolve(Msg::UpdateKeyState {
+                    e,
+                    is_key_down: true,
+                });
+            }) as Box<dyn FnMut(web_sys::KeyboardEvent)>);
+            web_sys::window()
+                .unwrap()
+                .set_onkeydown(Some(a.as_ref().unchecked_ref()));
+            a.forget();
+        });
+        builder.add_batch(|mut resolve| {
+            let a = Closure::wrap(Box::new(move |e: web_sys::KeyboardEvent| {
+                e.prevent_default();
+                e.stop_propagation();
+                resolve(Msg::UpdateKeyState {
+                    e,
+                    is_key_down: false,
+                });
+            }) as Box<dyn FnMut(web_sys::KeyboardEvent)>);
+            web_sys::window()
+                .unwrap()
+                .set_onkeyup(Some(a.as_ref().unchecked_ref()));
             a.forget();
         });
 
@@ -132,6 +187,12 @@ impl Implement {
                 last_changing_point: [0.0, 0.0],
                 last_point: [0.0, 0.0],
                 now_point: [0.0, 0.0],
+            },
+            key_state: KeyState {
+                alt_key: false,
+                ctrl_key: false,
+                shift_key: false,
+                space_key: false,
             },
             canvas: None,
             canvas_pos: [0.0, 0.0],

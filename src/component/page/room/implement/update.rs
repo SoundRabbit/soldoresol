@@ -83,6 +83,11 @@ impl Implement {
                 }
             }
 
+            Msg::UpdateKeyState { e, is_key_down } => {
+                self.key_state.update(e, is_key_down);
+                Cmd::none()
+            }
+
             Msg::SetTableToolIdx { idx } => {
                 self.table_tools.set_selected_idx(idx);
                 Cmd::none()

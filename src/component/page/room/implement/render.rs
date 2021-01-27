@@ -363,18 +363,6 @@ impl Implement {
             Html::div(
                 Attributes::new().class(Self::class("modeless-container")),
                 Events::new()
-                    .on("mousedown", |e| {
-                        let e = unwrap_or!(e.dyn_into::<web_sys::MouseEvent>().ok(); Msg::NoOp);
-                        Msg::UpdateMouseState { e }
-                    })
-                    .on("mouseup", |e| {
-                        let e = unwrap_or!(e.dyn_into::<web_sys::MouseEvent>().ok(); Msg::NoOp);
-                        Msg::UpdateMouseState { e }
-                    })
-                    .on("mousemove", |e| {
-                        let e = unwrap_or!(e.dyn_into::<web_sys::MouseEvent>().ok(); Msg::NoOp);
-                        Msg::UpdateMouseState { e }
-                    })
                     .on("dragover", |e| {
                         e.prevent_default();
                         Msg::NoOp

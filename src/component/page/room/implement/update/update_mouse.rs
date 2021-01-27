@@ -379,7 +379,7 @@ impl Implement {
                 _ => {}
             },
             _ => {
-                if self.mouse_state.is_dragging {
+                if self.mouse_state.is_dragging && self.key_state.space_key {
                     let mov_x = (client_x - last_client_x) as f32;
                     let mov_y = (client_y - last_client_y) as f32;
                     let intensity = 0.05;
@@ -390,6 +390,20 @@ impl Implement {
                         mov[2],
                     ];
                     self.camera_matrix.set_movement(mov);
+                    need_update = true;
+                }
+                if self.mouse_state.is_dragging && self.key_state.alt_key {
+                    let mov_x = (client_x - last_client_x) as f32;
+                    let mov_y = (client_y - last_client_y) as f32;
+                    let intensity = 0.005;
+                    let rot_x = self.camera_matrix.x_axis_rotation();
+                    let rot_z = self.camera_matrix.z_axis_rotation();
+
+                    self.camera_matrix
+                        .set_x_axis_rotation(rot_x - mov_y * intensity);
+                    self.camera_matrix
+                        .set_z_axis_rotation(rot_z - mov_x * intensity);
+
                     need_update = true;
                 }
             }
