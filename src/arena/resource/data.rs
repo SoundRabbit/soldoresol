@@ -15,6 +15,7 @@ pub struct ImageData {
     element: Rc<web_sys::HtmlImageElement>,
     blob: Rc<web_sys::Blob>,
     url: Rc<String>,
+    size: [f32; 2],
 }
 
 impl ImageData {
@@ -24,6 +25,10 @@ impl ImageData {
 
     pub fn url(&self) -> Rc<String> {
         Rc::clone(&self.url)
+    }
+
+    pub fn size(&self) -> &[f32; 2] {
+        &self.size
     }
 }
 
@@ -90,10 +95,13 @@ impl Data {
             }))
             .await;
 
+            let width = image.width() as f32;
+            let height = image.height() as f32;
             Some(Self::Image(Rc::new(ImageData {
                 element: image,
                 blob: Rc::new(blob),
                 url: object_url,
+                size: [width, height],
             })))
         } else {
             None

@@ -1,4 +1,4 @@
-use super::{block, BlockId, Implement, ShapeTool, TableTool};
+use super::{block, BlockId, CharacterTool, CloneOf, Implement, ResourceId, ShapeTool, TableTool};
 
 impl Implement {
     pub fn update_mouse(&mut self) -> bool {
@@ -75,6 +75,7 @@ impl Implement {
                 Some(TableTool::Eraser(_)) => {
                     self.update_tabletool_eraser(client_x, client_y, last_client_x, last_client_y)
                 }
+                Some(TableTool::Character(_)) => self.update_tabletool_character(),
                 _ => {}
             }
         }
@@ -584,6 +585,23 @@ impl Implement {
                     },
                 );
             }
+        }
+    }
+
+    fn update_tabletool_character(&mut self) {
+        if self.mouse_state.is_clicked {
+            let character = match self.table_tools.selected() {
+                Some(TableTool::Character(x)) => CharacterTool::clone_of(x),
+                _ => {
+                    return;
+                }
+            };
+            self.create_new_character(
+                Some(character.size),
+                Some(character.tex_scale),
+                character.tex_id.as_ref().map(|x| ResourceId::clone(x)),
+                Some(character.name.clone()),
+            );
         }
     }
 }

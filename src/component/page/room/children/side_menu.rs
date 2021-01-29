@@ -1,5 +1,5 @@
 use super::super::model::table::{
-    EraserTool, FillShapeTool, LineShapeTool, PenTool, ShapeTool, TableTool,
+    CharacterTool, EraserTool, FillShapeTool, LineShapeTool, PenTool, ShapeTool, TableTool,
 };
 use super::atom::btn::{self, Btn};
 use super::atom::fa;
@@ -12,7 +12,7 @@ use super::util::styled::{Style, Styled};
 use super::util::Prop;
 use crate::arena::block::{self, BlockId};
 use crate::arena::resource::{self, ResourceId};
-use crate::libs::clone_ref::CloneRef;
+use crate::libs::clone_of::CloneOf;
 use crate::libs::color::Pallet;
 use crate::libs::select_list::SelectList;
 use kagura::prelude::*;
@@ -62,6 +62,7 @@ pub struct SideMenu {
 pub enum Modal {
     None,
     SelectTableBackgroundImage,
+    SelectCharacterTexture(CharacterTool),
 }
 
 impl Constructor for SideMenu {
@@ -129,9 +130,27 @@ impl Component for SideMenu {
                 self.render_sub(),
                 match &self.modal {
                     Modal::None => Html::none(),
-                    Modal::SelectTableBackgroundImage => {
-                        self.render_modal_select_table_background_image()
-                    }
+                    Modal::SelectTableBackgroundImage => self.render_modal_select_image({
+                        let table_id = BlockId::clone(&self.selecting_table_id);
+                        move |r_id| {
+                            Msg::CloseModalSub(On::ChangeTableProps {
+                                table_id,
+                                size: None,
+                                grid_color: None,
+                                background_color: None,
+                                background_image: Some(Some(r_id)),
+                            })
+                        }
+                    }),
+                    Modal::SelectCharacterTexture(character) => self.render_modal_select_image({
+                        let mut character = CharacterTool::clone_of(character);
+                        move |r_id| {
+                            character.tex_id = Some(r_id);
+                            Msg::Sub(On::SetSelectedTool {
+                                tool: TableTool::Character(character),
+                            })
+                        }
+                    }),
                 },
             ],
         ))
@@ -139,24 +158,15 @@ impl Component for SideMenu {
 }
 
 impl SideMenu {
-    fn render_modal_select_table_background_image(&self) -> Html {
+    fn render_modal_select_image(&self, msg: impl FnOnce(ResourceId) -> Msg + 'static) -> Html {
         ModalImportedFiles::empty(
             modal_imported_files::Props {
                 resource_arena: resource::ArenaRef::clone(&self.resource_arena),
             },
             Subscription::new({
-                let table_id = BlockId::clone(&self.selecting_table_id);
                 move |sub| match sub {
                     modal_imported_files::On::Close => Msg::SetModal(Modal::None),
-                    modal_imported_files::On::SelectFile(r_id) => {
-                        Msg::CloseModalSub(On::ChangeTableProps {
-                            table_id,
-                            size: None,
-                            grid_color: None,
-                            background_color: None,
-                            background_image: Some(Some(r_id)),
-                        })
-                    }
+                    modal_imported_files::On::SelectFile(r_id) => msg(r_id),
                 }
             }),
         )
@@ -193,6 +203,7 @@ impl SideMenu {
                             TableTool::Pen(..) => "fa-pen",
                             TableTool::Shape(..) => "fa-shapes",
                             TableTool::Eraser(..) => "fa-eraser",
+                            TableTool::Character(..) => "fa-users",
                         }),
                     ),
                 })
@@ -259,6 +270,7 @@ impl SideMenu {
                     Some(TableTool::Shape(tool)) => self.render_sub_shape(tool),
                     Some(TableTool::TableEditor) => self.render_sub_table_editor(),
                     Some(TableTool::Eraser(tool)) => self.render_sub_eraser(tool),
+                    Some(TableTool::Character(tool)) => self.render_sub_character(tool),
                     _ => Html::div(Attributes::new(), Events::new(), vec![]),
                 },
             ],
@@ -467,7 +479,7 @@ impl SideMenu {
                                     },
                                 },
                                 Subscription::new({
-                                    let mut tools = SelectList::clone(tools);
+                                    let mut tools = SelectList::clone_of(tools);
                                     move |sub| match sub {
                                         btn::On::Click => {
                                             tools.set_selected_idx(tool_idx);
@@ -529,7 +541,7 @@ impl SideMenu {
                     },
                     Subscription::new({
                         let mut line_shape = LineShapeTool::clone(line_shape);
-                        let mut tools = SelectList::clone(tools);
+                        let mut tools = SelectList::clone_of(tools);
                         move |sub| match sub {
                             slider::On::Input(val) => {
                                 line_shape.line_width = val;
@@ -549,7 +561,7 @@ impl SideMenu {
                     },
                     Subscription::new({
                         let mut line_shape = LineShapeTool::clone(line_shape);
-                        let mut tools = SelectList::clone(tools);
+                        let mut tools = SelectList::clone_of(tools);
                         move |sub| match sub {
                             color_pallet::On::SelectColor(pallet) => {
                                 line_shape.pallet = pallet;
@@ -587,8 +599,8 @@ impl SideMenu {
                         range_is_editable: false,
                     },
                     Subscription::new({
-                        let mut fill_shape = FillShapeTool::clone(fill_shape);
-                        let mut tools = SelectList::clone(tools);
+                        let mut fill_shape = FillShapeTool::clone_of(fill_shape);
+                        let mut tools = SelectList::clone_of(tools);
                         move |sub| match sub {
                             slider::On::Input(val) => {
                                 fill_shape.line_width = val;
@@ -615,8 +627,8 @@ impl SideMenu {
                                 default_selected: fill_shape.line_pallet.clone(),
                             },
                             Subscription::new({
-                                let mut fill_shape = FillShapeTool::clone(fill_shape);
-                                let mut tools = SelectList::clone(tools);
+                                let mut fill_shape = FillShapeTool::clone_of(fill_shape);
+                                let mut tools = SelectList::clone_of(tools);
                                 move |sub| match sub {
                                     color_pallet::On::SelectColor(pallet) => {
                                         fill_shape.line_pallet = pallet;
@@ -635,8 +647,8 @@ impl SideMenu {
                                 default_selected: fill_shape.fill_pallet.clone(),
                             },
                             Subscription::new({
-                                let mut fill_shape = FillShapeTool::clone(fill_shape);
-                                let mut tools = SelectList::clone(tools);
+                                let mut fill_shape = FillShapeTool::clone_of(fill_shape);
+                                let mut tools = SelectList::clone_of(tools);
                                 move |sub| match sub {
                                     color_pallet::On::SelectColor(pallet) => {
                                         fill_shape.fill_pallet = pallet;
@@ -706,6 +718,87 @@ impl SideMenu {
                             }
                         }
                     }),
+                ),
+            ],
+        )
+    }
+
+    fn render_sub_character(&self, character: &CharacterTool) -> Html {
+        Html::div(
+            Attributes::new()
+                .class(Self::class("sub-body"))
+                .class(Self::class("sub-menu")),
+            Events::new(),
+            vec![
+                text::div("コマサイズ"),
+                Slider::empty(
+                    slider::Props {
+                        position: slider::Position::Inf {
+                            val: character.size as f64,
+                            mid: 1.0,
+                            step: 1.0,
+                        },
+                        range_is_editable: false,
+                    },
+                    Subscription::new({
+                        let mut character = CharacterTool::clone_of(character);
+                        move |sub| match sub {
+                            slider::On::Input(size) => {
+                                character.size = size as f32;
+                                Msg::Sub(On::SetSelectedTool {
+                                    tool: TableTool::Character(character),
+                                })
+                            }
+                        }
+                    }),
+                ),
+                text::div("キャラクター画像の拡大率"),
+                Slider::empty(
+                    slider::Props {
+                        position: slider::Position::Inf {
+                            val: character.tex_scale as f64,
+                            mid: 1.0,
+                            step: 0.1,
+                        },
+                        range_is_editable: false,
+                    },
+                    Subscription::new({
+                        let mut character = CharacterTool::clone_of(character);
+                        move |sub| match sub {
+                            slider::On::Input(tex_scale) => {
+                                character.tex_scale = tex_scale as f32;
+                                Msg::Sub(On::SetSelectedTool {
+                                    tool: TableTool::Character(character),
+                                })
+                            }
+                        }
+                    }),
+                ),
+                character
+                    .tex_id
+                    .as_ref()
+                    .and_then(|r_id| self.resource_arena.get_as::<resource::ImageData>(r_id))
+                    .map(|bg_image| {
+                        Html::img(
+                            Attributes::new().src(bg_image.url().as_ref()),
+                            Events::new(),
+                            vec![],
+                        )
+                    })
+                    .unwrap_or(Html::none()),
+                Btn::with_child(
+                    btn::Props {
+                        variant: btn::Variant::Primary,
+                    },
+                    Subscription::new({
+                        let character = CharacterTool::clone_of(character);
+                        move |sub| match sub {
+                            btn::On::Click => {
+                                Msg::SetModal(Modal::SelectCharacterTexture(character))
+                            }
+                        }
+                    }),
+                    Html::text("画像を選択する"),
                 ),
             ],
         )

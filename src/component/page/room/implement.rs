@@ -118,6 +118,7 @@ pub enum On {}
 
 struct MouseState {
     is_dragging: bool,
+    is_clicked: bool,
     is_changed_dragging_state: bool,
     changing_point: [f32; 2],
     last_changing_point: [f32; 2],
@@ -126,6 +127,18 @@ struct MouseState {
 }
 
 impl MouseState {
+    fn new() -> Self {
+        Self {
+            is_dragging: false,
+            is_clicked: false,
+            is_changed_dragging_state: false,
+            changing_point: [0.0, 0.0],
+            last_changing_point: [0.0, 0.0],
+            last_point: [0.0, 0.0],
+            now_point: [0.0, 0.0],
+        }
+    }
+
     fn update(&mut self, e: web_sys::MouseEvent) {
         let buttons = e.buttons();
         let page_x = e.page_x() as f32;
@@ -133,11 +146,16 @@ impl MouseState {
 
         let is_dragging = (buttons & 1) != 0;
 
+        self.is_clicked = false;
+
         if self.is_dragging != is_dragging {
             std::mem::swap(&mut self.last_changing_point, &mut self.changing_point);
             self.changing_point = [page_x, page_y];
             self.is_changed_dragging_state = true;
             self.is_dragging = is_dragging;
+            if !is_dragging {
+                self.is_clicked = true;
+            }
         } else {
             self.is_changed_dragging_state = false;
         }

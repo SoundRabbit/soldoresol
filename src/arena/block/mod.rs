@@ -7,6 +7,7 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use wasm_bindgen::{prelude::*, JsCast};
 
+pub mod character;
 pub mod chat;
 pub mod table;
 pub mod texture;
@@ -19,6 +20,7 @@ pub enum Block {
     Chat(chat::Chat),
     ChatChannel(chat::channel::Channel),
     ChatMessage(chat::message::Message),
+    Character(character::Character),
     None,
 }
 
@@ -38,6 +40,7 @@ impl Block {
             Self::Chat(block) => Self::Chat(chat::Chat::clone(block)),
             Self::ChatChannel(block) => Self::ChatChannel(chat::channel::Channel::clone(block)),
             Self::ChatMessage(block) => Self::ChatMessage(chat::message::Message::clone(block)),
+            Self::Character(block) => Self::Character(character::Character::clone(block)),
             Self::None => Self::None,
         }
     }
@@ -51,113 +54,46 @@ impl Block {
     }
 }
 
-impl TryRef<world::World> for Block {
-    fn try_ref(&self) -> Option<&world::World> {
-        match self {
-            Self::World(x) => Some(x),
-            _ => None,
+macro_rules! try_ref {
+    ($f:ty : $a:ident => $t:ty) => {
+        impl TryRef<$t> for $f {
+            fn try_ref(&self) -> Option<&$t> {
+                match self {
+                    Self::$a(x) => Some(x),
+                    _ => None,
+                }
+            }
         }
-    }
+    };
 }
 
-impl TryRef<table::Table> for Block {
-    fn try_ref(&self) -> Option<&table::Table> {
-        match self {
-            Self::Table(x) => Some(x),
-            _ => None,
+macro_rules! try_mut {
+    ($f:ty : $a:ident => $t:ty) => {
+        impl TryMut<$t> for $f {
+            fn try_mut(&mut self) -> Option<&mut $t> {
+                match self {
+                    Self::$a(x) => Some(x),
+                    _ => None,
+                }
+            }
         }
-    }
+    };
 }
 
-impl TryRef<texture::Texture> for Block {
-    fn try_ref(&self) -> Option<&texture::Texture> {
-        match self {
-            Self::Texture(x) => Some(x),
-            _ => None,
-        }
-    }
+macro_rules! try_ref_mut {
+    ($f:ty : $a:ident => $t:ty) => {
+        try_ref!($f : $a => $t);
+        try_mut!($f : $a => $t);
+    };
 }
 
-impl TryRef<chat::Chat> for Block {
-    fn try_ref(&self) -> Option<&chat::Chat> {
-        match self {
-            Self::Chat(x) => Some(x),
-            _ => None,
-        }
-    }
-}
-
-impl TryRef<chat::channel::Channel> for Block {
-    fn try_ref(&self) -> Option<&chat::channel::Channel> {
-        match self {
-            Self::ChatChannel(x) => Some(x),
-            _ => None,
-        }
-    }
-}
-
-impl TryRef<chat::message::Message> for Block {
-    fn try_ref(&self) -> Option<&chat::message::Message> {
-        match self {
-            Self::ChatMessage(x) => Some(x),
-            _ => None,
-        }
-    }
-}
-
-impl TryMut<world::World> for Block {
-    fn try_mut(&mut self) -> Option<&mut world::World> {
-        match self {
-            Self::World(x) => Some(x),
-            _ => None,
-        }
-    }
-}
-
-impl TryMut<table::Table> for Block {
-    fn try_mut(&mut self) -> Option<&mut table::Table> {
-        match self {
-            Self::Table(x) => Some(x),
-            _ => None,
-        }
-    }
-}
-
-impl TryMut<texture::Texture> for Block {
-    fn try_mut(&mut self) -> Option<&mut texture::Texture> {
-        match self {
-            Self::Texture(x) => Some(x),
-            _ => None,
-        }
-    }
-}
-
-impl TryMut<chat::Chat> for Block {
-    fn try_mut(&mut self) -> Option<&mut chat::Chat> {
-        match self {
-            Self::Chat(x) => Some(x),
-            _ => None,
-        }
-    }
-}
-
-impl TryMut<chat::channel::Channel> for Block {
-    fn try_mut(&mut self) -> Option<&mut chat::channel::Channel> {
-        match self {
-            Self::ChatChannel(x) => Some(x),
-            _ => None,
-        }
-    }
-}
-
-impl TryMut<chat::message::Message> for Block {
-    fn try_mut(&mut self) -> Option<&mut chat::message::Message> {
-        match self {
-            Self::ChatMessage(x) => Some(x),
-            _ => None,
-        }
-    }
-}
+try_ref_mut!(Block: World => world::World);
+try_ref_mut!(Block: Table => table::Table);
+try_ref_mut!(Block: Texture => texture::Texture);
+try_ref_mut!(Block: Chat => chat::Chat);
+try_ref_mut!(Block: ChatChannel => chat::channel::Channel);
+try_ref_mut!(Block: ChatMessage => chat::message::Message);
+try_ref_mut!(Block: Character => character::Character);
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct BlockId {
@@ -218,6 +154,7 @@ impl ArenaBlock {
             Block::Chat(x) => (object! {}.into(), "None"),
             Block::ChatChannel(x) => (object! {}.into(), "None"),
             Block::ChatMessage(x) => (object! {}.into(), "None"),
+            Block::Character(x) => (object! {}.into(), "None"),
             Block::None => (object! {}.into(), "None"),
         };
 
@@ -390,37 +327,20 @@ impl Arena {
     }
 }
 
-impl Insert<world::World> for Arena {
-    type Id = BlockId;
-    fn insert(&mut self, block: world::World) -> BlockId {
-        self.insert(Block::World(block))
-    }
+macro_rules! insert {
+    ($t:ty : $f:ty => $a:ident) => {
+        impl Insert<$f> for $t {
+            type Id = BlockId;
+            fn insert(&mut self, block: $f) -> BlockId {
+                self.insert(Block::$a(block))
+            }
+        }
+    };
 }
 
-impl Insert<table::Table> for Arena {
-    type Id = BlockId;
-    fn insert(&mut self, block: table::Table) -> BlockId {
-        self.insert(Block::Table(block))
-    }
-}
-
-impl Insert<texture::Texture> for Arena {
-    type Id = BlockId;
-    fn insert(&mut self, block: texture::Texture) -> BlockId {
-        self.insert(Block::Texture(block))
-    }
-}
-
-impl Insert<chat::Chat> for Arena {
-    type Id = BlockId;
-    fn insert(&mut self, block: chat::Chat) -> BlockId {
-        self.insert(Block::Chat(block))
-    }
-}
-
-impl Insert<chat::channel::Channel> for Arena {
-    type Id = BlockId;
-    fn insert(&mut self, block: chat::channel::Channel) -> BlockId {
-        self.insert(Block::ChatChannel(block))
-    }
-}
+insert!(Arena: world::World => World);
+insert!(Arena: table::Table => Table);
+insert!(Arena: texture::Texture => Texture);
+insert!(Arena: chat::Chat => Chat);
+insert!(Arena: chat::channel::Channel => ChatChannel);
+insert!(Arena: character::Character => Character);

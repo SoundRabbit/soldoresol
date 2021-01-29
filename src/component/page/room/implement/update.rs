@@ -1,13 +1,14 @@
 use super::super::{
     super::util::State,
     children::room_modeless,
-    model::table::{ShapeTool, TableTool},
+    model::table::{CharacterTool, ShapeTool, TableTool},
     renderer::Renderer,
 };
 use super::{Cmd, Implement, Modal, ModelessContent, Msg, On};
 use crate::arena::block::{self, BlockId};
-use crate::arena::resource;
+use crate::arena::resource::{self, ResourceId};
 use crate::arena::Insert;
+use crate::libs::clone_of::CloneOf;
 use crate::libs::select_list::SelectList;
 use std::rc::Rc;
 use wasm_bindgen::{prelude::*, JsCast};
@@ -373,5 +374,27 @@ impl Implement {
                 .request_animation_frame(a.as_ref().unchecked_ref());
             a.forget();
         })
+    }
+
+    fn create_new_character(
+        &mut self,
+        size: Option<f32>,
+        tex_scale: Option<f32>,
+        tex_id: Option<ResourceId>,
+        name: Option<String>,
+    ) -> BlockId {
+        let mut character_block = block::character::Character::new();
+        if let Some(size) = size {
+            character_block.set_size(size);
+        }
+        if let Some(tex_scale) = tex_scale {
+            character_block.set_tex_scale(tex_scale);
+        }
+        character_block.set_tex_id(tex_id);
+        if let Some(name) = name {
+            character_block.set_name(name);
+        }
+
+        self.block_arena.insert(character_block)
     }
 }

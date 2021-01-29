@@ -1,4 +1,5 @@
-use crate::libs::clone_ref::CloneRef;
+use crate::arena::resource::ResourceId;
+use crate::libs::clone_of::CloneOf;
 use crate::libs::color::Pallet;
 use crate::libs::select_list::SelectList;
 use std::rc::Rc;
@@ -10,6 +11,7 @@ pub enum TableTool {
     Pen(PenTool),
     Shape(SelectList<ShapeTool>),
     Eraser(EraserTool),
+    Character(CharacterTool),
 }
 
 impl TableTool {
@@ -21,19 +23,21 @@ impl TableTool {
             Self::Selector => "選択",
             Self::Shape(..) => "図形",
             Self::TableEditor => "テーブル編集",
+            Self::Character(..) => "キャラクター作成",
         }
     }
 }
 
-impl CloneRef for TableTool {
-    fn clone(this: &Self) -> Self {
+impl CloneOf for TableTool {
+    fn clone_of(this: &Self) -> Self {
         match this {
-            Self::Hr(x) => Self::Hr(<Rc<_> as Clone>::clone(x)),
+            Self::Hr(x) => Self::Hr(Rc::clone_of(x)),
             Self::Selector => Self::Selector,
             Self::TableEditor => Self::TableEditor,
-            Self::Pen(x) => Self::Pen(PenTool::clone(x)),
-            Self::Shape(x) => Self::Shape(SelectList::clone(x)),
-            Self::Eraser(x) => Self::Eraser(EraserTool::clone(x)),
+            Self::Pen(x) => Self::Pen(PenTool::clone_of(x)),
+            Self::Shape(x) => Self::Shape(SelectList::clone_of(x)),
+            Self::Eraser(x) => Self::Eraser(EraserTool::clone_of(x)),
+            Self::Character(x) => Self::Character(CharacterTool::clone_of(x)),
         }
     }
 }
@@ -78,12 +82,12 @@ impl ShapeTool {
     }
 }
 
-impl CloneRef for ShapeTool {
-    fn clone(this: &Self) -> Self {
+impl CloneOf for ShapeTool {
+    fn clone_of(this: &Self) -> Self {
         match this {
-            Self::Line(x) => Self::Line(LineShapeTool::clone(x)),
-            Self::Rect(x) => Self::Rect(FillShapeTool::clone(x)),
-            Self::Ellipse(x) => Self::Ellipse(FillShapeTool::clone(x)),
+            Self::Line(x) => Self::Line(LineShapeTool::clone_of(x)),
+            Self::Rect(x) => Self::Rect(FillShapeTool::clone_of(x)),
+            Self::Ellipse(x) => Self::Ellipse(FillShapeTool::clone_of(x)),
         }
     }
 }
@@ -105,4 +109,22 @@ pub struct FillShapeTool {
 pub struct EraserTool {
     pub line_width: f64,
     pub alpha: u8,
+}
+
+pub struct CharacterTool {
+    pub size: f32,
+    pub tex_scale: f32,
+    pub tex_id: Option<ResourceId>,
+    pub name: String,
+}
+
+impl CloneOf for CharacterTool {
+    fn clone_of(this: &Self) -> Self {
+        Self {
+            size: this.size,
+            tex_scale: this.tex_scale,
+            tex_id: this.tex_id.as_ref().map(|x| ResourceId::clone(x)),
+            name: this.name.clone(),
+        }
+    }
 }

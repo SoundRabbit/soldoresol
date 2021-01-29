@@ -1,6 +1,8 @@
 use super::super::{
     super::util::State,
-    model::table::{EraserTool, FillShapeTool, LineShapeTool, PenTool, ShapeTool, TableTool},
+    model::table::{
+        CharacterTool, EraserTool, FillShapeTool, LineShapeTool, PenTool, ShapeTool, TableTool,
+    },
     renderer::CameraMatrix,
 };
 use super::{ElementId, Implement, KeyState, Modal, MouseState, Msg, On, Overlay, Props};
@@ -127,6 +129,12 @@ impl Implement {
                         line_width: 2.0,
                         alpha: 100,
                     }),
+                    TableTool::Character(CharacterTool {
+                        size: 1.0,
+                        tex_scale: 1.0,
+                        tex_id: None,
+                        name: String::from(""),
+                    }),
                 ],
                 0,
             )),
@@ -148,14 +156,7 @@ impl Implement {
             modal: Modal::None,
             overlay: Overlay::None,
 
-            mouse_state: MouseState {
-                is_dragging: false,
-                is_changed_dragging_state: false,
-                changing_point: [0.0, 0.0],
-                last_changing_point: [0.0, 0.0],
-                last_point: [0.0, 0.0],
-                now_point: [0.0, 0.0],
-            },
+            mouse_state: MouseState::new(),
             key_state: KeyState {
                 alt_key: false,
                 ctrl_key: false,
