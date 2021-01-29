@@ -4,8 +4,6 @@ use crate::libs::color::Pallet;
 use std::rc::Rc;
 use wasm_bindgen::{prelude::*, JsCast};
 
-pub mod texture;
-
 pub struct Table {
     name: Rc<String>,
     size: [f32; 2],

@@ -87,6 +87,7 @@ impl Tabletexture {
             self.drawing_texture_update_time,
             &self.drawing_texture_buffer_id,
             &self.drawing_texture_buffer,
+            true,
         );
         gl.set_unif_texture(tex_idx);
         if let Some(tex_update_time) = tex_update_time {
@@ -103,6 +104,7 @@ impl Tabletexture {
             self.drawed_texture_update_time,
             &self.drawed_texture_buffer_id,
             &self.drawed_texture_buffer,
+            false,
         );
         gl.set_unif_texture_1(tex_idx);
         if let Some(tex_update_time) = tex_update_time {
@@ -180,13 +182,22 @@ impl Tabletexture {
         last_tex_update_time: f64,
         tex_buf_id: &U128Id,
         tex_buf: &web_sys::WebGlTexture,
+        is_maybe_mask: bool,
     ) -> (i32, Option<f64>) {
         let (tex_idx, tex_flag) = tex_table.use_custom(tex_buf_id);
         gl.active_texture(tex_flag);
         gl.bind_texture(web_sys::WebGlRenderingContext::TEXTURE_2D, Some(&tex_buf));
         let tex_update_time = block_arena.timestamp_of(tex_id).unwrap_or(0.0);
         if *last_tex_id != *tex_id || last_tex_update_time < tex_update_time {
-            block_arena.map(tex_id, |table_texture: &block::table::texture::Texture| {
+            block_arena.map(tex_id, |table_texture: &block::texture::Texture| {
+                if is_maybe_mask {
+                    if table_texture.is_mask() {
+                        gl.set_unif_use_texture_as_mask(1);
+                    } else {
+                        gl.set_unif_use_texture_as_mask(0);
+                    }
+                }
+
                 let _ = gl.tex_image_2d_with_u32_and_u32_and_canvas(
                     web_sys::WebGlRenderingContext::TEXTURE_2D,
                     0,

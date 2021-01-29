@@ -138,6 +138,9 @@ impl Renderer {
         camera_matrix: &matrix::camera::Camera,
     ) {
         block_arena.map(world_id, |world: &block::world::World| {
+            self.view_gl.clear_color(0.0, 0.0, 0.0, 0.0);
+            self.view_gl.clear_stencil(0);
+
             let vp_matrix = camera_matrix
                 .perspective_matrix(&self.canvas_size)
                 .dot(&camera_matrix.view_matrix());

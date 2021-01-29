@@ -340,14 +340,14 @@ impl Implement {
 
                     self.local_block_arena.map_mut(
                         &drawing_texture_id,
-                        |tex: &mut block::table::texture::Texture| {
+                        |tex: &mut block::texture::Texture| {
                             tex.set_size(tex_size.clone());
                         },
                     );
 
                     self.block_arena.map_mut(
                         &drawed_texture_id,
-                        |tex: &mut block::table::texture::Texture| {
+                        |tex: &mut block::texture::Texture| {
                             tex.set_size(tex_size.clone());
                         },
                     );

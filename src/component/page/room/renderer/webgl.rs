@@ -273,4 +273,5 @@ impl WebGlRenderingContext {
     setter!(unif unif_texture_2: 1i as set_unif_texture_2);
     setter!(unif unif_texture_2_is_available: 1i as set_unif_texture_2_is_available);
     setter!(unif unif_translate: matrix4fv as set_unif_translate);
+    setter!(unif unif_use_texture_as_mask: 1i as set_unif_use_texture_as_mask);
 }

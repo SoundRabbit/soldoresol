@@ -10,6 +10,7 @@ pub struct Texture {
     size: [f64; 2],
     buffer_size: [f64; 2],
     pixel_ratio: [f64; 2],
+    is_mask: bool,
 }
 
 impl Texture {
@@ -43,6 +44,7 @@ impl Texture {
             pixel_ratio: [1.0, 1.0],
             size: [1.0, 1.0],
             buffer_size: [buffer_size[0] as f64, buffer_size[1] as f64],
+            is_mask: false,
         };
 
         this.set_size(size);
@@ -57,6 +59,7 @@ impl Texture {
             size: this.size.clone(),
             buffer_size: this.buffer_size.clone(),
             pixel_ratio: this.pixel_ratio.clone(),
+            is_mask: this.is_mask,
         }
     }
 
@@ -88,6 +91,14 @@ impl Texture {
 
     pub fn texture_position(&self, p: &[f64; 2]) -> [f64; 2] {
         [(p[0] + self.size[0] / 2.0), -(p[1] - self.size[1] / 2.0)]
+    }
+
+    pub fn is_mask(&self) -> bool {
+        self.is_mask
+    }
+
+    pub fn set_is_mask(&mut self, is_mask: bool) {
+        self.is_mask = is_mask;
     }
 
     pub async fn pack(&self) -> JsValue {

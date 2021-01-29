@@ -9,13 +9,13 @@ pub enum TableTool {
     TableEditor,
     Pen(PenTool),
     Shape(SelectList<ShapeTool>),
-    Eraser,
+    Eraser(EraserTool),
 }
 
 impl TableTool {
     pub fn name(&self) -> &'static str {
         match self {
-            Self::Eraser => "消しゴム",
+            Self::Eraser(..) => "消しゴム",
             Self::Hr(..) => "",
             Self::Pen(..) => "ペン",
             Self::Selector => "選択",
@@ -33,7 +33,7 @@ impl CloneRef for TableTool {
             Self::TableEditor => Self::TableEditor,
             Self::Pen(x) => Self::Pen(PenTool::clone(x)),
             Self::Shape(x) => Self::Shape(SelectList::clone(x)),
-            Self::Eraser => Self::Eraser,
+            Self::Eraser(x) => Self::Eraser(EraserTool::clone(x)),
         }
     }
 }
@@ -99,4 +99,10 @@ pub struct FillShapeTool {
     pub line_width: f64,
     pub line_pallet: Pallet,
     pub fill_pallet: Pallet,
+}
+
+#[derive(Clone)]
+pub struct EraserTool {
+    pub line_width: f64,
+    pub alpha: u8,
 }

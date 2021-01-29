@@ -1,6 +1,6 @@
 use super::super::{
     super::util::State,
-    model::table::{FillShapeTool, LineShapeTool, PenTool, ShapeTool, TableTool},
+    model::table::{EraserTool, FillShapeTool, LineShapeTool, PenTool, ShapeTool, TableTool},
     renderer::CameraMatrix,
 };
 use super::{ElementId, Implement, KeyState, Modal, MouseState, Msg, On, Overlay, Props};
@@ -35,14 +35,10 @@ impl Implement {
 
         let tex_size = [4096, 4096];
         let tbl_size = [20.0, 20.0];
-        let drawing_texture_id = local_block_arena.insert(block::table::texture::Texture::new(
-            &tex_size,
-            tbl_size.clone(),
-        ));
-        let darwed_texture_id = block_arena.insert(block::table::texture::Texture::new(
-            &tex_size,
-            tbl_size.clone(),
-        ));
+        let drawing_texture_id =
+            local_block_arena.insert(block::texture::Texture::new(&tex_size, tbl_size.clone()));
+        let darwed_texture_id =
+            block_arena.insert(block::texture::Texture::new(&tex_size, tbl_size.clone()));
         let table_id = block_arena.insert(block::table::Table::new(
             drawing_texture_id,
             darwed_texture_id,
@@ -64,36 +60,7 @@ impl Implement {
             a.forget();
         });
         builder.add_batch(|mut resolve| {
-            let a = Closure::wrap(Box::new(move |e| {
-                resolve(Msg::UpdateMouseState { e });
-            }) as Box<dyn FnMut(web_sys::MouseEvent)>);
-            web_sys::window()
-                .unwrap()
-                .set_onmousedown(Some(a.as_ref().unchecked_ref()));
-            a.forget();
-        });
-        builder.add_batch(|mut resolve| {
-            let a = Closure::wrap(Box::new(move |e| {
-                resolve(Msg::UpdateMouseState { e });
-            }) as Box<dyn FnMut(web_sys::MouseEvent)>);
-            web_sys::window()
-                .unwrap()
-                .set_onmouseup(Some(a.as_ref().unchecked_ref()));
-            a.forget();
-        });
-        builder.add_batch(|mut resolve| {
-            let a = Closure::wrap(Box::new(move |e| {
-                resolve(Msg::UpdateMouseState { e });
-            }) as Box<dyn FnMut(web_sys::MouseEvent)>);
-            web_sys::window()
-                .unwrap()
-                .set_onmousemove(Some(a.as_ref().unchecked_ref()));
-            a.forget();
-        });
-        builder.add_batch(|mut resolve| {
             let a = Closure::wrap(Box::new(move |e: web_sys::KeyboardEvent| {
-                e.prevent_default();
-                e.stop_propagation();
                 resolve(Msg::UpdateKeyState {
                     e,
                     is_key_down: true,
@@ -106,8 +73,6 @@ impl Implement {
         });
         builder.add_batch(|mut resolve| {
             let a = Closure::wrap(Box::new(move |e: web_sys::KeyboardEvent| {
-                e.prevent_default();
-                e.stop_propagation();
                 resolve(Msg::UpdateKeyState {
                     e,
                     is_key_down: false,
@@ -158,7 +123,10 @@ impl Implement {
                         ],
                         0,
                     )),
-                    TableTool::Eraser,
+                    TableTool::Eraser(EraserTool {
+                        line_width: 2.0,
+                        alpha: 100,
+                    }),
                 ],
                 0,
             )),

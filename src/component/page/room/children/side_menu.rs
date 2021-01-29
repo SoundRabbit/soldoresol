@@ -1,4 +1,6 @@
-use super::super::model::table::{FillShapeTool, LineShapeTool, PenTool, ShapeTool, TableTool};
+use super::super::model::table::{
+    EraserTool, FillShapeTool, LineShapeTool, PenTool, ShapeTool, TableTool,
+};
 use super::atom::btn::{self, Btn};
 use super::atom::fa;
 use super::atom::slider::{self, Slider};
@@ -190,7 +192,7 @@ impl SideMenu {
                             TableTool::TableEditor => "fa-vector-square",
                             TableTool::Pen(..) => "fa-pen",
                             TableTool::Shape(..) => "fa-shapes",
-                            TableTool::Eraser => "fa-eraser",
+                            TableTool::Eraser(..) => "fa-eraser",
                         }),
                     ),
                 })
@@ -256,6 +258,7 @@ impl SideMenu {
                     Some(TableTool::Pen(tool)) => self.render_sub_pen(tool),
                     Some(TableTool::Shape(tool)) => self.render_sub_shape(tool),
                     Some(TableTool::TableEditor) => self.render_sub_table_editor(),
+                    Some(TableTool::Eraser(tool)) => self.render_sub_eraser(tool),
                     _ => Html::div(Attributes::new(), Events::new(), vec![]),
                 },
             ],
@@ -648,6 +651,61 @@ impl SideMenu {
                             }),
                         ),
                     ],
+                ),
+            ],
+        )
+    }
+
+    fn render_sub_eraser(&self, tool: &EraserTool) -> Html {
+        Html::div(
+            Attributes::new()
+                .class(Self::class("sub-body"))
+                .class(Self::class("sub-menu")),
+            Events::new(),
+            vec![
+                Html::div(Attributes::new(), Events::new(), vec![Html::text("線幅")]),
+                Slider::empty(
+                    slider::Props {
+                        position: slider::Position::Inf {
+                            val: tool.line_width,
+                            mid: 2.0,
+                            step: 0.01,
+                        },
+                        range_is_editable: false,
+                    },
+                    Subscription::new({
+                        let mut tool = EraserTool::clone(tool);
+                        move |sub| match sub {
+                            slider::On::Input(val) => {
+                                tool.line_width = val;
+                                Msg::Sub(On::SetSelectedTool {
+                                    tool: TableTool::Eraser(tool),
+                                })
+                            }
+                        }
+                    }),
+                ),
+                Slider::empty(
+                    slider::Props {
+                        position: slider::Position::Linear {
+                            min: 0.0,
+                            max: 100.0,
+                            val: tool.alpha as f64,
+                            step: 1.0,
+                        },
+                        range_is_editable: false,
+                    },
+                    Subscription::new({
+                        let mut tool = EraserTool::clone(tool);
+                        move |sub| match sub {
+                            slider::On::Input(val) => {
+                                tool.alpha = val.round() as u8;
+                                Msg::Sub(On::SetSelectedTool {
+                                    tool: TableTool::Eraser(tool),
+                                })
+                            }
+                        }
+                    }),
                 ),
             ],
         )

@@ -72,6 +72,9 @@ impl Implement {
                     ),
                     _ => {}
                 },
+                Some(TableTool::Eraser(_)) => {
+                    self.update_tabletool_eraser(client_x, client_y, last_client_x, last_client_y)
+                }
                 _ => {}
             }
         }
@@ -127,7 +130,7 @@ impl Implement {
                     .collision_point_on_xy_plane(&self.canvas_size, &[client_x, client_y]);
                 let p = self.local_block_arena.map_mut(
                     &drawing_texture_id,
-                    |texture: &mut block::table::texture::Texture| {
+                    |texture: &mut block::texture::Texture| {
                         let a = texture.texture_position(&[a[0] as f64, a[1] as f64]);
                         let b = texture.texture_position(&[b[0] as f64, b[1] as f64]);
                         let context = texture.context();
@@ -139,6 +142,8 @@ impl Implement {
                         context.move_to(a[0], a[1]);
                         context.line_to(b[0], b[1]);
                         context.stroke();
+
+                        texture.set_is_mask(false);
 
                         (a, b)
                     },
@@ -163,7 +168,7 @@ impl Implement {
             {
                 self.local_block_arena.map_mut(
                     &drawing_texture_id,
-                    |texture: &mut block::table::texture::Texture| {
+                    |texture: &mut block::texture::Texture| {
                         let context = texture.context();
                         let sz = texture.buffer_size();
                         context.clear_rect(0.0, 0.0, sz[0], sz[1]);
@@ -172,7 +177,7 @@ impl Implement {
 
                 self.block_arena.map_mut(
                     &drawed_texture_id,
-                    |texture: &mut block::table::texture::Texture| {
+                    |texture: &mut block::texture::Texture| {
                         let context = texture.context();
 
                         let a = points.pop_front().unwrap();
@@ -227,7 +232,7 @@ impl Implement {
                     .collision_point_on_xy_plane(&self.canvas_size, &[client_x, client_y]);
                 self.local_block_arena.map_mut(
                     &drawing_texture_id,
-                    |texture: &mut block::table::texture::Texture| {
+                    |texture: &mut block::texture::Texture| {
                         let a = texture.texture_position(&[a[0] as f64, a[1] as f64]);
                         let b = texture.texture_position(&[b[0] as f64, b[1] as f64]);
                         let context = texture.context();
@@ -257,7 +262,7 @@ impl Implement {
 
                 self.local_block_arena.map_mut(
                     &drawing_texture_id,
-                    |texture: &mut block::table::texture::Texture| {
+                    |texture: &mut block::texture::Texture| {
                         let context = texture.context();
                         let sz = texture.buffer_size();
                         context.clear_rect(0.0, 0.0, sz[0], sz[1]);
@@ -266,7 +271,7 @@ impl Implement {
 
                 self.block_arena.map_mut(
                     &drawed_texture_id,
-                    |texture: &mut block::table::texture::Texture| {
+                    |texture: &mut block::texture::Texture| {
                         let a = texture.texture_position(&[a[0] as f64, a[1] as f64]);
                         let b = texture.texture_position(&[b[0] as f64, b[1] as f64]);
                         let context = texture.context();
@@ -316,7 +321,7 @@ impl Implement {
                     .collision_point_on_xy_plane(&self.canvas_size, &[client_x, client_y]);
                 self.local_block_arena.map_mut(
                     &drawing_texture_id,
-                    |texture: &mut block::table::texture::Texture| {
+                    |texture: &mut block::texture::Texture| {
                         let a = texture.texture_position(&[a[0] as f64, a[1] as f64]);
                         let b = texture.texture_position(&[b[0] as f64, b[1] as f64]);
                         let context = texture.context();
@@ -346,7 +351,7 @@ impl Implement {
 
                 self.local_block_arena.map_mut(
                     &drawing_texture_id,
-                    |texture: &mut block::table::texture::Texture| {
+                    |texture: &mut block::texture::Texture| {
                         let context = texture.context();
                         let sz = texture.buffer_size();
                         context.clear_rect(0.0, 0.0, sz[0], sz[1]);
@@ -355,7 +360,7 @@ impl Implement {
 
                 self.block_arena.map_mut(
                     &drawed_texture_id,
-                    |texture: &mut block::table::texture::Texture| {
+                    |texture: &mut block::texture::Texture| {
                         let a = texture.texture_position(&[a[0] as f64, a[1] as f64]);
                         let b = texture.texture_position(&[b[0] as f64, b[1] as f64]);
                         let context = texture.context();
@@ -404,7 +409,7 @@ impl Implement {
                     .collision_point_on_xy_plane(&self.canvas_size, &[client_x, client_y]);
                 self.local_block_arena.map_mut(
                     &drawing_texture_id,
-                    |texture: &mut block::table::texture::Texture| {
+                    |texture: &mut block::texture::Texture| {
                         let a = texture.texture_position(&[a[0] as f64, a[1] as f64]);
                         let b = texture.texture_position(&[b[0] as f64, b[1] as f64]);
                         let context = texture.context();
@@ -444,7 +449,7 @@ impl Implement {
 
                 self.local_block_arena.map_mut(
                     &drawing_texture_id,
-                    |texture: &mut block::table::texture::Texture| {
+                    |texture: &mut block::texture::Texture| {
                         let context = texture.context();
                         let sz = texture.buffer_size();
                         context.clear_rect(0.0, 0.0, sz[0], sz[1]);
@@ -453,7 +458,7 @@ impl Implement {
 
                 self.block_arena.map_mut(
                     &drawed_texture_id,
-                    |texture: &mut block::table::texture::Texture| {
+                    |texture: &mut block::texture::Texture| {
                         let a = texture.texture_position(&[a[0] as f64, a[1] as f64]);
                         let b = texture.texture_position(&[b[0] as f64, b[1] as f64]);
                         let context = texture.context();
@@ -474,6 +479,108 @@ impl Implement {
                         );
                         context.fill();
                         context.stroke();
+                    },
+                );
+            }
+        }
+    }
+
+    fn update_tabletool_eraser(
+        &mut self,
+        client_x: f32,
+        client_y: f32,
+        last_client_x: f32,
+        last_client_y: f32,
+    ) {
+        let eraser = match self.table_tools.selected() {
+            Some(TableTool::Eraser(x)) => x,
+            _ => {
+                return;
+            }
+        };
+
+        if self.mouse_state.is_dragging {
+            if let Some(drawing_texture_id) = self.drawing_texture_id() {
+                let a = self.camera_matrix.collision_point_on_xy_plane(
+                    &self.canvas_size,
+                    &[last_client_x, last_client_y],
+                );
+                let b = self
+                    .camera_matrix
+                    .collision_point_on_xy_plane(&self.canvas_size, &[client_x, client_y]);
+                let p = self.local_block_arena.map_mut(
+                    &drawing_texture_id,
+                    |texture: &mut block::texture::Texture| {
+                        let a = texture.texture_position(&[a[0] as f64, a[1] as f64]);
+                        let b = texture.texture_position(&[b[0] as f64, b[1] as f64]);
+                        let context = texture.context();
+
+                        context.begin_path();
+                        let color = crate::libs::color::Pallet::gray(0).a(eraser.alpha);
+                        context.set_stroke_style(&color.to_color().to_jsvalue());
+                        context.set_line_cap("round");
+                        context.set_line_width(eraser.line_width);
+                        context.move_to(a[0], a[1]);
+                        context.line_to(b[0], b[1]);
+                        context.stroke();
+
+                        texture.set_is_mask(true);
+
+                        (a, b)
+                    },
+                );
+
+                if let Some((a, b)) = p {
+                    if self.mouse_state.is_changed_dragging_state {
+                        self.drawing_line = vec![a, b];
+                    } else {
+                        self.drawing_line.push(a);
+                    }
+                }
+            }
+        } else if self.mouse_state.is_changed_dragging_state && self.drawing_line.len() >= 2 {
+            let mut points = self
+                .drawing_line
+                .drain(..)
+                .collect::<std::collections::VecDeque<_>>();
+
+            if let Some((drawing_texture_id, drawed_texture_id)) =
+                join_some!(self.drawing_texture_id(), self.drawed_texture_id())
+            {
+                self.local_block_arena.map_mut(
+                    &drawing_texture_id,
+                    |texture: &mut block::texture::Texture| {
+                        let context = texture.context();
+                        let sz = texture.buffer_size();
+                        context.clear_rect(0.0, 0.0, sz[0], sz[1]);
+
+                        texture.set_is_mask(false);
+                    },
+                );
+
+                self.block_arena.map_mut(
+                    &drawed_texture_id,
+                    |texture: &mut block::texture::Texture| {
+                        let context = texture.context();
+
+                        let a = points.pop_front().unwrap();
+
+                        context.begin_path();
+                        let color = crate::libs::color::Pallet::gray(0).a(eraser.alpha);
+                        let _ = context.set_global_composite_operation("destination-out");
+                        context.set_stroke_style(&color.to_color().to_jsvalue());
+                        context.set_line_cap("round");
+                        context.set_line_width(eraser.line_width);
+                        context.set_line_join("round");
+                        context.move_to(a[0], a[1]);
+
+                        for b in points {
+                            context.line_to(b[0], b[1]);
+                        }
+
+                        context.stroke();
+
+                        let _ = context.set_global_composite_operation("source-over");
                     },
                 );
             }

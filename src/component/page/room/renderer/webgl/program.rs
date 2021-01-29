@@ -61,6 +61,7 @@ pub trait Program {
     accesser!(None as unif_texture_2: WebGlUniformLocation);
     accesser!(None as unif_texture_2_is_available: WebGlUniformLocation);
     accesser!(None as unif_translate: WebGlUniformLocation);
+    accesser!(None as unif_use_texture_as_mask: WebGlUniformLocation);
 }
 
 fn compile_shader(
@@ -80,9 +81,11 @@ fn compile_shader(
     {
         Ok(shader)
     } else {
-        Err(context
+        let info_log = context
             .get_shader_info_log(&shader)
-            .unwrap_or_else(|| String::from("Unknown error creating shader")))
+            .unwrap_or_else(|| String::from("Unknown error creating shader"));
+        crate::debug::log_1(&info_log);
+        Err(info_log)
     }
 }
 
@@ -106,9 +109,11 @@ fn link_program(
     {
         Ok(program)
     } else {
-        Err(context
+        let info_log = context
             .get_program_info_log(&program)
-            .unwrap_or_else(|| String::from("Unknown error creating program object")))
+            .unwrap_or_else(|| String::from("Unknown error creating program object"));
+        crate::debug::log_1(&info_log);
+        Err(info_log)
     }
 }
 
@@ -452,6 +457,7 @@ pub struct TabletextureProgram {
     u_texture_1_location: WebGlUniformLocation,
     u_texture_2_location: WebGlUniformLocation,
     u_texture_2_is_available_location: WebGlUniformLocation,
+    u_use_texture_as_mask_location: WebGlUniformLocation,
 }
 
 impl TabletextureProgram {
@@ -472,6 +478,9 @@ impl TabletextureProgram {
         let u_texture_2_is_available_location = gl
             .get_uniform_location(&program, "u_texture2IsAvailable")
             .unwrap();
+        let u_use_texture_as_mask_location = gl
+            .get_uniform_location(&program, "u_useTextureAsMask")
+            .unwrap();
 
         Self {
             program,
@@ -483,6 +492,7 @@ impl TabletextureProgram {
             u_texture_1_location,
             u_texture_2_is_available_location,
             u_translate_location,
+            u_use_texture_as_mask_location,
         }
     }
 }
@@ -500,4 +510,5 @@ impl Program for TabletextureProgram {
         u_texture_2_is_available_location as unif_texture_2_is_available: WebGlUniformLocation
     );
     accesser!(u_translate_location as unif_translate: WebGlUniformLocation);
+    accesser!(u_use_texture_as_mask_location as unif_use_texture_as_mask: WebGlUniformLocation);
 }

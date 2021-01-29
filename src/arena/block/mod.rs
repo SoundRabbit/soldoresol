@@ -9,12 +9,13 @@ use wasm_bindgen::{prelude::*, JsCast};
 
 pub mod chat;
 pub mod table;
+pub mod texture;
 pub mod world;
 
 pub enum Block {
     World(world::World),
     Table(table::Table),
-    TableTexture(table::texture::Texture),
+    Texture(texture::Texture),
     Chat(chat::Chat),
     ChatChannel(chat::channel::Channel),
     ChatMessage(chat::message::Message),
@@ -33,7 +34,7 @@ impl Block {
         match this {
             Self::World(block) => Self::World(world::World::clone(block)),
             Self::Table(block) => Self::Table(table::Table::clone(block)),
-            Self::TableTexture(block) => Self::TableTexture(table::texture::Texture::clone(block)),
+            Self::Texture(block) => Self::Texture(texture::Texture::clone(block)),
             Self::Chat(block) => Self::Chat(chat::Chat::clone(block)),
             Self::ChatChannel(block) => Self::ChatChannel(chat::channel::Channel::clone(block)),
             Self::ChatMessage(block) => Self::ChatMessage(chat::message::Message::clone(block)),
@@ -68,10 +69,10 @@ impl TryRef<table::Table> for Block {
     }
 }
 
-impl TryRef<table::texture::Texture> for Block {
-    fn try_ref(&self) -> Option<&table::texture::Texture> {
+impl TryRef<texture::Texture> for Block {
+    fn try_ref(&self) -> Option<&texture::Texture> {
         match self {
-            Self::TableTexture(x) => Some(x),
+            Self::Texture(x) => Some(x),
             _ => None,
         }
     }
@@ -122,10 +123,10 @@ impl TryMut<table::Table> for Block {
     }
 }
 
-impl TryMut<table::texture::Texture> for Block {
-    fn try_mut(&mut self) -> Option<&mut table::texture::Texture> {
+impl TryMut<texture::Texture> for Block {
+    fn try_mut(&mut self) -> Option<&mut texture::Texture> {
         match self {
-            Self::TableTexture(x) => Some(x),
+            Self::Texture(x) => Some(x),
             _ => None,
         }
     }
@@ -213,7 +214,7 @@ impl ArenaBlock {
         let (payload, type_name) = match &self.payload {
             Block::World(x) => (x.pack().await, "World"),
             Block::Table(x) => (x.pack().await, "Table"),
-            Block::TableTexture(x) => (x.pack().await, "TableTexture"),
+            Block::Texture(x) => (x.pack().await, "Texture"),
             Block::Chat(x) => (object! {}.into(), "None"),
             Block::ChatChannel(x) => (object! {}.into(), "None"),
             Block::ChatMessage(x) => (object! {}.into(), "None"),
@@ -403,10 +404,10 @@ impl Insert<table::Table> for Arena {
     }
 }
 
-impl Insert<table::texture::Texture> for Arena {
+impl Insert<texture::Texture> for Arena {
     type Id = BlockId;
-    fn insert(&mut self, block: table::texture::Texture) -> BlockId {
-        self.insert(Block::TableTexture(block))
+    fn insert(&mut self, block: texture::Texture) -> BlockId {
+        self.insert(Block::Texture(block))
     }
 }
 

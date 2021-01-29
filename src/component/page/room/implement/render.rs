@@ -384,6 +384,18 @@ impl Implement {
                         } else {
                             Msg::NoOp
                         }
+                    })
+                    .on("mousemove", move |e| {
+                        let e = unwrap_or!(e.dyn_into::<web_sys::MouseEvent>().ok(); Msg::NoOp);
+                        Msg::UpdateMouseState { e }
+                    })
+                    .on("mousedown", move |e| {
+                        let e = unwrap_or!(e.dyn_into::<web_sys::MouseEvent>().ok(); Msg::NoOp);
+                        Msg::UpdateMouseState { e }
+                    })
+                    .on("mouseup", move |e| {
+                        let e = unwrap_or!(e.dyn_into::<web_sys::MouseEvent>().ok(); Msg::NoOp);
+                        Msg::UpdateMouseState { e }
                     }),
                 self.modeless_list
                     .iter()
