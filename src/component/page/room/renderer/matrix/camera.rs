@@ -1,13 +1,13 @@
 use ndarray::{arr1, arr2, Array1, Array2};
 
-pub struct Camera {
+pub struct CameraMatrix {
     x_axis_rotation: f32,
     z_axis_rotation: f32,
     movement: [f32; 3],
     field_of_view: f32,
 }
 
-impl Camera {
+impl CameraMatrix {
     pub fn new() -> Self {
         Self {
             x_axis_rotation: 0.25 * std::f32::consts::PI,

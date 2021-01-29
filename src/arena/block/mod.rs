@@ -272,7 +272,7 @@ impl Arena {
         Some(f(block))
     }
 
-    pub async fn iter_map_with_ids<T, U>(
+    pub fn iter_map_with_ids<T, U>(
         &self,
         block_ids: impl Iterator<Item = BlockId>,
         mut f: impl FnMut(BlockId, &T) -> U,

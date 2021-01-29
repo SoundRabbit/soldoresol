@@ -75,7 +75,9 @@ impl Implement {
                 Some(TableTool::Eraser(_)) => {
                     self.update_tabletool_eraser(client_x, client_y, last_client_x, last_client_y)
                 }
-                Some(TableTool::Character(_)) => self.update_tabletool_character(),
+                Some(TableTool::Character(_)) => {
+                    self.update_tabletool_character(client_x, client_y)
+                }
                 _ => {}
             }
         }
@@ -588,7 +590,7 @@ impl Implement {
         }
     }
 
-    fn update_tabletool_character(&mut self) {
+    fn update_tabletool_character(&mut self, client_x: f32, client_y: f32) {
         if self.mouse_state.is_clicked {
             let character = match self.table_tools.selected() {
                 Some(TableTool::Character(x)) => CharacterTool::clone_of(x),
@@ -596,11 +598,16 @@ impl Implement {
                     return;
                 }
             };
+            let a = self
+                .camera_matrix
+                .collision_point_on_xy_plane(&self.canvas_size, &[client_x, client_y]);
+            let a = [a[0], a[1], a[2]];
             self.create_new_character(
                 Some(character.size),
                 Some(character.tex_scale),
                 character.tex_id.as_ref().map(|x| ResourceId::clone(x)),
                 Some(character.name.clone()),
+                Some(a),
             );
         }
     }

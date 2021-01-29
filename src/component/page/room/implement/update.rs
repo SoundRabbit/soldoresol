@@ -382,7 +382,8 @@ impl Implement {
         tex_scale: Option<f32>,
         tex_id: Option<ResourceId>,
         name: Option<String>,
-    ) -> BlockId {
+        pos: Option<[f32; 3]>,
+    ) {
         let mut character_block = block::character::Character::new();
         if let Some(size) = size {
             character_block.set_size(size);
@@ -394,7 +395,15 @@ impl Implement {
         if let Some(name) = name {
             character_block.set_name(name);
         }
+        if let Some(pos) = pos {
+            character_block.set_position(pos);
+        }
 
-        self.block_arena.insert(character_block)
+        let character_id = self.block_arena.insert(character_block);
+
+        self.block_arena
+            .map_mut(&self.world_id, |world: &mut block::world::World| {
+                world.add_character(character_id);
+            });
     }
 }

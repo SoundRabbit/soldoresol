@@ -1,4 +1,3 @@
-use super::BlockId;
 use crate::arena::resource::ResourceId;
 
 pub struct Character {
@@ -6,6 +5,7 @@ pub struct Character {
     tex_scale: f32,
     texture_id: Option<ResourceId>,
     name: String,
+    position: [f32; 3],
 }
 
 impl Character {
@@ -15,6 +15,7 @@ impl Character {
             tex_scale: 1.0,
             texture_id: None,
             name: String::from(""),
+            position: [0.0, 0.0, 0.0],
         }
     }
 
@@ -24,6 +25,7 @@ impl Character {
             tex_scale: this.tex_scale,
             texture_id: this.texture_id.as_ref().map(|x| ResourceId::clone(x)),
             name: this.name.clone(),
+            position: this.position.clone(),
         }
     }
 
@@ -56,5 +58,13 @@ impl Character {
 
     pub fn set_name(&mut self, name: String) {
         self.name = name;
+    }
+
+    pub fn position(&self) -> &[f32; 3] {
+        &self.position
+    }
+
+    pub fn set_position(&mut self, position: [f32; 3]) {
+        self.position = position;
     }
 }

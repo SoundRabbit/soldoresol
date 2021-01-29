@@ -10,7 +10,7 @@ mod webgl;
 
 use webgl::WebGlRenderingContext;
 
-pub use matrix::camera::Camera as CameraMatrix;
+pub use matrix::camera::CameraMatrix;
 
 pub struct Renderer {
     view_canvas: Rc<web_sys::HtmlCanvasElement>,
@@ -25,6 +25,7 @@ pub struct Renderer {
 
     render_view_tablegrid: view::tablegrid::Tablegrid,
     render_view_tabletexture: view::tabletexture::Tabletexture,
+    render_view_character: view::character::Character,
 }
 
 impl Renderer {
@@ -101,6 +102,7 @@ impl Renderer {
         let render_view_tablegrid = view::tablegrid::Tablegrid::new(&view_gl);
         let render_view_tabletexture =
             view::tabletexture::Tabletexture::new(&view_gl, &mut tex_table);
+        let render_view_character = view::character::Character::new(&view_gl);
 
         Self {
             view_canvas,
@@ -112,6 +114,7 @@ impl Renderer {
             tex_table,
             render_view_tablegrid,
             render_view_tabletexture,
+            render_view_character,
         }
     }
 
@@ -135,7 +138,7 @@ impl Renderer {
         local_block_arena: &block::Arena,
         resource_arena: &resource::Arena,
         world_id: &BlockId,
-        camera_matrix: &matrix::camera::Camera,
+        camera_matrix: &CameraMatrix,
     ) {
         block_arena.map(world_id, |world: &block::world::World| {
             self.view_gl.clear_color(0.0, 0.0, 0.0, 0.0);
@@ -161,6 +164,16 @@ impl Renderer {
                 self.render_view_tablegrid
                     .render(&mut self.view_gl, &vp_matrix, table)
             });
+
+            self.render_view_character.render(
+                &mut self.view_gl,
+                &mut self.tex_table,
+                camera_matrix,
+                &vp_matrix,
+                block_arena,
+                resource_arena,
+                world.characters().map(|x| BlockId::clone(x)),
+            );
         });
     }
 }
