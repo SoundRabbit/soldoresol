@@ -736,7 +736,7 @@ impl SideMenu {
                         position: slider::Position::Inf {
                             val: character.size as f64,
                             mid: 1.0,
-                            step: 1.0,
+                            step: 0.1,
                         },
                         range_is_editable: false,
                     },

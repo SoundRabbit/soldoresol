@@ -26,6 +26,7 @@ pub struct Renderer {
     render_view_tablegrid: view::tablegrid::Tablegrid,
     render_view_tabletexture: view::tabletexture::Tabletexture,
     render_view_character: view::character::Character,
+    render_view_character_base: view::character_base::CharacterBase,
 }
 
 impl Renderer {
@@ -103,6 +104,7 @@ impl Renderer {
         let render_view_tabletexture =
             view::tabletexture::Tabletexture::new(&view_gl, &mut tex_table);
         let render_view_character = view::character::Character::new(&view_gl);
+        let render_view_character_base = view::character_base::CharacterBase::new(&view_gl);
 
         Self {
             view_canvas,
@@ -115,6 +117,7 @@ impl Renderer {
             render_view_tablegrid,
             render_view_tabletexture,
             render_view_character,
+            render_view_character_base,
         }
     }
 
@@ -164,6 +167,13 @@ impl Renderer {
                 self.render_view_tablegrid
                     .render(&mut self.view_gl, &vp_matrix, table)
             });
+
+            self.render_view_character_base.render(
+                &mut self.view_gl,
+                &vp_matrix,
+                block_arena,
+                world.characters().map(|x| BlockId::clone(x)),
+            );
 
             self.render_view_character.render(
                 &mut self.view_gl,

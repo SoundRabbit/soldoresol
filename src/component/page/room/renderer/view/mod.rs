@@ -1,4 +1,5 @@
 pub mod character;
+pub mod character_base;
 pub mod tablegrid;
 pub mod tabletexture;
 
