@@ -25,7 +25,7 @@ vec4 mask(vec4 bg, vec4 mk) {
 void main() {
     vec4 color;
     vec4 tex_color;
-    color = vec4(1.0, 1.0, 1.0, 1.0);
+    color = vec4(0.0, 0.0, 0.0, 0.0);
     color = blend(color, u_bgColor);
     color = IF(u_texture2IsAvailable) ? blend(color, texture2D(u_texture2, v_textureCoord)) : color;
     tex_color = texture2D(u_texture1, v_textureCoord);

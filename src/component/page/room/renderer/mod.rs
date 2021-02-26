@@ -76,6 +76,7 @@ impl Renderer {
             web_sys::WebGlRenderingContext::ONE,
         );
         view_gl.enable(web_sys::WebGlRenderingContext::DEPTH_TEST);
+        view_gl.depth_func(web_sys::WebGlRenderingContext::ALWAYS);
         view_gl.enable(web_sys::WebGlRenderingContext::CULL_FACE);
         view_gl.cull_face(web_sys::WebGlRenderingContext::BACK);
         view_gl.enable(web_sys::WebGlRenderingContext::STENCIL_TEST);
@@ -86,7 +87,11 @@ impl Renderer {
         let offscreen_canvas = Rc::new(crate::libs::element::html_canvas_element());
         offscreen_canvas.set_width(canvas_size[0] as u32);
         offscreen_canvas.set_height(canvas_size[1] as u32);
-        let option: JsValue = object! {preserveDrawingBuffer: true}.into();
+        let option: JsValue = object! {
+            preserveDrawingBuffer: true,
+            stencil: true
+        }
+        .into();
         let offscreen_gl = offscreen_canvas
             .get_context_with_context_options("webgl", &option)
             .unwrap()
@@ -192,10 +197,16 @@ impl Renderer {
         camera_matrix: &CameraMatrix,
     ) {
         block_arena.map(world_id, |world: &block::world::World| {
-            self.view_gl.clear_color(0.0, 0.0, 0.0, 0.0);
-            self.view_gl.clear_stencil(0);
-            self.offscreen_gl.clear_color(0.0, 0.0, 0.0, 0.0);
-            self.offscreen_gl.clear_stencil(0);
+            self.view_gl.clear(
+                web_sys::WebGlRenderingContext::COLOR_BUFFER_BIT
+                    | web_sys::WebGlRenderingContext::DEPTH_BUFFER_BIT
+                    | web_sys::WebGlRenderingContext::STENCIL_BUFFER_BIT,
+            );
+            self.offscreen_gl.clear(
+                web_sys::WebGlRenderingContext::COLOR_BUFFER_BIT
+                    | web_sys::WebGlRenderingContext::DEPTH_BUFFER_BIT
+                    | web_sys::WebGlRenderingContext::STENCIL_BUFFER_BIT,
+            );
             self.id_table.clear();
 
             let vp_matrix = camera_matrix
