@@ -28,11 +28,6 @@ pub struct Props {
     pub client_id: Rc<String>,
 }
 
-pub enum Awaiting<T> {
-    Pending(T),
-    Ready(T),
-}
-
 pub enum Msg {
     NoOp,
     SetCanvasElement {
@@ -93,6 +88,9 @@ pub enum Msg {
     },
     SetOverlay {
         overlay: Overlay,
+    },
+    SetContextmenu {
+        contextmenu: Option<Contextmenu>,
     },
     LoadFile {
         files: Vec<web_sys::File>,
@@ -219,6 +217,7 @@ pub struct Implement {
 
     modal: Modal,
     overlay: Overlay,
+    contextmenu: Option<Contextmenu>,
 
     primary_mouse_btn_state: MouseBtnState,
     secondary_mouse_btn_state: MouseBtnState,
@@ -249,6 +248,16 @@ enum Modal {
 enum Overlay {
     None,
     DragFile,
+}
+
+struct Contextmenu {
+    page_x: i32,
+    page_y: i32,
+    kind: ContextmenuKind,
+}
+
+enum ContextmenuKind {
+    Character(BlockId),
 }
 
 impl Constructor for Implement {
@@ -285,7 +294,7 @@ impl Styled for Implement {
                 "left": "0";
                 "height": "100vh";
                 "width": "100vw";
-                "z-index": format!("{}", super::super::constant::z_index::overlay);
+                "z-index": format!("{}", super::super::constant::z_index::OVERLAY);
             }
 
             "overlay-file-import" {
@@ -298,6 +307,18 @@ impl Styled for Implement {
                 "font-size": "4rem";
                 "bottom": "1em";
                 "right": "1em";
+            }
+
+            "contextmenu" {
+                "position": "absolute";
+                "grid-template-columns": "max-content";
+                "grid-auto-rows": "max-content";
+                "grid-auto-flow": "rows";
+                "row-gap": "0.05rem";
+                "justify-items": "stretch";
+                "background-color": crate::libs::color::color_system::gray(100, 0).to_string();
+                "border-radius": "2px";
+                "display": "grid";
             }
 
             "header-row" {

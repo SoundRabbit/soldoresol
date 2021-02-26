@@ -155,6 +155,7 @@ impl Implement {
 
             modal: Modal::None,
             overlay: Overlay::None,
+            contextmenu: None,
 
             primary_mouse_btn_state: MouseBtnState::new(1),
             secondary_mouse_btn_state: MouseBtnState::new(2),

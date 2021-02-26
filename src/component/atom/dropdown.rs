@@ -221,7 +221,7 @@ impl Styled for Dropdown {
                 "left": "0";
                 "width": "100vw";
                 "height": "100vh";
-                "z-index": format!("{}", super::constant::z_index::mask);
+                "z-index": format!("{}", super::constant::z_index::MASK);
             }
 
             r#"mask[data-toggled="false"]"# {
@@ -234,7 +234,7 @@ impl Styled for Dropdown {
 
             "content" {
                 "position": "absolute";
-                "z-index": format!("{}", super::constant::z_index::mask + 1);
+                "z-index": format!("{}", super::constant::z_index::MASK + 1);
                 "grid-template-columns": "max-content";
                 "grid-auto-rows": "max-content";
                 "grid-auto-flow": "rows";

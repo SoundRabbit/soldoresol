@@ -105,7 +105,7 @@ impl Styled for Modal {
                 "left": "0";
                 "width": "100%";
                 "height": "100%";
-                "z-index": constant::z_index::modal.to_string();
+                "z-index": constant::z_index::MODAL.to_string();
                 "background-color": color_system::gray(13, 9).to_string();
                 "display": "grid";
                 "align-items": "center";

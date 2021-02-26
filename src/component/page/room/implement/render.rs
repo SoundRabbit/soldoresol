@@ -3,6 +3,7 @@ use super::super::{
     super::atom::dropdown::{self, Dropdown},
     super::atom::fa,
     super::atom::header::{self, Header},
+    super::atom::text,
     super::template::basic_app::{self, BasicApp},
     super::util::styled::Styled,
     children::modal_imported_files::{self, ModalImportedFiles},
@@ -10,7 +11,7 @@ use super::super::{
     children::room_modeless::{self, RoomModeless},
     children::side_menu::{self, SideMenu},
 };
-use super::{Implement, Modal, Msg, Overlay};
+use super::{ContextmenuKind, Implement, Modal, Msg, Overlay};
 use crate::arena::block::{self, BlockId};
 use crate::libs::random_id::U128Id;
 use kagura::prelude::*;
@@ -121,6 +122,7 @@ impl Implement {
                         ),
                     ],
                 ),
+                self.render_contextmenu(),
                 self.render_modal(),
                 self.render_overlay(),
             ],
@@ -465,5 +467,47 @@ impl Implement {
                 vec![],
             )
         }
+    }
+
+    fn close_context_menu_event(_: web_sys::Event) -> Msg {
+        Msg::SetContextmenu { contextmenu: None }
+    }
+
+    fn render_contextmenu(&self) -> Html {
+        if let Some(contextmenu) = &self.contextmenu {
+            Html::div(
+                Attributes::new().class(Self::class("overlay")),
+                Events::new()
+                    .on("click", Self::close_context_menu_event)
+                    .on("contextmenu", move |e| {
+                        e.prevent_default();
+                        Msg::NoOp
+                    }),
+                vec![Html::div(
+                    Attributes::new()
+                        .class(Self::class("contextmenu"))
+                        .style("left", format!("{}px", contextmenu.page_x))
+                        .style("top", format!("{}px", contextmenu.page_y)),
+                    Events::new(),
+                    match &contextmenu.kind {
+                        ContextmenuKind::Character(block_id) => {
+                            self.render_contextmenu_character(block_id)
+                        }
+                    },
+                )],
+            )
+        } else {
+            Html::none()
+        }
+    }
+
+    fn render_contextmenu_character(&self, block_id: &BlockId) -> Vec<Html> {
+        vec![Btn::with_child(
+            btn::Props {
+                variant: btn::Variant::Menu,
+            },
+            Subscription::none(),
+            Html::text("編集"),
+        )]
     }
 }
