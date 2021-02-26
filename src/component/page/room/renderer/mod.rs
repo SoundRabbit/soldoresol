@@ -3,13 +3,16 @@ use crate::arena::resource::{self};
 use std::rc::Rc;
 use wasm_bindgen::{prelude::*, JsCast};
 
+mod id_table;
 mod matrix;
+mod offscreen;
 mod tex_table;
 mod view;
 mod webgl;
 
 use webgl::WebGlRenderingContext;
 
+pub use id_table::ObjectId;
 pub use matrix::camera::CameraMatrix;
 
 pub struct Renderer {
@@ -22,6 +25,9 @@ pub struct Renderer {
     device_pixel_ratio: f32,
 
     tex_table: tex_table::TexTable,
+    id_table: id_table::IdTable,
+
+    render_offscreen_character: offscreen::character::Character,
 
     render_view_tablegrid: view::tablegrid::Tablegrid,
     render_view_tabletexture: view::tabletexture::Tabletexture,
@@ -86,7 +92,7 @@ impl Renderer {
             .unwrap()
             .dyn_into::<web_sys::WebGlRenderingContext>()
             .unwrap();
-        let offscreen_gl = WebGlRenderingContext::new(offscreen_gl);
+        let mut offscreen_gl = WebGlRenderingContext::new(offscreen_gl);
 
         offscreen_gl.enable(web_sys::WebGlRenderingContext::DEPTH_TEST);
         offscreen_gl.depth_func(web_sys::WebGlRenderingContext::ALWAYS);
@@ -97,8 +103,15 @@ impl Renderer {
         );
         offscreen_gl.enable(web_sys::WebGlRenderingContext::CULL_FACE);
         offscreen_gl.cull_face(web_sys::WebGlRenderingContext::BACK);
+        offscreen_gl.use_program(webgl::ProgramType::OffscreenProgram);
+
+        offscreen_gl.clear_color(0.0, 0.0, 0.0, 0.0);
+        offscreen_gl.clear_stencil(0);
 
         let mut tex_table = tex_table::TexTable::new(&view_gl);
+        let id_table = id_table::IdTable::new();
+
+        let render_offscreen_character = offscreen::character::Character::new(&view_gl);
 
         let render_view_tablegrid = view::tablegrid::Tablegrid::new(&view_gl);
         let render_view_tabletexture =
@@ -114,6 +127,8 @@ impl Renderer {
             canvas_size,
             device_pixel_ratio,
             tex_table,
+            id_table,
+            render_offscreen_character,
             render_view_tablegrid,
             render_view_tabletexture,
             render_view_character,
@@ -146,6 +161,9 @@ impl Renderer {
         block_arena.map(world_id, |world: &block::world::World| {
             self.view_gl.clear_color(0.0, 0.0, 0.0, 0.0);
             self.view_gl.clear_stencil(0);
+            self.offscreen_gl.clear_color(0.0, 0.0, 0.0, 0.0);
+            self.offscreen_gl.clear_stencil(0);
+            self.id_table.clear();
 
             let vp_matrix = camera_matrix
                 .perspective_matrix(&self.canvas_size)
@@ -178,6 +196,19 @@ impl Renderer {
             self.render_view_character.render(
                 &mut self.view_gl,
                 &mut self.tex_table,
+                camera_matrix,
+                &vp_matrix,
+                block_arena,
+                resource_arena,
+                world.characters().map(|x| BlockId::clone(x)),
+            );
+
+            self.view_gl
+                .depth_func(web_sys::WebGlRenderingContext::ALWAYS);
+
+            self.render_offscreen_character.render(
+                &mut self.view_gl,
+                &mut self.id_table,
                 camera_matrix,
                 &vp_matrix,
                 block_arena,
