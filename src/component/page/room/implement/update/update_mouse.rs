@@ -2,20 +2,21 @@ use super::{block, BlockId, CharacterTool, CloneOf, Implement, ResourceId, Shape
 
 impl Implement {
     pub fn update_mouse(&mut self) -> bool {
-        let mouse_point = &self.mouse_state.now_point;
+        let mouse_state = &self.primary_mouse_btn_state;
+        let mouse_point = &mouse_state.now_point;
         let client_x = mouse_point[0] - self.canvas_pos[0];
         let client_y = mouse_point[1] - self.canvas_pos[1];
-        let last_point = &self.mouse_state.last_point;
+        let last_point = &mouse_state.last_point;
         let last_client_x = last_point[0] - self.canvas_pos[0];
         let last_client_y = last_point[1] - self.canvas_pos[1];
-        let changing_point = &self.mouse_state.changing_point;
+        let changing_point = &mouse_state.changing_point;
         let changing_client_x = changing_point[0] - self.canvas_pos[0];
         let changing_client_y = changing_point[1] - self.canvas_pos[1];
-        let last_changing_point = &self.mouse_state.last_changing_point;
+        let last_changing_point = &mouse_state.last_changing_point;
         let last_changing_client_x = last_changing_point[0] - self.canvas_pos[0];
         let last_changing_client_y = last_changing_point[1] - self.canvas_pos[1];
 
-        if self.mouse_state.is_dragging && (self.key_state.space_key || self.key_state.alt_key) {
+        if mouse_state.is_dragging && (self.key_state.space_key || self.key_state.alt_key) {
             if self.key_state.space_key {
                 let mov_x = (client_x - last_client_x) as f32;
                 let mov_y = (client_y - last_client_y) as f32;
@@ -122,7 +123,9 @@ impl Implement {
             }
         };
 
-        if self.mouse_state.is_dragging {
+        let mouse_state = &self.primary_mouse_btn_state;
+
+        if mouse_state.is_dragging {
             if let Some(drawing_texture_id) = self.drawing_texture_id() {
                 let a = self.camera_matrix.collision_point_on_xy_plane(
                     &self.canvas_size,
@@ -153,14 +156,14 @@ impl Implement {
                 );
 
                 if let Some((a, b)) = p {
-                    if self.mouse_state.is_changed_dragging_state {
+                    if mouse_state.is_changed_dragging_state {
                         self.drawing_line = vec![a, b];
                     } else {
                         self.drawing_line.push(a);
                     }
                 }
             }
-        } else if self.mouse_state.is_changed_dragging_state && self.drawing_line.len() >= 2 {
+        } else if mouse_state.is_changed_dragging_state && self.drawing_line.len() >= 2 {
             let mut points = self
                 .drawing_line
                 .drain(..)
@@ -224,7 +227,9 @@ impl Implement {
             }
         };
 
-        if self.mouse_state.is_dragging {
+        let mouse_state = &self.primary_mouse_btn_state;
+
+        if mouse_state.is_dragging {
             if let Some(drawing_texture_id) = self.drawing_texture_id() {
                 let a = self.camera_matrix.collision_point_on_xy_plane(
                     &self.canvas_size,
@@ -251,7 +256,7 @@ impl Implement {
                     },
                 );
             }
-        } else if self.mouse_state.is_changed_dragging_state {
+        } else if mouse_state.is_changed_dragging_state {
             if let Some((drawing_texture_id, drawed_texture_id)) =
                 join_some!(self.drawing_texture_id(), self.drawed_texture_id())
             {
@@ -313,7 +318,9 @@ impl Implement {
             }
         };
 
-        if self.mouse_state.is_dragging {
+        let mouse_state = &self.primary_mouse_btn_state;
+
+        if mouse_state.is_dragging {
             if let Some(drawing_texture_id) = self.drawing_texture_id() {
                 let a = self.camera_matrix.collision_point_on_xy_plane(
                     &self.canvas_size,
@@ -340,7 +347,7 @@ impl Implement {
                     },
                 );
             }
-        } else if self.mouse_state.is_changed_dragging_state {
+        } else if mouse_state.is_changed_dragging_state {
             if let Some((drawing_texture_id, drawed_texture_id)) =
                 join_some!(self.drawing_texture_id(), self.drawed_texture_id())
             {
@@ -401,7 +408,9 @@ impl Implement {
             }
         };
 
-        if self.mouse_state.is_dragging {
+        let mouse_state = &self.primary_mouse_btn_state;
+
+        if mouse_state.is_dragging {
             if let Some(drawing_texture_id) = self.drawing_texture_id() {
                 let a = self.camera_matrix.collision_point_on_xy_plane(
                     &self.canvas_size,
@@ -438,7 +447,7 @@ impl Implement {
                     },
                 );
             }
-        } else if self.mouse_state.is_changed_dragging_state {
+        } else if mouse_state.is_changed_dragging_state {
             if let Some((drawing_texture_id, drawed_texture_id)) =
                 join_some!(self.drawing_texture_id(), self.drawed_texture_id())
             {
@@ -502,7 +511,9 @@ impl Implement {
             }
         };
 
-        if self.mouse_state.is_dragging {
+        let mouse_state = &self.primary_mouse_btn_state;
+
+        if mouse_state.is_dragging {
             if let Some(drawing_texture_id) = self.drawing_texture_id() {
                 let a = self.camera_matrix.collision_point_on_xy_plane(
                     &self.canvas_size,
@@ -534,14 +545,14 @@ impl Implement {
                 );
 
                 if let Some((a, b)) = p {
-                    if self.mouse_state.is_changed_dragging_state {
+                    if mouse_state.is_changed_dragging_state {
                         self.drawing_line = vec![a, b];
                     } else {
                         self.drawing_line.push(a);
                     }
                 }
             }
-        } else if self.mouse_state.is_changed_dragging_state && self.drawing_line.len() >= 2 {
+        } else if mouse_state.is_changed_dragging_state && self.drawing_line.len() >= 2 {
             let mut points = self
                 .drawing_line
                 .drain(..)
@@ -591,7 +602,9 @@ impl Implement {
     }
 
     fn update_tabletool_character(&mut self, client_x: f32, client_y: f32) {
-        if self.mouse_state.is_clicked {
+        let mouse_state = &self.primary_mouse_btn_state;
+
+        if mouse_state.is_clicked {
             let character = match self.table_tools.selected() {
                 Some(TableTool::Character(x)) => CharacterTool::clone_of(x),
                 _ => {
@@ -603,8 +616,8 @@ impl Implement {
                 .collision_point_on_xy_plane(&self.canvas_size, &[client_x, client_y]);
             let a = [a[0], a[1], a[2]];
             self.create_new_character(
-                Some(character.size),
-                Some(character.tex_scale),
+                Some(character.size as f32),
+                Some(character.tex_scale as f32),
                 character.tex_id.as_ref().map(|x| ResourceId::clone(x)),
                 Some(character.name.clone()),
                 Some(a),

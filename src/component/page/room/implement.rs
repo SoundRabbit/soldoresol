@@ -116,7 +116,7 @@ pub enum Msg {
 
 pub enum On {}
 
-struct MouseState {
+struct MouseBtnState {
     is_dragging: bool,
     is_clicked: bool,
     is_changed_dragging_state: bool,
@@ -124,10 +124,11 @@ struct MouseState {
     last_changing_point: [f32; 2],
     last_point: [f32; 2],
     now_point: [f32; 2],
+    btn: u16,
 }
 
-impl MouseState {
-    fn new() -> Self {
+impl MouseBtnState {
+    fn new(btn: u16) -> Self {
         Self {
             is_dragging: false,
             is_clicked: false,
@@ -136,15 +137,16 @@ impl MouseState {
             last_changing_point: [0.0, 0.0],
             last_point: [0.0, 0.0],
             now_point: [0.0, 0.0],
+            btn,
         }
     }
 
-    fn update(&mut self, e: web_sys::MouseEvent) {
+    fn update(&mut self, e: &web_sys::MouseEvent) {
         let buttons = e.buttons();
         let page_x = e.page_x() as f32;
         let page_y = e.page_y() as f32;
 
-        let is_dragging = (buttons & 1) != 0;
+        let is_dragging = (buttons & self.btn) != 0;
 
         self.is_clicked = false;
 
@@ -218,7 +220,8 @@ pub struct Implement {
     modal: Modal,
     overlay: Overlay,
 
-    mouse_state: MouseState,
+    primary_mouse_btn_state: MouseBtnState,
+    secondary_mouse_btn_state: MouseBtnState,
     key_state: KeyState,
     canvas: Option<Rc<web_sys::HtmlCanvasElement>>,
     canvas_pos: [f32; 2],

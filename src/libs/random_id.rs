@@ -91,3 +91,9 @@ impl U128Id {
         Self(Rc::clone(&this.0))
     }
 }
+
+impl std::fmt::Display for U128Id {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:X}", (*self.0.as_ref()))
+    }
+}

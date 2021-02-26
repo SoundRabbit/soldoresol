@@ -396,6 +396,10 @@ impl Implement {
                     .on("mouseup", move |e| {
                         let e = unwrap_or!(e.dyn_into::<web_sys::MouseEvent>().ok(); Msg::NoOp);
                         Msg::UpdateMouseState { e }
+                    })
+                    .on("contextmenu", move |e| {
+                        e.prevent_default();
+                        Msg::NoOp
                     }),
                 self.modeless_list
                     .iter()

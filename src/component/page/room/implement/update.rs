@@ -2,7 +2,7 @@ use super::super::{
     super::util::State,
     children::room_modeless,
     model::table::{CharacterTool, ShapeTool, TableTool},
-    renderer::Renderer,
+    renderer::{ObjectId, Renderer},
 };
 use super::{Cmd, Implement, Modal, ModelessContent, Msg, On};
 use crate::arena::block::{self, BlockId};
@@ -76,9 +76,23 @@ impl Implement {
             }
 
             Msg::UpdateMouseState { e } => {
-                self.mouse_state.update(e);
+                self.primary_mouse_btn_state.update(&e);
+                self.secondary_mouse_btn_state.update(&e);
                 if self.update_mouse() {
-                    self.gl_render_async()
+                    if self.secondary_mouse_btn_state.is_clicked {
+                        let focused_object_id = if let Some(renderer) = &self.renderer {
+                            let mouse_point = &self.secondary_mouse_btn_state.now_point;
+                            let client_x = mouse_point[0] - self.canvas_pos[0];
+                            let client_y = mouse_point[1] - self.canvas_pos[1];
+                            renderer.get_object_id(client_x, client_y)
+                        } else {
+                            ObjectId::None
+                        };
+                        crate::debug::log_1(format!("focused: {}", focused_object_id));
+                        Cmd::none()
+                    } else {
+                        self.gl_render_async()
+                    }
                 } else {
                     Cmd::none()
                 }

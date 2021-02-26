@@ -124,6 +124,12 @@ impl BlockId {
     }
 }
 
+impl std::fmt::Display for BlockId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.id)
+    }
+}
+
 type Timestamp = f64;
 
 struct ArenaBlock {

@@ -734,7 +734,7 @@ impl SideMenu {
                 Slider::empty(
                     slider::Props {
                         position: slider::Position::Inf {
-                            val: character.size as f64,
+                            val: character.size,
                             mid: 1.0,
                             step: 0.1,
                         },
@@ -744,7 +744,7 @@ impl SideMenu {
                         let mut character = CharacterTool::clone_of(character);
                         move |sub| match sub {
                             slider::On::Input(size) => {
-                                character.size = size as f32;
+                                character.size = size;
                                 Msg::Sub(On::SetSelectedTool {
                                     tool: TableTool::Character(character),
                                 })
@@ -756,7 +756,7 @@ impl SideMenu {
                 Slider::empty(
                     slider::Props {
                         position: slider::Position::Inf {
-                            val: character.tex_scale as f64,
+                            val: character.tex_scale,
                             mid: 1.0,
                             step: 0.1,
                         },
@@ -766,7 +766,7 @@ impl SideMenu {
                         let mut character = CharacterTool::clone_of(character);
                         move |sub| match sub {
                             slider::On::Input(tex_scale) => {
-                                character.tex_scale = tex_scale as f32;
+                                character.tex_scale = tex_scale;
                                 Msg::Sub(On::SetSelectedTool {
                                     tool: TableTool::Character(character),
                                 })

@@ -5,7 +5,7 @@ use super::super::{
     },
     renderer::CameraMatrix,
 };
-use super::{ElementId, Implement, KeyState, Modal, MouseState, Msg, On, Overlay, Props};
+use super::{ElementId, Implement, KeyState, Modal, MouseBtnState, Msg, On, Overlay, Props};
 use crate::arena::block;
 use crate::arena::player::{self, Player};
 use crate::arena::resource;
@@ -156,7 +156,8 @@ impl Implement {
             modal: Modal::None,
             overlay: Overlay::None,
 
-            mouse_state: MouseState::new(),
+            primary_mouse_btn_state: MouseBtnState::new(1),
+            secondary_mouse_btn_state: MouseBtnState::new(2),
             key_state: KeyState {
                 alt_key: false,
                 ctrl_key: false,

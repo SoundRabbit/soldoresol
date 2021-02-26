@@ -112,8 +112,8 @@ pub struct EraserTool {
 }
 
 pub struct CharacterTool {
-    pub size: f32,
-    pub tex_scale: f32,
+    pub size: f64,
+    pub tex_scale: f64,
     pub tex_id: Option<ResourceId>,
     pub name: String,
 }

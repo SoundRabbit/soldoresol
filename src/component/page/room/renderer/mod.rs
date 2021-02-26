@@ -1,5 +1,6 @@
 use crate::arena::block::{self, BlockId};
 use crate::arena::resource::{self};
+use crate::libs::clone_of::CloneOf;
 use std::rc::Rc;
 use wasm_bindgen::{prelude::*, JsCast};
 
@@ -111,13 +112,13 @@ impl Renderer {
         let mut tex_table = tex_table::TexTable::new(&view_gl);
         let id_table = id_table::IdTable::new();
 
-        let render_offscreen_character = offscreen::character::Character::new(&view_gl);
-
         let render_view_tablegrid = view::tablegrid::Tablegrid::new(&view_gl);
         let render_view_tabletexture =
             view::tabletexture::Tabletexture::new(&view_gl, &mut tex_table);
         let render_view_character = view::character::Character::new(&view_gl);
         let render_view_character_base = view::character_base::CharacterBase::new(&view_gl);
+
+        let render_offscreen_character = offscreen::character::Character::new(&offscreen_gl);
 
         Self {
             view_canvas,
@@ -148,6 +149,38 @@ impl Renderer {
             .viewport(0, 0, canvas_size[0] as i32, canvas_size[1] as i32);
 
         self.canvas_size = canvas_size;
+    }
+
+    pub fn get_object_id(&self, x: f32, y: f32) -> ObjectId {
+        let gl = &self.offscreen_gl;
+        let x = x * self.device_pixel_ratio;
+        let y = self.canvas_size[1] - y * self.device_pixel_ratio;
+        let mut table_id = [0, 0, 0, 0];
+        let res = gl.read_pixels_with_opt_u8_array(
+            x as i32,
+            y as i32,
+            1,
+            1,
+            web_sys::WebGlRenderingContext::RGBA,
+            web_sys::WebGlRenderingContext::UNSIGNED_BYTE,
+            Some(&mut table_id),
+        );
+
+        if res.is_ok() {
+            crate::debug::log_4(
+                table_id[0] as f64,
+                table_id[1] as f64,
+                table_id[2] as f64,
+                table_id[3] as f64,
+            );
+            let table_id = u32::from_be_bytes([table_id[3], table_id[0], table_id[1], table_id[2]]);
+            self.id_table
+                .get(&table_id)
+                .map(|x| ObjectId::clone_of(x))
+                .unwrap_or(ObjectId::None)
+        } else {
+            ObjectId::None
+        }
     }
 
     pub fn render(
@@ -207,7 +240,7 @@ impl Renderer {
                 .depth_func(web_sys::WebGlRenderingContext::ALWAYS);
 
             self.render_offscreen_character.render(
-                &mut self.view_gl,
+                &mut self.offscreen_gl,
                 &mut self.id_table,
                 camera_matrix,
                 &vp_matrix,

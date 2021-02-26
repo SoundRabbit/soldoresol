@@ -80,7 +80,7 @@ impl Character {
             web_sys::WebGlRenderingContext::ELEMENT_ARRAY_BUFFER,
             Some(&self.index_buffer),
         );
-        gl.set_unif_flag_round(0);
+        gl.set_unif_flag_round(1);
 
         for (color, size, pos, _, _) in &characters {
             let model_matrix: Array2<f32> = ModelMatrix::new()
