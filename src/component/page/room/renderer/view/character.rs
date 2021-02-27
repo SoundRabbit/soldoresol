@@ -85,14 +85,14 @@ impl Character {
         for (_, y_index) in z_index {
             for (_, character_list) in y_index {
                 for character in character_list {
-                    let tex_id = character.tex_id();
+                    let tex_id = character.current_tex_id();
                     if let Some(tex_id) = tex_id {
                         let tex_idx = tex_table.use_resource(gl, resource_arena, tex_id);
                         if let Some((tex_idx, tex)) = join_some!(
                             tex_idx,
                             resource_arena.get_as::<resource::ImageData>(tex_id)
                         ) {
-                            let sz = character.size() * character.tex_scale();
+                            let sz = character.size() * character.current_tex_scale();
                             let tex_size = tex.size();
                             let model_matrix: Array2<f32> = ModelMatrix::new()
                                 .with_scale(&[sz, 1.0, sz * tex_size[1] / tex_size[0]])

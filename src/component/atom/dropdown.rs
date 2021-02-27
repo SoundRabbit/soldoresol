@@ -22,6 +22,7 @@ impl Default for Props {
 }
 
 pub enum Direction {
+    Bottom,
     BottomLeft,
     BottomRight,
     RightBottom,
@@ -30,6 +31,7 @@ pub enum Direction {
 impl std::fmt::Display for Direction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::Bottom => write!(f, "bottom"),
             Self::BottomLeft => write!(f, "bottom-left"),
             Self::BottomRight => write!(f, "bottom-right"),
             Self::RightBottom => write!(f, "right-bottom"),
@@ -40,7 +42,7 @@ impl std::fmt::Display for Direction {
 impl Direction {
     fn render_caret(&self) -> Html {
         match self {
-            Self::BottomLeft | Self::BottomRight => fa::i("fa-caret-down"),
+            Self::Bottom | Self::BottomLeft | Self::BottomRight => fa::i("fa-caret-down"),
             Self::RightBottom => fa::i("fa-caret-right"),
         }
     }
@@ -235,7 +237,6 @@ impl Styled for Dropdown {
             "content" {
                 "position": "absolute";
                 "z-index": format!("{}", super::constant::z_index::MASK + 1);
-                "grid-template-columns": "max-content";
                 "grid-auto-rows": "max-content";
                 "grid-auto-flow": "rows";
                 "row-gap": "0.05rem";
@@ -251,19 +252,31 @@ impl Styled for Dropdown {
                 "display": "grid";
             }
 
+            "content-bottom" {
+                "top": "100%";
+                "left": "0";
+                "right": "0";
+                "grid-template-columns": "1fr";
+            }
+
             "content-bottom-left" {
                 "top": "100%";
                 "right": "0";
+                "grid-template-columns": "max-content";
+
             }
 
             "content-bottom-right" {
                 "top": "100%";
                 "left": "0";
+                "grid-template-columns": "max-content";
+
             }
 
             "content-right-bottom" {
                 "top": "0";
                 "left": "100%";
+                "grid-template-columns": "max-content";
             }
         }
     }

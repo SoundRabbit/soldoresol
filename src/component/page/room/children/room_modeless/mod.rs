@@ -12,12 +12,15 @@ use crate::libs::select_list::SelectList;
 use kagura::prelude::*;
 use wasm_bindgen::{prelude::*, JsCast};
 
+pub mod character;
 pub mod chat_channel;
 
+use character::Character;
 use chat_channel::ChatChannel;
 
 pub enum Content {
     ChatChannel(BlockId),
+    Character(BlockId),
 }
 
 pub struct Props {
@@ -236,6 +239,12 @@ impl RoomModeless {
                         Html::text(self.block_arena.map(channel_id, |channel: &block::chat::channel::Channel| {
                             format!(" {}", channel.name())
                         }).unwrap_or(String::new()))
+                    ],
+                    Content::Character(character_id) => vec![
+                        fa::i("fa-user"),
+                        Html::text(self.block_arena.map(character_id, |character: &block::character::Character| {
+                            format!(" {}", character.name())
+                        }).unwrap_or(String::new()))
                     ]
                 };
                 Html::div(
@@ -296,6 +305,13 @@ impl RoomModeless {
                     chat_channel::Props {
                         block_arena: block::ArenaRef::clone(&self.block_arena),
                         channel_id: BlockId::clone(channel_id),
+                    },
+                    Subscription::none(),
+                ),
+                Some(Content::Character(character_id)) => Character::empty(
+                    character::Props {
+                        block_arena: block::ArenaRef::clone(&self.block_arena),
+                        character_id: BlockId::clone(character_id),
                     },
                     Subscription::none(),
                 ),

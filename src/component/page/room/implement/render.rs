@@ -506,7 +506,14 @@ impl Implement {
             btn::Props {
                 variant: btn::Variant::Menu,
             },
-            Subscription::none(),
+            Subscription::new({
+                let block_id = BlockId::clone(&block_id);
+                move |sub| match sub {
+                    btn::On::Click => Msg::OpenNewModeless {
+                        content: room_modeless::Content::Character(block_id),
+                    },
+                }
+            }),
             Html::text("編集"),
         )]
     }

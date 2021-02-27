@@ -419,9 +419,9 @@ impl Implement {
             character_block.set_size(size);
         }
         if let Some(tex_scale) = tex_scale {
-            character_block.set_tex_scale(tex_scale);
+            character_block.set_tex_scale(0, tex_scale);
         }
-        character_block.set_tex_id(tex_id);
+        character_block.set_tex_id(0, tex_id);
         if let Some(name) = name {
             character_block.set_name(name);
         }

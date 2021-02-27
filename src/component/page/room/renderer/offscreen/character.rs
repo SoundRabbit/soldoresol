@@ -60,9 +60,9 @@ impl Character {
                 |character_id, character: &block::character::Character| {
                     let size = character.size();
                     let pos = character.position().clone();
-                    let tex_scale = character.tex_scale();
+                    let tex_scale = character.current_tex_scale();
                     let tex_size = character
-                        .tex_id()
+                        .current_tex_id()
                         .and_then(|tex_id| resource_arena.get_as::<resource::ImageData>(tex_id))
                         .map(|img| img.size().clone());
                     let id = id_table.len() as u32 | 0xFF000000;
