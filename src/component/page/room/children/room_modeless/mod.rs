@@ -6,6 +6,7 @@ use super::molecule::modeless::{self, Modeless};
 use super::util::styled::{Style, Styled};
 use super::util::Prop;
 use crate::arena::block::{self, BlockId};
+use crate::arena::resource;
 use crate::libs::color::color_system;
 use crate::libs::random_id::U128Id;
 use crate::libs::select_list::SelectList;
@@ -31,6 +32,7 @@ pub struct Props {
     pub page_y: i32,
     pub minimized: bool,
     pub block_arena: block::ArenaRef,
+    pub resource_arena: resource::ArenaRef,
 }
 
 pub enum Msg {
@@ -59,6 +61,7 @@ pub struct RoomModeless {
     size: [f32; 2],
     minimized: bool,
     block_arena: block::ArenaRef,
+    resource_arena: resource::ArenaRef,
 }
 
 impl Constructor for RoomModeless {
@@ -72,6 +75,7 @@ impl Constructor for RoomModeless {
             size: [0.3, 0.3],
             minimized: props.minimized,
             block_arena: props.block_arena,
+            resource_arena: props.resource_arena,
         }
     }
 }
@@ -311,6 +315,7 @@ impl RoomModeless {
                 Some(Content::Character(character_id)) => Character::empty(
                     character::Props {
                         block_arena: block::ArenaRef::clone(&self.block_arena),
+                        resource_arena: resource::ArenaRef::clone(&self.resource_arena),
                         character_id: BlockId::clone(character_id),
                     },
                     Subscription::none(),

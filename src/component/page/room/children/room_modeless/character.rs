@@ -2,11 +2,13 @@ use super::super::atom::btn::{self, Btn};
 use super::super::atom::dropdown::{self, Dropdown};
 use super::super::util::styled::{Style, Styled};
 use crate::arena::block;
+use crate::arena::resource;
 use async_std::sync::{Arc, Mutex};
 use kagura::prelude::*;
 
 pub struct Props {
     pub block_arena: block::ArenaRef,
+    pub resource_arena: resource::ArenaRef,
     pub character_id: block::BlockId,
 }
 
@@ -16,6 +18,7 @@ pub enum On {}
 
 pub struct Character {
     block_arena: block::ArenaRef,
+    resource_arena: resource::ArenaRef,
     character_id: block::BlockId,
     element_id: ElementId,
 }
@@ -28,6 +31,7 @@ impl Constructor for Character {
     fn constructor(props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) -> Self {
         Self {
             block_arena: props.block_arena,
+            resource_arena: props.resource_arena,
             character_id: props.character_id,
             element_id: ElementId {
                 input_character_name: format!("{:X}", crate::libs::random_id::u128val()),
@@ -63,14 +67,6 @@ impl Component for Character {
 }
 
 impl Character {
-    fn render_select_option(value: impl Into<String>, text: impl Into<String>) -> Html {
-        Html::option(
-            Attributes::new().value(value),
-            Events::new(),
-            vec![Html::text(text)],
-        )
-    }
-
     fn render_character(&self, character: &block::character::Character) -> Html {
         Html::div(
             Attributes::new()
@@ -150,6 +146,32 @@ impl Character {
                                 Events::new(),
                                 vec![],
                             ),
+                            Html::div(
+                                Attributes::new().class(Self::class("common-imgs-container")),
+                                Events::new(),
+                                vec![character
+                                    .current_tex_id()
+                                    .and_then(|r_id| {
+                                        self.resource_arena.get_as::<resource::ImageData>(r_id)
+                                    })
+                                    .map(|img| {
+                                        Html::img(
+                                            Attributes::new()
+                                                .class(Self::class("common-imgs-img"))
+                                                .src(img.url().as_ref()),
+                                            Events::new(),
+                                            vec![],
+                                        )
+                                    })
+                                    .unwrap_or(Html::none())],
+                            ),
+                            Btn::with_child(
+                                btn::Props {
+                                    variant: btn::Variant::Primary,
+                                },
+                                Subscription::none(),
+                                Html::text("画像を選択"),
+                            ),
                         ],
                     ),
                 ],
@@ -191,9 +213,26 @@ impl Styled for Character {
                 "row-gap": ".65em";
             }
 
+            "common-imgs" {
+                "display": "grid";
+                "grid-template-rows": "max-content max-content 1fr max-content";
+                "row-gap": "0.35em";
+            }
+
+            "common-imgs-container" {
+                "overflow": "hidden";
+            }
+
+            "common-imgs-img" {
+                "height": "100%";
+                "width": "100%";
+                "object-fit": "contain";
+            }
+
             "common-imgs-type" {
                 "display": "grid";
                 "grid-template-columns": "1fr max-content max-content";
+                "column-gap": ".15em";
             }
         }
     }

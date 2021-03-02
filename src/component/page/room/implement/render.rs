@@ -416,6 +416,7 @@ impl Implement {
                                     page_y: modeless.page_y,
                                     minimized: modeless.minimized,
                                     block_arena: self.block_arena.as_ref(),
+                                    resource_arena: self.resource_arena.as_ref(),
                                 },
                                 Subscription::new({
                                     let modeless_id = U128Id::clone(&modeless_id);
