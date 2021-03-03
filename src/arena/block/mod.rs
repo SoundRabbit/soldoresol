@@ -10,6 +10,7 @@ use wasm_bindgen::{prelude::*, JsCast};
 pub mod character;
 pub mod chat;
 pub mod table;
+pub mod tag;
 pub mod texture;
 pub mod world;
 
@@ -21,6 +22,7 @@ pub enum Block {
     ChatChannel(chat::channel::Channel),
     ChatMessage(chat::message::Message),
     Character(character::Character),
+    Tag(tag::Tag),
     None,
 }
 
@@ -41,6 +43,7 @@ impl Block {
             Self::ChatChannel(block) => Self::ChatChannel(chat::channel::Channel::clone(block)),
             Self::ChatMessage(block) => Self::ChatMessage(chat::message::Message::clone(block)),
             Self::Character(block) => Self::Character(character::Character::clone(block)),
+            Self::Tag(block) => Self::Tag(tag::Tag::clone(block)),
             Self::None => Self::None,
         }
     }
@@ -94,6 +97,7 @@ try_ref_mut!(Block: Chat => chat::Chat);
 try_ref_mut!(Block: ChatChannel => chat::channel::Channel);
 try_ref_mut!(Block: ChatMessage => chat::message::Message);
 try_ref_mut!(Block: Character => character::Character);
+try_ref_mut!(Block: Tag => tag::Tag);
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct BlockId {
@@ -161,6 +165,7 @@ impl ArenaBlock {
             Block::ChatChannel(x) => (object! {}.into(), "None"),
             Block::ChatMessage(x) => (object! {}.into(), "None"),
             Block::Character(x) => (object! {}.into(), "None"),
+            Block::Tag(x) => (object! {}.into(), "None"),
             Block::None => (object! {}.into(), "None"),
         };
 
@@ -350,3 +355,4 @@ insert!(Arena: texture::Texture => Texture);
 insert!(Arena: chat::Chat => Chat);
 insert!(Arena: chat::channel::Channel => ChatChannel);
 insert!(Arena: character::Character => Character);
+insert!(Arena: tag::Tag => Tag);
