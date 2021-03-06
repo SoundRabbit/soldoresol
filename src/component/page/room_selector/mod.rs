@@ -1,6 +1,7 @@
 use super::atom::{
     btn::{self, Btn},
     card::{self, Card},
+    dropdown::{self, Dropdown},
     header::{self, Header},
 };
 use super::organism::modal_notification::{self, ModalNotification};
@@ -22,6 +23,7 @@ pub struct Props {
 pub enum Msg {
     SetRooms(Vec<RoomData>),
     SetInputingRoomId(String),
+    ConnectWithRoomId(String),
     ConnectWithInputingRoomId,
     ConnectWithNewRoomId,
 }
@@ -95,6 +97,7 @@ impl Component for RoomSelector {
                 self.inputing_room_id = inputing_room_id;
                 Cmd::none()
             }
+            Msg::ConnectWithRoomId(room_id) => Cmd::sub(On::Connect(room_id)),
             Msg::ConnectWithInputingRoomId => {
                 if self.room_id_validator.is_match(&self.inputing_room_id) {
                     Cmd::sub(On::Connect(self.inputing_room_id.clone()))
@@ -217,18 +220,47 @@ impl RoomSelector {
     fn render_roomcard(&self, room: &RoomData) -> Html {
         Html::div(
             Attributes::new().class(Self::class("card")),
-            Events::new().on_click({
-                let room_id = room.id.clone();
-                move |_| Msg::SetInputingRoomId(room_id)
-            }),
+            Events::new(),
             vec![Card::with_children(
                 card::Props {},
                 Subscription::none(),
                 vec![
-                    Html::h2(
-                        Attributes::new().class(Self::class("room-name")),
-                        Events::new(),
-                        vec![Html::text(&room.name)],
+                    Dropdown::with_children(
+                        dropdown::Props {
+                            direction: dropdown::Direction::BottomLeft,
+                            text: room.name.clone(),
+                            variant: btn::Variant::Menu,
+                            ..Default::default()
+                        },
+                        Subscription::none(),
+                        vec![
+                            Btn::with_child(
+                                btn::Props {
+                                    variant: btn::Variant::Menu,
+                                },
+                                Subscription::new({
+                                    let room_id = room.id.clone();
+                                    move |sub| match sub {
+                                        btn::On::Click => Msg::ConnectWithRoomId(room_id),
+                                    }
+                                }),
+                                Html::text("開く"),
+                            ),
+                            Btn::with_child(
+                                btn::Props {
+                                    variant: btn::Variant::Menu,
+                                },
+                                Subscription::none(),
+                                Html::text("ダウンロード"),
+                            ),
+                            Btn::with_child(
+                                btn::Props {
+                                    variant: btn::Variant::Menu,
+                                },
+                                Subscription::none(),
+                                Html::text("削除"),
+                            ),
+                        ],
                     ),
                     Html::aside(
                         Attributes::new().class(Self::class("room-id")),
@@ -305,14 +337,6 @@ impl Styled for RoomSelector {
             "card" {
                 "max-width": "max-content";
                 "max-height": "max-content";
-            }
-
-            "card:hover" {
-                "cursor": "pointer";
-            }
-
-            "room-name" {
-                "border-bottom": format!("0.1em solid {}", crate::libs::color::color_system::gray(100, 9));
             }
 
             "room-id" {
