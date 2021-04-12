@@ -13,6 +13,7 @@ pub enum Variant {
     Danger,
     Disable,
     Dark,
+    DarkLikeMenu,
     TransparentDark,
     Menu,
 }
@@ -46,6 +47,7 @@ impl std::fmt::Display for Variant {
             Self::Danger => write!(f, "danger"),
             Self::Disable => write!(f, "disable"),
             Self::Dark => write!(f, "dark"),
+            Self::DarkLikeMenu => write!(f, "dark-like-menu"),
             Self::TransparentDark => write!(f, "transparent-dark"),
             Self::Menu => write!(f, "menu"),
         }
@@ -114,10 +116,16 @@ impl Styled for Btn {
                 "color": color_system::gray(100, 0).to_string();
             }
 
-            "menu" {
+            "dark-like-menu" {
+                "text-align": "left";
                 "background-color": color_system::gray(100, 9).to_string();
                 "color": color_system::gray(100, 0).to_string();
+            }
+
+            "menu" {
                 "text-align": "left";
+                "background-color": color_system::gray(100, 9).to_string();
+                "color": color_system::gray(100, 0).to_string();
             }
 
             "menu:hover" {

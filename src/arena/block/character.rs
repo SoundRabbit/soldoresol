@@ -4,7 +4,7 @@ use crate::libs::select_list::SelectList;
 
 pub struct CharacterTexture {
     name: String,
-    texture_id: ResourceId,
+    texture_id: Option<ResourceId>,
     tex_scale: f32,
 }
 
@@ -12,7 +12,7 @@ impl Clone for CharacterTexture {
     fn clone(&self) -> Self {
         Self {
             name: self.name.clone(),
-            texture_id: ResourceId::clone(&self.texture_id),
+            texture_id: self.texture_id.as_ref().map(|x| ResourceId::clone(x)),
             tex_scale: self.tex_scale,
         }
     }
@@ -20,8 +20,6 @@ impl Clone for CharacterTexture {
 
 pub struct Character {
     size: f32,
-    default_tex_scale: f32,
-    default_texture_id: Option<ResourceId>,
     name: String,
     position: [f32; 3],
     textures: SelectList<CharacterTexture>,
@@ -31,22 +29,22 @@ impl Character {
     pub fn new() -> Self {
         Self {
             size: 1.0,
-            default_tex_scale: 1.0,
-            default_texture_id: None,
             name: String::from(""),
             position: [0.0, 0.0, 0.0],
-            textures: SelectList::new(vec![], 0),
+            textures: SelectList::new(
+                vec![CharacterTexture {
+                    name: String::from("[default]"),
+                    texture_id: None,
+                    tex_scale: 1.0,
+                }],
+                0,
+            ),
         }
     }
 
     pub fn clone(this: &Self) -> Self {
         Self {
             size: this.size,
-            default_tex_scale: this.default_tex_scale,
-            default_texture_id: this
-                .default_texture_id
-                .as_ref()
-                .map(|x| ResourceId::clone(x)),
             name: this.name.clone(),
             position: this.position.clone(),
             textures: SelectList::clone_of(&this.textures),
@@ -64,35 +62,27 @@ impl Character {
         if let Some(tex) = self.textures.selected() {
             tex.tex_scale
         } else {
-            self.default_tex_scale
+            1.0
         }
     }
 
     pub fn set_tex_scale(&mut self, tex_idx: usize, tex_scale: f32) {
-        if tex_idx == 0 {
-            self.default_tex_scale = tex_scale;
-        } else {
-            if let Some(tex) = self.textures.get_mut(tex_idx - 1) {
-                tex.tex_scale = tex_scale;
-            }
+        if let Some(tex) = self.textures.get_mut(tex_idx) {
+            tex.tex_scale = tex_scale;
         }
     }
 
     pub fn current_tex_id(&self) -> Option<&ResourceId> {
         if let Some(tex) = self.textures.selected() {
-            Some(&tex.texture_id)
+            tex.texture_id.as_ref()
         } else {
-            self.default_texture_id.as_ref()
+            None
         }
     }
 
     pub fn set_tex_id(&mut self, tex_idx: usize, tex_id: Option<ResourceId>) {
-        if tex_idx == 0 {
-            self.default_texture_id = tex_id;
-        } else {
-            if let (Some(tex), Some(tex_id)) = (self.textures.get_mut(tex_idx - 1), tex_id) {
-                tex.texture_id = tex_id;
-            }
+        if let Some(tex) = self.textures.get_mut(tex_idx) {
+            tex.texture_id = tex_id;
         }
     }
 
@@ -113,20 +103,45 @@ impl Character {
     }
 
     pub fn tex_names(&self) -> Vec<&str> {
-        let mut tex_names = vec!["[default]"];
-
-        for tex in self.textures.iter() {
-            tex_names.push(&tex.name);
-        }
-
-        tex_names
+        self.textures.iter().map(|tex| tex.name.as_str()).collect()
     }
 
     pub fn current_tex_name(&self) -> &str {
-        if let Some(tex) = self.textures.selected() {
-            &tex.name
-        } else {
-            "[default]"
+        self.textures
+            .selected()
+            .map(|tex| tex.name.as_str())
+            .unwrap_or("")
+    }
+
+    pub fn current_tex_idx(&self) -> usize {
+        self.textures.selected_idx()
+    }
+
+    pub fn set_current_tex_idx(&mut self, idx: usize) {
+        self.textures.set_selected_idx(idx);
+    }
+
+    pub fn add_tex_to_select(&mut self) {
+        self.textures.push(CharacterTexture {
+            name: String::from("新規立ち絵"),
+            texture_id: None,
+            tex_scale: 1.0,
+        });
+        self.textures.set_selected_idx(self.textures.len() - 1);
+    }
+
+    pub fn remove_tex(&mut self, tex_idx: usize) {
+        if self.textures.len() > 1 {
+            self.textures.remove(tex_idx);
+            if self.textures.selected_idx() >= self.textures.len() {
+                self.textures.set_selected_idx(self.textures.len() - 1);
+            }
+        }
+    }
+
+    pub fn set_tex_name(&mut self, tex_idx: usize, tex_name: String) {
+        if let Some(tex) = self.textures.get_mut(tex_idx) {
+            tex.name = tex_name;
         }
     }
 }

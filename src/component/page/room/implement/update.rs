@@ -392,6 +392,76 @@ impl Implement {
                     Cmd::none()
                 }
             }
+
+            Msg::SetCharacterTextureId {
+                character_id,
+                tex_idx,
+                resource_id,
+            } => {
+                self.block_arena.map_mut(
+                    &character_id,
+                    |character: &mut block::character::Character| {
+                        crate::debug::log_1("SetCharacterTextureId");
+                        character.set_tex_id(tex_idx, resource_id);
+                    },
+                );
+
+                self.gl_render_async()
+            }
+
+            Msg::AddCharacterTexture { character_id } => {
+                self.block_arena.map_mut(
+                    &character_id,
+                    |character: &mut block::character::Character| {
+                        character.add_tex_to_select();
+                    },
+                );
+
+                self.gl_render_async()
+            }
+
+            Msg::RemoveCharacterTexture {
+                character_id,
+                tex_idx,
+            } => {
+                self.block_arena.map_mut(
+                    &character_id,
+                    |character: &mut block::character::Character| {
+                        character.remove_tex(tex_idx);
+                    },
+                );
+
+                self.gl_render_async()
+            }
+
+            Msg::SetCharacterTextureIdx {
+                character_id,
+                tex_idx,
+            } => {
+                self.block_arena.map_mut(
+                    &character_id,
+                    |character: &mut block::character::Character| {
+                        character.set_current_tex_idx(tex_idx);
+                    },
+                );
+
+                self.gl_render_async()
+            }
+
+            Msg::SetCharacterTextureName {
+                character_id,
+                tex_idx,
+                tex_name,
+            } => {
+                self.block_arena.map_mut(
+                    &character_id,
+                    |character: &mut block::character::Character| {
+                        character.set_tex_name(tex_idx, tex_name);
+                    },
+                );
+
+                Cmd::none()
+            }
         }
     }
 

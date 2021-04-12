@@ -451,6 +451,41 @@ impl Implement {
                                                 tab_idx,
                                             }
                                         }
+                                        room_modeless::On::SetCharacterTextureId {
+                                            character_id,
+                                            tex_idx,
+                                            resource_id,
+                                        } => Msg::SetCharacterTextureId {
+                                            character_id,
+                                            tex_idx,
+                                            resource_id,
+                                        },
+                                        room_modeless::On::AddCharacterTexture { character_id } => {
+                                            Msg::AddCharacterTexture { character_id }
+                                        }
+                                        room_modeless::On::RemoveCharacterTexture {
+                                            character_id,
+                                            tex_idx,
+                                        } => Msg::RemoveCharacterTexture {
+                                            character_id,
+                                            tex_idx,
+                                        },
+                                        room_modeless::On::SetCharacterTextureIdx {
+                                            character_id,
+                                            tex_idx,
+                                        } => Msg::SetCharacterTextureIdx {
+                                            character_id,
+                                            tex_idx,
+                                        },
+                                        room_modeless::On::SetCharacterTextureName {
+                                            character_id,
+                                            tex_idx,
+                                            tex_name,
+                                        } => Msg::SetCharacterTextureName {
+                                            character_id,
+                                            tex_idx,
+                                            tex_name,
+                                        },
                                     }
                                 }),
                             )

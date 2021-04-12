@@ -110,6 +110,27 @@ pub enum Msg {
         background_color: Option<Pallet>,
         background_image: Option<Option<ResourceId>>,
     },
+    SetCharacterTextureId {
+        character_id: BlockId,
+        tex_idx: usize,
+        resource_id: Option<ResourceId>,
+    },
+    AddCharacterTexture {
+        character_id: BlockId,
+    },
+    RemoveCharacterTexture {
+        character_id: BlockId,
+        tex_idx: usize,
+    },
+    SetCharacterTextureIdx {
+        character_id: BlockId,
+        tex_idx: usize,
+    },
+    SetCharacterTextureName {
+        character_id: BlockId,
+        tex_idx: usize,
+        tex_name: String,
+    },
 }
 
 pub enum On {}

@@ -6,7 +6,7 @@ use super::molecule::modeless::{self, Modeless};
 use super::util::styled::{Style, Styled};
 use super::util::Prop;
 use crate::arena::block::{self, BlockId};
-use crate::arena::resource;
+use crate::arena::resource::{self, ResourceId};
 use crate::libs::color::color_system;
 use crate::libs::random_id::U128Id;
 use crate::libs::select_list::SelectList;
@@ -47,9 +47,36 @@ pub enum On {
     Minimize,
     Restore,
     Focus,
-    DragTabStart { tab_idx: usize },
-    DropTab { tab_idx: Option<usize> },
-    SelectTab { tab_idx: usize },
+    DragTabStart {
+        tab_idx: usize,
+    },
+    DropTab {
+        tab_idx: Option<usize>,
+    },
+    SelectTab {
+        tab_idx: usize,
+    },
+    SetCharacterTextureId {
+        character_id: BlockId,
+        tex_idx: usize,
+        resource_id: Option<ResourceId>,
+    },
+    AddCharacterTexture {
+        character_id: BlockId,
+    },
+    RemoveCharacterTexture {
+        character_id: BlockId,
+        tex_idx: usize,
+    },
+    SetCharacterTextureIdx {
+        character_id: BlockId,
+        tex_idx: usize,
+    },
+    SetCharacterTextureName {
+        character_id: BlockId,
+        tex_idx: usize,
+        tex_name: String,
+    },
 }
 
 pub struct RoomModeless {
@@ -318,7 +345,41 @@ impl RoomModeless {
                         resource_arena: resource::ArenaRef::clone(&self.resource_arena),
                         character_id: BlockId::clone(character_id),
                     },
-                    Subscription::none(),
+                    Subscription::new({
+                        let character_id = BlockId::clone(character_id);
+                        move |sub| match sub {
+                            character::On::SetTextureId {
+                                tex_idx,
+                                resource_id,
+                            } => Msg::Sub(On::SetCharacterTextureId {
+                                character_id,
+                                tex_idx,
+                                resource_id,
+                            }),
+                            character::On::AddTexture => {
+                                Msg::Sub(On::AddCharacterTexture { character_id })
+                            }
+                            character::On::RemoveTexture { tex_idx } => {
+                                Msg::Sub(On::RemoveCharacterTexture {
+                                    character_id,
+                                    tex_idx,
+                                })
+                            }
+                            character::On::SetTextureIdx { tex_idx } => {
+                                Msg::Sub(On::SetCharacterTextureIdx {
+                                    character_id,
+                                    tex_idx,
+                                })
+                            }
+                            character::On::SetTextureName { tex_idx, tex_name } => {
+                                Msg::Sub(On::SetCharacterTextureName {
+                                    character_id,
+                                    tex_idx,
+                                    tex_name,
+                                })
+                            }
+                        }
+                    }),
                 ),
                 _ => Html::none(),
             }],
