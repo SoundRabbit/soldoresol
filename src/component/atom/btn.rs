@@ -39,21 +39,6 @@ impl Variant {
     }
 }
 
-impl std::fmt::Display for Variant {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Primary => write!(f, "primary"),
-            Self::Secondary => write!(f, "secondary"),
-            Self::Danger => write!(f, "danger"),
-            Self::Disable => write!(f, "disable"),
-            Self::Dark => write!(f, "dark"),
-            Self::DarkLikeMenu => write!(f, "dark-like-menu"),
-            Self::TransparentDark => write!(f, "transparent-dark"),
-            Self::Menu => write!(f, "menu"),
-        }
-    }
-}
-
 impl Constructor for Btn {
     fn constructor(props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) -> Self {
         Self {
@@ -81,7 +66,7 @@ impl Component for Btn {
         Self::styled(Html::button(
             Attributes::new()
                 .class("pure-button")
-                .class(Self::class(&format!("{}", &self.variant)))
+                .class(Self::class_name(&self.variant))
                 .flag(if self.variant.is_disable() {
                     "disabled"
                 } else {
@@ -90,6 +75,21 @@ impl Component for Btn {
             Events::new().on_click(|_| Msg::Clicked),
             children,
         ))
+    }
+}
+
+impl Btn {
+    fn class_name(variant: &Variant) -> String {
+        match variant {
+            Variant::Primary => Self::class("primary"),
+            Variant::Secondary => Self::class("secondary"),
+            Variant::Danger => Self::class("danger"),
+            Variant::Disable => Self::class("disable"),
+            Variant::Dark => Self::class("dark"),
+            Variant::DarkLikeMenu => Self::class("dark") + " " + &Self::class("like-menu"),
+            Variant::TransparentDark => Self::class("transparent-dark"),
+            Variant::Menu => Self::class("menu") + " " + &Self::class("like-menu"),
+        }
     }
 }
 
@@ -116,14 +116,11 @@ impl Styled for Btn {
                 "color": color_system::gray(100, 0).to_string();
             }
 
-            "dark-like-menu" {
+            "like-menu" {
                 "text-align": "left";
-                "background-color": color_system::gray(100, 9).to_string();
-                "color": color_system::gray(100, 0).to_string();
             }
 
             "menu" {
-                "text-align": "left";
                 "background-color": color_system::gray(100, 9).to_string();
                 "color": color_system::gray(100, 0).to_string();
             }

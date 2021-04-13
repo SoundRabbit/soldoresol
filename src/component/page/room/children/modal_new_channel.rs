@@ -1,4 +1,5 @@
 use super::atom::btn::{self, Btn};
+use super::atom::dropdown::{self, Dropdown};
 use super::atom::text;
 use super::molecule::modal::{self, Modal};
 use super::util::styled::{Style, Styled};
@@ -126,14 +127,6 @@ impl Component for ModalNewChannel {
 }
 
 impl ModalNewChannel {
-    fn render_select_option(value: impl Into<String>, text: impl Into<String>) -> Html {
-        Html::option(
-            Attributes::new().value(value),
-            Events::new(),
-            vec![Html::text(text)],
-        )
-    }
-
     fn render_channel_name_input(&self) -> Vec<Html> {
         vec![
             Html::label(
@@ -151,38 +144,43 @@ impl ModalNewChannel {
 
     fn render_channel_type_select(&self) -> Vec<Html> {
         vec![
-            Html::label(
-                Attributes::new(),
-                Events::new(),
-                vec![Html::text("チャンネルタイプ")],
-            ),
-            Html::select(
-                Attributes::new(),
-                Events::new().on("change", 
-                {
-                    let client_id = Rc::clone(&self.client_id);
-                    move |e| {
-                        let target = unwrap_or!(e.target(); Msg::NoOp);
-                        let target = unwrap_or!(target.dyn_into::<web_sys::HtmlSelectElement>().ok(); Msg::NoOp);
-                        let value = target.value();
-
-                        if value == "public" {
-                            Msg::SetChannelType(ChannelType::Public)
-                        } else if value == "private" {
-                            Msg::SetChannelType(ChannelType::Private{client_id: client_id, read: ChannelPermission::EveryOne, write: ChannelPermission::EveryOne})
-                        } else {
-                            Msg::NoOp
-                        }
-                    }
-                }),
+            Html::label(Attributes::new(), Events::new(), vec![Html::text("権限")]),
+            Dropdown::with_children(
+                dropdown::Props {
+                    direction: dropdown::Direction::Bottom,
+                    text: match &self.channel_type {
+                        ChannelType::Private { .. } => String::from("非公開チャンネル"),
+                        ChannelType::Public => String::from("公開チャンネル"),
+                    },
+                    toggle_type: dropdown::ToggleType::Click,
+                    variant: btn::Variant::DarkLikeMenu,
+                },
+                Subscription::none(),
                 vec![
-                    Self::render_select_option(
-                        "public",
-                        "公開チャンネル",
+                    Btn::with_child(
+                        btn::Props {
+                            variant: btn::Variant::Menu,
+                        },
+                        Subscription::new(move |sub| match sub {
+                            btn::On::Click => Msg::SetChannelType(ChannelType::Public),
+                        }),
+                        Html::text("公開チャンネル"),
                     ),
-                    Self::render_select_option(
-                        "private",
-                        "非公開チャンネル",
+                    Btn::with_child(
+                        btn::Props {
+                            variant: btn::Variant::Menu,
+                        },
+                        Subscription::new({
+                            let client_id = Rc::clone(&self.client_id);
+                            move |sub| match sub {
+                                btn::On::Click => Msg::SetChannelType(ChannelType::Private {
+                                    client_id: client_id,
+                                    read: ChannelPermission::EveryOne,
+                                    write: ChannelPermission::EveryOne,
+                                }),
+                            }
+                        }),
+                        Html::text("非公開チャンネル"),
                     ),
                 ],
             ),
@@ -211,7 +209,7 @@ impl ModalNewChannel {
                         }),
                     ],
                     vec![
-                        text::span("パーミッションの編集"),
+                        text::span("権限の変更"),
                         text::span(match &self.channel_type {
                             ChannelType::Private { .. } => "このクライアントのみ可",
                             ChannelType::Public => "不可",
