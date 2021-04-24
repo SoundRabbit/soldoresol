@@ -2,7 +2,7 @@ use super::{block, BlockId, CharacterTool, CloneOf, Implement, ResourceId, Shape
 
 impl Implement {
     pub fn update_mouse(&mut self) -> bool {
-        let mouse_state = &self.primary_mouse_btn_state;
+        let mouse_state = &self.mouse_btn_state.primary;
         let mouse_point = &mouse_state.now_point;
         let client_x = mouse_point[0] - self.canvas_pos[0];
         let client_y = mouse_point[1] - self.canvas_pos[1];
@@ -123,7 +123,7 @@ impl Implement {
             }
         };
 
-        let mouse_state = &self.primary_mouse_btn_state;
+        let mouse_state = &self.mouse_btn_state.primary;
 
         if mouse_state.is_dragging {
             if let Some(drawing_texture_id) = self.drawing_texture_id() {
@@ -227,7 +227,7 @@ impl Implement {
             }
         };
 
-        let mouse_state = &self.primary_mouse_btn_state;
+        let mouse_state = &self.mouse_btn_state.primary;
 
         if mouse_state.is_dragging {
             if let Some(drawing_texture_id) = self.drawing_texture_id() {
@@ -318,7 +318,7 @@ impl Implement {
             }
         };
 
-        let mouse_state = &self.primary_mouse_btn_state;
+        let mouse_state = &self.mouse_btn_state.primary;
 
         if mouse_state.is_dragging {
             if let Some(drawing_texture_id) = self.drawing_texture_id() {
@@ -408,7 +408,7 @@ impl Implement {
             }
         };
 
-        let mouse_state = &self.primary_mouse_btn_state;
+        let mouse_state = &self.mouse_btn_state.primary;
 
         if mouse_state.is_dragging {
             if let Some(drawing_texture_id) = self.drawing_texture_id() {
@@ -511,7 +511,7 @@ impl Implement {
             }
         };
 
-        let mouse_state = &self.primary_mouse_btn_state;
+        let mouse_state = &self.mouse_btn_state.primary;
 
         if mouse_state.is_dragging {
             if let Some(drawing_texture_id) = self.drawing_texture_id() {
@@ -602,7 +602,7 @@ impl Implement {
     }
 
     fn update_tabletool_character(&mut self, client_x: f32, client_y: f32) {
-        let mouse_state = &self.primary_mouse_btn_state;
+        let mouse_state = &self.mouse_btn_state.primary;
 
         if mouse_state.is_clicked {
             let character = match self.table_tools.selected() {

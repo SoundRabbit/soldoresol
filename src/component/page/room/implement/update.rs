@@ -76,8 +76,7 @@ impl Implement {
             }
 
             Msg::UpdateMouseState { e } => {
-                self.primary_mouse_btn_state.update(&e);
-                self.secondary_mouse_btn_state.update(&e);
+                self.mouse_btn_state.update(&e);
                 let page_x = e.page_x();
                 let page_y = e.page_y();
                 let focused_object_id = if let Some(renderer) = &self.renderer {
@@ -87,7 +86,7 @@ impl Implement {
                 } else {
                     ObjectId::None
                 };
-                if self.secondary_mouse_btn_state.is_clicked {
+                if self.mouse_btn_state.secondary.is_clicked {
                     crate::debug::log_1(format!("focused: {}", focused_object_id));
                     match focused_object_id {
                         ObjectId::Character(block_id) => {

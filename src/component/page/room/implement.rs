@@ -135,7 +135,7 @@ pub enum Msg {
 
 pub enum On {}
 
-struct MouseBtnState {
+struct AMouseBtnState {
     is_dragging: bool,
     is_clicked: bool,
     is_changed_dragging_state: bool,
@@ -146,7 +146,7 @@ struct MouseBtnState {
     btn: u16,
 }
 
-impl MouseBtnState {
+impl AMouseBtnState {
     fn new(btn: u16) -> Self {
         Self {
             is_dragging: false,
@@ -183,6 +183,25 @@ impl MouseBtnState {
 
         std::mem::swap(&mut self.last_point, &mut self.now_point);
         self.now_point = [page_x, page_y];
+    }
+}
+
+struct MouseBtnState {
+    primary: AMouseBtnState,
+    secondary: AMouseBtnState,
+}
+
+impl MouseBtnState {
+    fn new() -> Self {
+        Self {
+            primary: AMouseBtnState::new(1),
+            secondary: AMouseBtnState::new(2),
+        }
+    }
+
+    fn update(&mut self, e: &web_sys::MouseEvent) {
+        self.primary.update(e);
+        self.secondary.update(e);
     }
 }
 
@@ -240,8 +259,7 @@ pub struct Implement {
     overlay: Overlay,
     contextmenu: Option<Contextmenu>,
 
-    primary_mouse_btn_state: MouseBtnState,
-    secondary_mouse_btn_state: MouseBtnState,
+    mouse_btn_state: MouseBtnState,
     key_state: KeyState,
     canvas: Option<Rc<web_sys::HtmlCanvasElement>>,
     canvas_pos: [f32; 2],

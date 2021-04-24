@@ -157,8 +157,7 @@ impl Implement {
             overlay: Overlay::None,
             contextmenu: None,
 
-            primary_mouse_btn_state: MouseBtnState::new(1),
-            secondary_mouse_btn_state: MouseBtnState::new(2),
+            mouse_btn_state: MouseBtnState::new(),
             key_state: KeyState {
                 alt_key: false,
                 ctrl_key: false,
