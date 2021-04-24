@@ -14,6 +14,7 @@ pub struct Table {
     background_texture_id: Option<ResourceId>,
     background_color: Pallet,
     grid_color: Pallet,
+    boxblocks: Vec<BlockId>,
 }
 
 impl Table {
@@ -33,6 +34,7 @@ impl Table {
             background_texture_id: None,
             background_color: Pallet::gray(0).a(0),
             grid_color: Pallet::gray(9).a(100),
+            boxblocks: vec![],
         }
     }
 
@@ -50,6 +52,7 @@ impl Table {
                 .map(|r_id| ResourceId::clone(r_id)),
             background_color: this.background_color,
             grid_color: this.grid_color,
+            boxblocks: this.boxblocks.iter().map(|x| BlockId::clone(x)).collect(),
         }
     }
 
@@ -115,6 +118,14 @@ impl Table {
 
     pub fn set_grid_color(&mut self, color: Pallet) {
         self.grid_color = color;
+    }
+
+    pub fn boxblocks(&self) -> impl Iterator<Item = &BlockId> {
+        self.boxblocks.iter()
+    }
+
+    pub fn add_boxblock(&mut self, boxblock_id: BlockId) {
+        self.boxblocks.push(boxblock_id);
     }
 
     pub async fn pack(&self) -> JsValue {

@@ -508,5 +508,18 @@ impl Implement {
             });
     }
 
-    fn create_new_boxblock(&mut self, pos: [f32; 3], size: [f32; 3], color: Pallet) {}
+    fn create_new_boxblock(&mut self, pos: [f32; 3], size: [f32; 3], color: Pallet) {
+        let boxblock_block = block::boxblock::Boxblock::new(pos, size, color);
+        let boxblock_id = self.block_arena.insert(boxblock_block);
+        self.block_arena
+            .map(&self.world_id, |world: &block::world::World| {
+                BlockId::clone(world.selecting_table())
+            })
+            .map(|selecting_table_id| {
+                self.block_arena
+                    .map_mut(&selecting_table_id, |table: &mut block::table::Table| {
+                        table.add_boxblock(boxblock_id);
+                    });
+            });
+    }
 }

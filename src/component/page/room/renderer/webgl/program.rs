@@ -230,7 +230,10 @@ impl Program for BoxblockProgram {
     accesser!(a_vertex_location as attr_vertex: WebGlAttributeLocation);
     accesser!(a_normal_location as attr_normal: WebGlAttributeLocation);
     accesser!(u_bg_color_location as unif_bg_color: WebGlUniformLocation);
+    accesser!(u_light_location as unif_light: WebGlUniformLocation);
     accesser!(u_inv_model_location as unif_inv_model: WebGlUniformLocation);
+    accesser!(u_shade_intensity_location as unif_shade_intensity: WebGlUniformLocation);
+    accesser!(u_translate_location as unif_translate: WebGlUniformLocation);
 }
 
 /*----------CharacterProgram----------*/

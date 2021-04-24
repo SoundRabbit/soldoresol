@@ -34,6 +34,7 @@ pub struct Renderer {
     render_view_tabletexture: view::tabletexture::Tabletexture,
     render_view_character: view::character::Character,
     render_view_character_base: view::character_base::CharacterBase,
+    render_view_boxblock: view::boxblock::Boxblock,
 }
 
 impl Renderer {
@@ -122,6 +123,7 @@ impl Renderer {
             view::tabletexture::Tabletexture::new(&view_gl, &mut tex_table);
         let render_view_character = view::character::Character::new(&view_gl);
         let render_view_character_base = view::character_base::CharacterBase::new(&view_gl);
+        let render_view_boxblock = view::boxblock::Boxblock::new(&view_gl);
 
         let render_offscreen_character = offscreen::character::Character::new(&offscreen_gl);
 
@@ -139,6 +141,7 @@ impl Renderer {
             render_view_tabletexture,
             render_view_character,
             render_view_character_base,
+            render_view_boxblock,
         }
     }
 
@@ -263,6 +266,15 @@ impl Renderer {
             block_arena.map(world.selecting_table(), |table: &block::table::Table| {
                 self.render_view_tablegrid
                     .render(&mut self.view_gl, &vp_matrix, table)
+            });
+
+            block_arena.map(world.selecting_table(), |table: &block::table::Table| {
+                self.render_view_boxblock.render(
+                    &mut self.view_gl,
+                    &vp_matrix,
+                    block_arena,
+                    table.boxblocks().map(|x| BlockId::clone(x)),
+                )
             });
 
             self.render_view_character_base.render(

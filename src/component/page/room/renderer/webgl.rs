@@ -15,6 +15,7 @@ pub enum ProgramType {
     TablemaskProgram,
     TablegridProgram,
     TabletextureProgram,
+    BoxblockProgram,
 }
 
 pub struct WebGlF32Vbo(web_sys::WebGlBuffer);
@@ -235,6 +236,9 @@ impl WebGlRenderingContext {
                 ProgramType::TabletextureProgram => {
                     Box::new(program::TabletextureProgram::new(&self)) as Box<dyn Program>
                 }
+                ProgramType::BoxblockProgram => {
+                    Box::new(program::BoxblockProgram::new(&self)) as Box<dyn Program>
+                }
             };
             self.program_table.insert(program_type.clone(), program);
         }
@@ -242,7 +246,7 @@ impl WebGlRenderingContext {
         if self
             .using_program
             .as_ref()
-            .map(|up| *up != program_type)
+            .map(|using_program| *using_program != program_type)
             .unwrap_or(true)
         {
             let program = self
