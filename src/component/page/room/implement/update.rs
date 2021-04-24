@@ -98,7 +98,7 @@ impl Implement {
                                 kind: ContextmenuKind::Character(block_id),
                             });
                         }
-                        ObjectId::None => {}
+                        _ => {}
                     }
                     Cmd::none()
                 } else {

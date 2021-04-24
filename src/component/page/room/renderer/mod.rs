@@ -13,7 +13,7 @@ mod webgl;
 
 use webgl::WebGlRenderingContext;
 
-pub use id_table::ObjectId;
+pub use id_table::{ObjectId, Surface};
 pub use matrix::camera::CameraMatrix;
 
 pub struct Renderer {
@@ -29,6 +29,7 @@ pub struct Renderer {
     id_table: id_table::IdTable,
 
     render_offscreen_character: offscreen::character::Character,
+    render_offscreen_boxblock: offscreen::boxblock::Boxblock,
 
     render_view_tablegrid: view::tablegrid::Tablegrid,
     render_view_tabletexture: view::tabletexture::Tabletexture,
@@ -126,6 +127,7 @@ impl Renderer {
         let render_view_boxblock = view::boxblock::Boxblock::new(&view_gl);
 
         let render_offscreen_character = offscreen::character::Character::new(&offscreen_gl);
+        let render_offscreen_boxblock = offscreen::boxblock::Boxblock::new(&offscreen_gl);
 
         Self {
             view_canvas,
@@ -137,6 +139,7 @@ impl Renderer {
             tex_table,
             id_table,
             render_offscreen_character,
+            render_offscreen_boxblock,
             render_view_tablegrid,
             render_view_tabletexture,
             render_view_character,
@@ -216,6 +219,10 @@ impl Renderer {
                     )
                 })
             }
+
+            ObjectId::Boxblock(boxblock_id, srfs) => {
+                Some(camera.collision_point(&self.canvas_size, &[x, y], &srfs.r, &srfs.s, &srfs.t))
+            }
             _ => None,
         };
 
@@ -293,6 +300,17 @@ impl Renderer {
                 resource_arena,
                 world.characters().map(|x| BlockId::clone(x)),
             );
+
+            block_arena.map(world.selecting_table(), |table: &block::table::Table| {
+                self.render_offscreen_boxblock.render(
+                    &mut self.offscreen_gl,
+                    &mut self.id_table,
+                    &vp_matrix,
+                    block_arena,
+                    table.boxblocks().map(|x| BlockId::clone(x)),
+                    grabbed_object_id,
+                );
+            });
 
             self.render_offscreen_character.render(
                 &mut self.offscreen_gl,

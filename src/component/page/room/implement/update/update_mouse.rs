@@ -637,22 +637,27 @@ impl Implement {
         let mouse_state = &self.mouse_btn_state.primary;
 
         if mouse_state.is_clicked {
-            let character = match self.table_tools.selected() {
-                Some(TableTool::Character(x)) => CharacterTool::clone_of(x),
-                _ => {
-                    return;
-                }
+            let character = if let Some(TableTool::Character(x)) = self.table_tools.selected() {
+                CharacterTool::clone_of(x)
+            } else {
+                return;
             };
-            let a = self
-                .camera_matrix
-                .collision_point_on_xy_plane(&self.canvas_size, &[client_x, client_y]);
-            let a = [a[0], a[1], a[2]];
+            let p = if let Some(renderer) = &self.renderer {
+                renderer.get_focused_position(
+                    &self.block_arena,
+                    &self.camera_matrix,
+                    client_x,
+                    client_y,
+                )
+            } else {
+                return;
+            };
             self.create_new_character(
                 Some(character.size as f32),
                 Some(character.tex_scale as f32),
                 character.tex_id.as_ref().map(|x| ResourceId::clone(x)),
                 Some(character.name.clone()),
-                Some(a),
+                Some(p),
             );
         }
     }
@@ -661,16 +666,25 @@ impl Implement {
         let mouse_state = &self.mouse_btn_state.primary;
 
         if mouse_state.is_clicked {
-            let boxblock = match self.table_tools.selected() {
-                Some(TableTool::Boxblock(x)) => BoxblockTool::clone_of(x),
-                _ => {
-                    return;
-                }
+            let boxblock = if let Some(TableTool::Boxblock(x)) = self.table_tools.selected() {
+                BoxblockTool::clone_of(x)
+            } else {
+                return;
             };
-            let p = self
-                .camera_matrix
-                .collision_point_on_xy_plane(&self.canvas_size, &[client_x, client_y]);
-            let p = [p[0], p[1], p[2]];
+
+            let p = if let Some(renderer) = &self.renderer {
+                renderer.get_focused_position(
+                    &self.block_arena,
+                    &self.camera_matrix,
+                    client_x,
+                    client_y,
+                )
+            } else {
+                return;
+            };
+
+            let p = [p[0], p[1], p[2] + boxblock.size[2] as f32 * 0.5];
+
             let s = boxblock.size;
             let s = [s[0] as f32, s[1] as f32, s[2] as f32];
 

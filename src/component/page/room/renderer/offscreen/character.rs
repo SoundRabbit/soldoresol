@@ -4,7 +4,6 @@ use super::webgl::{ProgramType, WebGlF32Vbo, WebGlI16Ibo, WebGlRenderingContext}
 use crate::arena::block::{self, BlockId};
 use crate::arena::resource;
 use ndarray::Array2;
-use ordered_float::OrderedFloat;
 
 pub struct Character {
     vertexes_buffer_xy: WebGlF32Vbo,

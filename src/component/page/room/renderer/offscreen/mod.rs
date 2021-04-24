@@ -1,3 +1,4 @@
+pub mod boxblock;
 pub mod character;
 
 use super::id_table;
