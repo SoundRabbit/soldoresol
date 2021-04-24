@@ -7,6 +7,7 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use wasm_bindgen::{prelude::*, JsCast};
 
+pub mod boxblock;
 pub mod character;
 pub mod chat;
 pub mod table;
@@ -23,6 +24,7 @@ pub enum Block {
     ChatMessage(chat::message::Message),
     Character(character::Character),
     Tag(tag::Tag),
+    Boxblock(boxblock::Boxblock),
     None,
 }
 
@@ -44,6 +46,7 @@ impl Block {
             Self::ChatMessage(block) => Self::ChatMessage(chat::message::Message::clone(block)),
             Self::Character(block) => Self::Character(character::Character::clone(block)),
             Self::Tag(block) => Self::Tag(tag::Tag::clone(block)),
+            Self::Boxblock(block) => Self::Boxblock(boxblock::Boxblock::clone(block)),
             Self::None => Self::None,
         }
     }
@@ -98,6 +101,7 @@ try_ref_mut!(Block: ChatChannel => chat::channel::Channel);
 try_ref_mut!(Block: ChatMessage => chat::message::Message);
 try_ref_mut!(Block: Character => character::Character);
 try_ref_mut!(Block: Tag => tag::Tag);
+try_ref_mut!(Block: Boxblock => boxblock::Boxblock);
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct BlockId {
@@ -166,6 +170,7 @@ impl ArenaBlock {
             Block::ChatMessage(x) => (object! {}.into(), "None"),
             Block::Character(x) => (object! {}.into(), "None"),
             Block::Tag(x) => (object! {}.into(), "None"),
+            Block::Boxblock(x) => (object! {}.into(), "None"),
             Block::None => (object! {}.into(), "None"),
         };
 
@@ -356,3 +361,4 @@ insert!(Arena: chat::Chat => Chat);
 insert!(Arena: chat::channel::Channel => ChatChannel);
 insert!(Arena: character::Character => Character);
 insert!(Arena: tag::Tag => Tag);
+insert!(Arena: boxblock::Boxblock => Boxblock);
