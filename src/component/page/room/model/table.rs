@@ -12,6 +12,7 @@ pub enum TableTool {
     Shape(SelectList<ShapeTool>),
     Eraser(EraserTool),
     Character(CharacterTool),
+    Boxblock(BoxblockTool),
 }
 
 impl TableTool {
@@ -24,6 +25,7 @@ impl TableTool {
             Self::Shape(..) => "図形",
             Self::TableEditor => "テーブル編集",
             Self::Character(..) => "キャラクター作成",
+            Self::Boxblock(..) => "ブロック作成",
         }
     }
 }
@@ -38,6 +40,7 @@ impl CloneOf for TableTool {
             Self::Shape(x) => Self::Shape(SelectList::clone_of(x)),
             Self::Eraser(x) => Self::Eraser(EraserTool::clone_of(x)),
             Self::Character(x) => Self::Character(CharacterTool::clone_of(x)),
+            Self::Boxblock(x) => Self::Boxblock(BoxblockTool::clone_of(x)),
         }
     }
 }
@@ -127,4 +130,10 @@ impl CloneOf for CharacterTool {
             name: this.name.clone(),
         }
     }
+}
+
+#[derive(Clone)]
+pub struct BoxblockTool {
+    pub size: [f64; 3],
+    pub color: Pallet,
 }

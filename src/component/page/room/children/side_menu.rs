@@ -1,5 +1,6 @@
 use super::super::model::table::{
-    CharacterTool, EraserTool, FillShapeTool, LineShapeTool, PenTool, ShapeTool, TableTool,
+    BoxblockTool, CharacterTool, EraserTool, FillShapeTool, LineShapeTool, PenTool, ShapeTool,
+    TableTool,
 };
 use super::atom::btn::{self, Btn};
 use super::atom::fa;
@@ -204,6 +205,7 @@ impl SideMenu {
                             TableTool::Shape(..) => "fa-shapes",
                             TableTool::Eraser(..) => "fa-eraser",
                             TableTool::Character(..) => "fa-users",
+                            TableTool::Boxblock(..) => "fa-cube",
                         }),
                     ),
                 })
@@ -271,6 +273,7 @@ impl SideMenu {
                     Some(TableTool::TableEditor) => self.render_sub_table_editor(),
                     Some(TableTool::Eraser(tool)) => self.render_sub_eraser(tool),
                     Some(TableTool::Character(tool)) => self.render_sub_character(tool),
+                    Some(TableTool::Boxblock(tool)) => self.render_sub_boxblock(tool),
                     _ => Html::div(Attributes::new(), Events::new(), vec![]),
                 },
             ],
@@ -799,6 +802,102 @@ impl SideMenu {
                         }
                     }),
                     Html::text("画像を選択する"),
+                ),
+            ],
+        )
+    }
+
+    fn render_sub_boxblock(&self, boxblock: &BoxblockTool) -> Html {
+        Html::div(
+            Attributes::new()
+                .class(Self::class("sub-body"))
+                .class(Self::class("sub-menu")),
+            Events::new(),
+            vec![
+                text::div("幅（x方向）"),
+                Slider::empty(
+                    slider::Props {
+                        position: slider::Position::Linear {
+                            val: boxblock.size[0],
+                            min: 0.0,
+                            max: 10.0,
+                            step: 0.5,
+                        },
+                        range_is_editable: false,
+                    },
+                    Subscription::new({
+                        let mut boxblock = BoxblockTool::clone_of(boxblock);
+                        move |sub| match sub {
+                            slider::On::Input(a) => {
+                                boxblock.size[0] = a;
+                                Msg::Sub(On::SetSelectedTool {
+                                    tool: TableTool::Boxblock(boxblock),
+                                })
+                            }
+                        }
+                    }),
+                ),
+                text::div("奥行き（y方向）"),
+                Slider::empty(
+                    slider::Props {
+                        position: slider::Position::Linear {
+                            val: boxblock.size[1],
+                            min: 0.0,
+                            max: 10.0,
+                            step: 0.5,
+                        },
+                        range_is_editable: false,
+                    },
+                    Subscription::new({
+                        let mut boxblock = BoxblockTool::clone_of(boxblock);
+                        move |sub| match sub {
+                            slider::On::Input(a) => {
+                                boxblock.size[1] = a;
+                                Msg::Sub(On::SetSelectedTool {
+                                    tool: TableTool::Boxblock(boxblock),
+                                })
+                            }
+                        }
+                    }),
+                ),
+                text::div("奥行き（z方向）"),
+                Slider::empty(
+                    slider::Props {
+                        position: slider::Position::Linear {
+                            val: boxblock.size[2],
+                            min: 0.0,
+                            max: 10.0,
+                            step: 0.5,
+                        },
+                        range_is_editable: false,
+                    },
+                    Subscription::new({
+                        let mut boxblock = BoxblockTool::clone_of(boxblock);
+                        move |sub| match sub {
+                            slider::On::Input(a) => {
+                                boxblock.size[2] = a;
+                                Msg::Sub(On::SetSelectedTool {
+                                    tool: TableTool::Boxblock(boxblock),
+                                })
+                            }
+                        }
+                    }),
+                ),
+                ColorPallet::empty(
+                    color_pallet::Props {
+                        default_selected: boxblock.color.clone(),
+                    },
+                    Subscription::new({
+                        let mut boxblock = BoxblockTool::clone_of(boxblock);
+                        move |sub| match sub {
+                            color_pallet::On::SelectColor(a) => {
+                                boxblock.color = a;
+                                Msg::Sub(On::SetSelectedTool {
+                                    tool: TableTool::Boxblock(boxblock),
+                                })
+                            }
+                        }
+                    }),
                 ),
             ],
         )

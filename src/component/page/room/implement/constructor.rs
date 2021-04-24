@@ -1,7 +1,8 @@
 use super::super::{
     super::util::State,
     model::table::{
-        CharacterTool, EraserTool, FillShapeTool, LineShapeTool, PenTool, ShapeTool, TableTool,
+        BoxblockTool, CharacterTool, EraserTool, FillShapeTool, LineShapeTool, PenTool, ShapeTool,
+        TableTool,
     },
     renderer::{CameraMatrix, ObjectId},
 };
@@ -134,6 +135,10 @@ impl Implement {
                         tex_scale: 1.0,
                         tex_id: None,
                         name: String::from(""),
+                    }),
+                    TableTool::Boxblock(BoxblockTool {
+                        size: [1.0, 1.0, 1.0],
+                        color: Pallet::blue(5).a(100),
                     }),
                 ],
                 0,
