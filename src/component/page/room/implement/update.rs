@@ -1,7 +1,7 @@
 use super::super::{
     super::util::State,
     children::room_modeless,
-    model::table::{CharacterTool, ShapeTool, TableTool},
+    model::table::{BoxblockTool, CharacterTool, ShapeTool, TableTool},
     renderer::{ObjectId, Renderer},
 };
 use super::{Cmd, Contextmenu, ContextmenuKind, Implement, Modal, ModelessContent, Msg, On};
@@ -9,6 +9,7 @@ use crate::arena::block::{self, BlockId};
 use crate::arena::resource::{self, ResourceId};
 use crate::arena::Insert;
 use crate::libs::clone_of::CloneOf;
+use crate::libs::color::Pallet;
 use crate::libs::select_list::SelectList;
 use std::rc::Rc;
 use wasm_bindgen::{prelude::*, JsCast};
@@ -506,4 +507,6 @@ impl Implement {
                 world.add_character(character_id);
             });
     }
+
+    fn create_new_boxblock(&mut self, pos: [f32; 3], size: [f32; 3], color: Pallet) {}
 }

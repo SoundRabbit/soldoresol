@@ -1,5 +1,6 @@
 use super::{
-    block, BlockId, CharacterTool, CloneOf, Implement, ObjectId, ResourceId, ShapeTool, TableTool,
+    block, BlockId, BoxblockTool, CharacterTool, CloneOf, Implement, ObjectId, ResourceId,
+    ShapeTool, TableTool,
 };
 
 impl Implement {
@@ -109,6 +110,7 @@ impl Implement {
                 Some(TableTool::Character(_)) => {
                     self.update_tabletool_character(client_x, client_y)
                 }
+                Some(TableTool::Boxblock(_)) => self.update_tabletool_boxblock(client_x, client_y),
                 _ => {}
             }
         }
@@ -652,6 +654,27 @@ impl Implement {
                 Some(character.name.clone()),
                 Some(a),
             );
+        }
+    }
+
+    fn update_tabletool_boxblock(&mut self, client_x: f32, client_y: f32) {
+        let mouse_state = &self.mouse_btn_state.primary;
+
+        if mouse_state.is_clicked {
+            let boxblock = match self.table_tools.selected() {
+                Some(TableTool::Boxblock(x)) => BoxblockTool::clone_of(x),
+                _ => {
+                    return;
+                }
+            };
+            let p = self
+                .camera_matrix
+                .collision_point_on_xy_plane(&self.canvas_size, &[client_x, client_y]);
+            let p = [p[0], p[1], p[2]];
+            let s = boxblock.size;
+            let s = [s[0] as f32, s[1] as f32, s[2] as f32];
+
+            self.create_new_boxblock(s, p, boxblock.color);
         }
     }
 }
