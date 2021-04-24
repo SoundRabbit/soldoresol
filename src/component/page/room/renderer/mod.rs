@@ -188,6 +188,40 @@ impl Renderer {
         }
     }
 
+    pub fn get_focused_position(
+        &self,
+        block_arena: &block::Arena,
+        camera: &CameraMatrix,
+        x: f32,
+        y: f32,
+    ) -> [f32; 3] {
+        let focused = self.get_object_id(x, y);
+
+        let x = x * self.device_pixel_ratio;
+        let y = y * self.device_pixel_ratio;
+
+        let focused_position = match focused {
+            ObjectId::Character(character_id) => {
+                block_arena.map(&character_id, |character: &block::character::Character| {
+                    let p = character.position();
+                    camera.collision_point(
+                        &self.canvas_size,
+                        &[x, y],
+                        p,
+                        &[1.0, 0.0, 0.0],
+                        &[0.0, 1.0, 0.0],
+                    )
+                })
+            }
+            _ => None,
+        };
+
+        focused_position.unwrap_or({
+            let p = camera.collision_point_on_xy_plane(&self.canvas_size, &[x, y]);
+            [p[0], p[1], p[2]]
+        })
+    }
+
     pub fn render(
         &mut self,
         block_arena: &block::Arena,
@@ -195,6 +229,7 @@ impl Renderer {
         resource_arena: &resource::Arena,
         world_id: &BlockId,
         camera_matrix: &CameraMatrix,
+        grabbed_object_id: &ObjectId,
     ) {
         block_arena.map(world_id, |world: &block::world::World| {
             self.view_gl.clear(
@@ -258,6 +293,7 @@ impl Renderer {
                 block_arena,
                 resource_arena,
                 world.characters().map(|x| BlockId::clone(x)),
+                grabbed_object_id,
             );
         });
     }

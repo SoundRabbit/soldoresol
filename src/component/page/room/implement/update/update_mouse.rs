@@ -1,4 +1,6 @@
-use super::{block, BlockId, CharacterTool, CloneOf, Implement, ResourceId, ShapeTool, TableTool};
+use super::{
+    block, BlockId, CharacterTool, CloneOf, Implement, ObjectId, ResourceId, ShapeTool, TableTool,
+};
 
 impl Implement {
     pub fn update_mouse(&mut self) -> bool {
@@ -16,33 +18,61 @@ impl Implement {
         let last_changing_client_x = last_changing_point[0] - self.canvas_pos[0];
         let last_changing_client_y = last_changing_point[1] - self.canvas_pos[1];
 
-        if mouse_state.is_dragging && (self.key_state.space_key || self.key_state.alt_key) {
-            if self.key_state.space_key {
-                let mov_x = (client_x - last_client_x) as f32;
-                let mov_y = (client_y - last_client_y) as f32;
-                let intensity = 0.05;
-                let mov = self.camera_matrix.movement();
-                let mov = [
-                    mov[0] - mov_x * intensity,
-                    mov[1] + mov_y * intensity,
-                    mov[2],
-                ];
-                self.camera_matrix.set_movement(mov);
-            }
-            if self.key_state.alt_key {
-                let mov_x = (client_x - last_client_x) as f32;
-                let mov_y = (client_y - last_client_y) as f32;
-                let intensity = 0.005;
-                let rot_x = self.camera_matrix.x_axis_rotation();
-                let rot_z = self.camera_matrix.z_axis_rotation();
+        if mouse_state.is_dragging && self.key_state.space_key {
+            let mov_x = (client_x - last_client_x) as f32;
+            let mov_y = (client_y - last_client_y) as f32;
+            let intensity = 0.05;
+            let mov = self.camera_matrix.movement();
+            let mov = [
+                mov[0] - mov_x * intensity,
+                mov[1] + mov_y * intensity,
+                mov[2],
+            ];
+            self.camera_matrix.set_movement(mov);
+        } else if mouse_state.is_dragging && self.key_state.alt_key {
+            let mov_x = (client_x - last_client_x) as f32;
+            let mov_y = (client_y - last_client_y) as f32;
+            let intensity = 0.005;
+            let rot_x = self.camera_matrix.x_axis_rotation();
+            let rot_z = self.camera_matrix.z_axis_rotation();
 
-                self.camera_matrix
-                    .set_x_axis_rotation(rot_x - mov_y * intensity);
-                self.camera_matrix
-                    .set_z_axis_rotation(rot_z - mov_x * intensity);
-            }
+            self.camera_matrix
+                .set_x_axis_rotation(rot_x - mov_y * intensity);
+            self.camera_matrix
+                .set_z_axis_rotation(rot_z - mov_x * intensity);
         } else {
             match self.table_tools.selected() {
+                Some(TableTool::Selector) => {
+                    if mouse_state.is_dragging {
+                        if self.grabbed_object_id.is_none() {
+                            self.grabbed_object_id = self
+                                .renderer
+                                .as_ref()
+                                .map(|x| x.get_object_id(client_x, client_y))
+                                .unwrap_or(ObjectId::None);
+                        } else if let Some(renderer) = &self.renderer {
+                            let focused_position = renderer.get_focused_position(
+                                &self.block_arena,
+                                &self.camera_matrix,
+                                client_x,
+                                client_y,
+                            );
+                            match &self.grabbed_object_id {
+                                ObjectId::Character(character_id) => {
+                                    self.block_arena.map_mut(
+                                        character_id,
+                                        |character: &mut block::character::Character| {
+                                            character.set_position(focused_position);
+                                        },
+                                    );
+                                }
+                                _ => {}
+                            }
+                        }
+                    } else {
+                        self.grabbed_object_id = ObjectId::None;
+                    }
+                }
                 Some(TableTool::Pen(_)) => {
                     self.update_tabletool_pen(client_x, client_y, last_client_x, last_client_y)
                 }

@@ -3,7 +3,7 @@ use super::super::{
     model::table::{
         CharacterTool, EraserTool, FillShapeTool, LineShapeTool, PenTool, ShapeTool, TableTool,
     },
-    renderer::CameraMatrix,
+    renderer::{CameraMatrix, ObjectId},
 };
 use super::{ElementId, Implement, KeyState, Modal, MouseBtnState, Msg, On, Overlay, Props};
 use crate::arena::block;
@@ -168,6 +168,7 @@ impl Implement {
             canvas_pos: [0.0, 0.0],
             canvas_size: [1.0, 1.0],
             drawing_line: vec![],
+            grabbed_object_id: ObjectId::None,
         }
     }
 }

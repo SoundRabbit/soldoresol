@@ -53,10 +53,14 @@ impl Character {
         block_arena: &block::Arena,
         resource_arena: &resource::Arena,
         character_ids: impl Iterator<Item = BlockId>,
+        grabbed_object_id: &ObjectId,
     ) {
         let characters = block_arena
             .iter_map_with_ids(
-                character_ids,
+                character_ids.filter(|x| match grabbed_object_id {
+                    ObjectId::Character(grabbed_object_id) => *grabbed_object_id != *x,
+                    _ => true,
+                }),
                 |character_id, character: &block::character::Character| {
                     let size = character.size();
                     let pos = character.position().clone();

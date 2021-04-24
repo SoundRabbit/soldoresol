@@ -3,7 +3,7 @@ use super::{
     super::util::State,
     children::room_modeless,
     model::table::TableTool,
-    renderer::{CameraMatrix, Renderer},
+    renderer::{CameraMatrix, ObjectId, Renderer},
 };
 use crate::arena::block::{self, BlockId};
 use crate::arena::player;
@@ -265,6 +265,7 @@ pub struct Implement {
     canvas_pos: [f32; 2],
     canvas_size: [f32; 2],
     drawing_line: Vec<[f64; 2]>,
+    grabbed_object_id: ObjectId,
 }
 
 struct ModelessContent {

@@ -7,6 +7,15 @@ pub enum ObjectId {
     Character(BlockId),
 }
 
+impl ObjectId {
+    pub fn is_none(&self) -> bool {
+        match &self {
+            Self::None => true,
+            _ => false,
+        }
+    }
+}
+
 impl CloneOf for ObjectId {
     fn clone_of(this: &Self) -> Self {
         match this {

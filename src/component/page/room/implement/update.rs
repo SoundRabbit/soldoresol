@@ -70,6 +70,7 @@ impl Implement {
                         &self.resource_arena,
                         &self.world_id,
                         &self.camera_matrix,
+                        &self.grabbed_object_id,
                     );
                 }
                 Cmd::none()
