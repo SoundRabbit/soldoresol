@@ -39,6 +39,7 @@ impl CharacterBase {
         character_ids: impl Iterator<Item = BlockId>,
     ) {
         gl.use_program(ProgramType::TablemaskProgram);
+        gl.depth_func(web_sys::WebGlRenderingContext::LEQUAL);
         gl.set_attr_vertex(&self.vertexes_buffer, 3, 0);
         gl.set_attr_tex_coord(&self.texture_coord_buffer, 2, 0);
         gl.set_unif_flag_round(1);

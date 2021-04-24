@@ -150,9 +150,10 @@ impl WebGlRenderingContext {
         Rc::clone(&self.gl)
     }
 
-    pub fn depth_func(&self, func: u32) {
+    pub fn depth_func(&mut self, func: u32) {
         if self.depth_func != func {
-            self.depth_func(func);
+            self.gl.depth_func(func);
+            self.depth_func = func;
         }
     }
 

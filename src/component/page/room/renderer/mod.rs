@@ -66,7 +66,7 @@ impl Renderer {
             .map_err(|err| crate::debug::log_1(&err))
             .unwrap()
             .unwrap();
-        let view_gl = WebGlRenderingContext::new(view_gl);
+        let mut view_gl = WebGlRenderingContext::new(view_gl);
 
         view_gl.enable(web_sys::WebGlRenderingContext::BLEND);
         view_gl.blend_func_separate(
@@ -281,9 +281,6 @@ impl Renderer {
                 resource_arena,
                 world.characters().map(|x| BlockId::clone(x)),
             );
-
-            self.view_gl
-                .depth_func(web_sys::WebGlRenderingContext::ALWAYS);
 
             self.render_offscreen_character.render(
                 &mut self.offscreen_gl,

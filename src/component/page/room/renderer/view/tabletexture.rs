@@ -70,6 +70,7 @@ impl Tabletexture {
         };
 
         gl.use_program(ProgramType::TabletextureProgram);
+        gl.depth_func(web_sys::WebGlRenderingContext::ALWAYS);
 
         gl.set_attr_vertex(&self.vertexis_buffer, 3, 0);
         gl.set_attr_tex_coord(&self.texture_coord_buffer, 2, 0);

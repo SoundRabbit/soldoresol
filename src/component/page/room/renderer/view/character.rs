@@ -74,6 +74,7 @@ impl Character {
             },
         );
 
+        gl.depth_func(web_sys::WebGlRenderingContext::LEQUAL);
         gl.use_program(ProgramType::CharacterProgram);
         gl.set_attr_vertex(&self.vertexis_buffer, 3, 0);
         gl.set_attr_tex_coord(&self.texture_coord_buffer, 2, 0);
