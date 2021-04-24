@@ -18,11 +18,11 @@ pub fn render<'a>(
     block_field: &block::Field,
     resource: &Resource,
     modeless: &model::Modeless<Modeless>,
-    grubbed: Option<model::modeless::ModelessId>,
+    grabbed: Option<model::modeless::ModelessId>,
     world: &block::World,
     selecting_tab_idx: usize,
 ) -> Html {
-    let is_grubbed = grubbed.is_some();
+    let is_grabbed = grabbed.is_some();
     let tags = world.tags().collect::<Vec<_>>();
     let selecting_tag_id = if selecting_tab_idx == 0 {
         None
@@ -38,7 +38,7 @@ pub fn render<'a>(
         vec![
             super::header(
                 modeless_id,
-                grubbed,
+                grabbed,
                 Attributes::new().class("frame-header-tab"),
                 Events::new(),
                 memo_tag_list(modeless_id, block_field, &tags, selecting_tag_id),
@@ -49,7 +49,7 @@ pub fn render<'a>(
                     .class("linear-v-stretch")
                     .class("scroll-v"),
                 Events::new().on_mousemove(move |e| {
-                    if !is_grubbed {
+                    if !is_grabbed {
                         e.stop_propagation();
                     }
                     Msg::NoOp

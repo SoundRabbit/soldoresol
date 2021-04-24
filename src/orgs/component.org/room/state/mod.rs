@@ -342,14 +342,14 @@ impl<M, S> State<M, S> {
         self.modeless.focus(modeless_id);
     }
 
-    pub fn grub_modeless(
+    pub fn grab_modeless(
         &mut self,
         modeless_id: ModelessId,
         mouse_position: [f64; 2], // x, y
         movable: [bool; 4],       // top, left, bottom, right
     ) {
         self.modeless.get_mut(modeless_id).map(|m| {
-            m.grub(mouse_position[0], mouse_position[1]);
+            m.grab(mouse_position[0], mouse_position[1]);
             m.set_movable(movable[0], movable[1], movable[2], movable[3]);
         });
     }

@@ -16,7 +16,7 @@ struct Loc<T> {
 pub struct Modeless<T> {
     z_index: i32,
     position: Loc<f64>,
-    grubbed: Option<Loc<f64>>,
+    grabbed: Option<Loc<f64>>,
     movable: Loc<bool>,
     parent: Option<Rc<web_sys::Element>>,
     payload: T,
@@ -62,7 +62,7 @@ impl<T> Modeless<T> {
         Self {
             z_index: 0,
             position: Loc::new(20.0, 20.0, 60.0, 60.0),
-            grubbed: None,
+            grabbed: None,
             movable: Loc::new(false, false, false, false),
             parent: None,
             payload,
@@ -134,13 +134,13 @@ impl<T> Modeless<T> {
         self.z_index = z_index;
     }
 
-    pub fn is_grubbed(&self) -> bool {
-        self.grubbed.is_some()
+    pub fn is_grabbed(&self) -> bool {
+        self.grabbed.is_some()
     }
 
-    pub fn grub(&mut self, x: f64, y: f64) {
+    pub fn grab(&mut self, x: f64, y: f64) {
         let [x, y] = self.window_pos(&[x, y]);
-        self.grubbed = Some(Loc::new(
+        self.grabbed = Some(Loc::new(
             self.position.top - y,
             self.position.left - x,
             self.position.bottom - y,
@@ -149,7 +149,7 @@ impl<T> Modeless<T> {
     }
 
     pub fn drop(&mut self) {
-        self.grubbed = None;
+        self.grabbed = None;
         self.movable = Loc::new(false, false, false, false);
     }
 
@@ -158,13 +158,13 @@ impl<T> Modeless<T> {
     }
 
     pub fn move_with_mouse_pos(&mut self, x: f64, y: f64) {
-        if let Some(grubbed) = &self.grubbed {
+        if let Some(grabbed) = &self.grabbed {
             let pos = self.window_pos(&[x, y]);
 
-            let top = pos[1] + grubbed.top;
-            let left = pos[0] + grubbed.left;
-            let bottom = pos[1] + grubbed.bottom;
-            let right = pos[0] + grubbed.right;
+            let top = pos[1] + grabbed.top;
+            let left = pos[0] + grabbed.left;
+            let bottom = pos[1] + grabbed.bottom;
+            let right = pos[0] + grabbed.right;
 
             let diff_top = if self.movable.top { -top.min(0.0) } else { 0.0 };
             let diff_left = if self.movable.left {
@@ -279,10 +279,10 @@ impl<T> Collection<T> {
         self.modelesses.iter_mut().enumerate()
     }
 
-    pub fn grubbed(&self) -> Option<ModelessId> {
+    pub fn grabbed(&self) -> Option<ModelessId> {
         self.modelesses
             .iter()
-            .position(|m| m.as_ref().map(|m| m.is_grubbed()).unwrap_or(false))
+            .position(|m| m.as_ref().map(|m| m.is_grabbed()).unwrap_or(false))
     }
 
     pub fn set_parent(&mut self, element: Option<web_sys::Element>) {

@@ -20,7 +20,7 @@ pub fn render(
     state: &State,
     modeless_id: model::modeless::ModelessId,
     modeless: &model::Modeless<Modeless>,
-    grubbed: Option<model::modeless::ModelessId>,
+    grabbed: Option<model::modeless::ModelessId>,
 ) -> Html {
     match modeless.as_ref() {
         Modeless::Object {
@@ -33,7 +33,7 @@ pub fn render(
             state.resource(),
             modeless_id,
             modeless,
-            grubbed,
+            grabbed,
             tabs,
             *focused,
             outlined.as_ref(),
@@ -53,7 +53,7 @@ pub fn render(
                     state.resource(),
                     modeless_id,
                     modeless,
-                    grubbed,
+                    grabbed,
                     state.chat(),
                     state.dicebot(),
                     chat_data,
@@ -72,7 +72,7 @@ pub fn render(
                     state.block_field(),
                     state.resource(),
                     modeless,
-                    grubbed,
+                    grabbed,
                     world,
                     *focused,
                 )
@@ -122,42 +122,42 @@ fn frame(
                         .and_then(|t| t.dyn_into::<web_sys::Element>().ok())
                         .and_then(|t| t.get_attribute("data-position"))
                         .map(|pos| match pos.as_str() {
-                            "top" => Msg::GrubModeless(
+                            "top" => Msg::GrabModeless(
                                 modeless_id,
                                 mouse_pos,
                                 [true, false, false, false],
                             ),
-                            "left" => Msg::GrubModeless(
+                            "left" => Msg::GrabModeless(
                                 modeless_id,
                                 mouse_pos,
                                 [false, true, false, false],
                             ),
-                            "bottom" => Msg::GrubModeless(
+                            "bottom" => Msg::GrabModeless(
                                 modeless_id,
                                 mouse_pos,
                                 [false, false, true, false],
                             ),
-                            "right" => Msg::GrubModeless(
+                            "right" => Msg::GrabModeless(
                                 modeless_id,
                                 mouse_pos,
                                 [false, false, false, true],
                             ),
-                            "top_left" => Msg::GrubModeless(
+                            "top_left" => Msg::GrabModeless(
                                 modeless_id,
                                 mouse_pos,
                                 [true, true, false, false],
                             ),
-                            "bottom_left" => Msg::GrubModeless(
+                            "bottom_left" => Msg::GrabModeless(
                                 modeless_id,
                                 mouse_pos,
                                 [false, true, true, false],
                             ),
-                            "bottom_right" => Msg::GrubModeless(
+                            "bottom_right" => Msg::GrabModeless(
                                 modeless_id,
                                 mouse_pos,
                                 [false, false, true, true],
                             ),
-                            "top_right" => Msg::GrubModeless(
+                            "top_right" => Msg::GrabModeless(
                                 modeless_id,
                                 mouse_pos,
                                 [true, false, false, true],
@@ -190,7 +190,7 @@ fn resizers() -> Vec<Html> {
 
 fn header(
     modeless_id: model::modeless::ModelessId,
-    grubbed: Option<model::modeless::ModelessId>,
+    grabbed: Option<model::modeless::ModelessId>,
     attributes: Attributes,
     events: Events,
     header: Html,
@@ -201,7 +201,7 @@ fn header(
             .style("grid-template-columns", "1fr max-content"),
         events.on_mousedown(move |e| {
             let mouse_pos = [e.page_x() as f64, e.page_y() as f64];
-            Msg::GrubModeless(modeless_id, mouse_pos, [true, true, true, true])
+            Msg::GrabModeless(modeless_id, mouse_pos, [true, true, true, true])
         }),
         vec![
             header,

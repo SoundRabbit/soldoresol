@@ -55,12 +55,12 @@ pub enum Msg {
     // Modeless
     OpenModeless(state::Modeless),
     FocusModeless(ModelessId),
-    GrubModeless(ModelessId, [f64; 2], [bool; 4]),
+    GrabModeless(ModelessId, [f64; 2], [bool; 4]),
     DragModeless(ModelessId, [f64; 2]),
     DropModeless(ModelessId),
     CloseModeless(ModelessId),
     SetModelessTabIdx(ModelessId, usize),
-    GrubModelessTab(ModelessId, usize),
+    GrabModelessTab(ModelessId, usize),
     DropModelessTabToModeless(ModelessId),
     DropModelessTab([f64; 2]),
 
@@ -370,8 +370,8 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.dequeue()
         }
 
-        Msg::GrubModeless(modeless_id, mouse_position, movable) => {
-            state.grub_modeless(modeless_id, mouse_position, movable);
+        Msg::GrabModeless(modeless_id, mouse_position, movable) => {
+            state.grab_modeless(modeless_id, mouse_position, movable);
             state.dequeue()
         }
 
@@ -395,11 +395,11 @@ fn update(state: &mut State, msg: Msg) -> Cmd<Msg, Sub> {
             state.dequeue()
         }
 
-        Msg::GrubModelessTab(modeless_id, tab_idx) => {
+        Msg::GrabModelessTab(modeless_id, tab_idx) => {
             state
                 .table_mut()
                 .set_moving_tab(Some((modeless_id, tab_idx)));
-            state.grub_modeless(modeless_id, [0.0, 0.0], [false, false, false, false]);
+            state.grab_modeless(modeless_id, [0.0, 0.0], [false, false, false, false]);
             state.dequeue()
         }
 

@@ -12,7 +12,7 @@ mod character_list;
 mod overlaper;
 
 pub fn render(z_index: u64, state: &State, world: &block::World) -> Html {
-    let some_modeless_is_grubbed = state.modeless().grubbed().is_some();
+    let some_modeless_is_grabbed = state.modeless().grabbed().is_some();
 
     Html::div(
         Attributes::new()
@@ -21,7 +21,7 @@ pub fn render(z_index: u64, state: &State, world: &block::World) -> Html {
             .style("z-index", z_index.to_string()),
         Events::new()
             .on_mousedown(move |e| {
-                if !some_modeless_is_grubbed {
+                if !some_modeless_is_grabbed {
                     let mouse_pos = offset_mouse_pos(&e);
                     let mouse_pos = [mouse_pos[0] as f32, mouse_pos[1] as f32];
                     Msg::SetLastMouseDownPosition(mouse_pos)
@@ -30,7 +30,7 @@ pub fn render(z_index: u64, state: &State, world: &block::World) -> Html {
                 }
             })
             .on_mousemove(move |e| {
-                if !some_modeless_is_grubbed {
+                if !some_modeless_is_grabbed {
                     if e.buttons() & 1 != 0 {
                         let mouse_pos = offset_mouse_pos(&e);
                         let mouse_pos = [mouse_pos[0] as f32, mouse_pos[1] as f32];
@@ -45,7 +45,7 @@ pub fn render(z_index: u64, state: &State, world: &block::World) -> Html {
                 }
             })
             .on_mouseup(move |e| {
-                if !some_modeless_is_grubbed {
+                if !some_modeless_is_grabbed {
                     let mouse_pos = offset_mouse_pos(&e);
                     let mouse_pos = [mouse_pos[0] as f32, mouse_pos[1] as f32];
                     Msg::SetLastMouseUpPosition(mouse_pos)

@@ -13,7 +13,7 @@ use wasm_bindgen::JsCast;
 pub fn render(
     block_field: &block::Field,
     resource: &Resource,
-    is_grubbed: bool,
+    is_grabbed: bool,
     boxblock: &block::table_object::Boxblock,
     boxblock_id: &BlockId,
 ) -> Html {
@@ -22,7 +22,7 @@ pub fn render(
     modeless::body(
         Attributes::new().class("scroll-v"),
         Events::new().on_mousemove(move |e| {
-            if !is_grubbed {
+            if !is_grabbed {
                 e.stop_propagation();
             }
             Msg::NoOp

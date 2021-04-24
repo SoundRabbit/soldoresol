@@ -18,7 +18,7 @@ pub fn render(
     resource: &Resource,
     modeless_id: model::modeless::ModelessId,
     modeless: &model::Modeless<Modeless>,
-    grubbed: Option<model::modeless::ModelessId>,
+    grabbed: Option<model::modeless::ModelessId>,
     chat_state: &chat::State,
     dicebot_state: &dicebot::State,
     chat_data: &block::Chat,
@@ -27,7 +27,7 @@ pub fn render(
     selecting_tab: &block::chat::Tab,
 ) -> Html {
     let take_num = chat_state.take_num();
-    let is_grubbed = grubbed.is_some();
+    let is_grabbed = grabbed.is_some();
 
     super::frame(
         modeless_id,
@@ -37,7 +37,7 @@ pub fn render(
         vec![
             super::header(
                 modeless_id,
-                grubbed,
+                grabbed,
                 Attributes::new().class("frame-header-tab"),
                 Events::new(),
                 chat_tab_list(block_field, chat_data, selecting_tab_id),
@@ -47,7 +47,7 @@ pub fn render(
                     .class("linear-v")
                     .style("grid-template-rows", "1fr"),
                 Events::new().on_mousemove(move |e| {
-                    if !is_grubbed {
+                    if !is_grabbed {
                         e.stop_propagation();
                     }
                     Msg::NoOp

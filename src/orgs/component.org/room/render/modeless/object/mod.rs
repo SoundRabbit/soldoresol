@@ -18,7 +18,7 @@ pub fn render(
     resource: &Resource,
     modeless_id: model::modeless::ModelessId,
     modeless: &model::Modeless<Modeless>,
-    grubbed: Option<model::modeless::ModelessId>,
+    grabbed: Option<model::modeless::ModelessId>,
     tabs: &Vec<BlockId>,
     focused: usize,
     outlined: Option<&Color>,
@@ -40,7 +40,7 @@ pub fn render(
         vec![
             super::header(
                 modeless_id,
-                grubbed,
+                grabbed,
                 Attributes::new().class("frame-header-tab"),
                 Events::new().on("drop", move |e| {
                     let e = e.dyn_into::<web_sys::DragEvent>().unwrap();
@@ -110,7 +110,7 @@ pub fn render(
                                             &tab_idx.to_string(),
                                         );
 
-                                        Msg::GrubModelessTab(modeless_id, tab_idx)
+                                        Msg::GrabModelessTab(modeless_id, tab_idx)
                                     }),
                                 name,
                             )
@@ -122,7 +122,7 @@ pub fn render(
                 character::render(
                     block_field,
                     resource,
-                    grubbed.is_some(),
+                    grabbed.is_some(),
                     character,
                     focused_id,
                 )
@@ -132,7 +132,7 @@ pub fn render(
                 tablemask::render(
                     block_field,
                     resource,
-                    grubbed.is_some(),
+                    grabbed.is_some(),
                     tablemask,
                     focused_id,
                 )
@@ -142,7 +142,7 @@ pub fn render(
                 boxblock::render(
                     block_field,
                     resource,
-                    grubbed.is_some(),
+                    grabbed.is_some(),
                     boxblock,
                     focused_id,
                 )

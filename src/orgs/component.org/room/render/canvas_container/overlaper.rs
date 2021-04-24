@@ -9,7 +9,7 @@ use kagura::prelude::*;
 use wasm_bindgen::JsCast;
 
 pub fn render(state: &State, modeless: &model::modeless::Collection<Modeless>) -> Html {
-    let grubbed = modeless.grubbed();
+    let grabbed = modeless.grabbed();
     let table = state.table();
 
     Html::div(
@@ -55,11 +55,11 @@ pub fn render(state: &State, modeless: &model::modeless::Collection<Modeless>) -
                 let focused = table.focused().clone();
                 let last_mouse_pos = table.last_mouse_position().clone();
                 let last_mouse_down_pos = table.last_mouse_down_position().clone();
-                let grubbed = grubbed.clone();
+                let grabbed = grabbed.clone();
                 move |e| {
                     let mouse_pos = super::offset_mouse_pos(&e);
                     let mouse_pos = [mouse_pos[0] as f32, mouse_pos[1] as f32];
-                    if let Some(modeless_id) = grubbed {
+                    if let Some(modeless_id) = grabbed {
                         let mouse_pos = [e.client_x() as f64, e.client_y() as f64];
                         Msg::DragModeless(modeless_id, mouse_pos)
                     } else if e.buttons() & 4 != 0 {
@@ -135,10 +135,10 @@ pub fn render(state: &State, modeless: &model::modeless::Collection<Modeless>) -
                 }
             })
             .on_mouseup({
-                let grubbed = grubbed.clone();
+                let grabbed = grabbed.clone();
                 let mut selecting_tool = table.selecting_tool().clone();
                 move |_| {
-                    if let Some(modeless_id) = grubbed {
+                    if let Some(modeless_id) = grabbed {
                         Msg::DropModeless(modeless_id)
                     } else if selecting_tool.is_measure() {
                         Msg::ClearMeasure
@@ -216,7 +216,7 @@ pub fn render(state: &State, modeless: &model::modeless::Collection<Modeless>) -
             .iter()
             .map(|(modeless_id, modeless)| {
                 if let Some(modeless) = modeless {
-                    modeless::render(state, modeless_id, modeless, grubbed.clone())
+                    modeless::render(state, modeless_id, modeless, grabbed.clone())
                 } else {
                     Html::span(Attributes::new(), Events::new(), vec![])
                 }

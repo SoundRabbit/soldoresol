@@ -687,11 +687,11 @@ fn frame(
     children: Vec<Html<Msg>>,
 ) -> Html<Msg> {
     let attributes = if state
-        .grubbed
+        .grabbed
         .map(|g| g[0] || g[1] || g[2] || g[3])
         .unwrap_or(false)
     {
-        attributes.class("grubbed")
+        attributes.class("grabbed")
     } else {
         attributes
     };
@@ -711,13 +711,13 @@ fn frame(
             })
             .on_mouseup(move |e| {
                 e.stop_propagation();
-                Msg::GrubModeless(modeless_id, None)
+                Msg::GrabModeless(modeless_id, None)
             })
             .on_mousemove({
-                let grubbed = state.grubbed.is_some();
+                let grabbed = state.grabbed.is_some();
                 move |e| {
                     e.stop_propagation();
-                    if grubbed {
+                    if grabbed {
                         Msg::OpenModelessModal(modeless_id)
                     } else {
                         Msg::NoOp
@@ -725,10 +725,10 @@ fn frame(
                 }
             })
             .on_mouseleave({
-                let grubbed = state.grubbed.is_some();
+                let grabbed = state.grabbed.is_some();
                 move |e| {
                     e.stop_propagation();
-                    if grubbed {
+                    if grabbed {
                         Msg::OpenModelessModal(modeless_id)
                     } else {
                         Msg::NoOp
@@ -746,28 +746,28 @@ fn frame(
                         .and_then(|t| t.get_attribute("data-position"))
                         .map(|pos| match pos.as_str() {
                             "top" => {
-                                Msg::GrubModeless(modeless_id, Some([true, false, false, false]))
+                                Msg::GrabModeless(modeless_id, Some([true, false, false, false]))
                             }
                             "left" => {
-                                Msg::GrubModeless(modeless_id, Some([false, true, false, false]))
+                                Msg::GrabModeless(modeless_id, Some([false, true, false, false]))
                             }
                             "bottom" => {
-                                Msg::GrubModeless(modeless_id, Some([false, false, true, false]))
+                                Msg::GrabModeless(modeless_id, Some([false, false, true, false]))
                             }
                             "right" => {
-                                Msg::GrubModeless(modeless_id, Some([false, false, false, true]))
+                                Msg::GrabModeless(modeless_id, Some([false, false, false, true]))
                             }
                             "top_left" => {
-                                Msg::GrubModeless(modeless_id, Some([true, true, false, false]))
+                                Msg::GrabModeless(modeless_id, Some([true, true, false, false]))
                             }
                             "bottom_left" => {
-                                Msg::GrubModeless(modeless_id, Some([false, true, true, false]))
+                                Msg::GrabModeless(modeless_id, Some([false, true, true, false]))
                             }
                             "bottom_right" => {
-                                Msg::GrubModeless(modeless_id, Some([false, false, true, true]))
+                                Msg::GrabModeless(modeless_id, Some([false, false, true, true]))
                             }
                             "top_right" => {
-                                Msg::GrubModeless(modeless_id, Some([true, false, false, true]))
+                                Msg::GrabModeless(modeless_id, Some([true, false, false, true]))
                             }
                             _ => Msg::NoOp,
                         })
@@ -802,7 +802,7 @@ fn header(modeless_id: u128, header: Html<Msg>) -> Html<Msg> {
             .style("grid-template-columns", "1fr max-content"),
         Events::new().on_mousedown(move |e| {
             e.stop_propagation();
-            Msg::GrubModeless(modeless_id, Some([true, true, true, true]))
+            Msg::GrabModeless(modeless_id, Some([true, true, true, true]))
         }),
         vec![
             header,
