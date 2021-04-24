@@ -21,6 +21,7 @@ impl Clone for CharacterTexture {
 pub struct Character {
     size: f32,
     name: String,
+    display_name: String,
     position: [f32; 3],
     textures: SelectList<CharacterTexture>,
 }
@@ -30,6 +31,7 @@ impl Character {
         Self {
             size: 1.0,
             name: String::from(""),
+            display_name: String::from(""),
             position: [0.0, 0.0, 0.0],
             textures: SelectList::new(
                 vec![CharacterTexture {
@@ -46,6 +48,7 @@ impl Character {
         Self {
             size: this.size,
             name: this.name.clone(),
+            display_name: this.display_name.clone(),
             position: this.position.clone(),
             textures: SelectList::clone_of(&this.textures),
         }

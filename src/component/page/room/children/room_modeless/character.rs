@@ -1,5 +1,6 @@
 use super::super::atom::btn::{self, Btn};
 use super::super::atom::dropdown::{self, Dropdown};
+use super::super::atom::text;
 use super::super::modal_imported_files::{self, ModalImportedFiles};
 use super::super::util::styled::{Style, Styled};
 use crate::arena::block;
@@ -52,6 +53,7 @@ pub struct Character {
 
 struct ElementId {
     input_character_name: String,
+    input_display_name: String,
 }
 
 impl Constructor for Character {
@@ -62,6 +64,7 @@ impl Constructor for Character {
             character_id: props.character_id,
             element_id: ElementId {
                 input_character_name: format!("{:X}", crate::libs::random_id::u128val()),
+                input_display_name: format!("{:X}", crate::libs::random_id::u128val()),
             },
             modal: Modal::None,
         }
@@ -117,12 +120,24 @@ impl Character {
                             Attributes::new().class(Self::class("common-props")),
                             Events::new(),
                             vec![
-                                Html::input(
-                                    Attributes::new()
-                                        .value(character.name())
-                                        .id(&self.element_id.input_character_name),
+                                Html::div(
+                                    Attributes::new().class(Self::class("key-value")),
                                     Events::new(),
-                                    vec![],
+                                    vec![
+                                        text::label("表示名", &self.element_id.input_display_name),
+                                        Html::input(Attributes::new(), Events::new(), vec![]),
+                                        text::label(
+                                            "キャラクター名",
+                                            &self.element_id.input_character_name,
+                                        ),
+                                        Html::input(
+                                            Attributes::new()
+                                                .value(character.name())
+                                                .id(&self.element_id.input_character_name),
+                                            Events::new(),
+                                            vec![],
+                                        ),
+                                    ],
                                 ),
                                 Html::textarea(
                                     Attributes::new()
@@ -154,14 +169,20 @@ impl Character {
                                                 Self::render_tex_list_item(tex_idx, tex_name)
                                             })
                                             .collect(),
-                                        vec![Btn::with_child(
-                                            btn::Props {
-                                                variant: btn::Variant::Dark,
-                                            },
-                                            Subscription::new(|sub| match sub {
-                                                btn::On::Click => Msg::Sub(On::AddTexture),
+                                        vec![Html::div(
+                                            Attributes::new()
+                                                .class(Self::class("common-imgs-list-btn")),
+                                            Events::new().on("click", |e| {
+                                                e.stop_propagation();
+                                                Msg::Sub(On::AddTexture)
                                             }),
-                                            Html::text("追加"),
+                                            vec![Btn::with_child(
+                                                btn::Props {
+                                                    variant: btn::Variant::Dark,
+                                                },
+                                                Subscription::none(),
+                                                Html::text("追加"),
+                                            )],
                                         )],
                                     ]
                                     .into_iter()
@@ -232,14 +253,19 @@ impl Character {
                     }),
                     Html::text(tex_name),
                 ),
-                Btn::with_child(
-                    btn::Props {
-                        variant: btn::Variant::Danger,
-                    },
-                    Subscription::new(move |sub| match sub {
-                        btn::On::Click => Msg::Sub(On::RemoveTexture { tex_idx: tex_idx }),
+                Html::div(
+                    Attributes::new().class(Self::class("common-imgs-list-btn")),
+                    Events::new().on("click", move |e| {
+                        e.stop_propagation();
+                        Msg::Sub(On::RemoveTexture { tex_idx: tex_idx })
                     }),
-                    Html::text("削除"),
+                    vec![Btn::with_child(
+                        btn::Props {
+                            variant: btn::Variant::Danger,
+                        },
+                        Subscription::none(),
+                        Html::text("削除"),
+                    )],
                 ),
             ],
         )
@@ -274,8 +300,11 @@ impl Styled for Character {
                 "grid-template-columns": "1fr";
                 "grid-auto-rows": "max-content";
                 "grid-auto-flow": "row";
-                "column-gap": ".35em";
                 "row-gap": ".65em";
+                "overflow-y": "scroll";
+                "overflow-x": "hidden";
+                "max-height": "100%";
+                "padding": "1.2ch 0 1.2ch 1.2ch";
             }
 
             "base textarea" {
@@ -315,15 +344,21 @@ impl Styled for Character {
                 "object-fit": "contain";
             }
 
-            "common-imgs-list" {
-                "display": "grid";
-                "grid-template-columns": "1fr max-content max-content";
-            }
-
             "common-imgs-list-item" {
                 "display": "grid";
-                "grid-template-columns": "1fr max-content max-content";
+                "grid-template-columns": "1fr max-content";
                 "column-gap": ".15em";
+            }
+
+            "common-imgs-list-btn" {
+                "display": "grid";
+            }
+
+            "key-value" {
+                "display": "grid";
+                "column-gap": ".35em";
+                "row-gap": ".65em";
+                "grid-template-columns": "max-content 1fr";
             }
         }
     }

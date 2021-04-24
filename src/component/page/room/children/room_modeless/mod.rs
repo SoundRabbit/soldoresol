@@ -413,6 +413,7 @@ impl Styled for RoomModeless {
 
             "body" {
                 "background-color": format!("{}", color_system::gray(255, 0));
+                "overflow": "hidden";
             }
         }
     }

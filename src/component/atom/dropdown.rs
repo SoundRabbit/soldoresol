@@ -51,9 +51,11 @@ impl Direction {
 pub enum ToggleType {
     Click,
     Hover,
+    Manual(bool),
 }
 
 pub enum Msg {
+    NoOp,
     Toggle,
     ToggleTo(bool),
 }
@@ -70,8 +72,14 @@ pub struct Dropdown {
 
 impl Constructor for Dropdown {
     fn constructor(props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) -> Self {
+        let is_dropdowned = if let ToggleType::Manual(is_dropdowned) = &props.toggle_type {
+            *is_dropdowned
+        } else {
+            false
+        };
+
         Self {
-            is_dropdowned: false,
+            is_dropdowned: is_dropdowned,
             direction: props.direction,
             text: props.text,
             toggle_type: props.toggle_type,
@@ -86,6 +94,9 @@ impl Component for Dropdown {
     type Sub = On;
 
     fn init(&mut self, props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) {
+        if let ToggleType::Manual(is_dropdowned) = &props.toggle_type {
+            self.is_dropdowned = *is_dropdowned;
+        }
         self.direction = props.direction;
         self.text = props.text;
         self.toggle_type = props.toggle_type;
@@ -94,6 +105,7 @@ impl Component for Dropdown {
 
     fn update(&mut self, msg: Self::Msg) -> Cmd<Self::Msg, Self::Sub> {
         match msg {
+            Msg::NoOp => Cmd::none(),
             Msg::Toggle => {
                 self.is_dropdowned = !self.is_dropdowned;
                 Cmd::none()
@@ -109,6 +121,7 @@ impl Component for Dropdown {
         Self::styled(match &self.toggle_type {
             ToggleType::Click => self.render_toggle_by_click(children),
             ToggleType::Hover => self.render_toggle_by_hover(children),
+            ToggleType::Manual(_) => self.render_toggle_by_manual(children),
         })
     }
 }
@@ -147,6 +160,7 @@ impl Dropdown {
             ],
         )
     }
+
     fn render_toggle_by_hover(&self, children: Vec<Html>) -> Html {
         Html::div(
             Attributes::new()
@@ -155,6 +169,16 @@ impl Dropdown {
             Events::new()
                 .on("mouseenter", Self::toggle_to_drop)
                 .on("mouseleave", Self::toggle_to_up),
+            vec![self.render_toggle_btn(), self.render_toggled(children)],
+        )
+    }
+
+    fn render_toggle_by_manual(&self, children: Vec<Html>) -> Html {
+        Html::div(
+            Attributes::new()
+                .class(Self::class("base"))
+                .class(Self::class(self.base_class_option())),
+            Events::new(),
             vec![self.render_toggle_btn(), self.render_toggled(children)],
         )
     }
