@@ -91,7 +91,7 @@ impl Implement {
                 if self.mouse_btn_state.secondary.is_clicked {
                     crate::debug::log_1(format!("focused: {}", focused_object_id));
                     match focused_object_id {
-                        ObjectId::Character(block_id) => {
+                        ObjectId::Character(block_id, _) => {
                             self.contextmenu = Some(Contextmenu {
                                 page_x: page_x,
                                 page_y: page_y,

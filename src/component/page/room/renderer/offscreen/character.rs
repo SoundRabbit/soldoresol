@@ -1,4 +1,4 @@
-use super::id_table::{IdTable, ObjectId};
+use super::id_table::{IdTable, ObjectId, Surface};
 use super::matrix::{camera::CameraMatrix, model::ModelMatrix};
 use super::webgl::{ProgramType, WebGlF32Vbo, WebGlI16Ibo, WebGlRenderingContext};
 use crate::arena::block::{self, BlockId};
@@ -56,10 +56,7 @@ impl Character {
     ) {
         let characters = block_arena
             .iter_map_with_ids(
-                character_ids.filter(|x| match grabbed_object_id {
-                    ObjectId::Character(grabbed_object_id) => *grabbed_object_id != *x,
-                    _ => true,
-                }),
+                character_ids.filter(|x| !grabbed_object_id.eq(x)),
                 |character_id, character: &block::character::Character| {
                     let size = character.size();
                     let pos = character.position().clone();
@@ -69,7 +66,17 @@ impl Character {
                         .and_then(|tex_id| resource_arena.get_as::<resource::ImageData>(tex_id))
                         .map(|img| img.size().clone());
                     let id = id_table.len() as u32 | 0xFF000000;
-                    id_table.insert(id, ObjectId::Character(BlockId::clone(&character_id)));
+                    id_table.insert(
+                        id,
+                        ObjectId::Character(
+                            BlockId::clone(&character_id),
+                            Surface {
+                                r: pos.clone(),
+                                s: [1.0, 0.0, 0.0],
+                                t: [0.0, 1.0, 0.0],
+                            },
+                        ),
+                    );
                     let color = crate::libs::color::Color::from(id).to_f32array();
                     (color, size, pos, tex_scale, tex_size)
                 },
@@ -84,6 +91,7 @@ impl Character {
             Some(&self.index_buffer),
         );
         gl.set_unif_flag_round(1);
+        gl.depth_func(web_sys::WebGlRenderingContext::LEQUAL);
 
         for (color, size, pos, _, _) in &characters {
             let model_matrix: Array2<f32> = ModelMatrix::new()

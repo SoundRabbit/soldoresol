@@ -68,6 +68,7 @@ impl Boxblock {
         grabbed_object_id: &ObjectId,
     ) {
         gl.use_program(ProgramType::OffscreenProgram);
+        gl.depth_func(web_sys::WebGlRenderingContext::LEQUAL);
         gl.set_attr_vertex(&self.vertexis_buffer, 3, 0);
         gl.set_attr_tex_coord(&self.texture_coord_buffer, 2, 0);
         gl.bind_buffer(
@@ -125,8 +126,8 @@ impl Boxblock {
             },
             1 => Surface {
                 r: [p[0], p[1] + s[1] * 0.5, p[2]],
-                s: [1.0, 0.0, 0.0],
-                t: [0.0, 0.0, 1.0],
+                s: [0.0, 0.0, 1.0],
+                t: [1.0, 0.0, 0.0],
             },
             2 => Surface {
                 r: [p[0] + s[0] * 0.5, p[1], p[2]],
@@ -135,8 +136,8 @@ impl Boxblock {
             },
             3 => Surface {
                 r: [p[0] - s[0] * 0.5, p[1], p[2]],
-                s: [0.0, 1.0, 0.0],
-                t: [0.0, 0.0, 1.0],
+                s: [0.0, 0.0, 1.0],
+                t: [0.0, 1.0, 0.0],
             },
             4 => Surface {
                 r: [p[0], p[1] - s[1] * 0.5, p[2]],
@@ -145,8 +146,8 @@ impl Boxblock {
             },
             5 => Surface {
                 r: [p[0], p[1], p[2] - s[2] * 0.5],
-                s: [1.0, 0.0, 0.0],
-                t: [0.0, 1.0, 0.0],
+                s: [0.0, 1.0, 0.0],
+                t: [1.0, 0.0, 0.0],
             },
             _ => unreachable!(),
         }

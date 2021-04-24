@@ -200,36 +200,26 @@ impl Renderer {
         camera: &CameraMatrix,
         x: f32,
         y: f32,
-    ) -> [f32; 3] {
+    ) -> ([f32; 3], [f32; 3]) {
         let focused = self.get_object_id(x, y);
 
         let x = x * self.device_pixel_ratio;
         let y = y * self.device_pixel_ratio;
 
-        let focused_position = match focused {
-            ObjectId::Character(character_id) => {
-                block_arena.map(&character_id, |character: &block::character::Character| {
-                    let p = character.position();
-                    camera.collision_point(
-                        &self.canvas_size,
-                        &[x, y],
-                        p,
-                        &[1.0, 0.0, 0.0],
-                        &[0.0, 1.0, 0.0],
-                    )
-                })
+        match focused {
+            ObjectId::Character(_, srfs) => (
+                camera.collision_point(&self.canvas_size, &[x, y], &srfs.r, &srfs.s, &srfs.t),
+                srfs.n(),
+            ),
+            ObjectId::Boxblock(_, srfs) => (
+                camera.collision_point(&self.canvas_size, &[x, y], &srfs.r, &srfs.s, &srfs.t),
+                srfs.n(),
+            ),
+            _ => {
+                let p = camera.collision_point_on_xy_plane(&self.canvas_size, &[x, y]);
+                ([p[0], p[1], p[2]], [0.0, 0.0, 1.0])
             }
-
-            ObjectId::Boxblock(boxblock_id, srfs) => {
-                Some(camera.collision_point(&self.canvas_size, &[x, y], &srfs.r, &srfs.s, &srfs.t))
-            }
-            _ => None,
-        };
-
-        focused_position.unwrap_or({
-            let p = camera.collision_point_on_xy_plane(&self.canvas_size, &[x, y]);
-            [p[0], p[1], p[2]]
-        })
+        }
     }
 
     pub fn render(

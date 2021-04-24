@@ -52,18 +52,32 @@ impl Implement {
                                 .map(|x| x.get_object_id(client_x, client_y))
                                 .unwrap_or(ObjectId::None);
                         } else if let Some(renderer) = &self.renderer {
-                            let focused_position = renderer.get_focused_position(
+                            let (p, n) = renderer.get_focused_position(
                                 &self.block_arena,
                                 &self.camera_matrix,
                                 client_x,
                                 client_y,
                             );
                             match &self.grabbed_object_id {
-                                ObjectId::Character(character_id) => {
+                                ObjectId::Character(character_id, _) => {
                                     self.block_arena.map_mut(
                                         character_id,
                                         |character: &mut block::character::Character| {
-                                            character.set_position(focused_position);
+                                            character.set_position(p);
+                                        },
+                                    );
+                                }
+                                ObjectId::Boxblock(boxblock_id, _) => {
+                                    self.block_arena.map_mut(
+                                        boxblock_id,
+                                        |boxblock: &mut block::boxblock::Boxblock| {
+                                            let s = boxblock.size();
+                                            let p = [
+                                                p[0] + s[0] * n[0] * 0.5,
+                                                p[1] + s[1] * n[1] * 0.5,
+                                                p[2] + s[2] * n[2] * 0.5,
+                                            ];
+                                            boxblock.set_position(p);
                                         },
                                     );
                                 }
@@ -642,7 +656,7 @@ impl Implement {
             } else {
                 return;
             };
-            let p = if let Some(renderer) = &self.renderer {
+            let (p, _) = if let Some(renderer) = &self.renderer {
                 renderer.get_focused_position(
                     &self.block_arena,
                     &self.camera_matrix,
@@ -672,7 +686,7 @@ impl Implement {
                 return;
             };
 
-            let p = if let Some(renderer) = &self.renderer {
+            let (p, n) = if let Some(renderer) = &self.renderer {
                 renderer.get_focused_position(
                     &self.block_arena,
                     &self.camera_matrix,
@@ -683,7 +697,11 @@ impl Implement {
                 return;
             };
 
-            let p = [p[0], p[1], p[2] + boxblock.size[2] as f32 * 0.5];
+            let p = [
+                p[0] + n[0] * boxblock.size[0] as f32 * 0.5,
+                p[1] + n[1] * boxblock.size[1] as f32 * 0.5,
+                p[2] + n[2] * boxblock.size[2] as f32 * 0.5,
+            ];
 
             let s = boxblock.size;
             let s = [s[0] as f32, s[1] as f32, s[2] as f32];
