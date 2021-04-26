@@ -486,6 +486,10 @@ impl Implement {
                                             tex_idx,
                                             tex_name,
                                         },
+                                        room_modeless::On::SetPropertyName {
+                                            property_id,
+                                            name,
+                                        } => Msg::SetPropertyName { property_id, name },
                                         room_modeless::On::AddPropertyChild { block_id, name } => {
                                             Msg::AddPropertyChild { block_id, name }
                                         }

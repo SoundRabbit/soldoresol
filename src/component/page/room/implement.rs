@@ -131,6 +131,10 @@ pub enum Msg {
         tex_idx: usize,
         tex_name: String,
     },
+    SetPropertyName {
+        property_id: BlockId,
+        name: String,
+    },
     AddPropertyChild {
         block_id: BlockId,
         name: String,

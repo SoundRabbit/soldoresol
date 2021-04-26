@@ -77,6 +77,10 @@ pub enum On {
         tex_idx: usize,
         tex_name: String,
     },
+    SetPropertyName {
+        property_id: BlockId,
+        name: String,
+    },
     AddPropertyChild {
         block_id: BlockId,
         name: String,
@@ -389,6 +393,9 @@ impl RoomModeless {
                                     tex_idx,
                                     tex_name,
                                 })
+                            }
+                            character::On::SetPropertyName { property_id, name } => {
+                                Msg::Sub(On::SetPropertyName { property_id, name })
                             }
                             character::On::AddPropertyChild { property_id, name } => {
                                 Msg::Sub(On::AddPropertyChild {

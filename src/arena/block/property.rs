@@ -44,6 +44,10 @@ impl Property {
         &self.name
     }
 
+    pub fn set_name(&mut self, name: Rc<String>) {
+        self.name = name;
+    }
+
     pub fn values(&self) -> impl Iterator<Item = &Value> {
         self.values.iter()
     }
