@@ -138,6 +138,11 @@ pub enum Msg {
     AddPropertyValue {
         property_id: BlockId,
     },
+    SetPropertyValue {
+        property_id: BlockId,
+        idx: usize,
+        value: block::property::Value,
+    },
 }
 
 pub enum On {}

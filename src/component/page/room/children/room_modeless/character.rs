@@ -8,6 +8,7 @@ use crate::arena::block::{self, BlockId};
 use crate::arena::resource;
 use async_std::sync::{Arc, Mutex};
 use kagura::prelude::*;
+use std::rc::Rc;
 
 pub struct Props {
     pub block_arena: block::ArenaRef,
@@ -49,6 +50,11 @@ pub enum On {
     },
     AddPropertyValue {
         property_id: BlockId,
+    },
+    SetPropertyValue {
+        property_id: BlockId,
+        idx: usize,
+        value: block::property::Value,
     },
 }
 
@@ -380,11 +386,12 @@ impl Character {
                         {
                             let mut values: Vec<_> = prop
                                 .values()
-                                .map(|value| match value {
+                                .enumerate()
+                                .map(|(idx, value)| match value {
                                     block::property::Value::None => vec![Html::div(
                                         Attributes::new().class(Self::class("banner")),
                                         Events::new(),
-                                        vec![self.render_prop_set_value_type()],
+                                        vec![self.render_prop_set_value_type(prop_id, idx, value)],
                                     )],
                                     block::property::Value::Text(text) => vec![
                                         Html::input(
@@ -392,7 +399,7 @@ impl Character {
                                             Events::new(),
                                             vec![],
                                         ),
-                                        self.render_prop_set_value_type(),
+                                        self.render_prop_set_value_type(prop_id, idx, value),
                                     ],
                                     block::property::Value::MultiLineText(text) => {
                                         vec![
@@ -401,7 +408,7 @@ impl Character {
                                                 Events::new(),
                                                 vec![],
                                             ),
-                                            self.render_prop_set_value_type(),
+                                            self.render_prop_set_value_type(prop_id, idx, value),
                                         ]
                                     }
                                 })
@@ -470,11 +477,20 @@ impl Character {
         )
     }
 
-    fn render_prop_set_value_type(&self) -> Html {
+    fn render_prop_set_value_type(
+        &self,
+        prop_id: &BlockId,
+        idx: usize,
+        value: &block::property::Value,
+    ) -> Html {
         Dropdown::with_children(
             dropdown::Props {
-                direction: dropdown::Direction::BottomLeft,
-                text: String::from("未指定"),
+                direction: dropdown::Direction::Bottom,
+                text: String::from(match value {
+                    block::property::Value::None => "未指定",
+                    block::property::Value::Text(..) => "テキスト",
+                    block::property::Value::MultiLineText(..) => "ノート",
+                }),
                 toggle_type: dropdown::ToggleType::Click,
                 variant: btn::Variant::DarkLikeMenu,
             },
@@ -484,14 +500,54 @@ impl Character {
                     btn::Props {
                         variant: btn::Variant::Menu,
                     },
-                    Subscription::none(),
+                    Subscription::new({
+                        let prop_id = BlockId::clone(prop_id);
+                        let value = block::property::Value::clone(value);
+                        move |sub| match sub {
+                            btn::On::Click => match value {
+                                block::property::Value::Text(..) => Msg::NoOp,
+                                block::property::Value::MultiLineText(x) => {
+                                    Msg::Sub(On::SetPropertyValue {
+                                        property_id: prop_id,
+                                        idx,
+                                        value: block::property::Value::Text(x),
+                                    })
+                                }
+                                _ => Msg::Sub(On::SetPropertyValue {
+                                    property_id: prop_id,
+                                    idx,
+                                    value: block::property::Value::Text(Rc::new(String::new())),
+                                }),
+                            },
+                        }
+                    }),
                     Html::text("テキスト"),
                 ),
                 Btn::with_child(
                     btn::Props {
                         variant: btn::Variant::Menu,
                     },
-                    Subscription::none(),
+                    Subscription::new({
+                        let prop_id = BlockId::clone(prop_id);
+                        let value = block::property::Value::clone(value);
+                        move |sub| match sub {
+                            btn::On::Click => match value {
+                                block::property::Value::MultiLineText(..) => Msg::NoOp,
+                                block::property::Value::Text(x) => Msg::Sub(On::SetPropertyValue {
+                                    property_id: prop_id,
+                                    idx,
+                                    value: block::property::Value::MultiLineText(x),
+                                }),
+                                _ => Msg::Sub(On::SetPropertyValue {
+                                    property_id: prop_id,
+                                    idx,
+                                    value: block::property::Value::MultiLineText(Rc::new(
+                                        String::new(),
+                                    )),
+                                }),
+                            },
+                        }
+                    }),
                     Html::text("ノート"),
                 ),
             ],

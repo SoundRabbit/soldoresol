@@ -52,6 +52,10 @@ impl Property {
         self.values.push(value);
     }
 
+    pub fn set_value(&mut self, idx: usize, value: Value) {
+        self.values[idx] = value;
+    }
+
     pub fn children(&self) -> impl Iterator<Item = &BlockId> {
         self.children.iter()
     }

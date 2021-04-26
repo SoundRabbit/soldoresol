@@ -492,6 +492,15 @@ impl Implement {
                                         room_modeless::On::AddPropertyValue { property_id } => {
                                             Msg::AddPropertyValue { property_id }
                                         }
+                                        room_modeless::On::SetPropertyValue {
+                                            property_id,
+                                            idx,
+                                            value,
+                                        } => Msg::SetPropertyValue {
+                                            property_id,
+                                            idx,
+                                            value,
+                                        },
                                     }
                                 }),
                             )

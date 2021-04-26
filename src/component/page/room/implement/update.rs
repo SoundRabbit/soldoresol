@@ -497,6 +497,19 @@ impl Implement {
 
                 Cmd::none()
             }
+
+            Msg::SetPropertyValue {
+                property_id,
+                idx,
+                value,
+            } => {
+                self.block_arena
+                    .map_mut(&property_id, |prop: &mut block::property::Property| {
+                        prop.set_value(idx, value);
+                    });
+
+                Cmd::none()
+            }
         }
     }
 

@@ -84,6 +84,11 @@ pub enum On {
     AddPropertyValue {
         property_id: BlockId,
     },
+    SetPropertyValue {
+        property_id: BlockId,
+        idx: usize,
+        value: block::property::Value,
+    },
 }
 
 pub struct RoomModeless {
@@ -394,6 +399,15 @@ impl RoomModeless {
                             character::On::AddPropertyValue { property_id } => {
                                 Msg::Sub(On::AddPropertyValue { property_id })
                             }
+                            character::On::SetPropertyValue {
+                                property_id,
+                                idx,
+                                value,
+                            } => Msg::Sub(On::SetPropertyValue {
+                                property_id,
+                                idx,
+                                value,
+                            }),
                         }
                     }),
                 ),
