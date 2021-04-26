@@ -21,6 +21,7 @@ pub enum Msg {
     Sub(On),
     SetModal(Modal),
     SetSelectedTabIdx(usize),
+    SetIsEditable(bool),
 }
 
 pub enum Modal {
@@ -65,6 +66,7 @@ pub struct Character {
     element_id: ElementId,
     modal: Modal,
     selected_tab_idx: usize,
+    is_editable: bool,
 }
 
 struct ElementId {
@@ -86,6 +88,7 @@ impl Constructor for Character {
             },
             modal: Modal::None,
             selected_tab_idx: 0,
+            is_editable: false,
         }
     }
 }
@@ -110,6 +113,10 @@ impl Component for Character {
             }
             Msg::SetSelectedTabIdx(idx) => {
                 self.selected_tab_idx = idx;
+                Cmd::none()
+            }
+            Msg::SetIsEditable(is_editable) => {
+                self.is_editable = is_editable;
                 Cmd::none()
             }
         }
@@ -355,6 +362,26 @@ impl Character {
                                 ],
                             ),
                             Html::div(
+                                Attributes::new().class("banner"),
+                                Events::new(),
+                                vec![Btn::with_child(
+                                    btn::Props {
+                                        variant: btn::Variant::Dark,
+                                    },
+                                    Subscription::new({
+                                        let is_editable = self.is_editable;
+                                        move |sub| match sub {
+                                            btn::On::Click => Msg::SetIsEditable(!is_editable),
+                                        }
+                                    }),
+                                    Html::text(if self.is_editable {
+                                        "編集完了"
+                                    } else {
+                                        "編集開始"
+                                    }),
+                                )],
+                            ),
+                            Html::div(
                                 Attributes::new().class(Self::class("prop-list")),
                                 Events::new(),
                                 {
@@ -363,8 +390,11 @@ impl Character {
                                         .map(|prop_id| self.render_prop(prop_id))
                                         .flatten()
                                         .collect();
-                                    children
-                                        .push(self.render_prop_add_prop(BlockId::clone(prop_id)));
+                                    if self.is_editable {
+                                        children.push(
+                                            self.render_prop_add_prop(BlockId::clone(prop_id)),
+                                        );
+                                    }
                                     children
                                 },
                             ),
@@ -379,62 +409,129 @@ impl Character {
         self.block_arena
             .map(prop_id, |prop: &block::property::Property| {
                 vec![
-                    Html::input(Attributes::new().value(prop.name()), Events::new(), vec![]),
-                    Html::div(
-                        Attributes::new().class(Self::class("prop-value-list")),
-                        Events::new(),
-                        {
-                            let mut values: Vec<_> = prop
-                                .values()
-                                .enumerate()
-                                .map(|(idx, value)| match value {
-                                    block::property::Value::None => vec![Html::div(
-                                        Attributes::new().class(Self::class("banner")),
-                                        Events::new(),
-                                        vec![self.render_prop_set_value_type(prop_id, idx, value)],
-                                    )],
-                                    block::property::Value::Text(text) => vec![
-                                        Html::input(
-                                            Attributes::new().value(text.as_ref()),
-                                            Events::new(),
-                                            vec![],
-                                        ),
-                                        self.render_prop_set_value_type(prop_id, idx, value),
-                                    ],
-                                    block::property::Value::MultiLineText(text) => {
-                                        vec![
-                                            Html::textarea(
-                                                Attributes::new().value(text.as_ref()),
-                                                Events::new(),
-                                                vec![],
-                                            ),
-                                            self.render_prop_set_value_type(prop_id, idx, value),
-                                        ]
-                                    }
-                                })
-                                .flatten()
-                                .collect();
-                            values.push(self.render_prop_add_value(BlockId::clone(prop_id)));
-                            values
-                        },
-                    ),
-                    Html::div(
-                        Attributes::new().class(Self::class("prop-list-container")),
-                        Events::new(),
-                        vec![Html::div(
-                            Attributes::new().class(Self::class("prop-list")),
+                    if !self.is_editable && prop.values().count() < 1 {
+                        Html::input(
+                            Attributes::new()
+                                .value(prop.name())
+                                .class(Self::class("banner")),
+                            Events::new(),
+                            vec![],
+                        )
+                    } else {
+                        Html::input(Attributes::new().value(prop.name()), Events::new(), vec![])
+                    },
+                    if self.is_editable || prop.values().count() > 0 {
+                        Html::div(
+                            Attributes::new().class(Self::class("prop-value-list")),
                             Events::new(),
                             {
-                                let mut children: Vec<_> = prop
-                                    .children()
-                                    .map(|prop_id| self.render_prop(prop_id))
+                                let mut values: Vec<_> = prop
+                                    .values()
+                                    .enumerate()
+                                    .map(|(idx, value)| {
+                                        if self.is_editable {
+                                            match value {
+                                                block::property::Value::None => vec![Html::div(
+                                                    Attributes::new().class(Self::class("banner")),
+                                                    Events::new(),
+                                                    vec![self.render_prop_set_value_type(
+                                                        prop_id, idx, value,
+                                                    )],
+                                                )],
+                                                block::property::Value::Text(text) => vec![
+                                                    Html::input(
+                                                        Attributes::new().value(text.as_ref()),
+                                                        Events::new(),
+                                                        vec![],
+                                                    ),
+                                                    self.render_prop_set_value_type(
+                                                        prop_id, idx, value,
+                                                    ),
+                                                ],
+                                                block::property::Value::MultiLineText(text) => {
+                                                    vec![
+                                                        Html::textarea(
+                                                            Attributes::new().value(text.as_ref()),
+                                                            Events::new(),
+                                                            vec![],
+                                                        ),
+                                                        self.render_prop_set_value_type(
+                                                            prop_id, idx, value,
+                                                        ),
+                                                    ]
+                                                }
+                                            }
+                                        } else {
+                                            match value {
+                                                block::property::Value::None => vec![],
+                                                block::property::Value::Text(text) => {
+                                                    vec![
+                                                        Html::input(
+                                                            Attributes::new().value(text.as_ref()),
+                                                            Events::new(),
+                                                            vec![],
+                                                        ),
+                                                        Html::div(
+                                                            Attributes::new(),
+                                                            Events::new(),
+                                                            vec![],
+                                                        ),
+                                                    ]
+                                                }
+                                                block::property::Value::MultiLineText(text) => {
+                                                    vec![
+                                                        Html::textarea(
+                                                            Attributes::new().value(text.as_ref()),
+                                                            Events::new(),
+                                                            vec![],
+                                                        ),
+                                                        Html::div(
+                                                            Attributes::new(),
+                                                            Events::new(),
+                                                            vec![],
+                                                        ),
+                                                    ]
+                                                }
+                                            }
+                                        }
+                                    })
                                     .flatten()
                                     .collect();
-                                children.push(self.render_prop_add_prop(BlockId::clone(prop_id)));
-                                children
+                                if self.is_editable {
+                                    values
+                                        .push(self.render_prop_add_value(BlockId::clone(prop_id)));
+                                }
+                                values
                             },
-                        )],
-                    ),
+                        )
+                    } else {
+                        Html::none()
+                    },
+                    if self.is_editable || prop.children().count() > 0 {
+                        Html::div(
+                            Attributes::new().class(Self::class("prop-list-container")),
+                            Events::new(),
+                            vec![Html::div(
+                                Attributes::new().class(Self::class("prop-list")),
+                                Events::new(),
+                                {
+                                    let mut children: Vec<_> = prop
+                                        .children()
+                                        .map(|prop_id| self.render_prop(prop_id))
+                                        .flatten()
+                                        .collect();
+                                    if self.is_editable {
+                                        children.push(
+                                            self.render_prop_add_prop(BlockId::clone(prop_id)),
+                                        );
+                                    }
+                                    children
+                                },
+                            )],
+                        )
+                    } else {
+                        Html::none()
+                    },
                 ]
             })
             .unwrap_or(vec![])
