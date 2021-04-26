@@ -116,7 +116,7 @@ pub struct EraserTool {
 
 pub struct CharacterTool {
     pub size: f64,
-    pub tex_scale: f64,
+    pub height: f64,
     pub tex_id: Option<ResourceId>,
     pub name: String,
 }
@@ -125,7 +125,7 @@ impl CloneOf for CharacterTool {
     fn clone_of(this: &Self) -> Self {
         Self {
             size: this.size,
-            tex_scale: this.tex_scale,
+            height: this.height,
             tex_id: this.tex_id.as_ref().map(|x| ResourceId::clone(x)),
             name: this.name.clone(),
         }

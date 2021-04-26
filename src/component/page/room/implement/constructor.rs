@@ -132,7 +132,7 @@ impl Implement {
                     }),
                     TableTool::Character(CharacterTool {
                         size: 1.0,
-                        tex_scale: 1.0,
+                        height: 1.0,
                         tex_id: None,
                         name: String::from(""),
                     }),

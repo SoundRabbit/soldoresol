@@ -93,10 +93,14 @@ impl Character {
                             tex_idx,
                             resource_arena.get_as::<resource::ImageData>(tex_id)
                         ) {
-                            let sz = character.size() * character.current_tex_scale();
+                            let tex_height = character.current_tex_height();
                             let tex_size = tex.size();
                             let model_matrix: Array2<f32> = ModelMatrix::new()
-                                .with_scale(&[sz, 1.0, sz * tex_size[1] / tex_size[0]])
+                                .with_scale(&[
+                                    tex_height * tex_size[0] / tex_size[1],
+                                    1.0,
+                                    tex_height,
+                                ])
                                 .with_x_axis_rotation(
                                     camera.x_axis_rotation() - std::f32::consts::FRAC_PI_2,
                                 )

@@ -5,7 +5,7 @@ use crate::libs::select_list::SelectList;
 pub struct CharacterTexture {
     name: String,
     texture_id: Option<ResourceId>,
-    tex_scale: f32,
+    height: f32,
 }
 
 impl Clone for CharacterTexture {
@@ -13,7 +13,7 @@ impl Clone for CharacterTexture {
         Self {
             name: self.name.clone(),
             texture_id: self.texture_id.as_ref().map(|x| ResourceId::clone(x)),
-            tex_scale: self.tex_scale,
+            height: self.height,
         }
     }
 }
@@ -37,7 +37,7 @@ impl Character {
                 vec![CharacterTexture {
                     name: String::from("[default]"),
                     texture_id: None,
-                    tex_scale: 1.0,
+                    height: 1.0,
                 }],
                 0,
             ),
@@ -61,17 +61,17 @@ impl Character {
         self.size = size;
     }
 
-    pub fn current_tex_scale(&self) -> f32 {
+    pub fn current_tex_height(&self) -> f32 {
         if let Some(tex) = self.textures.selected() {
-            tex.tex_scale
+            tex.height
         } else {
             1.0
         }
     }
 
-    pub fn set_tex_scale(&mut self, tex_idx: usize, tex_scale: f32) {
+    pub fn set_tex_height(&mut self, tex_idx: usize, height: f32) {
         if let Some(tex) = self.textures.get_mut(tex_idx) {
-            tex.tex_scale = tex_scale;
+            tex.height = height;
         }
     }
 
@@ -128,7 +128,7 @@ impl Character {
         self.textures.push(CharacterTexture {
             name: String::from("新規立ち絵"),
             texture_id: None,
-            tex_scale: 1.0,
+            height: self.size,
         });
         self.textures.set_selected_idx(self.textures.len() - 1);
     }

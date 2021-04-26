@@ -668,7 +668,7 @@ impl Implement {
             };
             self.create_new_character(
                 Some(character.size as f32),
-                Some(character.tex_scale as f32),
+                Some(character.height as f32),
                 character.tex_id.as_ref().map(|x| ResourceId::clone(x)),
                 Some(character.name.clone()),
                 Some(p),

@@ -755,11 +755,11 @@ impl SideMenu {
                         }
                     }),
                 ),
-                text::div("キャラクター画像の拡大率"),
+                text::div("キャラクターの身長"),
                 Slider::empty(
                     slider::Props {
                         position: slider::Position::Inf {
-                            val: character.tex_scale,
+                            val: character.height,
                             mid: 1.0,
                             step: 0.1,
                         },
@@ -769,7 +769,7 @@ impl SideMenu {
                         let mut character = CharacterTool::clone_of(character);
                         move |sub| match sub {
                             slider::On::Input(tex_scale) => {
-                                character.tex_scale = tex_scale;
+                                character.height = tex_scale;
                                 Msg::Sub(On::SetSelectedTool {
                                     tool: TableTool::Character(character),
                                 })

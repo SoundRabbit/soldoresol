@@ -480,7 +480,7 @@ impl Implement {
     fn create_new_character(
         &mut self,
         size: Option<f32>,
-        tex_scale: Option<f32>,
+        height: Option<f32>,
         tex_id: Option<ResourceId>,
         name: Option<String>,
         pos: Option<[f32; 3]>,
@@ -489,8 +489,8 @@ impl Implement {
         if let Some(size) = size {
             character_block.set_size(size);
         }
-        if let Some(tex_scale) = tex_scale {
-            character_block.set_tex_scale(0, tex_scale);
+        if let Some(height) = height {
+            character_block.set_tex_height(0, height);
         }
         character_block.set_tex_id(0, tex_id);
         if let Some(name) = name {

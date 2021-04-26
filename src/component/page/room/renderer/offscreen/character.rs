@@ -60,7 +60,7 @@ impl Character {
                 |character_id, character: &block::character::Character| {
                     let size = character.size();
                     let pos = character.position().clone();
-                    let tex_scale = character.current_tex_scale();
+                    let tex_height = character.current_tex_height();
                     let tex_size = character
                         .current_tex_id()
                         .and_then(|tex_id| resource_arena.get_as::<resource::ImageData>(tex_id))
@@ -78,7 +78,7 @@ impl Character {
                         ),
                     );
                     let color = crate::libs::color::Color::from(id).to_f32array();
-                    (color, size, pos, tex_scale, tex_size)
+                    (color, size, pos, tex_height, tex_size)
                 },
             )
             .collect::<Vec<_>>();
@@ -112,11 +112,10 @@ impl Character {
         gl.set_attr_vertex(&self.vertexes_buffer_xz, 3, 0);
         gl.set_unif_flag_round(0);
 
-        for (color, size, pos, tex_scale, tex_size) in &characters {
+        for (color, _, pos, tex_height, tex_size) in &characters {
             if let Some(tex_size) = tex_size.as_ref() {
-                let size = (*size) * tex_scale;
                 let model_matrix: Array2<f32> = ModelMatrix::new()
-                    .with_scale(&[size, 1.0, size * tex_size[1] / tex_size[0]])
+                    .with_scale(&[*tex_height * tex_size[0] / tex_size[1], 1.0, *tex_height])
                     .with_x_axis_rotation(camera.x_axis_rotation() - std::f32::consts::FRAC_PI_2)
                     .with_z_axis_rotation(camera.z_axis_rotation())
                     .with_movement(pos)
