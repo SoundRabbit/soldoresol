@@ -282,6 +282,7 @@ impl Character {
                                         .map(|img| {
                                             Html::img(
                                                 Attributes::new()
+                                                    .draggable(false)
                                                     .class(Self::class("common-imgs-img"))
                                                     .src(img.url().as_ref()),
                                                 Events::new(),
