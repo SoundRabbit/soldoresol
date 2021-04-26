@@ -44,7 +44,15 @@ impl Property {
         &self.name
     }
 
+    pub fn values(&self) -> impl Iterator<Item = &Value> {
+        self.values.iter()
+    }
+
     pub fn children(&self) -> impl Iterator<Item = &BlockId> {
         self.children.iter()
+    }
+
+    pub fn add_child(&mut self, prop_id: BlockId) {
+        self.children.push(prop_id);
     }
 }

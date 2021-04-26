@@ -475,6 +475,13 @@ impl Implement {
                     })
                     .is_some()
                 {
+                } else if self
+                    .block_arena
+                    .map_mut(&block_id, |character: &mut block::property::Property| {
+                        character.add_child(BlockId::clone(&property_id));
+                    })
+                    .is_some()
+                {
                 } else {
                     self.block_arena.free(&property_id);
                 }

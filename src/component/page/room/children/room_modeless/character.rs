@@ -61,6 +61,7 @@ pub struct Character {
 struct ElementId {
     input_character_name: String,
     input_display_name: String,
+    input_tab_name: String,
 }
 
 impl Constructor for Character {
@@ -72,6 +73,7 @@ impl Constructor for Character {
             element_id: ElementId {
                 input_character_name: format!("{:X}", crate::libs::random_id::u128val()),
                 input_display_name: format!("{:X}", crate::libs::random_id::u128val()),
+                input_tab_name: format!("{:X}", crate::libs::random_id::u128val()),
             },
             modal: Modal::None,
             selected_tab_idx: 0,
@@ -112,14 +114,17 @@ impl Component for Character {
                     |character: &block::character::Character| {
                         let prop_num = character.properties().count();
 
-                        let mut prop_names = vec![String::from("common")];
+                        let mut prop_names = vec![String::from("[common]")];
+                        let mut prop_tabs = vec![self.render_common(character)];
+
                         for prop_id in character.properties() {
                             self.block_arena
                                 .map(prop_id, |prop: &block::property::Property| {
                                     prop_names.push(prop.name().clone());
                                 });
+                            prop_tabs.push(self.render_tab(prop_id));
                         }
-                        prop_names.push(String::from("追加"));
+                        prop_names.push(String::from("[追加]"));
 
                         TabMenu::with_children(
                             tab_menu::Props {
@@ -134,12 +139,12 @@ impl Component for Character {
                                     } else {
                                         Msg::Sub(On::AddPropertyChild {
                                             property_id: None,
-                                            name: String::from(""),
+                                            name: String::from("新規タブ"),
                                         })
                                     }
                                 }
                             }),
-                            vec![self.render_common(character)],
+                            prop_tabs,
                         )
                     },
                 )
@@ -315,6 +320,118 @@ impl Character {
         )
     }
 
+    fn render_tab(&self, prop_id: &BlockId) -> Html {
+        Html::div(
+            Attributes::new()
+                .class(Self::class("base"))
+                .class("pure-form"),
+            Events::new(),
+            vec![self
+                .block_arena
+                .map(prop_id, |prop: &block::property::Property| {
+                    Html::div(
+                        Attributes::new().class(Self::class("root-prop")),
+                        Events::new(),
+                        vec![
+                            Html::div(
+                                Attributes::new().class(Self::class("key-value")),
+                                Events::new(),
+                                vec![
+                                    text::label("タブ名", &self.element_id.input_tab_name),
+                                    Html::input(
+                                        Attributes::new().value(prop.name()),
+                                        Events::new(),
+                                        vec![],
+                                    ),
+                                ],
+                            ),
+                            Html::div(
+                                Attributes::new().class(Self::class("key-value")),
+                                Events::new(),
+                                {
+                                    let mut children: Vec<_> = prop
+                                        .children()
+                                        .map(|prop_id| self.render_prop(prop_id))
+                                        .flatten()
+                                        .collect();
+                                    children.push(self.render_prop_add(BlockId::clone(prop_id)));
+                                    children
+                                },
+                            ),
+                        ],
+                    )
+                })
+                .unwrap_or(Html::none())],
+        )
+    }
+
+    fn render_prop(&self, prop_id: &BlockId) -> Vec<Html> {
+        self.block_arena
+            .map(prop_id, |prop: &block::property::Property| {
+                vec![
+                    Html::input(Attributes::new().value(prop.name()), Events::new(), vec![]),
+                    Html::div(
+                        Attributes::new(),
+                        Events::new(),
+                        prop.values()
+                            .filter_map(|value| match value {
+                                block::property::Value::None => None,
+                                block::property::Value::Text(text) => Some(Html::input(
+                                    Attributes::new().value(text.as_ref()),
+                                    Events::new(),
+                                    vec![],
+                                )),
+                                block::property::Value::MultiLineText(text) => {
+                                    Some(Html::textarea(
+                                        Attributes::new().value(text.as_ref()),
+                                        Events::new(),
+                                        vec![],
+                                    ))
+                                }
+                            })
+                            .collect(),
+                    ),
+                    Html::div(
+                        Attributes::new().class(Self::class("prop-list")),
+                        Events::new(),
+                        vec![Html::div(
+                            Attributes::new().class(Self::class("key-value")),
+                            Events::new(),
+                            {
+                                let mut children: Vec<_> = prop
+                                    .children()
+                                    .map(|prop_id| self.render_prop(prop_id))
+                                    .flatten()
+                                    .collect();
+                                children.push(self.render_prop_add(BlockId::clone(prop_id)));
+                                children
+                            },
+                        )],
+                    ),
+                ]
+            })
+            .unwrap_or(vec![])
+    }
+
+    fn render_prop_add(&self, prop_id: BlockId) -> Html {
+        Html::div(
+            Attributes::new().class(Self::class("banner")),
+            Events::new(),
+            vec![Btn::with_child(
+                btn::Props {
+                    variant: btn::Variant::Primary,
+                },
+                Subscription::new(move |sub| match sub {
+                    btn::On::Click => Msg::Sub(On::AddPropertyChild {
+                        property_id: Some(prop_id),
+                        name: String::from(""),
+                    }),
+                }),
+                Html::text("追加"),
+            )],
+        )
+    }
+
     fn render_modal(&self, tex_idx: usize) -> Html {
         match &self.modal {
             Modal::None => Html::none(),
@@ -403,6 +520,21 @@ impl Styled for Character {
                 "column-gap": ".35em";
                 "row-gap": ".65em";
                 "grid-template-columns": "max-content 1fr";
+            }
+
+            "prop-list" {
+                "grid-column-start": "1";
+                "grid-column-end": "-1";
+                "padding-left": "2rem";
+            }
+
+            "banner" {
+                "grid-column-start": "1";
+                "grid-column-end": "-1";
+            }
+
+            "banner > button" {
+                "width": "100%";
             }
         }
     }

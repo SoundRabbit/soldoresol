@@ -99,10 +99,12 @@ impl Styled for TabMenu {
                 "display": "grid";
                 "grid-template-rows": "max-content 1fr";
                 "max-height": "100%";
+                "width": "100%";
             }
 
             "tabs" {
                 "display": "flex";
+                "flex-wrap": "wrap";
             }
         }
     }
