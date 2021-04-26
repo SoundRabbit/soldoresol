@@ -463,6 +463,24 @@ impl Implement {
 
                 Cmd::none()
             }
+
+            Msg::AddPropertyChild { block_id, name } => {
+                let property = block::property::Property::new(Rc::new(name));
+                let property_id = self.block_arena.insert(property);
+
+                if self
+                    .block_arena
+                    .map_mut(&block_id, |character: &mut block::character::Character| {
+                        character.add_property(BlockId::clone(&property_id));
+                    })
+                    .is_some()
+                {
+                } else {
+                    self.block_arena.free(&property_id);
+                }
+
+                Cmd::none()
+            }
         }
     }
 

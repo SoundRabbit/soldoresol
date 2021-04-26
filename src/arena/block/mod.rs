@@ -10,6 +10,7 @@ use wasm_bindgen::{prelude::*, JsCast};
 pub mod boxblock;
 pub mod character;
 pub mod chat;
+pub mod property;
 pub mod table;
 pub mod tag;
 pub mod texture;
@@ -25,6 +26,7 @@ pub enum Block {
     Character(character::Character),
     Tag(tag::Tag),
     Boxblock(boxblock::Boxblock),
+    Property(property::Property),
     None,
 }
 
@@ -47,6 +49,7 @@ impl Block {
             Self::Character(block) => Self::Character(character::Character::clone(block)),
             Self::Tag(block) => Self::Tag(tag::Tag::clone(block)),
             Self::Boxblock(block) => Self::Boxblock(boxblock::Boxblock::clone(block)),
+            Self::Property(block) => Self::Property(property::Property::clone(block)),
             Self::None => Self::None,
         }
     }
@@ -102,6 +105,7 @@ try_ref_mut!(Block: ChatMessage => chat::message::Message);
 try_ref_mut!(Block: Character => character::Character);
 try_ref_mut!(Block: Tag => tag::Tag);
 try_ref_mut!(Block: Boxblock => boxblock::Boxblock);
+try_ref_mut!(Block: Property => property::Property);
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct BlockId {
@@ -171,6 +175,7 @@ impl ArenaBlock {
             Block::Character(x) => (object! {}.into(), "None"),
             Block::Tag(x) => (object! {}.into(), "None"),
             Block::Boxblock(x) => (object! {}.into(), "None"),
+            Block::Property(x) => (object! {}.into(), "None"),
             Block::None => (object! {}.into(), "None"),
         };
 
@@ -246,15 +251,18 @@ impl Arena {
 
     fn insert(&mut self, block: Block) -> BlockId {
         let block_id = BlockId::new(U128Id::new());
-        let arena_block = ArenaBlock::new(js_sys::Date::now(), block);
 
-        self.assign_arena_block(BlockId::clone(&block_id), arena_block);
+        self.assign_block(BlockId::clone(&block_id), block);
 
         block_id
     }
 
+    fn assign_block(&mut self, block_id: BlockId, block: Block) {
+        let arena_block = ArenaBlock::new(js_sys::Date::now(), block);
+        self.assign_arena_block(BlockId::clone(&block_id), arena_block);
+    }
+
     fn assign_arena_block(&mut self, block_id: BlockId, new_arena_block: ArenaBlock) {
-        crate::debug::log_1("assign arena block");
         let mut table = self.table.borrow_mut();
         if let Some(arena_block) = table.get_mut(&block_id) {
             if arena_block.timestamp < new_arena_block.timestamp {
@@ -262,6 +270,7 @@ impl Arena {
                 arena_block.payload = new_arena_block.payload;
             }
         } else {
+            crate::debug::log_1("assign arena block");
             table.insert(block_id, new_arena_block);
         }
     }
@@ -341,6 +350,10 @@ impl Arena {
         }
         None
     }
+
+    pub fn free(&mut self, block_id: &BlockId) {
+        self.assign_block(BlockId::clone(block_id), Block::None)
+    }
 }
 
 macro_rules! insert {
@@ -362,3 +375,4 @@ insert!(Arena: chat::channel::Channel => ChatChannel);
 insert!(Arena: character::Character => Character);
 insert!(Arena: tag::Tag => Tag);
 insert!(Arena: boxblock::Boxblock => Boxblock);
+insert!(Arena: property::Property => Property);

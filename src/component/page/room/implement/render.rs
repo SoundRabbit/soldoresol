@@ -486,6 +486,9 @@ impl Implement {
                                             tex_idx,
                                             tex_name,
                                         },
+                                        room_modeless::On::AddPropertyChild { block_id, name } => {
+                                            Msg::AddPropertyChild { block_id, name }
+                                        }
                                     }
                                 }),
                             )

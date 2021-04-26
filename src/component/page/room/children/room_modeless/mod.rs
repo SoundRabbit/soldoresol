@@ -77,6 +77,10 @@ pub enum On {
         tex_idx: usize,
         tex_name: String,
     },
+    AddPropertyChild {
+        block_id: BlockId,
+        name: String,
+    },
 }
 
 pub struct RoomModeless {
@@ -376,6 +380,12 @@ impl RoomModeless {
                                     character_id,
                                     tex_idx,
                                     tex_name,
+                                })
+                            }
+                            character::On::AddPropertyChild { property_id, name } => {
+                                Msg::Sub(On::AddPropertyChild {
+                                    block_id: property_id.unwrap_or(character_id),
+                                    name,
                                 })
                             }
                         }

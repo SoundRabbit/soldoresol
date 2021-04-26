@@ -2,8 +2,9 @@ use super::super::atom::btn::{self, Btn};
 use super::super::atom::dropdown::{self, Dropdown};
 use super::super::atom::text;
 use super::super::modal_imported_files::{self, ModalImportedFiles};
+use super::super::molecule::tab_menu::{self, TabMenu};
 use super::super::util::styled::{Style, Styled};
-use crate::arena::block;
+use crate::arena::block::{self, BlockId};
 use crate::arena::resource;
 use async_std::sync::{Arc, Mutex};
 use kagura::prelude::*;
@@ -18,6 +19,7 @@ pub enum Msg {
     NoOp,
     Sub(On),
     SetModal(Modal),
+    SetSelectedTabIdx(usize),
 }
 
 pub enum Modal {
@@ -41,6 +43,10 @@ pub enum On {
         tex_idx: usize,
         tex_name: String,
     },
+    AddPropertyChild {
+        property_id: Option<BlockId>,
+        name: String,
+    },
 }
 
 pub struct Character {
@@ -49,6 +55,7 @@ pub struct Character {
     character_id: block::BlockId,
     element_id: ElementId,
     modal: Modal,
+    selected_tab_idx: usize,
 }
 
 struct ElementId {
@@ -67,6 +74,7 @@ impl Constructor for Character {
                 input_display_name: format!("{:X}", crate::libs::random_id::u128val()),
             },
             modal: Modal::None,
+            selected_tab_idx: 0,
         }
     }
 }
@@ -89,15 +97,51 @@ impl Component for Character {
                 self.modal = modal;
                 Cmd::none()
             }
+            Msg::SetSelectedTabIdx(idx) => {
+                self.selected_tab_idx = idx;
+                Cmd::none()
+            }
         }
     }
 
-    fn render(&self, children: Vec<Html>) -> Html {
+    fn render(&self, _: Vec<Html>) -> Html {
         Self::styled(
             self.block_arena
                 .map(
                     &self.character_id,
-                    |character: &block::character::Character| self.render_character(character),
+                    |character: &block::character::Character| {
+                        let prop_num = character.properties().count();
+
+                        let mut prop_names = vec![String::from("common")];
+                        for prop_id in character.properties() {
+                            self.block_arena
+                                .map(prop_id, |prop: &block::property::Property| {
+                                    prop_names.push(prop.name().clone());
+                                });
+                        }
+                        prop_names.push(String::from("追加"));
+
+                        TabMenu::with_children(
+                            tab_menu::Props {
+                                selected: self.selected_tab_idx,
+                                tabs: prop_names,
+                                controlled: true,
+                            },
+                            Subscription::new(move |sub| match sub {
+                                tab_menu::On::ChangeSelectedTab(idx) => {
+                                    if idx <= prop_num {
+                                        Msg::SetSelectedTabIdx(idx)
+                                    } else {
+                                        Msg::Sub(On::AddPropertyChild {
+                                            property_id: None,
+                                            name: String::from(""),
+                                        })
+                                    }
+                                }
+                            }),
+                            vec![self.render_common(character)],
+                        )
+                    },
                 )
                 .unwrap_or(Html::none()),
         )
@@ -105,7 +149,7 @@ impl Component for Character {
 }
 
 impl Character {
-    fn render_character(&self, character: &block::character::Character) -> Html {
+    fn render_common(&self, character: &block::character::Character) -> Html {
         Html::div(
             Attributes::new()
                 .class(Self::class("base"))

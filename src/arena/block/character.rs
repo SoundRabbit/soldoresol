@@ -1,3 +1,4 @@
+use super::BlockId;
 use crate::arena::resource::ResourceId;
 use crate::libs::clone_of::CloneOf;
 use crate::libs::select_list::SelectList;
@@ -24,6 +25,7 @@ pub struct Character {
     display_name: String,
     position: [f32; 3],
     textures: SelectList<CharacterTexture>,
+    properties: Vec<BlockId>,
 }
 
 impl Character {
@@ -41,6 +43,7 @@ impl Character {
                 }],
                 0,
             ),
+            properties: vec![],
         }
     }
 
@@ -51,6 +54,7 @@ impl Character {
             display_name: this.display_name.clone(),
             position: this.position.clone(),
             textures: SelectList::clone_of(&this.textures),
+            properties: this.properties.iter().map(BlockId::clone).collect(),
         }
     }
 
@@ -146,5 +150,13 @@ impl Character {
         if let Some(tex) = self.textures.get_mut(tex_idx) {
             tex.name = tex_name;
         }
+    }
+
+    pub fn properties(&self) -> impl Iterator<Item = &BlockId> {
+        self.properties.iter()
+    }
+
+    pub fn add_property(&mut self, property_id: BlockId) {
+        self.properties.push(property_id);
     }
 }

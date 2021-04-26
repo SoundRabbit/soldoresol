@@ -41,6 +41,7 @@ impl Component for TabMenu {
     fn init(&mut self, props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) {
         if self.is_controlled {
             self.selected_idx = props.selected;
+            self.tabs = props.tabs;
         }
     }
 
@@ -48,15 +49,19 @@ impl Component for TabMenu {
         match msg {
             Msg::NoOp => Cmd::none(),
             Msg::SetSelectedIdx(idx) => {
-                self.selected_idx = idx;
-                Cmd::none()
+                if self.is_controlled {
+                    Cmd::sub(On::ChangeSelectedTab(idx))
+                } else {
+                    self.selected_idx = idx;
+                    Cmd::none()
+                }
             }
         }
     }
 
     fn render(&self, mut children: Vec<Html>) -> Html {
         Self::styled(Html::div(
-            Attributes::new(),
+            Attributes::new().class(Self::class("base")),
             Events::new(),
             vec![
                 Html::div(
@@ -90,6 +95,12 @@ impl Component for TabMenu {
 impl Styled for TabMenu {
     fn style() -> Style {
         style! {
+            "base" {
+                "display": "grid";
+                "grid-template-rows": "max-content 1fr";
+                "max-height": "100%";
+            }
+
             "tabs" {
                 "display": "flex";
             }
