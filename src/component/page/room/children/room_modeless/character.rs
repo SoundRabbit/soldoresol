@@ -47,6 +47,9 @@ pub enum On {
         property_id: Option<BlockId>,
         name: String,
     },
+    AddPropertyValue {
+        property_id: BlockId,
+    },
 }
 
 pub struct Character {
@@ -346,7 +349,7 @@ impl Character {
                                 ],
                             ),
                             Html::div(
-                                Attributes::new().class(Self::class("key-value")),
+                                Attributes::new().class(Self::class("prop-list")),
                                 Events::new(),
                                 {
                                     let mut children: Vec<_> = prop
@@ -354,7 +357,8 @@ impl Character {
                                         .map(|prop_id| self.render_prop(prop_id))
                                         .flatten()
                                         .collect();
-                                    children.push(self.render_prop_add(BlockId::clone(prop_id)));
+                                    children
+                                        .push(self.render_prop_add_prop(BlockId::clone(prop_id)));
                                     children
                                 },
                             ),
@@ -371,31 +375,47 @@ impl Character {
                 vec![
                     Html::input(Attributes::new().value(prop.name()), Events::new(), vec![]),
                     Html::div(
-                        Attributes::new(),
+                        Attributes::new().class(Self::class("prop-value-list")),
                         Events::new(),
-                        prop.values()
-                            .filter_map(|value| match value {
-                                block::property::Value::None => None,
-                                block::property::Value::Text(text) => Some(Html::input(
-                                    Attributes::new().value(text.as_ref()),
-                                    Events::new(),
-                                    vec![],
-                                )),
-                                block::property::Value::MultiLineText(text) => {
-                                    Some(Html::textarea(
-                                        Attributes::new().value(text.as_ref()),
+                        {
+                            let mut values: Vec<_> = prop
+                                .values()
+                                .map(|value| match value {
+                                    block::property::Value::None => vec![Html::div(
+                                        Attributes::new().class(Self::class("banner")),
                                         Events::new(),
-                                        vec![],
-                                    ))
-                                }
-                            })
-                            .collect(),
+                                        vec![self.render_prop_set_value_type()],
+                                    )],
+                                    block::property::Value::Text(text) => vec![
+                                        Html::input(
+                                            Attributes::new().value(text.as_ref()),
+                                            Events::new(),
+                                            vec![],
+                                        ),
+                                        self.render_prop_set_value_type(),
+                                    ],
+                                    block::property::Value::MultiLineText(text) => {
+                                        vec![
+                                            Html::textarea(
+                                                Attributes::new().value(text.as_ref()),
+                                                Events::new(),
+                                                vec![],
+                                            ),
+                                            self.render_prop_set_value_type(),
+                                        ]
+                                    }
+                                })
+                                .flatten()
+                                .collect();
+                            values.push(self.render_prop_add_value(BlockId::clone(prop_id)));
+                            values
+                        },
                     ),
                     Html::div(
-                        Attributes::new().class(Self::class("prop-list")),
+                        Attributes::new().class(Self::class("prop-list-container")),
                         Events::new(),
                         vec![Html::div(
-                            Attributes::new().class(Self::class("key-value")),
+                            Attributes::new().class(Self::class("prop-list")),
                             Events::new(),
                             {
                                 let mut children: Vec<_> = prop
@@ -403,7 +423,7 @@ impl Character {
                                     .map(|prop_id| self.render_prop(prop_id))
                                     .flatten()
                                     .collect();
-                                children.push(self.render_prop_add(BlockId::clone(prop_id)));
+                                children.push(self.render_prop_add_prop(BlockId::clone(prop_id)));
                                 children
                             },
                         )],
@@ -413,13 +433,13 @@ impl Character {
             .unwrap_or(vec![])
     }
 
-    fn render_prop_add(&self, prop_id: BlockId) -> Html {
+    fn render_prop_add_prop(&self, prop_id: BlockId) -> Html {
         Html::div(
             Attributes::new().class(Self::class("banner")),
             Events::new(),
             vec![Btn::with_child(
                 btn::Props {
-                    variant: btn::Variant::Primary,
+                    variant: btn::Variant::Secondary,
                 },
                 Subscription::new(move |sub| match sub {
                     btn::On::Click => Msg::Sub(On::AddPropertyChild {
@@ -429,6 +449,52 @@ impl Character {
                 }),
                 Html::text("追加"),
             )],
+        )
+    }
+
+    fn render_prop_add_value(&self, prop_id: BlockId) -> Html {
+        Html::div(
+            Attributes::new().class(Self::class("banner")),
+            Events::new(),
+            vec![Btn::with_child(
+                btn::Props {
+                    variant: btn::Variant::Dark,
+                },
+                Subscription::new(move |sub| match sub {
+                    btn::On::Click => Msg::Sub(On::AddPropertyValue {
+                        property_id: prop_id,
+                    }),
+                }),
+                Html::text("追加"),
+            )],
+        )
+    }
+
+    fn render_prop_set_value_type(&self) -> Html {
+        Dropdown::with_children(
+            dropdown::Props {
+                direction: dropdown::Direction::BottomLeft,
+                text: String::from("未指定"),
+                toggle_type: dropdown::ToggleType::Click,
+                variant: btn::Variant::DarkLikeMenu,
+            },
+            Subscription::none(),
+            vec![
+                Btn::with_child(
+                    btn::Props {
+                        variant: btn::Variant::Menu,
+                    },
+                    Subscription::none(),
+                    Html::text("テキスト"),
+                ),
+                Btn::with_child(
+                    btn::Props {
+                        variant: btn::Variant::Menu,
+                    },
+                    Subscription::none(),
+                    Html::text("ノート"),
+                ),
+            ],
         )
     }
 
@@ -522,10 +588,32 @@ impl Styled for Character {
                 "grid-template-columns": "max-content 1fr";
             }
 
-            "prop-list" {
+            "root-prop" {
+                "display": "grid";
+                "row-gap": ".65em";
+                "grid-template-columns": "1fr";
+            }
+
+            "prop-list-container" {
                 "grid-column-start": "1";
                 "grid-column-end": "-1";
                 "padding-left": "2rem";
+            }
+
+            "prop-list" {
+                "display": "grid";
+                "column-gap": ".35em";
+                "row-gap": ".65em";
+                "grid-template-columns": "max-content 1fr";
+                "align-items": "start";
+            }
+
+            "prop-value-list" {
+                "display": "grid";
+                "column-gap": ".35em";
+                "row-gap": ".65em";
+                "grid-template-columns": "1fr max-content";
+                "align-items": "start";
             }
 
             "banner" {

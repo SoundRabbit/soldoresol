@@ -135,6 +135,9 @@ pub enum Msg {
         block_id: BlockId,
         name: String,
     },
+    AddPropertyValue {
+        property_id: BlockId,
+    },
 }
 
 pub enum On {}

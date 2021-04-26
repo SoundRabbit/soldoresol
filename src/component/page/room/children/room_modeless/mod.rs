@@ -81,6 +81,9 @@ pub enum On {
         block_id: BlockId,
         name: String,
     },
+    AddPropertyValue {
+        property_id: BlockId,
+    },
 }
 
 pub struct RoomModeless {
@@ -387,6 +390,9 @@ impl RoomModeless {
                                     block_id: property_id.unwrap_or(character_id),
                                     name,
                                 })
+                            }
+                            character::On::AddPropertyValue { property_id } => {
+                                Msg::Sub(On::AddPropertyValue { property_id })
                             }
                         }
                     }),

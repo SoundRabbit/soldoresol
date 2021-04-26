@@ -489,6 +489,9 @@ impl Implement {
                                         room_modeless::On::AddPropertyChild { block_id, name } => {
                                             Msg::AddPropertyChild { block_id, name }
                                         }
+                                        room_modeless::On::AddPropertyValue { property_id } => {
+                                            Msg::AddPropertyValue { property_id }
+                                        }
                                     }
                                 }),
                             )
