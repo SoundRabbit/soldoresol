@@ -130,18 +130,24 @@ impl Boxblock {
         );
 
         gl.set_unif_light(&[0.5, -2.0, 1.0]);
-        gl.set_unif_shade_intensity(0.2);
+        gl.set_unif_shade_intensity(0.5);
 
         let _ = block_arena.iter_map_with_ids(
             boxblock_ids,
             |_, boxblock: &block::boxblock::Boxblock| {
-                let s = boxblock.size();
+                let s = {
+                    let s = boxblock.size();
+                    [
+                        s[0].abs().max(1.0 / 128.0).copysign(s[0]),
+                        s[1].abs().max(1.0 / 128.0).copysign(s[1]),
+                        s[2].abs().max(1.0 / 128.0).copysign(s[2]),
+                    ]
+                };
                 let p = boxblock.position();
                 let model_matrix: Array2<f32> =
-                    ModelMatrix::new().with_scale(s).with_movement(p).into();
+                    ModelMatrix::new().with_scale(&s).with_movement(p).into();
                 let inv_model_matrix: Array2<f32> = ModelMatrix::new()
-                    .with_movement(&[-p[0], p[1], -p[2]])
-                    .with_scale(&[1.0 / s[0], 1.0 / s[1], 1.0 / s[2]])
+                    .with_movement(&[-p[0], -p[1], -p[2]])
                     .into();
                 let mvp_matrix = vp_matrix.dot(&model_matrix);
                 gl.set_unif_translate(mvp_matrix.reversed_axes());

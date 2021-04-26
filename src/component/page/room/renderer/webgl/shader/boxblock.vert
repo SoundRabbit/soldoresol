@@ -9,7 +9,7 @@ varying vec4 v_color;
 
 void main() {
     vec3 invLight = normalize(u_invModel * vec4(u_light, 0.0)).xyz;
-    float diffuse = clamp(dot(a_normal, invLight) * u_shadeIntensity + 1.0 - u_shadeIntensity, 1.0 - u_shadeIntensity, 1.0);
+    float diffuse = clamp(dot(a_normal, invLight), 0.0, 1.0) * u_shadeIntensity + 1.0 - u_shadeIntensity;
     v_color = u_bgColor * vec4(vec3(diffuse), 1.0);
 
     vec4 p = u_translate * a_vertex;
