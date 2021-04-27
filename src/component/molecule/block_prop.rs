@@ -371,7 +371,7 @@ impl BlockProp {
                     direction: dropdown::Direction::Bottom,
                     text: mapped_list
                         .selected()
-                        .map(|(a, _)| a.as_ref().clone())
+                        .map(|(a, b)| format!("{}: {}", b.as_ref(), a.as_ref()))
                         .unwrap_or(String::from("")),
                     toggle_type: dropdown::ToggleType::Click,
                     variant: btn::Variant::DarkLikeMenu,
@@ -380,10 +380,10 @@ impl BlockProp {
                 mapped_list
                     .iter()
                     .enumerate()
-                    .map(|(list_idx, (a, _))| {
+                    .map(|(list_idx, (a, b))| {
                         Btn::with_child(
                             btn::Props {
-                                variant: btn::Variant::Dark,
+                                variant: btn::Variant::Menu,
                             },
                             Subscription::new({
                                 let mut mapped_list = SelectList::clone_of(mapped_list);
@@ -399,7 +399,7 @@ impl BlockProp {
                                     }
                                 }
                             }),
-                            Html::text(a.as_ref()),
+                            Html::text(format!("{}: {}", b.as_ref(), a.as_ref())),
                         )
                     })
                     .collect(),

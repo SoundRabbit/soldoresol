@@ -1,3 +1,4 @@
+use hex::FromHex;
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 
@@ -68,8 +69,11 @@ impl U128Id {
     }
 
     pub fn from_jsvalue(val: &JsValue) -> Option<Self> {
-        if let Some(val) = val.as_string().and_then(|x| x.parse().ok()) {
-            Some(Self(Rc::new(val)))
+        if let Some(val) = val
+            .as_string()
+            .and_then(|x| <[u8; 16]>::from_hex(x.as_str()).ok())
+        {
+            Some(Self(Rc::new(u128::from_be_bytes(val))))
         } else {
             None
         }
@@ -83,8 +87,12 @@ impl U128Id {
         Self(Rc::new(val))
     }
 
-    pub fn to_string(&self) -> String {
-        self.0.to_string()
+    pub fn from_hex(val: &str) -> Option<Self> {
+        if let Ok(val) = <[u8; 16]>::from_hex(val) {
+            Some(Self(Rc::new(u128::from_be_bytes(val))))
+        } else {
+            None
+        }
     }
 
     pub fn clone(this: &Self) -> Self {
@@ -94,6 +102,6 @@ impl U128Id {
 
 impl std::fmt::Display for U128Id {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:X}", (*self.0.as_ref()))
+        write!(f, "{}", hex::encode(self.0.to_be_bytes()))
     }
 }

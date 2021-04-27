@@ -29,6 +29,12 @@ impl ResourceId {
     }
 }
 
+impl std::fmt::Display for ResourceId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.id.to_string())
+    }
+}
+
 pub struct ArenaRef {
     arena: Arena,
 }

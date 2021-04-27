@@ -9,6 +9,27 @@ pub struct CharacterTexture {
     height: f32,
 }
 
+impl CharacterTexture {
+    async fn pack_to_toml(&self) -> toml::Value {
+        let mut packed = toml::value::Table::new();
+
+        packed.insert(String::from("name"), toml::Value::String(self.name.clone()));
+
+        if let Some(texture_id) = &self.texture_id {
+            packed.insert(
+                String::from("texture_id"),
+                toml::Value::String(texture_id.to_string()),
+            );
+        }
+
+        packed.insert(
+            String::from("height"),
+            toml::Value::Float(self.height as f64),
+        );
+        toml::Value::Table(packed)
+    }
+}
+
 impl Clone for CharacterTexture {
     fn clone(&self) -> Self {
         Self {
@@ -158,5 +179,52 @@ impl Character {
 
     pub fn add_property(&mut self, property_id: BlockId) {
         self.properties.push(property_id);
+    }
+
+    pub async fn pack_to_toml(&self) -> toml::Value {
+        let mut packed = toml::value::Table::new();
+
+        packed.insert(String::from("size"), toml::Value::Float(self.size as f64));
+        packed.insert(String::from("name"), toml::Value::String(self.name.clone()));
+        packed.insert(
+            String::from("display_name"),
+            toml::Value::String(self.display_name.clone()),
+        );
+
+        let props = {
+            let mut props = toml::value::Array::new();
+
+            for prop_id in self.properties.iter() {
+                props.push(toml::Value::String(prop_id.to_string()));
+            }
+
+            props
+        };
+        packed.insert(String::from("propaties"), toml::Value::Array(props));
+
+        let textures = {
+            let mut textures = toml::value::Table::new();
+
+            textures.insert(
+                String::from("_selected_idx"),
+                toml::Value::Integer(self.textures.selected_idx() as i64),
+            );
+
+            let payload = {
+                let mut payload = toml::value::Array::new();
+
+                for texture in self.textures.iter() {
+                    payload.push(texture.pack_to_toml().await);
+                }
+
+                payload
+            };
+            textures.insert(String::from("_payload"), toml::Value::Array(payload));
+
+            textures
+        };
+        packed.insert(String::from("textures"), toml::Value::Table(textures));
+
+        toml::Value::Table(packed)
     }
 }

@@ -451,7 +451,7 @@ impl Character {
                             variant: btn::Variant::Primary,
                         },
                         Subscription::none(),
-                        Html::text("保存"),
+                        Html::text("ダウンロード"),
                     )],
                 ),
             ],
