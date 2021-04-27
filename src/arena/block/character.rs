@@ -122,6 +122,10 @@ impl Character {
         self.name = name;
     }
 
+    pub fn display_name(&self) -> &String {
+        &self.display_name
+    }
+
     pub fn position(&self) -> &[f32; 3] {
         &self.position
     }

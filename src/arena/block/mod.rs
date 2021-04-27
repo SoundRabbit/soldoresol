@@ -211,6 +211,35 @@ impl ArenaBlock {
             payload: payload,
         })
     }
+
+    async fn pack_to_toml(&self) -> toml::Value {
+        let mut packed = toml::value::Table::new();
+
+        match &self.payload {
+            Block::Character(x) => {
+                packed.insert(
+                    String::from("_type"),
+                    toml::Value::String(String::from("Character")),
+                );
+                packed.insert(String::from("payload"), x.pack_to_toml().await);
+            }
+            Block::Property(x) => {
+                packed.insert(
+                    String::from("_type"),
+                    toml::Value::String(String::from("Property")),
+                );
+                packed.insert(String::from("payload"), x.pack_to_toml().await);
+            }
+            _ => {
+                packed.insert(
+                    String::from("_type"),
+                    toml::Value::String(String::from("None")),
+                );
+            }
+        }
+
+        toml::Value::Table(packed)
+    }
 }
 
 pub struct ArenaRef {
@@ -353,6 +382,27 @@ impl Arena {
 
     pub fn free(&mut self, block_id: &BlockId) {
         self.assign_block(BlockId::clone(block_id), Block::None)
+    }
+
+    pub fn pack_to_toml(
+        &self,
+        block_id: &BlockId,
+    ) -> Option<
+        Box<dyn FnOnce() -> std::pin::Pin<Box<dyn std::future::Future<Output = toml::Value>>>>,
+    > {
+        if let Some(arena_block) = self.table.borrow().get(&block_id) {
+            let arena_block = ArenaBlock::clone(arena_block);
+            let block_id = BlockId::clone(block_id);
+            Some(Box::new(move || {
+                Box::pin(async move {
+                    let mut packed = toml::value::Table::new();
+                    packed.insert(block_id.to_string(), arena_block.pack_to_toml().await);
+                    toml::Value::Table(packed)
+                })
+            }))
+        } else {
+            None
+        }
     }
 }
 

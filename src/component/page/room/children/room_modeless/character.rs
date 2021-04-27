@@ -11,6 +11,7 @@ use crate::arena::resource;
 use async_std::sync::{Arc, Mutex};
 use kagura::prelude::*;
 use std::rc::Rc;
+use wasm_bindgen::JsCast;
 
 pub struct Props {
     pub block_arena: block::ArenaRef,
@@ -23,7 +24,8 @@ pub enum Msg {
     Sub(On),
     SetModal(Modal),
     SetSelectedTabIdx(usize),
-    SetIsEditable(bool),
+    PackToDownload,
+    Download(toml::Value),
 }
 
 pub enum Modal {
@@ -80,7 +82,6 @@ pub struct Character {
     element_id: ElementId,
     modal: Modal,
     selected_tab_idx: usize,
-    is_editable: bool,
 }
 
 struct ElementId {
@@ -102,7 +103,6 @@ impl Constructor for Character {
             },
             modal: Modal::None,
             selected_tab_idx: 0,
-            is_editable: false,
         }
     }
 }
@@ -129,8 +129,42 @@ impl Component for Character {
                 self.selected_tab_idx = idx;
                 Cmd::none()
             }
-            Msg::SetIsEditable(is_editable) => {
-                self.is_editable = is_editable;
+            Msg::PackToDownload => {
+                if let Some(task) = self.block_arena.pack_to_toml(&self.character_id) {
+                    Cmd::task(move |resolve| {
+                        wasm_bindgen_futures::spawn_local(async move {
+                            let packed = task().await;
+                            resolve(Msg::Download(packed));
+                        })
+                    })
+                } else {
+                    Cmd::none()
+                }
+            }
+            Msg::Download(packed) => {
+                if let Ok(serialized) = toml::to_string(&packed) {
+                    let blob = web_sys::Blob::new_with_str_sequence_and_options(
+                        &array![serialized].into(),
+                        web_sys::BlobPropertyBag::new().type_("application/toml"),
+                    )
+                    .unwrap();
+                    let url = web_sys::Url::create_object_url_with_blob(&blob).unwrap();
+                    let document = web_sys::window().unwrap().document().unwrap();
+                    let a = document.create_element("a").unwrap();
+                    let _ = a.set_attribute("href", &url);
+                    let character_name = self
+                        .block_arena
+                        .map(
+                            &self.character_id,
+                            |character: &block::character::Character| character.name().clone(),
+                        )
+                        .unwrap_or(String::from("キャラクター"));
+                    let _ = a.set_attribute("download", &(character_name + ".toml"));
+                    let _ = a.set_attribute("style", "display: none");
+                    let _ = document.body().unwrap().append_child(&a);
+                    a.dyn_ref::<web_sys::HtmlElement>().unwrap().click();
+                    let _ = document.body().unwrap().remove_child(&a);
+                }
                 Cmd::none()
             }
         }
@@ -211,7 +245,13 @@ impl Character {
                                     Events::new(),
                                     vec![
                                         text::label("表示名", &self.element_id.input_display_name),
-                                        Html::input(Attributes::new(), Events::new(), vec![]),
+                                        Html::input(
+                                            Attributes::new()
+                                                .value(character.display_name())
+                                                .id(&self.element_id.input_display_name),
+                                            Events::new(),
+                                            vec![],
+                                        ),
                                         text::label(
                                             "キャラクター名",
                                             &self.element_id.input_character_name,
@@ -450,7 +490,9 @@ impl Character {
                         btn::Props {
                             variant: btn::Variant::Primary,
                         },
-                        Subscription::none(),
+                        Subscription::new(|sub| match sub {
+                            btn::On::Click => Msg::PackToDownload,
+                        }),
                         Html::text("ダウンロード"),
                     )],
                 ),

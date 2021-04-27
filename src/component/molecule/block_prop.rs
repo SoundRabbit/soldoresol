@@ -6,7 +6,6 @@ use crate::arena::block::{self, BlockId};
 use crate::libs::clone_of::CloneOf;
 use crate::libs::select_list::SelectList;
 use kagura::prelude::*;
-use std::rc::Rc;
 
 pub struct Props {
     pub root_prop: BlockId,
@@ -227,11 +226,9 @@ impl BlockProp {
     ) -> Vec<Html> {
         match value {
             block::property::Value::None => self.render_value_none(prop_id, idx, value),
-            block::property::Value::Text(text) => {
-                self.render_value_text(prop_id, idx, value, text.as_ref())
-            }
+            block::property::Value::Text(text) => self.render_value_text(prop_id, idx, value, text),
             block::property::Value::MultiLineText(text) => {
-                self.render_value_multi_line_text(prop_id, idx, value, text.as_ref())
+                self.render_value_multi_line_text(prop_id, idx, value, text)
             }
             block::property::Value::ResourceMinMax { min, val, max } => {
                 self.render_value_resource_min_max(prop_id, idx, value, *min, *val, *max)
@@ -278,7 +275,7 @@ impl BlockProp {
                         Msg::Sub(On::SetPropertyValue {
                             property_id: prop_id,
                             idx,
-                            value: block::property::Value::Text(Rc::new(text)),
+                            value: block::property::Value::Text(text),
                         })
                     }
                 }),
@@ -305,7 +302,7 @@ impl BlockProp {
                         Msg::Sub(On::SetPropertyValue {
                             property_id: prop_id,
                             idx,
-                            value: block::property::Value::MultiLineText(Rc::new(text)),
+                            value: block::property::Value::MultiLineText(text),
                         })
                     }
                 }),
@@ -363,7 +360,7 @@ impl BlockProp {
         prop_id: &BlockId,
         idx: usize,
         value: &block::property::Value,
-        mapped_list: &SelectList<(Rc<String>, Rc<String>)>,
+        mapped_list: &SelectList<(String, String)>,
     ) -> Vec<Html> {
         vec![
             Dropdown::with_children(
@@ -371,7 +368,7 @@ impl BlockProp {
                     direction: dropdown::Direction::Bottom,
                     text: mapped_list
                         .selected()
-                        .map(|(a, b)| format!("{}: {}", b.as_ref(), a.as_ref()))
+                        .map(|(a, b)| format!("{}: {}", b, a))
                         .unwrap_or(String::from("")),
                     toggle_type: dropdown::ToggleType::Click,
                     variant: btn::Variant::DarkLikeMenu,
@@ -399,7 +396,7 @@ impl BlockProp {
                                     }
                                 }
                             }),
-                            Html::text(format!("{}: {}", b.as_ref(), a.as_ref())),
+                            Html::text(format!("{}: {}", b, a)),
                         )
                     })
                     .collect(),
@@ -560,7 +557,7 @@ impl BlockProp {
                         _ => Msg::Sub(On::SetPropertyValue {
                             property_id: prop_id,
                             idx,
-                            value: block::property::Value::Text(Rc::new(String::new())),
+                            value: block::property::Value::Text(String::new()),
                         }),
                     },
                 }
@@ -593,7 +590,7 @@ impl BlockProp {
                         _ => Msg::Sub(On::SetPropertyValue {
                             property_id: prop_id,
                             idx,
-                            value: block::property::Value::MultiLineText(Rc::new(String::new())),
+                            value: block::property::Value::MultiLineText(String::new()),
                         }),
                     },
                 }
@@ -655,8 +652,8 @@ impl BlockProp {
                             idx,
                             value: block::property::Value::MappedList(SelectList::new(
                                 vec![
-                                    (Rc::new(String::from("Yes")), Rc::new(String::from("1"))),
-                                    (Rc::new(String::from("No")), Rc::new(String::from("0"))),
+                                    (String::from("Yes"), String::from("1")),
+                                    (String::from("No"), String::from("0")),
                                 ],
                                 0,
                             )),

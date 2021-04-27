@@ -467,13 +467,13 @@ impl Implement {
             Msg::SetPropertyName { property_id, name } => {
                 self.block_arena
                     .map_mut(&property_id, |prop: &mut block::property::Property| {
-                        prop.set_name(Rc::new(name));
+                        prop.set_name(name);
                     });
                 Cmd::none()
             }
 
             Msg::AddPropertyChild { block_id, name } => {
-                let property = block::property::Property::new(Rc::new(name));
+                let property = block::property::Property::new(name);
                 let property_id = self.block_arena.insert(property);
 
                 if self

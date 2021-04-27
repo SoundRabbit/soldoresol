@@ -1,14 +1,13 @@
 use super::BlockId;
 use crate::libs::clone_of::CloneOf;
 use crate::libs::select_list::SelectList;
-use std::rc::Rc;
 
 pub enum Value {
     None,
-    Text(Rc<String>),
-    MultiLineText(Rc<String>),
+    Text(String),
+    MultiLineText(String),
     ResourceMinMax { min: f64, val: f64, max: f64 },
-    MappedList(SelectList<(Rc<String>, Rc<String>)>),
+    MappedList(SelectList<(String, String)>),
 }
 
 #[derive(Clone)]
@@ -18,7 +17,7 @@ pub enum ValueMode {
 }
 
 pub struct Property {
-    name: Rc<String>,
+    name: String,
     values: Vec<Value>,
     children: Vec<BlockId>,
     value_mode: ValueMode,
@@ -28,8 +27,8 @@ impl Value {
     pub fn clone(this: &Self) -> Self {
         match this {
             Self::None => Self::None,
-            Self::Text(x) => Self::Text(Rc::clone(x)),
-            Self::MultiLineText(x) => Self::MultiLineText(Rc::clone(x)),
+            Self::Text(x) => Self::Text(x.clone()),
+            Self::MultiLineText(x) => Self::MultiLineText(x.clone()),
             Self::ResourceMinMax { min, val, max } => Self::ResourceMinMax {
                 min: *min,
                 val: *val,
@@ -54,20 +53,14 @@ impl Value {
                     String::from("_type"),
                     toml::Value::String(String::from("Text")),
                 );
-                packed.insert(
-                    String::from("_payload"),
-                    toml::Value::String(x.as_ref().clone()),
-                );
+                packed.insert(String::from("_payload"), toml::Value::String(x.clone()));
             }
             Self::MultiLineText(x) => {
                 packed.insert(
                     String::from("_type"),
                     toml::Value::String(String::from("MultiLineText")),
                 );
-                packed.insert(
-                    String::from("_payload"),
-                    toml::Value::String(x.as_ref().clone()),
-                );
+                packed.insert(String::from("_payload"), toml::Value::String(x.clone()));
             }
             Self::ResourceMinMax { min, val, max } => {
                 packed.insert(
@@ -105,8 +98,8 @@ impl Value {
                         for x in x.iter() {
                             let mut pair = toml::value::Array::new();
 
-                            pair.push(toml::Value::String(x.0.as_ref().clone()));
-                            pair.push(toml::Value::String(x.1.as_ref().clone()));
+                            pair.push(toml::Value::String(x.0.clone()));
+                            pair.push(toml::Value::String(x.1.clone()));
 
                             payload.push(toml::Value::Array(pair));
                         }
@@ -126,7 +119,7 @@ impl Value {
 }
 
 impl Property {
-    pub fn new(name: Rc<String>) -> Self {
+    pub fn new(name: String) -> Self {
         Self {
             name,
             values: vec![],
@@ -137,7 +130,7 @@ impl Property {
 
     pub fn clone(this: &Self) -> Self {
         Self {
-            name: Rc::clone(&this.name),
+            name: this.name.clone(),
             values: this.values.iter().map(|x| Value::clone(x)).collect(),
             children: this.children.iter().map(|x| BlockId::clone(x)).collect(),
             value_mode: this.value_mode.clone(),
@@ -148,7 +141,7 @@ impl Property {
         &self.name
     }
 
-    pub fn set_name(&mut self, name: Rc<String>) {
+    pub fn set_name(&mut self, name: String) {
         self.name = name;
     }
 

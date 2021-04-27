@@ -1,5 +1,5 @@
+use async_std::sync::Arc;
 use hex::FromHex;
-use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 
 pub fn u8vec(len: usize) -> Vec<u8> {
@@ -49,7 +49,7 @@ pub fn u32color() -> u32 {
 }
 
 #[derive(Hash, PartialEq, Eq, Debug)]
-pub struct U128Id(Rc<u128>);
+pub struct U128Id(Arc<u128>);
 
 impl U128Id {
     pub fn new() -> Self {
@@ -57,11 +57,11 @@ impl U128Id {
         while id == 0 {
             id = u128val();
         }
-        Self(Rc::new(id))
+        Self(Arc::new(id))
     }
 
     pub fn none() -> Self {
-        Self(Rc::new(0))
+        Self(Arc::new(0))
     }
 
     pub fn to_jsvalue(&self) -> JsValue {
@@ -73,7 +73,7 @@ impl U128Id {
             .as_string()
             .and_then(|x| <[u8; 16]>::from_hex(x.as_str()).ok())
         {
-            Some(Self(Rc::new(u128::from_be_bytes(val))))
+            Some(Self(Arc::new(u128::from_be_bytes(val))))
         } else {
             None
         }
@@ -84,19 +84,19 @@ impl U128Id {
     }
 
     pub fn from_u128(val: u128) -> Self {
-        Self(Rc::new(val))
+        Self(Arc::new(val))
     }
 
     pub fn from_hex(val: &str) -> Option<Self> {
         if let Ok(val) = <[u8; 16]>::from_hex(val) {
-            Some(Self(Rc::new(u128::from_be_bytes(val))))
+            Some(Self(Arc::new(u128::from_be_bytes(val))))
         } else {
             None
         }
     }
 
     pub fn clone(this: &Self) -> Self {
-        Self(Rc::clone(&this.0))
+        Self(Arc::clone(&this.0))
     }
 }
 
