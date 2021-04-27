@@ -66,6 +66,12 @@ impl Property {
         self.values[idx] = value;
     }
 
+    pub fn remove_value(&mut self, idx: usize) {
+        if idx < self.values.len() {
+            self.values.remove(idx);
+        }
+    }
+
     pub fn children(&self) -> impl Iterator<Item = &BlockId> {
         self.children.iter()
     }

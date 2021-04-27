@@ -518,6 +518,15 @@ impl Implement {
 
                 Cmd::none()
             }
+
+            Msg::RemovePropertyValue { property_id, idx } => {
+                self.block_arena
+                    .map_mut(&property_id, |prop: &mut block::property::Property| {
+                        prop.remove_value(idx);
+                    });
+
+                Cmd::none()
+            }
         }
     }
 

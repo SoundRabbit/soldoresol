@@ -93,6 +93,10 @@ pub enum On {
         idx: usize,
         value: block::property::Value,
     },
+    RemovePropertyValue {
+        property_id: BlockId,
+        idx: usize,
+    },
 }
 
 pub struct RoomModeless {
@@ -418,6 +422,9 @@ impl RoomModeless {
                                 idx,
                                 value,
                             }),
+                            character::On::RemovePropertyValue { property_id, idx } => {
+                                Msg::Sub(On::RemovePropertyValue { property_id, idx })
+                            }
                         }
                     }),
                 ),

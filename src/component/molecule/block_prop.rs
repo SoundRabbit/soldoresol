@@ -34,6 +34,10 @@ pub enum On {
         idx: usize,
         value: block::property::Value,
     },
+    RemovePropertyValue {
+        property_id: BlockId,
+        idx: usize,
+    },
 }
 
 pub struct BlockProp {
@@ -222,7 +226,7 @@ impl BlockProp {
                     Events::new(),
                     vec![self.render_btn_set_value_type(prop_id, idx, value)],
                 ),
-                self.render_btn_remove_value(prop_id, idx),
+                self.render_btn_remove_value(BlockId::clone(prop_id), idx),
             ]
         } else {
             vec![]
@@ -252,7 +256,7 @@ impl BlockProp {
                 vec![],
             ),
             self.render_btn_set_value_type(prop_id, idx, value),
-            self.render_btn_remove_value(prop_id, idx),
+            self.render_btn_remove_value(BlockId::clone(prop_id), idx),
         ]
     }
 
@@ -279,7 +283,7 @@ impl BlockProp {
                 vec![],
             ),
             self.render_btn_set_value_type(prop_id, idx, value),
-            self.render_btn_remove_value(prop_id, idx),
+            self.render_btn_remove_value(BlockId::clone(prop_id), idx),
         ]
     }
 
@@ -321,7 +325,7 @@ impl BlockProp {
                 }),
             ),
             self.render_btn_set_value_type(prop_id, idx, value),
-            self.render_btn_remove_value(prop_id, idx),
+            self.render_btn_remove_value(BlockId::clone(prop_id), idx),
         ]
     }
 
@@ -493,7 +497,7 @@ impl BlockProp {
         )
     }
 
-    fn render_btn_remove_value(&self, prop_id: &BlockId, idx: usize) -> Html {
+    fn render_btn_remove_value(&self, prop_id: BlockId, idx: usize) -> Html {
         if self.is_editable {
             Dropdown::with_children(
                 dropdown::Props {
@@ -511,7 +515,12 @@ impl BlockProp {
                             btn::Props {
                                 variant: btn::Variant::Danger,
                             },
-                            Subscription::none(),
+                            Subscription::new(move |sub| match sub {
+                                btn::On::Click => Msg::Sub(On::RemovePropertyValue {
+                                    property_id: prop_id,
+                                    idx,
+                                }),
+                            }),
                             Html::text("OK"),
                         ),
                         Btn::with_child(

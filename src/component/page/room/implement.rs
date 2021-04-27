@@ -147,6 +147,10 @@ pub enum Msg {
         idx: usize,
         value: block::property::Value,
     },
+    RemovePropertyValue {
+        property_id: BlockId,
+        idx: usize,
+    },
 }
 
 pub enum On {}
