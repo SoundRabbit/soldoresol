@@ -10,12 +10,15 @@ pub struct Props {
 
 pub enum Msg {
     NoOp,
+    Sub(On),
     SetValue(f64),
     InputSliderValue(f64),
 }
 
 pub enum On {
     Input(f64),
+    InputRange { min: f64, max: f64 },
+    InputMid(f64),
 }
 
 pub struct Slider {
@@ -73,6 +76,7 @@ impl Component for Slider {
     fn update(&mut self, msg: Self::Msg) -> Cmd<Self::Msg, Self::Sub> {
         match msg {
             Msg::NoOp => Cmd::none(),
+            Msg::Sub(sub) => Cmd::sub(sub),
             Msg::SetValue(input_val) => {
                 let new_val = match &mut self.position {
                     Position::Linear { .. } => input_val,
@@ -208,7 +212,13 @@ impl Slider {
                                 attrs.flag("readonly")
                             }
                         },
-                        Events::new(),
+                        Events::new().on_input(move |min| {
+                            if let Ok(min) = min.parse::<f64>() {
+                                Msg::Sub(On::InputRange { min, max })
+                            } else {
+                                Msg::NoOp
+                            }
+                        }),
                         vec![],
                     )],
                 ),
@@ -229,7 +239,13 @@ impl Slider {
                                 attrs.flag("readonly")
                             }
                         },
-                        Events::new(),
+                        Events::new().on_input(move |max| {
+                            if let Ok(max) = max.parse::<f64>() {
+                                Msg::Sub(On::InputRange { min, max })
+                            } else {
+                                Msg::NoOp
+                            }
+                        }),
                         vec![],
                     )],
                 ),
@@ -259,7 +275,13 @@ impl Slider {
                             attrs.flag("readonly")
                         }
                     },
-                    Events::new(),
+                    Events::new().on_input(move |mid| {
+                        if let Ok(mid) = mid.parse::<f64>() {
+                            Msg::Sub(On::InputMid(mid))
+                        } else {
+                            Msg::NoOp
+                        }
+                    }),
                     vec![],
                 )],
             )],

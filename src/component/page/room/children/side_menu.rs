@@ -26,6 +26,7 @@ pub struct Props {
 }
 
 pub enum Msg {
+    NoOp,
     Sub(On),
     SetSelectedIdx(usize),
     SetShowSub(bool),
@@ -99,6 +100,7 @@ impl Component for SideMenu {
 
     fn update(&mut self, msg: Self::Msg) -> Cmd<Self::Msg, Self::Sub> {
         match msg {
+            Msg::NoOp => Cmd::none(),
             Msg::Sub(sub) => Cmd::Sub(sub),
             Msg::SetSelectedIdx(idx) => {
                 if idx != self.tools.selected_idx() {
@@ -311,6 +313,7 @@ impl SideMenu {
                                         background_color: None,
                                         background_image: None,
                                     }),
+                                    _ => Msg::NoOp,
                                 }
                             }),
                         ),
@@ -334,6 +337,7 @@ impl SideMenu {
                                         background_color: None,
                                         background_image: None,
                                     }),
+                                    _ => Msg::NoOp,
                                 }
                             }),
                         ),
@@ -438,6 +442,7 @@ impl SideMenu {
                                     tool: TableTool::Pen(tool),
                                 })
                             }
+                            _ => Msg::NoOp,
                         }
                     }),
                 ),
@@ -555,6 +560,7 @@ impl SideMenu {
                                     tool: TableTool::Shape(tools),
                                 })
                             }
+                            _ => Msg::NoOp,
                         }
                     }),
                 ),
@@ -614,6 +620,7 @@ impl SideMenu {
                                     tool: TableTool::Shape(tools),
                                 })
                             }
+                            _ => Msg::NoOp,
                         }
                     }),
                 ),
@@ -697,6 +704,7 @@ impl SideMenu {
                                     tool: TableTool::Eraser(tool),
                                 })
                             }
+                            _ => Msg::NoOp,
                         }
                     }),
                 ),
@@ -719,6 +727,7 @@ impl SideMenu {
                                     tool: TableTool::Eraser(tool),
                                 })
                             }
+                            _ => Msg::NoOp,
                         }
                     }),
                 ),
@@ -752,6 +761,7 @@ impl SideMenu {
                                     tool: TableTool::Character(character),
                                 })
                             }
+                            _ => Msg::NoOp,
                         }
                     }),
                 ),
@@ -774,6 +784,7 @@ impl SideMenu {
                                     tool: TableTool::Character(character),
                                 })
                             }
+                            _ => Msg::NoOp,
                         }
                     }),
                 ),
@@ -834,6 +845,7 @@ impl SideMenu {
                                     tool: TableTool::Boxblock(boxblock),
                                 })
                             }
+                            _ => Msg::NoOp,
                         }
                     }),
                 ),
@@ -857,6 +869,7 @@ impl SideMenu {
                                     tool: TableTool::Boxblock(boxblock),
                                 })
                             }
+                            _ => Msg::NoOp,
                         }
                     }),
                 ),
@@ -880,6 +893,7 @@ impl SideMenu {
                                     tool: TableTool::Boxblock(boxblock),
                                 })
                             }
+                            _ => Msg::NoOp,
                         }
                     }),
                 ),

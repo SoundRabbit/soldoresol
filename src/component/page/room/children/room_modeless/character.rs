@@ -3,6 +3,7 @@ use super::super::atom::dropdown::{self, Dropdown};
 use super::super::atom::slider::{self, Slider};
 use super::super::atom::text;
 use super::super::modal_imported_files::{self, ModalImportedFiles};
+use super::super::molecule::block_prop::{self, BlockProp};
 use super::super::molecule::tab_menu::{self, TabMenu};
 use super::super::util::styled::{Style, Styled};
 use crate::arena::block::{self, BlockId};
@@ -375,340 +376,39 @@ impl Character {
                                     ),
                                 ],
                             ),
-                            Html::div(
-                                Attributes::new().class("banner"),
-                                Events::new(),
-                                vec![Btn::with_child(
-                                    btn::Props {
-                                        variant: btn::Variant::Dark,
-                                    },
-                                    Subscription::new({
-                                        let is_editable = self.is_editable;
-                                        move |sub| match sub {
-                                            btn::On::Click => Msg::SetIsEditable(!is_editable),
-                                        }
-                                    }),
-                                    Html::text(if self.is_editable {
-                                        "編集完了"
-                                    } else {
-                                        "編集開始"
-                                    }),
-                                )],
-                            ),
-                            Html::div(
-                                Attributes::new().class(Self::class("prop-list")),
-                                Events::new(),
-                                {
-                                    let mut children: Vec<_> = prop
-                                        .children()
-                                        .map(|prop_id| self.render_prop(prop_id))
-                                        .flatten()
-                                        .collect();
-                                    if self.is_editable {
-                                        children.push(
-                                            self.render_prop_add_prop(BlockId::clone(prop_id)),
-                                        );
-                                    }
-                                    children
+                            BlockProp::empty(
+                                block_prop::Props {
+                                    root_prop: BlockId::clone(prop_id),
+                                    block_arena: block::ArenaRef::clone(&self.block_arena),
                                 },
+                                Subscription::new(|sub| match sub {
+                                    block_prop::On::AddPropertyChild { property_id, name } => {
+                                        Msg::Sub(On::AddPropertyChild {
+                                            property_id: Some(property_id),
+                                            name,
+                                        })
+                                    }
+                                    block_prop::On::AddPropertyValue { property_id } => {
+                                        Msg::Sub(On::AddPropertyValue { property_id })
+                                    }
+                                    block_prop::On::SetPropertyName { property_id, name } => {
+                                        Msg::Sub(On::SetPropertyName { property_id, name })
+                                    }
+                                    block_prop::On::SetPropertyValue {
+                                        property_id,
+                                        idx,
+                                        value,
+                                    } => Msg::Sub(On::SetPropertyValue {
+                                        property_id,
+                                        idx,
+                                        value,
+                                    }),
+                                }),
                             ),
                         ],
                     )
                 })
                 .unwrap_or(Html::none())],
-        )
-    }
-
-    fn render_prop(&self, prop_id: &BlockId) -> Vec<Html> {
-        self.block_arena
-            .map(prop_id, |prop: &block::property::Property| {
-                vec![
-                    {
-                        let attr = Attributes::new().value(prop.name());
-                        let attr = if self.is_editable || prop.values().count() > 0 {
-                            attr
-                        } else {
-                            attr.class(Self::class("banner"))
-                        };
-                        Html::input(
-                            attr,
-                            Events::new().on_input({
-                                let prop_id = BlockId::clone(prop_id);
-                                move |name| {
-                                    Msg::Sub(On::SetPropertyName {
-                                        property_id: prop_id,
-                                        name,
-                                    })
-                                }
-                            }),
-                            vec![],
-                        )
-                    },
-                    if self.is_editable || prop.values().count() > 0 {
-                        Html::div(
-                            Attributes::new().class(Self::class("prop-value-list")),
-                            Events::new(),
-                            {
-                                let mut values: Vec<_> = prop
-                                    .values()
-                                    .enumerate()
-                                    .map(|(idx, value)| match value {
-                                        block::property::Value::None => vec![if self.is_editable {
-                                            Html::div(
-                                                Attributes::new().class(Self::class("banner")),
-                                                Events::new(),
-                                                vec![self.render_prop_set_value_type(
-                                                    prop_id, idx, value,
-                                                )],
-                                            )
-                                        } else {
-                                            Html::none()
-                                        }],
-                                        block::property::Value::Text(text) => vec![
-                                            {
-                                                let attr = Attributes::new().value(text.as_ref());
-                                                let attr = if self.is_editable {
-                                                    attr
-                                                } else {
-                                                    attr.class(Self::class("banner"))
-                                                };
-                                                Html::input(attr, Events::new(), vec![])
-                                            },
-                                            if self.is_editable {
-                                                self.render_prop_set_value_type(prop_id, idx, value)
-                                            } else {
-                                                Html::none()
-                                            },
-                                        ],
-                                        block::property::Value::MultiLineText(text) => vec![
-                                            {
-                                                let attr = Attributes::new().value(text.as_ref());
-                                                let attr = if self.is_editable {
-                                                    attr
-                                                } else {
-                                                    attr.class(Self::class("banner"))
-                                                };
-                                                Html::textarea(attr, Events::new(), vec![])
-                                            },
-                                            if self.is_editable {
-                                                self.render_prop_set_value_type(prop_id, idx, value)
-                                            } else {
-                                                Html::none()
-                                            },
-                                        ],
-                                        block::property::Value::ResourceMinMax {
-                                            min,
-                                            val,
-                                            max,
-                                        } => vec![
-                                            {
-                                                let attr = if self.is_editable {
-                                                    Attributes::new()
-                                                } else {
-                                                    Attributes::new().class(Self::class("banner"))
-                                                };
-                                                Html::div(
-                                                    attr,
-                                                    Events::new(),
-                                                    vec![Slider::empty(
-                                                        slider::Props {
-                                                            position: slider::Position::Linear {
-                                                                min: *min,
-                                                                val: *val,
-                                                                max: *max,
-                                                                step: 1.0,
-                                                            },
-                                                            range_is_editable: true,
-                                                        },
-                                                        Subscription::none(),
-                                                    )],
-                                                )
-                                            },
-                                            if self.is_editable {
-                                                self.render_prop_set_value_type(prop_id, idx, value)
-                                            } else {
-                                                Html::none()
-                                            },
-                                        ],
-                                    })
-                                    .flatten()
-                                    .collect();
-                                if self.is_editable {
-                                    values
-                                        .push(self.render_prop_add_value(BlockId::clone(prop_id)));
-                                }
-                                values
-                            },
-                        )
-                    } else {
-                        Html::none()
-                    },
-                    if self.is_editable || prop.children().count() > 0 {
-                        Html::div(
-                            Attributes::new().class(Self::class("prop-list-container")),
-                            Events::new(),
-                            vec![Html::div(
-                                Attributes::new().class(Self::class("prop-list")),
-                                Events::new(),
-                                {
-                                    let mut children: Vec<_> = prop
-                                        .children()
-                                        .map(|prop_id| self.render_prop(prop_id))
-                                        .flatten()
-                                        .collect();
-                                    if self.is_editable {
-                                        children.push(
-                                            self.render_prop_add_prop(BlockId::clone(prop_id)),
-                                        );
-                                    }
-                                    children
-                                },
-                            )],
-                        )
-                    } else {
-                        Html::none()
-                    },
-                ]
-            })
-            .unwrap_or(vec![])
-    }
-
-    fn render_prop_add_prop(&self, prop_id: BlockId) -> Html {
-        Html::div(
-            Attributes::new().class(Self::class("banner")),
-            Events::new(),
-            vec![Btn::with_child(
-                btn::Props {
-                    variant: btn::Variant::Secondary,
-                },
-                Subscription::new(move |sub| match sub {
-                    btn::On::Click => Msg::Sub(On::AddPropertyChild {
-                        property_id: Some(prop_id),
-                        name: String::from(""),
-                    }),
-                }),
-                Html::text("追加"),
-            )],
-        )
-    }
-
-    fn render_prop_add_value(&self, prop_id: BlockId) -> Html {
-        Html::div(
-            Attributes::new().class(Self::class("banner")),
-            Events::new(),
-            vec![Btn::with_child(
-                btn::Props {
-                    variant: btn::Variant::Dark,
-                },
-                Subscription::new(move |sub| match sub {
-                    btn::On::Click => Msg::Sub(On::AddPropertyValue {
-                        property_id: prop_id,
-                    }),
-                }),
-                Html::text("追加"),
-            )],
-        )
-    }
-
-    fn render_prop_set_value_type(
-        &self,
-        prop_id: &BlockId,
-        idx: usize,
-        value: &block::property::Value,
-    ) -> Html {
-        Dropdown::with_children(
-            dropdown::Props {
-                direction: dropdown::Direction::Bottom,
-                text: String::from(match value {
-                    block::property::Value::None => "未指定",
-                    block::property::Value::Text(..) => "テキスト",
-                    block::property::Value::MultiLineText(..) => "ノート",
-                    block::property::Value::ResourceMinMax { .. } => "上限付きリソース",
-                }),
-                toggle_type: dropdown::ToggleType::Click,
-                variant: btn::Variant::DarkLikeMenu,
-            },
-            Subscription::none(),
-            vec![
-                Btn::with_child(
-                    btn::Props {
-                        variant: btn::Variant::Menu,
-                    },
-                    Subscription::new({
-                        let prop_id = BlockId::clone(prop_id);
-                        let value = block::property::Value::clone(value);
-                        move |sub| match sub {
-                            btn::On::Click => match value {
-                                block::property::Value::Text(..) => Msg::NoOp,
-                                block::property::Value::MultiLineText(x) => {
-                                    Msg::Sub(On::SetPropertyValue {
-                                        property_id: prop_id,
-                                        idx,
-                                        value: block::property::Value::Text(x),
-                                    })
-                                }
-                                _ => Msg::Sub(On::SetPropertyValue {
-                                    property_id: prop_id,
-                                    idx,
-                                    value: block::property::Value::Text(Rc::new(String::new())),
-                                }),
-                            },
-                        }
-                    }),
-                    Html::text("テキスト"),
-                ),
-                Btn::with_child(
-                    btn::Props {
-                        variant: btn::Variant::Menu,
-                    },
-                    Subscription::new({
-                        let prop_id = BlockId::clone(prop_id);
-                        let value = block::property::Value::clone(value);
-                        move |sub| match sub {
-                            btn::On::Click => match value {
-                                block::property::Value::MultiLineText(..) => Msg::NoOp,
-                                block::property::Value::Text(x) => Msg::Sub(On::SetPropertyValue {
-                                    property_id: prop_id,
-                                    idx,
-                                    value: block::property::Value::MultiLineText(x),
-                                }),
-                                _ => Msg::Sub(On::SetPropertyValue {
-                                    property_id: prop_id,
-                                    idx,
-                                    value: block::property::Value::MultiLineText(Rc::new(
-                                        String::new(),
-                                    )),
-                                }),
-                            },
-                        }
-                    }),
-                    Html::text("ノート"),
-                ),
-                Btn::with_child(
-                    btn::Props {
-                        variant: btn::Variant::Menu,
-                    },
-                    Subscription::new({
-                        let prop_id = BlockId::clone(prop_id);
-                        let value = block::property::Value::clone(value);
-                        move |sub| match sub {
-                            btn::On::Click => match value {
-                                block::property::Value::ResourceMinMax { .. } => Msg::NoOp,
-                                _ => Msg::Sub(On::SetPropertyValue {
-                                    property_id: prop_id,
-                                    idx,
-                                    value: block::property::Value::ResourceMinMax {
-                                        min: 0.0,
-                                        val: 50.0,
-                                        max: 100.0,
-                                    },
-                                }),
-                            },
-                        }
-                    }),
-                    Html::text("上限付きリソース"),
-                ),
-            ],
         )
     }
 
@@ -806,37 +506,6 @@ impl Styled for Character {
                 "display": "grid";
                 "row-gap": ".65em";
                 "grid-template-columns": "1fr";
-            }
-
-            "prop-list-container" {
-                "grid-column-start": "1";
-                "grid-column-end": "-1";
-                "padding-left": "2rem";
-            }
-
-            "prop-list" {
-                "display": "grid";
-                "column-gap": ".35em";
-                "row-gap": ".65em";
-                "grid-template-columns": "max-content 1fr";
-                "align-items": "start";
-            }
-
-            "prop-value-list" {
-                "display": "grid";
-                "column-gap": ".35em";
-                "row-gap": ".65em";
-                "grid-template-columns": "1fr max-content";
-                "align-items": "start";
-            }
-
-            "banner" {
-                "grid-column-start": "1";
-                "grid-column-end": "-1";
-            }
-
-            "banner > button" {
-                "width": "100%";
             }
         }
     }

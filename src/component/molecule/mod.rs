@@ -1,3 +1,4 @@
+pub mod block_prop;
 pub mod color_pallet;
 pub mod modal;
 pub mod modeless;

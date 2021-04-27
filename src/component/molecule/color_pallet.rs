@@ -9,6 +9,7 @@ pub struct Props {
 }
 
 pub enum Msg {
+    NoOp,
     SetColor(Pallet),
 }
 
@@ -52,6 +53,7 @@ impl Component for ColorPallet {
 
     fn update(&mut self, msg: Self::Msg) -> Cmd<Self::Msg, Self::Sub> {
         match msg {
+            Msg::NoOp => Cmd::none(),
             Msg::SetColor(pallet) => {
                 self.selected = pallet;
                 Cmd::sub(On::SelectColor(self.selected.clone()))
@@ -85,6 +87,7 @@ impl Component for ColorPallet {
                             slider::On::Input(alpha) => {
                                 Msg::SetColor(selected.a(alpha.round() as u8))
                             }
+                            _ => Msg::NoOp,
                         }
                     }),
                 ),
