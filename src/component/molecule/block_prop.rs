@@ -3,6 +3,8 @@ use super::atom::dropdown::{self, Dropdown};
 use super::atom::slider::{self, Slider};
 use super::util::styled::{Style, Styled};
 use crate::arena::block::{self, BlockId};
+use crate::libs::clone_of::CloneOf;
+use crate::libs::select_list::SelectList;
 use kagura::prelude::*;
 use std::rc::Rc;
 
@@ -234,6 +236,9 @@ impl BlockProp {
             block::property::Value::ResourceMinMax { min, val, max } => {
                 self.render_value_resource_min_max(prop_id, idx, value, *min, *val, *max)
             }
+            block::property::Value::MappedList(mapped_list) => {
+                self.render_value_mapped_list(prop_id, idx, value, mapped_list)
+            }
         }
     }
 
@@ -353,6 +358,57 @@ impl BlockProp {
         ]
     }
 
+    fn render_value_mapped_list(
+        &self,
+        prop_id: &BlockId,
+        idx: usize,
+        value: &block::property::Value,
+        mapped_list: &SelectList<(Rc<String>, Rc<String>)>,
+    ) -> Vec<Html> {
+        vec![
+            Dropdown::with_children(
+                dropdown::Props {
+                    direction: dropdown::Direction::Bottom,
+                    text: mapped_list
+                        .selected()
+                        .map(|(a, _)| a.as_ref().clone())
+                        .unwrap_or(String::from("")),
+                    toggle_type: dropdown::ToggleType::Click,
+                    variant: btn::Variant::DarkLikeMenu,
+                },
+                Subscription::none(),
+                mapped_list
+                    .iter()
+                    .enumerate()
+                    .map(|(list_idx, (a, _))| {
+                        Btn::with_child(
+                            btn::Props {
+                                variant: btn::Variant::Dark,
+                            },
+                            Subscription::new({
+                                let mut mapped_list = SelectList::clone_of(mapped_list);
+                                let prop_id = BlockId::clone(prop_id);
+                                move |sub| match sub {
+                                    btn::On::Click => {
+                                        mapped_list.set_selected_idx(list_idx);
+                                        Msg::Sub(On::SetPropertyValue {
+                                            property_id: prop_id,
+                                            idx: idx,
+                                            value: block::property::Value::MappedList(mapped_list),
+                                        })
+                                    }
+                                }
+                            }),
+                            Html::text(a.as_ref()),
+                        )
+                    })
+                    .collect(),
+            ),
+            self.render_btn_set_value_type(prop_id, idx, value),
+            self.render_btn_remove_value(BlockId::clone(prop_id), idx),
+        ]
+    }
+
     fn render_btn_add_prop(&self, prop_id: BlockId) -> Html {
         Html::div(
             Attributes::new().class(Self::class("banner")),
@@ -460,6 +516,7 @@ impl BlockProp {
                         block::property::Value::Text(..) => "テキスト",
                         block::property::Value::MultiLineText(..) => "ノート",
                         block::property::Value::ResourceMinMax { .. } => "上限付きリソース",
+                        block::property::Value::MappedList(..) => "選択肢",
                     }),
                     toggle_type: dropdown::ToggleType::Click,
                     variant: btn::Variant::DarkLikeMenu,
@@ -469,6 +526,7 @@ impl BlockProp {
                     self.render_btn_set_value_type_as_text(prop_id, idx, value),
                     self.render_btn_set_value_type_as_muti_line_text(prop_id, idx, value),
                     self.render_btn_set_value_type_as_resource_min_max(prop_id, idx, value),
+                    self.render_btn_set_value_type_as_mapped_list(prop_id, idx, value),
                 ],
             )
         } else {
@@ -573,6 +631,40 @@ impl BlockProp {
                 }
             }),
             Html::text("上限付きリソース"),
+        )
+    }
+
+    fn render_btn_set_value_type_as_mapped_list(
+        &self,
+        prop_id: &BlockId,
+        idx: usize,
+        value: &block::property::Value,
+    ) -> Html {
+        Btn::with_child(
+            btn::Props {
+                variant: btn::Variant::Menu,
+            },
+            Subscription::new({
+                let prop_id = BlockId::clone(prop_id);
+                let value = block::property::Value::clone(value);
+                move |sub| match sub {
+                    btn::On::Click => match value {
+                        block::property::Value::MappedList { .. } => Msg::NoOp,
+                        _ => Msg::Sub(On::SetPropertyValue {
+                            property_id: prop_id,
+                            idx,
+                            value: block::property::Value::MappedList(SelectList::new(
+                                vec![
+                                    (Rc::new(String::from("Yes")), Rc::new(String::from("1"))),
+                                    (Rc::new(String::from("No")), Rc::new(String::from("0"))),
+                                ],
+                                0,
+                            )),
+                        }),
+                    },
+                }
+            }),
+            Html::text("選択肢"),
         )
     }
 

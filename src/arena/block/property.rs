@@ -1,4 +1,6 @@
 use super::BlockId;
+use crate::libs::clone_of::CloneOf;
+use crate::libs::select_list::SelectList;
 use std::rc::Rc;
 
 pub enum Value {
@@ -6,6 +8,7 @@ pub enum Value {
     Text(Rc<String>),
     MultiLineText(Rc<String>),
     ResourceMinMax { min: f64, val: f64, max: f64 },
+    MappedList(SelectList<(Rc<String>, Rc<String>)>),
 }
 
 #[derive(Clone)]
@@ -32,6 +35,7 @@ impl Value {
                 val: *val,
                 max: *max,
             },
+            Self::MappedList(x) => Self::MappedList(SelectList::clone_of(x)),
         }
     }
 }
