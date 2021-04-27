@@ -142,7 +142,9 @@ impl Dropdown {
     fn base_class_option(&self) -> &str {
         match &self.variant {
             btn::Variant::Menu => "base-menu",
+            btn::Variant::MenuAsSecondary => "base-menu",
             btn::Variant::DarkLikeMenu => "base-menu",
+            btn::Variant::SecondaryLikeMenu => "base-menu",
             _ => "base-default",
         }
     }

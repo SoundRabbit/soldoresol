@@ -10,12 +10,14 @@ pub struct Props {
 pub enum Variant {
     Primary,
     Secondary,
+    SecondaryLikeMenu,
     Danger,
     Disable,
     Dark,
     DarkLikeMenu,
     TransparentDark,
     Menu,
+    MenuAsSecondary,
 }
 
 pub enum Msg {
@@ -83,12 +85,18 @@ impl Btn {
         match variant {
             Variant::Primary => Self::class("primary"),
             Variant::Secondary => Self::class("secondary"),
+            Variant::SecondaryLikeMenu => {
+                Self::class("secondary") + " " + &Self::class("like-menu")
+            }
             Variant::Danger => Self::class("danger"),
             Variant::Disable => Self::class("disable"),
             Variant::Dark => Self::class("dark"),
             Variant::DarkLikeMenu => Self::class("dark") + " " + &Self::class("like-menu"),
             Variant::TransparentDark => Self::class("transparent-dark"),
             Variant::Menu => Self::class("menu") + " " + &Self::class("like-menu"),
+            Variant::MenuAsSecondary => {
+                Self::class("menu-secondary") + " " + &Self::class("like-menu")
+            }
         }
     }
 }
@@ -131,6 +139,15 @@ impl Styled for Btn {
             }
 
             "menu:hover" {
+                "background-color": color_system::blue(100, 5).to_string();
+            }
+
+            "menu-secondary" {
+                "background-color": color_system::gray(100, 5).to_string();
+                "color": color_system::gray(100, 0).to_string();
+            }
+
+            "menu-secondary:hover" {
                 "background-color": color_system::blue(100, 5).to_string();
             }
         }

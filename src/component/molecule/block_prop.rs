@@ -136,6 +136,12 @@ impl BlockProp {
             .map(prop_id, |prop: &block::property::Property| {
                 vec![
                     self.render_prop_name(prop_id, prop),
+                    self.render_btn_set_value_mode(prop_id, prop.value_mode()),
+                    if self.is_editable {
+                        Html::div(Attributes::new(), Events::new(), vec![])
+                    } else {
+                        Html::none()
+                    },
                     if self.is_editable || prop.values().count() > 0 {
                         self.render_value_list(prop_id, prop)
                     } else {
@@ -157,7 +163,7 @@ impl BlockProp {
 
     fn render_prop_name(&self, prop_id: &BlockId, prop: &block::property::Property) -> Html {
         let attr = Attributes::new().class(Self::class("prop-name"));
-        let attr = if self.is_editable || prop.values().count() > 0 {
+        let attr = if prop.values().count() > 0 || self.is_editable {
             attr
         } else {
             attr.class(Self::class("banner"))
@@ -165,22 +171,19 @@ impl BlockProp {
         Html::div(
             attr,
             Events::new(),
-            vec![
-                Html::input(
-                    Attributes::new().value(prop.name()),
-                    Events::new().on_input({
-                        let prop_id = BlockId::clone(prop_id);
-                        move |name| {
-                            Msg::Sub(On::SetPropertyName {
-                                property_id: prop_id,
-                                name,
-                            })
-                        }
-                    }),
-                    vec![],
-                ),
-                self.render_btn_set_value_mode(prop_id, prop.value_mode()),
-            ],
+            vec![Html::input(
+                Attributes::new().value(prop.name()),
+                Events::new().on_input({
+                    let prop_id = BlockId::clone(prop_id);
+                    move |name| {
+                        Msg::Sub(On::SetPropertyName {
+                            property_id: prop_id,
+                            name,
+                        })
+                    }
+                }),
+                vec![],
+            )],
         )
     }
 
@@ -383,13 +386,13 @@ impl BlockProp {
                         block::property::ValueMode::Column => "テーブル",
                     }),
                     toggle_type: dropdown::ToggleType::Click,
-                    variant: btn::Variant::DarkLikeMenu,
+                    variant: btn::Variant::SecondaryLikeMenu,
                 },
                 Subscription::none(),
                 vec![
                     Btn::with_child(
                         btn::Props {
-                            variant: btn::Variant::Menu,
+                            variant: btn::Variant::MenuAsSecondary,
                         },
                         Subscription::new({
                             let prop_id = BlockId::clone(prop_id);
@@ -404,7 +407,7 @@ impl BlockProp {
                     ),
                     Btn::with_child(
                         btn::Props {
-                            variant: btn::Variant::Menu,
+                            variant: btn::Variant::MenuAsSecondary,
                         },
                         Subscription::new({
                             let prop_id = BlockId::clone(prop_id);
