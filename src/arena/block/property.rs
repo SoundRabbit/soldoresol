@@ -5,6 +5,7 @@ pub enum Value {
     None,
     Text(Rc<String>),
     MultiLineText(Rc<String>),
+    ResourceMinMax { min: f64, val: f64, max: f64 },
 }
 
 pub struct Property {
@@ -19,6 +20,11 @@ impl Value {
             Self::None => Self::None,
             Self::Text(x) => Self::Text(Rc::clone(x)),
             Self::MultiLineText(x) => Self::MultiLineText(Rc::clone(x)),
+            Self::ResourceMinMax { min, val, max } => Self::ResourceMinMax {
+                min: *min,
+                val: *val,
+                max: *max,
+            },
         }
     }
 }

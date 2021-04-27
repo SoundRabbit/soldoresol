@@ -346,7 +346,10 @@ impl RoomModeless {
     fn render_content(&self) -> Html {
         Html::div(
             Attributes::new().class(Self::class("body")),
-            Events::new(),
+            Events::new().on_mousedown(|e| {
+                e.stop_propagation();
+                Msg::NoOp
+            }),
             vec![match self.content.selected() {
                 Some(Content::ChatChannel(channel_id)) => ChatChannel::empty(
                     chat_channel::Props {

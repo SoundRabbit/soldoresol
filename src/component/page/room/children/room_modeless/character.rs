@@ -1,5 +1,6 @@
 use super::super::atom::btn::{self, Btn};
 use super::super::atom::dropdown::{self, Dropdown};
+use super::super::atom::slider::{self, Slider};
 use super::super::atom::text;
 use super::super::modal_imported_files::{self, ModalImportedFiles};
 use super::super::molecule::tab_menu::{self, TabMenu};
@@ -452,19 +453,17 @@ impl Character {
                                     .values()
                                     .enumerate()
                                     .map(|(idx, value)| match value {
-                                        block::property::Value::None => {
-                                            vec![if self.is_editable {
-                                                Html::div(
-                                                    Attributes::new().class(Self::class("banner")),
-                                                    Events::new(),
-                                                    vec![self.render_prop_set_value_type(
-                                                        prop_id, idx, value,
-                                                    )],
-                                                )
-                                            } else {
-                                                Html::none()
-                                            }]
-                                        }
+                                        block::property::Value::None => vec![if self.is_editable {
+                                            Html::div(
+                                                Attributes::new().class(Self::class("banner")),
+                                                Events::new(),
+                                                vec![self.render_prop_set_value_type(
+                                                    prop_id, idx, value,
+                                                )],
+                                            )
+                                        } else {
+                                            Html::none()
+                                        }],
                                         block::property::Value::Text(text) => vec![
                                             {
                                                 let attr = Attributes::new().value(text.as_ref());
@@ -481,27 +480,56 @@ impl Character {
                                                 Html::none()
                                             },
                                         ],
-                                        block::property::Value::MultiLineText(text) => {
-                                            vec![
-                                                {
-                                                    let attr =
-                                                        Attributes::new().value(text.as_ref());
-                                                    let attr = if self.is_editable {
-                                                        attr
-                                                    } else {
-                                                        attr.class(Self::class("banner"))
-                                                    };
-                                                    Html::textarea(attr, Events::new(), vec![])
-                                                },
-                                                if self.is_editable {
-                                                    self.render_prop_set_value_type(
-                                                        prop_id, idx, value,
-                                                    )
+                                        block::property::Value::MultiLineText(text) => vec![
+                                            {
+                                                let attr = Attributes::new().value(text.as_ref());
+                                                let attr = if self.is_editable {
+                                                    attr
                                                 } else {
-                                                    Html::none()
-                                                },
-                                            ]
-                                        }
+                                                    attr.class(Self::class("banner"))
+                                                };
+                                                Html::textarea(attr, Events::new(), vec![])
+                                            },
+                                            if self.is_editable {
+                                                self.render_prop_set_value_type(prop_id, idx, value)
+                                            } else {
+                                                Html::none()
+                                            },
+                                        ],
+                                        block::property::Value::ResourceMinMax {
+                                            min,
+                                            val,
+                                            max,
+                                        } => vec![
+                                            {
+                                                let attr = if self.is_editable {
+                                                    Attributes::new()
+                                                } else {
+                                                    Attributes::new().class(Self::class("banner"))
+                                                };
+                                                Html::div(
+                                                    attr,
+                                                    Events::new(),
+                                                    vec![Slider::empty(
+                                                        slider::Props {
+                                                            position: slider::Position::Linear {
+                                                                min: *min,
+                                                                val: *val,
+                                                                max: *max,
+                                                                step: 1.0,
+                                                            },
+                                                            range_is_editable: true,
+                                                        },
+                                                        Subscription::none(),
+                                                    )],
+                                                )
+                                            },
+                                            if self.is_editable {
+                                                self.render_prop_set_value_type(prop_id, idx, value)
+                                            } else {
+                                                Html::none()
+                                            },
+                                        ],
                                     })
                                     .flatten()
                                     .collect();
@@ -595,6 +623,7 @@ impl Character {
                     block::property::Value::None => "未指定",
                     block::property::Value::Text(..) => "テキスト",
                     block::property::Value::MultiLineText(..) => "ノート",
+                    block::property::Value::ResourceMinMax { .. } => "上限付きリソース",
                 }),
                 toggle_type: dropdown::ToggleType::Click,
                 variant: btn::Variant::DarkLikeMenu,
@@ -654,6 +683,30 @@ impl Character {
                         }
                     }),
                     Html::text("ノート"),
+                ),
+                Btn::with_child(
+                    btn::Props {
+                        variant: btn::Variant::Menu,
+                    },
+                    Subscription::new({
+                        let prop_id = BlockId::clone(prop_id);
+                        let value = block::property::Value::clone(value);
+                        move |sub| match sub {
+                            btn::On::Click => match value {
+                                block::property::Value::ResourceMinMax { .. } => Msg::NoOp,
+                                _ => Msg::Sub(On::SetPropertyValue {
+                                    property_id: prop_id,
+                                    idx,
+                                    value: block::property::Value::ResourceMinMax {
+                                        min: 0.0,
+                                        val: 50.0,
+                                        max: 100.0,
+                                    },
+                                }),
+                            },
+                        }
+                    }),
+                    Html::text("上限付きリソース"),
                 ),
             ],
         )
