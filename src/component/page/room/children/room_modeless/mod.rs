@@ -97,6 +97,10 @@ pub enum On {
         property_id: BlockId,
         idx: usize,
     },
+    SetPropertyValueMode {
+        property_id: BlockId,
+        value_mode: block::property::ValueMode,
+    },
 }
 
 pub struct RoomModeless {
@@ -425,6 +429,13 @@ impl RoomModeless {
                             character::On::RemovePropertyValue { property_id, idx } => {
                                 Msg::Sub(On::RemovePropertyValue { property_id, idx })
                             }
+                            character::On::SetPropertyValueMode {
+                                property_id,
+                                value_mode,
+                            } => Msg::Sub(On::SetPropertyValueMode {
+                                property_id,
+                                value_mode,
+                            }),
                         }
                     }),
                 ),

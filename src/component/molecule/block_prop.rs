@@ -26,6 +26,10 @@ pub enum On {
         property_id: BlockId,
         name: String,
     },
+    SetPropertyValueMode {
+        property_id: BlockId,
+        value_mode: block::property::ValueMode,
+    },
     AddPropertyValue {
         property_id: BlockId,
     },
@@ -131,7 +135,7 @@ impl BlockProp {
         self.block_arena
             .map(prop_id, |prop: &block::property::Property| {
                 vec![
-                    self.render_prop_name(BlockId::clone(prop_id), prop),
+                    self.render_prop_name(prop_id, prop),
                     if self.is_editable || prop.values().count() > 0 {
                         self.render_value_list(prop_id, prop)
                     } else {
@@ -151,22 +155,32 @@ impl BlockProp {
             .unwrap_or(vec![])
     }
 
-    fn render_prop_name(&self, prop_id: BlockId, prop: &block::property::Property) -> Html {
-        let attr = Attributes::new().value(prop.name());
+    fn render_prop_name(&self, prop_id: &BlockId, prop: &block::property::Property) -> Html {
+        let attr = Attributes::new().class(Self::class("prop-name"));
         let attr = if self.is_editable || prop.values().count() > 0 {
             attr
         } else {
             attr.class(Self::class("banner"))
         };
-        Html::input(
+        Html::div(
             attr,
-            Events::new().on_input(move |name| {
-                Msg::Sub(On::SetPropertyName {
-                    property_id: prop_id,
-                    name,
-                })
-            }),
-            vec![],
+            Events::new(),
+            vec![
+                Html::input(
+                    Attributes::new().value(prop.name()),
+                    Events::new().on_input({
+                        let prop_id = BlockId::clone(prop_id);
+                        move |name| {
+                            Msg::Sub(On::SetPropertyName {
+                                property_id: prop_id,
+                                name,
+                            })
+                        }
+                    }),
+                    vec![],
+                ),
+                self.render_btn_set_value_mode(prop_id, prop.value_mode()),
+            ],
         )
     }
 
@@ -175,7 +189,14 @@ impl BlockProp {
             if self.is_editable {
                 Attributes::new().class(Self::class("prop-value-list--editable"))
             } else {
-                Attributes::new().class(Self::class("prop-value-list"))
+                match prop.value_mode() {
+                    block::property::ValueMode::List => {
+                        Attributes::new().class(Self::class("prop-value-list"))
+                    }
+                    block::property::ValueMode::Column => {
+                        Attributes::new().class(Self::class("prop-value-column"))
+                    }
+                }
             },
             Events::new(),
             {
@@ -346,6 +367,61 @@ impl BlockProp {
                 Html::text("追加"),
             )],
         )
+    }
+
+    fn render_btn_set_value_mode(
+        &self,
+        prop_id: &BlockId,
+        value_mode: &block::property::ValueMode,
+    ) -> Html {
+        if self.is_editable {
+            Dropdown::with_children(
+                dropdown::Props {
+                    direction: dropdown::Direction::BottomLeft,
+                    text: String::from(match value_mode {
+                        block::property::ValueMode::List => "リスト",
+                        block::property::ValueMode::Column => "テーブル",
+                    }),
+                    toggle_type: dropdown::ToggleType::Click,
+                    variant: btn::Variant::DarkLikeMenu,
+                },
+                Subscription::none(),
+                vec![
+                    Btn::with_child(
+                        btn::Props {
+                            variant: btn::Variant::Menu,
+                        },
+                        Subscription::new({
+                            let prop_id = BlockId::clone(prop_id);
+                            move |sub| match sub {
+                                btn::On::Click => Msg::Sub(On::SetPropertyValueMode {
+                                    property_id: prop_id,
+                                    value_mode: block::property::ValueMode::List,
+                                }),
+                            }
+                        }),
+                        Html::text("リスト"),
+                    ),
+                    Btn::with_child(
+                        btn::Props {
+                            variant: btn::Variant::Menu,
+                        },
+                        Subscription::new({
+                            let prop_id = BlockId::clone(prop_id);
+                            move |sub| match sub {
+                                btn::On::Click => Msg::Sub(On::SetPropertyValueMode {
+                                    property_id: prop_id,
+                                    value_mode: block::property::ValueMode::Column,
+                                }),
+                            }
+                        }),
+                        Html::text("テーブル"),
+                    ),
+                ],
+            )
+        } else {
+            Html::none()
+        }
     }
 
     fn render_btn_add_value(&self, prop_id: BlockId) -> Html {
@@ -563,6 +639,13 @@ impl Styled for BlockProp {
                 "align-items": "start";
             }
 
+            "prop-name" {
+                "display": "grid";
+                "row-gap": ".65em";
+                "grid-template-columns": "max-content";
+                "align-items": "start";
+            }
+
             "prop-value-list" {
                 "display": "grid";
                 "column-gap": ".35em";
@@ -577,6 +660,18 @@ impl Styled for BlockProp {
                 "row-gap": ".65em";
                 "grid-template-columns": "1fr max-content max-content";
                 "align-items": "start";
+            }
+
+            "prop-value-column" {
+                "display": "grid";
+                "column-gap": ".35em";
+                "grid-auto-columns": "1fr";
+                "grid-auto-flow": "column";
+                "align-items": "start";
+            }
+
+            "prop-value-column > *" {
+                "width": "100%";
             }
 
             "banner" {

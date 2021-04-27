@@ -151,6 +151,10 @@ pub enum Msg {
         property_id: BlockId,
         idx: usize,
     },
+    SetPropertyValueMode {
+        property_id: BlockId,
+        value_mode: block::property::ValueMode,
+    },
 }
 
 pub enum On {}

@@ -527,6 +527,18 @@ impl Implement {
 
                 Cmd::none()
             }
+
+            Msg::SetPropertyValueMode {
+                property_id,
+                value_mode,
+            } => {
+                self.block_arena
+                    .map_mut(&property_id, |prop: &mut block::property::Property| {
+                        prop.set_value_mode(value_mode);
+                    });
+
+                Cmd::none()
+            }
         }
     }
 

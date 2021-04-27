@@ -8,10 +8,17 @@ pub enum Value {
     ResourceMinMax { min: f64, val: f64, max: f64 },
 }
 
+#[derive(Clone)]
+pub enum ValueMode {
+    List,
+    Column,
+}
+
 pub struct Property {
     name: Rc<String>,
     values: Vec<Value>,
     children: Vec<BlockId>,
+    value_mode: ValueMode,
 }
 
 impl Value {
@@ -35,6 +42,7 @@ impl Property {
             name,
             values: vec![],
             children: vec![],
+            value_mode: ValueMode::List,
         }
     }
 
@@ -43,6 +51,7 @@ impl Property {
             name: Rc::clone(&this.name),
             values: this.values.iter().map(|x| Value::clone(x)).collect(),
             children: this.children.iter().map(|x| BlockId::clone(x)).collect(),
+            value_mode: this.value_mode.clone(),
         }
     }
 
@@ -78,5 +87,13 @@ impl Property {
 
     pub fn add_child(&mut self, prop_id: BlockId) {
         self.children.push(prop_id);
+    }
+
+    pub fn value_mode(&self) -> &ValueMode {
+        &self.value_mode
+    }
+
+    pub fn set_value_mode(&mut self, value_mode: ValueMode) {
+        self.value_mode = value_mode;
     }
 }
