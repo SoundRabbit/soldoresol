@@ -225,4 +225,20 @@ impl Property {
 
         toml::Value::Table(packed)
     }
+
+    pub fn flat_tree(block_arena: &super::Arena, prop_id: &BlockId) -> Vec<BlockId> {
+        let mut children = vec![BlockId::clone(prop_id)];
+
+        block_arena.map(prop_id, |prop: &Property| {
+            for child_id in prop.children() {
+                let child_children = Self::flat_tree(block_arena, child_id);
+
+                for child_child_id in child_children {
+                    children.push(child_child_id);
+                }
+            }
+        });
+
+        children
+    }
 }

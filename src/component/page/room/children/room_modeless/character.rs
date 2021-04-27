@@ -130,16 +130,29 @@ impl Component for Character {
                 Cmd::none()
             }
             Msg::PackToDownload => {
-                if let Some(task) = self.block_arena.pack_to_toml(&self.character_id) {
-                    Cmd::task(move |resolve| {
-                        wasm_bindgen_futures::spawn_local(async move {
-                            let packed = task().await;
-                            resolve(Msg::Download(packed));
-                        })
+                let mut block_ids = vec![BlockId::clone(&self.character_id)];
+
+                self.block_arena.map(
+                    &self.character_id,
+                    |character: &block::character::Character| {
+                        for prop_id in character.properties() {
+                            let prop_ids =
+                                block::property::Property::flat_tree(&self.block_arena, prop_id);
+
+                            for prop_id in prop_ids {
+                                block_ids.push(prop_id);
+                            }
+                        }
+                    },
+                );
+
+                let task = self.block_arena.pack_to_toml(block_ids.into_iter());
+                Cmd::task(move |resolve| {
+                    wasm_bindgen_futures::spawn_local(async move {
+                        let packed = task().await;
+                        resolve(Msg::Download(packed));
                     })
-                } else {
-                    Cmd::none()
-                }
+                })
             }
             Msg::Download(packed) => {
                 if let Ok(serialized) = toml::to_string(&packed) {

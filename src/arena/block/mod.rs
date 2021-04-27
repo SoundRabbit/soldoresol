@@ -386,22 +386,33 @@ impl Arena {
 
     pub fn pack_to_toml(
         &self,
-        block_id: &BlockId,
-    ) -> Option<
-        Box<dyn FnOnce() -> std::pin::Pin<Box<dyn std::future::Future<Output = toml::Value>>>>,
-    > {
-        if let Some(arena_block) = self.table.borrow().get(&block_id) {
-            let arena_block = ArenaBlock::clone(arena_block);
-            let block_id = BlockId::clone(block_id);
-            Some(Box::new(move || {
-                Box::pin(async move {
-                    let mut packed = toml::value::Table::new();
-                    packed.insert(block_id.to_string(), arena_block.pack_to_toml().await);
-                    toml::Value::Table(packed)
-                })
-            }))
-        } else {
-            None
+        block_ids: impl Iterator<Item = BlockId>,
+    ) -> impl FnOnce() -> std::pin::Pin<Box<dyn std::future::Future<Output = toml::Value>>> {
+        let mut blocks = vec![];
+        for block_id in block_ids {
+            if let Some(block) = self.table.borrow().get(&block_id) {
+                blocks.push((block_id, ArenaBlock::clone(block)));
+            }
+        }
+        move || {
+            Box::pin(async move {
+                let mut packed = toml::value::Array::new();
+
+                for (block_id, block) in blocks {
+                    let mut packed_block = toml::value::Table::new();
+                    packed_block.insert(
+                        String::from("_id"),
+                        toml::Value::String(block_id.to_string()),
+                    );
+                    packed_block.insert(String::from("_payload"), block.pack_to_toml().await);
+                    packed.push(toml::Value::Table(packed_block));
+                }
+
+                let array = toml::Value::Array(packed);
+                let mut table = toml::value::Table::new();
+                table.insert(String::from("block"), array);
+                toml::Value::Table(table)
+            })
         }
     }
 }
