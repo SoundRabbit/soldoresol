@@ -156,25 +156,32 @@ impl Component for Character {
                         }
                         prop_names.push(String::from("[追加]"));
 
-                        TabMenu::with_children(
-                            tab_menu::Props {
-                                selected: self.selected_tab_idx,
-                                tabs: prop_names,
-                                controlled: true,
-                            },
-                            Subscription::new(move |sub| match sub {
-                                tab_menu::On::ChangeSelectedTab(idx) => {
-                                    if idx <= prop_num {
-                                        Msg::SetSelectedTabIdx(idx)
-                                    } else {
-                                        Msg::Sub(On::AddPropertyChild {
-                                            property_id: None,
-                                            name: String::from("新規タブ"),
-                                        })
-                                    }
-                                }
-                            }),
-                            prop_tabs,
+                        Html::div(
+                            Attributes::new().class(Self::class("base")),
+                            Events::new(),
+                            vec![
+                                TabMenu::with_children(
+                                    tab_menu::Props {
+                                        selected: self.selected_tab_idx,
+                                        tabs: prop_names,
+                                        controlled: true,
+                                    },
+                                    Subscription::new(move |sub| match sub {
+                                        tab_menu::On::ChangeSelectedTab(idx) => {
+                                            if idx <= prop_num {
+                                                Msg::SetSelectedTabIdx(idx)
+                                            } else {
+                                                Msg::Sub(On::AddPropertyChild {
+                                                    property_id: None,
+                                                    name: String::from("新規タブ"),
+                                                })
+                                            }
+                                        }
+                                    }),
+                                    prop_tabs,
+                                ),
+                                self.render_bottom_menu(),
+                            ],
                         )
                     },
                 )
@@ -187,7 +194,7 @@ impl Character {
     fn render_common(&self, character: &block::character::Character) -> Html {
         Html::div(
             Attributes::new()
-                .class(Self::class("base"))
+                .class(Self::class("content-base"))
                 .class("pure-form"),
             Events::new(),
             vec![
@@ -354,7 +361,7 @@ impl Character {
     fn render_tab(&self, prop_id: &BlockId) -> Html {
         Html::div(
             Attributes::new()
-                .class(Self::class("base"))
+                .class(Self::class("content-base"))
                 .class("pure-form"),
             Events::new(),
             vec![self
@@ -430,6 +437,27 @@ impl Character {
         )
     }
 
+    fn render_bottom_menu(&self) -> Html {
+        Html::div(
+            Attributes::new().class(Self::class("bottom-menu")),
+            Events::new(),
+            vec![
+                Html::div(Attributes::new(), Events::new(), vec![]),
+                Html::div(
+                    Attributes::new(),
+                    Events::new(),
+                    vec![Btn::with_child(
+                        btn::Props {
+                            variant: btn::Variant::Primary,
+                        },
+                        Subscription::none(),
+                        Html::text("保存"),
+                    )],
+                ),
+            ],
+        )
+    }
+
     fn render_modal(&self, tex_idx: usize) -> Html {
         match &self.modal {
             Modal::None => Html::none(),
@@ -455,6 +483,13 @@ impl Styled for Character {
     fn style() -> Style {
         style! {
             "base" {
+                "display": "grid";
+                "grid-template-columns": "1fr";
+                "grid-template-rows": "1fr max-content";
+                "height": "100%";
+            }
+
+            "content-base" {
                 "display": "grid";
                 "grid-template-columns": "1fr";
                 "grid-auto-rows": "max-content";
@@ -524,6 +559,13 @@ impl Styled for Character {
                 "display": "grid";
                 "row-gap": ".65em";
                 "grid-template-columns": "1fr";
+            }
+
+            "bottom-menu" {
+                "background-color": crate::libs::color::color_system::gray(100, 3).to_string();
+                "display": "grid";
+                "grid-template-columns": "1fr max-content";
+                "padding": "1.2ch";
             }
         }
     }
