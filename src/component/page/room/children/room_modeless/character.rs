@@ -562,10 +562,10 @@ impl Styled for Character {
             }
 
             "bottom-menu" {
-                "background-color": crate::libs::color::color_system::gray(100, 3).to_string();
+                "background-color": crate::libs::color::color_system::gray(100, 0).to_string();
                 "display": "grid";
                 "grid-template-columns": "1fr max-content";
-                "padding": "1.2ch";
+                "padding": "0.6ch 1.2ch";
             }
         }
     }
