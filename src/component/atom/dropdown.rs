@@ -265,6 +265,8 @@ impl Styled for Dropdown {
                 "grid-auto-rows": "max-content";
                 "grid-auto-flow": "rows";
                 "row-gap": "0.05rem";
+                "padding-top": "0.05rem";
+                "padding-bottom": "0.05rem";
                 "justify-items": "stretch";
                 "background-color": crate::libs::color::color_system::gray(100, 0).to_string();
                 "border-radius": "2px";

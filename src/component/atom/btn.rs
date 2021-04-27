@@ -106,6 +106,11 @@ impl Styled for Btn {
                 "color": color_system::gray(100, 0).to_string();
             }
 
+            "danger" {
+                "background-color": color_system::red(100, 5).to_string();
+                "color": color_system::gray(100, 0).to_string();
+            }
+
             "dark" {
                 "background-color": color_system::gray(100, 9).to_string();
                 "color": color_system::gray(100, 0).to_string();

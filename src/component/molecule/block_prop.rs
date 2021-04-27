@@ -215,15 +215,18 @@ impl BlockProp {
         idx: usize,
         value: &block::property::Value,
     ) -> Vec<Html> {
-        vec![if self.is_editable {
-            Html::div(
-                Attributes::new().class(Self::class("banner")),
-                Events::new(),
-                vec![self.render_btn_set_value_type(prop_id, idx, value)],
-            )
+        if self.is_editable {
+            vec![
+                Html::div(
+                    Attributes::new().class(Self::class("banner-2c")),
+                    Events::new(),
+                    vec![self.render_btn_set_value_type(prop_id, idx, value)],
+                ),
+                self.render_btn_remove_value(prop_id, idx),
+            ]
         } else {
-            Html::none()
-        }]
+            vec![]
+        }
     }
 
     fn render_value_text(
@@ -248,11 +251,8 @@ impl BlockProp {
                 }),
                 vec![],
             ),
-            if self.is_editable {
-                self.render_btn_set_value_type(prop_id, idx, value)
-            } else {
-                Html::none()
-            },
+            self.render_btn_set_value_type(prop_id, idx, value),
+            self.render_btn_remove_value(prop_id, idx),
         ]
     }
 
@@ -278,11 +278,8 @@ impl BlockProp {
                 }),
                 vec![],
             ),
-            if self.is_editable {
-                self.render_btn_set_value_type(prop_id, idx, value)
-            } else {
-                Html::none()
-            },
+            self.render_btn_set_value_type(prop_id, idx, value),
+            self.render_btn_remove_value(prop_id, idx),
         ]
     }
 
@@ -323,11 +320,8 @@ impl BlockProp {
                     }
                 }),
             ),
-            if self.is_editable {
-                self.render_btn_set_value_type(prop_id, idx, value)
-            } else {
-                Html::none()
-            },
+            self.render_btn_set_value_type(prop_id, idx, value),
+            self.render_btn_remove_value(prop_id, idx),
         ]
     }
 
@@ -374,25 +368,29 @@ impl BlockProp {
         idx: usize,
         value: &block::property::Value,
     ) -> Html {
-        Dropdown::with_children(
-            dropdown::Props {
-                direction: dropdown::Direction::BottomLeft,
-                text: String::from(match value {
-                    block::property::Value::None => "未指定",
-                    block::property::Value::Text(..) => "テキスト",
-                    block::property::Value::MultiLineText(..) => "ノート",
-                    block::property::Value::ResourceMinMax { .. } => "上限付きリソース",
-                }),
-                toggle_type: dropdown::ToggleType::Click,
-                variant: btn::Variant::DarkLikeMenu,
-            },
-            Subscription::none(),
-            vec![
-                self.render_btn_set_value_type_as_text(prop_id, idx, value),
-                self.render_btn_set_value_type_as_muti_line_text(prop_id, idx, value),
-                self.render_btn_set_value_type_as_resource_min_max(prop_id, idx, value),
-            ],
-        )
+        if self.is_editable {
+            Dropdown::with_children(
+                dropdown::Props {
+                    direction: dropdown::Direction::BottomLeft,
+                    text: String::from(match value {
+                        block::property::Value::None => "未指定",
+                        block::property::Value::Text(..) => "テキスト",
+                        block::property::Value::MultiLineText(..) => "ノート",
+                        block::property::Value::ResourceMinMax { .. } => "上限付きリソース",
+                    }),
+                    toggle_type: dropdown::ToggleType::Click,
+                    variant: btn::Variant::DarkLikeMenu,
+                },
+                Subscription::none(),
+                vec![
+                    self.render_btn_set_value_type_as_text(prop_id, idx, value),
+                    self.render_btn_set_value_type_as_muti_line_text(prop_id, idx, value),
+                    self.render_btn_set_value_type_as_resource_min_max(prop_id, idx, value),
+                ],
+            )
+        } else {
+            Html::none()
+        }
     }
 
     fn render_btn_set_value_type_as_text(
@@ -494,6 +492,42 @@ impl BlockProp {
             Html::text("上限付きリソース"),
         )
     }
+
+    fn render_btn_remove_value(&self, prop_id: &BlockId, idx: usize) -> Html {
+        if self.is_editable {
+            Dropdown::with_children(
+                dropdown::Props {
+                    direction: dropdown::Direction::BottomLeft,
+                    text: String::from("削除"),
+                    toggle_type: dropdown::ToggleType::Click,
+                    variant: btn::Variant::Danger,
+                },
+                Subscription::none(),
+                vec![Html::div(
+                    Attributes::new().class(Self::class("ok-cancel")),
+                    Events::new(),
+                    vec![
+                        Btn::with_child(
+                            btn::Props {
+                                variant: btn::Variant::Danger,
+                            },
+                            Subscription::none(),
+                            Html::text("OK"),
+                        ),
+                        Btn::with_child(
+                            btn::Props {
+                                variant: btn::Variant::Primary,
+                            },
+                            Subscription::none(),
+                            Html::text("キャンセル"),
+                        ),
+                    ],
+                )],
+            )
+        } else {
+            Html::none()
+        }
+    }
 }
 
 impl Styled for BlockProp {
@@ -532,7 +566,7 @@ impl Styled for BlockProp {
                 "display": "grid";
                 "column-gap": ".35em";
                 "row-gap": ".65em";
-                "grid-template-columns": "1fr max-content";
+                "grid-template-columns": "1fr max-content max-content";
                 "align-items": "start";
             }
 
@@ -541,8 +575,24 @@ impl Styled for BlockProp {
                 "grid-column-end": "-1";
             }
 
+            "banner-2c" {
+                "grid-column": "span 2";
+            }
+
             "banner > button" {
                 "width": "100%";
+            }
+
+            "banner-2c > button" {
+                "width": "100%";
+            }
+
+            "ok-cancel" {
+                "display": "grid";
+                "grid-template-columns": "max-content max-content";
+                "column-gap": "0.05rem";
+                "padding-left": "0.05rem";
+                "padding-right": "0.05rem";
             }
         }
     }
