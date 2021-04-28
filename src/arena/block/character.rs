@@ -9,27 +9,6 @@ pub struct CharacterTexture {
     height: f32,
 }
 
-impl CharacterTexture {
-    async fn pack_to_toml(&self) -> toml::Value {
-        let mut packed = toml::value::Table::new();
-
-        packed.insert(String::from("name"), toml::Value::String(self.name.clone()));
-
-        if let Some(texture_id) = &self.texture_id {
-            packed.insert(
-                String::from("texture_id"),
-                toml::Value::String(texture_id.to_string()),
-            );
-        }
-
-        packed.insert(
-            String::from("height"),
-            toml::Value::Float(self.height as f64),
-        );
-        toml::Value::Table(packed)
-    }
-}
-
 impl Clone for CharacterTexture {
     fn clone(&self) -> Self {
         Self {
@@ -184,7 +163,54 @@ impl Character {
     pub fn add_property(&mut self, property_id: BlockId) {
         self.properties.push(property_id);
     }
+}
 
+impl CharacterTexture {
+    async fn pack_to_toml(&self) -> toml::Value {
+        let mut packed = toml::value::Table::new();
+
+        packed.insert(String::from("name"), toml::Value::String(self.name.clone()));
+
+        if let Some(texture_id) = &self.texture_id {
+            packed.insert(
+                String::from("texture_id"),
+                toml::Value::String(texture_id.to_string()),
+            );
+        }
+
+        packed.insert(
+            String::from("height"),
+            toml::Value::Float(self.height as f64),
+        );
+        toml::Value::Table(packed)
+    }
+
+    async fn unpack_from_toml(packed: toml::Value) -> Self {
+        let mut unpacked = Self {
+            name: String::new(),
+            texture_id: None,
+            height: 1.0,
+        };
+
+        if let toml::Value::Table(mut packed) = packed {
+            if let Some(toml::Value::String(name)) = packed.remove("name") {
+                unpacked.name = name;
+            }
+            if let Some(toml::Value::String(texture_id)) = packed.remove("texture_id") {
+                if let Some(texture_id) = ResourceId::from_str(&texture_id) {
+                    unpacked.texture_id = Some(texture_id);
+                }
+            }
+            if let Some(toml::Value::Float(height)) = packed.remove("height") {
+                unpacked.height = height as f32;
+            }
+        }
+
+        unpacked
+    }
+}
+
+impl Character {
     pub async fn pack_to_toml(&self) -> toml::Value {
         let mut packed = toml::value::Table::new();
 
@@ -230,5 +256,62 @@ impl Character {
         packed.insert(String::from("textures"), toml::Value::Table(textures));
 
         toml::Value::Table(packed)
+    }
+
+    pub async fn unpack_from_toml(packed: toml::Value) -> Self {
+        let mut unpacked = Self::new();
+
+        if let toml::Value::Table(mut packed) = packed {
+            if let Some(toml::Value::Float(size)) = packed.remove("size") {
+                unpacked.size = size as f32;
+            }
+            if let Some(toml::Value::String(name)) = packed.remove("name") {
+                unpacked.name = name;
+            }
+            if let Some(toml::Value::String(display_name)) = packed.remove("display_name") {
+                unpacked.display_name = display_name;
+            }
+            if let Some(toml::Value::Array(packed_props)) = packed.remove("propaties") {
+                let mut props = vec![];
+
+                for packed_prop_id in packed_props {
+                    if let toml::Value::String(prop_id) = packed_prop_id {
+                        if let Some(prop_id) = BlockId::from_str(&prop_id) {
+                            props.push(prop_id);
+                        }
+                    }
+                }
+
+                unpacked.properties = props;
+            }
+            if let Some(toml::Value::Table(mut textures)) = packed.remove("textures") {
+                let selected_idx =
+                    if let Some(toml::Value::Integer(x)) = textures.remove("_selected_idx") {
+                        x.max(0) as usize
+                    } else {
+                        0
+                    };
+
+                let payload =
+                    if let Some(toml::Value::Array(textures)) = textures.remove("_payload") {
+                        let mut payload = vec![];
+
+                        for texture in textures {
+                            payload.push(CharacterTexture::unpack_from_toml(texture).await);
+                        }
+
+                        payload
+                    } else {
+                        vec![]
+                    };
+
+                if payload.len() > 0 {
+                    let selected_idx = selected_idx.min(payload.len());
+                    unpacked.textures = SelectList::new(payload, selected_idx);
+                }
+            }
+        }
+
+        unpacked
     }
 }

@@ -73,6 +73,10 @@ pub enum On {
         property_id: BlockId,
         value_mode: block::property::ValueMode,
     },
+    RemoveProperty {
+        property_id: BlockId,
+        idx: usize,
+    },
 }
 
 pub struct Character {
@@ -481,6 +485,9 @@ impl Character {
                                         property_id,
                                         value_mode,
                                     }),
+                                    block_prop::On::RemoveProperty { property_id, idx } => {
+                                        Msg::Sub(On::RemoveProperty { property_id, idx })
+                                    }
                                 }),
                             ),
                         ],

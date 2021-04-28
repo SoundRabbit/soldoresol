@@ -1,6 +1,7 @@
 use super::atom::btn::{self, Btn};
 use super::atom::dropdown::{self, Dropdown};
 use super::atom::slider::{self, Slider};
+use super::atom::text;
 use super::util::styled::{Style, Styled};
 use crate::arena::block::{self, BlockId};
 use crate::libs::clone_of::CloneOf;
@@ -30,6 +31,10 @@ pub enum On {
     SetPropertyValueMode {
         property_id: BlockId,
         value_mode: block::property::ValueMode,
+    },
+    RemoveProperty {
+        property_id: BlockId,
+        idx: usize,
     },
     AddPropertyValue {
         property_id: BlockId,
@@ -121,7 +126,8 @@ impl BlockProp {
             {
                 let mut children: Vec<_> = prop
                     .children()
-                    .map(|p_id| self.render_prop(p_id))
+                    .enumerate()
+                    .map(|(p_idx, p_id)| self.render_prop(&prop_id, p_id, p_idx))
                     .flatten()
                     .collect();
                 if self.is_editable {
@@ -132,12 +138,12 @@ impl BlockProp {
         )
     }
 
-    fn render_prop(&self, prop_id: &BlockId) -> Vec<Html> {
+    fn render_prop(&self, parent_id: &BlockId, prop_id: &BlockId, self_idx: usize) -> Vec<Html> {
         self.block_arena
             .map(prop_id, |prop: &block::property::Property| {
                 vec![
                     self.render_prop_name(prop_id, prop),
-                    self.render_btn_set_value_mode(prop_id, prop.value_mode()),
+                    self.render_menu_prop(parent_id, prop_id, self_idx, prop.value_mode()),
                     if self.is_editable {
                         Html::div(Attributes::new(), Events::new(), vec![])
                     } else {
@@ -363,43 +369,82 @@ impl BlockProp {
         mapped_list: &SelectList<(String, String)>,
     ) -> Vec<Html> {
         vec![
-            Dropdown::with_children(
-                dropdown::Props {
-                    direction: dropdown::Direction::Bottom,
-                    text: mapped_list
-                        .selected()
-                        .map(|(a, b)| format!("{}: {}", b, a))
-                        .unwrap_or(String::from("")),
-                    toggle_type: dropdown::ToggleType::Click,
-                    variant: btn::Variant::DarkLikeMenu,
-                },
-                Subscription::none(),
-                mapped_list
-                    .iter()
-                    .enumerate()
-                    .map(|(list_idx, (a, b))| {
-                        Btn::with_child(
-                            btn::Props {
-                                variant: btn::Variant::Menu,
-                            },
-                            Subscription::new({
-                                let mut mapped_list = SelectList::clone_of(mapped_list);
-                                let prop_id = BlockId::clone(prop_id);
-                                move |sub| match sub {
-                                    btn::On::Click => {
-                                        mapped_list.set_selected_idx(list_idx);
-                                        Msg::Sub(On::SetPropertyValue {
-                                            property_id: prop_id,
-                                            idx: idx,
-                                            value: block::property::Value::MappedList(mapped_list),
-                                        })
-                                    }
-                                }
-                            }),
-                            Html::text(format!("{}: {}", b, a)),
+            Html::div(
+                Attributes::new().class(Self::class("prop-value--table-column")),
+                Events::new(),
+                vec![
+                    Dropdown::with_children(
+                        dropdown::Props {
+                            direction: dropdown::Direction::Bottom,
+                            text: mapped_list
+                                .selected()
+                                .map(|(a, b)| format!("{}: {}", b, a))
+                                .unwrap_or(String::from("")),
+                            toggle_type: dropdown::ToggleType::Click,
+                            variant: btn::Variant::DarkLikeMenu,
+                        },
+                        Subscription::none(),
+                        mapped_list
+                            .iter()
+                            .enumerate()
+                            .map(|(list_idx, (a, b))| {
+                                Btn::with_child(
+                                    btn::Props {
+                                        variant: btn::Variant::Menu,
+                                    },
+                                    Subscription::new({
+                                        let mut mapped_list = SelectList::clone_of(mapped_list);
+                                        let prop_id = BlockId::clone(prop_id);
+                                        move |sub| match sub {
+                                            btn::On::Click => {
+                                                mapped_list.set_selected_idx(list_idx);
+                                                Msg::Sub(On::SetPropertyValue {
+                                                    property_id: prop_id,
+                                                    idx: idx,
+                                                    value: block::property::Value::MappedList(
+                                                        mapped_list,
+                                                    ),
+                                                })
+                                            }
+                                        }
+                                    }),
+                                    Html::text(format!("{}: {}", b, a)),
+                                )
+                            })
+                            .collect(),
+                    ),
+                    if self.is_editable {
+                        Html::div(
+                            Attributes::new().class(Self::class("prop-value--value-key-value")),
+                            Events::new(),
+                            vec![
+                                Html::input(
+                                    Attributes::new().value(
+                                        mapped_list
+                                            .selected()
+                                            .map(|(_, b)| b.clone())
+                                            .unwrap_or(String::from("")),
+                                    ),
+                                    Events::new(),
+                                    vec![],
+                                ),
+                                text::span(":"),
+                                Html::input(
+                                    Attributes::new().value(
+                                        mapped_list
+                                            .selected()
+                                            .map(|(a, _)| a.clone())
+                                            .unwrap_or(String::from("")),
+                                    ),
+                                    Events::new(),
+                                    vec![],
+                                ),
+                            ],
                         )
-                    })
-                    .collect(),
+                    } else {
+                        Html::none()
+                    },
+                ],
             ),
             self.render_btn_set_value_type(prop_id, idx, value),
             self.render_btn_remove_value(BlockId::clone(prop_id), idx),
@@ -425,59 +470,113 @@ impl BlockProp {
         )
     }
 
-    fn render_btn_set_value_mode(
+    fn render_menu_prop(
         &self,
+        parent_id: &block::BlockId,
         prop_id: &BlockId,
+        self_idx: usize,
         value_mode: &block::property::ValueMode,
     ) -> Html {
         if self.is_editable {
-            Dropdown::with_children(
-                dropdown::Props {
-                    direction: dropdown::Direction::BottomLeft,
-                    text: String::from(match value_mode {
-                        block::property::ValueMode::List => "リスト",
-                        block::property::ValueMode::Column => "テーブル",
-                    }),
-                    toggle_type: dropdown::ToggleType::Click,
-                    variant: btn::Variant::SecondaryLikeMenu,
-                },
-                Subscription::none(),
+            Html::div(
+                Attributes::new().class(Self::class("prop-menu")),
+                Events::new(),
                 vec![
-                    Btn::with_child(
-                        btn::Props {
-                            variant: btn::Variant::MenuAsSecondary,
-                        },
-                        Subscription::new({
-                            let prop_id = BlockId::clone(prop_id);
-                            move |sub| match sub {
-                                btn::On::Click => Msg::Sub(On::SetPropertyValueMode {
-                                    property_id: prop_id,
-                                    value_mode: block::property::ValueMode::List,
-                                }),
-                            }
-                        }),
-                        Html::text("リスト"),
-                    ),
-                    Btn::with_child(
-                        btn::Props {
-                            variant: btn::Variant::MenuAsSecondary,
-                        },
-                        Subscription::new({
-                            let prop_id = BlockId::clone(prop_id);
-                            move |sub| match sub {
-                                btn::On::Click => Msg::Sub(On::SetPropertyValueMode {
-                                    property_id: prop_id,
-                                    value_mode: block::property::ValueMode::Column,
-                                }),
-                            }
-                        }),
-                        Html::text("テーブル"),
-                    ),
+                    self.render_btn_set_value_mode(prop_id, value_mode),
+                    self.render_btn_remove_prop(BlockId::clone(parent_id), self_idx),
                 ],
             )
         } else {
             Html::none()
         }
+    }
+
+    fn render_btn_set_value_mode(
+        &self,
+        prop_id: &BlockId,
+        value_mode: &block::property::ValueMode,
+    ) -> Html {
+        Dropdown::with_children(
+            dropdown::Props {
+                direction: dropdown::Direction::BottomLeft,
+                text: String::from(match value_mode {
+                    block::property::ValueMode::List => "リスト",
+                    block::property::ValueMode::Column => "テーブル",
+                }),
+                toggle_type: dropdown::ToggleType::Click,
+                variant: btn::Variant::SecondaryLikeMenu,
+            },
+            Subscription::none(),
+            vec![
+                Btn::with_child(
+                    btn::Props {
+                        variant: btn::Variant::MenuAsSecondary,
+                    },
+                    Subscription::new({
+                        let prop_id = BlockId::clone(prop_id);
+                        move |sub| match sub {
+                            btn::On::Click => Msg::Sub(On::SetPropertyValueMode {
+                                property_id: prop_id,
+                                value_mode: block::property::ValueMode::List,
+                            }),
+                        }
+                    }),
+                    Html::text("リスト"),
+                ),
+                Btn::with_child(
+                    btn::Props {
+                        variant: btn::Variant::MenuAsSecondary,
+                    },
+                    Subscription::new({
+                        let prop_id = BlockId::clone(prop_id);
+                        move |sub| match sub {
+                            btn::On::Click => Msg::Sub(On::SetPropertyValueMode {
+                                property_id: prop_id,
+                                value_mode: block::property::ValueMode::Column,
+                            }),
+                        }
+                    }),
+                    Html::text("テーブル"),
+                ),
+            ],
+        )
+    }
+
+    fn render_btn_remove_prop(&self, parent_id: BlockId, self_idx: usize) -> Html {
+        Dropdown::with_children(
+            dropdown::Props {
+                direction: dropdown::Direction::BottomLeft,
+                text: String::from("削除"),
+                toggle_type: dropdown::ToggleType::Click,
+                variant: btn::Variant::Danger,
+            },
+            Subscription::none(),
+            vec![Html::div(
+                Attributes::new().class(Self::class("ok-cancel")),
+                Events::new(),
+                vec![
+                    Btn::with_child(
+                        btn::Props {
+                            variant: btn::Variant::Danger,
+                        },
+                        Subscription::new(move |sub| match sub {
+                            btn::On::Click => Msg::Sub(On::RemoveProperty {
+                                property_id: parent_id,
+                                idx: self_idx,
+                            }),
+                        }),
+                        Html::text("OK"),
+                    ),
+                    Btn::with_child(
+                        btn::Props {
+                            variant: btn::Variant::Primary,
+                        },
+                        Subscription::none(),
+                        Html::text("キャンセル"),
+                    ),
+                ],
+            )],
+        )
     }
 
     fn render_btn_add_value(&self, prop_id: BlockId) -> Html {
@@ -738,6 +837,12 @@ impl Styled for BlockProp {
                 "align-items": "start";
             }
 
+            "prop-menu" {
+                "display": "grid";
+                "column-gap": ".35em";
+                "grid-template-columns": "1fr max-content";
+            }
+
             "prop-value-list" {
                 "display": "grid";
                 "column-gap": ".35em";
@@ -764,6 +869,20 @@ impl Styled for BlockProp {
 
             "prop-value-column > *" {
                 "width": "100%";
+            }
+
+            "prop-value--table-column" {
+                "display": "grid";
+                "row-gap": ".65em";
+                "grid-template-columns": "1fr";
+                "grid-auto-flow": "row";
+            }
+
+            "prop-value--value-key-value" {
+                "display": "grid";
+                "column-gap": ".35em";
+                "grid-template-columns": "1fr max-content 1fr";
+                "align-items": "center";
             }
 
             "banner" {

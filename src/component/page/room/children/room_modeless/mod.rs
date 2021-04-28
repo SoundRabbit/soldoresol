@@ -85,6 +85,10 @@ pub enum On {
         block_id: BlockId,
         name: String,
     },
+    RemoveProperty {
+        property_id: BlockId,
+        idx: usize,
+    },
     AddPropertyValue {
         property_id: BlockId,
     },
@@ -436,6 +440,9 @@ impl RoomModeless {
                                 property_id,
                                 value_mode,
                             }),
+                            character::On::RemoveProperty { property_id, idx } => {
+                                Msg::Sub(On::RemoveProperty { property_id, idx })
+                            }
                         }
                     }),
                 ),

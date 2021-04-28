@@ -1,4 +1,5 @@
 use super::super::{
+    super::util::cmds::Cmds,
     super::util::State,
     model::table::{
         BoxblockTool, CharacterTool, EraserTool, FillShapeTool, LineShapeTool, PenTool, ShapeTool,
@@ -88,6 +89,8 @@ impl Implement {
         });
 
         Self {
+            cmds: Cmds::new(),
+
             peer: props.peer,
             peer_id: props.peer_id,
             room: props.room,

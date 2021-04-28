@@ -1,4 +1,5 @@
 use super::{
+    super::util::cmds::Cmds,
     super::util::styled::{Style, Styled},
     super::util::State,
     children::room_modeless,
@@ -96,8 +97,15 @@ pub enum Msg {
         files: Vec<web_sys::File>,
         overlay: Option<Overlay>,
     },
+    LoadData {
+        blocks: Vec<(BlockId, block::ArenaBlock)>,
+        resources: Vec<resource::Data>,
+    },
     LoadResourceData {
         data: Vec<resource::Data>,
+    },
+    LoadArenaBlocks {
+        blocks: Vec<(BlockId, block::ArenaBlock)>,
     },
     CreateNewChannel {
         channel_name: String,
@@ -154,6 +162,10 @@ pub enum Msg {
     SetPropertyValueMode {
         property_id: BlockId,
         value_mode: block::property::ValueMode,
+    },
+    RemoveProperty {
+        property_id: BlockId,
+        idx: usize,
     },
 }
 
@@ -255,6 +267,8 @@ impl KeyState {
 }
 
 pub struct Implement {
+    cmds: Cmds<Msg, On>,
+
     peer: Rc<Peer>,
     peer_id: Rc<String>,
     room: Rc<MeshRoom>,

@@ -11,15 +11,17 @@ use crate::arena::Insert;
 use crate::libs::clone_of::CloneOf;
 use crate::libs::color::Pallet;
 use crate::libs::select_list::SelectList;
+use js_sys::Promise;
 use std::rc::Rc;
 use wasm_bindgen::{prelude::*, JsCast};
+use wasm_bindgen_futures::JsFuture;
 
 mod update_mouse;
 
 impl Implement {
     pub fn update(&mut self, msg: Msg) -> Cmd<Msg, On> {
         match msg {
-            Msg::NoOp => Cmd::none(),
+            Msg::NoOp => {}
 
             Msg::SetCanvasElement { canvas } => {
                 let canvas = Rc::new(canvas);
@@ -34,7 +36,8 @@ impl Implement {
                 self.canvas_size = [client_width, client_height];
 
                 self.canvas = Some(canvas);
-                Cmd::task(move |resolve| {
+
+                self.cmds.push(Cmd::task(move |resolve| {
                     let a = Closure::once(
                         Box::new(move || resolve(Msg::ResetCanvasSize)) as Box<dyn FnOnce()>
                     );
@@ -42,7 +45,7 @@ impl Implement {
                         .unwrap()
                         .request_animation_frame(a.as_ref().unchecked_ref());
                     a.forget();
-                })
+                }));
             }
 
             Msg::ResetCanvasSize => {
@@ -57,9 +60,7 @@ impl Implement {
                 }
                 if let Some(renderer) = &mut self.renderer {
                     renderer.reset_size();
-                    self.gl_render_async()
-                } else {
-                    Cmd::none()
+                    self.gl_render_async();
                 }
             }
 
@@ -74,7 +75,6 @@ impl Implement {
                         &self.grabbed_object_id,
                     );
                 }
-                Cmd::none()
             }
 
             Msg::UpdateMouseState { e } => {
@@ -89,7 +89,6 @@ impl Implement {
                     ObjectId::None
                 };
                 if self.mouse_btn_state.secondary.is_clicked {
-                    crate::debug::log_1(format!("focused: {}", focused_object_id));
                     match focused_object_id {
                         ObjectId::Character(block_id, _) => {
                             self.contextmenu = Some(Contextmenu {
@@ -100,36 +99,29 @@ impl Implement {
                         }
                         _ => {}
                     }
-                    Cmd::none()
                 } else {
                     if self.update_mouse() {
-                        self.gl_render_async()
-                    } else {
-                        Cmd::none()
+                        self.gl_render_async();
                     }
                 }
             }
 
             Msg::UpdateKeyState { e, is_key_down } => {
                 self.key_state.update(e, is_key_down);
-                Cmd::none()
             }
 
             Msg::SetTableToolIdx { idx } => {
                 self.table_tools.set_selected_idx(idx);
-                Cmd::none()
             }
 
             Msg::SetSelectingTableTool { tool } => {
                 if let Some(selecting_tool) = self.table_tools.selected_mut() {
                     *selecting_tool = tool;
                 }
-                Cmd::none()
             }
 
             Msg::OpenNewModal { modal } => {
                 self.modal = modal;
-                Cmd::none()
             }
 
             Msg::OpenNewModeless { content } => {
@@ -139,7 +131,6 @@ impl Implement {
                     page_y: 0,
                     minimized: false,
                 });
-                Cmd::none()
             }
 
             Msg::OpenNewChatModeless => {
@@ -160,45 +151,37 @@ impl Implement {
                     page_y: 128,
                     minimized: false,
                 });
-                Cmd::none()
             }
 
             Msg::CloseModeless { modeless_id } => {
                 self.modeless_list.remove(&modeless_id);
-                Cmd::none()
             }
 
             Msg::MinimizeModeless { modeless_id } => {
                 if let Some(modeless) = self.modeless_list.get_mut(&modeless_id) {
                     modeless.minimized = true;
                 }
-                Cmd::none()
             }
 
             Msg::RestoreModeless { modeless_id } => {
                 if let Some(modeless) = self.modeless_list.get_mut(&modeless_id) {
                     modeless.minimized = false;
                 }
-                Cmd::none()
             }
 
             Msg::FocusModeless { modeless_id } => {
                 self.modeless_list.focus(&modeless_id);
-                Cmd::none()
             }
 
             Msg::SetModelessContainerElement { element } => {
                 self.modeless_container_element = Some(State::new(element));
-                Cmd::none()
             }
 
             Msg::SetDraggingModelessTab {
                 modeless_id,
                 tab_idx,
             } => {
-                crate::debug::log_1("SetDraggingModelessTab");
                 self.dragging_modeless_tab = Some((modeless_id, tab_idx));
-                Cmd::none()
             }
 
             Msg::MoveModelessTab {
@@ -230,7 +213,6 @@ impl Implement {
                         }
                     }
                 }
-                Cmd::none()
             }
 
             Msg::DropModelessTab { page_x, page_y } => {
@@ -258,7 +240,6 @@ impl Implement {
                         }
                     }
                 }
-                Cmd::none()
             }
 
             Msg::SelectModelessTab {
@@ -268,44 +249,108 @@ impl Implement {
                 if let Some(modeless) = self.modeless_list.get_mut(&modeless_id) {
                     modeless.content.set_selected_idx(tab_idx);
                 }
-                Cmd::none()
             }
 
             Msg::SetOverlay { overlay } => {
                 self.overlay = overlay;
-                Cmd::none()
             }
 
             Msg::SetContextmenu { contextmenu } => {
                 self.contextmenu = contextmenu;
-                Cmd::none()
             }
 
             Msg::LoadFile { files, overlay } => {
                 if let Some(overlay) = overlay {
                     self.overlay = overlay;
                 }
-                Cmd::task(move |resolve| {
+                self.cmds.push(Cmd::task(move |resolve| {
                     wasm_bindgen_futures::spawn_local(async move {
-                        let mut tasks = vec![];
+                        let mut resource_tasks = vec![];
+                        let mut block_tasks = vec![];
+                        let is_toml = regex::Regex::new(r"^.*\.toml$").unwrap();
                         for file in files {
-                            tasks.push(resource::Data::from_blob(file.into()));
+                            // MIMEタイプで判別できないので、拡張子で判別
+                            if is_toml.is_match(&file.name()) {
+                                block_tasks.push(JsFuture::from(Promise::new(
+                                    &mut move |resolve, _| {
+                                        let reader = Rc::new(web_sys::FileReader::new().unwrap());
+                                        let a = Closure::wrap(Box::new({
+                                            let reader = Rc::clone(&reader);
+                                            move || {
+                                                let _ = resolve.call1(
+                                                    &js_sys::global(),
+                                                    &reader.result().unwrap_or(JsValue::NULL),
+                                                );
+                                            }
+                                        })
+                                            as Box<dyn FnMut()>);
+                                        reader.set_onload(Some(&a.as_ref().unchecked_ref()));
+                                        let _ = reader.read_as_text(&file);
+                                        a.forget();
+                                    },
+                                )));
+                            } else {
+                                resource_tasks.push(resource::Data::from_blob(file.into()));
+                            }
                         }
-                        let data = futures::future::join_all(tasks)
+                        let resources = futures::future::join_all(resource_tasks)
                             .await
                             .into_iter()
                             .filter_map(|x| x)
                             .collect::<Vec<_>>();
-                        resolve(Msg::LoadResourceData { data })
+                        let toml_blocks = futures::future::join_all(block_tasks)
+                            .await
+                            .into_iter()
+                            .filter_map(|x| {
+                                x.ok()
+                                    .and_then(|x| x.as_string())
+                                    .and_then(|x| toml::from_str(&x).ok())
+                            })
+                            .collect::<Vec<toml::Value>>();
+                        let mut block_tasks = vec![];
+                        for toml_block in toml_blocks {
+                            block_tasks.push(async {
+                                crate::debug::log_1("start to create ab");
+                                block::Arena::unpack_from_toml(toml_block).await
+                            });
+                        }
+                        let blocks = futures::future::join_all(block_tasks)
+                            .await
+                            .into_iter()
+                            .flatten()
+                            .collect::<Vec<_>>();
+
+                        resolve(Msg::LoadData { blocks, resources })
                     })
-                })
+                }));
+            }
+
+            Msg::LoadData { blocks, resources } => {
+                self.cmds.push_msg(Msg::LoadArenaBlocks { blocks });
+                self.cmds
+                    .push_msg(Msg::LoadResourceData { data: resources });
             }
 
             Msg::LoadResourceData { data } => {
                 for a_data in data {
                     self.resource_arena.add(a_data);
                 }
-                Cmd::none()
+            }
+
+            Msg::LoadArenaBlocks { blocks } => {
+                for (block_id, block) in blocks {
+                    if block.is::<block::character::Character>() {
+                        let block_id = BlockId::clone(&block_id);
+                        self.block_arena.map_mut(
+                            &self.world_id,
+                            |world: &mut block::world::World| {
+                                world.add_character(block_id);
+                            },
+                        );
+                    }
+
+                    self.block_arena.assign_arena_block(block_id, block);
+                }
             }
 
             Msg::CreateNewChannel {
@@ -321,8 +366,6 @@ impl Implement {
                     });
 
                 self.modal = Modal::None;
-
-                Cmd::none()
             }
 
             Msg::UpdateTableProps {
@@ -388,9 +431,7 @@ impl Implement {
                 }
 
                 if is_updated {
-                    self.gl_render_async()
-                } else {
-                    Cmd::none()
+                    self.gl_render_async();
                 }
             }
 
@@ -402,12 +443,11 @@ impl Implement {
                 self.block_arena.map_mut(
                     &character_id,
                     |character: &mut block::character::Character| {
-                        crate::debug::log_1("SetCharacterTextureId");
                         character.set_tex_id(tex_idx, resource_id);
                     },
                 );
 
-                self.gl_render_async()
+                self.gl_render_async();
             }
 
             Msg::AddCharacterTexture { character_id } => {
@@ -418,7 +458,7 @@ impl Implement {
                     },
                 );
 
-                self.gl_render_async()
+                self.gl_render_async();
             }
 
             Msg::RemoveCharacterTexture {
@@ -432,7 +472,7 @@ impl Implement {
                     },
                 );
 
-                self.gl_render_async()
+                self.gl_render_async();
             }
 
             Msg::SetCharacterTextureIdx {
@@ -446,7 +486,7 @@ impl Implement {
                     },
                 );
 
-                self.gl_render_async()
+                self.gl_render_async();
             }
 
             Msg::SetCharacterTextureName {
@@ -460,8 +500,6 @@ impl Implement {
                         character.set_tex_name(tex_idx, tex_name);
                     },
                 );
-
-                Cmd::none()
             }
 
             Msg::SetPropertyName { property_id, name } => {
@@ -469,7 +507,6 @@ impl Implement {
                     .map_mut(&property_id, |prop: &mut block::property::Property| {
                         prop.set_name(name);
                     });
-                Cmd::none()
             }
 
             Msg::AddPropertyChild { block_id, name } => {
@@ -493,8 +530,6 @@ impl Implement {
                 } else {
                     self.block_arena.free(&property_id);
                 }
-
-                Cmd::none()
             }
 
             Msg::AddPropertyValue { property_id } => {
@@ -502,8 +537,6 @@ impl Implement {
                     .map_mut(&property_id, |prop: &mut block::property::Property| {
                         prop.add_value(block::property::Value::None);
                     });
-
-                Cmd::none()
             }
 
             Msg::SetPropertyValue {
@@ -515,8 +548,6 @@ impl Implement {
                     .map_mut(&property_id, |prop: &mut block::property::Property| {
                         prop.set_value(idx, value);
                     });
-
-                Cmd::none()
             }
 
             Msg::RemovePropertyValue { property_id, idx } => {
@@ -524,8 +555,6 @@ impl Implement {
                     .map_mut(&property_id, |prop: &mut block::property::Property| {
                         prop.remove_value(idx);
                     });
-
-                Cmd::none()
             }
 
             Msg::SetPropertyValueMode {
@@ -536,21 +565,28 @@ impl Implement {
                     .map_mut(&property_id, |prop: &mut block::property::Property| {
                         prop.set_value_mode(value_mode);
                     });
+            }
 
-                Cmd::none()
+            Msg::RemoveProperty { property_id, idx } => {
+                self.block_arena
+                    .map_mut(&property_id, |prop: &mut block::property::Property| {
+                        prop.remove_child(idx);
+                    });
             }
         }
+
+        self.cmds.pop()
     }
 
-    fn gl_render_async(&mut self) -> Cmd<Msg, On> {
-        Cmd::task(move |resolve| {
+    fn gl_render_async(&mut self) {
+        self.cmds.push(Cmd::task(move |resolve| {
             let a =
                 Closure::once(Box::new(move || resolve(Msg::RenderCanvas)) as Box<dyn FnOnce()>);
             let _ = web_sys::window()
                 .unwrap()
                 .request_animation_frame(a.as_ref().unchecked_ref());
             a.forget();
-        })
+        }));
     }
 
     fn create_new_character(

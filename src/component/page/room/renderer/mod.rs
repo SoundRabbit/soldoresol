@@ -178,12 +178,6 @@ impl Renderer {
         );
 
         if res.is_ok() {
-            crate::debug::log_4(
-                table_id[0] as f64,
-                table_id[1] as f64,
-                table_id[2] as f64,
-                table_id[3] as f64,
-            );
             let table_id = u32::from_be_bytes([table_id[3], table_id[0], table_id[1], table_id[2]]);
             self.id_table
                 .get(&table_id)

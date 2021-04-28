@@ -516,6 +516,9 @@ impl Implement {
                                             property_id,
                                             value_mode,
                                         },
+                                        room_modeless::On::RemoveProperty { property_id, idx } => {
+                                            Msg::RemoveProperty { property_id, idx }
+                                        }
                                     }
                                 }),
                             )

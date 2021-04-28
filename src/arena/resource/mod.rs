@@ -27,6 +27,10 @@ impl ResourceId {
             id: U128Id::clone(&this.id),
         }
     }
+
+    pub fn from_str(id: &str) -> Option<Self> {
+        U128Id::from_hex(id).map(|id| Self { id })
+    }
 }
 
 impl std::fmt::Display for ResourceId {

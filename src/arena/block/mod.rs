@@ -117,6 +117,10 @@ impl BlockId {
         Self { id }
     }
 
+    fn from_str(id: &str) -> Option<Self> {
+        U128Id::from_hex(id).map(|id| Self { id })
+    }
+
     pub fn none() -> Self {
         Self { id: U128Id::none() }
     }
@@ -144,7 +148,7 @@ impl std::fmt::Display for BlockId {
 
 type Timestamp = f64;
 
-struct ArenaBlock {
+pub struct ArenaBlock {
     timestamp: Timestamp,
     payload: Block,
 }
@@ -162,6 +166,13 @@ impl ArenaBlock {
             timestamp: this.timestamp,
             payload: Block::clone(&this.payload),
         }
+    }
+
+    pub fn is<T>(&self) -> bool
+    where
+        Block: TryRef<T>,
+    {
+        TryRef::try_ref(&self.payload).is_some()
     }
 
     async fn pack(&self) -> JsValue {
@@ -240,6 +251,28 @@ impl ArenaBlock {
 
         toml::Value::Table(packed)
     }
+
+    async fn unpack_from_toml(packed: toml::Value) -> Self {
+        let mut unpacked = Self::new(js_sys::Date::now(), Block::None);
+
+        if let toml::Value::Table(mut packed) = packed {
+            if let Some(toml::Value::String(block_type)) = packed.remove("_type") {
+                if block_type == "Character" {
+                    if let Some(payload) = packed.remove("payload") {
+                        unpacked.payload =
+                            Block::Character(character::Character::unpack_from_toml(payload).await);
+                    }
+                } else if block_type == "Property" {
+                    if let Some(payload) = packed.remove("payload") {
+                        unpacked.payload =
+                            Block::Property(property::Property::unpack_from_toml(payload).await);
+                    }
+                }
+            }
+        }
+
+        unpacked
+    }
 }
 
 pub struct ArenaRef {
@@ -291,7 +324,7 @@ impl Arena {
         self.assign_arena_block(BlockId::clone(&block_id), arena_block);
     }
 
-    fn assign_arena_block(&mut self, block_id: BlockId, new_arena_block: ArenaBlock) {
+    pub fn assign_arena_block(&mut self, block_id: BlockId, new_arena_block: ArenaBlock) {
         let mut table = self.table.borrow_mut();
         if let Some(arena_block) = table.get_mut(&block_id) {
             if arena_block.timestamp < new_arena_block.timestamp {
@@ -414,6 +447,29 @@ impl Arena {
                 toml::Value::Table(table)
             })
         }
+    }
+
+    pub async fn unpack_from_toml(packed: toml::Value) -> Vec<(BlockId, ArenaBlock)> {
+        let mut unpacked = vec![];
+
+        if let toml::Value::Table(mut packed) = packed {
+            if let Some(toml::Value::Array(packed)) = packed.remove("block") {
+                for packed_block in packed {
+                    if let toml::Value::Table(mut packed_block) = packed_block {
+                        if let (Some(toml::Value::String(block_id)), Some(payload)) =
+                            (packed_block.remove("_id"), packed_block.remove("_payload"))
+                        {
+                            if let Some(block_id) = BlockId::from_str(&block_id) {
+                                let payload = ArenaBlock::unpack_from_toml(payload).await;
+                                unpacked.push((block_id, payload));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        unpacked
     }
 }
 
