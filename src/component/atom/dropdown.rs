@@ -189,7 +189,9 @@ impl Dropdown {
         Html::button(
             Attributes::new()
                 .class("pure-button")
-                .class(Btn::class_name(&self.variant)),
+                .class(Btn::class_name(&self.variant))
+                .class(Self::class("root-btn"))
+                .string("data-toggled", self.is_dropdowned.to_string()),
             Events::new(),
             vec![Html::div(
                 Attributes::new().class(Self::class("btn")),
@@ -235,6 +237,14 @@ impl Styled for Dropdown {
 
             "base-default" {
                 "max-width": "max-content";
+            }
+
+            r#"root-btn[data-toggled="false"]"# {
+                "z-index": "auto";
+            }
+
+            r#"root-btn[data-toggled="true"]"# {
+                "z-index": format!("{}", super::constant::z_index::MASK + 1);
             }
 
             "btn" {

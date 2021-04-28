@@ -224,14 +224,14 @@ impl Value {
                     }
                 } else if value_type == "ResourceMinMax" {
                     if let Some(toml::Value::Table(mut payload)) = packed.remove("_payload") {
-                        if let Some((
-                            toml::Value::Float(min),
-                            toml::Value::Float(val),
-                            toml::Value::Float(max),
-                        )) = join_some!(
+                        if let (
+                            Some(toml::Value::Float(min)),
+                            Some(toml::Value::Float(val)),
+                            Some(toml::Value::Float(max)),
+                        ) = (
                             payload.remove("min"),
                             payload.remove("val"),
-                            payload.remove("max")
+                            payload.remove("max"),
                         ) {
                             unpacked = Self::ResourceMinMax { min, val, max };
                         }

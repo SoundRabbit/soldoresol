@@ -978,7 +978,6 @@ impl Styled for BlockProp {
             "prop-name" {
                 "display": "grid";
                 "row-gap": ".65em";
-                "grid-template-columns": "max-content";
                 "align-items": "start";
             }
 
@@ -1047,6 +1046,10 @@ impl Styled for BlockProp {
             }
 
             "banner > button" {
+                "width": "100%";
+            }
+
+            "banner > input" {
                 "width": "100%";
             }
 
