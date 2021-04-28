@@ -50,6 +50,7 @@ pub trait Program {
     accesser!(None as unif_bg_color: WebGlUniformLocation);
     accesser!(None as unif_bg_color_1: WebGlUniformLocation);
     accesser!(None as unif_bg_color_2: WebGlUniformLocation);
+    accesser!(None as unif_env_light_intensity: WebGlUniformLocation);
     accesser!(None as unif_flag_round: WebGlUniformLocation);
     accesser!(None as unif_inv_model: WebGlUniformLocation);
     accesser!(None as unif_light: WebGlUniformLocation);
@@ -187,6 +188,7 @@ pub struct BoxblockProgram {
     program: web_sys::WebGlProgram,
     a_vertex_location: WebGlAttributeLocation,
     a_normal_location: WebGlAttributeLocation,
+    u_env_light_intensity_location: WebGlUniformLocation,
     u_translate_location: WebGlUniformLocation,
     u_inv_model_location: WebGlUniformLocation,
     u_light_location: WebGlUniformLocation,
@@ -211,6 +213,9 @@ impl BoxblockProgram {
         let u_shade_intensity_location = gl
             .get_uniform_location(&program, "u_shadeIntensity")
             .unwrap();
+        let u_env_light_intensity_location = gl
+            .get_uniform_location(&program, "u_envLightIntensity")
+            .unwrap();
 
         Self {
             program,
@@ -221,6 +226,7 @@ impl BoxblockProgram {
             u_light_location,
             u_bg_color_location,
             u_shade_intensity_location,
+            u_env_light_intensity_location,
         }
     }
 }
@@ -230,6 +236,7 @@ impl Program for BoxblockProgram {
     accesser!(a_vertex_location as attr_vertex: WebGlAttributeLocation);
     accesser!(a_normal_location as attr_normal: WebGlAttributeLocation);
     accesser!(u_bg_color_location as unif_bg_color: WebGlUniformLocation);
+    accesser!(u_env_light_intensity_location as unif_env_light_intensity: WebGlUniformLocation);
     accesser!(u_light_location as unif_light: WebGlUniformLocation);
     accesser!(u_inv_model_location as unif_inv_model: WebGlUniformLocation);
     accesser!(u_shade_intensity_location as unif_shade_intensity: WebGlUniformLocation);

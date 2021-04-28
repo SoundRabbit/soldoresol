@@ -267,6 +267,7 @@ impl WebGlRenderingContext {
     setter!(unif unif_bg_color: 4fv as set_unif_bg_color);
     setter!(unif unif_bg_color_1: 4fv as set_unif_bg_color_1);
     setter!(unif unif_bg_color_2: 4fv as set_unif_bg_color_2);
+    setter!(unif unif_env_light_intensity: 1f as set_unif_env_light_intensity);
     setter!(unif unif_flag_round: 1i as set_unif_flag_round);
     setter!(unif unif_inv_model: matrix4fv as set_unif_inv_model);
     setter!(unif unif_light: 3fv as set_unif_light);

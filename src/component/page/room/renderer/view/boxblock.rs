@@ -131,6 +131,7 @@ impl Boxblock {
 
         gl.set_unif_light(&[0.5, -2.0, 1.0]);
         gl.set_unif_shade_intensity(0.5);
+        gl.set_unif_env_light_intensity(1.0);
 
         let _ = block_arena.iter_map_with_ids(
             boxblock_ids,

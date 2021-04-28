@@ -36,6 +36,10 @@ pub struct Renderer {
     render_view_character: view::character::Character,
     render_view_character_base: view::character_base::CharacterBase,
     render_view_boxblock: view::boxblock::Boxblock,
+
+    depth_screen: web_sys::WebGlRenderbuffer,
+    tex_screen: web_sys::WebGlTexture,
+    frame_screen: web_sys::WebGlFramebuffer,
 }
 
 impl Renderer {
@@ -129,6 +133,75 @@ impl Renderer {
         let render_offscreen_character = offscreen::character::Character::new(&offscreen_gl);
         let render_offscreen_boxblock = offscreen::boxblock::Boxblock::new(&offscreen_gl);
 
+        let depth_screen = view_gl.create_renderbuffer().unwrap();
+        view_gl.bind_renderbuffer(
+            web_sys::WebGlRenderingContext::RENDERBUFFER,
+            Some(&depth_screen),
+        );
+        view_gl.renderbuffer_storage(
+            web_sys::WebGlRenderingContext::RENDERBUFFER,
+            web_sys::WebGlRenderingContext::DEPTH_COMPONENT16,
+            canvas_size[0].round() as i32,
+            canvas_size[1].round() as i32,
+        );
+
+        let tex_screen = view_gl.create_texture().unwrap();
+        view_gl.bind_texture(
+            web_sys::WebGlRenderingContext::TEXTURE_2D,
+            Some(&tex_screen),
+        );
+        view_gl.tex_parameteri(
+            web_sys::WebGlRenderingContext::TEXTURE_2D,
+            web_sys::WebGlRenderingContext::TEXTURE_MIN_FILTER,
+            web_sys::WebGlRenderingContext::LINEAR as i32,
+        );
+        view_gl.tex_parameteri(
+            web_sys::WebGlRenderingContext::TEXTURE_2D,
+            web_sys::WebGlRenderingContext::TEXTURE_MAG_FILTER,
+            web_sys::WebGlRenderingContext::LINEAR as i32,
+        );
+        view_gl.tex_parameteri(
+            web_sys::WebGlRenderingContext::TEXTURE_2D,
+            web_sys::WebGlRenderingContext::TEXTURE_WRAP_S,
+            web_sys::WebGlRenderingContext::CLAMP_TO_EDGE as i32,
+        );
+        view_gl.tex_parameteri(
+            web_sys::WebGlRenderingContext::TEXTURE_2D,
+            web_sys::WebGlRenderingContext::TEXTURE_WRAP_T,
+            web_sys::WebGlRenderingContext::CLAMP_TO_EDGE as i32,
+        );
+        let _ = view_gl
+            .tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_array_buffer_view(
+                web_sys::WebGlRenderingContext::TEXTURE_2D,
+                0,
+                web_sys::WebGlRenderingContext::RGBA as i32,
+                canvas_size[0].round() as i32,
+                canvas_size[1].round() as i32,
+                0,
+                web_sys::WebGlRenderingContext::RGBA,
+                web_sys::WebGlRenderingContext::UNSIGNED_BYTE,
+                None,
+            );
+
+        let frame_screen = view_gl.create_framebuffer().unwrap();
+        view_gl.bind_framebuffer(
+            web_sys::WebGlRenderingContext::FRAMEBUFFER,
+            Some(&frame_screen),
+        );
+        view_gl.framebuffer_renderbuffer(
+            web_sys::WebGlRenderingContext::FRAMEBUFFER,
+            web_sys::WebGlRenderingContext::DEPTH_ATTACHMENT,
+            web_sys::WebGlRenderingContext::RENDERBUFFER,
+            Some(&depth_screen),
+        );
+        view_gl.framebuffer_texture_2d(
+            web_sys::WebGlRenderingContext::FRAMEBUFFER,
+            web_sys::WebGlRenderingContext::COLOR_ATTACHMENT0,
+            web_sys::WebGlRenderingContext::TEXTURE_2D,
+            Some(&tex_screen),
+            0,
+        );
+
         Self {
             view_canvas,
             view_gl,
@@ -145,6 +218,9 @@ impl Renderer {
             render_view_character,
             render_view_character_base,
             render_view_boxblock,
+            depth_screen,
+            tex_screen,
+            frame_screen,
         }
     }
 
@@ -226,6 +302,8 @@ impl Renderer {
         grabbed_object_id: &ObjectId,
     ) {
         block_arena.map(world_id, |world: &block::world::World| {
+            self.view_gl
+                .bind_framebuffer(web_sys::WebGlRenderingContext::FRAMEBUFFER, None);
             self.view_gl.clear(
                 web_sys::WebGlRenderingContext::COLOR_BUFFER_BIT
                     | web_sys::WebGlRenderingContext::DEPTH_BUFFER_BIT
