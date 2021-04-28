@@ -70,6 +70,10 @@ impl Property {
         self.values.iter()
     }
 
+    pub fn value(&self, idx: usize) -> &Value {
+        &self.values[idx]
+    }
+
     pub fn add_value(&mut self, value: Value) {
         self.values.push(value);
     }
@@ -198,7 +202,7 @@ impl Value {
 
                     select_list
                 };
-                packed.insert(String::from("payload"), toml::Value::Table(payload));
+                packed.insert(String::from("_payload"), toml::Value::Table(payload));
             }
         }
 
@@ -250,8 +254,9 @@ impl Value {
                             for item in mapped_list {
                                 if let toml::Value::Array(mut item) = item {
                                     if item.len() >= 2 {
+                                        // (item.remove(0), item.remove(1))だとitem.remove(0)の時点で要素が減るのでバグる
                                         if let (toml::Value::String(a), toml::Value::String(b)) =
-                                            (item.remove(0), item.remove(1))
+                                            (item.remove(0), item.remove(0))
                                         {
                                             payload.push((a, b));
                                         }
@@ -265,7 +270,7 @@ impl Value {
                         };
 
                         if payload.len() > 0 {
-                            let selected_idx = selected_idx.min(payload.len());
+                            let selected_idx = selected_idx.min(payload.len() - 1);
                             unpacked = Self::MappedList(SelectList::new(payload, selected_idx));
                         }
                     }

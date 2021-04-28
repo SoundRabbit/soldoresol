@@ -1,6 +1,9 @@
 use super::util::styled::{Style, Styled};
 use crate::libs::color::color_system;
+use async_std::sync::{Arc, Mutex};
 use kagura::prelude::*;
+use wasm_bindgen::prelude::*;
+use wasm_bindgen::JsCast;
 
 pub struct Props {
     pub variant: Variant,
@@ -74,14 +77,18 @@ impl Component for Btn {
                 } else {
                     ""
                 }),
-            Events::new().on_click(|_| Msg::Clicked),
+            Events::new().on("click", Self::on_click),
             children,
         ))
     }
 }
 
 impl Btn {
-    fn class_name(variant: &Variant) -> String {
+    fn on_click(_: web_sys::Event) -> Msg {
+        Msg::Clicked
+    }
+
+    pub fn class_name(variant: &Variant) -> String {
         match variant {
             Variant::Primary => Self::class("primary"),
             Variant::Secondary => Self::class("secondary"),

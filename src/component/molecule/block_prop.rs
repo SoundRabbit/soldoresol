@@ -17,6 +17,11 @@ pub enum Msg {
     NoOp,
     Sub(On),
     SetIsEditable(bool),
+    UpdateMappedList {
+        prop_id: BlockId,
+        idx: usize,
+        update: Box<dyn FnOnce(&mut SelectList<(String, String)>)>,
+    },
 }
 
 pub enum On {
@@ -84,6 +89,29 @@ impl Component for BlockProp {
                 self.is_editable = is_editable;
                 Cmd::none()
             }
+            Msg::UpdateMappedList {
+                prop_id,
+                idx,
+                update,
+            } => self
+                .block_arena
+                .map(
+                    &BlockId::clone(&prop_id),
+                    move |prop: &block::property::Property| {
+                        if let block::property::Value::MappedList(mapped_list) = prop.value(idx) {
+                            let mut mapped_list = SelectList::clone_of(mapped_list);
+                            update(&mut mapped_list);
+                            Cmd::sub(On::SetPropertyValue {
+                                property_id: prop_id,
+                                idx: idx,
+                                value: block::property::Value::MappedList(mapped_list),
+                            })
+                        } else {
+                            Cmd::none()
+                        }
+                    },
+                )
+                .unwrap_or(Cmd::none()),
         }
     }
 
@@ -384,71 +412,188 @@ impl BlockProp {
                             variant: btn::Variant::DarkLikeMenu,
                         },
                         Subscription::none(),
-                        mapped_list
-                            .iter()
-                            .enumerate()
-                            .map(|(list_idx, (a, b))| {
-                                Btn::with_child(
-                                    btn::Props {
-                                        variant: btn::Variant::Menu,
-                                    },
-                                    Subscription::new({
-                                        let mut mapped_list = SelectList::clone_of(mapped_list);
+                        {
+                            let mut x: Vec<_> = mapped_list
+                                .iter()
+                                .enumerate()
+                                .map(|(list_idx, (a, b))| {
+                                    self.render_value_mapped_list_item(
+                                        prop_id,
+                                        idx,
+                                        mapped_list,
+                                        list_idx,
+                                        a,
+                                        b,
+                                    )
+                                })
+                                .collect();
+
+                            if self.is_editable {
+                                x.push(Html::div(
+                                    Attributes::new().class(Self::class("prop-value--value-key")),
+                                    Events::new().on("click", {
                                         let prop_id = BlockId::clone(prop_id);
-                                        move |sub| match sub {
-                                            btn::On::Click => {
-                                                mapped_list.set_selected_idx(list_idx);
-                                                Msg::Sub(On::SetPropertyValue {
-                                                    property_id: prop_id,
-                                                    idx: idx,
-                                                    value: block::property::Value::MappedList(
-                                                        mapped_list,
-                                                    ),
-                                                })
+                                        move |e| {
+                                            e.stop_propagation();
+                                            Msg::UpdateMappedList {
+                                                prop_id,
+                                                idx,
+                                                update: Box::new(|mapped_list| {
+                                                    let len = mapped_list.len();
+                                                    mapped_list.push((
+                                                        format!("{}", len),
+                                                        format!("選択肢[{}]", len),
+                                                    ));
+                                                }),
                                             }
                                         }
                                     }),
-                                    Html::text(format!("{}: {}", b, a)),
-                                )
-                            })
-                            .collect(),
+                                    vec![Btn::with_child(
+                                        btn::Props {
+                                            variant: btn::Variant::Dark,
+                                        },
+                                        Subscription::none(),
+                                        Html::text("追加"),
+                                    )],
+                                ));
+                            }
+
+                            x
+                        },
                     ),
-                    if self.is_editable {
-                        Html::div(
-                            Attributes::new().class(Self::class("prop-value--value-key-value")),
-                            Events::new(),
-                            vec![
-                                Html::input(
-                                    Attributes::new().value(
-                                        mapped_list
-                                            .selected()
-                                            .map(|(_, b)| b.clone())
-                                            .unwrap_or(String::from("")),
-                                    ),
-                                    Events::new(),
-                                    vec![],
-                                ),
-                                text::span(":"),
-                                Html::input(
-                                    Attributes::new().value(
-                                        mapped_list
-                                            .selected()
-                                            .map(|(a, _)| a.clone())
-                                            .unwrap_or(String::from("")),
-                                    ),
-                                    Events::new(),
-                                    vec![],
-                                ),
-                            ],
-                        )
-                    } else {
-                        Html::none()
-                    },
+                    self.render_value_mapped_list_selected(prop_id, idx, mapped_list),
                 ],
             ),
             self.render_btn_set_value_type(prop_id, idx, value),
             self.render_btn_remove_value(BlockId::clone(prop_id), idx),
         ]
+    }
+
+    fn render_value_mapped_list_item(
+        &self,
+        prop_id: &BlockId,
+        idx: usize,
+        mapped_list: &SelectList<(String, String)>,
+        list_idx: usize,
+        a: &String,
+        b: &String,
+    ) -> Html {
+        Html::div(
+            Attributes::new().class(Self::class("prop-value--value-key")),
+            Events::new(),
+            vec![
+                Btn::with_child(
+                    btn::Props {
+                        variant: btn::Variant::Menu,
+                    },
+                    Subscription::new({
+                        let prop_id = BlockId::clone(prop_id);
+                        move |sub| match sub {
+                            btn::On::Click => Msg::UpdateMappedList {
+                                prop_id,
+                                idx,
+                                update: Box::new(move |mapped_list| {
+                                    mapped_list.set_selected_idx(list_idx);
+                                }),
+                            },
+                        }
+                    }),
+                    Html::text(format!("{}: {}", b, a)),
+                ),
+                if self.is_editable {
+                    Html::div(
+                        Attributes::new(),
+                        Events::new().on("click", move |e| {
+                            e.stop_propagation();
+                            Msg::NoOp
+                        }),
+                        vec![Btn::with_child(
+                            btn::Props {
+                                variant: btn::Variant::Danger,
+                            },
+                            Subscription::new({
+                                let prop_id = BlockId::clone(prop_id);
+                                move |sub| match sub {
+                                    btn::On::Click => Msg::UpdateMappedList {
+                                        prop_id,
+                                        idx,
+                                        update: Box::new(move |mapped_list| {
+                                            if mapped_list.len() > 1 {
+                                                mapped_list.remove(list_idx);
+                                            }
+                                        }),
+                                    },
+                                }
+                            }),
+                            Html::text("削除"),
+                        )],
+                    )
+                } else {
+                    Html::none()
+                },
+            ],
+        )
+    }
+
+    fn render_value_mapped_list_selected(
+        &self,
+        prop_id: &BlockId,
+        idx: usize,
+        mapped_list: &SelectList<(String, String)>,
+    ) -> Html {
+        if self.is_editable {
+            Html::div(
+                Attributes::new().class(Self::class("prop-value--value-key-value")),
+                Events::new(),
+                vec![
+                    Html::input(
+                        Attributes::new().value(
+                            mapped_list
+                                .selected()
+                                .map(|(_, b)| b.clone())
+                                .unwrap_or(String::from("")),
+                        ),
+                        Events::new().on_input({
+                            let prop_id = BlockId::clone(prop_id);
+                            move |b| Msg::UpdateMappedList {
+                                prop_id,
+                                idx,
+                                update: Box::new(|mapped_list| {
+                                    if let Some(selected) = mapped_list.selected_mut() {
+                                        selected.1 = b;
+                                    }
+                                }),
+                            }
+                        }),
+                        vec![],
+                    ),
+                    text::span(":"),
+                    Html::input(
+                        Attributes::new().value(
+                            mapped_list
+                                .selected()
+                                .map(|(a, _)| a.clone())
+                                .unwrap_or(String::from("")),
+                        ),
+                        Events::new().on_input({
+                            let prop_id = BlockId::clone(prop_id);
+                            move |a| Msg::UpdateMappedList {
+                                prop_id,
+                                idx,
+                                update: Box::new(|mapped_list| {
+                                    if let Some(selected) = mapped_list.selected_mut() {
+                                        selected.0 = a;
+                                    }
+                                }),
+                            }
+                        }),
+                        vec![],
+                    ),
+                ],
+            )
+        } else {
+            Html::none()
+        }
     }
 
     fn render_btn_add_prop(&self, prop_id: BlockId) -> Html {
@@ -876,6 +1021,13 @@ impl Styled for BlockProp {
                 "row-gap": ".65em";
                 "grid-template-columns": "1fr";
                 "grid-auto-flow": "row";
+            }
+
+            "prop-value--value-key" {
+                "display": "grid";
+                "column-gap": ".15em";
+                "grid-template-columns": "1fr max-content";
+                "align-items": "center";
             }
 
             "prop-value--value-key-value" {

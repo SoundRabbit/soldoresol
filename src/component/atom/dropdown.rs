@@ -186,11 +186,11 @@ impl Dropdown {
     }
 
     fn render_toggle_btn(&self) -> Html {
-        Btn::with_children(
-            btn::Props {
-                variant: self.variant.clone(),
-            },
-            Subscription::none(),
+        Html::button(
+            Attributes::new()
+                .class("pure-button")
+                .class(Btn::class_name(&self.variant)),
+            Events::new(),
             vec![Html::div(
                 Attributes::new().class(Self::class("btn")),
                 Events::new(),
@@ -216,7 +216,7 @@ impl Dropdown {
                 .class(Self::class(&format!("content-{}", &self.direction)))
                 .string("data-toggled", self.is_dropdowned.to_string()),
             Events::new(),
-            children,
+            if self.is_dropdowned { children } else { vec![] },
         )
     }
 }
