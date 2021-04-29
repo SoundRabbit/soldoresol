@@ -40,9 +40,11 @@ pub struct Renderer {
     render_screen: view::screen::Screen,
 
     depth_screen: web_sys::WebGlRenderbuffer,
-    tex_screen: web_sys::WebGlTexture,
+    tex_screen: (web_sys::WebGlTexture, U128Id),
+    shadow_map: [(web_sys::WebGlTexture, U128Id); 6],
     frame_screen: web_sys::WebGlFramebuffer,
-    tex_screen_id: U128Id,
+
+    light_camera: [CameraMatrix; 6],
 }
 
 impl Renderer {
@@ -97,6 +99,41 @@ impl Renderer {
                 web_sys::WebGlRenderingContext::UNSIGNED_BYTE,
                 None,
             );
+    }
+
+    fn create_screen_texture(
+        gl: &WebGlRenderingContext,
+        tex_table: &mut tex_table::TexTable,
+        width: i32,
+        height: i32,
+    ) -> (web_sys::WebGlTexture, U128Id) {
+        let tex_buf = gl.create_texture().unwrap();
+        let tex_id = U128Id::new();
+        let (_, tex_flag) = tex_table.use_custom(&tex_id);
+        gl.active_texture(tex_flag);
+        gl.bind_texture(web_sys::WebGlRenderingContext::TEXTURE_2D, Some(&tex_buf));
+        gl.tex_parameteri(
+            web_sys::WebGlRenderingContext::TEXTURE_2D,
+            web_sys::WebGlRenderingContext::TEXTURE_MIN_FILTER,
+            web_sys::WebGlRenderingContext::LINEAR as i32,
+        );
+        gl.tex_parameteri(
+            web_sys::WebGlRenderingContext::TEXTURE_2D,
+            web_sys::WebGlRenderingContext::TEXTURE_MAG_FILTER,
+            web_sys::WebGlRenderingContext::LINEAR as i32,
+        );
+        gl.tex_parameteri(
+            web_sys::WebGlRenderingContext::TEXTURE_2D,
+            web_sys::WebGlRenderingContext::TEXTURE_WRAP_S,
+            web_sys::WebGlRenderingContext::CLAMP_TO_EDGE as i32,
+        );
+        gl.tex_parameteri(
+            web_sys::WebGlRenderingContext::TEXTURE_2D,
+            web_sys::WebGlRenderingContext::TEXTURE_WRAP_T,
+            web_sys::WebGlRenderingContext::CLAMP_TO_EDGE as i32,
+        );
+        Self::resize_texturebuffer(&gl, &tex_buf, &tex_id, tex_table, width, height);
+        (tex_buf, tex_id)
     }
 
     pub fn new(view_canvas: Rc<web_sys::HtmlCanvasElement>) -> Self {
@@ -179,36 +216,8 @@ impl Renderer {
             canvas_size[1] as i32,
         );
 
-        let tex_screen = view_gl.create_texture().unwrap();
-        let tex_screen_id = U128Id::new();
-        view_gl.bind_texture(
-            web_sys::WebGlRenderingContext::TEXTURE_2D,
-            Some(&tex_screen),
-        );
-        view_gl.tex_parameteri(
-            web_sys::WebGlRenderingContext::TEXTURE_2D,
-            web_sys::WebGlRenderingContext::TEXTURE_MIN_FILTER,
-            web_sys::WebGlRenderingContext::LINEAR as i32,
-        );
-        view_gl.tex_parameteri(
-            web_sys::WebGlRenderingContext::TEXTURE_2D,
-            web_sys::WebGlRenderingContext::TEXTURE_MAG_FILTER,
-            web_sys::WebGlRenderingContext::LINEAR as i32,
-        );
-        view_gl.tex_parameteri(
-            web_sys::WebGlRenderingContext::TEXTURE_2D,
-            web_sys::WebGlRenderingContext::TEXTURE_WRAP_S,
-            web_sys::WebGlRenderingContext::CLAMP_TO_EDGE as i32,
-        );
-        view_gl.tex_parameteri(
-            web_sys::WebGlRenderingContext::TEXTURE_2D,
-            web_sys::WebGlRenderingContext::TEXTURE_WRAP_T,
-            web_sys::WebGlRenderingContext::CLAMP_TO_EDGE as i32,
-        );
-        Self::resize_texturebuffer(
+        let tex_screen = Self::create_screen_texture(
             &view_gl,
-            &tex_screen,
-            &tex_screen_id,
             &mut tex_table,
             canvas_size[0] as i32,
             canvas_size[1] as i32,
@@ -229,9 +238,27 @@ impl Renderer {
             web_sys::WebGlRenderingContext::FRAMEBUFFER,
             web_sys::WebGlRenderingContext::COLOR_ATTACHMENT0,
             web_sys::WebGlRenderingContext::TEXTURE_2D,
-            Some(&tex_screen),
+            Some(&tex_screen.0),
             0,
         );
+
+        let shadow_map = [
+            Self::create_screen_texture(&view_gl, &mut tex_table, 256, 256),
+            Self::create_screen_texture(&view_gl, &mut tex_table, 256, 256),
+            Self::create_screen_texture(&view_gl, &mut tex_table, 256, 256),
+            Self::create_screen_texture(&view_gl, &mut tex_table, 256, 256),
+            Self::create_screen_texture(&view_gl, &mut tex_table, 256, 256),
+            Self::create_screen_texture(&view_gl, &mut tex_table, 256, 256),
+        ];
+
+        let mut light_camera = [
+            CameraMatrix::new(),
+            CameraMatrix::new(),
+            CameraMatrix::new(),
+            CameraMatrix::new(),
+            CameraMatrix::new(),
+            CameraMatrix::new(),
+        ];
 
         Self {
             view_canvas,
@@ -252,8 +279,9 @@ impl Renderer {
             render_screen,
             depth_screen,
             tex_screen,
+            shadow_map,
             frame_screen,
-            tex_screen_id,
+            light_camera,
         }
     }
 
@@ -276,8 +304,8 @@ impl Renderer {
         );
         Self::resize_texturebuffer(
             &self.view_gl,
-            &self.tex_screen,
-            &self.tex_screen_id,
+            &self.tex_screen.0,
+            &self.tex_screen.1,
             &mut self.tex_table,
             canvas_size[0] as i32,
             canvas_size[1] as i32,
@@ -352,7 +380,7 @@ impl Renderer {
         block_arena.map(world_id, |world: &block::world::World| {
             let vp_matrix = camera_matrix
                 .perspective_matrix(&self.canvas_size)
-                .dot(&camera_matrix.view_matrix());
+                .dot(&camera_matrix.view_matrix(true));
 
             self.view_gl.bind_framebuffer(
                 web_sys::WebGlRenderingContext::FRAMEBUFFER,
@@ -431,9 +459,9 @@ impl Renderer {
 
             self.render_screen.render(
                 &mut self.view_gl,
-                &self.tex_screen_id,
+                &self.tex_screen.1,
                 &mut self.tex_table,
-                &self.tex_screen,
+                &self.tex_screen.0,
                 &self.canvas_size,
             );
 

@@ -38,7 +38,7 @@ impl Implement {
             let rot_z = self.camera_matrix.z_axis_rotation();
 
             self.camera_matrix
-                .set_x_axis_rotation(rot_x - mov_y * intensity);
+                .set_x_axis_rotation(rot_x - mov_y * intensity, true);
             self.camera_matrix
                 .set_z_axis_rotation(rot_z - mov_x * intensity);
         } else {

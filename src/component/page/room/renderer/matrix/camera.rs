@@ -58,8 +58,12 @@ impl CameraMatrix {
         t.dot(view)
     }
 
-    pub fn set_x_axis_rotation(&mut self, x_axis_rotation: f32) {
-        self.x_axis_rotation = x_axis_rotation.min(0.5 * std::f32::consts::PI).max(0.0);
+    pub fn set_x_axis_rotation(&mut self, x_axis_rotation: f32, clip: bool) {
+        if clip {
+            self.x_axis_rotation = x_axis_rotation.min(0.5 * std::f32::consts::PI).max(0.0);
+        } else {
+            self.x_axis_rotation = x_axis_rotation
+        }
     }
 
     pub fn x_axis_rotation(&self) -> f32 {
@@ -86,12 +90,24 @@ impl CameraMatrix {
         self.field_of_view = field_of_view;
     }
 
-    pub fn view_matrix(&self) -> Array2<f32> {
-        let view_matrix = Self::e();
-        let view_matrix = Self::rotate_view_matrix_with_z_axis(&view_matrix, self.z_axis_rotation);
-        let view_matrix = Self::rotate_view_matrix_with_x_axis(&view_matrix, self.x_axis_rotation);
-        let view_matrix = Self::move_view_matrix(&view_matrix, &self.movement);
-        view_matrix
+    pub fn view_matrix(&self, rev: bool) -> Array2<f32> {
+        if rev {
+            let view_matrix = Self::e();
+            let view_matrix =
+                Self::rotate_view_matrix_with_z_axis(&view_matrix, self.z_axis_rotation);
+            let view_matrix =
+                Self::rotate_view_matrix_with_x_axis(&view_matrix, self.x_axis_rotation);
+            let view_matrix = Self::move_view_matrix(&view_matrix, &self.movement);
+            view_matrix
+        } else {
+            let view_matrix = Self::e();
+            let view_matrix = Self::move_view_matrix(&view_matrix, &self.movement);
+            let view_matrix =
+                Self::rotate_view_matrix_with_z_axis(&view_matrix, self.z_axis_rotation);
+            let view_matrix =
+                Self::rotate_view_matrix_with_x_axis(&view_matrix, self.x_axis_rotation);
+            view_matrix
+        }
     }
 
     pub fn perspective_matrix(&self, canvas_size: &[f32; 2]) -> Array2<f32> {
