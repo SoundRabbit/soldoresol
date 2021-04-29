@@ -41,8 +41,11 @@ pub struct Renderer {
     depth_screen: web_sys::WebGlRenderbuffer,
     tex_backscreen: (web_sys::WebGlTexture, U128Id),
     tex_frontscreen: (web_sys::WebGlTexture, U128Id),
-    shadow_map: [(web_sys::WebGlTexture, U128Id); 6],
     frame_screen: web_sys::WebGlFramebuffer,
+
+    tex_shadowmap: [(web_sys::WebGlTexture, U128Id); 6],
+    depth_shadowmap: web_sys::WebGlRenderbuffer,
+    frame_shadowmap: web_sys::WebGlFramebuffer,
 
     depth_offscreen: web_sys::WebGlRenderbuffer,
     tex_offscreen: (web_sys::WebGlTexture, U128Id),
@@ -253,7 +256,10 @@ impl Renderer {
             0,
         );
 
-        let shadow_map = [
+        let depth_shadowmap = gl.create_renderbuffer().unwrap();
+        Self::resize_renderbuffer(&gl, &depth_offscreen, 256, 256);
+
+        let tex_shadowmap = [
             Self::create_screen_texture(&gl, &mut tex_table, 256, 256),
             Self::create_screen_texture(&gl, &mut tex_table, 256, 256),
             Self::create_screen_texture(&gl, &mut tex_table, 256, 256),
@@ -261,6 +267,18 @@ impl Renderer {
             Self::create_screen_texture(&gl, &mut tex_table, 256, 256),
             Self::create_screen_texture(&gl, &mut tex_table, 256, 256),
         ];
+
+        let frame_shadowmap = gl.create_framebuffer().unwrap();
+        gl.bind_framebuffer(
+            web_sys::WebGlRenderingContext::FRAMEBUFFER,
+            Some(&frame_shadowmap),
+        );
+        gl.framebuffer_renderbuffer(
+            web_sys::WebGlRenderingContext::FRAMEBUFFER,
+            web_sys::WebGlRenderingContext::DEPTH_ATTACHMENT,
+            web_sys::WebGlRenderingContext::RENDERBUFFER,
+            Some(&depth_shadowmap),
+        );
 
         Self {
             canvas,
@@ -281,8 +299,10 @@ impl Renderer {
             depth_screen,
             tex_backscreen,
             tex_frontscreen,
-            shadow_map,
             frame_screen,
+            depth_shadowmap,
+            tex_shadowmap,
+            frame_shadowmap,
             depth_offscreen,
             tex_offscreen,
             frame_offscreen,
@@ -404,9 +424,7 @@ impl Renderer {
         grabbed_object_id: &ObjectId,
     ) {
         block_arena.map(world_id, |world: &block::world::World| {
-            let vp_matrix = camera_matrix
-                .perspective_matrix(&self.canvas_size)
-                .dot(&camera_matrix.view_matrix(true));
+            let vp_matrix = camera_matrix.vp_matrix(&self.canvas_size, true);
 
             self.id_table.clear();
 
@@ -501,6 +519,23 @@ impl Renderer {
 
             // 一旦、(0,0,0)に点光源があるものと過程
             let light_pos = [0.0, 0.0, 0.0];
+            let shadowmap_size = [256.0, 256.0];
+
+            camera_px.set_movement(light_pos.clone());
+            camera_py.set_movement(light_pos.clone());
+            camera_pz.set_movement(light_pos.clone());
+            camera_nx.set_movement(light_pos.clone());
+            camera_ny.set_movement(light_pos.clone());
+            camera_nz.set_movement(light_pos.clone());
+
+            let light_vps = [
+                camera_px.vp_matrix(&shadowmap_size, false),
+                camera_py.vp_matrix(&shadowmap_size, false),
+                camera_pz.vp_matrix(&shadowmap_size, false),
+                camera_nx.vp_matrix(&shadowmap_size, false),
+                camera_ny.vp_matrix(&shadowmap_size, false),
+                camera_nz.vp_matrix(&shadowmap_size, false),
+            ];
 
             // 当たり判定用のオフスクリーンレンダリング
 

@@ -120,6 +120,11 @@ impl CameraMatrix {
         self.field_of_view = field_of_view;
     }
 
+    pub fn vp_matrix(&self, canvas_size: &[f32; 2], rev: bool) -> Array2<f32> {
+        self.perspective_matrix(&canvas_size)
+            .dot(&self.view_matrix(true))
+    }
+
     pub fn view_matrix(&self, rev: bool) -> Array2<f32> {
         if rev {
             let view_matrix = Self::e();
