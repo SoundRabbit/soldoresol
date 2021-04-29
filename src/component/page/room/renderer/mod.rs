@@ -32,8 +32,8 @@ pub struct Renderer {
     render_offscreen_character: offscreen::character::Character,
     render_offscreen_boxblock: offscreen::boxblock::Boxblock,
 
-    render_view_tablegrid: view::tablegrid::Tablegrid,
-    render_view_tabletexture: view::tabletexture::Tabletexture,
+    render_view_table_grid: view::table_grid::TableGrid,
+    render_view_table_texture: view::table_texture::TableTexture,
     render_view_character: view::character::Character,
     render_view_character_base: view::character_base::CharacterBase,
     render_view_boxblock: view::boxblock::Boxblock,
@@ -44,7 +44,7 @@ pub struct Renderer {
     shadow_map: [(web_sys::WebGlTexture, U128Id); 6],
     frame_screen: web_sys::WebGlFramebuffer,
 
-    light_camera: [CameraMatrix; 6],
+    light_camera: CameraMatrix,
 }
 
 impl Renderer {
@@ -197,9 +197,9 @@ impl Renderer {
         let mut tex_table = tex_table::TexTable::new(&view_gl);
         let id_table = id_table::IdTable::new();
 
-        let render_view_tablegrid = view::tablegrid::Tablegrid::new(&view_gl);
-        let render_view_tabletexture =
-            view::tabletexture::Tabletexture::new(&view_gl, &mut tex_table);
+        let render_view_table_grid = view::table_grid::TableGrid::new(&view_gl);
+        let render_view_table_texture =
+            view::table_texture::TableTexture::new(&view_gl, &mut tex_table);
         let render_view_character = view::character::Character::new(&view_gl);
         let render_view_character_base = view::character_base::CharacterBase::new(&view_gl);
         let render_view_boxblock = view::boxblock::Boxblock::new(&view_gl);
@@ -251,14 +251,8 @@ impl Renderer {
             Self::create_screen_texture(&view_gl, &mut tex_table, 256, 256),
         ];
 
-        let mut light_camera = [
-            CameraMatrix::new(),
-            CameraMatrix::new(),
-            CameraMatrix::new(),
-            CameraMatrix::new(),
-            CameraMatrix::new(),
-            CameraMatrix::new(),
-        ];
+        let mut light_camera = CameraMatrix::new();
+        light_camera.set_field_of_view(0.5 * std::f32::consts::PI);
 
         Self {
             view_canvas,
@@ -271,8 +265,8 @@ impl Renderer {
             id_table,
             render_offscreen_character,
             render_offscreen_boxblock,
-            render_view_tablegrid,
-            render_view_tabletexture,
+            render_view_table_grid,
+            render_view_table_texture,
             render_view_character,
             render_view_character_base,
             render_view_boxblock,
@@ -399,7 +393,7 @@ impl Renderer {
             );
 
             block_arena.map(world.selecting_table(), |table: &block::table::Table| {
-                self.render_view_tabletexture.render(
+                self.render_view_table_texture.render(
                     &mut self.view_gl,
                     &mut self.tex_table,
                     &vp_matrix,
@@ -411,7 +405,7 @@ impl Renderer {
             });
 
             block_arena.map(world.selecting_table(), |table: &block::table::Table| {
-                self.render_view_tablegrid
+                self.render_view_table_grid
                     .render(&mut self.view_gl, &vp_matrix, table)
             });
 

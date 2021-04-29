@@ -3,14 +3,14 @@ use super::webgl::{ProgramType, WebGlF32Vbo, WebGlI16Ibo, WebGlRenderingContext}
 use crate::arena::block;
 use ndarray::Array2;
 
-pub struct Tablegrid {
+pub struct TableGrid {
     grid_index_buffer: WebGlI16Ibo,
     grid_index_len: i32,
     grid_vertexis_buffer: WebGlF32Vbo,
     table_size: [u64; 2],
 }
 
-impl Tablegrid {
+impl TableGrid {
     pub fn new(gl: &WebGlRenderingContext) -> Self {
         let table_size = [20, 20];
 

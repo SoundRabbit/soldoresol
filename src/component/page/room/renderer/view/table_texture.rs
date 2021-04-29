@@ -6,7 +6,7 @@ use crate::arena::resource;
 use crate::libs::random_id::U128Id;
 use ndarray::Array2;
 
-pub struct Tabletexture {
+pub struct TableTexture {
     vertexis_buffer: WebGlF32Vbo,
     index_buffer: WebGlI16Ibo,
     texture_coord_buffer: WebGlF32Vbo,
@@ -20,7 +20,7 @@ pub struct Tabletexture {
     last_drawed_texture_id: BlockId,
 }
 
-impl Tabletexture {
+impl TableTexture {
     pub fn new(gl: &WebGlRenderingContext, tex_table: &mut TexTable) -> Self {
         let vertexis_buffer = gl.create_vbo_with_f32array(
             &[

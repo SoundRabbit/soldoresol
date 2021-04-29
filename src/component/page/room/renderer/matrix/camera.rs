@@ -86,6 +86,36 @@ impl CameraMatrix {
         &self.movement
     }
 
+    pub fn set_to_px(&mut self) {
+        self.set_x_axis_rotation(0.5 * std::f32::consts::PI, false);
+        self.set_z_axis_rotation(-0.5 * std::f32::consts::PI);
+    }
+
+    pub fn set_to_py(&mut self) {
+        self.set_x_axis_rotation(0.5 * std::f32::consts::PI, false);
+        self.set_z_axis_rotation(0.0 * std::f32::consts::PI);
+    }
+
+    pub fn set_to_pz(&mut self) {
+        self.set_x_axis_rotation(1.0 * std::f32::consts::PI, false);
+        self.set_z_axis_rotation(0.0 * std::f32::consts::PI);
+    }
+
+    pub fn set_to_nx(&mut self) {
+        self.set_x_axis_rotation(0.5 * std::f32::consts::PI, false);
+        self.set_z_axis_rotation(0.5 * std::f32::consts::PI);
+    }
+
+    pub fn set_to_ny(&mut self) {
+        self.set_x_axis_rotation(0.5 * std::f32::consts::PI, false);
+        self.set_z_axis_rotation(1.0 * std::f32::consts::PI);
+    }
+
+    pub fn set_to_nz(&mut self) {
+        self.set_x_axis_rotation(0.0 * std::f32::consts::PI, false);
+        self.set_z_axis_rotation(0.0 * std::f32::consts::PI);
+    }
+
     pub fn set_field_of_view(&mut self, field_of_view: f32) {
         self.field_of_view = field_of_view;
     }
