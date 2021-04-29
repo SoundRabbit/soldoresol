@@ -613,14 +613,6 @@ impl Renderer {
 
             self.render_frontscreen();
 
-            self.render_screen.render(
-                &mut self.gl,
-                &self.tex_shadowmap[5].1,
-                &mut self.tex_table,
-                &self.tex_shadowmap[5].0,
-                &self.canvas_size,
-            );
-
             // 当たり判定用のオフスクリーンレンダリング
 
             self.gl.bind_framebuffer(
