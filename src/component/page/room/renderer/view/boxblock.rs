@@ -3,6 +3,7 @@ use super::tex_table::TexTable;
 use super::webgl::{ProgramType, WebGlF32Vbo, WebGlI16Ibo, WebGlRenderingContext};
 use crate::arena::block::{self, BlockId};
 use crate::arena::resource;
+use crate::libs::random_id::U128Id;
 use ndarray::{arr1, Array2};
 use ordered_float::OrderedFloat;
 use std::collections::BTreeMap;
@@ -116,6 +117,9 @@ impl Boxblock {
         vp_matrix: &Array2<f32>,
         block_arena: &block::Arena,
         boxblock_ids: impl Iterator<Item = BlockId>,
+        tex_table: Option<&mut TexTable>,
+        shadowmap: Option<[(web_sys::WebGlTexture, U128Id); 6]>,
+        cameras: Option<[&Array2<f32>; 6]>,
     ) {
         gl.depth_func(web_sys::WebGlRenderingContext::LEQUAL);
         gl.use_program(ProgramType::BoxblockProgram);

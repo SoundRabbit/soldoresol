@@ -152,14 +152,6 @@ impl Component for Slider {
                             val.parse()
                                 .map(|val| Msg::InputSliderValue(val))
                                 .unwrap_or(Msg::NoOp)
-                        })
-                        .on("wheel", move |e| {
-                            let e = e.dyn_into::<web_sys::WheelEvent>().unwrap();
-                            if e.delta_y() < 0.0 {
-                                Msg::SetValue(val + step)
-                            } else {
-                                Msg::SetValue(val - step)
-                            }
                         }),
                     vec![],
                 ),

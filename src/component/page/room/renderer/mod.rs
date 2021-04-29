@@ -47,8 +47,6 @@ pub struct Renderer {
     depth_offscreen: web_sys::WebGlRenderbuffer,
     tex_offscreen: (web_sys::WebGlTexture, U128Id),
     frame_offscreen: web_sys::WebGlFramebuffer,
-
-    light_camera: CameraMatrix,
 }
 
 impl Renderer {
@@ -264,9 +262,6 @@ impl Renderer {
             Self::create_screen_texture(&gl, &mut tex_table, 256, 256),
         ];
 
-        let mut light_camera = CameraMatrix::new();
-        light_camera.set_field_of_view(0.5 * std::f32::consts::PI);
-
         Self {
             canvas,
             gl,
@@ -288,7 +283,6 @@ impl Renderer {
             tex_frontscreen,
             shadow_map,
             frame_screen,
-            light_camera,
             depth_offscreen,
             tex_offscreen,
             frame_offscreen,
@@ -457,6 +451,9 @@ impl Renderer {
                     &vp_matrix,
                     block_arena,
                     table.boxblocks().map(|x| BlockId::clone(x)),
+                    None,
+                    None,
+                    None,
                 )
             });
 
@@ -480,6 +477,30 @@ impl Renderer {
             self.render_frontscreen();
 
             // 点光源
+
+            let mut camera_px = CameraMatrix::new();
+            let mut camera_py = CameraMatrix::new();
+            let mut camera_pz = CameraMatrix::new();
+            let mut camera_nx = CameraMatrix::new();
+            let mut camera_ny = CameraMatrix::new();
+            let mut camera_nz = CameraMatrix::new();
+
+            camera_px.set_field_of_view(0.51 * std::f32::consts::PI);
+            camera_py.set_field_of_view(0.51 * std::f32::consts::PI);
+            camera_pz.set_field_of_view(0.51 * std::f32::consts::PI);
+            camera_nx.set_field_of_view(0.51 * std::f32::consts::PI);
+            camera_ny.set_field_of_view(0.51 * std::f32::consts::PI);
+            camera_nz.set_field_of_view(0.51 * std::f32::consts::PI);
+
+            camera_px.set_to_px();
+            camera_py.set_to_py();
+            camera_pz.set_to_pz();
+            camera_nx.set_to_nx();
+            camera_ny.set_to_ny();
+            camera_nz.set_to_nz();
+
+            // 一旦、(0,0,0)に点光源があるものと過程
+            let light_pos = [0.0, 0.0, 0.0];
 
             // 当たり判定用のオフスクリーンレンダリング
 
