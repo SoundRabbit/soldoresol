@@ -1,6 +1,7 @@
 use crate::arena::block::{self, BlockId};
 use crate::arena::resource::{self};
 use crate::libs::clone_of::CloneOf;
+use crate::libs::random_id::U128Id;
 use std::rc::Rc;
 use wasm_bindgen::{prelude::*, JsCast};
 
@@ -36,10 +37,12 @@ pub struct Renderer {
     render_view_character: view::character::Character,
     render_view_character_base: view::character_base::CharacterBase,
     render_view_boxblock: view::boxblock::Boxblock,
+    render_screen: view::screen::Screen,
 
     depth_screen: web_sys::WebGlRenderbuffer,
     tex_screen: web_sys::WebGlTexture,
     frame_screen: web_sys::WebGlFramebuffer,
+    tex_screen_id: U128Id,
 }
 
 impl Renderer {
@@ -54,6 +57,46 @@ impl Renderer {
         crate::debug::log_2(w, h);
 
         [w, h]
+    }
+
+    fn resize_renderbuffer(
+        gl: &WebGlRenderingContext,
+        buf: &web_sys::WebGlRenderbuffer,
+        width: i32,
+        height: i32,
+    ) {
+        gl.bind_renderbuffer(web_sys::WebGlRenderingContext::RENDERBUFFER, Some(&buf));
+        gl.renderbuffer_storage(
+            web_sys::WebGlRenderingContext::RENDERBUFFER,
+            web_sys::WebGlRenderingContext::DEPTH_COMPONENT16,
+            width,
+            height,
+        );
+    }
+
+    fn resize_texturebuffer(
+        gl: &WebGlRenderingContext,
+        buf: &web_sys::WebGlTexture,
+        tex_id: &U128Id,
+        tex_table: &mut tex_table::TexTable,
+        width: i32,
+        height: i32,
+    ) {
+        let (_, tex_flag) = tex_table.use_custom(tex_id);
+        gl.active_texture(tex_flag);
+        gl.bind_texture(web_sys::WebGlRenderingContext::TEXTURE_2D, Some(&buf));
+        let _ = gl
+            .tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_array_buffer_view(
+                web_sys::WebGlRenderingContext::TEXTURE_2D,
+                0,
+                web_sys::WebGlRenderingContext::RGBA as i32,
+                width,
+                height,
+                0,
+                web_sys::WebGlRenderingContext::RGBA,
+                web_sys::WebGlRenderingContext::UNSIGNED_BYTE,
+                None,
+            );
     }
 
     pub fn new(view_canvas: Rc<web_sys::HtmlCanvasElement>) -> Self {
@@ -75,12 +118,6 @@ impl Renderer {
         let mut view_gl = WebGlRenderingContext::new(view_gl);
 
         view_gl.enable(web_sys::WebGlRenderingContext::BLEND);
-        view_gl.blend_func_separate(
-            web_sys::WebGlRenderingContext::SRC_ALPHA,
-            web_sys::WebGlRenderingContext::ONE_MINUS_SRC_ALPHA,
-            web_sys::WebGlRenderingContext::ONE,
-            web_sys::WebGlRenderingContext::ONE,
-        );
         view_gl.enable(web_sys::WebGlRenderingContext::DEPTH_TEST);
         view_gl.depth_func(web_sys::WebGlRenderingContext::ALWAYS);
         view_gl.enable(web_sys::WebGlRenderingContext::CULL_FACE);
@@ -129,23 +166,21 @@ impl Renderer {
         let render_view_character = view::character::Character::new(&view_gl);
         let render_view_character_base = view::character_base::CharacterBase::new(&view_gl);
         let render_view_boxblock = view::boxblock::Boxblock::new(&view_gl);
+        let render_screen = view::screen::Screen::new(&view_gl);
 
         let render_offscreen_character = offscreen::character::Character::new(&offscreen_gl);
         let render_offscreen_boxblock = offscreen::boxblock::Boxblock::new(&offscreen_gl);
 
         let depth_screen = view_gl.create_renderbuffer().unwrap();
-        view_gl.bind_renderbuffer(
-            web_sys::WebGlRenderingContext::RENDERBUFFER,
-            Some(&depth_screen),
-        );
-        view_gl.renderbuffer_storage(
-            web_sys::WebGlRenderingContext::RENDERBUFFER,
-            web_sys::WebGlRenderingContext::DEPTH_COMPONENT16,
-            canvas_size[0].round() as i32,
-            canvas_size[1].round() as i32,
+        Self::resize_renderbuffer(
+            &view_gl,
+            &depth_screen,
+            canvas_size[0] as i32,
+            canvas_size[1] as i32,
         );
 
         let tex_screen = view_gl.create_texture().unwrap();
+        let tex_screen_id = U128Id::new();
         view_gl.bind_texture(
             web_sys::WebGlRenderingContext::TEXTURE_2D,
             Some(&tex_screen),
@@ -170,18 +205,14 @@ impl Renderer {
             web_sys::WebGlRenderingContext::TEXTURE_WRAP_T,
             web_sys::WebGlRenderingContext::CLAMP_TO_EDGE as i32,
         );
-        let _ = view_gl
-            .tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_array_buffer_view(
-                web_sys::WebGlRenderingContext::TEXTURE_2D,
-                0,
-                web_sys::WebGlRenderingContext::RGBA as i32,
-                canvas_size[0].round() as i32,
-                canvas_size[1].round() as i32,
-                0,
-                web_sys::WebGlRenderingContext::RGBA,
-                web_sys::WebGlRenderingContext::UNSIGNED_BYTE,
-                None,
-            );
+        Self::resize_texturebuffer(
+            &view_gl,
+            &tex_screen,
+            &tex_screen_id,
+            &mut tex_table,
+            canvas_size[0] as i32,
+            canvas_size[1] as i32,
+        );
 
         let frame_screen = view_gl.create_framebuffer().unwrap();
         view_gl.bind_framebuffer(
@@ -218,9 +249,11 @@ impl Renderer {
             render_view_character,
             render_view_character_base,
             render_view_boxblock,
+            render_screen,
             depth_screen,
             tex_screen,
             frame_screen,
+            tex_screen_id,
         }
     }
 
@@ -234,6 +267,21 @@ impl Renderer {
             .viewport(0, 0, canvas_size[0] as i32, canvas_size[1] as i32);
         self.offscreen_gl
             .viewport(0, 0, canvas_size[0] as i32, canvas_size[1] as i32);
+
+        Self::resize_renderbuffer(
+            &self.view_gl,
+            &self.depth_screen,
+            canvas_size[0] as i32,
+            canvas_size[1] as i32,
+        );
+        Self::resize_texturebuffer(
+            &self.view_gl,
+            &self.tex_screen,
+            &self.tex_screen_id,
+            &mut self.tex_table,
+            canvas_size[0] as i32,
+            canvas_size[1] as i32,
+        );
 
         self.canvas_size = canvas_size;
     }
@@ -302,23 +350,25 @@ impl Renderer {
         grabbed_object_id: &ObjectId,
     ) {
         block_arena.map(world_id, |world: &block::world::World| {
-            self.view_gl
-                .bind_framebuffer(web_sys::WebGlRenderingContext::FRAMEBUFFER, None);
+            let vp_matrix = camera_matrix
+                .perspective_matrix(&self.canvas_size)
+                .dot(&camera_matrix.view_matrix());
+
+            self.view_gl.bind_framebuffer(
+                web_sys::WebGlRenderingContext::FRAMEBUFFER,
+                Some(&self.frame_screen),
+            );
             self.view_gl.clear(
                 web_sys::WebGlRenderingContext::COLOR_BUFFER_BIT
                     | web_sys::WebGlRenderingContext::DEPTH_BUFFER_BIT
                     | web_sys::WebGlRenderingContext::STENCIL_BUFFER_BIT,
             );
-            self.offscreen_gl.clear(
-                web_sys::WebGlRenderingContext::COLOR_BUFFER_BIT
-                    | web_sys::WebGlRenderingContext::DEPTH_BUFFER_BIT
-                    | web_sys::WebGlRenderingContext::STENCIL_BUFFER_BIT,
+            self.view_gl.blend_func_separate(
+                web_sys::WebGlRenderingContext::SRC_ALPHA,
+                web_sys::WebGlRenderingContext::ONE_MINUS_SRC_ALPHA,
+                web_sys::WebGlRenderingContext::ONE,
+                web_sys::WebGlRenderingContext::ONE,
             );
-            self.id_table.clear();
-
-            let vp_matrix = camera_matrix
-                .perspective_matrix(&self.canvas_size)
-                .dot(&camera_matrix.view_matrix());
 
             block_arena.map(world.selecting_table(), |table: &block::table::Table| {
                 self.render_view_tabletexture.render(
@@ -362,6 +412,37 @@ impl Renderer {
                 resource_arena,
                 world.characters().map(|x| BlockId::clone(x)),
             );
+
+            self.view_gl
+                .bind_framebuffer(web_sys::WebGlRenderingContext::FRAMEBUFFER, None);
+
+            self.view_gl.clear(
+                web_sys::WebGlRenderingContext::COLOR_BUFFER_BIT
+                    | web_sys::WebGlRenderingContext::DEPTH_BUFFER_BIT
+                    | web_sys::WebGlRenderingContext::STENCIL_BUFFER_BIT,
+            );
+
+            self.view_gl.blend_func_separate(
+                web_sys::WebGlRenderingContext::SRC_ALPHA,
+                web_sys::WebGlRenderingContext::DST_ALPHA,
+                web_sys::WebGlRenderingContext::ONE,
+                web_sys::WebGlRenderingContext::ONE,
+            );
+
+            self.render_screen.render(
+                &mut self.view_gl,
+                &self.tex_screen_id,
+                &mut self.tex_table,
+                &self.tex_screen,
+                &self.canvas_size,
+            );
+
+            self.offscreen_gl.clear(
+                web_sys::WebGlRenderingContext::COLOR_BUFFER_BIT
+                    | web_sys::WebGlRenderingContext::DEPTH_BUFFER_BIT
+                    | web_sys::WebGlRenderingContext::STENCIL_BUFFER_BIT,
+            );
+            self.id_table.clear();
 
             block_arena.map(world.selecting_table(), |table: &block::table::Table| {
                 self.render_offscreen_boxblock.render(

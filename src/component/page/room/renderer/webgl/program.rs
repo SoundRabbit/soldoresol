@@ -3,22 +3,6 @@ use super::WebGlRenderingContext;
 use web_sys::WebGlProgram;
 use web_sys::WebGlUniformLocation;
 
-pub enum ObjectType {
-    Area,
-    Boxblock,
-    Character,
-}
-
-impl ObjectType {
-    fn as_uni(&self) -> i32 {
-        match self {
-            Self::Area => 0,
-            Self::Boxblock => 1,
-            Self::Character => 2,
-        }
-    }
-}
-
 macro_rules! accesser {
     (program) => {
         fn as_program(&self) -> &web_sys::WebGlProgram {
@@ -57,6 +41,7 @@ pub trait Program {
     accesser!(None as unif_object_type: WebGlUniformLocation);
     accesser!(None as unif_point_size: WebGlUniformLocation);
     accesser!(None as unif_shade_intensity: WebGlUniformLocation);
+    accesser!(None as unif_screen_size: WebGlUniformLocation);
     accesser!(None as unif_texture: WebGlUniformLocation);
     accesser!(None as unif_texture_1: WebGlUniformLocation);
     accesser!(None as unif_texture_2: WebGlUniformLocation);
@@ -367,6 +352,47 @@ impl Program for OffscreenProgram {
     accesser!(u_bg_color_location as unif_bg_color: WebGlUniformLocation);
     accesser!(u_flag_round_location as unif_flag_round: WebGlUniformLocation);
     accesser!(u_translate_location as unif_translate: WebGlUniformLocation);
+}
+
+/*----------ScreenProgram----------*/
+
+pub struct ScreenProgram {
+    program: web_sys::WebGlProgram,
+    a_vertex_location: WebGlAttributeLocation,
+    a_texture_coord_location: WebGlAttributeLocation,
+    u_texture_location: WebGlUniformLocation,
+    u_screen_size_location: WebGlUniformLocation,
+}
+
+impl ScreenProgram {
+    pub fn new(gl: &WebGlRenderingContext) -> Self {
+        let vert = include_str!("./shader/screen.vert");
+        let frag = include_str!("./shader/screen.frag");
+        let program = create_program(gl, vert, frag);
+
+        let a_vertex_location =
+            WebGlAttributeLocation(gl.get_attrib_location(&program, "a_vertex") as u32);
+        let a_texture_coord_location =
+            WebGlAttributeLocation(gl.get_attrib_location(&program, "a_textureCoord") as u32);
+        let u_screen_size_location = gl.get_uniform_location(&program, "u_screenSize").unwrap();
+        let u_texture_location = gl.get_uniform_location(&program, "u_texture").unwrap();
+
+        Self {
+            program,
+            a_texture_coord_location,
+            a_vertex_location,
+            u_texture_location,
+            u_screen_size_location,
+        }
+    }
+}
+
+impl Program for ScreenProgram {
+    accesser!(program);
+    accesser!(a_texture_coord_location as attr_tex_coord: WebGlAttributeLocation);
+    accesser!(a_vertex_location as attr_vertex: WebGlAttributeLocation);
+    accesser!(u_screen_size_location as unif_screen_size: WebGlUniformLocation);
+    accesser!(u_texture_location as unif_texture: WebGlUniformLocation);
 }
 
 /*----------TablegridProgram----------*/

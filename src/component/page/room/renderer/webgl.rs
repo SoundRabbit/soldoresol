@@ -16,6 +16,7 @@ pub enum ProgramType {
     TablegridProgram,
     TabletextureProgram,
     BoxblockProgram,
+    ScreenProgram,
 }
 
 pub struct WebGlF32Vbo(web_sys::WebGlBuffer);
@@ -239,6 +240,9 @@ impl WebGlRenderingContext {
                 ProgramType::BoxblockProgram => {
                     Box::new(program::BoxblockProgram::new(&self)) as Box<dyn Program>
                 }
+                ProgramType::ScreenProgram => {
+                    Box::new(program::ScreenProgram::new(&self)) as Box<dyn Program>
+                }
             };
             self.program_table.insert(program_type.clone(), program);
         }
@@ -273,6 +277,7 @@ impl WebGlRenderingContext {
     setter!(unif unif_light: 3fv as set_unif_light);
     setter!(unif unif_object_type: 1i as set_unif_object_type);
     setter!(unif unif_point_size: 1f as set_unif_point_size);
+    setter!(unif unif_screen_size: 2fv as set_unif_screen_size);
     setter!(unif unif_shade_intensity: 1f as set_unif_shade_intensity);
     setter!(unif unif_texture: 1i as set_unif_texture);
     setter!(unif unif_texture_1: 1i as set_unif_texture_1);
