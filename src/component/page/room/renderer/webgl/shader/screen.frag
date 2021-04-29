@@ -10,5 +10,5 @@ vec2 texPos(vec2 screenPos, vec2 offset) {
 
 void main() {
     vec2 screenPos = v_textureCoord * u_screenSize;
-    gl_FragColor = texture2D(u_texture, texPos(screenPos, vec2(0, 0)));
+    gl_FragColor = texture2D(u_texture, texPos(screenPos, vec2(0, 0))) +
 }
