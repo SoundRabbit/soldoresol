@@ -37,8 +37,7 @@ pub trait Program {
     accesser!(None as unif_env_light_intensity: WebGlUniformLocation);
     accesser!(None as unif_flag_round: WebGlUniformLocation);
     accesser!(None as unif_inv_model: WebGlUniformLocation);
-    accesser!(None as unif_f_is_shadowmap: WebGlUniformLocation);
-    accesser!(None as unif_v_is_shadowmap: WebGlUniformLocation);
+    accesser!(None as unif_is_shadowmap: WebGlUniformLocation);
     accesser!(None as unif_light: WebGlUniformLocation);
     accesser!(None as unif_light_vp_px: WebGlUniformLocation);
     accesser!(None as unif_light_vp_py: WebGlUniformLocation);
@@ -196,7 +195,7 @@ pub struct BoxblockProgram {
     u_bg_color_location: WebGlUniformLocation,
     u_shade_intensity_location: WebGlUniformLocation,
     u_env_light_intensity_location: WebGlUniformLocation,
-    u_v_is_shadowmap_location: WebGlUniformLocation,
+    u_is_shadowmap_location: WebGlUniformLocation,
     u_light_vp_px_location: WebGlUniformLocation,
     u_light_vp_py_location: WebGlUniformLocation,
     u_light_vp_pz_location: WebGlUniformLocation,
@@ -209,7 +208,6 @@ pub struct BoxblockProgram {
     u_shadowmap_nx_location: WebGlUniformLocation,
     u_shadowmap_ny_location: WebGlUniformLocation,
     u_shadowmap_nz_location: WebGlUniformLocation,
-    u_f_is_shadowmap_location: WebGlUniformLocation,
 }
 
 impl BoxblockProgram {
@@ -234,9 +232,7 @@ impl BoxblockProgram {
         let u_env_light_intensity_location = gl
             .get_uniform_location(&program, "u_envLightIntensity")
             .unwrap();
-        let u_v_is_shadowmap_location = gl
-            .get_uniform_location(&program, "u_v_isShadowmap")
-            .unwrap();
+        let u_is_shadowmap_location = gl.get_uniform_location(&program, "u_isShadowmap").unwrap();
         let u_light_vp_px_location = gl.get_uniform_location(&program, "u_lightVpPx").unwrap();
         let u_light_vp_py_location = gl.get_uniform_location(&program, "u_lightVpPy").unwrap();
         let u_light_vp_pz_location = gl.get_uniform_location(&program, "u_lightVpPz").unwrap();
@@ -249,9 +245,6 @@ impl BoxblockProgram {
         let u_shadowmap_nx_location = gl.get_uniform_location(&program, "u_shadowmapNx").unwrap();
         let u_shadowmap_ny_location = gl.get_uniform_location(&program, "u_shadowmapNy").unwrap();
         let u_shadowmap_nz_location = gl.get_uniform_location(&program, "u_shadowmapNz").unwrap();
-        let u_f_is_shadowmap_location = gl
-            .get_uniform_location(&program, "u_f_isShadowmap")
-            .unwrap();
         Self {
             program,
             a_vertex_location,
@@ -263,7 +256,7 @@ impl BoxblockProgram {
             u_bg_color_location,
             u_shade_intensity_location,
             u_env_light_intensity_location,
-            u_v_is_shadowmap_location,
+            u_is_shadowmap_location,
             u_light_vp_px_location,
             u_light_vp_py_location,
             u_light_vp_pz_location,
@@ -276,7 +269,6 @@ impl BoxblockProgram {
             u_shadowmap_nx_location,
             u_shadowmap_ny_location,
             u_shadowmap_nz_location,
-            u_f_is_shadowmap_location,
         }
     }
 }
@@ -292,7 +284,7 @@ impl Program for BoxblockProgram {
     accesser!(u_bg_color_location as unif_bg_color: WebGlUniformLocation);
     accesser!(u_shade_intensity_location as unif_shade_intensity: WebGlUniformLocation);
     accesser!(u_env_light_intensity_location as unif_env_light_intensity: WebGlUniformLocation);
-    accesser!(u_v_is_shadowmap_location as unif_v_is_shadowmap: WebGlUniformLocation);
+    accesser!(u_is_shadowmap_location as unif_is_shadowmap: WebGlUniformLocation);
     accesser!(u_light_vp_px_location as unif_light_vp_px: WebGlUniformLocation);
     accesser!(u_light_vp_py_location as unif_light_vp_py: WebGlUniformLocation);
     accesser!(u_light_vp_pz_location as unif_light_vp_pz: WebGlUniformLocation);
@@ -305,7 +297,6 @@ impl Program for BoxblockProgram {
     accesser!(u_shadowmap_nx_location as unif_shadowmap_nx: WebGlUniformLocation);
     accesser!(u_shadowmap_ny_location as unif_shadowmap_ny: WebGlUniformLocation);
     accesser!(u_shadowmap_nz_location as unif_shadowmap_nz: WebGlUniformLocation);
-    accesser!(u_f_is_shadowmap_location as unif_f_is_shadowmap: WebGlUniformLocation);
 }
 
 /*----------CharacterProgram----------*/
@@ -473,6 +464,38 @@ impl Program for ScreenProgram {
     accesser!(a_vertex_location as attr_vertex: WebGlAttributeLocation);
     accesser!(u_screen_size_location as unif_screen_size: WebGlUniformLocation);
     accesser!(u_texture_location as unif_texture: WebGlUniformLocation);
+}
+
+/*----------ShadowmapProgram----------*/
+
+pub struct ShadowmapProgram {
+    program: web_sys::WebGlProgram,
+    a_vertex_location: WebGlAttributeLocation,
+    u_translate_location: WebGlUniformLocation,
+}
+
+impl ShadowmapProgram {
+    pub fn new(gl: &WebGlRenderingContext) -> Self {
+        let vert = include_str!("./shader/shadowmap.vert");
+        let frag = include_str!("./shader/shadowmap.frag");
+        let program = create_program(gl, vert, frag);
+
+        let a_vertex_location =
+            WebGlAttributeLocation(gl.get_attrib_location(&program, "a_vertex") as u32);
+        let u_translate_location = gl.get_uniform_location(&program, "u_translate").unwrap();
+
+        Self {
+            program,
+            a_vertex_location,
+            u_translate_location,
+        }
+    }
+}
+
+impl Program for ShadowmapProgram {
+    accesser!(program);
+    accesser!(a_vertex_location as attr_vertex: WebGlAttributeLocation);
+    accesser!(u_translate_location as unif_translate: WebGlUniformLocation);
 }
 
 /*----------TablegridProgram----------*/

@@ -117,7 +117,8 @@ impl Boxblock {
         vp_matrix: &Array2<f32>,
         block_arena: &block::Arena,
         boxblock_ids: impl Iterator<Item = BlockId>,
-        tex_table: Option<&mut TexTable>,
+        light: &[f32; 3],
+        mut tex_table: Option<&mut TexTable>,
         shadowmap: Option<&[(web_sys::WebGlTexture, U128Id); 6]>,
         light_vps: Option<&[Array2<f32>; 6]>,
     ) {
@@ -133,16 +134,57 @@ impl Boxblock {
             Some(&self.poly_index_buffer),
         );
 
-        if let (Some(tex_table), Some(shadowmap), Some(light_vps)) =
-            (tex_table, shadowmap, light_vps)
-        {
+        if let Some(light_vps) = light_vps {
+            gl.set_unif_light_vp_px(light_vps[0].clone().reversed_axes());
+            gl.set_unif_light_vp_py(light_vps[1].clone().reversed_axes());
+            gl.set_unif_light_vp_pz(light_vps[2].clone().reversed_axes());
+            gl.set_unif_light_vp_nx(light_vps[3].clone().reversed_axes());
+            gl.set_unif_light_vp_ny(light_vps[4].clone().reversed_axes());
+            gl.set_unif_light_vp_nz(light_vps[5].clone().reversed_axes());
+            gl.set_unif_is_shadowmap(1);
         } else {
-            gl.set_unif_light(&[0.5, -2.0, 1.0]);
             gl.set_unif_shade_intensity(0.5);
-            gl.set_unif_env_light_intensity(1.0);
-            gl.set_unif_v_is_shadowmap(0);
-            gl.set_unif_f_is_shadowmap(0);
+            gl.set_unif_env_light_intensity(0.1);
+            gl.set_unif_is_shadowmap(0);
         }
+
+        gl.set_unif_light(light);
+
+        if let (Some(tex_table), Some(shadowmap)) = (tex_table.as_mut(), shadowmap.as_ref()) {
+            for i in 0..6 {
+                let (tex_idx, tex_flag) = tex_table.use_custom(&shadowmap[i].1);
+                gl.active_texture(tex_flag);
+                gl.bind_texture(
+                    web_sys::WebGlRenderingContext::TEXTURE_2D,
+                    Some(&shadowmap[i].0),
+                );
+                match i {
+                    0 => {
+                        gl.set_unif_shadowmap_px(tex_idx);
+                    }
+                    1 => {
+                        gl.set_unif_shadowmap_py(tex_idx);
+                    }
+                    2 => {
+                        gl.set_unif_shadowmap_pz(tex_idx);
+                    }
+                    3 => {
+                        gl.set_unif_shadowmap_nx(tex_idx);
+                    }
+                    4 => {
+                        gl.set_unif_shadowmap_ny(tex_idx);
+                    }
+                    5 => {
+                        gl.set_unif_shadowmap_nz(tex_idx);
+                    }
+                    _ => {
+                        unreachable!();
+                    }
+                }
+            }
+        }
+
+        gl.set_unif_vp(vp_matrix.clone().reversed_axes());
 
         let _ = block_arena.iter_map_with_ids(
             boxblock_ids,
@@ -162,9 +204,9 @@ impl Boxblock {
                     .with_movement(&[-p[0], -p[1], -p[2]])
                     .into();
                 gl.set_unif_model(model_matrix.reversed_axes());
-                gl.set_unif_vp(vp_matrix.clone().reversed_axes());
                 gl.set_unif_inv_model(inv_model_matrix.reversed_axes());
                 gl.set_unif_bg_color(&boxblock.color().to_color().to_f32array());
+
                 gl.draw_elements_with_i32(
                     web_sys::WebGlRenderingContext::TRIANGLES,
                     36,

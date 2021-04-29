@@ -3,6 +3,7 @@ uniform mat4 u_translate;
 varying vec4 v_position;
 
 void main() {
-    v_position = u_translate * a_vertex;
-    gl_Position = v_position;
+    vec4 p = u_translate * a_vertex;
+    v_position = p;
+    gl_Position = p;
 }

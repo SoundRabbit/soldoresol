@@ -8,6 +8,7 @@ use wasm_bindgen::{prelude::*, JsCast};
 mod id_table;
 mod matrix;
 mod offscreen;
+mod shadowmap;
 mod tex_table;
 mod view;
 mod webgl;
@@ -30,6 +31,8 @@ pub struct Renderer {
     render_offscreen_character: offscreen::character::Character,
     render_offscreen_boxblock: offscreen::boxblock::Boxblock,
 
+    render_shadowmap_boxblock: shadowmap::boxblock::Boxblock,
+
     render_view_table: view::table::Table,
     render_view_table_grid: view::table_grid::TableGrid,
     render_view_table_texture: view::table_texture::TableTexture,
@@ -40,6 +43,7 @@ pub struct Renderer {
 
     depth_screen: web_sys::WebGlRenderbuffer,
     tex_backscreen: (web_sys::WebGlTexture, U128Id),
+    tex_backscreen_2: (web_sys::WebGlTexture, U128Id),
     tex_frontscreen: (web_sys::WebGlTexture, U128Id),
     frame_screen: web_sys::WebGlFramebuffer,
 
@@ -186,6 +190,8 @@ impl Renderer {
         let render_offscreen_character = offscreen::character::Character::new(&gl);
         let render_offscreen_boxblock = offscreen::boxblock::Boxblock::new(&gl);
 
+        let render_shadowmap_boxblock = shadowmap::boxblock::Boxblock::new(&gl);
+
         let sw = canvas_size[0] as i32;
         let sh = canvas_size[1] as i32;
 
@@ -197,6 +203,16 @@ impl Renderer {
             &gl,
             &tex_backscreen.0,
             &tex_backscreen.1,
+            &mut tex_table,
+            sw,
+            sh,
+        );
+
+        let tex_backscreen_2 = Self::create_screen_texture(&gl, &mut tex_table, sw, sh);
+        Self::resize_texturebuffer(
+            &gl,
+            &tex_backscreen_2.0,
+            &tex_backscreen_2.1,
             &mut tex_table,
             sw,
             sh,
@@ -257,15 +273,15 @@ impl Renderer {
         );
 
         let depth_shadowmap = gl.create_renderbuffer().unwrap();
-        Self::resize_renderbuffer(&gl, &depth_offscreen, 256, 256);
+        Self::resize_renderbuffer(&gl, &depth_shadowmap, 1024, 1024);
 
         let tex_shadowmap = [
-            Self::create_screen_texture(&gl, &mut tex_table, 256, 256),
-            Self::create_screen_texture(&gl, &mut tex_table, 256, 256),
-            Self::create_screen_texture(&gl, &mut tex_table, 256, 256),
-            Self::create_screen_texture(&gl, &mut tex_table, 256, 256),
-            Self::create_screen_texture(&gl, &mut tex_table, 256, 256),
-            Self::create_screen_texture(&gl, &mut tex_table, 256, 256),
+            Self::create_screen_texture(&gl, &mut tex_table, 1024, 1024),
+            Self::create_screen_texture(&gl, &mut tex_table, 1024, 1024),
+            Self::create_screen_texture(&gl, &mut tex_table, 1024, 1024),
+            Self::create_screen_texture(&gl, &mut tex_table, 1024, 1024),
+            Self::create_screen_texture(&gl, &mut tex_table, 1024, 1024),
+            Self::create_screen_texture(&gl, &mut tex_table, 1024, 1024),
         ];
 
         let frame_shadowmap = gl.create_framebuffer().unwrap();
@@ -289,6 +305,7 @@ impl Renderer {
             id_table,
             render_offscreen_character,
             render_offscreen_boxblock,
+            render_shadowmap_boxblock,
             render_view_table,
             render_view_table_grid,
             render_view_table_texture,
@@ -298,6 +315,7 @@ impl Renderer {
             render_screen,
             depth_screen,
             tex_backscreen,
+            tex_backscreen_2,
             tex_frontscreen,
             frame_screen,
             depth_shadowmap,
@@ -312,8 +330,6 @@ impl Renderer {
     pub fn reset_size(&mut self) {
         let canvas_size = Self::reset_canvas_size(&self.canvas, self.device_pixel_ratio);
 
-        self.gl
-            .viewport(0, 0, canvas_size[0] as i32, canvas_size[1] as i32);
         self.gl
             .viewport(0, 0, canvas_size[0] as i32, canvas_size[1] as i32);
 
@@ -424,7 +440,7 @@ impl Renderer {
         grabbed_object_id: &ObjectId,
     ) {
         block_arena.map(world_id, |world: &block::world::World| {
-            let vp_matrix = camera_matrix.vp_matrix(&self.canvas_size, true);
+            let vp_matrix = camera_matrix.vp_matrix(&self.canvas_size, false);
 
             self.id_table.clear();
 
@@ -445,6 +461,8 @@ impl Renderer {
 
             // 環境光による描画
             self.begin_to_render_backscreen();
+
+            self.clear();
 
             block_arena.map(world.selecting_table(), |table: &block::table::Table| {
                 self.render_view_table_texture.render(
@@ -469,6 +487,7 @@ impl Renderer {
                     &vp_matrix,
                     block_arena,
                     table.boxblocks().map(|x| BlockId::clone(x)),
+                    &[0.5, -2.0, 1.0],
                     None,
                     None,
                     None,
@@ -503,12 +522,12 @@ impl Renderer {
             let mut camera_ny = CameraMatrix::new();
             let mut camera_nz = CameraMatrix::new();
 
-            camera_px.set_field_of_view(0.51 * std::f32::consts::PI);
-            camera_py.set_field_of_view(0.51 * std::f32::consts::PI);
-            camera_pz.set_field_of_view(0.51 * std::f32::consts::PI);
-            camera_nx.set_field_of_view(0.51 * std::f32::consts::PI);
-            camera_ny.set_field_of_view(0.51 * std::f32::consts::PI);
-            camera_nz.set_field_of_view(0.51 * std::f32::consts::PI);
+            camera_px.set_field_of_view(90.0);
+            camera_py.set_field_of_view(90.0);
+            camera_pz.set_field_of_view(90.0);
+            camera_nx.set_field_of_view(90.0);
+            camera_ny.set_field_of_view(90.0);
+            camera_nz.set_field_of_view(90.0);
 
             camera_px.set_to_px();
             camera_py.set_to_py();
@@ -518,15 +537,15 @@ impl Renderer {
             camera_nz.set_to_nz();
 
             // 一旦、(0,0,0)に点光源があるものと過程
-            let light_pos = [0.0, 0.0, 0.0];
-            let shadowmap_size = [256.0, 256.0];
+            let shadowmap_size = [1024.0, 1024.0];
 
-            camera_px.set_movement(light_pos.clone());
-            camera_py.set_movement(light_pos.clone());
-            camera_pz.set_movement(light_pos.clone());
-            camera_nx.set_movement(light_pos.clone());
-            camera_ny.set_movement(light_pos.clone());
-            camera_nz.set_movement(light_pos.clone());
+            let light = [0.0, 0.0, 0.5];
+            camera_px.set_movement([-light[1], light[2], -light[0]]);
+            camera_py.set_movement([light[0], light[2], -light[1]]);
+            camera_pz.set_movement([light[0], -light[1], -light[2]]);
+            camera_nx.set_movement([light[1], light[2], light[0]]);
+            camera_ny.set_movement([light[0], -light[2], light[1]]);
+            camera_nz.set_movement([light[0], light[1], light[2]]);
 
             let light_vps = [
                 camera_px.vp_matrix(&shadowmap_size, false),
@@ -536,6 +555,71 @@ impl Renderer {
                 camera_ny.vp_matrix(&shadowmap_size, false),
                 camera_nz.vp_matrix(&shadowmap_size, false),
             ];
+
+            self.gl
+                .viewport(0, 0, shadowmap_size[0] as i32, shadowmap_size[1] as i32);
+
+            self.gl.bind_framebuffer(
+                web_sys::WebGlRenderingContext::FRAMEBUFFER,
+                Some(&self.frame_shadowmap),
+            );
+
+            self.gl.blend_func(
+                web_sys::WebGlRenderingContext::ONE,
+                web_sys::WebGlRenderingContext::ZERO,
+            );
+
+            block_arena.map(world.selecting_table(), |table: &block::table::Table| {
+                self.render_shadowmap_boxblock.render(
+                    &mut self.gl,
+                    &self.tex_shadowmap,
+                    &light_vps,
+                    &block_arena,
+                    table.boxblocks().map(|x| BlockId::clone(x)).collect(),
+                );
+            });
+
+            self.gl
+                .viewport(0, 0, self.canvas_size[0] as i32, self.canvas_size[1] as i32);
+
+            self.gl.bind_framebuffer(
+                web_sys::WebGlRenderingContext::FRAMEBUFFER,
+                Some(&self.frame_screen),
+            );
+
+            self.begin_to_render_backscreen();
+
+            self.clear();
+
+            self.gl.blend_func_separate(
+                web_sys::WebGlRenderingContext::SRC_ALPHA,
+                web_sys::WebGlRenderingContext::ONE_MINUS_SRC_ALPHA,
+                web_sys::WebGlRenderingContext::ONE,
+                web_sys::WebGlRenderingContext::ONE,
+            );
+
+            block_arena.map(world.selecting_table(), |table: &block::table::Table| {
+                self.render_view_boxblock.render(
+                    &mut self.gl,
+                    &vp_matrix,
+                    block_arena,
+                    table.boxblocks().map(|x| BlockId::clone(x)),
+                    &light,
+                    Some(&mut self.tex_table),
+                    Some(&self.tex_shadowmap),
+                    Some(&light_vps),
+                )
+            });
+
+            self.render_frontscreen();
+
+            self.render_screen.render(
+                &mut self.gl,
+                &self.tex_shadowmap[5].1,
+                &mut self.tex_table,
+                &self.tex_shadowmap[5].0,
+                &self.canvas_size,
+            );
 
             // 当たり判定用のオフスクリーンレンダリング
 
@@ -547,8 +631,8 @@ impl Renderer {
             self.clear();
 
             self.gl.blend_func(
-                web_sys::WebGlRenderingContext::SRC_ALPHA,
-                web_sys::WebGlRenderingContext::ONE_MINUS_SRC_ALPHA,
+                web_sys::WebGlRenderingContext::ONE,
+                web_sys::WebGlRenderingContext::ZERO,
             );
 
             block_arena.map(world.selecting_table(), |table: &block::table::Table| {
@@ -598,8 +682,6 @@ impl Renderer {
             0,
         );
 
-        self.clear();
-
         self.gl.blend_func_separate(
             web_sys::WebGlRenderingContext::SRC_ALPHA,
             web_sys::WebGlRenderingContext::ONE_MINUS_SRC_ALPHA,
@@ -619,7 +701,7 @@ impl Renderer {
 
         self.gl.blend_func_separate(
             web_sys::WebGlRenderingContext::SRC_ALPHA,
-            web_sys::WebGlRenderingContext::DST_ALPHA,
+            web_sys::WebGlRenderingContext::ONE_MINUS_SRC_ALPHA,
             web_sys::WebGlRenderingContext::ONE,
             web_sys::WebGlRenderingContext::ONE,
         );

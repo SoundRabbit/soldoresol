@@ -17,6 +17,7 @@ pub enum ProgramType {
     TabletextureProgram,
     BoxblockProgram,
     ScreenProgram,
+    ShadowmapProgram,
 }
 
 pub struct WebGlF32Vbo(web_sys::WebGlBuffer);
@@ -243,6 +244,9 @@ impl WebGlRenderingContext {
                 ProgramType::ScreenProgram => {
                     Box::new(program::ScreenProgram::new(&self)) as Box<dyn Program>
                 }
+                ProgramType::ShadowmapProgram => {
+                    Box::new(program::ShadowmapProgram::new(&self)) as Box<dyn Program>
+                }
             };
             self.program_table.insert(program_type.clone(), program);
         }
@@ -272,9 +276,9 @@ impl WebGlRenderingContext {
     setter!(unif unif_bg_color_1: 4fv as set_unif_bg_color_1);
     setter!(unif unif_bg_color_2: 4fv as set_unif_bg_color_2);
     setter!(unif unif_env_light_intensity: 1f as set_unif_env_light_intensity);
-    setter!(unif unif_f_is_shadowmap: 1i as set_unif_f_is_shadowmap);
     setter!(unif unif_flag_round: 1i as set_unif_flag_round);
     setter!(unif unif_inv_model: matrix4fv as set_unif_inv_model);
+    setter!(unif unif_is_shadowmap: 1i as set_unif_is_shadowmap);
     setter!(unif unif_light: 3fv as set_unif_light);
     setter!(unif unif_light_vp_nx: matrix4fv as set_unif_light_vp_nx);
     setter!(unif unif_light_vp_ny: matrix4fv as set_unif_light_vp_ny);
@@ -299,6 +303,5 @@ impl WebGlRenderingContext {
     setter!(unif unif_texture_2_is_available: 1i as set_unif_texture_2_is_available);
     setter!(unif unif_translate: matrix4fv as set_unif_translate);
     setter!(unif unif_use_texture_as_mask: 1i as set_unif_use_texture_as_mask);
-    setter!(unif unif_v_is_shadowmap: 1i as set_unif_v_is_shadowmap);
     setter!(unif unif_vp: matrix4fv as set_unif_vp);
 }

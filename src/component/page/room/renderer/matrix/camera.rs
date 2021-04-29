@@ -107,8 +107,8 @@ impl CameraMatrix {
     }
 
     pub fn set_to_ny(&mut self) {
-        self.set_x_axis_rotation(0.5 * std::f32::consts::PI, false);
-        self.set_z_axis_rotation(1.0 * std::f32::consts::PI);
+        self.set_x_axis_rotation(-0.5 * std::f32::consts::PI, false);
+        self.set_z_axis_rotation(0.0 * std::f32::consts::PI);
     }
 
     pub fn set_to_nz(&mut self) {
@@ -126,23 +126,11 @@ impl CameraMatrix {
     }
 
     pub fn view_matrix(&self, rev: bool) -> Array2<f32> {
-        if rev {
-            let view_matrix = Self::e();
-            let view_matrix =
-                Self::rotate_view_matrix_with_z_axis(&view_matrix, self.z_axis_rotation);
-            let view_matrix =
-                Self::rotate_view_matrix_with_x_axis(&view_matrix, self.x_axis_rotation);
-            let view_matrix = Self::move_view_matrix(&view_matrix, &self.movement);
-            view_matrix
-        } else {
-            let view_matrix = Self::e();
-            let view_matrix = Self::move_view_matrix(&view_matrix, &self.movement);
-            let view_matrix =
-                Self::rotate_view_matrix_with_z_axis(&view_matrix, self.z_axis_rotation);
-            let view_matrix =
-                Self::rotate_view_matrix_with_x_axis(&view_matrix, self.x_axis_rotation);
-            view_matrix
-        }
+        let view_matrix = Self::e();
+        let view_matrix = Self::rotate_view_matrix_with_z_axis(&view_matrix, self.z_axis_rotation);
+        let view_matrix = Self::rotate_view_matrix_with_x_axis(&view_matrix, self.x_axis_rotation);
+        let view_matrix = Self::move_view_matrix(&view_matrix, &self.movement);
+        view_matrix
     }
 
     pub fn perspective_matrix(&self, canvas_size: &[f32; 2]) -> Array2<f32> {
@@ -151,7 +139,7 @@ impl CameraMatrix {
         let aspect = w / h;
         let field_of_view = self.field_of_view * std::f32::consts::PI / 180.0;
         let near = 1.0;
-        let far = 1000.0;
+        let far = 100.0;
         let f = (std::f32::consts::PI * 0.5 - field_of_view * 0.5).tan();
         let range_inv = 1.0 / (near - far);
         arr2(&[

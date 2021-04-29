@@ -15,6 +15,10 @@ vec4 convRGBA(float depth){
 }
 
 void main(void){
-    vec4 convColor = convRGBA(length(v_position));
+    float near = 1.0;
+    float far  = 100.0;
+    float linerDepth = 1.0 / (far - near);
+    linerDepth *= v_position.z / v_position.w;
+    vec4 convColor = convRGBA(linerDepth);
     gl_FragColor = convColor;
 }
