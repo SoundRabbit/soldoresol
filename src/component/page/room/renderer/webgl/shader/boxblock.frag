@@ -17,7 +17,8 @@ uniform sampler2D u_shadowmapNy;
 uniform sampler2D u_shadowmapNz;
 uniform int u_isShadowmap;
 uniform float u_shadeIntensity;
-uniform float u_envLightIntensity;
+uniform float u_lightIntensity;
+uniform float u_attenation;
 varying vec3 v_position;
 varying vec3 v_normal;
 
@@ -27,7 +28,7 @@ varying vec3 v_normal;
 vec4 colorWithEnvLight() {
     vec3 invLight = normalize(u_invModel * vec4(u_light, 0.0)).xyz;
     float diffuse = clamp(dot(v_normal, invLight), 0.0, 1.0) * u_shadeIntensity + 1.0 - u_shadeIntensity;
-    vec4 res = vec4(0.0, 0.0, 0.0, 1.0) + u_bgColor * vec4(vec3(diffuse), 1.0) * u_envLightIntensity;
+    vec4 res = vec4(0.0, 0.0, 0.0, 1.0) + u_bgColor * vec4(vec3(diffuse), 1.0) * u_lightIntensity;
 
     return res;
 }
@@ -41,16 +42,16 @@ float restDepth(vec4 RGBA){
     return depth;
 }
 
-vec4 shadowmappedBy(mat4 lightVp, sampler2D shadowmap, int idx) {
+vec4 shadowmappedBy(mat4 lightVp, sampler2D shadowmap, float len) {
     vec4 pLight = lightVp * vec4(v_position, 1.0);
     vec2 texCoord = (pLight.xy / pLight.w + vec2(1.0)) * 0.5;
     float shadow = restDepth(texture2D(shadowmap, texCoord));
-    float near = 1.0;
+    float near = 0.5;
     float far  = 100.0;
     float linerDepth = 1.0 / (far - near);
     linerDepth *= pLight.z / pLight.w;
-
-    vec4 color = linerDepth < shadow + 0.0001 ? u_bgColor * vec4(1.0) : u_bgColor * vec4(vec3(0.5), 1.0);
+    float intensity = u_attenation != 0.0 ? u_lightIntensity / pow(len * u_attenation, 2.0) : u_lightIntensity;
+    vec4 color = linerDepth < shadow + 0.00012207031 ? u_bgColor * vec4(vec3(intensity), 1.0) : vec4(vec3(0.0), 1.0);
 
     return color;
 }
@@ -60,11 +61,12 @@ vec4 shadowmapped() {
     float absX = abs(lp.x);
     float absY = abs(lp.y);
     float absZ = abs(lp.z);
+    float len = length(lp);
 
     vec4 color =
-        IS_MAX(absX, absY, absZ) ? (lp.x > 0.0 ? shadowmappedBy(u_lightVpPx, u_shadowmapPx, 0) : shadowmappedBy(u_lightVpNx, u_shadowmapNx, 3)) :
-        IS_MAX(absY, absZ, absX) ? (lp.y > 0.0 ? shadowmappedBy(u_lightVpPy, u_shadowmapPy, 1) : shadowmappedBy(u_lightVpNy, u_shadowmapNy, 4)) :
-        (lp.z > 0.0 ? shadowmappedBy(u_lightVpPz, u_shadowmapPz, 2) : shadowmappedBy(u_lightVpNz, u_shadowmapNz, 5));
+        IS_MAX(absX, absY, absZ) ? (lp.x > 0.0 ? shadowmappedBy(u_lightVpPx, u_shadowmapPx, len) : shadowmappedBy(u_lightVpNx, u_shadowmapNx, len)) :
+        IS_MAX(absY, absZ, absX) ? (lp.y > 0.0 ? shadowmappedBy(u_lightVpPy, u_shadowmapPy, len) : shadowmappedBy(u_lightVpNy, u_shadowmapNy, len)) :
+        (lp.z > 0.0 ? shadowmappedBy(u_lightVpPz, u_shadowmapPz, len) : shadowmappedBy(u_lightVpNz, u_shadowmapNz, len));
 
     return color;
 }

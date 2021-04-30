@@ -50,6 +50,7 @@ pub struct Renderer {
     tex_shadowmap: [(web_sys::WebGlTexture, U128Id); 6],
     depth_shadowmap: web_sys::WebGlRenderbuffer,
     frame_shadowmap: web_sys::WebGlFramebuffer,
+    size_shadowmap: [f32; 2],
 
     depth_offscreen: web_sys::WebGlRenderbuffer,
     tex_offscreen: (web_sys::WebGlTexture, U128Id),
@@ -273,15 +274,18 @@ impl Renderer {
         );
 
         let depth_shadowmap = gl.create_renderbuffer().unwrap();
-        Self::resize_renderbuffer(&gl, &depth_shadowmap, 1024, 1024);
+        let size_shadowmap = [512.0, 512.0];
+        let smw = size_shadowmap[0] as i32;
+        let smh = size_shadowmap[1] as i32;
+        Self::resize_renderbuffer(&gl, &depth_shadowmap, smw, smh);
 
         let tex_shadowmap = [
-            Self::create_screen_texture(&gl, &mut tex_table, 1024, 1024),
-            Self::create_screen_texture(&gl, &mut tex_table, 1024, 1024),
-            Self::create_screen_texture(&gl, &mut tex_table, 1024, 1024),
-            Self::create_screen_texture(&gl, &mut tex_table, 1024, 1024),
-            Self::create_screen_texture(&gl, &mut tex_table, 1024, 1024),
-            Self::create_screen_texture(&gl, &mut tex_table, 1024, 1024),
+            Self::create_screen_texture(&gl, &mut tex_table, smw, smh),
+            Self::create_screen_texture(&gl, &mut tex_table, smw, smh),
+            Self::create_screen_texture(&gl, &mut tex_table, smw, smh),
+            Self::create_screen_texture(&gl, &mut tex_table, smw, smh),
+            Self::create_screen_texture(&gl, &mut tex_table, smw, smh),
+            Self::create_screen_texture(&gl, &mut tex_table, smw, smh),
         ];
 
         let frame_shadowmap = gl.create_framebuffer().unwrap();
@@ -321,6 +325,7 @@ impl Renderer {
             depth_shadowmap,
             tex_shadowmap,
             frame_shadowmap,
+            size_shadowmap,
             depth_offscreen,
             tex_offscreen,
             frame_offscreen,
@@ -440,7 +445,7 @@ impl Renderer {
         grabbed_object_id: &ObjectId,
     ) {
         block_arena.map(world_id, |world: &block::world::World| {
-            let vp_matrix = camera_matrix.vp_matrix(&self.canvas_size, false);
+            let vp_matrix = camera_matrix.vp_matrix(&self.canvas_size);
 
             self.id_table.clear();
 
@@ -515,19 +520,12 @@ impl Renderer {
 
             // 点光源
 
-            let mut camera_px = CameraMatrix::new();
-            let mut camera_py = CameraMatrix::new();
-            let mut camera_pz = CameraMatrix::new();
-            let mut camera_nx = CameraMatrix::new();
-            let mut camera_ny = CameraMatrix::new();
-            let mut camera_nz = CameraMatrix::new();
-
-            camera_px.set_field_of_view(90.0);
-            camera_py.set_field_of_view(90.0);
-            camera_pz.set_field_of_view(90.0);
-            camera_nx.set_field_of_view(90.0);
-            camera_ny.set_field_of_view(90.0);
-            camera_nz.set_field_of_view(90.0);
+            let mut camera_px = CameraMatrix::new_as_light();
+            let mut camera_py = CameraMatrix::new_as_light();
+            let mut camera_pz = CameraMatrix::new_as_light();
+            let mut camera_nx = CameraMatrix::new_as_light();
+            let mut camera_ny = CameraMatrix::new_as_light();
+            let mut camera_nz = CameraMatrix::new_as_light();
 
             camera_px.set_to_px();
             camera_py.set_to_py();
@@ -537,8 +535,6 @@ impl Renderer {
             camera_nz.set_to_nz();
 
             // 一旦、(0,0,0)に点光源があるものと過程
-            let shadowmap_size = [1024.0, 1024.0];
-
             let light = [0.0, 0.0, 0.5];
             camera_px.set_movement([-light[1], light[2], -light[0]]);
             camera_py.set_movement([light[0], light[2], -light[1]]);
@@ -548,21 +544,27 @@ impl Renderer {
             camera_nz.set_movement([light[0], light[1], light[2]]);
 
             let light_vps = [
-                camera_px.vp_matrix(&shadowmap_size, false),
-                camera_py.vp_matrix(&shadowmap_size, false),
-                camera_pz.vp_matrix(&shadowmap_size, false),
-                camera_nx.vp_matrix(&shadowmap_size, false),
-                camera_ny.vp_matrix(&shadowmap_size, false),
-                camera_nz.vp_matrix(&shadowmap_size, false),
+                camera_px.vp_matrix(&self.size_shadowmap),
+                camera_py.vp_matrix(&self.size_shadowmap),
+                camera_pz.vp_matrix(&self.size_shadowmap),
+                camera_nx.vp_matrix(&self.size_shadowmap),
+                camera_ny.vp_matrix(&self.size_shadowmap),
+                camera_nz.vp_matrix(&self.size_shadowmap),
             ];
 
-            self.gl
-                .viewport(0, 0, shadowmap_size[0] as i32, shadowmap_size[1] as i32);
+            self.gl.viewport(
+                0,
+                0,
+                self.size_shadowmap[0] as i32,
+                self.size_shadowmap[1] as i32,
+            );
 
             self.gl.bind_framebuffer(
                 web_sys::WebGlRenderingContext::FRAMEBUFFER,
                 Some(&self.frame_shadowmap),
             );
+
+            self.gl.disable(web_sys::WebGlRenderingContext::CULL_FACE);
 
             self.gl.blend_func(
                 web_sys::WebGlRenderingContext::ONE,
@@ -586,6 +588,9 @@ impl Renderer {
                 web_sys::WebGlRenderingContext::FRAMEBUFFER,
                 Some(&self.frame_screen),
             );
+
+            self.gl.enable(web_sys::WebGlRenderingContext::CULL_FACE);
+            self.gl.cull_face(web_sys::WebGlRenderingContext::BACK);
 
             self.begin_to_render_backscreen();
 

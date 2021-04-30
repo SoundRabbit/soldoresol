@@ -5,6 +5,8 @@ pub struct CameraMatrix {
     z_axis_rotation: f32,
     movement: [f32; 3],
     field_of_view: f32,
+    near: f32,
+    far: f32,
 }
 
 impl CameraMatrix {
@@ -14,7 +16,20 @@ impl CameraMatrix {
             z_axis_rotation: 0.03125 * std::f32::consts::PI,
             movement: [0.0, 0.0, 20.0],
             field_of_view: 30.0,
+            near: 1.0,
+            far: 1000.0,
         }
+    }
+
+    pub fn new_as_light() -> Self {
+        let mut this = Self::new();
+        this.x_axis_rotation = 0.0;
+        this.z_axis_rotation = 0.0;
+        this.movement = [0.0, 0.0, 0.0];
+        this.field_of_view = 90.0;
+        this.near = 0.5;
+        this.far = 100.0;
+        this
     }
 
     fn e() -> Array2<f32> {
@@ -120,12 +135,12 @@ impl CameraMatrix {
         self.field_of_view = field_of_view;
     }
 
-    pub fn vp_matrix(&self, canvas_size: &[f32; 2], rev: bool) -> Array2<f32> {
+    pub fn vp_matrix(&self, canvas_size: &[f32; 2]) -> Array2<f32> {
         self.perspective_matrix(&canvas_size)
-            .dot(&self.view_matrix(true))
+            .dot(&self.view_matrix())
     }
 
-    pub fn view_matrix(&self, rev: bool) -> Array2<f32> {
+    pub fn view_matrix(&self) -> Array2<f32> {
         let view_matrix = Self::e();
         let view_matrix = Self::rotate_view_matrix_with_z_axis(&view_matrix, self.z_axis_rotation);
         let view_matrix = Self::rotate_view_matrix_with_x_axis(&view_matrix, self.x_axis_rotation);
@@ -138,8 +153,8 @@ impl CameraMatrix {
         let h = canvas_size[1];
         let aspect = w / h;
         let field_of_view = self.field_of_view * std::f32::consts::PI / 180.0;
-        let near = 1.0;
-        let far = 100.0;
+        let near = self.near;
+        let far = self.far;
         let f = (std::f32::consts::PI * 0.5 - field_of_view * 0.5).tan();
         let range_inv = 1.0 / (near - far);
         arr2(&[

@@ -15,7 +15,7 @@ vec4 convRGBA(float depth){
 }
 
 void main(void){
-    float near = 1.0;
+    float near = 0.5;
     float far  = 100.0;
     float linerDepth = 1.0 / (far - near);
     linerDepth *= v_position.z / v_position.w;

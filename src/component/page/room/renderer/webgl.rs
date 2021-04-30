@@ -272,10 +272,11 @@ impl WebGlRenderingContext {
     setter!(attr attr_normal: WebGlF32Vbo as set_attr_normal);
 
     setter!(unif unif_area_size: 2fv as set_unif_area_size);
+    setter!(unif unif_attenation: 1f as set_unif_attenation);
     setter!(unif unif_bg_color: 4fv as set_unif_bg_color);
     setter!(unif unif_bg_color_1: 4fv as set_unif_bg_color_1);
     setter!(unif unif_bg_color_2: 4fv as set_unif_bg_color_2);
-    setter!(unif unif_env_light_intensity: 1f as set_unif_env_light_intensity);
+    setter!(unif unif_light_intensity: 1f as set_unif_light_intensity);
     setter!(unif unif_flag_round: 1i as set_unif_flag_round);
     setter!(unif unif_inv_model: matrix4fv as set_unif_inv_model);
     setter!(unif unif_is_shadowmap: 1i as set_unif_is_shadowmap);
