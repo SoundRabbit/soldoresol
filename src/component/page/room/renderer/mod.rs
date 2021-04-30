@@ -116,21 +116,23 @@ impl Renderer {
         tex_table: &mut tex_table::TexTable,
         width: i32,
         height: i32,
+        filter: Option<u32>,
     ) -> (web_sys::WebGlTexture, U128Id) {
         let tex_buf = gl.create_texture().unwrap();
         let tex_id = U128Id::new();
         let (_, tex_flag) = tex_table.use_custom(&tex_id);
+        let filter = filter.unwrap_or(web_sys::WebGlRenderingContext::LINEAR);
         gl.active_texture(tex_flag);
         gl.bind_texture(web_sys::WebGlRenderingContext::TEXTURE_2D, Some(&tex_buf));
         gl.tex_parameteri(
             web_sys::WebGlRenderingContext::TEXTURE_2D,
             web_sys::WebGlRenderingContext::TEXTURE_MIN_FILTER,
-            web_sys::WebGlRenderingContext::LINEAR as i32,
+            filter as i32,
         );
         gl.tex_parameteri(
             web_sys::WebGlRenderingContext::TEXTURE_2D,
             web_sys::WebGlRenderingContext::TEXTURE_MAG_FILTER,
-            web_sys::WebGlRenderingContext::LINEAR as i32,
+            filter as i32,
         );
         gl.tex_parameteri(
             web_sys::WebGlRenderingContext::TEXTURE_2D,
@@ -199,7 +201,7 @@ impl Renderer {
         let depth_screen = gl.create_renderbuffer().unwrap();
         Self::resize_renderbuffer(&gl, &depth_screen, sw, sh);
 
-        let tex_backscreen = Self::create_screen_texture(&gl, &mut tex_table, sw, sh);
+        let tex_backscreen = Self::create_screen_texture(&gl, &mut tex_table, sw, sh, None);
         Self::resize_texturebuffer(
             &gl,
             &tex_backscreen.0,
@@ -209,7 +211,7 @@ impl Renderer {
             sh,
         );
 
-        let tex_backscreen_2 = Self::create_screen_texture(&gl, &mut tex_table, sw, sh);
+        let tex_backscreen_2 = Self::create_screen_texture(&gl, &mut tex_table, sw, sh, None);
         Self::resize_texturebuffer(
             &gl,
             &tex_backscreen_2.0,
@@ -219,7 +221,7 @@ impl Renderer {
             sh,
         );
 
-        let tex_frontscreen = Self::create_screen_texture(&gl, &mut tex_table, sw, sh);
+        let tex_frontscreen = Self::create_screen_texture(&gl, &mut tex_table, sw, sh, None);
         Self::resize_texturebuffer(
             &gl,
             &tex_backscreen.0,
@@ -244,7 +246,7 @@ impl Renderer {
         let depth_offscreen = gl.create_renderbuffer().unwrap();
         Self::resize_renderbuffer(&gl, &depth_offscreen, sw, sh);
 
-        let tex_offscreen = Self::create_screen_texture(&gl, &mut tex_table, sw, sh);
+        let tex_offscreen = Self::create_screen_texture(&gl, &mut tex_table, sw, sh, None);
         Self::resize_texturebuffer(
             &gl,
             &tex_offscreen.0,
@@ -279,13 +281,15 @@ impl Renderer {
         let smh = size_shadowmap[1] as i32;
         Self::resize_renderbuffer(&gl, &depth_shadowmap, smw, smh);
 
+        let filter = web_sys::WebGlRenderingContext::NEAREST;
+
         let tex_shadowmap = [
-            Self::create_screen_texture(&gl, &mut tex_table, smw, smh),
-            Self::create_screen_texture(&gl, &mut tex_table, smw, smh),
-            Self::create_screen_texture(&gl, &mut tex_table, smw, smh),
-            Self::create_screen_texture(&gl, &mut tex_table, smw, smh),
-            Self::create_screen_texture(&gl, &mut tex_table, smw, smh),
-            Self::create_screen_texture(&gl, &mut tex_table, smw, smh),
+            Self::create_screen_texture(&gl, &mut tex_table, smw, smh, None),
+            Self::create_screen_texture(&gl, &mut tex_table, smw, smh, None),
+            Self::create_screen_texture(&gl, &mut tex_table, smw, smh, None),
+            Self::create_screen_texture(&gl, &mut tex_table, smw, smh, None),
+            Self::create_screen_texture(&gl, &mut tex_table, smw, smh, None),
+            Self::create_screen_texture(&gl, &mut tex_table, smw, smh, None),
         ];
 
         let frame_shadowmap = gl.create_framebuffer().unwrap();
@@ -571,6 +575,8 @@ impl Renderer {
                 web_sys::WebGlRenderingContext::ZERO,
             );
 
+            self.gl.clear_color(1.0, 1.0, 1.0, 1.0);
+
             block_arena.map(world.selecting_table(), |table: &block::table::Table| {
                 self.render_shadowmap_boxblock.render(
                     &mut self.gl,
@@ -588,6 +594,7 @@ impl Renderer {
                 web_sys::WebGlRenderingContext::FRAMEBUFFER,
                 Some(&self.frame_screen),
             );
+            self.gl.clear_color(0.0, 0.0, 0.0, 0.0);
 
             self.gl.enable(web_sys::WebGlRenderingContext::CULL_FACE);
             self.gl.cull_face(web_sys::WebGlRenderingContext::BACK);

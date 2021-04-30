@@ -25,11 +25,15 @@ varying vec3 v_normal;
 #define IF(x) (x != 0)
 #define IS_MAX(x, y, z) (x>=y && x>=z)
 
+float normalVecIntensity(vec3 invLight) {
+    float diffuse = clamp(dot(v_normal, invLight), 0.0, 1.0) * u_shadeIntensity + 1.0 - u_shadeIntensity;
+    return diffuse * u_lightIntensity;
+}
+
 vec4 colorWithEnvLight() {
     vec3 invLight = normalize(u_invModel * vec4(u_light, 0.0)).xyz;
-    float diffuse = clamp(dot(v_normal, invLight), 0.0, 1.0) * u_shadeIntensity + 1.0 - u_shadeIntensity;
-    vec4 res = vec4(0.0, 0.0, 0.0, 1.0) + u_bgColor * vec4(vec3(diffuse), 1.0) * u_lightIntensity;
-
+    float envIntensity = normalVecIntensity(invLight);
+    vec4 res = u_bgColor * vec4(vec3(envIntensity), 1.0);
     return res;
 }
 
@@ -42,17 +46,23 @@ float restDepth(vec4 RGBA){
     return depth;
 }
 
-vec4 shadowmappedBy(mat4 lightVp, sampler2D shadowmap, float len) {
+vec4 texColorAround(sampler2D tex, vec2 coord) {
+    vec2 movX = vec2(1.0 / 512.0, 0.0);
+    vec2 movY = vec2(0.0, 1.0 / 512.0);
+
+    return texture2D(tex, coord);
+}
+
+float shadowmappedBy(mat4 lightVp, sampler2D shadowmap, float len) {
     vec4 pLight = lightVp * vec4(v_position, 1.0);
     vec2 texCoord = (pLight.xy / pLight.w + vec2(1.0)) * 0.5;
-    float shadow = restDepth(texture2D(shadowmap, texCoord));
+    float shadow = restDepth(texColorAround(shadowmap, texCoord));
     float near = 0.5;
     float far  = 100.0;
     float linerDepth = 1.0 / (far - near);
     linerDepth *= pLight.z / pLight.w;
-    float intensity = u_attenation != 0.0 ? u_lightIntensity / pow(len * u_attenation, 2.0) : u_lightIntensity;
-    float shadeIntensity = smoothstep(-1.0/1024.0, 1.0/1024.0, shadow - linerDepth) * intensity;
-    return u_bgColor * vec4(vec3(shadeIntensity), 1.0);
+    float shadeIntensity = smoothstep(-1.0/1024.0, 1.0/1024.0, shadow - linerDepth);
+    return shadeIntensity;
 }
 
 vec4 shadowmapped() {
@@ -62,12 +72,17 @@ vec4 shadowmapped() {
     float absZ = abs(lp.z);
     float len = length(lp);
 
-    vec4 color =
+    float shadowmappedIntensity =
         IS_MAX(absX, absY, absZ) ? (lp.x > 0.0 ? shadowmappedBy(u_lightVpPx, u_shadowmapPx, len) : shadowmappedBy(u_lightVpNx, u_shadowmapNx, len)) :
         IS_MAX(absY, absZ, absX) ? (lp.y > 0.0 ? shadowmappedBy(u_lightVpPy, u_shadowmapPy, len) : shadowmappedBy(u_lightVpNy, u_shadowmapNy, len)) :
         (lp.z > 0.0 ? shadowmappedBy(u_lightVpPz, u_shadowmapPz, len) : shadowmappedBy(u_lightVpNz, u_shadowmapNz, len));
 
-    return color;
+    float envIntensity = normalVecIntensity(lp);
+
+    float shadeIntensity = min(envIntensity, shadowmappedIntensity);
+
+    float lightIntensity = u_attenation != 0.0 ? u_lightIntensity / pow(len * u_attenation, 2.0) : u_lightIntensity;
+    return u_bgColor * vec4(vec3(shadeIntensity * lightIntensity), 1.0);
 }
 
 void main() {
