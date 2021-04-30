@@ -534,8 +534,8 @@ impl Renderer {
             camera_ny.set_to_ny();
             camera_nz.set_to_nz();
 
-            // 一旦、(0,0,0)に点光源があるものと過程
-            let light = [0.0, 0.0, 0.5];
+            // 一旦、(0,0,20)に点光源があるものと過程
+            let light = [0.0, 0.0, 10.0];
             camera_px.set_movement([-light[1], light[2], -light[0]]);
             camera_py.set_movement([light[0], light[2], -light[1]]);
             camera_pz.set_movement([light[0], -light[1], -light[2]]);
@@ -696,10 +696,8 @@ impl Renderer {
             0,
         );
 
-        self.gl.blend_func_separate(
+        self.gl.blend_func(
             web_sys::WebGlRenderingContext::SRC_ALPHA,
-            web_sys::WebGlRenderingContext::ONE_MINUS_SRC_ALPHA,
-            web_sys::WebGlRenderingContext::ONE,
             web_sys::WebGlRenderingContext::ONE,
         );
 

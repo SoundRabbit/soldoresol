@@ -51,9 +51,8 @@ vec4 shadowmappedBy(mat4 lightVp, sampler2D shadowmap, float len) {
     float linerDepth = 1.0 / (far - near);
     linerDepth *= pLight.z / pLight.w;
     float intensity = u_attenation != 0.0 ? u_lightIntensity / pow(len * u_attenation, 2.0) : u_lightIntensity;
-    vec4 color = linerDepth < shadow + 0.00012207031 ? u_bgColor * vec4(vec3(intensity), 1.0) : vec4(vec3(0.0), 1.0);
-
-    return color;
+    float shadeIntensity = smoothstep(-1.0/1024.0, 1.0/1024.0, shadow - linerDepth) * intensity;
+    return u_bgColor * vec4(vec3(shadeIntensity), 1.0);
 }
 
 vec4 shadowmapped() {

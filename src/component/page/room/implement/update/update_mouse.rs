@@ -52,12 +52,15 @@ impl Implement {
                                 .map(|x| x.get_object_id(client_x, client_y))
                                 .unwrap_or(ObjectId::None);
                         } else if let Some(renderer) = &self.renderer {
-                            let (p, n) = renderer.get_focused_position(
+                            let (mut p, n) = renderer.get_focused_position(
                                 &self.block_arena,
                                 &self.camera_matrix,
                                 client_x,
                                 client_y,
                             );
+                            p[0] = p[0].round();
+                            p[1] = p[1].round();
+                            p[2] = p[2].round();
                             match &self.grabbed_object_id {
                                 ObjectId::Character(character_id, _) => {
                                     self.block_arena.map_mut(
