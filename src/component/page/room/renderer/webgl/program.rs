@@ -58,6 +58,7 @@ pub trait Program {
     accesser!(None as unif_shadowmap_ny: WebGlUniformLocation);
     accesser!(None as unif_shadowmap_nz: WebGlUniformLocation);
     accesser!(None as unif_screen_size: WebGlUniformLocation);
+    accesser!(None as unif_text_color: WebGlUniformLocation);
     accesser!(None as unif_texture: WebGlUniformLocation);
     accesser!(None as unif_texture_1: WebGlUniformLocation);
     accesser!(None as unif_texture_2: WebGlUniformLocation);
@@ -317,6 +318,7 @@ pub struct CharacterProgram {
     program: WebGlProgram,
     a_vertex_location: WebGlAttributeLocation,
     a_texture_coord_location: WebGlAttributeLocation,
+    u_text_color_location: WebGlUniformLocation,
     u_translate_location: WebGlUniformLocation,
     u_bg_color_location: WebGlUniformLocation,
     u_texture_location: WebGlUniformLocation,
@@ -335,6 +337,7 @@ impl CharacterProgram {
         let u_translate_location = gl.get_uniform_location(&program, "u_translate").unwrap();
         let u_bg_color_location = gl.get_uniform_location(&program, "u_bgColor").unwrap();
         let u_texture_location = gl.get_uniform_location(&program, "u_texture").unwrap();
+        let u_text_color_location = gl.get_uniform_location(&program, "u_textColor").unwrap();
 
         Self {
             program,
@@ -343,6 +346,7 @@ impl CharacterProgram {
             u_translate_location,
             u_bg_color_location,
             u_texture_location,
+            u_text_color_location,
         }
     }
 }
@@ -354,6 +358,7 @@ impl Program for CharacterProgram {
     accesser!(u_bg_color_location as unif_bg_color: WebGlUniformLocation);
     accesser!(u_texture_location as unif_texture: WebGlUniformLocation);
     accesser!(u_translate_location as unif_translate: WebGlUniformLocation);
+    accesser!(u_text_color_location as unif_text_color: WebGlUniformLocation);
 }
 
 /*----------DefaultProgram----------*/

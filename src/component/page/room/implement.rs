@@ -124,6 +124,7 @@ pub enum Msg {
         name: Option<String>,
         display_name: Option<String>,
         description: Option<String>,
+        name_color: Option<crate::libs::color::Pallet>,
     },
     SetCharacterTextureId {
         character_id: BlockId,

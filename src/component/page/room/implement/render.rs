@@ -458,11 +458,13 @@ impl Implement {
                                             name,
                                             display_name,
                                             description,
+                                            name_color,
                                         } => Msg::SetCharacterCommonProps {
                                             character_id,
                                             name,
                                             display_name,
                                             description,
+                                            name_color,
                                         },
                                         room_modeless::On::SetCharacterTextureId {
                                             character_id,

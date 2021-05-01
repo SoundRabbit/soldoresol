@@ -4,6 +4,7 @@ use super::super::atom::slider::{self, Slider};
 use super::super::atom::text;
 use super::super::modal_imported_files::{self, ModalImportedFiles};
 use super::super::molecule::block_prop::{self, BlockProp};
+use super::super::molecule::color_pallet::{self, ColorPallet};
 use super::super::molecule::tab_menu::{self, TabMenu};
 use super::super::util::styled::{Style, Styled};
 use crate::arena::block::{self, BlockId};
@@ -38,6 +39,7 @@ pub enum On {
         name: Option<String>,
         display_name: Option<String>,
         description: Option<String>,
+        name_color: Option<crate::libs::color::Pallet>,
     },
     SetTextureId {
         tex_idx: usize,
@@ -276,6 +278,7 @@ impl Character {
                                                     name: None,
                                                     display_name: Some(display_name),
                                                     description: None,
+                                                    name_color: None,
                                                 })
                                             }),
                                             vec![],
@@ -293,6 +296,7 @@ impl Character {
                                                     name: Some(name),
                                                     display_name: None,
                                                     description: None,
+                                                    name_color: None,
                                                 })
                                             }),
                                             vec![],
@@ -308,6 +312,7 @@ impl Character {
                                             name: None,
                                             display_name: None,
                                             description: Some(description),
+                                            name_color: None,
                                         })
                                     }),
                                     vec![],
@@ -396,6 +401,32 @@ impl Character {
                                         btn::On::Click => Msg::SetModal(Modal::ImportedFiles),
                                     }),
                                     Html::text("画像を選択"),
+                                ),
+                            ],
+                        ),
+                        Html::div(
+                            Attributes::new(),
+                            Events::new(),
+                            vec![
+                                Html::div(
+                                    Attributes::new(),
+                                    Events::new(),
+                                    vec![Html::text("キャラクター色")],
+                                ),
+                                ColorPallet::empty(
+                                    color_pallet::Props {
+                                        default_selected: character.name_color().clone(),
+                                    },
+                                    Subscription::new(move |sub| match sub {
+                                        color_pallet::On::SelectColor(name_color) => {
+                                            Msg::Sub(On::SetCommonProps {
+                                                name: None,
+                                                display_name: None,
+                                                description: None,
+                                                name_color: Some(name_color),
+                                            })
+                                        }
+                                    }),
                                 ),
                             ],
                         ),

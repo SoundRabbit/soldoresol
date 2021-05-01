@@ -29,6 +29,7 @@ pub struct TexTable {
     max_tex_num: i32,
     unused_tex_idx: VecDeque<i32>,
     used_tex_idx: VecDeque<(i32, TextureId)>,
+    string_tex_usage: VecDeque<String>,
     string_tex_table: HashMap<String, (Rc<web_sys::WebGlTexture>, [f64; 2])>,
     resource_tex_table: HashMap<ResourceId, Rc<web_sys::WebGlTexture>>,
     tex_idx: HashMap<TextureId, i32>,
@@ -54,6 +55,7 @@ impl TexTable {
             max_tex_num,
             unused_tex_idx,
             used_tex_idx: VecDeque::new(),
+            string_tex_usage: VecDeque::new(),
             string_tex_table: HashMap::new(),
             resource_tex_table: HashMap::new(),
             tex_idx: HashMap::new(),
@@ -177,12 +179,8 @@ impl TexTable {
 
             ctx.set_line_width(line_width);
             ctx.set_font(&format!("{}px san-serif", font_height));
-            ctx.set_stroke_style(&JsValue::from(
-                crate::libs::color::Pallet::gray(0).a(100).to_string(),
-            ));
-            ctx.set_fill_style(&JsValue::from(
-                crate::libs::color::Pallet::gray(9).a(100).to_string(),
-            ));
+            ctx.set_stroke_style(&JsValue::from("#FFFFFF"));
+            ctx.set_fill_style(&JsValue::from("#000000"));
             ctx.set_text_baseline("middle");
 
             ctx.clear_rect(0.0, 0.0, width, height);
@@ -227,6 +225,12 @@ impl TexTable {
                 .insert(text.clone(), (Rc::new(tex_buf), [width, height]));
             self.tex_idx.insert(TextureId::clone(&tex_id), tex_idx);
             self.used_tex_idx.push_back((tex_idx, tex_id));
+            self.string_tex_usage.push_back(text.clone());
+            if self.string_tex_usage.len() >= 128 {
+                let old_text = self.string_tex_usage.pop_front().unwrap();
+                self.string_tex_table.remove(&old_text);
+            }
+
             Some((tex_idx, [width, height]))
         }
     }

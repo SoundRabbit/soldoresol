@@ -111,6 +111,7 @@ impl Character {
 
                             gl.set_unif_texture(tex_idx);
                             gl.set_unif_translate(mvp_matrix.reversed_axes());
+                            gl.set_unif_text_color(&[0.0, 0.0, 0.0]);
                             gl.draw_elements_with_i32(
                                 web_sys::WebGlRenderingContext::TRIANGLES,
                                 6,
@@ -119,15 +120,50 @@ impl Character {
                             );
                         }
                     }
-                    let name_tex = tex_table.use_string(gl, character.display_name());
-                    if let Some((name_tex_idx, name_tex_size)) = name_tex {
+                    let display_name_tex = tex_table.use_string(gl, character.display_name());
+                    let name_tex = tex_table.use_string(gl, character.name());
+                    if let (
+                        Some((name_tex_idx, name_tex_size)),
+                        Some((display_name_tex_idx, display_name_tex_size)),
+                    ) = (name_tex, display_name_tex)
+                    {
+                        let text_color = character.name_color().to_color().to_f32array();
+                        gl.set_unif_text_color(&[text_color[0], text_color[1], text_color[2]]);
+
+                        let display_name_width =
+                            ((0.5 * display_name_tex_size[0] / display_name_tex_size[1]) as f32)
+                                .min(character.size() * 2.0);
+                        let display_name_height = display_name_width
+                            * (display_name_tex_size[1] / display_name_tex_size[0]) as f32;
                         let model_matrix: Array2<f32> = ModelMatrix::new()
-                            .with_scale(&[
-                                (0.5 * name_tex_size[0] / name_tex_size[1]) as f32,
-                                1.0,
-                                0.5,
-                            ])
+                            .with_scale(&[display_name_width, 1.0, display_name_height])
                             .with_movement(&[0.0, 0.0, character.current_tex_height()])
+                            .with_x_axis_rotation(
+                                camera.x_axis_rotation() - std::f32::consts::FRAC_PI_2,
+                            )
+                            .with_z_axis_rotation(camera.z_axis_rotation())
+                            .with_movement(character.position())
+                            .into();
+                        let mvp_matrix = vp_matrix.dot(&model_matrix);
+                        gl.set_unif_texture(display_name_tex_idx);
+                        gl.set_unif_translate(mvp_matrix.reversed_axes());
+                        gl.draw_elements_with_i32(
+                            web_sys::WebGlRenderingContext::TRIANGLES,
+                            6,
+                            web_sys::WebGlRenderingContext::UNSIGNED_SHORT,
+                            0,
+                        );
+
+                        let name_width = ((0.3 * name_tex_size[0] / name_tex_size[1]) as f32)
+                            .min(character.size() * 2.0);
+                        let name_height = name_width * (name_tex_size[1] / name_tex_size[0]) as f32;
+                        let model_matrix: Array2<f32> = ModelMatrix::new()
+                            .with_scale(&[name_width, 1.0, name_height])
+                            .with_movement(&[
+                                0.0,
+                                0.0,
+                                character.current_tex_height() + display_name_height,
+                            ])
                             .with_x_axis_rotation(
                                 camera.x_axis_rotation() - std::f32::consts::FRAC_PI_2,
                             )

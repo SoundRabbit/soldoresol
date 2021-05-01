@@ -299,6 +299,7 @@ impl WebGlRenderingContext {
     setter!(unif unif_shadowmap_px: 1i as set_unif_shadowmap_px);
     setter!(unif unif_shadowmap_py: 1i as set_unif_shadowmap_py);
     setter!(unif unif_shadowmap_pz: 1i as set_unif_shadowmap_pz);
+    setter!(unif unif_text_color: 3fv as set_unif_text_color);
     setter!(unif unif_texture: 1i as set_unif_texture);
     setter!(unif unif_texture_1: 1i as set_unif_texture_1);
     setter!(unif unif_texture_2: 1i as set_unif_texture_2);

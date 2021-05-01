@@ -61,6 +61,7 @@ pub enum On {
         name: Option<String>,
         display_name: Option<String>,
         description: Option<String>,
+        name_color: Option<crate::libs::color::Pallet>,
     },
     SetCharacterTextureId {
         character_id: BlockId,
@@ -389,11 +390,13 @@ impl RoomModeless {
                                 name,
                                 display_name,
                                 description,
+                                name_color,
                             } => Msg::Sub(On::SetCharacterCommonProps {
                                 character_id,
                                 name,
                                 display_name,
                                 description,
+                                name_color,
                             }),
                             character::On::SetTextureId {
                                 tex_idx,

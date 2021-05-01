@@ -446,6 +446,7 @@ impl Implement {
                 name,
                 display_name,
                 description,
+                name_color,
             } => {
                 self.block_arena.map_mut(
                     &character_id,
@@ -460,6 +461,10 @@ impl Implement {
 
                         if let Some(description) = description {
                             character.set_description(description);
+                        }
+
+                        if let Some(name_color) = name_color {
+                            character.set_name_color(name_color);
                         }
                     },
                 );

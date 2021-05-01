@@ -1,6 +1,7 @@
 use super::BlockId;
 use crate::arena::resource::ResourceId;
 use crate::libs::clone_of::CloneOf;
+use crate::libs::color::Pallet;
 use crate::libs::select_list::SelectList;
 
 pub struct CharacterTexture {
@@ -27,6 +28,7 @@ pub struct Character {
     position: [f32; 3],
     textures: SelectList<CharacterTexture>,
     properties: Vec<BlockId>,
+    name_color: Pallet,
 }
 
 impl Character {
@@ -46,6 +48,7 @@ impl Character {
                 0,
             ),
             properties: vec![],
+            name_color: Pallet::gray(0).a(100),
         }
     }
 
@@ -58,6 +61,7 @@ impl Character {
             position: this.position.clone(),
             textures: SelectList::clone_of(&this.textures),
             properties: this.properties.iter().map(BlockId::clone).collect(),
+            name_color: this.name_color.clone(),
         }
     }
 
@@ -110,6 +114,14 @@ impl Character {
 
     pub fn set_display_name(&mut self, display_name: String) {
         self.display_name = display_name;
+    }
+
+    pub fn name_color(&self) -> &Pallet {
+        &self.name_color
+    }
+
+    pub fn set_name_color(&mut self, color: Pallet) {
+        self.name_color = color;
     }
 
     pub fn description(&self) -> &String {
