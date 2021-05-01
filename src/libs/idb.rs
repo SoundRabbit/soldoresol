@@ -6,6 +6,7 @@ use wasm_bindgen_futures::JsFuture;
 pub async fn open_db(name: &str) -> Option<web_sys::IdbDatabase> {
     let request = web_sys::window().unwrap().indexed_db().unwrap().unwrap();
     let request = request.open(name).unwrap();
+    crate::debug::log_1(format!("open db: {}", name));
     let request = Rc::new(request);
     JsFuture::from(Promise::new(&mut move |resolve, _| {
         let a = Closure::once(Box::new({
