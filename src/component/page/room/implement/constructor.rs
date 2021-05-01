@@ -2,8 +2,8 @@ use super::super::{
     super::util::cmds::Cmds,
     super::util::State,
     model::table::{
-        BoxblockTool, CharacterTool, EraserTool, FillShapeTool, LineShapeTool, PenTool, ShapeTool,
-        TableTool,
+        BoxblockTool, CharacterTool, EraserTool, FillShapeTool, LineShapeTool, PenTool,
+        PointlightTool, ShapeTool, TableTool,
     },
     renderer::{CameraMatrix, ObjectId},
 };
@@ -141,6 +141,11 @@ impl Implement {
                     }),
                     TableTool::Boxblock(BoxblockTool {
                         size: [1.0, 1.0, 1.0],
+                        color: Pallet::blue(5).a(100),
+                    }),
+                    TableTool::Pointlight(PointlightTool {
+                        light_intensity: 0.5,
+                        light_attenation: 0.5,
                         color: Pallet::blue(5).a(100),
                     }),
                 ],

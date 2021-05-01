@@ -10,6 +10,7 @@ use wasm_bindgen::{prelude::*, JsCast};
 pub mod boxblock;
 pub mod character;
 pub mod chat;
+pub mod pointlight;
 pub mod property;
 pub mod table;
 pub mod tag;
@@ -27,6 +28,7 @@ pub enum Block {
     Tag(tag::Tag),
     Boxblock(boxblock::Boxblock),
     Property(property::Property),
+    Pointlight(pointlight::Pointlight),
     None,
 }
 
@@ -50,6 +52,7 @@ impl Block {
             Self::Tag(block) => Self::Tag(tag::Tag::clone(block)),
             Self::Boxblock(block) => Self::Boxblock(boxblock::Boxblock::clone(block)),
             Self::Property(block) => Self::Property(property::Property::clone(block)),
+            Self::Pointlight(block) => Self::Pointlight(pointlight::Pointlight::clone(block)),
             Self::None => Self::None,
         }
     }
@@ -106,6 +109,7 @@ try_ref_mut!(Block: Character => character::Character);
 try_ref_mut!(Block: Tag => tag::Tag);
 try_ref_mut!(Block: Boxblock => boxblock::Boxblock);
 try_ref_mut!(Block: Property => property::Property);
+try_ref_mut!(Block: Pointlight => pointlight::Pointlight);
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct BlockId {
@@ -187,6 +191,7 @@ impl ArenaBlock {
             Block::Tag(x) => (object! {}.into(), "None"),
             Block::Boxblock(x) => (object! {}.into(), "None"),
             Block::Property(x) => (object! {}.into(), "None"),
+            Block::Pointlight(x) => (object! {}.into(), "None"),
             Block::None => (object! {}.into(), "None"),
         };
 
@@ -493,3 +498,4 @@ insert!(Arena: character::Character => Character);
 insert!(Arena: tag::Tag => Tag);
 insert!(Arena: boxblock::Boxblock => Boxblock);
 insert!(Arena: property::Property => Property);
+insert!(Arena: pointlight::Pointlight => Pointlight);

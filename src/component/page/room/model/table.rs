@@ -13,6 +13,7 @@ pub enum TableTool {
     Eraser(EraserTool),
     Character(CharacterTool),
     Boxblock(BoxblockTool),
+    Pointlight(PointlightTool),
 }
 
 impl TableTool {
@@ -26,6 +27,7 @@ impl TableTool {
             Self::TableEditor => "テーブル編集",
             Self::Character(..) => "キャラクター作成",
             Self::Boxblock(..) => "ブロック作成",
+            Self::Pointlight(..) => "点光源",
         }
     }
 }
@@ -41,6 +43,7 @@ impl CloneOf for TableTool {
             Self::Eraser(x) => Self::Eraser(EraserTool::clone_of(x)),
             Self::Character(x) => Self::Character(CharacterTool::clone_of(x)),
             Self::Boxblock(x) => Self::Boxblock(BoxblockTool::clone_of(x)),
+            Self::Pointlight(x) => Self::Pointlight(PointlightTool::clone_of(x)),
         }
     }
 }
@@ -135,5 +138,12 @@ impl CloneOf for CharacterTool {
 #[derive(Clone)]
 pub struct BoxblockTool {
     pub size: [f64; 3],
+    pub color: Pallet,
+}
+
+#[derive(Clone)]
+pub struct PointlightTool {
+    pub light_intensity: f64,
+    pub light_attenation: f64,
     pub color: Pallet,
 }

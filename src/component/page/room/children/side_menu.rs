@@ -1,6 +1,6 @@
 use super::super::model::table::{
-    BoxblockTool, CharacterTool, EraserTool, FillShapeTool, LineShapeTool, PenTool, ShapeTool,
-    TableTool,
+    BoxblockTool, CharacterTool, EraserTool, FillShapeTool, LineShapeTool, PenTool, PointlightTool,
+    ShapeTool, TableTool,
 };
 use super::atom::btn::{self, Btn};
 use super::atom::fa;
@@ -208,6 +208,7 @@ impl SideMenu {
                             TableTool::Eraser(..) => "fa-eraser",
                             TableTool::Character(..) => "fa-users",
                             TableTool::Boxblock(..) => "fa-cube",
+                            TableTool::Pointlight(..) => "fa-lightbulb",
                         }),
                     ),
                 })
@@ -276,6 +277,7 @@ impl SideMenu {
                     Some(TableTool::Eraser(tool)) => self.render_sub_eraser(tool),
                     Some(TableTool::Character(tool)) => self.render_sub_character(tool),
                     Some(TableTool::Boxblock(tool)) => self.render_sub_boxblock(tool),
+                    Some(TableTool::Pointlight(tool)) => self.render_sub_pointlight(tool),
                     _ => Html::div(Attributes::new(), Events::new(), vec![]),
                 },
             ],
@@ -908,6 +910,80 @@ impl SideMenu {
                                 boxblock.color = a;
                                 Msg::Sub(On::SetSelectedTool {
                                     tool: TableTool::Boxblock(boxblock),
+                                })
+                            }
+                        }
+                    }),
+                ),
+            ],
+        )
+    }
+    fn render_sub_pointlight(&self, pointlight: &PointlightTool) -> Html {
+        Html::div(
+            Attributes::new()
+                .class(Self::class("sub-body"))
+                .class(Self::class("sub-menu")),
+            Events::new(),
+            vec![
+                text::div("明るさ"),
+                Slider::empty(
+                    slider::Props {
+                        position: slider::Position::Linear {
+                            val: pointlight.light_intensity,
+                            min: 0.0,
+                            max: 1.0,
+                            step: 0.1,
+                        },
+                        range_is_editable: false,
+                    },
+                    Subscription::new({
+                        let mut pointlight = PointlightTool::clone_of(pointlight);
+                        move |sub| match sub {
+                            slider::On::Input(a) => {
+                                pointlight.light_intensity = a;
+                                Msg::Sub(On::SetSelectedTool {
+                                    tool: TableTool::Pointlight(pointlight),
+                                })
+                            }
+                            _ => Msg::NoOp,
+                        }
+                    }),
+                ),
+                text::div("減衰量"),
+                Slider::empty(
+                    slider::Props {
+                        position: slider::Position::Linear {
+                            val: pointlight.light_attenation,
+                            min: 0.0,
+                            max: 1.0,
+                            step: 0.05,
+                        },
+                        range_is_editable: false,
+                    },
+                    Subscription::new({
+                        let mut pointlight = PointlightTool::clone_of(pointlight);
+                        move |sub| match sub {
+                            slider::On::Input(a) => {
+                                pointlight.light_attenation = a;
+                                Msg::Sub(On::SetSelectedTool {
+                                    tool: TableTool::Pointlight(pointlight),
+                                })
+                            }
+                            _ => Msg::NoOp,
+                        }
+                    }),
+                ),
+                ColorPallet::empty(
+                    color_pallet::Props {
+                        default_selected: pointlight.color.clone(),
+                    },
+                    Subscription::new({
+                        let mut pointlight = PointlightTool::clone_of(pointlight);
+                        move |sub| match sub {
+                            color_pallet::On::SelectColor(a) => {
+                                pointlight.color = a;
+                                Msg::Sub(On::SetSelectedTool {
+                                    tool: TableTool::Pointlight(pointlight),
                                 })
                             }
                         }

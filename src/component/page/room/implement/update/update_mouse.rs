@@ -1,6 +1,6 @@
 use super::{
-    block, BlockId, BoxblockTool, CharacterTool, CloneOf, Implement, ObjectId, ResourceId,
-    ShapeTool, TableTool,
+    block, BlockId, BoxblockTool, CharacterTool, CloneOf, Implement, ObjectId, PointlightTool,
+    ResourceId, ShapeTool, TableTool,
 };
 
 impl Implement {
@@ -128,6 +128,9 @@ impl Implement {
                     self.update_tabletool_character(client_x, client_y)
                 }
                 Some(TableTool::Boxblock(_)) => self.update_tabletool_boxblock(client_x, client_y),
+                Some(TableTool::Pointlight(_)) => {
+                    self.update_tabletool_pointlight(client_x, client_y)
+                }
                 _ => {}
             }
         }
@@ -710,6 +713,38 @@ impl Implement {
             let s = [s[0] as f32, s[1] as f32, s[2] as f32];
 
             self.create_new_boxblock(p, s, boxblock.color);
+        }
+    }
+
+    fn update_tabletool_pointlight(&mut self, client_x: f32, client_y: f32) {
+        let mouse_state = &self.mouse_btn_state.primary;
+
+        if mouse_state.is_clicked {
+            let pointlight = if let Some(TableTool::Pointlight(x)) = self.table_tools.selected() {
+                PointlightTool::clone_of(x)
+            } else {
+                return;
+            };
+
+            let (p, n) = if let Some(renderer) = &self.renderer {
+                renderer.get_focused_position(
+                    &self.block_arena,
+                    &self.camera_matrix,
+                    client_x,
+                    client_y,
+                )
+            } else {
+                return;
+            };
+
+            let p = [p[0] + n[0] * 0.5, p[1] + n[1] * 0.5, p[2] + n[2] * 0.5];
+
+            self.create_new_pointlight(
+                p,
+                pointlight.light_intensity as f32,
+                pointlight.light_attenation as f32,
+                pointlight.color,
+            );
         }
     }
 }

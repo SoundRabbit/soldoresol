@@ -490,6 +490,124 @@ impl Renderer {
                     .render(&mut self.gl, &vp_matrix, table)
             });
 
+            self.render_frontscreen();
+
+            block_arena.map(world.selecting_table(), |table: &block::table::Table| {
+                let mut camera_px = CameraMatrix::new_as_light();
+                let mut camera_py = CameraMatrix::new_as_light();
+                let mut camera_pz = CameraMatrix::new_as_light();
+                let mut camera_nx = CameraMatrix::new_as_light();
+                let mut camera_ny = CameraMatrix::new_as_light();
+                let mut camera_nz = CameraMatrix::new_as_light();
+
+                camera_px.set_to_px();
+                camera_py.set_to_py();
+                camera_pz.set_to_pz();
+                camera_nx.set_to_nx();
+                camera_ny.set_to_ny();
+                camera_nz.set_to_nz();
+                let _ = block_arena.iter_map_with_ids(
+                    table.pointlights().map(BlockId::clone),
+                    |_, pointlight: &block::pointlight::Pointlight| {
+                        let light = pointlight.position();
+                        camera_px.set_movement([-light[1], light[2], -light[0]]);
+                        camera_py.set_movement([light[0], light[2], -light[1]]);
+                        camera_pz.set_movement([light[0], -light[1], -light[2]]);
+                        camera_nx.set_movement([light[1], light[2], light[0]]);
+                        camera_ny.set_movement([light[0], -light[2], light[1]]);
+                        camera_nz.set_movement([light[0], light[1], light[2]]);
+
+                        let light_vps = [
+                            camera_px.vp_matrix(&self.size_shadowmap),
+                            camera_py.vp_matrix(&self.size_shadowmap),
+                            camera_pz.vp_matrix(&self.size_shadowmap),
+                            camera_nx.vp_matrix(&self.size_shadowmap),
+                            camera_ny.vp_matrix(&self.size_shadowmap),
+                            camera_nz.vp_matrix(&self.size_shadowmap),
+                        ];
+
+                        self.gl.viewport(
+                            0,
+                            0,
+                            self.size_shadowmap[0] as i32,
+                            self.size_shadowmap[1] as i32,
+                        );
+
+                        self.gl.bind_framebuffer(
+                            web_sys::WebGlRenderingContext::FRAMEBUFFER,
+                            Some(&self.frame_shadowmap),
+                        );
+
+                        self.gl.disable(web_sys::WebGlRenderingContext::CULL_FACE);
+
+                        self.gl.blend_func(
+                            web_sys::WebGlRenderingContext::ONE,
+                            web_sys::WebGlRenderingContext::ZERO,
+                        );
+
+                        self.gl.clear_color(1.0, 1.0, 1.0, 1.0);
+
+                        block_arena.map(world.selecting_table(), |table: &block::table::Table| {
+                            self.render_shadowmap_boxblock.render(
+                                &mut self.gl,
+                                &self.tex_shadowmap,
+                                &light_vps,
+                                &block_arena,
+                                table.boxblocks().map(|x| BlockId::clone(x)).collect(),
+                            );
+                        });
+
+                        self.gl.viewport(
+                            0,
+                            0,
+                            self.canvas_size[0] as i32,
+                            self.canvas_size[1] as i32,
+                        );
+
+                        self.gl.bind_framebuffer(
+                            web_sys::WebGlRenderingContext::FRAMEBUFFER,
+                            Some(&self.frame_screen),
+                        );
+                        self.gl.clear_color(0.0, 0.0, 0.0, 0.0);
+
+                        self.gl.enable(web_sys::WebGlRenderingContext::CULL_FACE);
+                        self.gl.cull_face(web_sys::WebGlRenderingContext::BACK);
+
+                        self.begin_to_render_backscreen();
+
+                        self.clear();
+
+                        self.gl.blend_func_separate(
+                            web_sys::WebGlRenderingContext::SRC_ALPHA,
+                            web_sys::WebGlRenderingContext::ONE_MINUS_SRC_ALPHA,
+                            web_sys::WebGlRenderingContext::ONE,
+                            web_sys::WebGlRenderingContext::ONE,
+                        );
+
+                        block_arena.map(world.selecting_table(), |table: &block::table::Table| {
+                            self.render_view_boxblock.render(
+                                &mut self.gl,
+                                &vp_matrix,
+                                block_arena,
+                                table.boxblocks().map(|x| BlockId::clone(x)),
+                                &light,
+                                Some(&mut self.tex_table),
+                                Some(&self.tex_shadowmap),
+                                Some(&light_vps),
+                                Some(pointlight.light_intensity()),
+                                Some(pointlight.light_attenation()),
+                            )
+                        });
+
+                        self.render_frontscreen();
+                    },
+                );
+            });
+
+            self.begin_to_render_backscreen();
+
+            self.clear();
+
             block_arena.map(world.selecting_table(), |table: &block::table::Table| {
                 self.render_view_boxblock.render(
                     &mut self.gl,
@@ -497,6 +615,8 @@ impl Renderer {
                     block_arena,
                     table.boxblocks().map(|x| BlockId::clone(x)),
                     &[0.5, -2.0, 1.0],
+                    None,
+                    None,
                     None,
                     None,
                     None,
@@ -522,108 +642,7 @@ impl Renderer {
 
             self.render_frontscreen();
 
-            // 点光源
-
-            let mut camera_px = CameraMatrix::new_as_light();
-            let mut camera_py = CameraMatrix::new_as_light();
-            let mut camera_pz = CameraMatrix::new_as_light();
-            let mut camera_nx = CameraMatrix::new_as_light();
-            let mut camera_ny = CameraMatrix::new_as_light();
-            let mut camera_nz = CameraMatrix::new_as_light();
-
-            camera_px.set_to_px();
-            camera_py.set_to_py();
-            camera_pz.set_to_pz();
-            camera_nx.set_to_nx();
-            camera_ny.set_to_ny();
-            camera_nz.set_to_nz();
-
             // 一旦、(0,0,20)に点光源があるものと過程
-            let light = [0.0, 0.0, 10.0];
-            camera_px.set_movement([-light[1], light[2], -light[0]]);
-            camera_py.set_movement([light[0], light[2], -light[1]]);
-            camera_pz.set_movement([light[0], -light[1], -light[2]]);
-            camera_nx.set_movement([light[1], light[2], light[0]]);
-            camera_ny.set_movement([light[0], -light[2], light[1]]);
-            camera_nz.set_movement([light[0], light[1], light[2]]);
-
-            let light_vps = [
-                camera_px.vp_matrix(&self.size_shadowmap),
-                camera_py.vp_matrix(&self.size_shadowmap),
-                camera_pz.vp_matrix(&self.size_shadowmap),
-                camera_nx.vp_matrix(&self.size_shadowmap),
-                camera_ny.vp_matrix(&self.size_shadowmap),
-                camera_nz.vp_matrix(&self.size_shadowmap),
-            ];
-
-            self.gl.viewport(
-                0,
-                0,
-                self.size_shadowmap[0] as i32,
-                self.size_shadowmap[1] as i32,
-            );
-
-            self.gl.bind_framebuffer(
-                web_sys::WebGlRenderingContext::FRAMEBUFFER,
-                Some(&self.frame_shadowmap),
-            );
-
-            self.gl.disable(web_sys::WebGlRenderingContext::CULL_FACE);
-
-            self.gl.blend_func(
-                web_sys::WebGlRenderingContext::ONE,
-                web_sys::WebGlRenderingContext::ZERO,
-            );
-
-            self.gl.clear_color(1.0, 1.0, 1.0, 1.0);
-
-            block_arena.map(world.selecting_table(), |table: &block::table::Table| {
-                self.render_shadowmap_boxblock.render(
-                    &mut self.gl,
-                    &self.tex_shadowmap,
-                    &light_vps,
-                    &block_arena,
-                    table.boxblocks().map(|x| BlockId::clone(x)).collect(),
-                );
-            });
-
-            self.gl
-                .viewport(0, 0, self.canvas_size[0] as i32, self.canvas_size[1] as i32);
-
-            self.gl.bind_framebuffer(
-                web_sys::WebGlRenderingContext::FRAMEBUFFER,
-                Some(&self.frame_screen),
-            );
-            self.gl.clear_color(0.0, 0.0, 0.0, 0.0);
-
-            self.gl.enable(web_sys::WebGlRenderingContext::CULL_FACE);
-            self.gl.cull_face(web_sys::WebGlRenderingContext::BACK);
-
-            self.begin_to_render_backscreen();
-
-            self.clear();
-
-            self.gl.blend_func_separate(
-                web_sys::WebGlRenderingContext::SRC_ALPHA,
-                web_sys::WebGlRenderingContext::ONE_MINUS_SRC_ALPHA,
-                web_sys::WebGlRenderingContext::ONE,
-                web_sys::WebGlRenderingContext::ONE,
-            );
-
-            block_arena.map(world.selecting_table(), |table: &block::table::Table| {
-                self.render_view_boxblock.render(
-                    &mut self.gl,
-                    &vp_matrix,
-                    block_arena,
-                    table.boxblocks().map(|x| BlockId::clone(x)),
-                    &light,
-                    Some(&mut self.tex_table),
-                    Some(&self.tex_shadowmap),
-                    Some(&light_vps),
-                )
-            });
-
-            self.render_frontscreen();
 
             // 当たり判定用のオフスクリーンレンダリング
 

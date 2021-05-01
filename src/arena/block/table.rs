@@ -15,6 +15,7 @@ pub struct Table {
     background_color: Pallet,
     grid_color: Pallet,
     boxblocks: Vec<BlockId>,
+    pointlights: Vec<BlockId>,
 }
 
 impl Table {
@@ -35,6 +36,7 @@ impl Table {
             background_color: Pallet::gray(0).a(0),
             grid_color: Pallet::gray(9).a(100),
             boxblocks: vec![],
+            pointlights: vec![],
         }
     }
 
@@ -52,7 +54,8 @@ impl Table {
                 .map(|r_id| ResourceId::clone(r_id)),
             background_color: this.background_color,
             grid_color: this.grid_color,
-            boxblocks: this.boxblocks.iter().map(|x| BlockId::clone(x)).collect(),
+            boxblocks: this.boxblocks.iter().map(BlockId::clone).collect(),
+            pointlights: this.pointlights.iter().map(BlockId::clone).collect(),
         }
     }
 
@@ -126,6 +129,14 @@ impl Table {
 
     pub fn add_boxblock(&mut self, boxblock_id: BlockId) {
         self.boxblocks.push(boxblock_id);
+    }
+
+    pub fn pointlights(&self) -> impl Iterator<Item = &BlockId> {
+        self.pointlights.iter()
+    }
+
+    pub fn add_pointlight(&mut self, pointlight_id: BlockId) {
+        self.pointlights.push(pointlight_id);
     }
 
     pub async fn pack(&self) -> JsValue {

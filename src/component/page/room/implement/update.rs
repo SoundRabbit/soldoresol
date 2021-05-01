@@ -1,7 +1,7 @@
 use super::super::{
     super::util::State,
     children::room_modeless,
-    model::table::{BoxblockTool, CharacterTool, ShapeTool, TableTool},
+    model::table::{BoxblockTool, CharacterTool, PointlightTool, ShapeTool, TableTool},
     renderer::{ObjectId, Renderer},
 };
 use super::{Cmd, Contextmenu, ContextmenuKind, Implement, Modal, ModelessContent, Msg, On};
@@ -631,6 +631,29 @@ impl Implement {
                 self.block_arena
                     .map_mut(&selecting_table_id, |table: &mut block::table::Table| {
                         table.add_boxblock(boxblock_id);
+                    });
+            });
+    }
+
+    fn create_new_pointlight(
+        &mut self,
+        pos: [f32; 3],
+        light_intensity: f32,
+        light_attenation: f32,
+        color: Pallet,
+    ) {
+        let mut pointlight_block = block::pointlight::Pointlight::new(pos);
+        pointlight_block.set_light_intensity(light_intensity);
+        pointlight_block.set_light_intensity(light_attenation);
+        let pointlight_id = self.block_arena.insert(pointlight_block);
+        self.block_arena
+            .map(&self.world_id, |world: &block::world::World| {
+                BlockId::clone(world.selecting_table())
+            })
+            .map(|selecting_table_id| {
+                self.block_arena
+                    .map_mut(&selecting_table_id, |table: &mut block::table::Table| {
+                        table.add_pointlight(pointlight_id);
                     });
             });
     }
