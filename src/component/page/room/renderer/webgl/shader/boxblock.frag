@@ -3,6 +3,7 @@ precision mediump float;
 uniform vec4 u_bgColor;
 uniform mat4 u_invModel;
 uniform vec3 u_light;
+uniform vec4 u_lightColor;
 uniform mat4 u_lightVpPx;
 uniform mat4 u_lightVpPy;
 uniform mat4 u_lightVpPz;
@@ -25,6 +26,10 @@ varying vec3 v_normal;
 #define IF(x) (x != 0)
 #define IS_MAX(x, y, z) (x>=y && x>=z)
 
+vec4 colorWithLight(float intensity) {
+    return vec4(u_bgColor.xyz * u_lightColor.xyz * intensity, 1.0);
+}
+
 float normalVecIntensity(vec3 invLight) {
     float diffuse = clamp(dot(v_normal, invLight), 0.0, 1.0) * u_shadeIntensity + 1.0 - u_shadeIntensity;
     return diffuse * u_lightIntensity;
@@ -33,8 +38,7 @@ float normalVecIntensity(vec3 invLight) {
 vec4 colorWithEnvLight() {
     vec3 invLight = normalize(u_invModel * vec4(u_light, 0.0)).xyz;
     float envIntensity = normalVecIntensity(invLight);
-    vec4 res = u_bgColor * vec4(vec3(envIntensity), 1.0);
-    return res;
+    return colorWithLight(envIntensity);
 }
 
 float restDepth(vec4 RGBA){
@@ -82,7 +86,7 @@ vec4 shadowmapped() {
     float shadeIntensity = min(envIntensity, shadowmappedIntensity);
 
     float lightIntensity = u_attenation != 0.0 ? u_lightIntensity / pow(len * u_attenation, 2.0) : u_lightIntensity;
-    return u_bgColor * vec4(vec3(shadeIntensity * lightIntensity), 1.0);
+    return colorWithLight(shadeIntensity * lightIntensity);
 }
 
 void main() {

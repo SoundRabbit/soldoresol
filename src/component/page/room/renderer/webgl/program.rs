@@ -39,6 +39,7 @@ pub trait Program {
     accesser!(None as unif_inv_model: WebGlUniformLocation);
     accesser!(None as unif_is_shadowmap: WebGlUniformLocation);
     accesser!(None as unif_light: WebGlUniformLocation);
+    accesser!(None as unif_light_color: WebGlUniformLocation);
     accesser!(None as unif_light_intensity: WebGlUniformLocation);
     accesser!(None as unif_light_vp_px: WebGlUniformLocation);
     accesser!(None as unif_light_vp_py: WebGlUniformLocation);
@@ -193,6 +194,7 @@ pub struct BoxblockProgram {
     u_vp_location: WebGlUniformLocation,
     u_inv_model_location: WebGlUniformLocation,
     u_light_location: WebGlUniformLocation,
+    u_light_color_location: WebGlUniformLocation,
     u_bg_color_location: WebGlUniformLocation,
     u_shade_intensity_location: WebGlUniformLocation,
     u_light_intensity_location: WebGlUniformLocation,
@@ -227,6 +229,7 @@ impl BoxblockProgram {
         let u_vp_location = gl.get_uniform_location(&program, "u_vp").unwrap();
         let u_inv_model_location = gl.get_uniform_location(&program, "u_invModel").unwrap();
         let u_light_location = gl.get_uniform_location(&program, "u_light").unwrap();
+        let u_light_color_location = gl.get_uniform_location(&program, "u_lightColor").unwrap();
         let u_bg_color_location = gl.get_uniform_location(&program, "u_bgColor").unwrap();
         let u_shade_intensity_location = gl
             .get_uniform_location(&program, "u_shadeIntensity")
@@ -258,6 +261,7 @@ impl BoxblockProgram {
             u_vp_location,
             u_inv_model_location,
             u_light_location,
+            u_light_color_location,
             u_bg_color_location,
             u_shade_intensity_location,
             u_light_intensity_location,
@@ -287,6 +291,7 @@ impl Program for BoxblockProgram {
     accesser!(u_vp_location as unif_vp: WebGlUniformLocation);
     accesser!(u_inv_model_location as unif_inv_model: WebGlUniformLocation);
     accesser!(u_light_location as unif_light: WebGlUniformLocation);
+    accesser!(u_light_color_location as unif_light_color: WebGlUniformLocation);
     accesser!(u_bg_color_location as unif_bg_color: WebGlUniformLocation);
     accesser!(u_shade_intensity_location as unif_shade_intensity: WebGlUniformLocation);
     accesser!(u_light_intensity_location as unif_light_intensity: WebGlUniformLocation);

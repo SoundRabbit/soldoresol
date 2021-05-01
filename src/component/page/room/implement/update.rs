@@ -644,7 +644,8 @@ impl Implement {
     ) {
         let mut pointlight_block = block::pointlight::Pointlight::new(pos);
         pointlight_block.set_light_intensity(light_intensity);
-        pointlight_block.set_light_intensity(light_attenation);
+        pointlight_block.set_light_attenation(light_attenation);
+        pointlight_block.set_color(color);
         let pointlight_id = self.block_arena.insert(pointlight_block);
         self.block_arena
             .map(&self.world_id, |world: &block::world::World| {

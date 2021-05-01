@@ -118,6 +118,7 @@ impl Boxblock {
         block_arena: &block::Arena,
         boxblock_ids: impl Iterator<Item = BlockId>,
         light: &[f32; 3],
+        light_color: &crate::libs::color::Pallet,
         mut tex_table: Option<&mut TexTable>,
         shadowmap: Option<&[(web_sys::WebGlTexture, U128Id); 6]>,
         light_vps: Option<&[Array2<f32>; 6]>,
@@ -155,6 +156,7 @@ impl Boxblock {
         }
 
         gl.set_unif_light(light);
+        gl.set_unif_light_color(&light_color.to_color().to_f32array());
 
         if let (Some(tex_table), Some(shadowmap)) = (tex_table.as_mut(), shadowmap.as_ref()) {
             for i in 0..6 {
