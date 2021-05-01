@@ -112,7 +112,7 @@ impl Character {
                             gl.set_unif_texture(tex_idx);
                             gl.set_unif_translate(mvp_matrix.reversed_axes());
                             gl.set_unif_text_color_1(&[0.0, 0.0, 0.0]);
-                            gl.set_unif_text_color_2(&[0.0, 0.0, 0.0]);
+                            gl.set_unif_text_color_2(&[1.0, 1.0, 1.0]);
                             gl.draw_elements_with_i32(
                                 web_sys::WebGlRenderingContext::TRIANGLES,
                                 6,
