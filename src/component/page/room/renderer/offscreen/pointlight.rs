@@ -5,13 +5,13 @@ use crate::arena::block::{self, BlockId};
 use crate::arena::resource;
 use ndarray::Array2;
 
-pub struct Boxblock {
+pub struct Pointlight {
     vertexis_buffer: WebGlF32Vbo,
     index_buffer: WebGlI16Ibo,
     texture_coord_buffer: WebGlF32Vbo,
 }
 
-impl Boxblock {
+impl Pointlight {
     pub fn new(gl: &WebGlRenderingContext) -> Self {
         let vertexis_buffer = gl.create_vbo_with_f32array(
             &[
@@ -64,7 +64,7 @@ impl Boxblock {
         id_table: &mut IdTable,
         vp_matrix: &Array2<f32>,
         block_arena: &block::Arena,
-        boxblock_ids: impl Iterator<Item = BlockId>,
+        pointlight_ids: impl Iterator<Item = BlockId>,
         grabbed_object_id: &ObjectId,
     ) {
         gl.use_program(ProgramType::OffscreenProgram);
@@ -77,17 +77,17 @@ impl Boxblock {
         );
         gl.set_unif_flag_round(0);
 
+        let s = [1.0, 1.0, 1.0];
+
         let _ = block_arena.iter_map_with_ids(
-            boxblock_ids,
-            |boxblock_id, boxblock: &block::boxblock::Boxblock| {
-                if grabbed_object_id.eq(&boxblock_id) {
+            pointlight_ids,
+            |pointlight_id, pointlight: &block::pointlight::Pointlight| {
+                if grabbed_object_id.eq(&pointlight_id) {
                     return;
                 }
-
-                let s = boxblock.size();
-                let p = boxblock.position();
+                let p = pointlight.position();
                 let model_matrix: Array2<f32> =
-                    ModelMatrix::new().with_scale(s).with_movement(p).into();
+                    ModelMatrix::new().with_scale(&s).with_movement(p).into();
                 let mvp_matrix = vp_matrix.dot(&model_matrix);
                 gl.set_unif_translate(mvp_matrix.reversed_axes());
 
@@ -102,9 +102,9 @@ impl Boxblock {
                     );
                     id_table.insert(
                         color.to_u32(),
-                        ObjectId::Boxblock(
-                            BlockId::clone(&boxblock_id),
-                            Self::surface_of(boxblock, srfs),
+                        ObjectId::Pointlight(
+                            BlockId::clone(&pointlight_id),
+                            Self::surface_of(pointlight, srfs),
                         ),
                     );
                 }
@@ -112,9 +112,9 @@ impl Boxblock {
         );
     }
 
-    fn surface_of(boxblock: &block::boxblock::Boxblock, idx: i32) -> Surface {
-        let p = boxblock.position();
-        let s = boxblock.size();
+    fn surface_of(pointlight: &block::pointlight::Pointlight, idx: i32) -> Surface {
+        let p = pointlight.position();
+        let s = [1.0, 1.0, 1.0];
 
         match idx % 6 {
             0 => Surface {

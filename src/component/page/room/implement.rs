@@ -117,6 +117,7 @@ pub enum Msg {
         grid_color: Option<Pallet>,
         background_color: Option<Pallet>,
         background_image: Option<Option<ResourceId>>,
+        env_light_intensity: Option<f32>,
     },
     SetCharacterTextureId {
         character_id: BlockId,

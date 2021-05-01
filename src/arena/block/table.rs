@@ -16,6 +16,7 @@ pub struct Table {
     grid_color: Pallet,
     boxblocks: Vec<BlockId>,
     pointlights: Vec<BlockId>,
+    env_light_intensity: f32,
 }
 
 impl Table {
@@ -37,6 +38,7 @@ impl Table {
             grid_color: Pallet::gray(9).a(100),
             boxblocks: vec![],
             pointlights: vec![],
+            env_light_intensity: 1.0,
         }
     }
 
@@ -56,6 +58,7 @@ impl Table {
             grid_color: this.grid_color,
             boxblocks: this.boxblocks.iter().map(BlockId::clone).collect(),
             pointlights: this.pointlights.iter().map(BlockId::clone).collect(),
+            env_light_intensity: this.env_light_intensity,
         }
     }
 
@@ -137,6 +140,14 @@ impl Table {
 
     pub fn add_pointlight(&mut self, pointlight_id: BlockId) {
         self.pointlights.push(pointlight_id);
+    }
+
+    pub fn env_light_intensity(&self) -> f32 {
+        self.env_light_intensity
+    }
+
+    pub fn set_env_light_intensity(&mut self, env_light_intensity: f32) {
+        self.env_light_intensity = env_light_intensity;
     }
 
     pub async fn pack(&self) -> JsValue {

@@ -30,6 +30,7 @@ pub struct Renderer {
 
     render_offscreen_character: offscreen::character::Character,
     render_offscreen_boxblock: offscreen::boxblock::Boxblock,
+    render_offscreen_pointlight: offscreen::pointlight::Pointlight,
 
     render_shadowmap_boxblock: shadowmap::boxblock::Boxblock,
 
@@ -194,6 +195,7 @@ impl Renderer {
 
         let render_offscreen_character = offscreen::character::Character::new(&gl);
         let render_offscreen_boxblock = offscreen::boxblock::Boxblock::new(&gl);
+        let render_offscreen_pointlight = offscreen::pointlight::Pointlight::new(&gl);
 
         let render_shadowmap_boxblock = shadowmap::boxblock::Boxblock::new(&gl);
 
@@ -315,6 +317,7 @@ impl Renderer {
             id_table,
             render_offscreen_character,
             render_offscreen_boxblock,
+            render_offscreen_pointlight,
             render_shadowmap_boxblock,
             render_view_table,
             render_view_table_grid,
@@ -432,6 +435,10 @@ impl Renderer {
                 srfs.n(),
             ),
             ObjectId::Boxblock(_, srfs) => (
+                camera.collision_point(&self.canvas_size, &[x, y], &srfs.r, &srfs.s, &srfs.t),
+                srfs.n(),
+            ),
+            ObjectId::Pointlight(_, srfs) => (
                 camera.collision_point(&self.canvas_size, &[x, y], &srfs.r, &srfs.s, &srfs.t),
                 srfs.n(),
             ),
@@ -579,10 +586,10 @@ impl Renderer {
                                 table.boxblocks().map(BlockId::clone),
                                 &light,
                                 &pointlight.color(),
+                                pointlight.light_intensity(),
                                 Some(&mut self.tex_table),
                                 Some(&self.tex_shadowmap),
                                 Some(&light_vps),
-                                Some(pointlight.light_intensity()),
                                 Some(pointlight.light_attenation()),
                             )
                         });
@@ -623,7 +630,7 @@ impl Renderer {
                     table.boxblocks().map(BlockId::clone),
                     &[0.5, -2.0, 1.0],
                     &crate::libs::color::Pallet::gray(0).a(100),
-                    None,
+                    table.env_light_intensity(),
                     None,
                     None,
                     None,
@@ -661,6 +668,15 @@ impl Renderer {
                 self.gl.blend_func(
                     web_sys::WebGlRenderingContext::ONE,
                     web_sys::WebGlRenderingContext::ZERO,
+                );
+
+                self.render_offscreen_pointlight.render(
+                    &mut self.gl,
+                    &mut self.id_table,
+                    &vp_matrix,
+                    block_arena,
+                    table.pointlights().map(BlockId::clone),
+                    grabbed_object_id,
                 );
 
                 self.render_offscreen_boxblock.render(

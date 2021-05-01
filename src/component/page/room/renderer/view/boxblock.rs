@@ -119,10 +119,10 @@ impl Boxblock {
         boxblock_ids: impl Iterator<Item = BlockId>,
         light: &[f32; 3],
         light_color: &crate::libs::color::Pallet,
+        light_intensity: f32,
         mut tex_table: Option<&mut TexTable>,
         shadowmap: Option<&[(web_sys::WebGlTexture, U128Id); 6]>,
         light_vps: Option<&[Array2<f32>; 6]>,
-        light_intensity: Option<f32>,
         light_attenation: Option<f32>,
     ) {
         gl.depth_func(web_sys::WebGlRenderingContext::LEQUAL);
@@ -137,9 +137,7 @@ impl Boxblock {
             Some(&self.poly_index_buffer),
         );
 
-        if let (Some(light_vps), Some(light_intensity), Some(light_attenation)) =
-            (light_vps, light_intensity, light_attenation)
-        {
+        if let (Some(light_vps), Some(light_attenation)) = (light_vps, light_attenation) {
             gl.set_unif_light_vp_px(light_vps[0].clone().reversed_axes());
             gl.set_unif_light_vp_py(light_vps[1].clone().reversed_axes());
             gl.set_unif_light_vp_pz(light_vps[2].clone().reversed_axes());
@@ -147,7 +145,6 @@ impl Boxblock {
             gl.set_unif_light_vp_ny(light_vps[4].clone().reversed_axes());
             gl.set_unif_light_vp_nz(light_vps[5].clone().reversed_axes());
             gl.set_unif_is_shadowmap(1);
-            gl.set_unif_light_intensity(light_intensity);
             gl.set_unif_attenation(light_attenation);
         } else {
             gl.set_unif_shade_intensity(0.5);
@@ -157,6 +154,7 @@ impl Boxblock {
 
         gl.set_unif_light(light);
         gl.set_unif_light_color(&light_color.to_color().to_f32array());
+        gl.set_unif_light_intensity(light_intensity);
 
         if let (Some(tex_table), Some(shadowmap)) = (tex_table.as_mut(), shadowmap.as_ref()) {
             for i in 0..6 {

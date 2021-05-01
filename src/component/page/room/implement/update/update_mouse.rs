@@ -58,9 +58,11 @@ impl Implement {
                                 client_x,
                                 client_y,
                             );
-                            p[0] = p[0].round();
-                            p[1] = p[1].round();
-                            p[2] = p[2].round();
+
+                            p[0] = (p[0] * 2.0).round() / 2.0;
+                            p[1] = (p[1] * 2.0).round() / 2.0;
+                            p[2] = (p[2] * 2.0).round() / 2.0;
+
                             match &self.grabbed_object_id {
                                 ObjectId::Character(character_id, _) => {
                                     self.block_arena.map_mut(
@@ -81,6 +83,20 @@ impl Implement {
                                                 p[2] + s[2] * n[2] * 0.5,
                                             ];
                                             boxblock.set_position(p);
+                                        },
+                                    );
+                                }
+                                ObjectId::Pointlight(pointlight_id, _) => {
+                                    self.block_arena.map_mut(
+                                        pointlight_id,
+                                        |pointlight: &mut block::pointlight::Pointlight| {
+                                            let s = [1.0, 1.0, 1.0];
+                                            let p = [
+                                                p[0] + s[0] * n[0] * 0.5,
+                                                p[1] + s[1] * n[1] * 0.5,
+                                                p[2] + s[2] * n[2] * 0.5,
+                                            ];
+                                            pointlight.set_position(p);
                                         },
                                     );
                                 }

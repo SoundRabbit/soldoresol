@@ -47,6 +47,7 @@ pub enum On {
         grid_color: Option<Pallet>,
         background_color: Option<Pallet>,
         background_image: Option<Option<ResourceId>>,
+        env_light_intensity: Option<f32>,
     },
 }
 
@@ -142,6 +143,7 @@ impl Component for SideMenu {
                                 grid_color: None,
                                 background_color: None,
                                 background_image: Some(Some(r_id)),
+                                env_light_intensity: None,
                             })
                         }
                     }),
@@ -314,6 +316,7 @@ impl SideMenu {
                                         grid_color: None,
                                         background_color: None,
                                         background_image: None,
+                                        env_light_intensity: None,
                                     }),
                                     _ => Msg::NoOp,
                                 }
@@ -338,7 +341,37 @@ impl SideMenu {
                                         grid_color: None,
                                         background_color: None,
                                         background_image: None,
+                                        env_light_intensity: None,
                                     }),
+                                    _ => Msg::NoOp,
+                                }
+                            }),
+                        ),
+                        text::div("環境光"),
+                        text::div("［明るさ］"),
+                        Slider::empty(
+                            slider::Props {
+                                position: slider::Position::Linear {
+                                    val: table.env_light_intensity() as f64,
+                                    min: 0.0,
+                                    max: 1.0,
+                                    step: 0.1,
+                                },
+                                range_is_editable: false,
+                            },
+                            Subscription::new({
+                                let table_id = BlockId::clone(&self.selecting_table_id);
+                                move |sub| match sub {
+                                    slider::On::Input(env_light_intensity) => {
+                                        Msg::Sub(On::ChangeTableProps {
+                                            table_id,
+                                            size: None,
+                                            grid_color: None,
+                                            background_color: None,
+                                            background_image: None,
+                                            env_light_intensity: Some(env_light_intensity as f32),
+                                        })
+                                    }
                                     _ => Msg::NoOp,
                                 }
                             }),
@@ -365,6 +398,7 @@ impl SideMenu {
                                                     grid_color: Some(color),
                                                     background_color: None,
                                                     background_image: None,
+                                                    env_light_intensity: None,
                                                 })
                                             }
                                         }
@@ -384,6 +418,7 @@ impl SideMenu {
                                                     grid_color: None,
                                                     background_color: Some(color),
                                                     background_image: None,
+                                                    env_light_intensity: None,
                                                 })
                                             }
                                         }

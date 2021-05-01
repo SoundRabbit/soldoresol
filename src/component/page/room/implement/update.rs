@@ -374,6 +374,7 @@ impl Implement {
                 grid_color,
                 background_color,
                 background_image,
+                env_light_intensity,
             } => {
                 let mut is_updated = self
                     .block_arena
@@ -392,6 +393,11 @@ impl Implement {
 
                         if let Some(background_image) = background_image {
                             table.set_background_texture_id(background_image);
+                            is_updated = true;
+                        }
+
+                        if let Some(env_light_intensity) = env_light_intensity {
+                            table.set_env_light_intensity(env_light_intensity);
                             is_updated = true;
                         }
 
