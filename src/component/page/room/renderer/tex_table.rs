@@ -159,10 +159,10 @@ impl TexTable {
                 .unwrap()
                 .dyn_into::<web_sys::CanvasRenderingContext2d>()
                 .unwrap();
-            let line_width = 8.0;
+            let line_width = 16.0;
 
             let font_height = 64.0;
-            ctx.set_font(&format!("{}px san-serif", font_height));
+            ctx.set_font(&format!("{}px san-serif bold", font_height));
 
             let metrix = ctx.measure_text(&text).unwrap();
             let width = metrix.width() + line_width * 2.0;

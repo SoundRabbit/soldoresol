@@ -48,7 +48,7 @@ impl Character {
                 0,
             ),
             properties: vec![],
-            name_color: Pallet::gray(0).a(100),
+            name_color: Pallet::gray(9).a(100),
         }
     }
 

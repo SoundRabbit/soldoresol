@@ -111,7 +111,8 @@ impl Character {
 
                             gl.set_unif_texture(tex_idx);
                             gl.set_unif_translate(mvp_matrix.reversed_axes());
-                            gl.set_unif_text_color(&[0.0, 0.0, 0.0]);
+                            gl.set_unif_text_color_1(&[0.0, 0.0, 0.0]);
+                            gl.set_unif_text_color_2(&[0.0, 0.0, 0.0]);
                             gl.draw_elements_with_i32(
                                 web_sys::WebGlRenderingContext::TRIANGLES,
                                 6,
@@ -127,8 +128,25 @@ impl Character {
                         Some((display_name_tex_idx, display_name_tex_size)),
                     ) = (name_tex, display_name_tex)
                     {
-                        let text_color = character.name_color().to_color().to_f32array();
-                        gl.set_unif_text_color(&[text_color[0], text_color[1], text_color[2]]);
+                        let text_color = character.name_color();
+
+                        if text_color.idx >= 6 {
+                            let text_color = text_color.to_color().to_f32array();
+                            gl.set_unif_text_color_1(&[
+                                text_color[0],
+                                text_color[1],
+                                text_color[2],
+                            ]);
+                            gl.set_unif_text_color_2(&[1.0, 1.0, 1.0]);
+                        } else {
+                            let text_color = text_color.to_color().to_f32array();
+                            gl.set_unif_text_color_1(&[0.0, 0.0, 0.0]);
+                            gl.set_unif_text_color_2(&[
+                                text_color[0],
+                                text_color[1],
+                                text_color[2],
+                            ]);
+                        }
 
                         let display_name_width =
                             ((0.5 * display_name_tex_size[0] / display_name_tex_size[1]) as f32)
