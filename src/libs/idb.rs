@@ -36,6 +36,7 @@ pub async fn create_object_strage(
         .open_with_f64(database_name.as_str(), version + 1.0)
         .unwrap();
     let request = Rc::new(request);
+    crate::debug::log_1(format!("upgrade to {}", version + 1.0));
     JsFuture::from(Promise::new(&mut move |resolve, _| {
         let resolve = Rc::new(resolve);
         let a = Closure::wrap(Box::new({
@@ -43,6 +44,7 @@ pub async fn create_object_strage(
             let resolve = Rc::clone(&resolve);
             let name = Rc::clone(&name);
             move || {
+                crate::debug::log_1("onupgradeneeded");
                 let database = request
                     .result()
                     .unwrap()
@@ -52,6 +54,7 @@ pub async fn create_object_strage(
                 let a = Closure::wrap(Box::new({
                     let resolve = Rc::clone(&resolve);
                     move || {
+                        crate::debug::log_1("oncomplete");
                         let _ = resolve.call1(&js_sys::global(), &database);
                     }
                 }) as Box<dyn FnMut()>);

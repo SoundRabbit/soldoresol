@@ -68,10 +68,8 @@ async fn load_config() -> Option<Config> {
 }
 
 async fn initialize_common_db(db_name: &str) -> Option<(web_sys::IdbDatabase, String)> {
-    let database = idb::open_db(db_name).await;
-    if let Some(database) = database {
-        let client_id = initialize_object_store(&database).await;
-        if let Some(client_id) = client_id {
+    if let Some(database) = idb::open_db(db_name).await {
+        if let Some((database, client_id)) = initialize_object_store(database).await {
             return Some((database, client_id));
         } else {
             crate::debug::log_1("faild to get client_id");
@@ -82,45 +80,44 @@ async fn initialize_common_db(db_name: &str) -> Option<(web_sys::IdbDatabase, St
     None
 }
 
-async fn initialize_object_store(database: &web_sys::IdbDatabase) -> Option<String> {
-    loop {
-        let names = database.object_store_names();
-        let mut has_client = false;
-        let mut has_rooms = false;
-        let mut has_resources = false;
-        let mut has_tables = false;
-        let mut has_characters = false;
-        for i in 0..names.length() {
-            if let Some(name) = names.item(i) {
-                if name == "client" {
-                    has_client = true;
-                } else if name == "rooms" {
-                    has_rooms = true;
-                } else if name == "resources" {
-                    has_resources = true;
-                } else if name == "tables" {
-                    has_tables = true;
-                } else if name == "characters" {
-                    has_characters = true;
-                }
+async fn initialize_object_store(
+    mut database: web_sys::IdbDatabase,
+) -> Option<(web_sys::IdbDatabase, String)> {
+    let names = database.object_store_names();
+    let mut has_client = false;
+    let mut has_rooms = false;
+    let mut has_resources = false;
+    let mut has_tables = false;
+    let mut has_characters = false;
+    for i in 0..names.length() {
+        if let Some(name) = names.item(i) {
+            if name == "client" {
+                has_client = true;
+            } else if name == "rooms" {
+                has_rooms = true;
+            } else if name == "resources" {
+                has_resources = true;
+            } else if name == "tables" {
+                has_tables = true;
+            } else if name == "characters" {
+                has_characters = true;
             }
         }
-
-        if has_client && has_rooms && has_resources && has_characters && has_tables {
-            break;
-        } else {
-            if !has_client {
-                idb::create_object_strage(&database, "client").await;
-            } else if !has_rooms {
-                idb::create_object_strage(&database, "rooms").await;
-            } else if !has_resources {
-                idb::create_object_strage(&database, "resources").await;
-            } else if !has_tables {
-                idb::create_object_strage(&database, "tables").await;
-            } else {
-                idb::create_object_strage(&database, "characters").await;
-            }
-        }
+    }
+    if !has_client {
+        database = unwrap_or!(idb::create_object_strage(&database, "client").await; None);
+    }
+    if !has_rooms {
+        database = unwrap_or!(idb::create_object_strage(&database, "rooms").await; None);
+    }
+    if !has_resources {
+        database = unwrap_or!(idb::create_object_strage(&database, "resources").await;None);
+    }
+    if !has_tables {
+        database = unwrap_or!(idb::create_object_strage(&database, "tables").await;None);
+    }
+    if !has_characters {
+        database = unwrap_or!(idb::create_object_strage(&database, "characters").await;None);
     }
     let client_id = idb::query(
         &database,
@@ -129,9 +126,10 @@ async fn initialize_object_store(database: &web_sys::IdbDatabase) -> Option<Stri
     )
     .await;
     if let Some(client_id) = client_id.and_then(|x| x.as_string()) {
-        Some(client_id)
+        Some((database, client_id))
     } else {
-        assign_client_id(database).await
+        let client_id = assign_client_id(&database).await;
+        client_id.map(|c_id| (database, c_id))
     }
 }
 
