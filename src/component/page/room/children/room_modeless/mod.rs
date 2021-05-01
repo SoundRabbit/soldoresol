@@ -56,6 +56,12 @@ pub enum On {
     SelectTab {
         tab_idx: usize,
     },
+    SetCharacterCommonProps {
+        character_id: BlockId,
+        name: Option<String>,
+        display_name: Option<String>,
+        description: Option<String>,
+    },
     SetCharacterTextureId {
         character_id: BlockId,
         tex_idx: usize,
@@ -379,6 +385,16 @@ impl RoomModeless {
                     Subscription::new({
                         let character_id = BlockId::clone(character_id);
                         move |sub| match sub {
+                            character::On::SetCommonProps {
+                                name,
+                                display_name,
+                                description,
+                            } => Msg::Sub(On::SetCharacterCommonProps {
+                                character_id,
+                                name,
+                                display_name,
+                                description,
+                            }),
                             character::On::SetTextureId {
                                 tex_idx,
                                 resource_id,

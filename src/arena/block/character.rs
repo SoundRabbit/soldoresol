@@ -23,6 +23,7 @@ pub struct Character {
     size: f32,
     name: String,
     display_name: String,
+    description: String,
     position: [f32; 3],
     textures: SelectList<CharacterTexture>,
     properties: Vec<BlockId>,
@@ -34,6 +35,7 @@ impl Character {
             size: 1.0,
             name: String::from(""),
             display_name: String::from(""),
+            description: String::from(""),
             position: [0.0, 0.0, 0.0],
             textures: SelectList::new(
                 vec![CharacterTexture {
@@ -52,6 +54,7 @@ impl Character {
             size: this.size,
             name: this.name.clone(),
             display_name: this.display_name.clone(),
+            description: this.description.clone(),
             position: this.position.clone(),
             textures: SelectList::clone_of(&this.textures),
             properties: this.properties.iter().map(BlockId::clone).collect(),
@@ -103,6 +106,18 @@ impl Character {
 
     pub fn display_name(&self) -> &String {
         &self.display_name
+    }
+
+    pub fn set_display_name(&mut self, display_name: String) {
+        self.display_name = display_name;
+    }
+
+    pub fn description(&self) -> &String {
+        &self.description
+    }
+
+    pub fn set_description(&mut self, description: String) {
+        self.description = description;
     }
 
     pub fn position(&self) -> &[f32; 3] {
@@ -217,6 +232,10 @@ impl Character {
         packed.insert(String::from("size"), toml::Value::Float(self.size as f64));
         packed.insert(String::from("name"), toml::Value::String(self.name.clone()));
         packed.insert(
+            String::from("description"),
+            toml::Value::String(self.description.clone()),
+        );
+        packed.insert(
             String::from("display_name"),
             toml::Value::String(self.display_name.clone()),
         );
@@ -267,6 +286,9 @@ impl Character {
             }
             if let Some(toml::Value::String(name)) = packed.remove("name") {
                 unpacked.name = name;
+            }
+            if let Some(toml::Value::String(description)) = packed.remove("description") {
+                unpacked.description = description;
             }
             if let Some(toml::Value::String(display_name)) = packed.remove("display_name") {
                 unpacked.display_name = display_name;

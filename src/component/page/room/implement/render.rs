@@ -453,6 +453,17 @@ impl Implement {
                                                 tab_idx,
                                             }
                                         }
+                                        room_modeless::On::SetCharacterCommonProps {
+                                            character_id,
+                                            name,
+                                            display_name,
+                                            description,
+                                        } => Msg::SetCharacterCommonProps {
+                                            character_id,
+                                            name,
+                                            display_name,
+                                            description,
+                                        },
                                         room_modeless::On::SetCharacterTextureId {
                                             character_id,
                                             tex_idx,

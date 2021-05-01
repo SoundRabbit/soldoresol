@@ -119,6 +119,12 @@ pub enum Msg {
         background_image: Option<Option<ResourceId>>,
         env_light_intensity: Option<f32>,
     },
+    SetCharacterCommonProps {
+        character_id: BlockId,
+        name: Option<String>,
+        display_name: Option<String>,
+        description: Option<String>,
+    },
     SetCharacterTextureId {
         character_id: BlockId,
         tex_idx: usize,

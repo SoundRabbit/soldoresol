@@ -34,6 +34,11 @@ pub enum Modal {
 }
 
 pub enum On {
+    SetCommonProps {
+        name: Option<String>,
+        display_name: Option<String>,
+        description: Option<String>,
+    },
     SetTextureId {
         tex_idx: usize,
         resource_id: Option<resource::ResourceId>,
@@ -266,7 +271,13 @@ impl Character {
                                             Attributes::new()
                                                 .value(character.display_name())
                                                 .id(&self.element_id.input_display_name),
-                                            Events::new(),
+                                            Events::new().on_input(|display_name| {
+                                                Msg::Sub(On::SetCommonProps {
+                                                    name: None,
+                                                    display_name: Some(display_name),
+                                                    description: None,
+                                                })
+                                            }),
                                             vec![],
                                         ),
                                         text::label(
@@ -277,16 +288,28 @@ impl Character {
                                             Attributes::new()
                                                 .value(character.name())
                                                 .id(&self.element_id.input_character_name),
-                                            Events::new(),
+                                            Events::new().on_input(|name| {
+                                                Msg::Sub(On::SetCommonProps {
+                                                    name: Some(name),
+                                                    display_name: None,
+                                                    description: None,
+                                                })
+                                            }),
                                             vec![],
                                         ),
                                     ],
                                 ),
                                 Html::textarea(
                                     Attributes::new()
-                                        .value(character.name())
+                                        .value(character.description())
                                         .class(Self::class("common-description")),
-                                    Events::new(),
+                                    Events::new().on_input(|description| {
+                                        Msg::Sub(On::SetCommonProps {
+                                            name: None,
+                                            display_name: None,
+                                            description: Some(description),
+                                        })
+                                    }),
                                     vec![],
                                 ),
                             ],

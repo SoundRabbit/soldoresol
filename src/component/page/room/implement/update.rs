@@ -441,6 +441,32 @@ impl Implement {
                 }
             }
 
+            Msg::SetCharacterCommonProps {
+                character_id,
+                name,
+                display_name,
+                description,
+            } => {
+                self.block_arena.map_mut(
+                    &character_id,
+                    |character: &mut block::character::Character| {
+                        if let Some(name) = name {
+                            character.set_name(name);
+                        }
+
+                        if let Some(display_name) = display_name {
+                            character.set_display_name(display_name);
+                        }
+
+                        if let Some(description) = description {
+                            character.set_description(description);
+                        }
+                    },
+                );
+
+                self.gl_render_async();
+            }
+
             Msg::SetCharacterTextureId {
                 character_id,
                 tex_idx,
