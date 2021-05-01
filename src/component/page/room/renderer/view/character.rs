@@ -108,6 +108,7 @@ impl Character {
                                 .with_movement(&character.position())
                                 .into();
                             let mvp_matrix = vp_matrix.dot(&model_matrix);
+
                             gl.set_unif_texture(tex_idx);
                             gl.set_unif_translate(mvp_matrix.reversed_axes());
                             gl.draw_elements_with_i32(
@@ -117,6 +118,31 @@ impl Character {
                                 0,
                             );
                         }
+                    }
+                    let name_tex = tex_table.use_string(gl, character.display_name());
+                    if let Some((name_tex_idx, name_tex_size)) = name_tex {
+                        let model_matrix: Array2<f32> = ModelMatrix::new()
+                            .with_scale(&[
+                                (0.5 * name_tex_size[0] / name_tex_size[1]) as f32,
+                                1.0,
+                                0.5,
+                            ])
+                            .with_movement(&[0.0, 0.0, character.current_tex_height()])
+                            .with_x_axis_rotation(
+                                camera.x_axis_rotation() - std::f32::consts::FRAC_PI_2,
+                            )
+                            .with_z_axis_rotation(camera.z_axis_rotation())
+                            .with_movement(character.position())
+                            .into();
+                        let mvp_matrix = vp_matrix.dot(&model_matrix);
+                        gl.set_unif_texture(name_tex_idx);
+                        gl.set_unif_translate(mvp_matrix.reversed_axes());
+                        gl.draw_elements_with_i32(
+                            web_sys::WebGlRenderingContext::TRIANGLES,
+                            6,
+                            web_sys::WebGlRenderingContext::UNSIGNED_SHORT,
+                            0,
+                        );
                     }
                 }
             }

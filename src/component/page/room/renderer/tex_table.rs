@@ -5,10 +5,14 @@ use std::collections::HashMap;
 use std::collections::VecDeque;
 use std::rc::Rc;
 
+use wasm_bindgen::prelude::*;
+use wasm_bindgen::JsCast;
+
 #[derive(Hash, PartialEq, Eq)]
 enum TextureId {
     ResourceId(ResourceId),
     Custom(U128Id),
+    String(String),
 }
 
 impl TextureId {
@@ -16,6 +20,7 @@ impl TextureId {
         match this {
             Self::ResourceId(id) => Self::ResourceId(ResourceId::clone(id)),
             Self::Custom(id) => Self::Custom(U128Id::clone(id)),
+            Self::String(id) => Self::String(id.clone()),
         }
     }
 }
@@ -24,8 +29,10 @@ pub struct TexTable {
     max_tex_num: i32,
     unused_tex_idx: VecDeque<i32>,
     used_tex_idx: VecDeque<(i32, TextureId)>,
-    tex_table: HashMap<ResourceId, Rc<web_sys::WebGlTexture>>,
+    string_tex_table: HashMap<String, (Rc<web_sys::WebGlTexture>, [f64; 2])>,
+    resource_tex_table: HashMap<ResourceId, Rc<web_sys::WebGlTexture>>,
     tex_idx: HashMap<TextureId, i32>,
+    string_canvas: web_sys::HtmlCanvasElement,
 }
 
 impl TexTable {
@@ -41,12 +48,16 @@ impl TexTable {
             unused_tex_idx.push_back(i);
         }
 
+        let string_canvas = crate::libs::element::html_canvas_element();
+
         Self {
             max_tex_num,
             unused_tex_idx,
             used_tex_idx: VecDeque::new(),
-            tex_table: HashMap::new(),
+            string_tex_table: HashMap::new(),
+            resource_tex_table: HashMap::new(),
             tex_idx: HashMap::new(),
+            string_canvas,
         }
     }
 
@@ -59,63 +70,164 @@ impl TexTable {
         let tex_id = TextureId::ResourceId(ResourceId::clone(resource_id));
         if let Some(tex_idx) = self.tex_idx.get(&tex_id) {
             Some(*tex_idx)
+        } else if let Some(tex_buf) = self
+            .resource_tex_table
+            .get(&resource_id)
+            .map(|tex_buf| Rc::clone(&tex_buf))
+        {
+            let tex_idx = self.use_idx();
+            gl.active_texture(Self::tex_flag(tex_idx));
+            gl.bind_texture(web_sys::WebGlRenderingContext::TEXTURE_2D, Some(&tex_buf));
+            self.tex_idx.insert(TextureId::clone(&tex_id), tex_idx);
+            self.used_tex_idx.push_back((tex_idx, tex_id));
+            Some(tex_idx)
         } else {
-            if let Some(tex_buf) = self
-                .tex_table
-                .get(&resource_id)
-                .map(|tex_buf| Rc::clone(&tex_buf))
-            {
+            let data = resource_arena.get_as::<resource::ImageData>(resource_id);
+            if let Some(data) = data {
+                let tex_idx = self.use_idx();
+                let tex_buf = gl.create_texture().unwrap();
+                gl.active_texture(Self::tex_flag(tex_idx));
+                gl.bind_texture(web_sys::WebGlRenderingContext::TEXTURE_2D, Some(&tex_buf));
+                gl.pixel_storei(web_sys::WebGlRenderingContext::PACK_ALIGNMENT, 1);
+                gl.tex_parameteri(
+                    web_sys::WebGlRenderingContext::TEXTURE_2D,
+                    web_sys::WebGlRenderingContext::TEXTURE_MIN_FILTER,
+                    web_sys::WebGlRenderingContext::LINEAR as i32,
+                );
+                gl.tex_parameteri(
+                    web_sys::WebGlRenderingContext::TEXTURE_2D,
+                    web_sys::WebGlRenderingContext::TEXTURE_MAG_FILTER,
+                    web_sys::WebGlRenderingContext::LINEAR as i32,
+                );
+                gl.tex_parameteri(
+                    web_sys::WebGlRenderingContext::TEXTURE_2D,
+                    web_sys::WebGlRenderingContext::TEXTURE_WRAP_S,
+                    web_sys::WebGlRenderingContext::CLAMP_TO_EDGE as i32,
+                );
+                gl.tex_parameteri(
+                    web_sys::WebGlRenderingContext::TEXTURE_2D,
+                    web_sys::WebGlRenderingContext::TEXTURE_WRAP_T,
+                    web_sys::WebGlRenderingContext::CLAMP_TO_EDGE as i32,
+                );
+                let _ = gl.tex_image_2d_with_u32_and_u32_and_image(
+                    web_sys::WebGlRenderingContext::TEXTURE_2D,
+                    0,
+                    web_sys::WebGlRenderingContext::RGBA as i32,
+                    web_sys::WebGlRenderingContext::RGBA,
+                    web_sys::WebGlRenderingContext::UNSIGNED_BYTE,
+                    &data.element(),
+                );
+                self.resource_tex_table
+                    .insert(ResourceId::clone(&resource_id), Rc::new(tex_buf));
+                self.tex_idx.insert(TextureId::clone(&tex_id), tex_idx);
+                self.used_tex_idx.push_back((tex_idx, tex_id));
+                Some(tex_idx)
+            } else {
+                return None;
+            }
+        }
+    }
+
+    pub fn use_string(
+        &mut self,
+        gl: &WebGlRenderingContext,
+        text: &String,
+    ) -> Option<(i32, [f64; 2])> {
+        let tex_id = TextureId::String(text.clone());
+        if let Some((tex_buf, size)) = self
+            .string_tex_table
+            .get(text)
+            .map(|(tex_buf, size)| (Rc::clone(&tex_buf), size.clone()))
+        {
+            if let Some(tex_idx) = self.tex_idx.get(&tex_id) {
+                Some((*tex_idx, size))
+            } else {
                 let tex_idx = self.use_idx();
                 gl.active_texture(Self::tex_flag(tex_idx));
                 gl.bind_texture(web_sys::WebGlRenderingContext::TEXTURE_2D, Some(&tex_buf));
                 self.tex_idx.insert(TextureId::clone(&tex_id), tex_idx);
                 self.used_tex_idx.push_back((tex_idx, tex_id));
-                Some(tex_idx)
-            } else {
-                let data = resource_arena.get_as::<resource::ImageData>(resource_id);
-                if let Some(data) = data {
-                    let tex_idx = self.use_idx();
-                    let tex_buf = gl.create_texture().unwrap();
-                    gl.active_texture(Self::tex_flag(tex_idx));
-                    gl.bind_texture(web_sys::WebGlRenderingContext::TEXTURE_2D, Some(&tex_buf));
-                    gl.pixel_storei(web_sys::WebGlRenderingContext::PACK_ALIGNMENT, 1);
-                    gl.tex_parameteri(
-                        web_sys::WebGlRenderingContext::TEXTURE_2D,
-                        web_sys::WebGlRenderingContext::TEXTURE_MIN_FILTER,
-                        web_sys::WebGlRenderingContext::LINEAR as i32,
-                    );
-                    gl.tex_parameteri(
-                        web_sys::WebGlRenderingContext::TEXTURE_2D,
-                        web_sys::WebGlRenderingContext::TEXTURE_MAG_FILTER,
-                        web_sys::WebGlRenderingContext::LINEAR as i32,
-                    );
-                    gl.tex_parameteri(
-                        web_sys::WebGlRenderingContext::TEXTURE_2D,
-                        web_sys::WebGlRenderingContext::TEXTURE_WRAP_S,
-                        web_sys::WebGlRenderingContext::CLAMP_TO_EDGE as i32,
-                    );
-                    gl.tex_parameteri(
-                        web_sys::WebGlRenderingContext::TEXTURE_2D,
-                        web_sys::WebGlRenderingContext::TEXTURE_WRAP_T,
-                        web_sys::WebGlRenderingContext::CLAMP_TO_EDGE as i32,
-                    );
-                    let _ = gl.tex_image_2d_with_u32_and_u32_and_image(
-                        web_sys::WebGlRenderingContext::TEXTURE_2D,
-                        0,
-                        web_sys::WebGlRenderingContext::RGBA as i32,
-                        web_sys::WebGlRenderingContext::RGBA,
-                        web_sys::WebGlRenderingContext::UNSIGNED_BYTE,
-                        &data.element(),
-                    );
-                    self.tex_table
-                        .insert(ResourceId::clone(&resource_id), Rc::new(tex_buf));
-                    self.tex_idx.insert(TextureId::clone(&tex_id), tex_idx);
-                    self.used_tex_idx.push_back((tex_idx, tex_id));
-                    Some(tex_idx)
-                } else {
-                    return None;
-                }
+                Some((tex_idx, size))
             }
+        } else {
+            let canvas = &self.string_canvas;
+            let ctx = canvas
+                .get_context("2d")
+                .unwrap()
+                .unwrap()
+                .dyn_into::<web_sys::CanvasRenderingContext2d>()
+                .unwrap();
+            let line_width = 8.0;
+
+            let font_height = 64.0;
+            ctx.set_font(&format!("{}px san-serif", font_height));
+
+            let metrix = ctx.measure_text(&text).unwrap();
+            let width = metrix.width() + line_width * 2.0;
+            let height = font_height + line_width * 2.0;
+
+            canvas.set_width(width as u32);
+            canvas.set_height(height as u32);
+            let ctx = canvas
+                .get_context("2d")
+                .unwrap()
+                .unwrap()
+                .dyn_into::<web_sys::CanvasRenderingContext2d>()
+                .unwrap();
+
+            ctx.set_line_width(line_width);
+            ctx.set_font(&format!("{}px san-serif", font_height));
+            ctx.set_stroke_style(&JsValue::from(
+                crate::libs::color::Pallet::gray(0).a(100).to_string(),
+            ));
+            ctx.set_fill_style(&JsValue::from(
+                crate::libs::color::Pallet::gray(9).a(100).to_string(),
+            ));
+            ctx.set_text_baseline("middle");
+
+            ctx.clear_rect(0.0, 0.0, width, height);
+
+            let _ = ctx.stroke_text(&text, line_width, height / 2.0);
+            let _ = ctx.fill_text(&text, line_width, height / 2.0);
+
+            let tex_idx = self.use_idx();
+            let tex_buf = gl.create_texture().unwrap();
+            gl.active_texture(Self::tex_flag(tex_idx));
+            gl.bind_texture(web_sys::WebGlRenderingContext::TEXTURE_2D, Some(&tex_buf));
+            gl.pixel_storei(web_sys::WebGlRenderingContext::PACK_ALIGNMENT, 1);
+            gl.tex_parameteri(
+                web_sys::WebGlRenderingContext::TEXTURE_2D,
+                web_sys::WebGlRenderingContext::TEXTURE_MIN_FILTER,
+                web_sys::WebGlRenderingContext::LINEAR as i32,
+            );
+            gl.tex_parameteri(
+                web_sys::WebGlRenderingContext::TEXTURE_2D,
+                web_sys::WebGlRenderingContext::TEXTURE_MAG_FILTER,
+                web_sys::WebGlRenderingContext::LINEAR as i32,
+            );
+            gl.tex_parameteri(
+                web_sys::WebGlRenderingContext::TEXTURE_2D,
+                web_sys::WebGlRenderingContext::TEXTURE_WRAP_S,
+                web_sys::WebGlRenderingContext::CLAMP_TO_EDGE as i32,
+            );
+            gl.tex_parameteri(
+                web_sys::WebGlRenderingContext::TEXTURE_2D,
+                web_sys::WebGlRenderingContext::TEXTURE_WRAP_T,
+                web_sys::WebGlRenderingContext::CLAMP_TO_EDGE as i32,
+            );
+            let _ = gl.tex_image_2d_with_u32_and_u32_and_canvas(
+                web_sys::WebGlRenderingContext::TEXTURE_2D,
+                0,
+                web_sys::WebGlRenderingContext::RGBA as i32,
+                web_sys::WebGlRenderingContext::RGBA,
+                web_sys::WebGlRenderingContext::UNSIGNED_BYTE,
+                &self.string_canvas,
+            );
+            self.string_tex_table
+                .insert(text.clone(), (Rc::new(tex_buf), [width, height]));
+            self.tex_idx.insert(TextureId::clone(&tex_id), tex_idx);
+            self.used_tex_idx.push_back((tex_idx, tex_id));
+            Some((tex_idx, [width, height]))
         }
     }
 

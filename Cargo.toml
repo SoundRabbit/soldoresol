@@ -86,6 +86,7 @@ features = [
     "RequestMode",
     "Response",
     "StyleSheet",
+    "TextMetrics",
     "Url",
     "WebGlBuffer",
     "WebGlFramebuffer",
