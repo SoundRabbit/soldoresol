@@ -991,14 +991,14 @@ impl SideMenu {
                         }
                     }),
                 ),
-                text::div("減衰量"),
+                text::div("減衰開始距離"),
                 Slider::empty(
                     slider::Props {
                         position: slider::Position::Linear {
                             val: pointlight.light_attenation,
                             min: 0.0,
-                            max: 1.0,
-                            step: 0.05,
+                            max: 10.0,
+                            step: 0.5,
                         },
                         range_is_editable: false,
                     },

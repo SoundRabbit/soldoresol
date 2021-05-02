@@ -146,7 +146,7 @@ impl Implement {
                     TableTool::Pointlight(PointlightTool {
                         light_intensity: 0.5,
                         light_attenation: 0.5,
-                        color: Pallet::blue(5).a(100),
+                        color: Pallet::gray(0).a(100),
                     }),
                 ],
                 0,

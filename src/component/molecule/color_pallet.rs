@@ -219,6 +219,7 @@ impl Styled for ColorPallet {
                     linear-gradient(-135deg, #fff 25%, #fff 25%, transparent 25%, transparent 75%, #fff 75%, #fff 75%)";
                 "background-size": "1rem 1rem";
                 "background-position": "0 0, 0.5rem 0.5rem";
+                "border": format!("0.1rem solid {}", Pallet::gray(0).a(100));
             }
 
             "color-sample" {
