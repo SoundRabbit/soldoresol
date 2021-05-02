@@ -85,7 +85,7 @@ vec4 shadowmapped() {
 
     float shadeIntensity = min(envIntensity, shadowmappedIntensity);
 
-    float lightIntensity = u_attenation != 0.0 ? u_lightIntensity / pow((len - u_attenation - 1.0), 2.0) : u_lightIntensity;
+    float lightIntensity = u_attenation != 0.0 ? u_lightIntensity / pow(max(0.0, len - u_attenation - 1.0), 2.0) : u_lightIntensity;
     return colorWithLight(shadeIntensity * lightIntensity);
 }
 

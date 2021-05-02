@@ -973,7 +973,7 @@ impl SideMenu {
                         position: slider::Position::Linear {
                             val: pointlight.light_intensity,
                             min: 0.0,
-                            max: 1.0,
+                            max: 20.0,
                             step: 0.1,
                         },
                         range_is_editable: false,
