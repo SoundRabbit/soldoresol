@@ -1,88 +1,116 @@
 use super::util::styled::{Style, Styled};
 use kagura::prelude::*;
 
-pub struct Props {
-    pub level: u32,
+pub struct Heading {}
+
+pub enum Variant {
+    Dark,
+    Light,
 }
 
-pub enum Msg {}
-
-pub enum On {}
-
-pub struct Heading {
-    level: u32,
-}
-
-impl Constructor for Heading {
-    fn constructor(props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) -> Self {
-        Self { level: props.level }
-    }
-}
-
-impl Component for Heading {
-    type Props = Props;
-    type Msg = Msg;
-    type Sub = On;
-
-    fn init(&mut self, props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) {
-        self.level = props.level;
+impl Heading {
+    pub fn h1(variant: Variant, attrs: Attributes, events: Events, children: Vec<Html>) -> Html {
+        Self::styled(Html::h1(
+            attrs.class(Self::class_name(1, &variant)),
+            events,
+            children,
+        ))
     }
 
-    fn update(&mut self, _: Self::Msg) -> Cmd<Self::Msg, Self::Sub> {
-        Cmd::none()
+    pub fn h2(variant: Variant, attrs: Attributes, events: Events, children: Vec<Html>) -> Html {
+        Self::styled(Html::h2(
+            attrs.class(Self::class_name(2, &variant)),
+            events,
+            children,
+        ))
     }
 
-    fn render(&self, children: Vec<Html>) -> Html {
-        Self::styled(match self.level {
-            1 => Html::h1(
-                Attributes::new()
-                    .class(Self::class("base"))
-                    .class("base--1"),
-                Events::new(),
-                children,
-            ),
-            2 => Html::h2(
-                Attributes::new()
-                    .class(Self::class("base"))
-                    .class("base--2"),
-                Events::new(),
-                children,
-            ),
-            3 => Html::h3(
-                Attributes::new()
-                    .class(Self::class("base"))
-                    .class("base--3"),
-                Events::new(),
-                children,
-            ),
-            4 => Html::h4(
-                Attributes::new()
-                    .class(Self::class("base"))
-                    .class("base--4"),
-                Events::new(),
-                children,
-            ),
-            5 => Html::h5(
-                Attributes::new()
-                    .class(Self::class("base"))
-                    .class("base--5"),
-                Events::new(),
-                children,
-            ),
-            6 => Html::h6(
-                Attributes::new()
-                    .class(Self::class("base"))
-                    .class("base--6"),
-                Events::new(),
-                children,
-            ),
-            _ => unreachable!(),
-        })
+    pub fn h3(variant: Variant, attrs: Attributes, events: Events, children: Vec<Html>) -> Html {
+        Self::styled(Html::h3(
+            attrs.class(Self::class_name(3, &variant)),
+            events,
+            children,
+        ))
+    }
+
+    pub fn h4(variant: Variant, attrs: Attributes, events: Events, children: Vec<Html>) -> Html {
+        Self::styled(Html::h4(
+            attrs.class(Self::class_name(4, &variant)),
+            events,
+            children,
+        ))
+    }
+
+    pub fn h5(variant: Variant, attrs: Attributes, events: Events, children: Vec<Html>) -> Html {
+        Self::styled(Html::h5(
+            attrs.class(Self::class_name(5, &variant)),
+            events,
+            children,
+        ))
+    }
+
+    pub fn h6(variant: Variant, attrs: Attributes, events: Events, children: Vec<Html>) -> Html {
+        Self::styled(Html::h6(
+            attrs.class(Self::class_name(6, &variant)),
+            events,
+            children,
+        ))
+    }
+
+    pub fn class_name(level: u32, variant: &Variant) -> String {
+        let sufix = match variant {
+            Variant::Dark => "dark",
+            Variant::Light => "light",
+        };
+
+        format!(
+            "{} {} {} {}",
+            Self::class("base"),
+            Self::class(&format!("base--{}", sufix)),
+            Self::class(&format!("base--{}", level)),
+            Self::class(&format!("base--{}-{}", level, sufix)),
+        )
     }
 }
 
 impl Styled for Heading {
     fn style() -> Style {
-        style! {}
+        style! {
+            "base" {
+                "margin" : "1.7em 0 0.7em";
+                "padding" : "0.3em 1em 0.3em";
+                "font-weight": "700";
+            }
+
+            "base--dark" {
+                "color" : format!("{}", crate::libs::color::Pallet::gray(2).a(100));
+                "border-bottom" : format!("0.1em solid {}", crate::libs::color::Pallet::gray(2).a(100));
+            }
+
+            "base--light" {
+                "color" : format!("{}", crate::libs::color::Pallet::gray(6).a(100));
+                "border-bottom" : format!("0.1em solid {}", crate::libs::color::Pallet::gray(6).a(100));
+            }
+
+            "base--2" {
+                "font-size": "1.5em";
+            }
+
+            "base--3" {
+                "font-size": "1.25em";
+            }
+
+            "base--4" {
+                "font-size": "1.13em";
+            }
+
+            "base--5" {
+                "font-size": "1.06em";
+            }
+
+            "base--6" {
+                "font-size": "1.03em";
+            }
+        }
     }
 }

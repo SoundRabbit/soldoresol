@@ -1,4 +1,5 @@
 use super::atom::btn::{self, Btn};
+use super::atom::heading::{self, Heading};
 use super::molecule::modal::{self, Modal};
 use super::util::styled::{Style, Styled};
 use kagura::prelude::*;
@@ -58,7 +59,8 @@ impl Component for ModalNotification {
                                 Attributes::new().class(Self::class("container")),
                                 Events::new(),
                                 vec![
-                                    Html::h2(
+                                    Heading::h2(
+                                        heading::Variant::Light,
                                         Attributes::new(),
                                         Events::new(),
                                         vec![Html::text("Soldoresol dev")],
@@ -68,7 +70,8 @@ impl Component for ModalNotification {
                                         Events::new(),
                                         vec![Html::text("更新：2020-01-24")],
                                     ),
-                                    Html::h3(
+                                    Heading::h3(
+                                        heading::Variant::Light,
                                         Attributes::new(),
                                         Events::new(),
                                         vec![Html::text("主な変更点")],

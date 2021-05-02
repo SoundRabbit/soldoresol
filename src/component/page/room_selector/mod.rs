@@ -3,6 +3,7 @@ use super::atom::{
     card::{self, Card},
     dropdown::{self, Dropdown},
     header::{self, Header},
+    heading::{self, Heading},
 };
 use super::organism::modal_notification::{self, ModalNotification};
 use super::template::{
@@ -272,7 +273,8 @@ impl RoomSelector {
                         Events::new(),
                         vec![
                             Html::dt(
-                                Attributes::new(),
+                                Attributes::new()
+                                    .class(Heading::class_name(6, &heading::Variant::Light)),
                                 Events::new(),
                                 vec![Html::text("最終使用")],
                             ),
@@ -286,7 +288,12 @@ impl RoomSelector {
                                         .unwrap_or(String::from("")),
                                 )],
                             ),
-                            Html::dt(Attributes::new(), Events::new(), vec![Html::text("メモ")]),
+                            Html::dt(
+                                Attributes::new()
+                                    .class(Heading::class_name(6, &heading::Variant::Light)),
+                                Events::new(),
+                                vec![Html::text("メモ")],
+                            ),
                             Html::dd(
                                 Attributes::new(),
                                 Events::new(),

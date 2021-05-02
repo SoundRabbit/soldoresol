@@ -407,28 +407,22 @@ impl Character {
                         Html::div(
                             Attributes::new(),
                             Events::new(),
-                            vec![
-                                Html::div(
-                                    Attributes::new(),
-                                    Events::new(),
-                                    vec![Html::text("キャラクター色")],
-                                ),
-                                ColorPallet::empty(
-                                    color_pallet::Props {
-                                        default_selected: character.name_color().clone(),
-                                    },
-                                    Subscription::new(move |sub| match sub {
-                                        color_pallet::On::SelectColor(name_color) => {
-                                            Msg::Sub(On::SetCommonProps {
-                                                name: None,
-                                                display_name: None,
-                                                description: None,
-                                                name_color: Some(name_color),
-                                            })
-                                        }
-                                    }),
-                                ),
-                            ],
+                            vec![ColorPallet::empty(
+                                color_pallet::Props {
+                                    default_selected: character.name_color().clone(),
+                                    title: Some(String::from("キャラクター色")),
+                                },
+                                Subscription::new(move |sub| match sub {
+                                    color_pallet::On::SelectColor(name_color) => {
+                                        Msg::Sub(On::SetCommonProps {
+                                            name: None,
+                                            display_name: None,
+                                            description: None,
+                                            name_color: Some(name_color),
+                                        })
+                                    }
+                                }),
+                            )],
                         ),
                     ],
                 ),

@@ -6,6 +6,7 @@ use kagura::prelude::*;
 
 pub struct Props {
     pub default_selected: Pallet,
+    pub title: Option<String>,
 }
 
 pub enum Msg {
@@ -20,12 +21,14 @@ pub enum On {
 pub struct ColorPallet {
     selected: Pallet,
     default_selected: Pallet,
+    title: Option<String>,
 }
 
 impl Default for Props {
     fn default() -> Self {
         Self {
             default_selected: Pallet::gray(9).a(100),
+            title: None,
         }
     }
 }
@@ -35,6 +38,7 @@ impl Constructor for ColorPallet {
         Self {
             selected: props.default_selected.clone(),
             default_selected: props.default_selected.clone(),
+            title: props.title,
         }
     }
 }
@@ -49,6 +53,8 @@ impl Component for ColorPallet {
             self.default_selected = props.default_selected.clone();
             self.selected = props.default_selected.clone();
         }
+
+        self.title = props.title;
     }
 
     fn update(&mut self, msg: Self::Msg) -> Cmd<Self::Msg, Self::Sub> {
@@ -66,10 +72,41 @@ impl Component for ColorPallet {
             Attributes::new().class(Self::class("base")),
             Events::new(),
             vec![
-                Heading::with_child(
-                    heading::Props { level: 5 },
-                    Subscription::none(),
-                    Html::text("透明度"),
+                self.title
+                    .as_ref()
+                    .map(|title| {
+                        Heading::h4(
+                            heading::Variant::Dark,
+                            Attributes::new(),
+                            Events::new(),
+                            vec![Html::text(title)],
+                        )
+                    })
+                    .unwrap_or(Html::none()),
+                Html::div(
+                    Attributes::new().class(Self::class("color-base")),
+                    Events::new(),
+                    vec![Html::div(
+                        Attributes::new()
+                            .class(Self::class("color-sample"))
+                            .style("background-color", self.selected.to_string()),
+                        Events::new(),
+                        vec![],
+                    )],
+                ),
+                Html::div(
+                    Attributes::new().class(Self::class("table")),
+                    Events::new(),
+                    vec![
+                        self.render_column(pallet::Kind::Gray),
+                        self.render_column(pallet::Kind::Red),
+                        self.render_column(pallet::Kind::Orange),
+                        self.render_column(pallet::Kind::Yellow),
+                        self.render_column(pallet::Kind::Green),
+                        self.render_column(pallet::Kind::Blue),
+                        self.render_column(pallet::Kind::Purple),
+                        self.render_column(pallet::Kind::Pink),
+                    ],
                 ),
                 Slider::empty(
                     slider::Props {
@@ -90,20 +127,6 @@ impl Component for ColorPallet {
                             _ => Msg::NoOp,
                         }
                     }),
-                ),
-                Html::div(
-                    Attributes::new().class(Self::class("table")),
-                    Events::new(),
-                    vec![
-                        self.render_column(pallet::Kind::Gray),
-                        self.render_column(pallet::Kind::Red),
-                        self.render_column(pallet::Kind::Orange),
-                        self.render_column(pallet::Kind::Yellow),
-                        self.render_column(pallet::Kind::Green),
-                        self.render_column(pallet::Kind::Blue),
-                        self.render_column(pallet::Kind::Purple),
-                        self.render_column(pallet::Kind::Pink),
-                    ],
                 ),
             ],
         ))
@@ -159,6 +182,8 @@ impl Styled for ColorPallet {
                 "display": "grid";
                 "grid-auto-rows": "max-content";
                 "row-gap": "0.35em";
+                "background-color": Pallet::gray(8).a(100).to_string();
+                "padding": "0.35em";
             }
 
             "table" {
@@ -184,6 +209,21 @@ impl Styled for ColorPallet {
 
             "cell--selected-light" {
                 "box-shadow": format!("0 0 0.1em 0.1em {} inset", Pallet::gray(0).a(100));
+            }
+
+            "color-base" {
+                "width": "100%";
+                "height": "2rem";
+                "background-color": format!("{}", Pallet::gray(2).a(100));
+                "background-image": "linear-gradient(45deg,  #fff 25%, #fff 25%, transparent 25%, transparent 75%, #fff 75%, #fff 75%),
+                    linear-gradient(-135deg, #fff 25%, #fff 25%, transparent 25%, transparent 75%, #fff 75%, #fff 75%)";
+                "background-size": "1rem 1rem";
+                "background-position": "0 0, 0.5rem 0.5rem";
+            }
+
+            "color-sample" {
+                "width": "100%";
+                "height": "100%";
             }
         }
     }

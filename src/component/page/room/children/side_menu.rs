@@ -387,6 +387,7 @@ impl SideMenu {
                                 ColorPallet::empty(
                                     color_pallet::Props {
                                         default_selected: table.grid_color().clone(),
+                                        ..Default::default()
                                     },
                                     Subscription::new({
                                         let table_id = BlockId::clone(&self.selecting_table_id);
@@ -407,6 +408,7 @@ impl SideMenu {
                                 ColorPallet::empty(
                                     color_pallet::Props {
                                         default_selected: table.background_color().clone(),
+                                        ..Default::default()
                                     },
                                     Subscription::new({
                                         let table_id = BlockId::clone(&self.selecting_table_id);
@@ -486,6 +488,7 @@ impl SideMenu {
                 ColorPallet::empty(
                     color_pallet::Props {
                         default_selected: tool.pallet.clone(),
+                        title: Some(String::from("ペン色")),
                     },
                     Subscription::new({
                         let mut tool = PenTool::clone(tool);
@@ -604,6 +607,7 @@ impl SideMenu {
                 ColorPallet::empty(
                     color_pallet::Props {
                         default_selected: line_shape.pallet.clone(),
+                        title: Some(String::from("線色")),
                     },
                     Subscription::new({
                         let mut line_shape = LineShapeTool::clone(line_shape);
@@ -664,7 +668,7 @@ impl SideMenu {
                 TabMenu::with_children(
                     tab_menu::Props {
                         selected: 0,
-                        tabs: vec![String::from("色 1"), String::from("色 2")],
+                        tabs: vec![String::from("線色"), String::from("塗り潰し色")],
                         controlled: false,
                     },
                     Subscription::none(),
@@ -672,6 +676,7 @@ impl SideMenu {
                         ColorPallet::empty(
                             color_pallet::Props {
                                 default_selected: fill_shape.line_pallet.clone(),
+                                ..Default::default()
                             },
                             Subscription::new({
                                 let mut fill_shape = FillShapeTool::clone_of(fill_shape);
@@ -692,6 +697,7 @@ impl SideMenu {
                         ColorPallet::empty(
                             color_pallet::Props {
                                 default_selected: fill_shape.fill_pallet.clone(),
+                                ..Default::default()
                             },
                             Subscription::new({
                                 let mut fill_shape = FillShapeTool::clone_of(fill_shape);
@@ -937,6 +943,7 @@ impl SideMenu {
                 ColorPallet::empty(
                     color_pallet::Props {
                         default_selected: boxblock.color.clone(),
+                        title: Some(String::from("ブロック色")),
                     },
                     Subscription::new({
                         let mut boxblock = BoxblockTool::clone_of(boxblock);
@@ -1011,6 +1018,7 @@ impl SideMenu {
                 ColorPallet::empty(
                     color_pallet::Props {
                         default_selected: pointlight.color.clone(),
+                        title: Some(String::from("光源色")),
                     },
                     Subscription::new({
                         let mut pointlight = PointlightTool::clone_of(pointlight);
