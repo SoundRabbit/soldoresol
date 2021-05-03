@@ -199,8 +199,10 @@ impl Component for Character {
                     |character: &block::character::Character| {
                         let prop_num = character.properties().count();
 
-                        let mut prop_names = vec![String::from("[common]")];
-                        let mut prop_tabs = vec![self.render_common(character)];
+                        let mut prop_names =
+                            vec![String::from("[common]"), String::from("[立ち絵]")];
+                        let mut prop_tabs =
+                            vec![self.render_common(character), self.render_tex(character)];
 
                         for prop_id in character.properties() {
                             self.block_arena
@@ -223,7 +225,7 @@ impl Component for Character {
                                     },
                                     Subscription::new(move |sub| match sub {
                                         tab_menu::On::ChangeSelectedTab(idx) => {
-                                            if idx <= prop_num {
+                                            if idx <= prop_num + 1 {
                                                 Msg::SetSelectedTabIdx(idx)
                                             } else {
                                                 Msg::Sub(On::AddPropertyChild {
@@ -236,6 +238,7 @@ impl Component for Character {
                                     prop_tabs,
                                 ),
                                 self.render_bottom_menu(),
+                                self.render_modal(character.current_tex_idx()),
                             ],
                         )
                     },
@@ -252,179 +255,184 @@ impl Character {
                 .class(Self::class("content-base"))
                 .class("pure-form"),
             Events::new(),
-            vec![
-                Html::div(
-                    Attributes::new().class(Self::class("common")),
-                    Events::new(),
-                    vec![
-                        Html::div(
-                            Attributes::new().class(Self::class("common-props")),
-                            Events::new(),
-                            vec![
-                                Html::div(
-                                    Attributes::new().class(Self::class("key-value")),
-                                    Events::new(),
-                                    vec![
-                                        text::label("表示名", &self.element_id.input_display_name),
-                                        Html::input(
-                                            Attributes::new()
-                                                .value(character.display_name())
-                                                .id(&self.element_id.input_display_name),
-                                            Events::new().on_input(|display_name| {
-                                                Msg::Sub(On::SetCommonProps {
-                                                    name: None,
-                                                    display_name: Some(display_name),
-                                                    description: None,
-                                                    name_color: None,
-                                                })
-                                            }),
-                                            vec![],
-                                        ),
-                                        text::label(
-                                            "キャラクター名",
-                                            &self.element_id.input_character_name,
-                                        ),
-                                        Html::input(
-                                            Attributes::new()
-                                                .value(character.name())
-                                                .id(&self.element_id.input_character_name),
-                                            Events::new().on_input(|name| {
-                                                Msg::Sub(On::SetCommonProps {
-                                                    name: Some(name),
-                                                    display_name: None,
-                                                    description: None,
-                                                    name_color: None,
-                                                })
-                                            }),
-                                            vec![],
-                                        ),
-                                    ],
-                                ),
-                                Html::textarea(
-                                    Attributes::new()
-                                        .value(character.description())
-                                        .class(Self::class("common-description")),
-                                    Events::new().on_input(|description| {
-                                        Msg::Sub(On::SetCommonProps {
-                                            name: None,
-                                            display_name: None,
-                                            description: Some(description),
-                                            name_color: None,
-                                        })
-                                    }),
-                                    vec![],
-                                ),
-                            ],
-                        ),
-                        Html::div(
-                            Attributes::new().class(Self::class("common-imgs")),
-                            Events::new(),
-                            vec![
-                                Dropdown::with_children(
-                                    dropdown::Props {
-                                        direction: dropdown::Direction::Bottom,
-                                        text: String::from(character.current_tex_name()),
-                                        toggle_type: dropdown::ToggleType::Click,
-                                        variant: btn::Variant::DarkLikeMenu,
+            vec![Html::div(
+                Attributes::new().class(Self::class("common")),
+                Events::new(),
+                vec![
+                    Html::div(
+                        Attributes::new().class(Self::class("common-props")),
+                        Events::new(),
+                        vec![
+                            Html::div(
+                                Attributes::new().class(Self::class("key-value")),
+                                Events::new(),
+                                vec![
+                                    text::label("表示名", &self.element_id.input_display_name),
+                                    Html::input(
+                                        Attributes::new()
+                                            .value(character.display_name())
+                                            .id(&self.element_id.input_display_name),
+                                        Events::new().on_input(|display_name| {
+                                            Msg::Sub(On::SetCommonProps {
+                                                name: None,
+                                                display_name: Some(display_name),
+                                                description: None,
+                                                name_color: None,
+                                            })
+                                        }),
+                                        vec![],
+                                    ),
+                                    text::label(
+                                        "キャラクター名",
+                                        &self.element_id.input_character_name,
+                                    ),
+                                    Html::input(
+                                        Attributes::new()
+                                            .value(character.name())
+                                            .id(&self.element_id.input_character_name),
+                                        Events::new().on_input(|name| {
+                                            Msg::Sub(On::SetCommonProps {
+                                                name: Some(name),
+                                                display_name: None,
+                                                description: None,
+                                                name_color: None,
+                                            })
+                                        }),
+                                        vec![],
+                                    ),
+                                ],
+                            ),
+                            Html::textarea(
+                                Attributes::new()
+                                    .value(character.description())
+                                    .class(Self::class("common-description")),
+                                Events::new().on_input(|description| {
+                                    Msg::Sub(On::SetCommonProps {
+                                        name: None,
+                                        display_name: None,
+                                        description: Some(description),
+                                        name_color: None,
+                                    })
+                                }),
+                                vec![],
+                            ),
+                        ],
+                    ),
+                    Html::div(
+                        Attributes::new(),
+                        Events::new(),
+                        vec![ColorPallet::empty(
+                            color_pallet::Props {
+                                default_selected: character.name_color().clone(),
+                                title: Some(String::from("キャラクター色")),
+                            },
+                            Subscription::new(move |sub| match sub {
+                                color_pallet::On::SelectColor(name_color) => {
+                                    Msg::Sub(On::SetCommonProps {
+                                        name: None,
+                                        display_name: None,
+                                        description: None,
+                                        name_color: Some(name_color),
+                                    })
+                                }
+                            }),
+                        )],
+                    ),
+                ],
+            )],
+        )
+    }
+
+    fn render_tex(&self, character: &block::character::Character) -> Html {
+        Html::div(
+            Attributes::new()
+                .class(Self::class("content-base"))
+                .class("pure-form"),
+            Events::new(),
+            vec![Html::div(
+                Attributes::new().class(Self::class("common-imgs")),
+                Events::new(),
+                vec![
+                    Dropdown::with_children(
+                        dropdown::Props {
+                            direction: dropdown::Direction::Bottom,
+                            text: String::from(character.current_tex_name()),
+                            toggle_type: dropdown::ToggleType::Click,
+                            variant: btn::Variant::DarkLikeMenu,
+                        },
+                        Subscription::none(),
+                        vec![
+                            character
+                                .tex_names()
+                                .into_iter()
+                                .enumerate()
+                                .map(|(tex_idx, tex_name)| {
+                                    Self::render_tex_list_item(tex_idx, tex_name)
+                                })
+                                .collect(),
+                            vec![Html::div(
+                                Attributes::new().class(Self::class("common-imgs-list-btn")),
+                                Events::new().on("click", |e| {
+                                    e.stop_propagation();
+                                    Msg::Sub(On::AddTexture)
+                                }),
+                                vec![Btn::with_child(
+                                    btn::Props {
+                                        variant: btn::Variant::Dark,
                                     },
                                     Subscription::none(),
-                                    vec![
-                                        character
-                                            .tex_names()
-                                            .into_iter()
-                                            .enumerate()
-                                            .map(|(tex_idx, tex_name)| {
-                                                Self::render_tex_list_item(tex_idx, tex_name)
-                                            })
-                                            .collect(),
-                                        vec![Html::div(
-                                            Attributes::new()
-                                                .class(Self::class("common-imgs-list-btn")),
-                                            Events::new().on("click", |e| {
-                                                e.stop_propagation();
-                                                Msg::Sub(On::AddTexture)
-                                            }),
-                                            vec![Btn::with_child(
-                                                btn::Props {
-                                                    variant: btn::Variant::Dark,
-                                                },
-                                                Subscription::none(),
-                                                Html::text("追加"),
-                                            )],
-                                        )],
-                                    ]
-                                    .into_iter()
-                                    .flatten()
-                                    .collect(),
-                                ),
-                                Html::input(
-                                    Attributes::new().value(character.current_tex_name()),
-                                    Events::new().on_input({
-                                        let current_tex_idx = character.current_tex_idx();
-                                        move |tex_name| {
-                                            Msg::Sub(On::SetTextureName {
-                                                tex_idx: current_tex_idx,
-                                                tex_name: tex_name,
-                                            })
-                                        }
-                                    }),
-                                    vec![],
-                                ),
-                                Html::div(
-                                    Attributes::new().class(Self::class("common-imgs-container")),
-                                    Events::new(),
-                                    vec![character
-                                        .current_tex_id()
-                                        .and_then(|r_id| {
-                                            self.resource_arena.get_as::<resource::ImageData>(r_id)
-                                        })
-                                        .map(|img| {
-                                            Html::img(
-                                                Attributes::new()
-                                                    .draggable(false)
-                                                    .class(Self::class("common-imgs-img"))
-                                                    .src(img.url().as_ref()),
-                                                Events::new(),
-                                                vec![],
-                                            )
-                                        })
-                                        .unwrap_or(Html::none())],
-                                ),
-                                Btn::with_child(
-                                    btn::Props {
-                                        variant: btn::Variant::Primary,
-                                    },
-                                    Subscription::new(move |sub| match sub {
-                                        btn::On::Click => Msg::SetModal(Modal::ImportedFiles),
-                                    }),
-                                    Html::text("画像を選択"),
-                                ),
-                            ],
-                        ),
-                        Html::div(
-                            Attributes::new(),
-                            Events::new(),
-                            vec![ColorPallet::empty(
-                                color_pallet::Props {
-                                    default_selected: character.name_color().clone(),
-                                    title: Some(String::from("キャラクター色")),
-                                },
-                                Subscription::new(move |sub| match sub {
-                                    color_pallet::On::SelectColor(name_color) => {
-                                        Msg::Sub(On::SetCommonProps {
-                                            name: None,
-                                            display_name: None,
-                                            description: None,
-                                            name_color: Some(name_color),
-                                        })
-                                    }
-                                }),
+                                    Html::text("追加"),
+                                )],
                             )],
-                        ),
-                    ],
-                ),
-                self.render_modal(character.current_tex_idx()),
-            ],
+                        ]
+                        .into_iter()
+                        .flatten()
+                        .collect(),
+                    ),
+                    Html::input(
+                        Attributes::new().value(character.current_tex_name()),
+                        Events::new().on_input({
+                            let current_tex_idx = character.current_tex_idx();
+                            move |tex_name| {
+                                Msg::Sub(On::SetTextureName {
+                                    tex_idx: current_tex_idx,
+                                    tex_name: tex_name,
+                                })
+                            }
+                        }),
+                        vec![],
+                    ),
+                    Html::div(
+                        Attributes::new().class(Self::class("common-imgs-container")),
+                        Events::new(),
+                        vec![character
+                            .current_tex_id()
+                            .and_then(|r_id| {
+                                self.resource_arena.get_as::<resource::ImageData>(r_id)
+                            })
+                            .map(|img| {
+                                Html::img(
+                                    Attributes::new()
+                                        .draggable(false)
+                                        .class(Self::class("common-imgs-img"))
+                                        .src(img.url().as_ref()),
+                                    Events::new(),
+                                    vec![],
+                                )
+                            })
+                            .unwrap_or(Html::none())],
+                    ),
+                    Btn::with_child(
+                        btn::Props {
+                            variant: btn::Variant::Primary,
+                        },
+                        Subscription::new(move |sub| match sub {
+                            btn::On::Click => Msg::SetModal(Modal::ImportedFiles),
+                        }),
+                        Html::text("画像を選択"),
+                    ),
+                ],
+            )],
         )
     }
 
@@ -614,7 +622,7 @@ impl Styled for Character {
 
             "common" {
                 "display": "grid";
-                "grid-template-columns": "1fr 15rem";
+                "grid-template-columns": "1fr max-content";
                 "grid-template-rows": "20rem";
                 "column-gap": ".35em";
                 "row-gap": ".65em";
