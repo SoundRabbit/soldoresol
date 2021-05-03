@@ -87,6 +87,13 @@ pub enum On {
         tex_idx: usize,
         tex_name: String,
     },
+    SetBoxblockCommonProps {
+        boxblock_id: BlockId,
+        name: Option<String>,
+        display_name: Option<String>,
+        color: Option<crate::libs::color::Pallet>,
+        size: Option<[f32; 3]>,
+    },
     SetPropertyName {
         property_id: BlockId,
         name: String,
@@ -480,7 +487,23 @@ impl RoomModeless {
                         resource_arena: resource::ArenaRef::clone(&self.resource_arena),
                         boxblock_id: BlockId::clone(boxblock_id),
                     },
-                    Subscription::none(),
+                    Subscription::new({
+                        let boxblock_id = BlockId::clone(boxblock_id);
+                        move |sub| match sub {
+                            boxblock::On::SetCommonProps {
+                                name,
+                                display_name,
+                                size,
+                                color,
+                            } => Msg::Sub(On::SetBoxblockCommonProps {
+                                boxblock_id,
+                                name,
+                                display_name,
+                                size,
+                                color,
+                            }),
+                        }
+                    }),
                 ),
                 _ => Html::none(),
             }],

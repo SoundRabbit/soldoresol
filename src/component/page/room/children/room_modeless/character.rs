@@ -641,6 +641,8 @@ impl Styled for Character {
                 "display": "grid";
                 "grid-template-rows": "max-content max-content 1fr max-content";
                 "row-gap": "0.35em";
+                "max-height": "100%";
+                "min-height": "100%";
             }
 
             "common-imgs-container" {

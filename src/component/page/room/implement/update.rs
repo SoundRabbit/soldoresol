@@ -546,6 +546,37 @@ impl Implement {
                 );
             }
 
+            Msg::SetBoxblockCommonProps {
+                boxblock_id,
+                display_name,
+                name,
+                color,
+                size,
+            } => {
+                self.block_arena.map_mut(
+                    &boxblock_id,
+                    |character: &mut block::boxblock::Boxblock| {
+                        if let Some(name) = name {
+                            character.set_name(name);
+                        }
+
+                        if let Some(display_name) = display_name {
+                            character.set_display_name(display_name);
+                        }
+
+                        if let Some(color) = color {
+                            character.set_color(color);
+                        }
+
+                        if let Some(size) = size {
+                            character.set_size(size);
+                        }
+                    },
+                );
+
+                self.gl_render_async();
+            }
+
             Msg::SetPropertyName { property_id, name } => {
                 self.block_arena
                     .map_mut(&property_id, |prop: &mut block::property::Property| {

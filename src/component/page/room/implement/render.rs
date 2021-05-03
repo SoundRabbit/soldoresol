@@ -501,6 +501,19 @@ impl Implement {
                                             tex_idx,
                                             tex_name,
                                         },
+                                        room_modeless::On::SetBoxblockCommonProps {
+                                            boxblock_id,
+                                            name,
+                                            display_name,
+                                            color,
+                                            size,
+                                        } => Msg::SetBoxblockCommonProps {
+                                            boxblock_id,
+                                            name,
+                                            display_name,
+                                            color,
+                                            size,
+                                        },
                                         room_modeless::On::SetPropertyName {
                                             property_id,
                                             name,

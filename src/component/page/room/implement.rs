@@ -147,6 +147,13 @@ pub enum Msg {
         tex_idx: usize,
         tex_name: String,
     },
+    SetBoxblockCommonProps {
+        boxblock_id: BlockId,
+        name: Option<String>,
+        display_name: Option<String>,
+        color: Option<crate::libs::color::Pallet>,
+        size: Option<[f32; 3]>,
+    },
     SetPropertyName {
         property_id: BlockId,
         name: String,
