@@ -5,6 +5,8 @@ pub struct Boxblock {
     size: [f32; 3],
     color: Pallet,
     is_fixed: bool,
+    name: String,
+    display_name: String,
 }
 
 impl Boxblock {
@@ -14,6 +16,8 @@ impl Boxblock {
             size,
             color,
             is_fixed: true,
+            name: String::new(),
+            display_name: String::new(),
         }
     }
 
@@ -23,6 +27,8 @@ impl Boxblock {
             size: self.size.clone(),
             color: self.color,
             is_fixed: self.is_fixed,
+            name: self.name.clone(),
+            display_name: self.display_name.clone(),
         }
     }
 
@@ -56,5 +62,21 @@ impl Boxblock {
 
     pub fn set_is_fixed(&mut self, is_fixed: bool) {
         self.is_fixed = is_fixed;
+    }
+
+    pub fn name(&self) -> &String {
+        &self.name
+    }
+
+    pub fn set_name(&mut self, name: String) {
+        self.name = name;
+    }
+
+    pub fn display_name(&self) -> &String {
+        &self.display_name
+    }
+
+    pub fn set_display_name(&mut self, display_name: String) {
+        self.display_name = display_name;
     }
 }

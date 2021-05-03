@@ -4,6 +4,7 @@ use crate::libs::random_id::U128Id;
 use crate::libs::try_ref::{TryMut, TryRef};
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::collections::VecDeque;
 use std::rc::Rc;
 use wasm_bindgen::{prelude::*, JsCast};
 
@@ -426,15 +427,21 @@ impl Arena {
         &self,
         block_ids: impl Iterator<Item = BlockId>,
     ) -> impl FnOnce() -> std::pin::Pin<Box<dyn std::future::Future<Output = toml::Value>>> {
-        let mut blocks = vec![];
+        let mut blocks = VecDeque::new();
         for block_id in block_ids {
             if let Some(block) = self.table.borrow().get(&block_id) {
-                blocks.push((block_id, ArenaBlock::clone(block)));
+                blocks.push_back((block_id, ArenaBlock::clone(block)));
             }
         }
         move || {
             Box::pin(async move {
                 let mut packed = toml::value::Array::new();
+
+                if let Some((_, block)) = blocks.pop_front() {
+                    let mut packed_block = toml::value::Table::new();
+                    packed_block.insert(String::from("_payload"), block.pack_to_toml().await);
+                    packed.push(toml::Value::Table(packed_block));
+                }
 
                 for (block_id, block) in blocks {
                     let mut packed_block = toml::value::Table::new();
@@ -461,13 +468,19 @@ impl Arena {
             if let Some(toml::Value::Array(packed)) = packed.remove("block") {
                 for packed_block in packed {
                     if let toml::Value::Table(mut packed_block) = packed_block {
-                        if let (Some(toml::Value::String(block_id)), Some(payload)) =
-                            (packed_block.remove("_id"), packed_block.remove("_payload"))
-                        {
-                            if let Some(block_id) = BlockId::from_str(&block_id) {
-                                let payload = ArenaBlock::unpack_from_toml(payload).await;
-                                unpacked.push((block_id, payload));
-                            }
+                        if let Some(payload) = packed_block.remove("_payload") {
+                            let block_id = packed_block
+                                .remove("_id")
+                                .and_then(|block_id| {
+                                    if let toml::Value::String(block_id) = block_id {
+                                        BlockId::from_str(&block_id)
+                                    } else {
+                                        None
+                                    }
+                                })
+                                .unwrap_or(BlockId::new(U128Id::new()));
+                            let payload = ArenaBlock::unpack_from_toml(payload).await;
+                            unpacked.push((block_id, payload));
                         }
                     }
                 }
