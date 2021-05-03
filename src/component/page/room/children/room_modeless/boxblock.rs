@@ -71,7 +71,7 @@ impl Component for Boxblock {
             Msg::NoOp => Cmd::none(),
             Msg::Sub(sub) => Cmd::sub(sub),
             Msg::PackToDownload => {
-                let mut block_ids = vec![BlockId::clone(&self.boxblock_id)];
+                let block_ids = vec![BlockId::clone(&self.boxblock_id)];
 
                 let task = self.block_arena.pack_to_toml(block_ids.into_iter());
                 Cmd::task(move |resolve| {
@@ -97,7 +97,7 @@ impl Component for Boxblock {
                         .map(&self.boxblock_id, |boxblock: &block::boxblock::Boxblock| {
                             boxblock.name().clone()
                         })
-                        .unwrap_or(String::from("キャラクター"));
+                        .unwrap_or(String::from("ブロック"));
                     let _ =
                         a.set_attribute("download", &(format!("ブロック_{}.toml", boxblock_name)));
                     let _ = a.set_attribute("style", "display: none");
@@ -267,7 +267,7 @@ impl Styled for Boxblock {
 
             "common" {
                 "display": "grid";
-                "grid-template-columns": "1fr 15rem";
+                "grid-template-columns": "1fr max-content";
                 "grid-template-rows": "20rem";
                 "column-gap": ".35em";
                 "row-gap": ".65em";

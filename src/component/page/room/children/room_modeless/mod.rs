@@ -318,7 +318,7 @@ impl RoomModeless {
                     Content::Boxblock(boxblock_id) => vec![
                         fa::i("fa-cube"),
                         Html::text(self.block_arena.map(boxblock_id, |boxblock: &block::boxblock::Boxblock| {
-                            format!(" {:?}", boxblock.position())
+                            format!(" {}", boxblock.name())
                         }).unwrap_or(String::new()))
                     ]
                 };
