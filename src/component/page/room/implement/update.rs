@@ -97,6 +97,13 @@ impl Implement {
                                 kind: ContextmenuKind::Character(block_id),
                             });
                         }
+                        ObjectId::Boxblock(block_id, _) => {
+                            self.contextmenu = Some(Contextmenu {
+                                page_x: page_x,
+                                page_y: page_y,
+                                kind: ContextmenuKind::Boxblock(block_id),
+                            });
+                        }
                         _ => {}
                     }
                 } else {

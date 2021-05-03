@@ -344,6 +344,7 @@ struct Contextmenu {
 
 enum ContextmenuKind {
     Character(BlockId),
+    Boxblock(BlockId),
 }
 
 impl Constructor for Implement {

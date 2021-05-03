@@ -577,6 +577,9 @@ impl Implement {
                         ContextmenuKind::Character(block_id) => {
                             self.render_contextmenu_character(block_id)
                         }
+                        ContextmenuKind::Boxblock(block_id) => {
+                            self.render_contextmenu_boxblock(block_id)
+                        }
                     },
                 )],
             )
@@ -595,6 +598,23 @@ impl Implement {
                 move |sub| match sub {
                     btn::On::Click => Msg::OpenNewModeless {
                         content: room_modeless::Content::Character(block_id),
+                    },
+                }
+            }),
+            Html::text("編集"),
+        )]
+    }
+
+    fn render_contextmenu_boxblock(&self, block_id: &BlockId) -> Vec<Html> {
+        vec![Btn::with_child(
+            btn::Props {
+                variant: btn::Variant::Menu,
+            },
+            Subscription::new({
+                let block_id = BlockId::clone(&block_id);
+                move |sub| match sub {
+                    btn::On::Click => Msg::OpenNewModeless {
+                        content: room_modeless::Content::Boxblock(block_id),
                     },
                 }
             }),
