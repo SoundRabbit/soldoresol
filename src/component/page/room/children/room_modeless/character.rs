@@ -1,6 +1,5 @@
 use super::super::atom::btn::{self, Btn};
 use super::super::atom::dropdown::{self, Dropdown};
-use super::super::atom::slider::{self, Slider};
 use super::super::atom::text;
 use super::super::modal_imported_files::{self, ModalImportedFiles};
 use super::super::molecule::block_prop::{self, BlockProp};
@@ -9,9 +8,7 @@ use super::super::molecule::tab_menu::{self, TabMenu};
 use super::super::util::styled::{Style, Styled};
 use crate::arena::block::{self, BlockId};
 use crate::arena::resource;
-use async_std::sync::{Arc, Mutex};
 use kagura::prelude::*;
-use std::rc::Rc;
 use wasm_bindgen::JsCast;
 
 pub struct Props {
