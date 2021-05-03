@@ -688,6 +688,13 @@ impl Implement {
             } else {
                 return;
             };
+
+            let p = [
+                (p[0] * 2.0).round() / 2.0,
+                (p[1] * 2.0).round() / 2.0,
+                (p[2] * 2.0).round() / 2.0,
+            ];
+
             self.create_new_character(
                 Some(character.size as f32),
                 Some(character.height as f32),
@@ -718,6 +725,12 @@ impl Implement {
             } else {
                 return;
             };
+
+            let p = [
+                (p[0] * 2.0).round() / 2.0,
+                (p[1] * 2.0).round() / 2.0,
+                (p[2] * 2.0).round() / 2.0,
+            ];
 
             let p = [
                 p[0] + n[0] * boxblock.size[0] as f32 * 0.5,
@@ -752,6 +765,12 @@ impl Implement {
             } else {
                 return;
             };
+
+            let p = [
+                (p[0] * 2.0).round() / 2.0,
+                (p[1] * 2.0).round() / 2.0,
+                (p[2] * 2.0).round() / 2.0,
+            ];
 
             let p = [p[0] + n[0] * 0.5, p[1] + n[1] * 0.5, p[2] + n[2] * 0.5];
 

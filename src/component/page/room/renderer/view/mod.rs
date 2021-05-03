@@ -1,4 +1,5 @@
 pub mod boxblock;
+pub mod boxblock_name;
 pub mod character;
 pub mod character_base;
 pub mod pointlight;

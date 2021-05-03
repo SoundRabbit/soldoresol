@@ -18,6 +18,7 @@ pub enum ProgramType {
     BoxblockProgram,
     ScreenProgram,
     ShadowmapProgram,
+    NamePlateProgram,
 }
 
 pub struct WebGlF32Vbo(web_sys::WebGlBuffer);
@@ -246,6 +247,9 @@ impl WebGlRenderingContext {
                 }
                 ProgramType::ShadowmapProgram => {
                     Box::new(program::ShadowmapProgram::new(&self)) as Box<dyn Program>
+                }
+                ProgramType::NamePlateProgram => {
+                    Box::new(program::NamePlateProgram::new(&self)) as Box<dyn Program>
                 }
             };
             self.program_table.insert(program_type.clone(), program);
