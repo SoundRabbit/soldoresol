@@ -56,25 +56,16 @@ impl BoxblockName {
                 if boxblock.display_name() != "" {
                     let name_tex = tex_table.use_string(gl, boxblock.display_name());
                     if let Some((name_tex_idx, name_tex_size)) = name_tex {
-                        let text_color = boxblock.color();
+                        let mut text_color = boxblock.color().clone();
+                        text_color.idx = 9;
 
-                        if text_color.idx >= 6 {
-                            let text_color = text_color.to_color().to_f32array();
-                            gl.set_unif_text_color_1(&[
-                                text_color[0],
-                                text_color[1],
-                                text_color[2],
-                            ]);
-                            gl.set_unif_text_color_2(&[1.0, 1.0, 1.0]);
-                        } else {
-                            let text_color = text_color.to_color().to_f32array();
-                            gl.set_unif_text_color_1(&[0.0, 0.0, 0.0]);
-                            gl.set_unif_text_color_2(&[
-                                text_color[0],
-                                text_color[1],
-                                text_color[2],
-                            ]);
-                        }
+                        let text_color = text_color.to_color().to_f32array();
+                        let bg_color = crate::libs::color::Pallet::gray(0)
+                            .a(100)
+                            .to_color()
+                            .to_f32array();
+                        gl.set_unif_text_color_1(&[text_color[0], text_color[1], text_color[2]]);
+                        gl.set_unif_text_color_2(&[bg_color[0], bg_color[1], bg_color[2]]);
 
                         let name_width = ((0.5 * name_tex_size[0] / name_tex_size[1]) as f32).min(
                             (boxblock.size()[0].powi(2) + boxblock.size()[1].powi(2)).sqrt() * 2.0,
@@ -86,10 +77,11 @@ impl BoxblockName {
                                 camera.x_axis_rotation() - std::f32::consts::FRAC_PI_2,
                             )
                             .with_z_axis_rotation(camera.z_axis_rotation())
-                            .with_movement(&[0.0, 0.0, boxblock.size()[2]])
+                            .with_movement(&[0.0, 0.0, boxblock.size()[2] / 2.0 + 0.5])
                             .with_movement(boxblock.position())
                             .into();
                         let mvp_matrix = vp_matrix.dot(&model_matrix);
+                        gl.set_unif_area_size(&[name_width, name_height]);
                         gl.set_unif_texture(name_tex_idx);
                         gl.set_unif_translate(mvp_matrix.reversed_axes());
                         gl.draw_elements_with_i32(

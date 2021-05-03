@@ -408,6 +408,7 @@ pub struct NamePlateProgram {
     program: WebGlProgram,
     a_vertex_location: WebGlAttributeLocation,
     a_texture_coord_location: WebGlAttributeLocation,
+    u_area_size_location: WebGlUniformLocation,
     u_text_color_1_location: WebGlUniformLocation,
     u_text_color_2_location: WebGlUniformLocation,
     u_translate_location: WebGlUniformLocation,
@@ -424,6 +425,7 @@ impl NamePlateProgram {
             WebGlAttributeLocation(gl.get_attrib_location(&program, "a_vertex") as u32);
         let a_texture_coord_location =
             WebGlAttributeLocation(gl.get_attrib_location(&program, "a_textureCoord") as u32);
+        let u_area_size_location = gl.get_uniform_location(&program, "u_areaSize").unwrap();
         let u_translate_location = gl.get_uniform_location(&program, "u_translate").unwrap();
         let u_texture_location = gl.get_uniform_location(&program, "u_texture").unwrap();
         let u_text_color_1_location = gl.get_uniform_location(&program, "u_textColor1").unwrap();
@@ -433,6 +435,7 @@ impl NamePlateProgram {
             program,
             a_vertex_location,
             a_texture_coord_location,
+            u_area_size_location,
             u_translate_location,
             u_texture_location,
             u_text_color_1_location,
@@ -445,6 +448,7 @@ impl Program for NamePlateProgram {
     accesser!(program);
     accesser!(a_texture_coord_location as attr_tex_coord: WebGlAttributeLocation);
     accesser!(a_vertex_location as attr_vertex: WebGlAttributeLocation);
+    accesser!(u_area_size_location as unif_area_size: WebGlUniformLocation);
     accesser!(u_texture_location as unif_texture: WebGlUniformLocation);
     accesser!(u_translate_location as unif_translate: WebGlUniformLocation);
     accesser!(u_text_color_1_location as unif_text_color_1: WebGlUniformLocation);

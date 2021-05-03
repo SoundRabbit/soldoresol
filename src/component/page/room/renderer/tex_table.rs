@@ -159,14 +159,12 @@ impl TexTable {
                 .unwrap()
                 .dyn_into::<web_sys::CanvasRenderingContext2d>()
                 .unwrap();
-            let line_width = 16.0;
-
             let font_height = 64.0;
             ctx.set_font(&format!("{}px san-serif bold", font_height));
 
             let metrix = ctx.measure_text(&text).unwrap();
-            let width = metrix.width() + line_width * 2.0;
-            let height = font_height + line_width * 2.0;
+            let width = metrix.width();
+            let height = font_height;
 
             canvas.set_width(width as u32);
             canvas.set_height(height as u32);
@@ -177,16 +175,14 @@ impl TexTable {
                 .dyn_into::<web_sys::CanvasRenderingContext2d>()
                 .unwrap();
 
-            ctx.set_line_width(line_width);
-            ctx.set_font(&format!("{}px san-serif", font_height));
+            ctx.set_font(&format!("{}px bold san-serif", font_height));
             ctx.set_stroke_style(&JsValue::from("#FFFFFF"));
             ctx.set_fill_style(&JsValue::from("#000000"));
             ctx.set_text_baseline("middle");
 
             ctx.clear_rect(0.0, 0.0, width, height);
 
-            let _ = ctx.stroke_text(&text, line_width, height / 2.0);
-            let _ = ctx.fill_text(&text, line_width, height / 2.0);
+            let _ = ctx.fill_text(&text, 0.0, height / 2.0);
 
             let tex_idx = self.use_idx();
             let tex_buf = gl.create_texture().unwrap();
