@@ -416,7 +416,7 @@ pub struct NamePlateProgram {
 
 impl NamePlateProgram {
     pub fn new(gl: &WebGlRenderingContext) -> Self {
-        let vert = include_str!("./shader/default.vert");
+        let vert = include_str!("./shader/name_plate.vert");
         let frag = include_str!("./shader/name_plate.frag");
         let program = create_program(gl, vert, frag);
 

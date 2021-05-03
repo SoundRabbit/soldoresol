@@ -43,10 +43,9 @@ impl BoxblockName {
         boxblock_ids: impl Iterator<Item = BlockId>,
     ) {
         gl.depth_func(web_sys::WebGlRenderingContext::LEQUAL);
-        gl.use_program(ProgramType::CharacterProgram);
-
+        gl.use_program(ProgramType::NamePlateProgram);
         gl.set_attr_vertex(&self.vertexis_buffer, 3, 0);
-        gl.set_attr_vertex(&self.texture_coord_buffer, 3, 0);
+        gl.set_attr_tex_coord(&self.texture_coord_buffer, 2, 0);
         gl.bind_buffer(
             web_sys::WebGlRenderingContext::ELEMENT_ARRAY_BUFFER,
             Some(&self.index_buffer),
@@ -83,11 +82,11 @@ impl BoxblockName {
                         let name_height = name_width * (name_tex_size[1] / name_tex_size[0]) as f32;
                         let model_matrix: Array2<f32> = ModelMatrix::new()
                             .with_scale(&[name_width, 1.0, name_height])
-                            .with_movement(&[0.0, 0.0, boxblock.size()[2]])
                             .with_x_axis_rotation(
                                 camera.x_axis_rotation() - std::f32::consts::FRAC_PI_2,
                             )
                             .with_z_axis_rotation(camera.z_axis_rotation())
+                            .with_movement(&[0.0, 0.0, boxblock.size()[2]])
                             .with_movement(boxblock.position())
                             .into();
                         let mvp_matrix = vp_matrix.dot(&model_matrix);

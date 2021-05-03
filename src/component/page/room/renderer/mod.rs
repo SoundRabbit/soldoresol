@@ -581,21 +581,19 @@ impl Renderer {
                             true,
                         );
 
-                        block_arena.map(world.selecting_table(), |table: &block::table::Table| {
-                            self.render_view_boxblock.render(
-                                &mut self.gl,
-                                &vp_matrix,
-                                block_arena,
-                                table.boxblocks().map(BlockId::clone),
-                                &light,
-                                &pointlight.color(),
-                                pointlight.light_intensity(),
-                                Some(&mut self.tex_table),
-                                Some(&self.tex_shadowmap),
-                                Some(&light_vps),
-                                Some(pointlight.light_attenation()),
-                            )
-                        });
+                        self.render_view_boxblock.render(
+                            &mut self.gl,
+                            &vp_matrix,
+                            block_arena,
+                            table.boxblocks().map(BlockId::clone),
+                            &light,
+                            &pointlight.color(),
+                            pointlight.light_intensity(),
+                            Some(&mut self.tex_table),
+                            Some(&self.tex_shadowmap),
+                            Some(&light_vps),
+                            Some(pointlight.light_attenation()),
+                        );
 
                         self.render_frontscreen();
                     },
@@ -640,6 +638,13 @@ impl Renderer {
                     None,
                 );
 
+                self.render_view_character_base.render(
+                    &mut self.gl,
+                    &vp_matrix,
+                    block_arena,
+                    world.characters().map(BlockId::clone),
+                );
+
                 self.render_view_boxblock_name.render(
                     &mut self.gl,
                     &mut self.tex_table,
@@ -647,13 +652,6 @@ impl Renderer {
                     &vp_matrix,
                     block_arena,
                     table.boxblocks().map(BlockId::clone),
-                );
-
-                self.render_view_character_base.render(
-                    &mut self.gl,
-                    &vp_matrix,
-                    block_arena,
-                    world.characters().map(BlockId::clone),
                 );
 
                 self.render_view_character.render(
