@@ -8,6 +8,7 @@ use std::collections::VecDeque;
 use std::rc::Rc;
 use wasm_bindgen::{prelude::*, JsCast};
 
+pub mod block_trait;
 pub mod boxblock;
 pub mod character;
 pub mod chat;

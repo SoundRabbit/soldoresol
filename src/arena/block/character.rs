@@ -1,3 +1,4 @@
+use super::block_trait::DisplayNamed;
 use super::BlockId;
 use crate::arena::resource::ResourceId;
 use crate::libs::clone_of::CloneOf;
@@ -189,6 +190,16 @@ impl Character {
 
     pub fn add_property(&mut self, property_id: BlockId) {
         self.properties.push(property_id);
+    }
+}
+
+impl DisplayNamed for Character {
+    fn display_name(&self) -> &String {
+        self.display_name()
+    }
+
+    fn set_display_name(&mut self, name: String) {
+        self.set_display_name(name);
     }
 }
 

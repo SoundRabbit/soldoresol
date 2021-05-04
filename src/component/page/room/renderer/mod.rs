@@ -40,7 +40,7 @@ pub struct Renderer {
     render_view_character: view::character::Character,
     render_view_character_base: view::character_base::CharacterBase,
     render_view_boxblock: view::boxblock::Boxblock,
-    render_view_boxblock_name: view::boxblock_name::BoxblockName,
+    render_view_nameplate: view::nameplate::Nameplate,
     render_view_pointlight: view::pointlight::Pointlight,
     render_screen: view::screen::Screen,
 
@@ -191,7 +191,7 @@ impl Renderer {
         let render_view_character = view::character::Character::new(&gl);
         let render_view_character_base = view::character_base::CharacterBase::new(&gl);
         let render_view_boxblock = view::boxblock::Boxblock::new(&gl);
-        let render_view_boxblock_name = view::boxblock_name::BoxblockName::new(&gl);
+        let render_view_nameplate = view::nameplate::Nameplate::new(&gl);
         let render_view_pointlight = view::pointlight::Pointlight::new(&gl);
         let render_screen = view::screen::Screen::new(&gl);
 
@@ -327,7 +327,7 @@ impl Renderer {
             render_view_character,
             render_view_character_base,
             render_view_boxblock,
-            render_view_boxblock_name,
+            render_view_nameplate,
             render_view_pointlight,
             render_screen,
             depth_screen,
@@ -645,13 +645,22 @@ impl Renderer {
                     world.characters().map(BlockId::clone),
                 );
 
-                self.render_view_boxblock_name.render(
+                self.render_view_nameplate.render(
                     &mut self.gl,
                     &mut self.tex_table,
                     &camera_matrix,
                     &vp_matrix,
                     block_arena,
                     table.boxblocks().map(BlockId::clone),
+                );
+
+                self.render_view_nameplate.render(
+                    &mut self.gl,
+                    &mut self.tex_table,
+                    &camera_matrix,
+                    &vp_matrix,
+                    block_arena,
+                    world.characters().map(BlockId::clone),
                 );
 
                 self.render_view_character.render(

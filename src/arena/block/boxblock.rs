@@ -1,3 +1,4 @@
+use super::block_trait::DisplayNamed;
 use crate::libs::color::Pallet;
 
 pub struct Boxblock {
@@ -78,5 +79,15 @@ impl Boxblock {
 
     pub fn set_display_name(&mut self, display_name: String) {
         self.display_name = display_name;
+    }
+}
+
+impl DisplayNamed for Boxblock {
+    fn display_name(&self) -> &String {
+        self.name()
+    }
+
+    fn set_display_name(&mut self, name: String) {
+        self.set_name(name)
     }
 }
