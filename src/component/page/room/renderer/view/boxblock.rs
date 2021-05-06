@@ -147,9 +147,10 @@ impl Boxblock {
             gl.set_unif_light_vp_nz(light_vps[5].clone().reversed_axes());
             gl.set_unif_is_shadowmap(1);
             gl.set_unif_attenation(light_attenation);
-            gl.set_unif_shade_intensity(0.9);
+            gl.set_unif_shade_intensity(0.5);
         } else {
             gl.set_unif_shade_intensity(0.5);
+            gl.set_unif_attenation(1.0);
             gl.set_unif_is_shadowmap(0);
         }
 

@@ -67,11 +67,11 @@ surface cylinderShader(cameraRay a) {
 }
 
 vec4 convRGBA(float depth){
-    float r = depth;
-    float g = fract(r * 255.0);
-    float b = fract(g * 255.0);
-    float a = fract(b * 255.0);
-    float coef = 1.0 / 255.0;
+    float r = max(0.0, depth);
+    float g = fract(r * 64.0);
+    float b = fract(g * 64.0);
+    float a = fract(b * 64.0);
+    float coef = 1.0 / 64.0;
     r -= g * coef;
     g -= b * coef;
     b -= a * coef;
