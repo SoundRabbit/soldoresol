@@ -280,12 +280,13 @@ impl WebGlRenderingContext {
     setter!(unif unif_bg_color: 4fv as set_unif_bg_color);
     setter!(unif unif_bg_color_1: 4fv as set_unif_bg_color_1);
     setter!(unif unif_bg_color_2: 4fv as set_unif_bg_color_2);
-    setter!(unif unif_light_intensity: 1f as set_unif_light_intensity);
+    setter!(unif unif_camera: 3fv as set_unif_camera);
     setter!(unif unif_flag_round: 1i as set_unif_flag_round);
     setter!(unif unif_inv_model: matrix4fv as set_unif_inv_model);
     setter!(unif unif_is_shadowmap: 1i as set_unif_is_shadowmap);
     setter!(unif unif_light: 3fv as set_unif_light);
     setter!(unif unif_light_color: 4fv as set_unif_light_color);
+    setter!(unif unif_light_intensity: 1f as set_unif_light_intensity);
     setter!(unif unif_light_vp_nx: matrix4fv as set_unif_light_vp_nx);
     setter!(unif unif_light_vp_ny: matrix4fv as set_unif_light_vp_ny);
     setter!(unif unif_light_vp_nz: matrix4fv as set_unif_light_vp_nz);

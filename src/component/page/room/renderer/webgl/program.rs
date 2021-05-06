@@ -35,6 +35,7 @@ pub trait Program {
     accesser!(None as unif_bg_color: WebGlUniformLocation);
     accesser!(None as unif_bg_color_1: WebGlUniformLocation);
     accesser!(None as unif_bg_color_2: WebGlUniformLocation);
+    accesser!(None as unif_camera: WebGlUniformLocation);
     accesser!(None as unif_flag_round: WebGlUniformLocation);
     accesser!(None as unif_inv_model: WebGlUniformLocation);
     accesser!(None as unif_is_shadowmap: WebGlUniformLocation);
@@ -214,6 +215,7 @@ pub struct BoxblockProgram {
     u_shadowmap_ny_location: WebGlUniformLocation,
     u_shadowmap_nz_location: WebGlUniformLocation,
     u_attenation_location: WebGlUniformLocation,
+    u_camera_location: WebGlUniformLocation,
 }
 
 impl BoxblockProgram {
@@ -254,6 +256,7 @@ impl BoxblockProgram {
         let u_shadowmap_nz_location = gl.get_uniform_location(&program, "u_shadowmapNz").unwrap();
 
         let u_attenation_location = gl.get_uniform_location(&program, "u_attenation").unwrap();
+        let u_camera_location = gl.get_uniform_location(&program, "u_camera").unwrap();
 
         Self {
             program,
@@ -281,6 +284,7 @@ impl BoxblockProgram {
             u_shadowmap_ny_location,
             u_shadowmap_nz_location,
             u_attenation_location,
+            u_camera_location,
         }
     }
 }
@@ -311,6 +315,7 @@ impl Program for BoxblockProgram {
     accesser!(u_shadowmap_ny_location as unif_shadowmap_ny: WebGlUniformLocation);
     accesser!(u_shadowmap_nz_location as unif_shadowmap_nz: WebGlUniformLocation);
     accesser!(u_attenation_location as unif_attenation: WebGlUniformLocation);
+    accesser!(u_camera_location as unif_camera: WebGlUniformLocation);
 }
 
 /*----------CharacterProgram----------*/

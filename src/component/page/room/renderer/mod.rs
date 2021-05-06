@@ -583,6 +583,7 @@ impl Renderer {
 
                         self.render_view_boxblock.render(
                             &mut self.gl,
+                            camera_matrix,
                             &vp_matrix,
                             block_arena,
                             table.boxblocks().map(BlockId::clone),
@@ -626,6 +627,7 @@ impl Renderer {
 
                 self.render_view_boxblock.render(
                     &mut self.gl,
+                    camera_matrix,
                     &vp_matrix,
                     block_arena,
                     table.boxblocks().map(BlockId::clone),

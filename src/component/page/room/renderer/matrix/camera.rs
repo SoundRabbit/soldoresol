@@ -148,6 +148,11 @@ impl CameraMatrix {
         view_matrix
     }
 
+    pub fn position(&self) -> [f32; 3] {
+        let p = self.inv_view_matrix().dot(&arr1(&[0.0, 0.0, 0.0, 1.0]));
+        [p[0], p[1], p[2]]
+    }
+
     pub fn perspective_matrix(&self, canvas_size: &[f32; 2]) -> Array2<f32> {
         let w = canvas_size[0];
         let h = canvas_size[1];

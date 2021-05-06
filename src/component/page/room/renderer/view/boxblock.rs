@@ -114,6 +114,7 @@ impl Boxblock {
     pub fn render(
         &self,
         gl: &mut WebGlRenderingContext,
+        camera: &CameraMatrix,
         vp_matrix: &Array2<f32>,
         block_arena: &block::Arena,
         boxblock_ids: impl Iterator<Item = BlockId>,
@@ -152,6 +153,7 @@ impl Boxblock {
             gl.set_unif_is_shadowmap(0);
         }
 
+        gl.set_unif_camera(&camera.position());
         gl.set_unif_light(light);
         gl.set_unif_light_color(&light_color.to_color().to_f32array());
         gl.set_unif_light_intensity(light_intensity);
@@ -208,6 +210,7 @@ impl Boxblock {
                     ModelMatrix::new().with_scale(&s).with_movement(p).into();
                 let inv_model_matrix: Array2<f32> = ModelMatrix::new()
                     .with_movement(&[-p[0], -p[1], -p[2]])
+                    .with_scale(&[1.0 / s[0], 1.0 / s[1], 1.0 / s[2]])
                     .into();
                 gl.set_unif_model(model_matrix.reversed_axes());
                 gl.set_unif_inv_model(inv_model_matrix.reversed_axes());

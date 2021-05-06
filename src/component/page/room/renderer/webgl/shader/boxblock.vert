@@ -1,3 +1,5 @@
+precision mediump float;
+
 attribute vec4 a_vertex;
 attribute vec3 a_normal;
 uniform mat4 u_model;
@@ -11,9 +13,6 @@ varying vec3 v_normal;
 void main() {
     vec4 p = u_model * a_vertex;
     vec4 pCamera = u_vp * p;
-
-    float near = 1.0;
-    float far = 100.0;
 
     v_position = p.xyz;
     v_normal = a_normal;
