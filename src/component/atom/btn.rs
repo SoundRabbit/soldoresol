@@ -112,26 +112,31 @@ impl Styled for Btn {
     fn style() -> Style {
         style! {
             "primary" {
+                "line-height": "1.5";
                 "background-color": color_system::blue(100, 5).to_string();
                 "color": color_system::gray(100, 0).to_string();
             }
 
             "secondary" {
+                "line-height": "1.5";
                 "background-color": color_system::gray(100, 5).to_string();
                 "color": color_system::gray(100, 0).to_string();
             }
 
             "danger" {
+                "line-height": "1.5";
                 "background-color": color_system::red(100, 5).to_string();
                 "color": color_system::gray(100, 0).to_string();
             }
 
             "dark" {
+                "line-height": "1.5";
                 "background-color": color_system::gray(100, 9).to_string();
                 "color": color_system::gray(100, 0).to_string();
             }
 
             "transparent-dark" {
+                "line-height": "1.5";
                 "background-color": "transparent";
                 "color": color_system::gray(100, 0).to_string();
             }
@@ -141,6 +146,7 @@ impl Styled for Btn {
             }
 
             "menu" {
+                "line-height": "1.5";
                 "background-color": color_system::gray(100, 9).to_string();
                 "color": color_system::gray(100, 0).to_string();
             }
@@ -150,6 +156,7 @@ impl Styled for Btn {
             }
 
             "menu-secondary" {
+                "line-height": "1.5";
                 "background-color": color_system::gray(100, 5).to_string();
                 "color": color_system::gray(100, 0).to_string();
             }

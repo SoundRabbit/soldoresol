@@ -59,9 +59,9 @@ vec4 colorWithEnvLight(vec3 n) {
 
 float restDepth(vec4 RGBA){
     const float rMask = 1.0;
-    const float gMask = 1.0 / 64.0;
-    const float bMask = 1.0 / (64.0 * 64.0);
-    const float aMask = 1.0 / (64.0 * 64.0 * 64.0);
+    const float gMask = 1.0 / 256.0;
+    const float bMask = 1.0 / (256.0 * 256.0);
+    const float aMask = 1.0 / (256.0 * 256.0 * 256.0);
     float depth = dot(RGBA, vec4(rMask, gMask, bMask, aMask));
     return depth;
 }
@@ -79,10 +79,10 @@ float shadowmappedBy(mat4 lightVp, sampler2D shadowmap, surface s) {
     float shadow = restDepth(texColorAround(shadowmap, texCoord));
     float near = 0.5;
     float far  = 100.0;
-    float linerDepth = 1.0 / (far - near);
-    linerDepth *= pLight.z / pLight.w;
-    float shadeIntensity = smoothstep(-1.0/2048.0, 1.0/2048.0, shadow - linerDepth);
-    return pow(shadeIntensity, 2.0);
+    float linerDepth = pLight.z / pLight.w / (far - near);
+    linerDepth = linerDepth;
+    float shadeIntensity = smoothstep(-1.0/1024.0, 1.0/1024.0, shadow - linerDepth);
+    return shadeIntensity;
 }
 
 vec4 shadowmapped(surface s) {
@@ -99,9 +99,9 @@ vec4 shadowmapped(surface s) {
 
     float envIntensity = normalVecIntensity(lp, s.n);
 
-    float shadeIntensity = shadowmappedIntensity;
+    float shadeIntensity = min(envIntensity, shadowmappedIntensity);
 
-    float lightIntensity = u_attenation != 0.0 ? pow(u_lightIntensity / max(1.0, len - u_attenation  + 1.0), 2.0) : pow(u_lightIntensity, 2.0);
+    float lightIntensity = u_attenation > 0.0 ? pow(u_lightIntensity / max(1.0, len - u_attenation  + 1.0), 2.0) : pow(u_lightIntensity, 2.0);
     return colorWithLight(shadeIntensity * lightIntensity);
 }
 
