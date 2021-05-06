@@ -23,7 +23,7 @@ uniform float u_attenation;
 uniform vec3 u_camera;
 uniform mat4 u_model;
 uniform mat4 u_vp;
-varying vec3 v_position;
+varying vec3 v_vertex;
 varying vec3 v_normal;
 
 #extension GL_EXT_frag_depth : enable
@@ -107,11 +107,10 @@ vec4 shadowmapped(surface s) {
 
 cameraRay getCameraRay() {
     vec4 c = u_invModel * vec4(u_camera, 1.0);
-    vec4 v = u_invModel * vec4(v_position, 1.0);
 
     cameraRay res;
     res.a =c.xyz;
-    res.t = v.xyz - c.xyz;
+    res.t = v_vertex - c.xyz;
 
     return res;
 }
@@ -182,8 +181,8 @@ surface cylinderShader(cameraRay a) {
     return s;
 }
 
-float fragDepth(surface s) {
-    vec4 p =  u_vp * vec4(s.p, 1.0);
+float fragDepth(vec3 s) {
+    vec4 p =  u_vp * vec4(s, 1.0);
     float ndc_depth = p.z / p.w;
     float far = gl_DepthRange.far;
     float near = gl_DepthRange.near;
@@ -197,5 +196,5 @@ void main() {
         : IF(u_isShadowmap) ? shadowmapped(s)
         : colorWithEnvLight(s.n);
     
-    gl_FragDepthEXT = s.disable ? 1.0 : fragDepth(s);
+    gl_FragDepthEXT = s.disable ? 1.0 : fragDepth(s.p);
 }

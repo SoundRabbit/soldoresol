@@ -46,6 +46,7 @@ impl Boxblock {
         &self,
         gl: &mut WebGlRenderingContext,
         shadowmap: &[(web_sys::WebGlTexture, U128Id); 6],
+        light_pos: &[f32; 3],
         light_vps: &[Array2<f32>; 6],
         block_arena: &block::Arena,
         boxblock_ids: Vec<BlockId>,
@@ -58,6 +59,8 @@ impl Boxblock {
             web_sys::WebGlRenderingContext::ELEMENT_ARRAY_BUFFER,
             Some(&self.index_buffer),
         );
+
+        gl.set_unif_camera(light_pos);
 
         for i in 0..6 {
             let tex_buf = &shadowmap[i].0;
@@ -89,8 +92,15 @@ impl Boxblock {
                     let p = boxblock.position();
                     let model_matrix: Array2<f32> =
                         ModelMatrix::new().with_scale(&s).with_movement(p).into();
+                    let inv_model_matrix: Array2<f32> = ModelMatrix::new()
+                        .with_movement(&[-p[0], -p[1], -p[2]])
+                        .with_scale(&[1.0 / s[0], 1.0 / s[1], 1.0 / s[2]])
+                        .into();
                     let mvp_matrix = vp_matrix.dot(&model_matrix);
+                    gl.set_unif_model(model_matrix.reversed_axes());
+                    gl.set_unif_inv_model(inv_model_matrix.reversed_axes());
                     gl.set_unif_translate(mvp_matrix.reversed_axes());
+                    gl.set_unif_vp(vp_matrix.clone().reversed_axes());
                     gl.draw_elements_with_i32(
                         web_sys::WebGlRenderingContext::TRIANGLES,
                         36,

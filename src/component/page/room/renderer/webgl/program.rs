@@ -216,6 +216,7 @@ pub struct BoxblockProgram {
     u_shadowmap_nz_location: WebGlUniformLocation,
     u_attenation_location: WebGlUniformLocation,
     u_camera_location: WebGlUniformLocation,
+    u_translate_location: WebGlUniformLocation,
 }
 
 impl BoxblockProgram {
@@ -257,6 +258,7 @@ impl BoxblockProgram {
 
         let u_attenation_location = gl.get_uniform_location(&program, "u_attenation").unwrap();
         let u_camera_location = gl.get_uniform_location(&program, "u_camera").unwrap();
+        let u_translate_location = gl.get_uniform_location(&program, "u_translate").unwrap();
 
         Self {
             program,
@@ -285,6 +287,7 @@ impl BoxblockProgram {
             u_shadowmap_nz_location,
             u_attenation_location,
             u_camera_location,
+            u_translate_location,
         }
     }
 }
@@ -316,6 +319,7 @@ impl Program for BoxblockProgram {
     accesser!(u_shadowmap_nz_location as unif_shadowmap_nz: WebGlUniformLocation);
     accesser!(u_attenation_location as unif_attenation: WebGlUniformLocation);
     accesser!(u_camera_location as unif_camera: WebGlUniformLocation);
+    accesser!(u_translate_location as unif_translate: WebGlUniformLocation);
 }
 
 /*----------CharacterProgram----------*/
@@ -552,6 +556,10 @@ pub struct ShadowmapProgram {
     program: web_sys::WebGlProgram,
     a_vertex_location: WebGlAttributeLocation,
     u_translate_location: WebGlUniformLocation,
+    u_camera_location: WebGlUniformLocation,
+    u_inv_model_location: WebGlUniformLocation,
+    u_model_location: WebGlUniformLocation,
+    u_vp_location: WebGlUniformLocation,
 }
 
 impl ShadowmapProgram {
@@ -563,11 +571,19 @@ impl ShadowmapProgram {
         let a_vertex_location =
             WebGlAttributeLocation(gl.get_attrib_location(&program, "a_vertex") as u32);
         let u_translate_location = gl.get_uniform_location(&program, "u_translate").unwrap();
+        let u_camera_location = gl.get_uniform_location(&program, "u_camera").unwrap();
+        let u_model_location = gl.get_uniform_location(&program, "u_model").unwrap();
+        let u_vp_location = gl.get_uniform_location(&program, "u_vp").unwrap();
+        let u_inv_model_location = gl.get_uniform_location(&program, "u_invModel").unwrap();
 
         Self {
             program,
             a_vertex_location,
             u_translate_location,
+            u_camera_location,
+            u_model_location,
+            u_vp_location,
+            u_inv_model_location,
         }
     }
 }
@@ -576,6 +592,10 @@ impl Program for ShadowmapProgram {
     accesser!(program);
     accesser!(a_vertex_location as attr_vertex: WebGlAttributeLocation);
     accesser!(u_translate_location as unif_translate: WebGlUniformLocation);
+    accesser!(u_camera_location as unif_camera: WebGlUniformLocation);
+    accesser!(u_model_location as unif_model: WebGlUniformLocation);
+    accesser!(u_vp_location as unif_vp: WebGlUniformLocation);
+    accesser!(u_inv_model_location as unif_inv_model: WebGlUniformLocation);
 }
 
 /*----------TablegridProgram----------*/

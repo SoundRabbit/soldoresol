@@ -1,21 +1,12 @@
-precision mediump float;
-
 attribute vec4 a_vertex;
 attribute vec3 a_normal;
-uniform mat4 u_model;
-uniform mat4 u_vp;
-varying vec3 v_position;
+uniform mat4 u_translate;
+varying vec3 v_vertex;
 varying vec3 v_normal;
 
-#define IF(x) (x != 0)
-#define IS_MAX(x, y, z) (x>=y && x>=z)
-
 void main() {
-    vec4 p = u_model * a_vertex;
-    vec4 pCamera = u_vp * p;
-
-    v_position = p.xyz;
+    v_vertex = a_vertex.xyz;
     v_normal = a_normal;
     
-    gl_Position = pCamera;
+    gl_Position = u_translate * a_vertex;
 }

@@ -147,9 +147,9 @@ impl Boxblock {
             gl.set_unif_light_vp_nz(light_vps[5].clone().reversed_axes());
             gl.set_unif_is_shadowmap(1);
             gl.set_unif_attenation(light_attenation);
+            gl.set_unif_shade_intensity(0.9);
         } else {
             gl.set_unif_shade_intensity(0.5);
-            gl.set_unif_light_intensity(0.1);
             gl.set_unif_is_shadowmap(0);
         }
 
@@ -212,8 +212,11 @@ impl Boxblock {
                     .with_movement(&[-p[0], -p[1], -p[2]])
                     .with_scale(&[1.0 / s[0], 1.0 / s[1], 1.0 / s[2]])
                     .into();
+                let mvp_matrix = vp_matrix.dot(&model_matrix);
+
                 gl.set_unif_model(model_matrix.reversed_axes());
                 gl.set_unif_inv_model(inv_model_matrix.reversed_axes());
+                gl.set_unif_translate(mvp_matrix.reversed_axes());
                 gl.set_unif_bg_color(&boxblock.color().to_color().to_f32array());
 
                 gl.draw_elements_with_i32(

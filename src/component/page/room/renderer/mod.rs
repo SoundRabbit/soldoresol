@@ -540,6 +540,7 @@ impl Renderer {
                             self.render_shadowmap_boxblock.render(
                                 &mut self.gl,
                                 &self.tex_shadowmap,
+                                pointlight.position(),
                                 &light_vps,
                                 &block_arena,
                                 table.boxblocks().map(BlockId::clone).collect(),
