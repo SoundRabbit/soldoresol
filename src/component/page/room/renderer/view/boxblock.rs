@@ -219,6 +219,7 @@ impl Boxblock {
                 gl.set_unif_inv_model(inv_model_matrix.reversed_axes());
                 gl.set_unif_translate(mvp_matrix.reversed_axes());
                 gl.set_unif_bg_color(&boxblock.color().to_color().to_f32array());
+                gl.set_unif_shape(boxblock.shape().as_num());
 
                 gl.draw_elements_with_i32(
                     web_sys::WebGlRenderingContext::TRIANGLES,

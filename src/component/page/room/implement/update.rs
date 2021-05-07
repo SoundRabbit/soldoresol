@@ -695,8 +695,14 @@ impl Implement {
             });
     }
 
-    fn create_new_boxblock(&mut self, pos: [f32; 3], size: [f32; 3], color: Pallet) {
-        let boxblock_block = block::boxblock::Boxblock::new(pos, size, color);
+    fn create_new_boxblock(
+        &mut self,
+        pos: [f32; 3],
+        size: [f32; 3],
+        color: Pallet,
+        shape: block::boxblock::Shape,
+    ) {
+        let boxblock_block = block::boxblock::Boxblock::new(pos, size, color, shape);
         let boxblock_id = self.block_arena.insert(boxblock_block);
         self.block_arena
             .map(&self.world_id, |world: &block::world::World| {

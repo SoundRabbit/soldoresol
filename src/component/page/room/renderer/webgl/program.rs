@@ -58,6 +58,7 @@ pub trait Program {
     accesser!(None as unif_shadowmap_nx: WebGlUniformLocation);
     accesser!(None as unif_shadowmap_ny: WebGlUniformLocation);
     accesser!(None as unif_shadowmap_nz: WebGlUniformLocation);
+    accesser!(None as unif_shape: WebGlUniformLocation);
     accesser!(None as unif_screen_size: WebGlUniformLocation);
     accesser!(None as unif_text_color_1: WebGlUniformLocation);
     accesser!(None as unif_text_color_2: WebGlUniformLocation);
@@ -217,6 +218,7 @@ pub struct BoxblockProgram {
     u_attenation_location: WebGlUniformLocation,
     u_camera_location: WebGlUniformLocation,
     u_translate_location: WebGlUniformLocation,
+    u_shape_location: WebGlUniformLocation,
 }
 
 impl BoxblockProgram {
@@ -259,6 +261,7 @@ impl BoxblockProgram {
         let u_attenation_location = gl.get_uniform_location(&program, "u_attenation").unwrap();
         let u_camera_location = gl.get_uniform_location(&program, "u_camera").unwrap();
         let u_translate_location = gl.get_uniform_location(&program, "u_translate").unwrap();
+        let u_shape_location = gl.get_uniform_location(&program, "u_shape").unwrap();
 
         Self {
             program,
@@ -288,6 +291,7 @@ impl BoxblockProgram {
             u_attenation_location,
             u_camera_location,
             u_translate_location,
+            u_shape_location,
         }
     }
 }
@@ -320,6 +324,7 @@ impl Program for BoxblockProgram {
     accesser!(u_attenation_location as unif_attenation: WebGlUniformLocation);
     accesser!(u_camera_location as unif_camera: WebGlUniformLocation);
     accesser!(u_translate_location as unif_translate: WebGlUniformLocation);
+    accesser!(u_shape_location as unif_shape: WebGlUniformLocation);
 }
 
 /*----------CharacterProgram----------*/
@@ -560,6 +565,7 @@ pub struct ShadowmapProgram {
     u_inv_model_location: WebGlUniformLocation,
     u_model_location: WebGlUniformLocation,
     u_vp_location: WebGlUniformLocation,
+    u_shape_location: WebGlUniformLocation,
 }
 
 impl ShadowmapProgram {
@@ -575,6 +581,7 @@ impl ShadowmapProgram {
         let u_model_location = gl.get_uniform_location(&program, "u_model").unwrap();
         let u_vp_location = gl.get_uniform_location(&program, "u_vp").unwrap();
         let u_inv_model_location = gl.get_uniform_location(&program, "u_invModel").unwrap();
+        let u_shape_location = gl.get_uniform_location(&program, "u_shape").unwrap();
 
         Self {
             program,
@@ -584,6 +591,7 @@ impl ShadowmapProgram {
             u_model_location,
             u_vp_location,
             u_inv_model_location,
+            u_shape_location,
         }
     }
 }
@@ -596,6 +604,7 @@ impl Program for ShadowmapProgram {
     accesser!(u_model_location as unif_model: WebGlUniformLocation);
     accesser!(u_vp_location as unif_vp: WebGlUniformLocation);
     accesser!(u_inv_model_location as unif_inv_model: WebGlUniformLocation);
+    accesser!(u_shape_location as unif_shape: WebGlUniformLocation);
 }
 
 /*----------TablegridProgram----------*/

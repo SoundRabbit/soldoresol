@@ -741,7 +741,7 @@ impl Implement {
             let s = boxblock.size;
             let s = [s[0] as f32, s[1] as f32, s[2] as f32];
 
-            self.create_new_boxblock(p, s, boxblock.color);
+            self.create_new_boxblock(p, s, boxblock.color, boxblock.shape);
         }
     }
 

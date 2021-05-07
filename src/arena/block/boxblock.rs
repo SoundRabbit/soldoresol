@@ -1,6 +1,13 @@
 use super::block_trait::DisplayNamed;
 use crate::libs::color::Pallet;
 
+#[derive(Clone)]
+pub enum Shape {
+    Cube,
+    Sphere,
+    Cyliner,
+}
+
 pub struct Boxblock {
     position: [f32; 3],
     size: [f32; 3],
@@ -8,10 +15,21 @@ pub struct Boxblock {
     is_fixed: bool,
     name: String,
     display_name: String,
+    shape: Shape,
+}
+
+impl Shape {
+    pub fn as_num(&self) -> i32 {
+        match self {
+            Self::Cube => 0,
+            Self::Sphere => 1,
+            Self::Cyliner => 2,
+        }
+    }
 }
 
 impl Boxblock {
-    pub fn new(position: [f32; 3], size: [f32; 3], color: Pallet) -> Self {
+    pub fn new(position: [f32; 3], size: [f32; 3], color: Pallet, shape: Shape) -> Self {
         Self {
             position,
             size,
@@ -19,6 +37,7 @@ impl Boxblock {
             is_fixed: true,
             name: String::new(),
             display_name: String::new(),
+            shape,
         }
     }
 
@@ -30,6 +49,7 @@ impl Boxblock {
             is_fixed: self.is_fixed,
             name: self.name.clone(),
             display_name: self.display_name.clone(),
+            shape: self.shape.clone(),
         }
     }
 
@@ -79,6 +99,10 @@ impl Boxblock {
 
     pub fn set_display_name(&mut self, display_name: String) {
         self.display_name = display_name;
+    }
+
+    pub fn shape(&self) -> &Shape {
+        &self.shape
     }
 }
 

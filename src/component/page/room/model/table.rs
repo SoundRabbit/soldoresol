@@ -138,6 +138,7 @@ impl CloneOf for CharacterTool {
 #[derive(Clone)]
 pub struct BoxblockTool {
     pub size: [f64; 3],
+    pub shape: crate::arena::block::boxblock::Shape,
     pub color: Pallet,
 }
 

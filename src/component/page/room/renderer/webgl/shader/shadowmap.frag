@@ -4,6 +4,7 @@ uniform mat4 u_model;
 uniform mat4 u_vp;
 uniform mat4 u_invModel;
 uniform vec3 u_camera;
+uniform int u_shape;
 varying vec3 v_vertex;
 
 #extension GL_EXT_frag_depth : enable
@@ -28,13 +29,45 @@ cameraRay getCameraRay() {
     return res;
 }
 
+surface sphareShader(cameraRay a) {
+    surface s;
+
+    vec3 tmp_a = a.t * a.t;
+    vec3 tmp_b = a.t * a.a;
+    vec3 tmp_c = a.a * a.a;
+
+    float aa = tmp_a.x + tmp_a.y + tmp_a.z;
+    float bb = 2.0 * (tmp_b.x + tmp_b.y + tmp_b.z);
+    float cc = tmp_c.x + tmp_c.y + tmp_c.z - 0.5 * 0.5;
+
+    float dd = bb * bb - 4.0 * aa * cc;
+
+    if(dd < 0.0) {
+        s.disable = true;
+    } else {
+        float t = (-bb - sqrt(dd)) / (2.0 * aa);
+        vec3 p = a.t * t + a.a;
+        s.p = (u_model * vec4(p, 1.0)).xyz;
+        s.disable = false;
+    }
+
+    return s;
+}
+
+surface cubeShader() {
+    surface s;
+    s.p = (u_model * vec4(v_vertex, 1.0)).xyz;
+    s.disable = false;
+    return s;
+}
+
 surface cylinderShader(cameraRay a) {
     float r = length(a.t.xy + a.a.xy);
 
     surface s;
 
     if(r < 0.5) {
-        vec3 p = a.t + a.a;
+        vec3 p = v_vertex;
         s.p = (u_model * vec4(p, 1.0)).xyz;
         s.disable = false;
     } else {
@@ -96,7 +129,14 @@ float linerDepth(vec3 s) {
 }
 
 void main(void){
-    surface s = cylinderShader(getCameraRay());
+    surface s;
+    if(u_shape == 1) {
+        s = sphareShader(getCameraRay());
+    } else if(u_shape == 2) {
+        s = cylinderShader(getCameraRay());
+    } else {
+        s = cubeShader();
+    }
     gl_FragColor = s.disable ? vec4(1.0, 1.0, 1.0, 1.0) : convRGBA(linerDepth(s.p));
     gl_FragDepthEXT = s.disable ? 1.0 : fragDepth(s.p);
 }

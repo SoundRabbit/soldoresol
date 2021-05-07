@@ -7,6 +7,5 @@ varying vec3 v_normal;
 void main() {
     v_vertex = a_vertex.xyz;
     v_normal = a_normal;
-    
-    gl_Position = u_translate * a_vertex;
+    gl_Position = u_translate * a_vertex;;
 }

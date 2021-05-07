@@ -3,6 +3,7 @@ use super::super::model::table::{
     ShapeTool, TableTool,
 };
 use super::atom::btn::{self, Btn};
+use super::atom::dropdown::{self, Dropdown};
 use super::atom::fa;
 use super::atom::slider::{self, Slider};
 use super::atom::text;
@@ -916,7 +917,7 @@ impl SideMenu {
                         }
                     }),
                 ),
-                text::div("奥行き（z方向）"),
+                text::div("高さ（z方向）"),
                 Slider::empty(
                     slider::Props {
                         position: slider::Position::Linear {
@@ -939,6 +940,72 @@ impl SideMenu {
                             _ => Msg::NoOp,
                         }
                     }),
+                ),
+                Dropdown::with_children(
+                    dropdown::Props {
+                        variant: btn::Variant::DarkLikeMenu,
+                        direction: dropdown::Direction::Bottom,
+                        text: match &boxblock.shape {
+                            block::boxblock::Shape::Cube => String::from("立方体"),
+                            block::boxblock::Shape::Sphere => String::from("球体"),
+                            block::boxblock::Shape::Cyliner => String::from("円柱"),
+                        },
+                        toggle_type: dropdown::ToggleType::Click,
+                    },
+                    Subscription::none(),
+                    vec![
+                        Btn::with_child(
+                            btn::Props {
+                                variant: btn::Variant::Menu,
+                            },
+                            Subscription::new({
+                                let mut boxblock = BoxblockTool::clone_of(boxblock);
+                                move |sub| match sub {
+                                    btn::On::Click => {
+                                        boxblock.shape = block::boxblock::Shape::Cube;
+                                        Msg::Sub(On::SetSelectedTool {
+                                            tool: TableTool::Boxblock(boxblock),
+                                        })
+                                    }
+                                }
+                            }),
+                            Html::text("立方体"),
+                        ),
+                        Btn::with_child(
+                            btn::Props {
+                                variant: btn::Variant::Menu,
+                            },
+                            Subscription::new({
+                                let mut boxblock = BoxblockTool::clone_of(boxblock);
+                                move |sub| match sub {
+                                    btn::On::Click => {
+                                        boxblock.shape = block::boxblock::Shape::Sphere;
+                                        Msg::Sub(On::SetSelectedTool {
+                                            tool: TableTool::Boxblock(boxblock),
+                                        })
+                                    }
+                                }
+                            }),
+                            Html::text("球体"),
+                        ),
+                        Btn::with_child(
+                            btn::Props {
+                                variant: btn::Variant::Menu,
+                            },
+                            Subscription::new({
+                                let mut boxblock = BoxblockTool::clone_of(boxblock);
+                                move |sub| match sub {
+                                    btn::On::Click => {
+                                        boxblock.shape = block::boxblock::Shape::Cyliner;
+                                        Msg::Sub(On::SetSelectedTool {
+                                            tool: TableTool::Boxblock(boxblock),
+                                        })
+                                    }
+                                }
+                            }),
+                            Html::text("円柱"),
+                        ),
+                    ],
                 ),
                 ColorPallet::empty(
                     color_pallet::Props {

@@ -142,6 +142,7 @@ impl Implement {
                     TableTool::Boxblock(BoxblockTool {
                         size: [1.0, 1.0, 1.0],
                         color: Pallet::blue(5).a(100),
+                        shape: block::boxblock::Shape::Cube,
                     }),
                     TableTool::Pointlight(PointlightTool {
                         light_intensity: 12.0,

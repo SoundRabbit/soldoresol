@@ -1,5 +1,7 @@
 precision mediump float;
 
+#extension GL_EXT_frag_depth : enable
+
 uniform vec4 u_bgColor;
 uniform mat4 u_invModel;
 uniform vec3 u_light;
@@ -23,10 +25,9 @@ uniform float u_attenation;
 uniform vec3 u_camera;
 uniform mat4 u_model;
 uniform mat4 u_vp;
+uniform int u_shape;
 varying vec3 v_vertex;
 varying vec3 v_normal;
-
-#extension GL_EXT_frag_depth : enable
 
 #define IF(x) (x != 0)
 #define IS_MAX(x, y, z) (x>=y && x>=z)
@@ -147,7 +148,7 @@ surface cylinderShader(cameraRay a) {
     surface s;
 
     if(r < 0.5) {
-        vec3 p = a.t + a.a;
+        vec3 p = v_vertex;
         s.p = (u_model * vec4(p, 1.0)).xyz;
         s.n = v_normal;
         s.disable = false;
@@ -181,6 +182,14 @@ surface cylinderShader(cameraRay a) {
     return s;
 }
 
+surface cubeShader() {
+    surface s;
+    s.p = (u_model * vec4(v_vertex, 1.0)).xyz;
+    s.n = v_normal;
+    s.disable = false;
+    return s;
+}
+
 float fragDepth(vec3 s) {
     vec4 p =  u_vp * vec4(s, 1.0);
     float ndc_depth = p.z / p.w;
@@ -190,7 +199,14 @@ float fragDepth(vec3 s) {
 }
 
 void main() {
-    surface s = cylinderShader(getCameraRay());
+    surface s;
+    if(u_shape == 1) {
+        s = sphareShader(getCameraRay());
+    } else if(u_shape == 2) {
+        s = cylinderShader(getCameraRay());
+    } else {
+        s = cubeShader();
+    }
     gl_FragColor =
         s.disable ? vec4(0.0, 0.0, 0.0, 0.0)
         : IF(u_isShadowmap) ? shadowmapped(s)
