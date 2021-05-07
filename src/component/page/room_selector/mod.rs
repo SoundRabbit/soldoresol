@@ -130,14 +130,11 @@ impl Component for RoomSelector {
                         Attributes::new().class(Self::class("body")),
                         Events::new(),
                         vec![
-                            Html::div(
+                            Heading::h2(
+                                heading::Variant::Light,
                                 Attributes::new(),
                                 Events::new(),
-                                vec![Html::h1(
-                                    Attributes::new(),
-                                    Events::new(),
-                                    vec![Html::text("履歴")],
-                                )],
+                                vec![Html::text("自動保存されたルーム")],
                             ),
                             Html::div(
                                 Attributes::new().class(Self::class("card-container")),
