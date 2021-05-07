@@ -19,86 +19,6 @@ struct surface {
     bool disable;
 };
 
-cameraRay getCameraRay() {
-    vec4 c = u_invModel * vec4(u_camera, 1.0);
-
-    cameraRay res;
-    res.a =c.xyz;
-    res.t = v_vertex - c.xyz;
-
-    return res;
-}
-
-surface sphareShader(cameraRay a) {
-    surface s;
-
-    vec3 tmp_a = a.t * a.t;
-    vec3 tmp_b = a.t * a.a;
-    vec3 tmp_c = a.a * a.a;
-
-    float aa = tmp_a.x + tmp_a.y + tmp_a.z;
-    float bb = 2.0 * (tmp_b.x + tmp_b.y + tmp_b.z);
-    float cc = tmp_c.x + tmp_c.y + tmp_c.z - 0.5 * 0.5;
-
-    float dd = bb * bb - 4.0 * aa * cc;
-
-    if(dd < 0.0) {
-        s.disable = true;
-    } else {
-        float t = (-bb - sqrt(dd)) / (2.0 * aa);
-        vec3 p = a.t * t + a.a;
-        s.p = (u_model * vec4(p, 1.0)).xyz;
-        s.disable = false;
-    }
-
-    return s;
-}
-
-surface cubeShader() {
-    surface s;
-    s.p = (u_model * vec4(v_vertex, 1.0)).xyz;
-    s.disable = false;
-    return s;
-}
-
-surface cylinderShader(cameraRay a) {
-    float r = length(a.t.xy + a.a.xy);
-
-    surface s;
-
-    if(r < 0.5) {
-        vec3 p = v_vertex;
-        s.p = (u_model * vec4(p, 1.0)).xyz;
-        s.disable = false;
-    } else {
-        vec2 tmp_a = a.t.xy * a.t.xy;
-        vec2 tmp_b = a.t.xy * a.a.xy;
-        vec2 tmp_c = a.a.xy * a.a.xy;
-
-        float aa = tmp_a.x + tmp_a.y;
-        float bb = 2.0 * (tmp_b.x + tmp_b.y);
-        float cc = tmp_c.x + tmp_c.y - 0.5 * 0.5;
-
-        float dd = bb * bb - 4.0 * aa * cc;
-
-        if(dd < 0.0) {
-            s.disable = true;
-        } else {
-            float t = (-bb - sqrt(dd)) / (2.0 * aa);
-            vec3 p = a.t * t + a.a;
-            if(p.z < -0.5 || 0.5 < p.z) {
-                s.disable = true;
-            } else {
-                vec3 p = a.t * t + a.a;
-                s.p = (u_model * vec4(p, 1.0)).xyz;
-                s.disable = false;
-            }
-        }
-    }
-
-    return s;
-}
-
 vec4 convRGBA(float depth){
     float r = fract(depth);
     float g = fract(r * 256.0);
@@ -129,13 +49,56 @@ float linerDepth(vec3 s) {
 }
 
 void main(void){
+    // getCameraRay
+    cameraRay cr;
+    {
+        vec4 c = u_invModel * vec4(u_camera, 1.0);
+        cr.a =c.xyz;
+        cr.t = v_vertex - c.xyz;
+    }
+
     surface s;
     if(u_shape == 1) {
-        s = sphareShader(getCameraRay());
+        // sphareShader
+        float aa = dot(cr.t, cr.t);
+        float bb = 2.0 * dot(cr.t, cr.a);
+        float cc = dot(cr.a, cr.a) - 0.5 * 0.5;
+        float dd = bb * bb - 4.0 * aa * cc;
+        if(dd < 0.0) {
+            s.disable = true;
+        } else {
+            float t = (-bb - sqrt(dd)) / (2.0 * aa);
+            vec3 p = cr.t * t + cr.a;
+            s.p = (u_model * vec4(p, 1.0)).xyz;
+            s.disable = false;
+        }
     } else if(u_shape == 2) {
-        s = cylinderShader(getCameraRay());
+        // cylinderShader
+        if(length(v_vertex.xy) < 0.5) {
+            s.p = (u_model * vec4(v_vertex, 1.0)).xyz;
+            s.disable = false;
+        } else {
+            float aa = dot(cr.t.xy, cr.t.xy);
+            float bb = 2.0 * dot(cr.t.xy, cr.a.xy);
+            float cc = dot(cr.a.xy, cr.a.xy) - 0.5 * 0.5;
+            float dd = bb * bb - 4.0 * aa * cc;
+            if(dd < 0.0) {
+                s.disable = true;
+            } else {
+                float t = (-bb - sqrt(dd)) / (2.0 * aa);
+                vec3 p = cr.t * t + cr.a;
+                if(p.z < -0.5 || 0.5 < p.z) {
+                    s.disable = true;
+                } else {
+                    s.p = (u_model * vec4(p, 1.0)).xyz;
+                    s.disable = false;
+                }
+            }
+        }
     } else {
-        s = cubeShader();
+        // cubeShader
+        s.p = (u_model * vec4(v_vertex, 1.0)).xyz;
+        s.disable = false;
     }
     gl_FragColor = s.disable ? vec4(1.0, 1.0, 1.0, 1.0) : convRGBA(linerDepth(s.p));
     gl_FragDepthEXT = s.disable ? 1.0 : fragDepth(s.p);

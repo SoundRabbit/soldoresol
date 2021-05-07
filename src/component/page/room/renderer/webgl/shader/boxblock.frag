@@ -43,41 +43,34 @@ struct surface {
     bool disable;
 };
 
+surface g_surface;
+
 vec4 colorWithLight(float intensity) {
     return vec4(u_bgColor.xyz * u_lightColor.xyz * intensity, 1.0);
 }
 
-float normalVecIntensity(vec3 invLight, vec3 n) {
-    float diffuse = clamp(dot(n, invLight), 0.0, 1.0) * u_shadeIntensity + 1.0 - u_shadeIntensity;
+float normalVecIntensity(vec3 invLight) {
+    float diffuse = clamp(dot(g_surface.n, invLight), 0.0, 1.0) * u_shadeIntensity + 1.0 - u_shadeIntensity;
     return diffuse * u_lightIntensity;
 }
 
-vec4 colorWithEnvLight(vec3 n) {
+vec4 colorWithEnvLight() {
     vec3 invLight = normalize(u_invModel * vec4(u_light, 0.0)).xyz;
-    float envIntensity = normalVecIntensity(invLight, n);
+    float envIntensity = normalVecIntensity(invLight);
     return colorWithLight(envIntensity);
 }
 
-float restDepth(vec4 RGBA){
+float shadowmappedBy(mat4 lightVp, sampler2D shadowmap) {
+    vec4 pLight = lightVp * vec4(g_surface.p, 1.0);
+    vec2 texCoord = (pLight.xy / pLight.w + vec2(1.0)) * 0.5;
+    vec4 shadowRgba = texture2D(shadowmap, texCoord);
+
     const float rMask = 1.0;
     const float gMask = 1.0 / 256.0;
     const float bMask = 1.0 / (256.0 * 256.0);
     const float aMask = 1.0 / (256.0 * 256.0 * 256.0);
-    float depth = dot(RGBA, vec4(rMask, gMask, bMask, aMask));
-    return depth;
-}
+    float shadow = dot(shadowRgba, vec4(rMask, gMask, bMask, aMask));
 
-vec4 texColorAround(sampler2D tex, vec2 coord) {
-    vec2 movX = vec2(1.0 / 512.0, 0.0);
-    vec2 movY = vec2(0.0, 1.0 / 512.0);
-
-    return texture2D(tex, coord);
-}
-
-float shadowmappedBy(mat4 lightVp, sampler2D shadowmap, surface s) {
-    vec4 pLight = lightVp * vec4(s.p, 1.0);
-    vec2 texCoord = (pLight.xy / pLight.w + vec2(1.0)) * 0.5;
-    float shadow = restDepth(texColorAround(shadowmap, texCoord));
     float near = 0.5;
     float far  = 100.0;
     float linerDepth = pLight.z / pLight.w / (far - near);
@@ -86,108 +79,24 @@ float shadowmappedBy(mat4 lightVp, sampler2D shadowmap, surface s) {
     return shadeIntensity;
 }
 
-vec4 shadowmapped(surface s) {
-    vec3 lp = s.p - u_light;
+vec4 shadowmapped() {
+    vec3 lp = g_surface.p - u_light;
     float absX = abs(lp.x);
     float absY = abs(lp.y);
     float absZ = abs(lp.z);
     float len = length(lp);
 
     float shadowmappedIntensity =
-        IS_MAX(absX, absY, absZ) ? (lp.x > 0.0 ? shadowmappedBy(u_lightVpPx, u_shadowmapPx, s) : shadowmappedBy(u_lightVpNx, u_shadowmapNx, s)) :
-        IS_MAX(absY, absZ, absX) ? (lp.y > 0.0 ? shadowmappedBy(u_lightVpPy, u_shadowmapPy, s) : shadowmappedBy(u_lightVpNy, u_shadowmapNy, s)) :
-        (lp.z > 0.0 ? shadowmappedBy(u_lightVpPz, u_shadowmapPz, s) : shadowmappedBy(u_lightVpNz, u_shadowmapNz, s));
+        IS_MAX(absX, absY, absZ) ? (lp.x > 0.0 ? shadowmappedBy(u_lightVpPx, u_shadowmapPx) : shadowmappedBy(u_lightVpNx, u_shadowmapNx)) :
+        IS_MAX(absY, absZ, absX) ? (lp.y > 0.0 ? shadowmappedBy(u_lightVpPy, u_shadowmapPy) : shadowmappedBy(u_lightVpNy, u_shadowmapNy)) :
+        (lp.z > 0.0 ? shadowmappedBy(u_lightVpPz, u_shadowmapPz) : shadowmappedBy(u_lightVpNz, u_shadowmapNz));
 
-    float envIntensity = normalVecIntensity(lp, s.n);
+    float envIntensity = normalVecIntensity(lp);
 
     float shadeIntensity = min(envIntensity, shadowmappedIntensity);
 
     float lightIntensity = u_attenation > 0.0 ? pow(u_lightIntensity / max(1.0, len - u_attenation  + 1.0), 2.0) : pow(u_lightIntensity, 2.0);
     return colorWithLight(shadeIntensity * lightIntensity);
-}
-
-cameraRay getCameraRay() {
-    vec4 c = u_invModel * vec4(u_camera, 1.0);
-
-    cameraRay res;
-    res.a =c.xyz;
-    res.t = v_vertex - c.xyz;
-
-    return res;
-}
-
-surface sphareShader(cameraRay a) {
-    surface s;
-
-    vec3 tmp_a = a.t * a.t;
-    vec3 tmp_b = a.t * a.a;
-    vec3 tmp_c = a.a * a.a;
-
-    float aa = tmp_a.x + tmp_a.y + tmp_a.z;
-    float bb = 2.0 * (tmp_b.x + tmp_b.y + tmp_b.z);
-    float cc = tmp_c.x + tmp_c.y + tmp_c.z - 0.5 * 0.5;
-
-    float dd = bb * bb - 4.0 * aa * cc;
-
-    if(dd < 0.0) {
-        s.disable = true;
-    } else {
-        float t = (-bb - sqrt(dd)) / (2.0 * aa);
-        vec3 p = a.t * t + a.a;
-        s.p = (u_model * vec4(p, 1.0)).xyz;
-        s.n = normalize(p);
-        s.disable = false;
-    }
-
-    return s;
-}
-
-surface cylinderShader(cameraRay a) {
-    float r = length(a.t.xy + a.a.xy);
-
-    surface s;
-
-    if(r < 0.5) {
-        vec3 p = v_vertex;
-        s.p = (u_model * vec4(p, 1.0)).xyz;
-        s.n = v_normal;
-        s.disable = false;
-    } else {
-        vec2 tmp_a = a.t.xy * a.t.xy;
-        vec2 tmp_b = a.t.xy * a.a.xy;
-        vec2 tmp_c = a.a.xy * a.a.xy;
-
-        float aa = tmp_a.x + tmp_a.y;
-        float bb = 2.0 * (tmp_b.x + tmp_b.y);
-        float cc = tmp_c.x + tmp_c.y - 0.5 * 0.5;
-
-        float dd = bb * bb - 4.0 * aa * cc;
-
-        if(dd < 0.0) {
-            s.disable = true;
-        } else {
-            float t = (-bb - sqrt(dd)) / (2.0 * aa);
-            vec3 p = a.t * t + a.a;
-            if(p.z < -0.5 || 0.5 < p.z) {
-                s.disable = true;
-            } else {
-                vec3 p = a.t * t + a.a;
-                s.p = (u_model * vec4(p, 1.0)).xyz;
-                s.n = normalize(vec3(p.xy, 0.0));
-                s.disable = false;
-            }
-        }
-    }
-
-    return s;
-}
-
-surface cubeShader() {
-    surface s;
-    s.p = (u_model * vec4(v_vertex, 1.0)).xyz;
-    s.n = v_normal;
-    s.disable = false;
-    return s;
 }
 
 float fragDepth(vec3 s) {
@@ -199,18 +108,66 @@ float fragDepth(vec3 s) {
 }
 
 void main() {
-    surface s;
-    if(u_shape == 1) {
-        s = sphareShader(getCameraRay());
-    } else if(u_shape == 2) {
-        s = cylinderShader(getCameraRay());
-    } else {
-        s = cubeShader();
+
+    // getCameraRay
+    cameraRay cr;
+    {
+        vec4 c = u_invModel * vec4(u_camera, 1.0);
+        cr.a =c.xyz;
+        cr.t = v_vertex - c.xyz;
     }
+
+    if(u_shape == 1) {
+        // sphareShader
+        float aa = dot(cr.t, cr.t);
+        float bb = 2.0 * dot(cr.t, cr.a);
+        float cc = dot(cr.a, cr.a) - 0.5 * 0.5;
+        float dd = bb * bb - 4.0 * aa * cc;
+        if(dd < 0.0) {
+            g_surface.disable = true;
+        } else {
+            float t = (-bb - sqrt(dd)) / (2.0 * aa);
+            vec3 p = cr.t * t + cr.a;
+            g_surface.p = (u_model * vec4(p, 1.0)).xyz;
+            g_surface.n = normalize(p);
+            g_surface.disable = false;
+        }
+    } else if(u_shape == 2) {
+        // cylinderShader
+        if(length(v_vertex.xy) < 0.5) {
+            g_surface.p = (u_model * vec4(v_vertex, 1.0)).xyz;
+            g_surface.n = v_normal;
+            g_surface.disable = false;
+        } else {
+            float aa = dot(cr.t.xy, cr.t.xy);
+            float bb = 2.0 * dot(cr.t.xy, cr.a.xy);
+            float cc = dot(cr.a.xy, cr.a.xy) - 0.5 * 0.5;
+            float dd = bb * bb - 4.0 * aa * cc;
+            if(dd < 0.0) {
+                g_surface.disable = true;
+            } else {
+                float t = (-bb - sqrt(dd)) / (2.0 * aa);
+                vec3 p = cr.t * t + cr.a;
+                if(p.z < -0.5 || 0.5 < p.z) {
+                    g_surface.disable = true;
+                } else {
+                    g_surface.p = (u_model * vec4(p, 1.0)).xyz;
+                    g_surface.n = normalize(vec3(p.xy, 0.0));
+                    g_surface.disable = false;
+                }
+            }
+        }
+    } else {
+        // cubeShader
+        g_surface.p = (u_model * vec4(v_vertex, 1.0)).xyz;
+        g_surface.n = v_normal;
+        g_surface.disable = false;
+    }
+
     gl_FragColor =
-        s.disable ? vec4(0.0, 0.0, 0.0, 0.0)
-        : IF(u_isShadowmap) ? shadowmapped(s)
-        : colorWithEnvLight(s.n);
+        g_surface.disable ? vec4(0.0, 0.0, 0.0, 0.0)
+        : IF(u_isShadowmap) ? shadowmapped()
+        : colorWithEnvLight();
     
-    gl_FragDepthEXT = s.disable ? 1.0 : fragDepth(s.p);
+    gl_FragDepthEXT = g_surface.disable ? 1.0 : fragDepth(g_surface.p);
 }
