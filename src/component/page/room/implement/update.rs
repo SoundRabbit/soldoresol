@@ -37,23 +37,6 @@ impl Implement {
 
                 self.canvas = Some(canvas);
 
-                // デバッグ用に大量のブロックを設置
-                for x in 0..20 {
-                    for y in 0..20 {
-                        for z in 0..10 {
-                            let p = [x as f32 - 9.5, y as f32 - 9.5, z as f32 + 0.5];
-                            let s = [1.0, 1.0, 1.0];
-
-                            self.create_new_boxblock(
-                                p,
-                                s,
-                                crate::libs::color::Pallet::blue(5).a(100),
-                                block::boxblock::Shape::Sphere,
-                            );
-                        }
-                    }
-                }
-
                 self.cmds.push(Cmd::task(move |resolve| {
                     let a = Closure::once(
                         Box::new(move || resolve(Msg::ResetCanvasSize)) as Box<dyn FnOnce()>
