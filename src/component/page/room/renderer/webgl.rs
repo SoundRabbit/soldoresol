@@ -19,6 +19,7 @@ pub enum ProgramType {
     ScreenProgram,
     ShadowmapProgram,
     NamePlateProgram,
+    TerranProgram,
 }
 
 pub struct WebGlF32Vbo(web_sys::WebGlBuffer);
@@ -251,6 +252,9 @@ impl WebGlRenderingContext {
                 ProgramType::NamePlateProgram => {
                     Box::new(program::NamePlateProgram::new(&self)) as Box<dyn Program>
                 }
+                ProgramType::TerranProgram => {
+                    Box::new(program::TerranProgram::new(&self)) as Box<dyn Program>
+                }
             };
             self.program_table.insert(program_type.clone(), program);
         }
@@ -274,6 +278,7 @@ impl WebGlRenderingContext {
     setter!(attr attr_tex_coord: WebGlF32Vbo as set_attr_tex_coord);
     setter!(attr attr_vertex: WebGlF32Vbo as set_attr_vertex);
     setter!(attr attr_normal: WebGlF32Vbo as set_attr_normal);
+    setter!(attr attr_color: WebGlF32Vbo as set_attr_color);
 
     setter!(unif unif_area_size: 2fv as set_unif_area_size);
     setter!(unif unif_attenation: 1f as set_unif_attenation);

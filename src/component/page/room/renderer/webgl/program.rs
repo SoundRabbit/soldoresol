@@ -29,6 +29,7 @@ pub trait Program {
     accesser!(None as attr_normal: WebGlAttributeLocation);
     accesser!(None as attr_tex_coord: WebGlAttributeLocation);
     accesser!(None as attr_vertex: WebGlAttributeLocation);
+    accesser!(None as attr_color: WebGlAttributeLocation);
 
     accesser!(None as unif_area_size: WebGlUniformLocation);
     accesser!(None as unif_attenation: WebGlUniformLocation);
@@ -759,4 +760,132 @@ impl Program for TabletextureProgram {
     );
     accesser!(u_translate_location as unif_translate: WebGlUniformLocation);
     accesser!(u_use_texture_as_mask_location as unif_use_texture_as_mask: WebGlUniformLocation);
+}
+
+/*----------BoxblockProgram----------*/
+
+pub struct TerranProgram {
+    program: web_sys::WebGlProgram,
+    a_vertex_location: WebGlAttributeLocation,
+    a_normal_location: WebGlAttributeLocation,
+    a_color_location: WebGlAttributeLocation,
+    u_model_location: WebGlUniformLocation,
+    u_inv_model_location: WebGlUniformLocation,
+    u_light_location: WebGlUniformLocation,
+    u_light_color_location: WebGlUniformLocation,
+    u_shade_intensity_location: WebGlUniformLocation,
+    u_light_intensity_location: WebGlUniformLocation,
+    u_is_shadowmap_location: WebGlUniformLocation,
+    u_light_vp_px_location: WebGlUniformLocation,
+    u_light_vp_py_location: WebGlUniformLocation,
+    u_light_vp_pz_location: WebGlUniformLocation,
+    u_light_vp_nx_location: WebGlUniformLocation,
+    u_light_vp_ny_location: WebGlUniformLocation,
+    u_light_vp_nz_location: WebGlUniformLocation,
+    u_shadowmap_px_location: WebGlUniformLocation,
+    u_shadowmap_py_location: WebGlUniformLocation,
+    u_shadowmap_pz_location: WebGlUniformLocation,
+    u_shadowmap_nx_location: WebGlUniformLocation,
+    u_shadowmap_ny_location: WebGlUniformLocation,
+    u_shadowmap_nz_location: WebGlUniformLocation,
+    u_attenation_location: WebGlUniformLocation,
+    u_translate_location: WebGlUniformLocation,
+}
+
+impl TerranProgram {
+    pub fn new(gl: &WebGlRenderingContext) -> Self {
+        let vert = include_str!("./shader/terran.vert");
+        let frag = include_str!("./shader/terran.frag");
+        let program = create_program(gl, vert, frag);
+
+        let a_vertex_location =
+            WebGlAttributeLocation(gl.get_attrib_location(&program, "a_vertex") as u32);
+        let a_normal_location =
+            WebGlAttributeLocation(gl.get_attrib_location(&program, "a_normal") as u32);
+        let a_color_location =
+            WebGlAttributeLocation(gl.get_attrib_location(&program, "a_color") as u32);
+
+        let u_model_location = gl.get_uniform_location(&program, "u_model").unwrap();
+        let u_inv_model_location = gl.get_uniform_location(&program, "u_invModel").unwrap();
+        let u_light_location = gl.get_uniform_location(&program, "u_light").unwrap();
+        let u_light_color_location = gl.get_uniform_location(&program, "u_lightColor").unwrap();
+        let u_shade_intensity_location = gl
+            .get_uniform_location(&program, "u_shadeIntensity")
+            .unwrap();
+        let u_light_intensity_location = gl
+            .get_uniform_location(&program, "u_lightIntensity")
+            .unwrap();
+        let u_is_shadowmap_location = gl.get_uniform_location(&program, "u_isShadowmap").unwrap();
+        let u_light_vp_px_location = gl.get_uniform_location(&program, "u_lightVpPx").unwrap();
+        let u_light_vp_py_location = gl.get_uniform_location(&program, "u_lightVpPy").unwrap();
+        let u_light_vp_pz_location = gl.get_uniform_location(&program, "u_lightVpPz").unwrap();
+        let u_light_vp_nx_location = gl.get_uniform_location(&program, "u_lightVpNx").unwrap();
+        let u_light_vp_ny_location = gl.get_uniform_location(&program, "u_lightVpNy").unwrap();
+        let u_light_vp_nz_location = gl.get_uniform_location(&program, "u_lightVpNz").unwrap();
+        let u_shadowmap_px_location = gl.get_uniform_location(&program, "u_shadowmapPx").unwrap();
+        let u_shadowmap_py_location = gl.get_uniform_location(&program, "u_shadowmapPy").unwrap();
+        let u_shadowmap_pz_location = gl.get_uniform_location(&program, "u_shadowmapPz").unwrap();
+        let u_shadowmap_nx_location = gl.get_uniform_location(&program, "u_shadowmapNx").unwrap();
+        let u_shadowmap_ny_location = gl.get_uniform_location(&program, "u_shadowmapNy").unwrap();
+        let u_shadowmap_nz_location = gl.get_uniform_location(&program, "u_shadowmapNz").unwrap();
+
+        let u_attenation_location = gl.get_uniform_location(&program, "u_attenation").unwrap();
+        let u_translate_location = gl.get_uniform_location(&program, "u_translate").unwrap();
+
+        Self {
+            program,
+            a_vertex_location,
+            a_normal_location,
+            a_color_location,
+            u_model_location,
+            u_inv_model_location,
+            u_light_location,
+            u_light_color_location,
+            u_shade_intensity_location,
+            u_light_intensity_location,
+            u_is_shadowmap_location,
+            u_light_vp_px_location,
+            u_light_vp_py_location,
+            u_light_vp_pz_location,
+            u_light_vp_nx_location,
+            u_light_vp_ny_location,
+            u_light_vp_nz_location,
+            u_shadowmap_px_location,
+            u_shadowmap_py_location,
+            u_shadowmap_pz_location,
+            u_shadowmap_nx_location,
+            u_shadowmap_ny_location,
+            u_shadowmap_nz_location,
+            u_attenation_location,
+            u_translate_location,
+        }
+    }
+}
+
+impl Program for TerranProgram {
+    accesser!(program);
+    accesser!(a_vertex_location as attr_vertex: WebGlAttributeLocation);
+    accesser!(a_normal_location as attr_normal: WebGlAttributeLocation);
+    accesser!(a_color_location as attr_color: WebGlAttributeLocation);
+    accesser!(u_model_location as unif_model: WebGlUniformLocation);
+    accesser!(u_inv_model_location as unif_inv_model: WebGlUniformLocation);
+    accesser!(u_light_location as unif_light: WebGlUniformLocation);
+    accesser!(u_light_color_location as unif_light_color: WebGlUniformLocation);
+    accesser!(u_shade_intensity_location as unif_shade_intensity: WebGlUniformLocation);
+    accesser!(u_light_intensity_location as unif_light_intensity: WebGlUniformLocation);
+    accesser!(u_is_shadowmap_location as unif_is_shadowmap: WebGlUniformLocation);
+    accesser!(u_light_vp_px_location as unif_light_vp_px: WebGlUniformLocation);
+    accesser!(u_light_vp_py_location as unif_light_vp_py: WebGlUniformLocation);
+    accesser!(u_light_vp_pz_location as unif_light_vp_pz: WebGlUniformLocation);
+    accesser!(u_light_vp_nx_location as unif_light_vp_nx: WebGlUniformLocation);
+    accesser!(u_light_vp_ny_location as unif_light_vp_ny: WebGlUniformLocation);
+    accesser!(u_light_vp_nz_location as unif_light_vp_nz: WebGlUniformLocation);
+    accesser!(u_shadowmap_px_location as unif_shadowmap_px: WebGlUniformLocation);
+    accesser!(u_shadowmap_py_location as unif_shadowmap_py: WebGlUniformLocation);
+    accesser!(u_shadowmap_pz_location as unif_shadowmap_pz: WebGlUniformLocation);
+    accesser!(u_shadowmap_nx_location as unif_shadowmap_nx: WebGlUniformLocation);
+    accesser!(u_shadowmap_ny_location as unif_shadowmap_ny: WebGlUniformLocation);
+    accesser!(u_shadowmap_nz_location as unif_shadowmap_nz: WebGlUniformLocation);
+    accesser!(u_attenation_location as unif_attenation: WebGlUniformLocation);
+    accesser!(u_translate_location as unif_translate: WebGlUniformLocation);
 }

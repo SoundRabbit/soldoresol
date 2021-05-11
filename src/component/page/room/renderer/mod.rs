@@ -631,7 +631,6 @@ impl Renderer {
 
                 self.render_view_terran.render(
                     &mut self.gl,
-                    camera_matrix,
                     &vp_matrix,
                     block_arena,
                     table,

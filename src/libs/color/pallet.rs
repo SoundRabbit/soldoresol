@@ -1,11 +1,11 @@
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Pallet {
     pub alpha: u8,
     pub idx: usize,
     pub kind: Kind,
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Kind {
     Gray,
     Red,
