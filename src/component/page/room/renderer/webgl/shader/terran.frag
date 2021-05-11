@@ -1,7 +1,5 @@
 precision mediump float;
 
-#extension GL_EXT_frag_depth : enable
-
 uniform mat4 u_invModel;
 uniform vec3 u_light;
 uniform vec4 u_lightColor;

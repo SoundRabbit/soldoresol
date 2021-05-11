@@ -31,6 +31,7 @@ pub struct Renderer {
     render_offscreen_character: offscreen::character::Character,
     render_offscreen_boxblock: offscreen::boxblock::Boxblock,
     render_offscreen_pointlight: offscreen::pointlight::Pointlight,
+    render_offscreen_terran: offscreen::terran::Terran,
 
     render_shadowmap_boxblock: shadowmap::boxblock::Boxblock,
 
@@ -200,6 +201,7 @@ impl Renderer {
         let render_offscreen_character = offscreen::character::Character::new(&gl);
         let render_offscreen_boxblock = offscreen::boxblock::Boxblock::new(&gl);
         let render_offscreen_pointlight = offscreen::pointlight::Pointlight::new(&gl);
+        let render_offscreen_terran = offscreen::terran::Terran::new(&gl);
 
         let render_shadowmap_boxblock = shadowmap::boxblock::Boxblock::new(&gl);
 
@@ -322,6 +324,7 @@ impl Renderer {
             render_offscreen_character,
             render_offscreen_boxblock,
             render_offscreen_pointlight,
+            render_offscreen_terran,
             render_shadowmap_boxblock,
             render_view_table,
             render_view_table_grid,
@@ -425,7 +428,7 @@ impl Renderer {
 
     pub fn get_focused_position(
         &self,
-        block_arena: &block::Arena,
+        _block_arena: &block::Arena,
         camera: &CameraMatrix,
         x: f32,
         y: f32,
@@ -445,6 +448,10 @@ impl Renderer {
                 srfs.n(),
             ),
             ObjectId::Pointlight(_, srfs) => (
+                camera.collision_point(&self.canvas_size, &[x, y], &srfs.r, &srfs.s, &srfs.t),
+                srfs.n(),
+            ),
+            ObjectId::Terran(_, srfs) => (
                 camera.collision_point(&self.canvas_size, &[x, y], &srfs.r, &srfs.s, &srfs.t),
                 srfs.n(),
             ),
@@ -629,11 +636,12 @@ impl Renderer {
                     false,
                 );
 
-                self.render_view_terran.render(
+                self.render_view_boxblock.render(
                     &mut self.gl,
+                    camera_matrix,
                     &vp_matrix,
                     block_arena,
-                    table,
+                    table.boxblocks().map(BlockId::clone),
                     &[0.5, -2.0, 1.0],
                     &crate::libs::color::Pallet::gray(0).a(100),
                     table.env_light_intensity(),
@@ -643,12 +651,11 @@ impl Renderer {
                     None,
                 );
 
-                self.render_view_boxblock.render(
+                self.render_view_terran.render(
                     &mut self.gl,
-                    camera_matrix,
                     &vp_matrix,
                     block_arena,
-                    table.boxblocks().map(BlockId::clone),
+                    table,
                     &[0.5, -2.0, 1.0],
                     &crate::libs::color::Pallet::gray(0).a(100),
                     table.env_light_intensity(),
@@ -725,6 +732,14 @@ impl Renderer {
                     block_arena,
                     table.boxblocks().map(BlockId::clone),
                     grabbed_object_id,
+                );
+
+                self.render_offscreen_terran.render(
+                    &mut self.gl,
+                    &mut self.id_table,
+                    &vp_matrix,
+                    block_arena,
+                    table,
                 );
 
                 self.render_offscreen_character.render(

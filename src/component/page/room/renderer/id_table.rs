@@ -7,6 +7,7 @@ pub enum ObjectId {
     Character(BlockId, Surface),
     Boxblock(BlockId, Surface),
     Pointlight(BlockId, Surface),
+    Terran(BlockId, Surface),
 }
 
 #[derive(Clone)]
@@ -32,6 +33,7 @@ impl CloneOf for ObjectId {
             Self::Character(b_id, s) => Self::Character(BlockId::clone(b_id), s.clone()),
             Self::Boxblock(b_id, s) => Self::Boxblock(BlockId::clone(b_id), s.clone()),
             Self::Pointlight(b_id, s) => Self::Pointlight(BlockId::clone(b_id), s.clone()),
+            Self::Terran(b_id, s) => Self::Terran(BlockId::clone(b_id), s.clone()),
         }
     }
 }
@@ -43,6 +45,7 @@ impl std::fmt::Display for ObjectId {
             Self::Character(b_id, _) => write!(f, "[Character: {}]", &b_id),
             Self::Boxblock(b_id, _) => write!(f, "[Boxblock: {}]", &b_id),
             Self::Pointlight(b_id, _) => write!(f, "[Pointlight: {}]", &b_id),
+            Self::Terran(b_id, _) => write!(f, "[Terran: {}]", &b_id),
         }
     }
 }
@@ -54,6 +57,7 @@ impl ObjectId {
             Self::Character(b_id, _) => *b_id == *block_id,
             Self::Boxblock(b_id, _) => *b_id == *block_id,
             Self::Pointlight(b_id, _) => *b_id == *block_id,
+            Self::Terran(b_id, _) => *b_id == *block_id,
         }
     }
 }
