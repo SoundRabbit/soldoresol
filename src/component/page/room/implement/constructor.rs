@@ -3,7 +3,7 @@ use super::super::{
     super::util::State,
     model::table::{
         BoxblockTool, CharacterTool, EraserTool, FillShapeTool, LineShapeTool, PenTool,
-        PointlightTool, ShapeTool, TableTool,
+        PointlightTool, ShapeTool, TableTool, TerranblockTool,
     },
     renderer::{CameraMatrix, ObjectId},
 };
@@ -143,6 +143,9 @@ impl Implement {
                         size: [1.0, 1.0, 1.0],
                         color: Pallet::blue(5).a(100),
                         shape: block::boxblock::Shape::Cube,
+                    }),
+                    TableTool::Terranblock(TerranblockTool {
+                        color: Pallet::blue(5).a(100),
                     }),
                     TableTool::Pointlight(PointlightTool {
                         light_intensity: 12.0,

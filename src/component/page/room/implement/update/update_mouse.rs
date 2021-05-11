@@ -1,6 +1,6 @@
 use super::{
     block, BlockId, BoxblockTool, CharacterTool, CloneOf, Implement, ObjectId, PointlightTool,
-    ResourceId, ShapeTool, TableTool,
+    ResourceId, ShapeTool, TableTool, TerranblockTool,
 };
 
 impl Implement {
@@ -142,6 +142,9 @@ impl Implement {
                 }
                 Some(TableTool::Character(_)) => {
                     self.update_tabletool_character(client_x, client_y)
+                }
+                Some(TableTool::Terranblock(_)) => {
+                    self.update_tabletool_terranblock(client_x, client_y)
                 }
                 Some(TableTool::Boxblock(_)) => self.update_tabletool_boxblock(client_x, client_y),
                 Some(TableTool::Pointlight(_)) => {
@@ -742,6 +745,38 @@ impl Implement {
             let s = [s[0] as f32, s[1] as f32, s[2] as f32];
 
             self.create_new_boxblock(p, s, boxblock.color, boxblock.shape);
+        }
+    }
+
+    fn update_tabletool_terranblock(&mut self, client_x: f32, client_y: f32) {
+        let mouse_state = &self.mouse_btn_state.primary;
+
+        if mouse_state.is_clicked {
+            let terranblock = if let Some(TableTool::Terranblock(x)) = self.table_tools.selected() {
+                TerranblockTool::clone_of(x)
+            } else {
+                return;
+            };
+
+            let (p, n) = if let Some(renderer) = &self.renderer {
+                renderer.get_focused_position(
+                    &self.block_arena,
+                    &self.camera_matrix,
+                    client_x,
+                    client_y,
+                )
+            } else {
+                return;
+            };
+
+            let p = [
+                p[0].round() + n[0] * 0.5,
+                p[1].round() + n[1] * 0.5,
+                p[2].round() + n[2] * 0.5,
+            ];
+            let p = [p[0] as i32, p[1] as i32, p[2] as i32];
+
+            self.create_new_terranblock(p, terranblock.color);
         }
     }
 

@@ -7,6 +7,7 @@ pub mod screen;
 pub mod table;
 pub mod table_grid;
 pub mod table_texture;
+pub mod terranblock;
 
 use super::matrix;
 use super::tex_table;

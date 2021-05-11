@@ -1,7 +1,9 @@
 use super::super::{
     super::util::State,
     children::room_modeless,
-    model::table::{BoxblockTool, CharacterTool, PointlightTool, ShapeTool, TableTool},
+    model::table::{
+        BoxblockTool, CharacterTool, PointlightTool, ShapeTool, TableTool, TerranblockTool,
+    },
     renderer::{ObjectId, Renderer},
 };
 use super::{Cmd, Contextmenu, ContextmenuKind, Implement, Modal, ModelessContent, Msg, On};
@@ -712,6 +714,19 @@ impl Implement {
                 self.block_arena
                     .map_mut(&selecting_table_id, |table: &mut block::table::Table| {
                         table.add_boxblock(boxblock_id);
+                    });
+            });
+    }
+
+    fn create_new_terranblock(&mut self, pos: [i32; 3], color: Pallet) {
+        self.block_arena
+            .map(&self.world_id, |world: &block::world::World| {
+                BlockId::clone(world.selecting_table())
+            })
+            .map(|selecting_table_id| {
+                self.block_arena
+                    .map_mut(&selecting_table_id, |table: &mut block::table::Table| {
+                        table.terran_mut().insert(pos, color);
                     });
             });
     }

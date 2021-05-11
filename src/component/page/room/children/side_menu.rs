@@ -1,6 +1,6 @@
 use super::super::model::table::{
     BoxblockTool, CharacterTool, EraserTool, FillShapeTool, LineShapeTool, PenTool, PointlightTool,
-    ShapeTool, TableTool,
+    ShapeTool, TableTool, TerranblockTool,
 };
 use super::atom::btn::{self, Btn};
 use super::atom::dropdown::{self, Dropdown};
@@ -211,6 +211,7 @@ impl SideMenu {
                             TableTool::Eraser(..) => "fa-eraser",
                             TableTool::Character(..) => "fa-users",
                             TableTool::Boxblock(..) => "fa-cube",
+                            TableTool::Terranblock(..) => "fa-cubes",
                             TableTool::Pointlight(..) => "fa-lightbulb",
                         }),
                     ),
@@ -281,6 +282,7 @@ impl SideMenu {
                     Some(TableTool::Character(tool)) => self.render_sub_character(tool),
                     Some(TableTool::Boxblock(tool)) => self.render_sub_boxblock(tool),
                     Some(TableTool::Pointlight(tool)) => self.render_sub_pointlight(tool),
+                    Some(TableTool::Terranblock(tool)) => self.render_sub_terranblock(tool),
                     _ => Html::div(Attributes::new(), Events::new(), vec![]),
                 },
             ],
@@ -1027,6 +1029,33 @@ impl SideMenu {
             ],
         )
     }
+
+    fn render_sub_terranblock(&self, terranblock: &TerranblockTool) -> Html {
+        Html::div(
+            Attributes::new()
+                .class(Self::class("sub-body"))
+                .class(Self::class("sub-menu")),
+            Events::new(),
+            vec![ColorPallet::empty(
+                color_pallet::Props {
+                    default_selected: terranblock.color.clone(),
+                    title: Some(String::from("ブロック色")),
+                },
+                Subscription::new({
+                    let mut terranblock = TerranblockTool::clone_of(terranblock);
+                    move |sub| match sub {
+                        color_pallet::On::SelectColor(a) => {
+                            terranblock.color = a;
+                            Msg::Sub(On::SetSelectedTool {
+                                tool: TableTool::Terranblock(terranblock),
+                            })
+                        }
+                    }
+                }),
+            )],
+        )
+    }
+
     fn render_sub_pointlight(&self, pointlight: &PointlightTool) -> Html {
         Html::div(
             Attributes::new()
