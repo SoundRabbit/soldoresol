@@ -9,6 +9,7 @@ pub struct Character {
     vertexes_buffer_xy: WebGlF32Vbo,
     vertexes_buffer_xz: WebGlF32Vbo,
     texture_coord_buffer: WebGlF32Vbo,
+    colors_buffer: WebGlF32Vbo,
     index_buffer: WebGlI16Ibo,
 }
 
@@ -32,12 +33,22 @@ impl Character {
             ]
             .concat(),
         );
+        let colors_buffer = gl.create_vbo_with_f32array(
+            &[
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+            ]
+            .concat(),
+        );
         let texture_coord_buffer =
             gl.create_vbo_with_f32array(&[[1.0, 1.0], [0.0, 1.0], [1.0, 0.0], [0.0, 0.0]].concat());
         let index_buffer = gl.create_ibo_with_i16array(&[0, 1, 2, 3, 2, 1]);
         Self {
             vertexes_buffer_xy,
             vertexes_buffer_xz,
+            colors_buffer,
             texture_coord_buffer,
             index_buffer,
         }
@@ -86,6 +97,7 @@ impl Character {
         gl.use_program(ProgramType::OffscreenProgram);
         gl.set_attr_vertex(&self.vertexes_buffer_xy, 3, 0);
         gl.set_attr_tex_coord(&self.texture_coord_buffer, 2, 0);
+        gl.set_attr_color(&self.colors_buffer, 4, 0);
         gl.bind_buffer(
             web_sys::WebGlRenderingContext::ELEMENT_ARRAY_BUFFER,
             Some(&self.index_buffer),

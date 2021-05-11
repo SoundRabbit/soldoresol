@@ -476,6 +476,7 @@ pub struct OffscreenProgram {
     program: web_sys::WebGlProgram,
     a_vertex_location: WebGlAttributeLocation,
     a_texture_coord_location: WebGlAttributeLocation,
+    a_color_location: WebGlAttributeLocation,
     u_translate_location: WebGlUniformLocation,
     u_bg_color_location: WebGlUniformLocation,
     u_flag_round_location: WebGlUniformLocation,
@@ -491,6 +492,8 @@ impl OffscreenProgram {
             WebGlAttributeLocation(gl.get_attrib_location(&program, "a_vertex") as u32);
         let a_texture_coord_location =
             WebGlAttributeLocation(gl.get_attrib_location(&program, "a_textureCoord") as u32);
+        let a_color_location =
+            WebGlAttributeLocation(gl.get_attrib_location(&program, "a_color") as u32);
         let u_translate_location = gl.get_uniform_location(&program, "u_translate").unwrap();
         let u_bg_color_location = gl.get_uniform_location(&program, "u_bgColor").unwrap();
         let u_flag_round_location = gl.get_uniform_location(&program, "u_flagRound").unwrap();
@@ -499,6 +502,7 @@ impl OffscreenProgram {
             program,
             a_texture_coord_location,
             a_vertex_location,
+            a_color_location,
             u_bg_color_location,
             u_flag_round_location,
             u_translate_location,
@@ -510,6 +514,7 @@ impl Program for OffscreenProgram {
     accesser!(program);
     accesser!(a_texture_coord_location as attr_tex_coord: WebGlAttributeLocation);
     accesser!(a_vertex_location as attr_vertex: WebGlAttributeLocation);
+    accesser!(a_color_location as attr_color: WebGlAttributeLocation);
     accesser!(u_bg_color_location as unif_bg_color: WebGlUniformLocation);
     accesser!(u_flag_round_location as unif_flag_round: WebGlUniformLocation);
     accesser!(u_translate_location as unif_translate: WebGlUniformLocation);

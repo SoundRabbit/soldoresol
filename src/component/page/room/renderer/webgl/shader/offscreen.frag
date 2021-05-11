@@ -3,6 +3,7 @@ precision mediump float;
 uniform vec4 u_bgColor;
 uniform int u_flagRound;
 varying vec2 v_textureCoord;
+varying vec4 v_color;
 
 vec4 roundedColor() {
     float x = (v_textureCoord.x - 0.5) * 2.0;
@@ -11,5 +12,5 @@ vec4 roundedColor() {
 }
 
 void main() {
-    gl_FragColor = u_flagRound != 0 ? roundedColor() : u_bgColor;
+    gl_FragColor = u_flagRound != 0 ? roundedColor() : u_bgColor + v_color;
 }

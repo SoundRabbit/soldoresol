@@ -7,6 +7,7 @@ use ndarray::Array2;
 
 pub struct Boxblock {
     vertexis_buffer: WebGlF32Vbo,
+    colors_buffer: WebGlF32Vbo,
     index_buffer: WebGlI16Ibo,
     texture_coord_buffer: WebGlF32Vbo,
 }
@@ -23,6 +24,19 @@ impl Boxblock {
                 [-0.5, 0.5, -0.5],
                 [0.5, -0.5, -0.5],
                 [-0.5, -0.5, -0.5],
+            ]
+            .concat(),
+        );
+        let colors_buffer = gl.create_vbo_with_f32array(
+            &[
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
             ]
             .concat(),
         );
@@ -53,6 +67,7 @@ impl Boxblock {
 
         Self {
             vertexis_buffer,
+            colors_buffer,
             index_buffer,
             texture_coord_buffer,
         }
@@ -71,6 +86,7 @@ impl Boxblock {
         gl.depth_func(web_sys::WebGlRenderingContext::LEQUAL);
         gl.set_attr_vertex(&self.vertexis_buffer, 3, 0);
         gl.set_attr_tex_coord(&self.texture_coord_buffer, 2, 0);
+        gl.set_attr_color(&self.colors_buffer, 4, 0);
         gl.bind_buffer(
             web_sys::WebGlRenderingContext::ELEMENT_ARRAY_BUFFER,
             Some(&self.index_buffer),

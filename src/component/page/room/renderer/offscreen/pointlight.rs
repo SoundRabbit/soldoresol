@@ -8,6 +8,7 @@ use ndarray::Array2;
 pub struct Pointlight {
     vertexis_buffer: WebGlF32Vbo,
     index_buffer: WebGlI16Ibo,
+    colors_buffer: WebGlF32Vbo,
     texture_coord_buffer: WebGlF32Vbo,
 }
 
@@ -23,6 +24,19 @@ impl Pointlight {
                 [-0.5, 0.5, -0.5],
                 [0.5, -0.5, -0.5],
                 [-0.5, -0.5, -0.5],
+            ]
+            .concat(),
+        );
+        let colors_buffer = gl.create_vbo_with_f32array(
+            &[
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
             ]
             .concat(),
         );
@@ -54,6 +68,7 @@ impl Pointlight {
         Self {
             vertexis_buffer,
             index_buffer,
+            colors_buffer,
             texture_coord_buffer,
         }
     }
@@ -70,6 +85,7 @@ impl Pointlight {
         gl.use_program(ProgramType::OffscreenProgram);
         gl.depth_func(web_sys::WebGlRenderingContext::LEQUAL);
         gl.set_attr_vertex(&self.vertexis_buffer, 3, 0);
+        gl.set_attr_color(&self.colors_buffer, 4, 0);
         gl.set_attr_tex_coord(&self.texture_coord_buffer, 2, 0);
         gl.bind_buffer(
             web_sys::WebGlRenderingContext::ELEMENT_ARRAY_BUFFER,
