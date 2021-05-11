@@ -8,14 +8,16 @@ use ndarray::{arr1, Array2};
 use ordered_float::OrderedFloat;
 use std::collections::HashMap;
 
-pub struct Terranblock {
+pub struct Terran {
     vertexes_buffer: WebGlF32Vbo,
     normals_buffer: WebGlF32Vbo,
     index_buffer: WebGlI16Ibo,
     vertex_num: i32,
+    last_terran_id: BlockId,
+    terran_update_time: f64,
 }
 
-impl Terranblock {
+impl Terran {
     pub fn new(gl: &WebGlRenderingContext) -> Self {
         let vertexes_buffer = gl.create_vbo_with_f32array(&[]);
         let normals_buffer = gl.create_vbo_with_f32array(&[]);
@@ -26,6 +28,8 @@ impl Terranblock {
             index_buffer,
             normals_buffer,
             vertex_num: 0,
+            last_terran_id: BlockId::none(),
+            terran_update_time: 0.0,
         }
     }
 
@@ -34,7 +38,8 @@ impl Terranblock {
         gl: &mut WebGlRenderingContext,
         camera: &CameraMatrix,
         vp_matrix: &Array2<f32>,
-        terran: &block::table::Terran,
+        block_arena: &block::Arena,
+        table: &block::table::Table,
         light: &[f32; 3],
         light_color: &crate::libs::color::Pallet,
         light_intensity: f32,
@@ -46,7 +51,15 @@ impl Terranblock {
         gl.depth_func(web_sys::WebGlRenderingContext::LEQUAL);
         gl.use_program(ProgramType::BoxblockProgram);
 
-        self.update_buffer(gl, terran);
+        let terran_id = table.terran_id();
+        if block_arena.timestamp_of(terran_id).unwrap_or(0.0) > self.terran_update_time
+            || *terran_id != self.last_terran_id
+        {
+            block_arena.map(terran_id, |terran: &block::terran::Terran| {
+                self.update_buffer(gl, terran);
+            });
+        }
+
         gl.set_attr_vertex(&self.vertexes_buffer, 3, 0);
         gl.set_attr_normal(&self.normals_buffer, 3, 0);
 
@@ -135,98 +148,34 @@ impl Terranblock {
         );
     }
 
-    fn update_buffer(&mut self, gl: &mut WebGlRenderingContext, terran: &block::table::Terran) {
+    fn update_buffer(&mut self, gl: &mut WebGlRenderingContext, terran: &block::terran::Terran) {
         let mut vertexes = vec![];
         let mut normals = vec![];
         let mut indexes = vec![];
         let mut vertexes_table: HashMap<([i32; 3], usize), i16> = HashMap::new();
 
-        let min = terran.min();
-        let max = terran.max();
-
-        for x in min[0]..(max[0] + 1) {
-            for y in min[1]..(max[1] + 1) {
-                for z in min[2]..(max[2] + 1) {
-                    if terran.get(&[x, y, z]).is_some() {
-                        if terran.get(&[x + 1, y, z]).is_none() {
-                            Self::push_surface(
-                                &mut indexes,
-                                &mut vertexes,
-                                &mut normals,
-                                &mut vertexes_table,
-                                [x + 1, y + 1, z + 1],
-                                [x + 1, y + 0, z + 1],
-                                [x + 1, y + 1, z + 0],
-                                [x + 1, y + 0, z + 0],
-                                0,
-                            );
-                        }
-                        if terran.get(&[x, y + 1, z]).is_none() {
-                            Self::push_surface(
-                                &mut indexes,
-                                &mut vertexes,
-                                &mut normals,
-                                &mut vertexes_table,
-                                [x + 1, y + 1, z + 1],
-                                [x + 1, y + 1, z + 0],
-                                [x + 0, y + 1, z + 1],
-                                [x + 0, y + 1, z + 0],
-                                1,
-                            );
-                        }
-                        if terran.get(&[x, y, z + 1]).is_none() {
-                            Self::push_surface(
-                                &mut indexes,
-                                &mut vertexes,
-                                &mut normals,
-                                &mut vertexes_table,
-                                [x + 1, y + 1, z + 1],
-                                [x + 0, y + 1, z + 1],
-                                [x + 1, y + 0, z + 1],
-                                [x + 0, y + 0, z + 1],
-                                2,
-                            );
-                        }
-                        if terran.get(&[x - 1, y, z]).is_none() {
-                            Self::push_surface(
-                                &mut indexes,
-                                &mut vertexes,
-                                &mut normals,
-                                &mut vertexes_table,
-                                [x + 0, y + 1, z + 1],
-                                [x + 0, y + 1, z + 0],
-                                [x + 0, y + 0, z + 1],
-                                [x + 0, y + 0, z + 0],
-                                3,
-                            );
-                        }
-                        if terran.get(&[x, y - 1, z]).is_none() {
-                            Self::push_surface(
-                                &mut indexes,
-                                &mut vertexes,
-                                &mut normals,
-                                &mut vertexes_table,
-                                [x + 1, y + 0, z + 1],
-                                [x + 0, y + 0, z + 1],
-                                [x + 1, y + 0, z + 0],
-                                [x + 0, y + 0, z + 0],
-                                4,
-                            );
-                        }
-                        if terran.get(&[x, y, z - 1]).is_none() {
-                            Self::push_surface(
-                                &mut indexes,
-                                &mut vertexes,
-                                &mut normals,
-                                &mut vertexes_table,
-                                [x + 1, y + 1, z + 0],
-                                [x + 1, y + 0, z + 0],
-                                [x + 0, y + 1, z + 0],
-                                [x + 0, y + 0, z + 0],
-                                5,
-                            );
-                        }
-                    }
+        for (p, _) in terran.table().iter() {
+            let o = [
+                [[1, 1, 1], [1, 0, 1], [1, 1, 0], [1, 0, 0]],
+                [[1, 1, 1], [1, 1, 0], [0, 1, 1], [0, 1, 0]],
+                [[1, 1, 1], [0, 1, 1], [1, 0, 1], [0, 0, 1]],
+                [[0, 1, 1], [0, 1, 0], [0, 0, 1], [0, 0, 0]],
+                [[1, 0, 1], [0, 0, 1], [1, 0, 0], [0, 0, 0]],
+                [[1, 1, 0], [1, 0, 0], [0, 1, 0], [0, 0, 0]],
+            ];
+            for i in 0..6 {
+                if !terran.is_covered(p, i) {
+                    Self::push_surface(
+                        &mut indexes,
+                        &mut vertexes,
+                        &mut normals,
+                        &mut vertexes_table,
+                        [p[0] + o[i][0][0], p[1] + o[i][0][1], p[2] + o[i][0][2]],
+                        [p[0] + o[i][1][0], p[1] + o[i][1][1], p[2] + o[i][1][2]],
+                        [p[0] + o[i][2][0], p[1] + o[i][2][1], p[2] + o[i][2][2]],
+                        [p[0] + o[i][3][0], p[1] + o[i][3][1], p[2] + o[i][3][2]],
+                        i,
+                    );
                 }
             }
         }

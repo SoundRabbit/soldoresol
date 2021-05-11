@@ -720,13 +720,16 @@ impl Implement {
 
     fn create_new_terranblock(&mut self, pos: [i32; 3], color: Pallet) {
         self.block_arena
-            .map(&self.world_id, |world: &block::world::World| {
-                BlockId::clone(world.selecting_table())
-            })
-            .map(|selecting_table_id| {
+            .and_then(&self.world_id, |world: &block::world::World| {
                 self.block_arena
-                    .map_mut(&selecting_table_id, |table: &mut block::table::Table| {
-                        table.terran_mut().insert(pos, color);
+                    .map(world.selecting_table(), |table: &block::table::Table| {
+                        BlockId::clone(table.terran_id())
+                    })
+            })
+            .map(|terran_id| {
+                self.block_arena
+                    .map_mut(&terran_id, |terran: &mut block::terran::Terran| {
+                        terran.insert(pos, block::terran::TerranBlock::new(color));
                     });
             });
     }

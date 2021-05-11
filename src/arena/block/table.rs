@@ -5,13 +5,6 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use wasm_bindgen::{prelude::*, JsCast};
 
-#[derive(Clone)]
-pub struct Terran {
-    terran: HashMap<[i32; 3], Pallet>,
-    min: [i32; 3],
-    max: [i32; 3],
-}
-
 pub struct Table {
     name: Rc<String>,
     size: [f32; 2],
@@ -19,57 +12,20 @@ pub struct Table {
     is_showing_grid: bool,
     drawing_texture_id: BlockId,
     drawed_texture_id: BlockId,
+    terran_id: BlockId,
     background_texture_id: Option<ResourceId>,
     background_color: Pallet,
     grid_color: Pallet,
     boxblocks: Vec<BlockId>,
     pointlights: Vec<BlockId>,
     env_light_intensity: f32,
-    terran: Terran,
-}
-
-impl Terran {
-    pub fn new() -> Self {
-        Self {
-            terran: HashMap::new(),
-            min: [0, 0, 0],
-            max: [0, 0, 0],
-        }
-    }
-
-    pub fn insert(&mut self, p: [i32; 3], c: Pallet) {
-        if self.terran.is_empty() {
-            self.min = p.clone();
-            self.max = p.clone();
-        } else {
-            self.min[0] = self.min[0].min(p[0]);
-            self.min[1] = self.min[1].min(p[1]);
-            self.min[2] = self.min[2].min(p[2]);
-            self.max[0] = self.max[0].max(p[0]);
-            self.max[1] = self.max[1].max(p[1]);
-            self.max[2] = self.max[2].max(p[2]);
-        }
-
-        self.terran.insert(p, c);
-    }
-
-    pub fn get(&self, p: &[i32; 3]) -> Option<&Pallet> {
-        self.terran.get(p)
-    }
-
-    pub fn min(&self) -> &[i32; 3] {
-        &self.min
-    }
-
-    pub fn max(&self) -> &[i32; 3] {
-        &self.max
-    }
 }
 
 impl Table {
     pub fn new(
         drawing_texture_id: BlockId,
         drawed_texture_id: BlockId,
+        terran_id: BlockId,
         size: [f32; 2],
         name: impl Into<String>,
     ) -> Self {
@@ -80,13 +36,13 @@ impl Table {
             is_showing_grid: true,
             drawing_texture_id,
             drawed_texture_id,
+            terran_id,
             background_texture_id: None,
             background_color: Pallet::gray(0).a(0),
             grid_color: Pallet::gray(9).a(100),
             boxblocks: vec![],
             pointlights: vec![],
             env_light_intensity: 1.0,
-            terran: Terran::new(),
         }
     }
 
@@ -98,6 +54,7 @@ impl Table {
             is_showing_grid: this.is_showing_grid,
             drawing_texture_id: BlockId::clone(&this.drawing_texture_id),
             drawed_texture_id: BlockId::clone(&this.drawed_texture_id),
+            terran_id: BlockId::clone(&this.terran_id),
             background_texture_id: this
                 .background_texture_id
                 .as_ref()
@@ -107,7 +64,6 @@ impl Table {
             boxblocks: this.boxblocks.iter().map(BlockId::clone).collect(),
             pointlights: this.pointlights.iter().map(BlockId::clone).collect(),
             env_light_intensity: this.env_light_intensity,
-            terran: this.terran.clone(),
         }
     }
 
@@ -149,6 +105,10 @@ impl Table {
 
     pub fn drawed_texture_id(&self) -> &BlockId {
         &self.drawed_texture_id
+    }
+
+    pub fn terran_id(&self) -> &BlockId {
+        &self.terran_id
     }
 
     pub fn background_texture_id(&self) -> Option<&ResourceId> {
@@ -197,14 +157,6 @@ impl Table {
 
     pub fn set_env_light_intensity(&mut self, env_light_intensity: f32) {
         self.env_light_intensity = env_light_intensity;
-    }
-
-    pub fn terran(&self) -> &Terran {
-        &self.terran
-    }
-
-    pub fn terran_mut(&mut self) -> &mut Terran {
-        &mut self.terran
     }
 
     pub async fn pack(&self) -> JsValue {

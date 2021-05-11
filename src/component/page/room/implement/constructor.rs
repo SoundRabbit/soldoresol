@@ -43,9 +43,11 @@ impl Implement {
             local_block_arena.insert(block::texture::Texture::new(&tex_size, tbl_size.clone()));
         let darwed_texture_id =
             block_arena.insert(block::texture::Texture::new(&tex_size, tbl_size.clone()));
+        let terran_id = block_arena.insert(block::terran::Terran::new());
         let table_id = block_arena.insert(block::table::Table::new(
             drawing_texture_id,
             darwed_texture_id,
+            terran_id,
             [tbl_size[0] as f32, tbl_size[1] as f32],
             "最初のテーブル",
         ));

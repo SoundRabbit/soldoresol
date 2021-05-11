@@ -42,7 +42,7 @@ pub struct Renderer {
     render_view_boxblock: view::boxblock::Boxblock,
     render_view_nameplate: view::nameplate::Nameplate,
     render_view_pointlight: view::pointlight::Pointlight,
-    render_view_terranblock: view::terranblock::Terranblock,
+    render_view_terran: view::terran::Terran,
     render_screen: view::screen::Screen,
 
     depth_screen: web_sys::WebGlRenderbuffer,
@@ -194,7 +194,7 @@ impl Renderer {
         let render_view_boxblock = view::boxblock::Boxblock::new(&gl);
         let render_view_nameplate = view::nameplate::Nameplate::new(&gl);
         let render_view_pointlight = view::pointlight::Pointlight::new(&gl);
-        let render_view_terranblock = view::terranblock::Terranblock::new(&gl);
+        let render_view_terran = view::terran::Terran::new(&gl);
         let render_screen = view::screen::Screen::new(&gl);
 
         let render_offscreen_character = offscreen::character::Character::new(&gl);
@@ -331,7 +331,7 @@ impl Renderer {
             render_view_boxblock,
             render_view_nameplate,
             render_view_pointlight,
-            render_view_terranblock,
+            render_view_terran,
             render_screen,
             depth_screen,
             tex_backscreen,
@@ -629,11 +629,12 @@ impl Renderer {
                     false,
                 );
 
-                self.render_view_terranblock.render(
+                self.render_view_terran.render(
                     &mut self.gl,
                     camera_matrix,
                     &vp_matrix,
-                    table.terran(),
+                    block_arena,
+                    table,
                     &[0.5, -2.0, 1.0],
                     &crate::libs::color::Pallet::gray(0).a(100),
                     table.env_light_intensity(),

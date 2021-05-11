@@ -16,6 +16,7 @@ pub mod pointlight;
 pub mod property;
 pub mod table;
 pub mod tag;
+pub mod terran;
 pub mod texture;
 pub mod world;
 
@@ -31,6 +32,7 @@ pub enum Block {
     Boxblock(boxblock::Boxblock),
     Property(property::Property),
     Pointlight(pointlight::Pointlight),
+    Terran(terran::Terran),
     None,
 }
 
@@ -55,6 +57,7 @@ impl Block {
             Self::Boxblock(block) => Self::Boxblock(boxblock::Boxblock::clone(block)),
             Self::Property(block) => Self::Property(property::Property::clone(block)),
             Self::Pointlight(block) => Self::Pointlight(pointlight::Pointlight::clone(block)),
+            Self::Terran(block) => Self::Terran(terran::Terran::clone(block)),
             Self::None => Self::None,
         }
     }
@@ -112,6 +115,7 @@ try_ref_mut!(Block: Tag => tag::Tag);
 try_ref_mut!(Block: Boxblock => boxblock::Boxblock);
 try_ref_mut!(Block: Property => property::Property);
 try_ref_mut!(Block: Pointlight => pointlight::Pointlight);
+try_ref_mut!(Block: Terran => terran::Terran);
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct BlockId {
@@ -194,6 +198,7 @@ impl ArenaBlock {
             Block::Boxblock(x) => (object! {}.into(), "None"),
             Block::Property(x) => (object! {}.into(), "None"),
             Block::Pointlight(x) => (object! {}.into(), "None"),
+            Block::Terran(x) => (object! {}.into(), "None"),
             Block::None => (object! {}.into(), "None"),
         };
 
@@ -366,6 +371,13 @@ impl Arena {
         Some(f(block))
     }
 
+    pub fn and_then<T, U>(&self, block_id: &BlockId, f: impl FnOnce(&T) -> Option<U>) -> Option<U>
+    where
+        Block: TryRef<T>,
+    {
+        self.map(block_id, f).unwrap_or(None)
+    }
+
     pub fn iter_map_with_ids<T, U>(
         &self,
         block_ids: impl Iterator<Item = BlockId>,
@@ -513,3 +525,4 @@ insert!(Arena: tag::Tag => Tag);
 insert!(Arena: boxblock::Boxblock => Boxblock);
 insert!(Arena: property::Property => Property);
 insert!(Arena: pointlight::Pointlight => Pointlight);
+insert!(Arena: terran::Terran => Terran);
