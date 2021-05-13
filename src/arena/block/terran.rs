@@ -61,4 +61,10 @@ impl Terran {
     pub fn table(&self) -> &HashMap<[i32; 3], TerranBlock> {
         &self.table
     }
+
+    pub fn remove_all(&mut self) -> HashMap<[i32; 3], TerranBlock> {
+        let mut x = HashMap::new();
+        std::mem::swap(&mut self.table, &mut x);
+        x
+    }
 }

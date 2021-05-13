@@ -80,29 +80,36 @@ impl Implement {
             }
 
             Msg::UpdateMouseState { e } => {
-                self.mouse_btn_state.update(&e);
-                let page_x = e.page_x();
-                let page_y = e.page_y();
+                if let Some(renderer) = &self.renderer {
+                    self.mouse_state.update(
+                        &e,
+                        &renderer,
+                        &self.block_arena,
+                        &self.camera_matrix,
+                        &self.canvas_size,
+                        &self.canvas_pos,
+                    );
+                }
                 let focused_object_id = if let Some(renderer) = &self.renderer {
-                    let x = page_x as f32 - self.canvas_pos[0];
-                    let y = page_y as f32 - self.canvas_pos[1];
-                    renderer.get_object_id(x, y)
+                    let p = self.mouse_state.cursor().now().position_in_canvas();
+                    renderer.get_object_id(p[0], p[1])
                 } else {
                     ObjectId::None
                 };
-                if self.mouse_btn_state.secondary.is_clicked {
+                if self.mouse_state.secondary_btn().is_clicked() {
+                    let p = self.mouse_state.cursor().now().position_in_page();
                     match focused_object_id {
                         ObjectId::Character(block_id, _) => {
                             self.contextmenu = Some(Contextmenu {
-                                page_x: page_x,
-                                page_y: page_y,
+                                page_x: p[0] as i32,
+                                page_y: p[1] as i32,
                                 kind: ContextmenuKind::Character(block_id),
                             });
                         }
                         ObjectId::Boxblock(block_id, _) => {
                             self.contextmenu = Some(Contextmenu {
-                                page_x: page_x,
-                                page_y: page_y,
+                                page_x: p[0] as i32,
+                                page_y: p[1] as i32,
                                 kind: ContextmenuKind::Boxblock(block_id),
                             });
                         }
@@ -723,14 +730,45 @@ impl Implement {
             .and_then(&self.world_id, |world: &block::world::World| {
                 self.block_arena
                     .map(world.selecting_table(), |table: &block::table::Table| {
-                        BlockId::clone(table.terran_id())
+                        BlockId::clone(table.drawing_terran_id())
                     })
             })
-            .map(|terran_id| {
-                self.block_arena
-                    .map_mut(&terran_id, |terran: &mut block::terran::Terran| {
+            .map(|drawing_terran_id| {
+                self.local_block_arena.map_mut(
+                    &drawing_terran_id,
+                    |terran: &mut block::terran::Terran| {
                         terran.insert(pos, block::terran::TerranBlock::new(color));
-                    });
+                    },
+                );
+            });
+    }
+
+    fn flip_to_drawed_terran(&mut self) {
+        self.block_arena
+            .and_then(&self.world_id, |world: &block::world::World| {
+                self.block_arena
+                    .map(world.selecting_table(), |table: &block::table::Table| {
+                        (
+                            BlockId::clone(table.drawing_terran_id()),
+                            BlockId::clone(table.drawed_terran_id()),
+                        )
+                    })
+            })
+            .map(|(drawing_terran_id, drawed_terran_id)| {
+                let terran_blocks = self
+                    .local_block_arena
+                    .map_mut(&drawing_terran_id, |terran: &mut block::terran::Terran| {
+                        terran.remove_all()
+                    })
+                    .unwrap_or(std::collections::HashMap::new());
+                self.block_arena.map_mut(
+                    &drawed_terran_id,
+                    |terran: &mut block::terran::Terran| {
+                        for (p, b) in terran_blocks {
+                            terran.insert(p, b);
+                        }
+                    },
+                );
             });
     }
 

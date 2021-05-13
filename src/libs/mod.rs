@@ -3,6 +3,7 @@ pub mod macros;
 #[macro_use]
 pub mod js_object;
 
+pub mod annotated;
 pub mod clone_of;
 pub mod color;
 pub mod element;

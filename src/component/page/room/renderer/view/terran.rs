@@ -42,7 +42,7 @@ impl Terran {
         gl: &mut WebGlRenderingContext,
         vp_matrix: &Array2<f32>,
         block_arena: &block::Arena,
-        table: &block::table::Table,
+        terran_id: &block::BlockId,
         light: &[f32; 3],
         light_color: &crate::libs::color::Pallet,
         light_intensity: f32,
@@ -54,7 +54,6 @@ impl Terran {
         gl.depth_func(web_sys::WebGlRenderingContext::LEQUAL);
         gl.use_program(ProgramType::TerranProgram);
 
-        let terran_id = table.terran_id();
         if block_arena.timestamp_of(terran_id).unwrap_or(0.0) > self.terran_update_time
             || *terran_id != self.last_terran_id
         {
@@ -128,7 +127,7 @@ impl Terran {
 
         gl.set_unif_vp(vp_matrix.clone().reversed_axes());
 
-        let model_matrix: Array2<f32> = ModelMatrix::new().with_movement(&[-0.5, -0.5, 0.0]).into();
+        let model_matrix: Array2<f32> = ModelMatrix::new().into();
         let inv_model_matrix: Array2<f32> = ModelMatrix::new().into();
         let mvp_matrix = vp_matrix.dot(&model_matrix);
 

@@ -7,7 +7,7 @@ use super::super::{
     },
     renderer::{CameraMatrix, ObjectId},
 };
-use super::{ElementId, Implement, KeyState, Modal, MouseBtnState, Msg, On, Overlay, Props};
+use super::{ElementId, Implement, KeyState, Modal, MouseState, Msg, On, Overlay, Props};
 use crate::arena::block;
 use crate::arena::player::{self, Player};
 use crate::arena::resource;
@@ -43,11 +43,13 @@ impl Implement {
             local_block_arena.insert(block::texture::Texture::new(&tex_size, tbl_size.clone()));
         let darwed_texture_id =
             block_arena.insert(block::texture::Texture::new(&tex_size, tbl_size.clone()));
-        let terran_id = block_arena.insert(block::terran::Terran::new());
+        let drawing_terran_id = local_block_arena.insert(block::terran::Terran::new());
+        let drawed_terran_id = block_arena.insert(block::terran::Terran::new());
         let table_id = block_arena.insert(block::table::Table::new(
             drawing_texture_id,
             darwed_texture_id,
-            terran_id,
+            drawing_terran_id,
+            drawed_terran_id,
             [tbl_size[0] as f32, tbl_size[1] as f32],
             "最初のテーブル",
         ));
@@ -176,7 +178,7 @@ impl Implement {
             overlay: Overlay::None,
             contextmenu: None,
 
-            mouse_btn_state: MouseBtnState::new(),
+            mouse_state: MouseState::new(),
             key_state: KeyState {
                 alt_key: false,
                 ctrl_key: false,

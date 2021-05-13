@@ -5,23 +5,11 @@ use super::{
 
 impl Implement {
     pub fn update_mouse(&mut self) -> bool {
-        let mouse_state = &self.mouse_btn_state.primary;
-        let mouse_point = &mouse_state.now_point;
-        let client_x = mouse_point[0] - self.canvas_pos[0];
-        let client_y = mouse_point[1] - self.canvas_pos[1];
-        let last_point = &mouse_state.last_point;
-        let last_client_x = last_point[0] - self.canvas_pos[0];
-        let last_client_y = last_point[1] - self.canvas_pos[1];
-        let changing_point = &mouse_state.changing_point;
-        let changing_client_x = changing_point[0] - self.canvas_pos[0];
-        let changing_client_y = changing_point[1] - self.canvas_pos[1];
-        let last_changing_point = &mouse_state.last_changing_point;
-        let last_changing_client_x = last_changing_point[0] - self.canvas_pos[0];
-        let last_changing_client_y = last_changing_point[1] - self.canvas_pos[1];
-
-        if mouse_state.is_dragging && self.key_state.space_key {
-            let mov_x = (client_x - last_client_x) as f32;
-            let mov_y = (client_y - last_client_y) as f32;
+        if self.mouse_state.primary_btn().is_dragging() && self.key_state.space_key {
+            let last = self.mouse_state.cursor().last().position_in_canvas();
+            let now = self.mouse_state.cursor().now().position_in_canvas();
+            let mov_x = now[0] - last[0];
+            let mov_y = now[1] - last[1];
             let intensity = 0.05;
             let mov = self.camera_matrix.movement();
             let mov = [
@@ -30,9 +18,11 @@ impl Implement {
                 mov[2],
             ];
             self.camera_matrix.set_movement(mov);
-        } else if mouse_state.is_dragging && self.key_state.alt_key {
-            let mov_x = (client_x - last_client_x) as f32;
-            let mov_y = (client_y - last_client_y) as f32;
+        } else if self.mouse_state.primary_btn().is_dragging() && self.key_state.alt_key {
+            let last = self.mouse_state.cursor().last().position_in_canvas();
+            let now = self.mouse_state.cursor().now().position_in_canvas();
+            let mov_x = now[0] - last[0];
+            let mov_y = now[1] - last[1];
             let intensity = 0.005;
             let rot_x = self.camera_matrix.x_axis_rotation();
             let rot_z = self.camera_matrix.z_axis_rotation();
@@ -44,19 +34,24 @@ impl Implement {
         } else {
             match self.table_tools.selected() {
                 Some(TableTool::Selector) => {
-                    if mouse_state.is_dragging {
+                    if self.mouse_state.primary_btn().is_dragging() {
                         if self.grabbed_object_id.is_none() {
                             self.grabbed_object_id = self
                                 .renderer
                                 .as_ref()
-                                .map(|x| x.get_object_id(client_x, client_y))
+                                .map(|x| {
+                                    x.get_object_id(
+                                        self.mouse_state.cursor().now().position_in_canvas()[0],
+                                        self.mouse_state.cursor().now().position_in_canvas()[1],
+                                    )
+                                })
                                 .unwrap_or(ObjectId::None);
                         } else if let Some(renderer) = &self.renderer {
                             let (mut p, n) = renderer.get_focused_position(
                                 &self.block_arena,
                                 &self.camera_matrix,
-                                client_x,
-                                client_y,
+                                self.mouse_state.cursor().now().position_in_canvas()[0],
+                                self.mouse_state.cursor().now().position_in_canvas()[1],
                             );
 
                             p[0] = (p[0] * 2.0).round() / 2.0;
@@ -107,49 +102,18 @@ impl Implement {
                         self.grabbed_object_id = ObjectId::None;
                     }
                 }
-                Some(TableTool::Pen(_)) => {
-                    self.update_tabletool_pen(client_x, client_y, last_client_x, last_client_y)
-                }
+                Some(TableTool::Pen(_)) => self.update_tabletool_pen(),
                 Some(TableTool::Shape(shape_tool)) => match shape_tool.selected() {
-                    Some(ShapeTool::Line(_)) => self.update_tabletool_shape_line(
-                        client_x,
-                        client_y,
-                        changing_client_x,
-                        changing_client_y,
-                        last_changing_client_x,
-                        last_changing_client_y,
-                    ),
-                    Some(ShapeTool::Rect(_)) => self.update_tabletool_shape_rect(
-                        client_x,
-                        client_y,
-                        changing_client_x,
-                        changing_client_y,
-                        last_changing_client_x,
-                        last_changing_client_y,
-                    ),
-                    Some(ShapeTool::Ellipse(_)) => self.update_tabletool_shape_ellipse(
-                        client_x,
-                        client_y,
-                        changing_client_x,
-                        changing_client_y,
-                        last_changing_client_x,
-                        last_changing_client_y,
-                    ),
+                    Some(ShapeTool::Line(_)) => self.update_tabletool_shape_line(),
+                    Some(ShapeTool::Rect(_)) => self.update_tabletool_shape_rect(),
+                    Some(ShapeTool::Ellipse(_)) => self.update_tabletool_shape_ellipse(),
                     _ => {}
                 },
-                Some(TableTool::Eraser(_)) => {
-                    self.update_tabletool_eraser(client_x, client_y, last_client_x, last_client_y)
-                }
-                Some(TableTool::Character(_)) => {
-                    self.update_tabletool_character(client_x, client_y)
-                }
-                Some(TableTool::Terranblock(_)) => {
-                    self.update_tabletool_terranblock(client_x, client_y)
-                }
-                Some(TableTool::Boxblock(_)) => self.update_tabletool_boxblock(client_x, client_y),
-                Some(TableTool::Pointlight(_)) => {
-                    self.update_tabletool_pointlight(client_x, client_y)
-                }
+                Some(TableTool::Eraser(_)) => self.update_tabletool_eraser(),
+                Some(TableTool::Character(_)) => self.update_tabletool_character(),
+                Some(TableTool::Terranblock(_)) => self.update_tabletool_terranblock(),
+                Some(TableTool::Boxblock(_)) => self.update_tabletool_boxblock(),
+                Some(TableTool::Pointlight(_)) => self.update_tabletool_pointlight(),
                 _ => {}
             }
         }
@@ -180,13 +144,7 @@ impl Implement {
         })
     }
 
-    fn update_tabletool_pen(
-        &mut self,
-        client_x: f32,
-        client_y: f32,
-        last_client_x: f32,
-        last_client_y: f32,
-    ) {
+    fn update_tabletool_pen(&mut self) {
         let pen = match self.table_tools.selected() {
             Some(TableTool::Pen(x)) => x,
             _ => {
@@ -194,17 +152,10 @@ impl Implement {
             }
         };
 
-        let mouse_state = &self.mouse_btn_state.primary;
-
-        if mouse_state.is_dragging {
+        if self.mouse_state.primary_btn().is_dragging() {
             if let Some(drawing_texture_id) = self.drawing_texture_id() {
-                let a = self.camera_matrix.collision_point_on_xy_plane(
-                    &self.canvas_size,
-                    &[last_client_x, last_client_y],
-                );
-                let b = self
-                    .camera_matrix
-                    .collision_point_on_xy_plane(&self.canvas_size, &[client_x, client_y]);
+                let a = self.mouse_state.cursor().last().position_in_table();
+                let b = self.mouse_state.cursor().now().position_in_table();
                 let p = self.local_block_arena.map_mut(
                     &drawing_texture_id,
                     |texture: &mut block::texture::Texture| {
@@ -227,14 +178,14 @@ impl Implement {
                 );
 
                 if let Some((a, b)) = p {
-                    if mouse_state.is_changed_dragging_state {
+                    if self.mouse_state.primary_btn().is_downed() {
                         self.drawing_line = vec![a, b];
                     } else {
                         self.drawing_line.push(a);
                     }
                 }
             }
-        } else if mouse_state.is_changed_dragging_state && self.drawing_line.len() >= 2 {
+        } else if self.mouse_state.primary_btn().is_upped() && self.drawing_line.len() >= 2 {
             let mut points = self
                 .drawing_line
                 .drain(..)
@@ -277,15 +228,7 @@ impl Implement {
         }
     }
 
-    fn update_tabletool_shape_line(
-        &mut self,
-        client_x: f32,
-        client_y: f32,
-        changing_client_x: f32,
-        changing_client_y: f32,
-        last_changing_client_x: f32,
-        last_changing_client_y: f32,
-    ) {
+    fn update_tabletool_shape_line(&mut self) {
         let line = match self.table_tools.selected() {
             Some(TableTool::Shape(shape_tool)) => match shape_tool.selected() {
                 Some(ShapeTool::Line(x)) => x,
@@ -298,17 +241,14 @@ impl Implement {
             }
         };
 
-        let mouse_state = &self.mouse_btn_state.primary;
-
-        if mouse_state.is_dragging {
+        if self.mouse_state.primary_btn().is_dragging() {
             if let Some(drawing_texture_id) = self.drawing_texture_id() {
-                let a = self.camera_matrix.collision_point_on_xy_plane(
-                    &self.canvas_size,
-                    &[changing_client_x, changing_client_y],
-                );
-                let b = self
-                    .camera_matrix
-                    .collision_point_on_xy_plane(&self.canvas_size, &[client_x, client_y]);
+                let a = self
+                    .mouse_state
+                    .primary_btn()
+                    .drag_start()
+                    .position_in_table();
+                let b = self.mouse_state.cursor().now().position_in_table();
                 self.local_block_arena.map_mut(
                     &drawing_texture_id,
                     |texture: &mut block::texture::Texture| {
@@ -327,17 +267,16 @@ impl Implement {
                     },
                 );
             }
-        } else if mouse_state.is_changed_dragging_state {
+        } else if self.mouse_state.primary_btn().is_upped() {
             if let Some((drawing_texture_id, drawed_texture_id)) =
                 join_some!(self.drawing_texture_id(), self.drawed_texture_id())
             {
-                let a = self.camera_matrix.collision_point_on_xy_plane(
-                    &self.canvas_size,
-                    &[last_changing_client_x, last_changing_client_y],
-                );
-                let b = self
-                    .camera_matrix
-                    .collision_point_on_xy_plane(&self.canvas_size, &[client_x, client_y]);
+                let a = self
+                    .mouse_state
+                    .primary_btn()
+                    .drag_start()
+                    .position_in_table();
+                let b = self.mouse_state.cursor().now().position_in_table();
 
                 self.local_block_arena.map_mut(
                     &drawing_texture_id,
@@ -368,15 +307,7 @@ impl Implement {
         }
     }
 
-    fn update_tabletool_shape_rect(
-        &mut self,
-        client_x: f32,
-        client_y: f32,
-        changing_client_x: f32,
-        changing_client_y: f32,
-        last_changing_client_x: f32,
-        last_changing_client_y: f32,
-    ) {
+    fn update_tabletool_shape_rect(&mut self) {
         let rect = match self.table_tools.selected() {
             Some(TableTool::Shape(shape_tool)) => match shape_tool.selected() {
                 Some(ShapeTool::Rect(x)) => x,
@@ -389,17 +320,14 @@ impl Implement {
             }
         };
 
-        let mouse_state = &self.mouse_btn_state.primary;
-
-        if mouse_state.is_dragging {
+        if self.mouse_state.primary_btn().is_dragging() {
             if let Some(drawing_texture_id) = self.drawing_texture_id() {
-                let a = self.camera_matrix.collision_point_on_xy_plane(
-                    &self.canvas_size,
-                    &[changing_client_x, changing_client_y],
-                );
-                let b = self
-                    .camera_matrix
-                    .collision_point_on_xy_plane(&self.canvas_size, &[client_x, client_y]);
+                let a = self
+                    .mouse_state
+                    .primary_btn()
+                    .drag_start()
+                    .position_in_table();
+                let b = self.mouse_state.cursor().now().position_in_table();
                 self.local_block_arena.map_mut(
                     &drawing_texture_id,
                     |texture: &mut block::texture::Texture| {
@@ -418,17 +346,16 @@ impl Implement {
                     },
                 );
             }
-        } else if mouse_state.is_changed_dragging_state {
+        } else if self.mouse_state.primary_btn().is_upped() {
             if let Some((drawing_texture_id, drawed_texture_id)) =
                 join_some!(self.drawing_texture_id(), self.drawed_texture_id())
             {
-                let a = self.camera_matrix.collision_point_on_xy_plane(
-                    &self.canvas_size,
-                    &[last_changing_client_x, last_changing_client_y],
-                );
-                let b = self
-                    .camera_matrix
-                    .collision_point_on_xy_plane(&self.canvas_size, &[client_x, client_y]);
+                let a = self
+                    .mouse_state
+                    .primary_btn()
+                    .drag_start()
+                    .position_in_table();
+                let b = self.mouse_state.cursor().now().position_in_table();
 
                 self.local_block_arena.map_mut(
                     &drawing_texture_id,
@@ -458,15 +385,7 @@ impl Implement {
         }
     }
 
-    fn update_tabletool_shape_ellipse(
-        &mut self,
-        client_x: f32,
-        client_y: f32,
-        changing_client_x: f32,
-        changing_client_y: f32,
-        last_changing_client_x: f32,
-        last_changing_client_y: f32,
-    ) {
+    fn update_tabletool_shape_ellipse(&mut self) {
         let ellipse = match self.table_tools.selected() {
             Some(TableTool::Shape(shape_tool)) => match shape_tool.selected() {
                 Some(ShapeTool::Ellipse(x)) => x,
@@ -479,17 +398,14 @@ impl Implement {
             }
         };
 
-        let mouse_state = &self.mouse_btn_state.primary;
-
-        if mouse_state.is_dragging {
+        if self.mouse_state.primary_btn().is_dragging() {
             if let Some(drawing_texture_id) = self.drawing_texture_id() {
-                let a = self.camera_matrix.collision_point_on_xy_plane(
-                    &self.canvas_size,
-                    &[changing_client_x, changing_client_y],
-                );
-                let b = self
-                    .camera_matrix
-                    .collision_point_on_xy_plane(&self.canvas_size, &[client_x, client_y]);
+                let a = self
+                    .mouse_state
+                    .primary_btn()
+                    .drag_start()
+                    .position_in_table();
+                let b = self.mouse_state.cursor().now().position_in_table();
                 self.local_block_arena.map_mut(
                     &drawing_texture_id,
                     |texture: &mut block::texture::Texture| {
@@ -518,17 +434,16 @@ impl Implement {
                     },
                 );
             }
-        } else if mouse_state.is_changed_dragging_state {
+        } else if self.mouse_state.primary_btn().is_upped() {
             if let Some((drawing_texture_id, drawed_texture_id)) =
                 join_some!(self.drawing_texture_id(), self.drawed_texture_id())
             {
-                let a = self.camera_matrix.collision_point_on_xy_plane(
-                    &self.canvas_size,
-                    &[last_changing_client_x, last_changing_client_y],
-                );
-                let b = self
-                    .camera_matrix
-                    .collision_point_on_xy_plane(&self.canvas_size, &[client_x, client_y]);
+                let a = self
+                    .mouse_state
+                    .primary_btn()
+                    .drag_start()
+                    .position_in_table();
+                let b = self.mouse_state.cursor().now().position_in_table();
 
                 self.local_block_arena.map_mut(
                     &drawing_texture_id,
@@ -568,13 +483,7 @@ impl Implement {
         }
     }
 
-    fn update_tabletool_eraser(
-        &mut self,
-        client_x: f32,
-        client_y: f32,
-        last_client_x: f32,
-        last_client_y: f32,
-    ) {
+    fn update_tabletool_eraser(&mut self) {
         let eraser = match self.table_tools.selected() {
             Some(TableTool::Eraser(x)) => x,
             _ => {
@@ -582,17 +491,10 @@ impl Implement {
             }
         };
 
-        let mouse_state = &self.mouse_btn_state.primary;
-
-        if mouse_state.is_dragging {
+        if self.mouse_state.primary_btn().is_dragging() {
             if let Some(drawing_texture_id) = self.drawing_texture_id() {
-                let a = self.camera_matrix.collision_point_on_xy_plane(
-                    &self.canvas_size,
-                    &[last_client_x, last_client_y],
-                );
-                let b = self
-                    .camera_matrix
-                    .collision_point_on_xy_plane(&self.canvas_size, &[client_x, client_y]);
+                let a = self.mouse_state.cursor().last().position_in_table();
+                let b = self.mouse_state.cursor().now().position_in_table();
                 let p = self.local_block_arena.map_mut(
                     &drawing_texture_id,
                     |texture: &mut block::texture::Texture| {
@@ -616,14 +518,14 @@ impl Implement {
                 );
 
                 if let Some((a, b)) = p {
-                    if mouse_state.is_changed_dragging_state {
+                    if self.mouse_state.primary_btn().is_downed() {
                         self.drawing_line = vec![a, b];
                     } else {
                         self.drawing_line.push(a);
                     }
                 }
             }
-        } else if mouse_state.is_changed_dragging_state && self.drawing_line.len() >= 2 {
+        } else if self.mouse_state.primary_btn().is_upped() && self.drawing_line.len() >= 2 {
             let mut points = self
                 .drawing_line
                 .drain(..)
@@ -672,25 +574,14 @@ impl Implement {
         }
     }
 
-    fn update_tabletool_character(&mut self, client_x: f32, client_y: f32) {
-        let mouse_state = &self.mouse_btn_state.primary;
-
-        if mouse_state.is_clicked {
+    fn update_tabletool_character(&mut self) {
+        if self.mouse_state.primary_btn().is_clicked() {
             let character = if let Some(TableTool::Character(x)) = self.table_tools.selected() {
                 CharacterTool::clone_of(x)
             } else {
                 return;
             };
-            let (p, _) = if let Some(renderer) = &self.renderer {
-                renderer.get_focused_position(
-                    &self.block_arena,
-                    &self.camera_matrix,
-                    client_x,
-                    client_y,
-                )
-            } else {
-                return;
-            };
+            let (p, _) = self.mouse_state.cursor().now().position_in_world();
 
             let p = [
                 (p[0] * 2.0).round() / 2.0,
@@ -708,26 +599,15 @@ impl Implement {
         }
     }
 
-    fn update_tabletool_boxblock(&mut self, client_x: f32, client_y: f32) {
-        let mouse_state = &self.mouse_btn_state.primary;
-
-        if mouse_state.is_clicked {
+    fn update_tabletool_boxblock(&mut self) {
+        if self.mouse_state.primary_btn().is_clicked() {
             let boxblock = if let Some(TableTool::Boxblock(x)) = self.table_tools.selected() {
                 BoxblockTool::clone_of(x)
             } else {
                 return;
             };
 
-            let (p, n) = if let Some(renderer) = &self.renderer {
-                renderer.get_focused_position(
-                    &self.block_arena,
-                    &self.camera_matrix,
-                    client_x,
-                    client_y,
-                )
-            } else {
-                return;
-            };
+            let (p, n) = self.mouse_state.cursor().now().position_in_world();
 
             let p = [
                 (p[0] * 2.0).round() / 2.0,
@@ -748,58 +628,46 @@ impl Implement {
         }
     }
 
-    fn update_tabletool_terranblock(&mut self, client_x: f32, client_y: f32) {
-        let mouse_state = &self.mouse_btn_state.primary;
+    fn update_tabletool_terranblock(&mut self) {
+        if self.mouse_state.primary_btn().is_dragging() {
+            let focuesd =
+                self.focused_grid_area(self.mouse_state.cursor().now().position_in_world());
+            let last_focuesd =
+                self.focused_grid_area(self.mouse_state.cursor().last().position_in_world());
 
-        if mouse_state.is_clicked {
-            let terranblock = if let Some(TableTool::Terranblock(x)) = self.table_tools.selected() {
-                TerranblockTool::clone_of(x)
-            } else {
-                return;
-            };
+            if focuesd != last_focuesd {
+                let terranblock =
+                    if let Some(TableTool::Terranblock(x)) = self.table_tools.selected() {
+                        TerranblockTool::clone_of(x)
+                    } else {
+                        return;
+                    };
 
-            let (p, n) = if let Some(renderer) = &self.renderer {
-                renderer.get_focused_position(
-                    &self.block_arena,
-                    &self.camera_matrix,
-                    client_x,
-                    client_y,
-                )
-            } else {
-                return;
-            };
-
-            let p = [
-                p[0].round() + n[0] * 0.5,
-                p[1].round() + n[1] * 0.5,
-                p[2].round() + n[2] * 0.5,
-            ];
-            let p = [p[0] as i32, p[1] as i32, p[2] as i32];
-
-            self.create_new_terranblock(p, terranblock.color);
+                self.create_new_terranblock(last_focuesd, terranblock.color);
+            }
+        } else if self.mouse_state.primary_btn().is_upped() {
+            self.flip_to_drawed_terran();
         }
     }
 
-    fn update_tabletool_pointlight(&mut self, client_x: f32, client_y: f32) {
-        let mouse_state = &self.mouse_btn_state.primary;
+    fn focused_grid_area(&self, (p, n): (&[f32; 3], &[f32; 3])) -> [i32; 3] {
+        let p = [
+            (p[0] + n[0] * 0.5).floor(),
+            (p[1] + n[1] * 0.5).floor(),
+            (p[2] + n[2] * 0.5).floor(),
+        ];
+        [p[0] as i32, p[1] as i32, p[2] as i32]
+    }
 
-        if mouse_state.is_clicked {
+    fn update_tabletool_pointlight(&mut self) {
+        if self.mouse_state.primary_btn().is_clicked() {
             let pointlight = if let Some(TableTool::Pointlight(x)) = self.table_tools.selected() {
                 PointlightTool::clone_of(x)
             } else {
                 return;
             };
 
-            let (p, n) = if let Some(renderer) = &self.renderer {
-                renderer.get_focused_position(
-                    &self.block_arena,
-                    &self.camera_matrix,
-                    client_x,
-                    client_y,
-                )
-            } else {
-                return;
-            };
+            let (p, n) = self.mouse_state.cursor().now().position_in_world();
 
             let p = [
                 (p[0] * 2.0).round() / 2.0,

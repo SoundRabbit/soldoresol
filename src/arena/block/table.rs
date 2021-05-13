@@ -12,7 +12,8 @@ pub struct Table {
     is_showing_grid: bool,
     drawing_texture_id: BlockId,
     drawed_texture_id: BlockId,
-    terran_id: BlockId,
+    drawing_terran_id: BlockId,
+    drawed_terran_id: BlockId,
     background_texture_id: Option<ResourceId>,
     background_color: Pallet,
     grid_color: Pallet,
@@ -25,7 +26,8 @@ impl Table {
     pub fn new(
         drawing_texture_id: BlockId,
         drawed_texture_id: BlockId,
-        terran_id: BlockId,
+        drawing_terran_id: BlockId,
+        drawed_terran_id: BlockId,
         size: [f32; 2],
         name: impl Into<String>,
     ) -> Self {
@@ -36,7 +38,8 @@ impl Table {
             is_showing_grid: true,
             drawing_texture_id,
             drawed_texture_id,
-            terran_id,
+            drawing_terran_id,
+            drawed_terran_id,
             background_texture_id: None,
             background_color: Pallet::gray(0).a(0),
             grid_color: Pallet::gray(9).a(100),
@@ -54,7 +57,8 @@ impl Table {
             is_showing_grid: this.is_showing_grid,
             drawing_texture_id: BlockId::clone(&this.drawing_texture_id),
             drawed_texture_id: BlockId::clone(&this.drawed_texture_id),
-            terran_id: BlockId::clone(&this.terran_id),
+            drawing_terran_id: BlockId::clone(&this.drawing_terran_id),
+            drawed_terran_id: BlockId::clone(&this.drawed_terran_id),
             background_texture_id: this
                 .background_texture_id
                 .as_ref()
@@ -107,8 +111,12 @@ impl Table {
         &self.drawed_texture_id
     }
 
-    pub fn terran_id(&self) -> &BlockId {
-        &self.terran_id
+    pub fn drawing_terran_id(&self) -> &BlockId {
+        &self.drawing_terran_id
+    }
+
+    pub fn drawed_terran_id(&self) -> &BlockId {
+        &self.drawed_terran_id
     }
 
     pub fn background_texture_id(&self) -> Option<&ResourceId> {

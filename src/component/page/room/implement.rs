@@ -3,6 +3,7 @@ use super::{
     super::util::styled::{Style, Styled},
     super::util::State,
     children::room_modeless,
+    model::controller_state::MouseState,
     model::table::TableTool,
     renderer::{CameraMatrix, ObjectId, Renderer},
 };
@@ -186,76 +187,6 @@ pub enum Msg {
 
 pub enum On {}
 
-struct AMouseBtnState {
-    is_dragging: bool,
-    is_clicked: bool,
-    is_changed_dragging_state: bool,
-    changing_point: [f32; 2],
-    last_changing_point: [f32; 2],
-    last_point: [f32; 2],
-    now_point: [f32; 2],
-    btn: u16,
-}
-
-impl AMouseBtnState {
-    fn new(btn: u16) -> Self {
-        Self {
-            is_dragging: false,
-            is_clicked: false,
-            is_changed_dragging_state: false,
-            changing_point: [0.0, 0.0],
-            last_changing_point: [0.0, 0.0],
-            last_point: [0.0, 0.0],
-            now_point: [0.0, 0.0],
-            btn,
-        }
-    }
-
-    fn update(&mut self, e: &web_sys::MouseEvent) {
-        let buttons = e.buttons();
-        let page_x = e.page_x() as f32;
-        let page_y = e.page_y() as f32;
-
-        let is_dragging = (buttons & self.btn) != 0;
-
-        self.is_clicked = false;
-
-        if self.is_dragging != is_dragging {
-            std::mem::swap(&mut self.last_changing_point, &mut self.changing_point);
-            self.changing_point = [page_x, page_y];
-            self.is_changed_dragging_state = true;
-            self.is_dragging = is_dragging;
-            if !is_dragging {
-                self.is_clicked = true;
-            }
-        } else {
-            self.is_changed_dragging_state = false;
-        }
-
-        std::mem::swap(&mut self.last_point, &mut self.now_point);
-        self.now_point = [page_x, page_y];
-    }
-}
-
-struct MouseBtnState {
-    primary: AMouseBtnState,
-    secondary: AMouseBtnState,
-}
-
-impl MouseBtnState {
-    fn new() -> Self {
-        Self {
-            primary: AMouseBtnState::new(1),
-            secondary: AMouseBtnState::new(2),
-        }
-    }
-
-    fn update(&mut self, e: &web_sys::MouseEvent) {
-        self.primary.update(e);
-        self.secondary.update(e);
-    }
-}
-
 struct KeyState {
     space_key: bool,
     alt_key: bool,
@@ -312,7 +243,7 @@ pub struct Implement {
     overlay: Overlay,
     contextmenu: Option<Contextmenu>,
 
-    mouse_btn_state: MouseBtnState,
+    mouse_state: MouseState,
     key_state: KeyState,
     canvas: Option<Rc<web_sys::HtmlCanvasElement>>,
     canvas_pos: [f32; 2],
