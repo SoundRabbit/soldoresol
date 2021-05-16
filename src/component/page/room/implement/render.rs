@@ -404,6 +404,10 @@ impl Implement {
                     .on("contextmenu", move |e| {
                         e.prevent_default();
                         Msg::NoOp
+                    })
+                    .on("wheel", move |e| {
+                        let e = unwrap_or!(e.dyn_into::<web_sys::WheelEvent>().ok(); Msg::NoOp);
+                        Msg::NoOp
                     }),
                 self.modeless_list
                     .iter()

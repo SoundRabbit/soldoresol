@@ -29,22 +29,27 @@ macro_rules! map {
 }
 
 macro_rules! join_some {
-    ($($x:expr), *) => {{
-        #[allow(unused_mut)]
-        let mut all_is_some = true;
-
-        $(
-            if $x.is_none() {
-                all_is_some = false;
-            }
-        )*
-
-        if all_is_some {
-            Some(($($x.unwrap()),*))
+    ($x:expr; $($ys:expr), +) => {{
+        if let Some(y) = $x {
+            Some(($($ys,)+ y))
         } else {
             None
         }
     }};
+    ($x:expr, $($xs:expr), + ; $($ys:expr), +) => {
+        if let Some(y) = $x {
+            join_some!($($xs),+ ; $($ys,)+ y)
+        } else {
+            None
+        }
+    };
+    ($x:expr, $($xs:expr), +) => {
+        if let Some(y) = $x {
+            join_some!($($xs),+ ; y)
+        } else {
+            None
+        }
+    };
 }
 
 macro_rules! unwrap {
