@@ -407,7 +407,7 @@ impl Implement {
                     })
                     .on("wheel", move |e| {
                         let e = unwrap_or!(e.dyn_into::<web_sys::WheelEvent>().ok(); Msg::NoOp);
-                        Msg::NoOp
+                        Msg::UpdateMouseWheelState { e }
                     }),
                 self.modeless_list
                     .iter()

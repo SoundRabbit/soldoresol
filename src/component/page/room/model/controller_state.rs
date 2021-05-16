@@ -21,6 +21,7 @@ pub struct MouseState {
     primary_btn: MouseBtnState,
     secondary_btn: MouseBtnState,
     cursor: State<CursorPosition>,
+    wheel: State<f64>,
 }
 
 impl<T> State<T> {
@@ -157,6 +158,7 @@ impl MouseState {
                 annot: State::new(CursorPosition::empty(), CursorPosition::empty()),
             },
             cursor: State::new(CursorPosition::empty(), CursorPosition::empty()),
+            wheel: State::new(0.0, 0.0),
         }
     }
 
@@ -186,6 +188,11 @@ impl MouseState {
         self.cursor.update(cursor);
     }
 
+    pub fn update_wheel(&mut self, e: &web_sys::WheelEvent) {
+        let now_y = e.delta_y() + self.wheel.now();
+        self.wheel.update(now_y);
+    }
+
     pub fn primary_btn(&self) -> &MouseBtnState {
         &self.primary_btn
     }
@@ -196,5 +203,9 @@ impl MouseState {
 
     pub fn cursor(&self) -> &State<CursorPosition> {
         &self.cursor
+    }
+
+    pub fn wheel(&self) -> &State<f64> {
+        &self.wheel
     }
 }

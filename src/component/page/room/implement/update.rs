@@ -122,6 +122,19 @@ impl Implement {
                 }
             }
 
+            Msg::UpdateMouseWheelState { e } => {
+                self.mouse_state.update_wheel(&e);
+                let intensity = 0.01;
+                let mov = self.camera_matrix.movement();
+                let mov = [
+                    mov[0],
+                    mov[1],
+                    20.0 + (intensity * self.mouse_state.wheel().now()) as f32,
+                ];
+                self.camera_matrix.set_movement(mov);
+                self.gl_render_async();
+            }
+
             Msg::UpdateKeyState { e, is_key_down } => {
                 self.key_state.update(e, is_key_down);
             }

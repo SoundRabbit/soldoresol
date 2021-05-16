@@ -40,6 +40,9 @@ pub enum Msg {
     UpdateMouseState {
         e: web_sys::MouseEvent,
     },
+    UpdateMouseWheelState {
+        e: web_sys::WheelEvent,
+    },
     UpdateKeyState {
         e: web_sys::KeyboardEvent,
         is_key_down: bool,
