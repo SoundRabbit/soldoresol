@@ -43,6 +43,8 @@ impl Terran {
         vp_matrix: &Array2<f32>,
         block_arena: &block::Arena,
         terran_id: &block::BlockId,
+        table_size: &[f32; 2],
+        alpha: u8,
         light: &[f32; 3],
         light_color: &crate::libs::color::Pallet,
         light_intensity: f32,
@@ -58,13 +60,13 @@ impl Terran {
             || *terran_id != self.last_terran_id
         {
             block_arena.map(terran_id, |terran: &block::terran::Terran| {
-                self.update_buffer(gl, terran);
+                self.update_buffer(gl, terran, alpha);
             });
         }
 
         gl.set_attr_vertex(&self.vertexes_buffer, 3, 0);
         gl.set_attr_normal(&self.normals_buffer, 3, 0);
-        gl.set_attr_color(&self.colors_buffer, 3, 0);
+        gl.set_attr_color(&self.colors_buffer, 4, 0);
 
         gl.bind_buffer(
             web_sys::WebGlRenderingContext::ELEMENT_ARRAY_BUFFER,
@@ -127,7 +129,12 @@ impl Terran {
 
         gl.set_unif_vp(vp_matrix.clone().reversed_axes());
 
-        let model_matrix: Array2<f32> = ModelMatrix::new().into();
+        let offset = [
+            -table_size[0].floor() % 2.0 * 0.5,
+            -table_size[1].floor() % 2.0 * 0.5,
+            0.0,
+        ];
+        let model_matrix: Array2<f32> = ModelMatrix::new().with_movement(&offset).into();
         let inv_model_matrix: Array2<f32> = ModelMatrix::new().into();
         let mvp_matrix = vp_matrix.dot(&model_matrix);
 
@@ -143,7 +150,12 @@ impl Terran {
         );
     }
 
-    fn update_buffer(&mut self, gl: &mut WebGlRenderingContext, terran: &block::terran::Terran) {
+    fn update_buffer(
+        &mut self,
+        gl: &mut WebGlRenderingContext,
+        terran: &block::terran::Terran,
+        alpha: u8,
+    ) {
         let mut vertexes = vec![];
         let mut normals = vec![];
         let mut indexes = vec![];
@@ -172,7 +184,7 @@ impl Terran {
                         [p[0] + o[i][2][0], p[1] + o[i][2][1], p[2] + o[i][2][2]],
                         [p[0] + o[i][3][0], p[1] + o[i][3][1], p[2] + o[i][3][2]],
                         i,
-                        terran_block.color(),
+                        terran_block.color().with_a(alpha),
                     );
                 }
             }
@@ -196,14 +208,17 @@ impl Terran {
         pn: [i32; 3],
         nn: [i32; 3],
         n_idx: usize,
-        color: &Pallet,
+        color: Pallet,
     ) {
-        let pp_idx = Self::push_vertex(vertexes, normals, colors, vertexes_table, pp, n_idx, color);
-        let np_idx = Self::push_vertex(vertexes, normals, colors, vertexes_table, np, n_idx, color);
-        let pn_idx = Self::push_vertex(vertexes, normals, colors, vertexes_table, pn, n_idx, color);
-        let nn_idx = Self::push_vertex(vertexes, normals, colors, vertexes_table, nn, n_idx, color);
-
-        indexes.push(pp_idx);
+        let pp_idx =
+            Self::push_vertex(vertexes, normals, colors, vertexes_table, pp, n_idx, &color);
+        let np_idx =
+            Self::push_vertex(vertexes, normals, colors, vertexes_table, np, n_idx, &color);
+        let pn_idx =
+            Self::push_vertex(vertexes, normals, colors, vertexes_table, pn, n_idx, &color);
+        let nn_idx =
+            Self::push_vertex(vertexes, normals, colors, vertexes_table, nn, n_idx, &color);
+        &indexes.push(pp_idx);
         indexes.push(np_idx);
         indexes.push(pn_idx);
         indexes.push(nn_idx);
@@ -236,6 +251,7 @@ impl Terran {
             colors.push(color[0]);
             colors.push(color[1]);
             colors.push(color[2]);
+            colors.push(color[3]);
 
             let idx = vertexes_table.len() as i16;
             vertexes_table.insert(key, idx);

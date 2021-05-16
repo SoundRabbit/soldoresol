@@ -725,21 +725,37 @@ impl Implement {
             });
     }
 
-    fn create_new_terranblock(&mut self, pos: [i32; 3], color: Pallet) {
+    fn push_new_terranblock(&mut self, pos: [i32; 3], color: Pallet) {
         self.block_arena
             .and_then(&self.world_id, |world: &block::world::World| {
                 self.block_arena
                     .map(world.selecting_table(), |table: &block::table::Table| {
-                        BlockId::clone(table.drawing_terran_id())
+                        (
+                            BlockId::clone(table.drawing_terran_id()),
+                            BlockId::clone(table.drawed_terran_id()),
+                        )
                     })
             })
-            .map(|drawing_terran_id| {
-                self.local_block_arena.map_mut(
+            .map(|(drawing_terran_id, drawed_terran_id)| {
+                let t = self.local_block_arena.map_mut(
                     &drawing_terran_id,
                     |terran: &mut block::terran::Terran| {
-                        terran.insert(pos, block::terran::TerranBlock::new(color));
+                        terran.enqueue(pos, block::terran::TerranBlock::new(color));
+                        if terran.table().len() > 6 {
+                            terran.dequeue()
+                        } else {
+                            None
+                        }
                     },
                 );
+                if let Some(Some((p, t))) = t {
+                    self.block_arena.map_mut(
+                        &drawed_terran_id,
+                        |terran: &mut block::terran::Terran| {
+                            terran.enqueue(p, t);
+                        },
+                    );
+                }
             });
     }
 
@@ -765,7 +781,7 @@ impl Implement {
                     &drawed_terran_id,
                     |terran: &mut block::terran::Terran| {
                         for (p, b) in terran_blocks {
-                            terran.insert(p, b);
+                            terran.enqueue(p, b);
                         }
                     },
                 );

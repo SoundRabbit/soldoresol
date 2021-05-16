@@ -50,6 +50,10 @@ impl Pallet {
         self
     }
 
+    pub fn with_a(&self, alpha: u8) -> Self {
+        self.clone().a(alpha)
+    }
+
     pub fn to_color(&self) -> super::Color {
         match &self.kind {
             Kind::Gray => color_of!(gray; self),

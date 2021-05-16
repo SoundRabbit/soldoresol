@@ -1,5 +1,6 @@
 use crate::libs::color::Pallet;
 use std::collections::HashMap;
+use std::collections::VecDeque;
 
 #[derive(Clone)]
 pub struct TerranBlock {
@@ -8,6 +9,7 @@ pub struct TerranBlock {
 
 #[derive(Clone)]
 pub struct Terran {
+    list: VecDeque<[i32; 3]>,
     table: HashMap<[i32; 3], TerranBlock>,
 }
 
@@ -24,12 +26,15 @@ impl TerranBlock {
 impl Terran {
     pub fn new() -> Self {
         Self {
+            list: VecDeque::new(),
             table: HashMap::new(),
         }
     }
 
-    pub fn insert(&mut self, p: [i32; 3], c: TerranBlock) {
-        self.table.insert(p, c);
+    pub fn enqueue(&mut self, p: [i32; 3], c: TerranBlock) {
+        if self.table.insert(p.clone(), c).is_none() {
+            self.list.push_back(p);
+        }
     }
 
     pub fn is_covered(&self, p: &[i32; 3], surface: usize) -> bool {
@@ -65,6 +70,13 @@ impl Terran {
     pub fn remove_all(&mut self) -> HashMap<[i32; 3], TerranBlock> {
         let mut x = HashMap::new();
         std::mem::swap(&mut self.table, &mut x);
+        self.list.clear();
         x
+    }
+
+    pub fn dequeue(&mut self) -> Option<([i32; 3], TerranBlock)> {
+        self.list
+            .pop_front()
+            .and_then(|p| self.table.remove(&p).map(|x| (p, x)))
     }
 }

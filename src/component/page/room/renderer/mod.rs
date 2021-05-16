@@ -654,11 +654,13 @@ impl Renderer {
                     None,
                 );
 
-                self.render_view_drawing_terran.render(
+                self.render_view_drawed_terran.render(
                     &mut self.gl,
                     &vp_matrix,
-                    local_block_arena,
-                    table.drawing_terran_id(),
+                    block_arena,
+                    table.drawed_terran_id(),
+                    table.size(),
+                    100,
                     &[0.5, -2.0, 1.0],
                     &crate::libs::color::Pallet::gray(0).a(100),
                     table.env_light_intensity(),
@@ -668,11 +670,13 @@ impl Renderer {
                     None,
                 );
 
-                self.render_view_drawed_terran.render(
+                self.render_view_drawing_terran.render(
                     &mut self.gl,
                     &vp_matrix,
-                    block_arena,
-                    table.drawed_terran_id(),
+                    local_block_arena,
+                    table.drawing_terran_id(),
+                    table.size(),
+                    90,
                     &[0.5, -2.0, 1.0],
                     &crate::libs::color::Pallet::gray(0).a(100),
                     table.env_light_intensity(),

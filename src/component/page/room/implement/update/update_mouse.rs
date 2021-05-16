@@ -635,7 +635,7 @@ impl Implement {
             let last_focuesd =
                 self.focused_grid_area(self.mouse_state.cursor().last().position_in_world());
 
-            if focuesd != last_focuesd {
+            if focuesd != last_focuesd || self.mouse_state.primary_btn().is_downed() {
                 let terranblock =
                     if let Some(TableTool::Terranblock(x)) = self.table_tools.selected() {
                         TerranblockTool::clone_of(x)
@@ -643,7 +643,7 @@ impl Implement {
                         return;
                     };
 
-                self.create_new_terranblock(last_focuesd, terranblock.color);
+                self.push_new_terranblock(focuesd, terranblock.color);
             }
         } else if self.mouse_state.primary_btn().is_upped() {
             self.flip_to_drawed_terran();
@@ -651,9 +651,22 @@ impl Implement {
     }
 
     fn focused_grid_area(&self, (p, n): (&[f32; 3], &[f32; 3])) -> [i32; 3] {
+        let offset = self
+            .block_arena
+            .map(&self.world_id, |world: &block::world::World| {
+                BlockId::clone(world.selecting_table())
+            })
+            .and_then(|t_id| {
+                self.block_arena.map(&t_id, |table: &block::table::Table| {
+                    let sz = table.size();
+                    [sz[0].floor() % 2.0 * 0.5, sz[1].floor() % 2.0 * 0.5]
+                })
+            })
+            .unwrap_or([0.0, 0.0]);
+
         let p = [
-            (p[0] + n[0] * 0.5).floor(),
-            (p[1] + n[1] * 0.5).floor(),
+            (p[0] + n[0] * 0.5 + offset[0]).floor(),
+            (p[1] + n[1] * 0.5 + offset[1]).floor(),
             (p[2] + n[2] * 0.5).floor(),
         ];
         [p[0] as i32, p[1] as i32, p[2] as i32]

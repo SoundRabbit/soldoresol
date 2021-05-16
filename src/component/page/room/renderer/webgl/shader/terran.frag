@@ -22,7 +22,7 @@ uniform float u_attenation;
 uniform mat4 u_model;
 varying vec3 v_vertex;
 varying vec3 v_normal;
-varying vec3 v_color;
+varying vec4 v_color;
 
 #define IF(x) (x != 0)
 #define IS_MAX(x, y, z) (x>=y && x>=z)
@@ -35,7 +35,7 @@ struct surface {
 surface g_surface;
 
 vec4 colorWithLight(float intensity) {
-    return vec4(v_color.xyz * u_lightColor.xyz * intensity, 1.0);
+    return vec4(v_color.xyz * u_lightColor.xyz * intensity, v_color.w);
 }
 
 float normalVecIntensity(vec3 invLight) {
