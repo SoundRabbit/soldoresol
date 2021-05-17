@@ -60,7 +60,15 @@ impl Nameplate {
                 let position = block.position();
 
                 self.render_plate(
-                    gl, tex_table, camera, vp_matrix, name, color, width, offset, position,
+                    gl,
+                    tex_table,
+                    camera,
+                    vp_matrix,
+                    name,
+                    color,
+                    width,
+                    (0.0, offset),
+                    position,
                 );
             });
             block_arena.map(&block_id, |block: &block::character::Character| {
@@ -71,7 +79,15 @@ impl Nameplate {
                 let position = block.position();
 
                 self.render_plate(
-                    gl, tex_table, camera, vp_matrix, name, color, width, offset, position,
+                    gl,
+                    tex_table,
+                    camera,
+                    vp_matrix,
+                    name,
+                    color,
+                    width,
+                    (offset, 0.0),
+                    position,
                 );
             });
         }
@@ -86,7 +102,7 @@ impl Nameplate {
         name: &String,
         mut color: crate::libs::color::Pallet,
         width: f32,
-        offset: f32,
+        offset: (f32, f32),
         position: &[f32; 3],
     ) {
         if name != "" {
@@ -107,9 +123,10 @@ impl Nameplate {
 
                 let model_matrix: Array2<f32> = ModelMatrix::new()
                     .with_scale(&[name_width, 1.0, name_height])
+                    .with_movement(&[0.0, 0.0, offset.0])
                     .with_x_axis_rotation(camera.x_axis_rotation() - std::f32::consts::FRAC_PI_2)
                     .with_z_axis_rotation(camera.z_axis_rotation())
-                    .with_movement(&[0.0, 0.0, offset])
+                    .with_movement(&[0.0, 0.0, offset.1])
                     .with_movement(position)
                     .into();
                 let mvp_matrix = vp_matrix.dot(&model_matrix);

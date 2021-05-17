@@ -329,7 +329,7 @@ impl BlockProp {
     ) -> Vec<Html> {
         vec![
             Html::textarea(
-                Attributes::new().value(text),
+                Attributes::new().value(text).nut("rows", 4),
                 Events::new().on_input({
                     let prop_id = BlockId::clone(prop_id);
                     move |text| {

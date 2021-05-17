@@ -152,7 +152,7 @@ impl Component for Modeless {
             }
             Msg::DragEnd => {
                 self.dragging = None;
-                Cmd::none()
+                Cmd::sub(On::Focus)
             }
             Msg::Drag { page_x, page_y } => {
                 let cmd;
@@ -285,9 +285,16 @@ impl Component for Modeless {
                         drag_type: DragType::Move,
                     }
                 })
-                .on_mouseup(|_| Msg::DragEnd)
+                .on_mouseup(|e| {
+                    e.stop_propagation();
+                    Msg::DragEnd
+                })
                 .on_mousemove(on_drag!(self.dragging.is_some()))
-                .on_mouseleave(on_drag!(self.dragging.is_some())),
+                .on_mouseleave(on_drag!(self.dragging.is_some()))
+                .on("wheel", |e| {
+                    e.stop_propagation();
+                    Msg::NoOp
+                }),
             vec![
                 Html::div(
                     Attributes::new().class(Self::class("container")),
