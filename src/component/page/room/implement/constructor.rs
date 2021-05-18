@@ -137,6 +137,10 @@ impl Implement {
                         line_width: 2.0,
                         alpha: 100,
                     }),
+                    TableTool::Hr(Rc::new(String::from("地形"))),
+                    TableTool::Terranblock(TerranblockTool {
+                        color: Pallet::blue(5).a(100),
+                    }),
                     TableTool::Character(CharacterTool {
                         size: 1.0,
                         height: 1.0,
@@ -147,9 +151,6 @@ impl Implement {
                         size: [1.0, 1.0, 1.0],
                         color: Pallet::blue(5).a(100),
                         shape: block::boxblock::Shape::Cube,
-                    }),
-                    TableTool::Terranblock(TerranblockTool {
-                        color: Pallet::blue(5).a(100),
                     }),
                     TableTool::Pointlight(PointlightTool {
                         light_intensity: 12.0,

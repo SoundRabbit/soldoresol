@@ -214,7 +214,7 @@ impl SideMenu {
                             TableTool::Eraser(..) => "fa-eraser",
                             TableTool::Character(..) => "fa-users",
                             TableTool::Boxblock(..) => "fa-cube",
-                            TableTool::Terranblock(..) => "fa-cubes",
+                            TableTool::Terranblock(..) => "fa-edit",
                             TableTool::Pointlight(..) => "fa-lightbulb",
                         }),
                     ),
