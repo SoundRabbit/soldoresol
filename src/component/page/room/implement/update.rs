@@ -748,33 +748,16 @@ impl Implement {
             .and_then(&self.world_id, |world: &block::world::World| {
                 self.block_arena
                     .map(world.selecting_table(), |table: &block::table::Table| {
-                        (
-                            BlockId::clone(table.drawing_terran_id()),
-                            BlockId::clone(table.drawed_terran_id()),
-                        )
+                        BlockId::clone(table.drawing_terran_id())
                     })
             })
-            .map(|(drawing_terran_id, drawed_terran_id)| {
-                let t = self.local_block_arena.map_mut(
+            .map(|drawing_terran_id| {
+                self.local_block_arena.map_mut(
                     &drawing_terran_id,
                     |terran: &mut block::terran::Terran| {
                         terran.enqueue(pos, block::terran::TerranBlock::new(color));
-                        if terran.table().len() > 1024 {
-                            //実質無限大
-                            terran.dequeue()
-                        } else {
-                            None
-                        }
                     },
                 );
-                if let Some(Some((p, t))) = t {
-                    self.block_arena.map_mut(
-                        &drawed_terran_id,
-                        |terran: &mut block::terran::Terran| {
-                            terran.enqueue(p, t);
-                        },
-                    );
-                }
             });
     }
 
