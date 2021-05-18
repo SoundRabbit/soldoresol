@@ -4,7 +4,6 @@ use super::super::model::table::{
 };
 use super::atom::align::Align;
 use super::atom::btn::{self, Btn};
-use super::atom::checkbox::Checkbox;
 use super::atom::dropdown::{self, Dropdown};
 use super::atom::fa;
 use super::atom::heading::{self, Heading};
@@ -1096,24 +1095,53 @@ impl SideMenu {
                 .class(Self::class("sub-menu")),
             Events::new(),
             vec![
-                Align::key_value(
-                    Attributes::new(),
-                    Events::new(),
+                Dropdown::with_children(
+                    dropdown::Props {
+                        direction: dropdown::Direction::Bottom,
+                        text: String::from(if terranblock.is_fillable {
+                            "塗りつぶし"
+                        } else {
+                            "1つずつ配置"
+                        }),
+                        variant: btn::Variant::DarkLikeMenu,
+                        toggle_type: dropdown::ToggleType::Click,
+                    },
+                    Subscription::none(),
                     vec![
-                        Checkbox::light(
-                            terranblock.is_fillable,
-                            Events::new().on_click({
+                        Btn::with_child(
+                            btn::Props {
+                                variant: btn::Variant::Menu,
+                            },
+                            Subscription::new({
                                 let mut terranblock = TerranblockTool::clone_of(terranblock);
-                                let is_fillable = terranblock.is_fillable;
-                                move |_| {
-                                    terranblock.is_fillable = !is_fillable;
-                                    Msg::Sub(On::SetSelectedTool {
-                                        tool: TableTool::Terranblock(terranblock),
-                                    })
+                                move |sub| match sub {
+                                    btn::On::Click => {
+                                        terranblock.is_fillable = false;
+                                        Msg::Sub(On::SetSelectedTool {
+                                            tool: TableTool::Terranblock(terranblock),
+                                        })
+                                    }
                                 }
                             }),
+                            Html::text("1つずつ配置"),
                         ),
-                        text::span("塗りつぶし"),
+                        Btn::with_child(
+                            btn::Props {
+                                variant: btn::Variant::Menu,
+                            },
+                            Subscription::new({
+                                let mut terranblock = TerranblockTool::clone_of(terranblock);
+                                move |sub| match sub {
+                                    btn::On::Click => {
+                                        terranblock.is_fillable = true;
+                                        Msg::Sub(On::SetSelectedTool {
+                                            tool: TableTool::Terranblock(terranblock),
+                                        })
+                                    }
+                                }
+                            }),
+                            Html::text("塗りつぶし"),
+                        ),
                     ],
                 ),
                 ColorPallet::empty(
