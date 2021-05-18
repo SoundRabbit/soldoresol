@@ -151,6 +151,7 @@ pub struct BoxblockTool {
 #[derive(Clone)]
 pub struct TerranblockTool {
     pub color: Pallet,
+    pub is_fillable: bool,
 }
 
 #[derive(Clone)]

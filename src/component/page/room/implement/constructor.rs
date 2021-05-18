@@ -140,6 +140,7 @@ impl Implement {
                     TableTool::Hr(Rc::new(String::from("地形"))),
                     TableTool::Terranblock(TerranblockTool {
                         color: Pallet::blue(5).a(100),
+                        is_fillable: false,
                     }),
                     TableTool::TerranblockEraser,
                     TableTool::Hr(Rc::new(String::from("作成"))),

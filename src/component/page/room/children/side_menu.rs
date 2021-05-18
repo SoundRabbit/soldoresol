@@ -2,7 +2,9 @@ use super::super::model::table::{
     BoxblockTool, CharacterTool, EraserTool, FillShapeTool, LineShapeTool, PenTool, PointlightTool,
     ShapeTool, TableTool, TerranblockTool,
 };
+use super::atom::align::Align;
 use super::atom::btn::{self, Btn};
+use super::atom::checkbox::Checkbox;
 use super::atom::dropdown::{self, Dropdown};
 use super::atom::fa;
 use super::atom::heading::{self, Heading};
@@ -1093,23 +1095,45 @@ impl SideMenu {
                 .class(Self::class("sub-body"))
                 .class(Self::class("sub-menu")),
             Events::new(),
-            vec![ColorPallet::empty(
-                color_pallet::Props {
-                    default_selected: terranblock.color.clone(),
-                    title: Some(String::from("ブロック色")),
-                },
-                Subscription::new({
-                    let mut terranblock = TerranblockTool::clone_of(terranblock);
-                    move |sub| match sub {
-                        color_pallet::On::SelectColor(a) => {
-                            terranblock.color = a;
-                            Msg::Sub(On::SetSelectedTool {
-                                tool: TableTool::Terranblock(terranblock),
-                            })
+            vec![
+                Align::key_value(
+                    Attributes::new(),
+                    Events::new(),
+                    vec![
+                        Checkbox::light(
+                            terranblock.is_fillable,
+                            Events::new().on_click({
+                                let mut terranblock = TerranblockTool::clone_of(terranblock);
+                                let is_fillable = terranblock.is_fillable;
+                                move |_| {
+                                    terranblock.is_fillable = !is_fillable;
+                                    Msg::Sub(On::SetSelectedTool {
+                                        tool: TableTool::Terranblock(terranblock),
+                                    })
+                                }
+                            }),
+                        ),
+                        text::span("塗りつぶし"),
+                    ],
+                ),
+                ColorPallet::empty(
+                    color_pallet::Props {
+                        default_selected: terranblock.color.clone(),
+                        title: Some(String::from("ブロック色")),
+                    },
+                    Subscription::new({
+                        let mut terranblock = TerranblockTool::clone_of(terranblock);
+                        move |sub| match sub {
+                            color_pallet::On::SelectColor(a) => {
+                                terranblock.color = a;
+                                Msg::Sub(On::SetSelectedTool {
+                                    tool: TableTool::Terranblock(terranblock),
+                                })
+                            }
                         }
-                    }
-                }),
-            )],
+                    }),
+                ),
+            ],
         )
     }
 

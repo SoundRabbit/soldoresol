@@ -15,3 +15,7 @@ pub fn label(text: impl Into<String>, for_: impl Into<String>) -> Html {
         vec![Html::text(text)],
     )
 }
+
+pub fn i(text: impl Into<String>) -> Html {
+    Html::i(Attributes::new(), Events::new(), vec![Html::text(text)])
+}

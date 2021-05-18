@@ -1,6 +1,6 @@
 use super::{
-    block, BlockId, BoxblockTool, CharacterTool, CloneOf, Implement, ObjectId, PointlightTool,
-    ResourceId, ShapeTool, TableTool, TerranblockTool,
+    block, BlockId, BoxblockTool, CharacterTool, CloneOf, HashSet, Implement, ObjectId,
+    PointlightTool, ResourceId, ShapeTool, TableTool, TerranblockTool,
 };
 
 impl Implement {
@@ -633,24 +633,81 @@ impl Implement {
     }
 
     fn update_tabletool_terranblock(&mut self) {
-        if self.mouse_state.primary_btn().is_dragging() {
-            let focuesd =
-                self.focused_terran_grid_area(self.mouse_state.cursor().now().position_in_world());
-            let last_focuesd =
-                self.focused_terran_grid_area(self.mouse_state.cursor().last().position_in_world());
-
-            if focuesd != last_focuesd || self.mouse_state.primary_btn().is_downed() {
-                let terranblock =
-                    if let Some(TableTool::Terranblock(x)) = self.table_tools.selected() {
-                        TerranblockTool::clone_of(x)
-                    } else {
-                        return;
-                    };
-
-                self.push_new_terranblock(focuesd, terranblock.color);
+        let terranblock = if let Some(TableTool::Terranblock(x)) = self.table_tools.selected() {
+            TerranblockTool::clone_of(x)
+        } else {
+            return;
+        };
+        if terranblock.is_fillable {
+            if self.mouse_state.primary_btn().is_clicked() {
+                self.block_arena
+                    .and_then(&self.world_id, |world: &block::world::World| {
+                        self.block_arena.map(
+                            world.selecting_table(),
+                            |table: &block::table::Table| {
+                                (
+                                    BlockId::clone(table.drawed_terran_id()),
+                                    table.size().clone(),
+                                )
+                            },
+                        )
+                    })
+                    .map(|(drawed_terran_id, table_size)| {
+                        let p = self.focused_terran_grid_area(
+                            self.mouse_state.cursor().now().position_in_world(),
+                        );
+                        self.block_arena.map_mut(
+                            &drawed_terran_id,
+                            |terran: &mut block::terran::Terran| {
+                                let mut stack = vec![p];
+                                let table_size_offset = [
+                                    table_size[0].floor() % 2.0 * 0.5 - 0.5,
+                                    table_size[1].floor() % 2.0 * 0.5 - 0.5,
+                                ];
+                                while let Some(p) = stack.pop() {
+                                    if (p[0] as f32 - table_size_offset[0]).abs()
+                                        < table_size[0] * 0.5
+                                        && (p[1] as f32 - table_size_offset[1]).abs()
+                                            < table_size[1] * 0.5
+                                        && (terran.is_adjasted(&p, 5) || p[2] == 0)
+                                    {
+                                        if !terran.is_adjasted(&p, 0) {
+                                            stack.push([p[0] + 1, p[1], p[2]]);
+                                        }
+                                        if !terran.is_adjasted(&p, 1) {
+                                            stack.push([p[0], p[1] + 1, p[2]]);
+                                        }
+                                        if !terran.is_adjasted(&p, 3) {
+                                            stack.push([p[0] - 1, p[1], p[2]]);
+                                        }
+                                        if !terran.is_adjasted(&p, 4) {
+                                            stack.push([p[0], p[1] - 1, p[2]]);
+                                        }
+                                        terran.enqueue(
+                                            p,
+                                            block::terran::TerranBlock::new(
+                                                terranblock.color.clone(),
+                                            ),
+                                        );
+                                    }
+                                }
+                            },
+                        );
+                    });
             }
-        } else if self.mouse_state.primary_btn().is_upped() {
-            self.flip_to_drawed_terran();
+        } else {
+            if self.mouse_state.primary_btn().is_dragging() {
+                let focuesd = self
+                    .focused_terran_grid_area(self.mouse_state.cursor().now().position_in_world());
+                let last_focuesd = self
+                    .focused_terran_grid_area(self.mouse_state.cursor().last().position_in_world());
+
+                if focuesd != last_focuesd || self.mouse_state.primary_btn().is_downed() {
+                    self.push_new_terranblock(focuesd, terranblock.color);
+                }
+            } else if self.mouse_state.primary_btn().is_upped() {
+                self.flip_to_drawed_terran();
+            }
         }
     }
 

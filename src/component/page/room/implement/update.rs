@@ -14,6 +14,7 @@ use crate::libs::clone_of::CloneOf;
 use crate::libs::color::Pallet;
 use crate::libs::select_list::SelectList;
 use js_sys::Promise;
+use std::collections::HashSet;
 use std::rc::Rc;
 use wasm_bindgen::{prelude::*, JsCast};
 use wasm_bindgen_futures::JsFuture;

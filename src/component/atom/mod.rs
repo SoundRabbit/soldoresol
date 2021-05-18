@@ -1,5 +1,7 @@
+pub mod align;
 pub mod btn;
 pub mod card;
+pub mod checkbox;
 pub mod dropdown;
 pub mod fa;
 pub mod frame;
