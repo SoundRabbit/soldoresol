@@ -44,6 +44,7 @@ impl Terran {
         id_table: &mut IdTable,
         vp_matrix: &Array2<f32>,
         block_arena: &block::Arena,
+        table: &block::table::Table,
         terran_id: &BlockId,
     ) {
         gl.depth_func(web_sys::WebGlRenderingContext::LEQUAL);
@@ -57,7 +58,7 @@ impl Terran {
             });
         }
 
-        self.set_color_buffer(gl, id_table, terran_id);
+        self.set_color_buffer(gl, id_table, terran_id, table.terran_height());
 
         gl.set_attr_vertex(&self.vertexes_buffer, 3, 0);
 
@@ -66,7 +67,15 @@ impl Terran {
             Some(&self.index_buffer),
         );
 
-        let model_matrix: Array2<f32> = ModelMatrix::new().into();
+        let offset = [
+            -table.size()[0].floor() % 2.0 * 0.5,
+            -table.size()[1].floor() % 2.0 * 0.5,
+            0.0,
+        ];
+        let model_matrix: Array2<f32> = ModelMatrix::new()
+            .with_movement(&offset)
+            .with_scale(&[1.0, 1.0, table.terran_height()])
+            .into();
         let mvp_matrix = vp_matrix.dot(&model_matrix);
         gl.set_unif_translate(mvp_matrix.reversed_axes());
         gl.set_unif_flag_round(0);
@@ -85,6 +94,7 @@ impl Terran {
         gl: &WebGlRenderingContext,
         id_table: &mut IdTable,
         terran_id: &BlockId,
+        height: f32,
     ) {
         let mut colors_buffer = vec![];
         let color_offset = id_table.len();
@@ -112,7 +122,7 @@ impl Terran {
                             t: [1.0, 0.0, 0.0],
                         },
                         2 => Surface {
-                            r: [0.0, 0.0, pn],
+                            r: [0.0, 0.0, pn * height],
                             s: [1.0, 0.0, 0.0],
                             t: [0.0, 1.0, 0.0],
                         },
@@ -127,7 +137,7 @@ impl Terran {
                             t: [0.0, 0.0, 1.0],
                         },
                         5 => Surface {
-                            r: [0.0, 0.0, pn],
+                            r: [0.0, 0.0, pn * height],
                             s: [0.0, 1.0, 0.0],
                             t: [1.0, 0.0, 0.0],
                         },

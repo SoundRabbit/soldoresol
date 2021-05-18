@@ -404,6 +404,7 @@ impl Implement {
                 background_color,
                 background_image,
                 env_light_intensity,
+                terran_height,
             } => {
                 let mut is_updated = self
                     .block_arena
@@ -427,6 +428,10 @@ impl Implement {
 
                         if let Some(env_light_intensity) = env_light_intensity {
                             table.set_env_light_intensity(env_light_intensity);
+                            is_updated = true;
+                        }
+                        if let Some(terran_height) = terran_height {
+                            table.set_terran_height(terran_height);
                             is_updated = true;
                         }
 
@@ -754,7 +759,8 @@ impl Implement {
                     &drawing_terran_id,
                     |terran: &mut block::terran::Terran| {
                         terran.enqueue(pos, block::terran::TerranBlock::new(color));
-                        if terran.table().len() > 6 {
+                        if terran.table().len() > 1024 {
+                            //実質無限大
                             terran.dequeue()
                         } else {
                             None

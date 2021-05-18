@@ -42,8 +42,8 @@ impl Terran {
         gl: &mut WebGlRenderingContext,
         vp_matrix: &Array2<f32>,
         block_arena: &block::Arena,
+        table: &block::table::Table,
         terran_id: &block::BlockId,
-        table_size: &[f32; 2],
         alpha: u8,
         light: &[f32; 3],
         light_color: &crate::libs::color::Pallet,
@@ -130,11 +130,14 @@ impl Terran {
         gl.set_unif_vp(vp_matrix.clone().reversed_axes());
 
         let offset = [
-            -table_size[0].floor() % 2.0 * 0.5,
-            -table_size[1].floor() % 2.0 * 0.5,
+            -table.size()[0].floor() % 2.0 * 0.5,
+            -table.size()[1].floor() % 2.0 * 0.5,
             0.0,
         ];
-        let model_matrix: Array2<f32> = ModelMatrix::new().with_movement(&offset).into();
+        let model_matrix: Array2<f32> = ModelMatrix::new()
+            .with_movement(&offset)
+            .with_scale(&[1.0, 1.0, table.terran_height()])
+            .into();
         let inv_model_matrix: Array2<f32> = ModelMatrix::new().into();
         let mvp_matrix = vp_matrix.dot(&model_matrix);
 

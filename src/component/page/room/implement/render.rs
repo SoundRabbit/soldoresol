@@ -106,6 +106,7 @@ impl Implement {
                                         background_color,
                                         background_image,
                                         env_light_intensity,
+                                        terran_height,
                                     } => Msg::UpdateTableProps {
                                         table_id,
                                         size,
@@ -113,6 +114,7 @@ impl Implement {
                                         background_color,
                                         background_image,
                                         env_light_intensity,
+                                        terran_height,
                                     },
                                 }),
                             )],

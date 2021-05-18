@@ -11,7 +11,6 @@ pub struct TerranBlock {
 pub struct Terran {
     list: VecDeque<[i32; 3]>,
     table: HashMap<[i32; 3], TerranBlock>,
-    height: f32,
 }
 
 impl TerranBlock {
@@ -29,7 +28,6 @@ impl Terran {
         Self {
             list: VecDeque::new(),
             table: HashMap::new(),
-            height: 1.0,
         }
     }
 
@@ -80,13 +78,5 @@ impl Terran {
         self.list
             .pop_front()
             .and_then(|p| self.table.remove(&p).map(|x| (p, x)))
-    }
-
-    pub fn height(&self) -> f32 {
-        self.height
-    }
-
-    pub fn set_height(&mut self, height: f32) {
-        self.height = height;
     }
 }

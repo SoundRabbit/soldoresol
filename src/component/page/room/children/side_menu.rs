@@ -50,6 +50,7 @@ pub enum On {
         background_color: Option<Pallet>,
         background_image: Option<Option<ResourceId>>,
         env_light_intensity: Option<f32>,
+        terran_height: Option<f32>,
     },
 }
 
@@ -146,6 +147,7 @@ impl Component for SideMenu {
                                 background_color: None,
                                 background_image: Some(Some(r_id)),
                                 env_light_intensity: None,
+                                terran_height: None,
                             })
                         }
                     }),
@@ -326,6 +328,7 @@ impl SideMenu {
                                         background_color: None,
                                         background_image: None,
                                         env_light_intensity: None,
+                                        terran_height: None,
                                     }),
                                     _ => Msg::NoOp,
                                 }
@@ -356,6 +359,7 @@ impl SideMenu {
                                         background_color: None,
                                         background_image: None,
                                         env_light_intensity: None,
+                                        terran_height: None,
                                     }),
                                     _ => Msg::NoOp,
                                 }
@@ -388,6 +392,41 @@ impl SideMenu {
                                             background_color: None,
                                             background_image: None,
                                             env_light_intensity: Some(env_light_intensity as f32),
+                                            terran_height: None,
+                                        })
+                                    }
+                                    _ => Msg::NoOp,
+                                }
+                            }),
+                        ),
+                        Heading::h4(
+                            heading::Variant::Dark,
+                            Attributes::new(),
+                            Events::new(),
+                            vec![Html::text("地形ブロックの高さ")],
+                        ),
+                        Slider::empty(
+                            slider::Props {
+                                position: slider::Position::Linear {
+                                    val: table.terran_height() as f64,
+                                    min: 0.0,
+                                    max: 2.0,
+                                    step: 0.1,
+                                },
+                                range_is_editable: false,
+                            },
+                            Subscription::new({
+                                let table_id = BlockId::clone(&self.selecting_table_id);
+                                move |sub| match sub {
+                                    slider::On::Input(terran_height) => {
+                                        Msg::Sub(On::ChangeTableProps {
+                                            table_id,
+                                            size: None,
+                                            grid_color: None,
+                                            background_color: None,
+                                            background_image: None,
+                                            env_light_intensity: None,
+                                            terran_height: Some(terran_height as f32),
                                         })
                                     }
                                     _ => Msg::NoOp,
@@ -418,6 +457,7 @@ impl SideMenu {
                                                     background_color: None,
                                                     background_image: None,
                                                     env_light_intensity: None,
+                                                    terran_height: None,
                                                 })
                                             }
                                         }
@@ -439,6 +479,7 @@ impl SideMenu {
                                                     background_color: Some(color),
                                                     background_image: None,
                                                     env_light_intensity: None,
+                                                    terran_height: None,
                                                 })
                                             }
                                         }

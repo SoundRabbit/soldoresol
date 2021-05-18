@@ -14,6 +14,7 @@ pub struct Table {
     drawed_texture_id: BlockId,
     drawing_terran_id: BlockId,
     drawed_terran_id: BlockId,
+    terran_height: f32,
     background_texture_id: Option<ResourceId>,
     background_color: Pallet,
     grid_color: Pallet,
@@ -40,6 +41,7 @@ impl Table {
             drawed_texture_id,
             drawing_terran_id,
             drawed_terran_id,
+            terran_height: 1.0,
             background_texture_id: None,
             background_color: Pallet::gray(0).a(0),
             grid_color: Pallet::gray(9).a(100),
@@ -59,6 +61,7 @@ impl Table {
             drawed_texture_id: BlockId::clone(&this.drawed_texture_id),
             drawing_terran_id: BlockId::clone(&this.drawing_terran_id),
             drawed_terran_id: BlockId::clone(&this.drawed_terran_id),
+            terran_height: this.terran_height,
             background_texture_id: this
                 .background_texture_id
                 .as_ref()
@@ -165,6 +168,14 @@ impl Table {
 
     pub fn set_env_light_intensity(&mut self, env_light_intensity: f32) {
         self.env_light_intensity = env_light_intensity;
+    }
+
+    pub fn terran_height(&self) -> f32 {
+        self.terran_height
+    }
+
+    pub fn set_terran_height(&mut self, terran_height: f32) {
+        self.terran_height = terran_height;
     }
 
     pub async fn pack(&self) -> JsValue {
