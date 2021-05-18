@@ -5,6 +5,7 @@ use super::super::model::table::{
 use super::atom::btn::{self, Btn};
 use super::atom::dropdown::{self, Dropdown};
 use super::atom::fa;
+use super::atom::heading::{self, Heading};
 use super::atom::slider::{self, Slider};
 use super::atom::text;
 use super::modal_imported_files::{self, ModalImportedFiles};
@@ -300,7 +301,12 @@ impl SideMenu {
                     let [width, height] = *table.size();
                     let bg_image_id = table.background_texture_id();
                     vec![
-                        text::div("幅（x方向）"),
+                        Heading::h4(
+                            heading::Variant::Dark,
+                            Attributes::new(),
+                            Events::new(),
+                            vec![Html::text("幅（x方向)")],
+                        ),
                         Slider::empty(
                             slider::Props {
                                 position: slider::Position::Inf {
@@ -325,7 +331,12 @@ impl SideMenu {
                                 }
                             }),
                         ),
-                        text::div("奥行き（y方向）"),
+                        Heading::h4(
+                            heading::Variant::Dark,
+                            Attributes::new(),
+                            Events::new(),
+                            vec![Html::text("奥行き（y方向)")],
+                        ),
                         Slider::empty(
                             slider::Props {
                                 position: slider::Position::Inf {
@@ -350,8 +361,12 @@ impl SideMenu {
                                 }
                             }),
                         ),
-                        text::div("環境光"),
-                        text::div("［明るさ］"),
+                        Heading::h4(
+                            heading::Variant::Dark,
+                            Attributes::new(),
+                            Events::new(),
+                            vec![Html::text("環境光")],
+                        ),
                         Slider::empty(
                             slider::Props {
                                 position: slider::Position::Linear {

@@ -487,7 +487,9 @@ impl Character {
                                 vec![
                                     text::label("タブ名", &self.element_id.input_tab_name),
                                     Html::input(
-                                        Attributes::new().value(prop.name()),
+                                        Attributes::new()
+                                            .value(prop.name())
+                                            .id(&self.element_id.input_tab_name),
                                         Events::new().on_input({
                                             let prop_id = BlockId::clone(prop_id);
                                             move |name| {

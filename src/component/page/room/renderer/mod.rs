@@ -495,6 +495,11 @@ impl Renderer {
 
                 self.clear();
 
+                self.gl.blend_func(
+                    web_sys::WebGlRenderingContext::ONE,
+                    web_sys::WebGlRenderingContext::ZERO,
+                );
+
                 let mut camera_px = CameraMatrix::new_as_light();
                 let mut camera_py = CameraMatrix::new_as_light();
                 let mut camera_pz = CameraMatrix::new_as_light();
@@ -508,6 +513,7 @@ impl Renderer {
                 camera_nx.set_to_nx();
                 camera_ny.set_to_ny();
                 camera_nz.set_to_nz();
+
                 let _ = block_arena.iter_map_with_ids(
                     table.pointlights().map(BlockId::clone),
                     |_, pointlight: &block::pointlight::Pointlight| {
@@ -540,25 +546,18 @@ impl Renderer {
                             Some(&self.frame_shadowmap),
                         );
 
-                        self.gl.blend_func(
-                            web_sys::WebGlRenderingContext::ONE,
-                            web_sys::WebGlRenderingContext::ZERO,
-                        );
-
                         self.gl.disable(web_sys::WebGlRenderingContext::CULL_FACE);
 
                         self.gl.clear_color(1.0, 1.0, 1.0, 1.0);
 
-                        block_arena.map(world.selecting_table(), |table: &block::table::Table| {
-                            self.render_shadowmap_boxblock.render(
-                                &mut self.gl,
-                                &self.tex_shadowmap,
-                                pointlight.position(),
-                                &light_vps,
-                                &block_arena,
-                                table.boxblocks().map(BlockId::clone).collect(),
-                            );
-                        });
+                        self.render_shadowmap_boxblock.render(
+                            &mut self.gl,
+                            &self.tex_shadowmap,
+                            pointlight.position(),
+                            &light_vps,
+                            &block_arena,
+                            table.boxblocks().map(BlockId::clone).collect(),
+                        );
 
                         self.gl.viewport(
                             0,
@@ -711,6 +710,13 @@ impl Renderer {
                     world.characters().map(BlockId::clone),
                 );
 
+                self.gl.blend_func_separate(
+                    web_sys::WebGlRenderingContext::SRC_ALPHA,
+                    web_sys::WebGlRenderingContext::ONE_MINUS_SRC_ALPHA,
+                    web_sys::WebGlRenderingContext::ONE,
+                    web_sys::WebGlRenderingContext::ONE,
+                );
+
                 self.render_view_character.render(
                     &mut self.gl,
                     &mut self.tex_table,
@@ -798,13 +804,6 @@ impl Renderer {
             web_sys::WebGlRenderingContext::TEXTURE_2D,
             Some(&self.tex_backscreen.0),
             0,
-        );
-
-        self.gl.blend_func_separate(
-            web_sys::WebGlRenderingContext::SRC_ALPHA,
-            web_sys::WebGlRenderingContext::ONE_MINUS_SRC_ALPHA,
-            web_sys::WebGlRenderingContext::ONE,
-            web_sys::WebGlRenderingContext::ONE,
         );
     }
 
