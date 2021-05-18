@@ -79,4 +79,9 @@ impl Terran {
             .pop_front()
             .and_then(|p| self.table.remove(&p).map(|x| (p, x)))
     }
+
+    pub fn remove_at(&mut self, p: &[i32; 3]) {
+        self.table.remove(p);
+        self.list = self.list.drain(..).filter(|x| x != p).collect();
+    }
 }

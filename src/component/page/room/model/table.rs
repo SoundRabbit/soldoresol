@@ -15,6 +15,7 @@ pub enum TableTool {
     Boxblock(BoxblockTool),
     Terranblock(TerranblockTool),
     Pointlight(PointlightTool),
+    TerranblockEraser,
 }
 
 impl TableTool {
@@ -30,6 +31,7 @@ impl TableTool {
             Self::Boxblock(..) => "ブロック作成",
             Self::Pointlight(..) => "点光源",
             Self::Terranblock(..) => "地形",
+            Self::TerranblockEraser => "地形消去",
         }
     }
 }
@@ -47,6 +49,7 @@ impl CloneOf for TableTool {
             Self::Boxblock(x) => Self::Boxblock(BoxblockTool::clone_of(x)),
             Self::Pointlight(x) => Self::Pointlight(PointlightTool::clone_of(x)),
             Self::Terranblock(x) => Self::Terranblock(TerranblockTool::clone_of(x)),
+            Self::TerranblockEraser => Self::TerranblockEraser,
         }
     }
 }

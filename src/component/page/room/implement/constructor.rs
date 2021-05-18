@@ -141,6 +141,8 @@ impl Implement {
                     TableTool::Terranblock(TerranblockTool {
                         color: Pallet::blue(5).a(100),
                     }),
+                    TableTool::TerranblockEraser,
+                    TableTool::Hr(Rc::new(String::from("作成"))),
                     TableTool::Character(CharacterTool {
                         size: 1.0,
                         height: 1.0,

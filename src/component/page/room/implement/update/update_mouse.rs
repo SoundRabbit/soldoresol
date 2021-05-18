@@ -36,16 +36,7 @@ impl Implement {
                 Some(TableTool::Selector) => {
                     if self.mouse_state.primary_btn().is_dragging() {
                         if self.grabbed_object_id.is_none() {
-                            self.grabbed_object_id = self
-                                .renderer
-                                .as_ref()
-                                .map(|x| {
-                                    x.get_object_id(
-                                        self.mouse_state.cursor().now().position_in_canvas()[0],
-                                        self.mouse_state.cursor().now().position_in_canvas()[1],
-                                    )
-                                })
-                                .unwrap_or(ObjectId::None);
+                            self.grabbed_object_id = self.focused_object_id();
                         } else if let Some(renderer) = &self.renderer {
                             let (mut p, n) = renderer.get_focused_position(
                                 &self.block_arena,
@@ -112,6 +103,7 @@ impl Implement {
                 Some(TableTool::Eraser(_)) => self.update_tabletool_eraser(),
                 Some(TableTool::Character(_)) => self.update_tabletool_character(),
                 Some(TableTool::Terranblock(_)) => self.update_tabletool_terranblock(),
+                Some(TableTool::TerranblockEraser) => self.update_tabletool_terranblock_eraser(),
                 Some(TableTool::Boxblock(_)) => self.update_tabletool_boxblock(),
                 Some(TableTool::Pointlight(_)) => self.update_tabletool_pointlight(),
                 _ => {}
@@ -119,6 +111,18 @@ impl Implement {
         }
 
         true
+    }
+
+    fn focused_object_id(&self) -> ObjectId {
+        self.renderer
+            .as_ref()
+            .map(|x| {
+                x.get_object_id(
+                    self.mouse_state.cursor().now().position_in_canvas()[0],
+                    self.mouse_state.cursor().now().position_in_canvas()[1],
+                )
+            })
+            .unwrap_or(ObjectId::None)
     }
 
     fn selecting_table_id(&self) -> Option<BlockId> {
@@ -647,6 +651,21 @@ impl Implement {
             }
         } else if self.mouse_state.primary_btn().is_upped() {
             self.flip_to_drawed_terran();
+        }
+    }
+
+    fn update_tabletool_terranblock_eraser(&mut self) {
+        if self.mouse_state.primary_btn().is_clicked() {
+            if let ObjectId::Terran(terran_id, _) = self.focused_object_id() {
+                let (p, n) = self.mouse_state.cursor().now().position_in_world();
+                let n = [-n[0], -n[1], -n[2]];
+                let focused = self.focused_terran_grid_area((p, &n));
+
+                self.block_arena
+                    .map_mut(&terran_id, |terran: &mut block::terran::Terran| {
+                        terran.remove_at(&focused);
+                    });
+            }
         }
     }
 
