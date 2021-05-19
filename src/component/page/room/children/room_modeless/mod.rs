@@ -228,36 +228,24 @@ impl RoomModeless {
 
     fn render_controller_sotored() -> Vec<Html> {
         vec![
-            Btn::with_child(
-                btn::Props {
-                    variant: btn::Variant::Secondary,
-                },
-                Subscription::new(|sub| match sub {
-                    btn::On::Click => Msg::Sub(On::Minimize),
-                }),
-                fa::i("fa-window-minimize"),
+            Btn::secondary(
+                Attributes::new(),
+                Events::new().on_click(|_| Msg::Sub(On::Minimize)),
+                vec![fa::i("fa-window-minimize")],
             ),
-            Btn::with_child(
-                btn::Props {
-                    variant: btn::Variant::Secondary,
-                },
-                Subscription::new(|sub| match sub {
-                    btn::On::Click => Msg::Sub(On::Close),
-                }),
-                fa::i("fa-times"),
+            Btn::secondary(
+                Attributes::new(),
+                Events::new().on_click(|_| Msg::Sub(On::Close)),
+                vec![fa::i("fa-times")],
             ),
         ]
     }
 
     fn render_controller_minimized() -> Vec<Html> {
-        vec![Btn::with_child(
-            btn::Props {
-                variant: btn::Variant::Secondary,
-            },
-            Subscription::new(|sub| match sub {
-                btn::On::Click => Msg::Sub(On::Restore),
-            }),
-            fa::i("fa-window-restore"),
+        vec![Btn::secondary(
+            Attributes::new(),
+            Events::new().on_click(|_| Msg::Sub(On::Restore)),
+            vec![fa::i("fa-window-restore")],
         )]
     }
 
@@ -366,11 +354,9 @@ impl RoomModeless {
                 ..Default::default()
             },
             Subscription::none(),
-            vec![Btn::with_children(
-                btn::Props {
-                    variant: btn::Variant::Menu,
-                },
-                Subscription::none(),
+            vec![Btn::menu(
+                Attributes::new(),
+                Events::new(),
                 vec![fa::i("fa-chat"), Html::text(" 新規チャンネル")],
             )],
         ));

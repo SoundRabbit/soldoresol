@@ -370,19 +370,13 @@ impl Character {
                                     Self::render_tex_list_item(tex_idx, tex_name)
                                 })
                                 .collect(),
-                            vec![Html::div(
-                                Attributes::new().class(Self::class("common-imgs-list-btn")),
+                            vec![Btn::dark(
+                                Attributes::new(),
                                 Events::new().on("click", |e| {
                                     e.stop_propagation();
                                     Msg::Sub(On::AddTexture)
                                 }),
-                                vec![Btn::with_child(
-                                    btn::Props {
-                                        variant: btn::Variant::Dark,
-                                    },
-                                    Subscription::none(),
-                                    Html::text("追加"),
-                                )],
+                                vec![Html::text("追加")],
                             )],
                         ]
                         .into_iter()
@@ -422,14 +416,10 @@ impl Character {
                             })
                             .unwrap_or(Html::none())],
                     ),
-                    Btn::with_child(
-                        btn::Props {
-                            variant: btn::Variant::Primary,
-                        },
-                        Subscription::new(move |sub| match sub {
-                            btn::On::Click => Msg::SetModal(Modal::ImportedFiles),
-                        }),
-                        Html::text("画像を選択"),
+                    Btn::primary(
+                        Attributes::new(),
+                        Events::new().on_click(|_| Msg::SetModal(Modal::ImportedFiles)),
+                        vec![Html::text("画像を選択")],
                     ),
                 ],
             )],
@@ -441,28 +431,18 @@ impl Character {
             Attributes::new().class(Self::class("common-imgs-list-item")),
             Events::new(),
             vec![
-                Btn::with_child(
-                    btn::Props {
-                        variant: btn::Variant::Menu,
-                    },
-                    Subscription::new(move |sub| match sub {
-                        btn::On::Click => Msg::Sub(On::SetTextureIdx { tex_idx }),
-                    }),
-                    Html::text(tex_name),
+                Btn::menu(
+                    Attributes::new(),
+                    Events::new().on_click(move |_| Msg::Sub(On::SetTextureIdx { tex_idx })),
+                    vec![Html::text(tex_name)],
                 ),
-                Html::div(
-                    Attributes::new().class(Self::class("common-imgs-list-btn")),
+                Btn::danger(
+                    Attributes::new(),
                     Events::new().on("click", move |e| {
                         e.stop_propagation();
                         Msg::Sub(On::RemoveTexture { tex_idx: tex_idx })
                     }),
-                    vec![Btn::with_child(
-                        btn::Props {
-                            variant: btn::Variant::Danger,
-                        },
-                        Subscription::none(),
-                        Html::text("削除"),
-                    )],
+                    vec![Html::text("削除")],
                 ),
             ],
         )
@@ -561,14 +541,10 @@ impl Character {
                 Html::div(
                     Attributes::new(),
                     Events::new(),
-                    vec![Btn::with_child(
-                        btn::Props {
-                            variant: btn::Variant::Primary,
-                        },
-                        Subscription::new(|sub| match sub {
-                            btn::On::Click => Msg::PackToDownload,
-                        }),
-                        Html::text("ダウンロード"),
+                    vec![Btn::primary(
+                        Attributes::new(),
+                        Events::new().on_click(|_| Msg::PackToDownload),
+                        vec![Html::text("ダウンロード")],
                     )],
                 ),
             ],
@@ -661,10 +637,6 @@ impl Styled for Character {
                 "display": "grid";
                 "grid-template-columns": "1fr max-content";
                 "column-gap": ".15em";
-            }
-
-            "common-imgs-list-btn" {
-                "display": "grid";
             }
 
             "key-value" {

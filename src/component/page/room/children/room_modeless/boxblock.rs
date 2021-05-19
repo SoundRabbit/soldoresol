@@ -224,14 +224,10 @@ impl Boxblock {
                 Html::div(
                     Attributes::new(),
                     Events::new(),
-                    vec![Btn::with_child(
-                        btn::Props {
-                            variant: btn::Variant::Primary,
-                        },
-                        Subscription::new(|sub| match sub {
-                            btn::On::Click => Msg::PackToDownload,
-                        }),
-                        Html::text("ダウンロード"),
+                    vec![Btn::primary(
+                        Attributes::new(),
+                        Events::new().on_click(|_| Msg::PackToDownload),
+                        vec![Html::text("ダウンロード")],
                     )],
                 ),
             ],

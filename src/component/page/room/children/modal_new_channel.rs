@@ -110,14 +110,10 @@ impl Component for ModalNewChannel {
                     Html::div(
                         Attributes::new().class(Self::class("centering")),
                         Events::new(),
-                        vec![Btn::with_child(
-                            btn::Props {
-                                variant: btn::Variant::Primary,
-                            },
-                            Subscription::new(|sub| match sub {
-                                btn::On::Click => Msg::CreateNewChannel,
-                            }),
-                            Html::text("新規チャンネルを作成"),
+                        vec![Btn::primary(
+                            Attributes::new(),
+                            Events::new().on_click(|_| Msg::CreateNewChannel),
+                            vec![Html::text("新規チャンネルを作成")],
                         )],
                     ),
                 ],
@@ -157,30 +153,24 @@ impl ModalNewChannel {
                 },
                 Subscription::none(),
                 vec![
-                    Btn::with_child(
-                        btn::Props {
-                            variant: btn::Variant::Menu,
-                        },
-                        Subscription::new(move |sub| match sub {
-                            btn::On::Click => Msg::SetChannelType(ChannelType::Public),
-                        }),
-                        Html::text("公開チャンネル"),
+                    Btn::menu(
+                        Attributes::new(),
+                        Events::new().on_click(|_| Msg::SetChannelType(ChannelType::Public)),
+                        vec![Html::text("公開チャンネル")],
                     ),
-                    Btn::with_child(
-                        btn::Props {
-                            variant: btn::Variant::Menu,
-                        },
-                        Subscription::new({
+                    Btn::menu(
+                        Attributes::new(),
+                        Events::new().on_click({
                             let client_id = Rc::clone(&self.client_id);
-                            move |sub| match sub {
-                                btn::On::Click => Msg::SetChannelType(ChannelType::Private {
+                            move |_| {
+                                Msg::SetChannelType(ChannelType::Private {
                                     client_id: client_id,
                                     read: ChannelPermission::EveryOne,
                                     write: ChannelPermission::EveryOne,
-                                }),
+                                })
                             }
                         }),
-                        Html::text("非公開チャンネル"),
+                        vec![Html::text("非公開チャンネル")],
                     ),
                 ],
             ),

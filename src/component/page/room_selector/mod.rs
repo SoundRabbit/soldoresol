@@ -164,13 +164,9 @@ impl RoomSelector {
                 Html::div(
                     Attributes::new().class(Self::class("right")),
                     Events::new(),
-                    vec![Btn::with_children(
-                        btn::Props {
-                            variant: btn::Variant::Primary,
-                        },
-                        Subscription::new(|sub| match sub {
-                            btn::On::Click => Msg::ConnectWithNewRoomId,
-                        }),
+                    vec![Btn::primary(
+                        Attributes::new(),
+                        Events::new().on_click(|_| Msg::ConnectWithNewRoomId),
                         vec![Html::text("新規ルームを作成")],
                     )],
                 ),
@@ -198,17 +194,14 @@ impl RoomSelector {
                     Events::new().on_input(Msg::SetInputingRoomId),
                     vec![],
                 ),
-                Btn::with_children(
-                    btn::Props {
-                        variant: if self.room_id_validator.is_match(&self.inputing_room_id) {
-                            btn::Variant::Primary
-                        } else {
-                            btn::Variant::Disable
-                        },
+                Btn::with_variant(
+                    if self.room_id_validator.is_match(&self.inputing_room_id) {
+                        btn::Variant::Primary
+                    } else {
+                        btn::Variant::Disable
                     },
-                    Subscription::new(|sub| match sub {
-                        btn::On::Click => Msg::ConnectWithInputingRoomId,
-                    }),
+                    Attributes::new(),
+                    Events::new().on_click(|_| Msg::ConnectWithInputingRoomId),
                     vec![Html::text("接続")],
                 ),
             ],
@@ -232,32 +225,20 @@ impl RoomSelector {
                         },
                         Subscription::none(),
                         vec![
-                            Btn::with_child(
-                                btn::Props {
-                                    variant: btn::Variant::Menu,
-                                },
-                                Subscription::new({
+                            Btn::menu(
+                                Attributes::new(),
+                                Events::new().on_click({
                                     let room_id = room.id.clone();
-                                    move |sub| match sub {
-                                        btn::On::Click => Msg::ConnectWithRoomId(room_id),
-                                    }
+                                    move |_| Msg::ConnectWithRoomId(room_id)
                                 }),
-                                Html::text("開く"),
+                                vec![Html::text("開く")],
                             ),
-                            Btn::with_child(
-                                btn::Props {
-                                    variant: btn::Variant::Menu,
-                                },
-                                Subscription::none(),
-                                Html::text("ダウンロード"),
+                            Btn::menu(
+                                Attributes::new(),
+                                Events::new(),
+                                vec![Html::text("ダウンロード")],
                             ),
-                            Btn::with_child(
-                                btn::Props {
-                                    variant: btn::Variant::Menu,
-                                },
-                                Subscription::none(),
-                                Html::text("削除"),
-                            ),
+                            Btn::menu(Attributes::new(), Events::new(), vec![Html::text("削除")]),
                         ],
                     ),
                     Html::aside(

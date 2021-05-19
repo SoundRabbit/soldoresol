@@ -270,28 +270,18 @@ impl Implement {
                     },
                     Subscription::none(),
                     vec![
-                        vec![Btn::with_children(
-                            btn::Props {
-                                variant: btn::Variant::Menu,
-                            },
-                            Subscription::new(|sub| match sub {
-                                btn::On::Click => Msg::OpenNewChatModeless,
-                            }),
+                        vec![Btn::menu(
+                            Attributes::new(),
+                            Events::new().on_click(|_| Msg::OpenNewChatModeless),
                             vec![fa::i("fa-comments"), Html::text(" 全てのチャンネル")],
                         )],
                         channel_names
                             .into_iter()
                             .map(|(channel_id, channel_name)| {
-                                Btn::with_children(
-                                    btn::Props {
-                                        variant: btn::Variant::Menu,
-                                    },
-                                    Subscription::new(|sub| match sub {
-                                        btn::On::Click => Msg::OpenNewModeless {
-                                            content: room_modeless::Content::ChatChannel(
-                                                channel_id,
-                                            ),
-                                        },
+                                Btn::menu(
+                                    Attributes::new(),
+                                    Events::new().on_click(|_| Msg::OpenNewModeless {
+                                        content: room_modeless::Content::ChatChannel(channel_id),
                                     }),
                                     vec![
                                         fa::i("fa-comment"),
@@ -305,24 +295,16 @@ impl Implement {
                     .flatten()
                     .collect(),
                 ),
-                Btn::with_children(
-                    btn::Props {
-                        variant: btn::Variant::Menu,
-                    },
-                    Subscription::new(|sub| match sub {
-                        btn::On::Click => Msg::OpenNewModal {
-                            modal: Modal::NewChannel,
-                        },
+                Btn::menu(
+                    Attributes::new(),
+                    Events::new().on_click(|_| Msg::OpenNewModal {
+                        modal: Modal::NewChannel,
                     }),
                     vec![fa::i("fa-plus"), Html::text(" 新規チャンネル")],
                 ),
-                Btn::with_children(
-                    btn::Props {
-                        variant: btn::Variant::Menu,
-                    },
-                    Subscription::new(|sub| match sub {
-                        btn::On::Click => Msg::OpenNewChatModeless,
-                    }),
+                Btn::menu(
+                    Attributes::new(),
+                    Events::new().on_click(|_| Msg::OpenNewChatModeless),
                     vec![fa::i("fa-cog"), Html::text(" チャンネル設定")],
                 ),
             ],
@@ -338,14 +320,10 @@ impl Implement {
                 ..Default::default()
             },
             Subscription::none(),
-            vec![Btn::with_children(
-                btn::Props {
-                    variant: btn::Variant::Menu,
-                },
-                Subscription::new(|sub| match sub {
-                    btn::On::Click => Msg::OpenNewModal {
-                        modal: Modal::ImportedFiles,
-                    },
+            vec![Btn::menu(
+                Attributes::new(),
+                Events::new().on_click(|_| Msg::OpenNewModal {
+                    modal: Modal::ImportedFiles,
                 }),
                 vec![fa::i("fa-file"), Html::text(" 全てのファイル")],
             )],
@@ -608,36 +586,28 @@ impl Implement {
     }
 
     fn render_contextmenu_character(&self, block_id: &BlockId) -> Vec<Html> {
-        vec![Btn::with_child(
-            btn::Props {
-                variant: btn::Variant::Menu,
-            },
-            Subscription::new({
+        vec![Btn::menu(
+            Attributes::new(),
+            Events::new().on_click({
                 let block_id = BlockId::clone(&block_id);
-                move |sub| match sub {
-                    btn::On::Click => Msg::OpenNewModeless {
-                        content: room_modeless::Content::Character(block_id),
-                    },
+                move |_| Msg::OpenNewModeless {
+                    content: room_modeless::Content::Character(block_id),
                 }
             }),
-            Html::text("編集"),
+            vec![Html::text("編集")],
         )]
     }
 
     fn render_contextmenu_boxblock(&self, block_id: &BlockId) -> Vec<Html> {
-        vec![Btn::with_child(
-            btn::Props {
-                variant: btn::Variant::Menu,
-            },
-            Subscription::new({
+        vec![Btn::menu(
+            Attributes::new(),
+            Events::new().on_click({
                 let block_id = BlockId::clone(&block_id);
-                move |sub| match sub {
-                    btn::On::Click => Msg::OpenNewModeless {
-                        content: room_modeless::Content::Boxblock(block_id),
-                    },
+                move |_| Msg::OpenNewModeless {
+                    content: room_modeless::Content::Boxblock(block_id),
                 }
             }),
-            Html::text("編集"),
+            vec![Html::text("編集")],
         )]
     }
 }

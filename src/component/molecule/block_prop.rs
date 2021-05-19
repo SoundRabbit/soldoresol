@@ -120,21 +120,17 @@ impl Component for BlockProp {
             Attributes::new().class(Self::class("base")),
             Events::new(),
             vec![
-                Btn::with_child(
-                    btn::Props {
-                        variant: btn::Variant::Dark,
-                    },
-                    Subscription::new({
+                Btn::dark(
+                    Attributes::new(),
+                    Events::new().on_click({
                         let is_editable = self.is_editable;
-                        move |sub| match sub {
-                            btn::On::Click => Msg::SetIsEditable(!is_editable),
-                        }
+                        move |_| Msg::SetIsEditable(!is_editable)
                     }),
-                    Html::text(if self.is_editable {
+                    vec![Html::text(if self.is_editable {
                         "編集完了"
                     } else {
                         "編集開始"
-                    }),
+                    })],
                 ),
                 self.block_arena
                     .map(&self.root_prop, |root_prop: &block::property::Property| {
@@ -429,8 +425,8 @@ impl BlockProp {
                                 .collect();
 
                             if self.is_editable {
-                                x.push(Html::div(
-                                    Attributes::new().class(Self::class("prop-value--value-key")),
+                                x.push(Btn::dark(
+                                    Attributes::new(),
                                     Events::new().on("click", {
                                         let prop_id = BlockId::clone(prop_id);
                                         move |e| {
@@ -448,13 +444,7 @@ impl BlockProp {
                                             }
                                         }
                                     }),
-                                    vec![Btn::with_child(
-                                        btn::Props {
-                                            variant: btn::Variant::Dark,
-                                        },
-                                        Subscription::none(),
-                                        Html::text("追加"),
-                                    )],
+                                    vec![Html::text("追加")],
                                 ));
                             }
 
@@ -482,51 +472,39 @@ impl BlockProp {
             Attributes::new().class(Self::class("prop-value--value-key")),
             Events::new(),
             vec![
-                Btn::with_child(
-                    btn::Props {
-                        variant: btn::Variant::Menu,
-                    },
-                    Subscription::new({
+                Btn::menu(
+                    Attributes::new(),
+                    Events::new().on_click({
                         let prop_id = BlockId::clone(prop_id);
-                        move |sub| match sub {
-                            btn::On::Click => Msg::UpdateMappedList {
-                                prop_id,
-                                idx,
-                                update: Box::new(move |mapped_list| {
-                                    mapped_list.set_selected_idx(list_idx);
-                                }),
-                            },
+                        move |_| Msg::UpdateMappedList {
+                            prop_id,
+                            idx,
+                            update: Box::new(move |mapped_list| {
+                                mapped_list.set_selected_idx(list_idx);
+                            }),
                         }
                     }),
-                    Html::text(format!("{}: {}", b, a)),
+                    vec![Html::text(format!("{}: {}", b, a))],
                 ),
                 if self.is_editable {
-                    Html::div(
+                    Btn::danger(
                         Attributes::new(),
-                        Events::new().on("click", move |e| {
-                            e.stop_propagation();
-                            Msg::NoOp
-                        }),
-                        vec![Btn::with_child(
-                            btn::Props {
-                                variant: btn::Variant::Danger,
-                            },
-                            Subscription::new({
-                                let prop_id = BlockId::clone(prop_id);
-                                move |sub| match sub {
-                                    btn::On::Click => Msg::UpdateMappedList {
-                                        prop_id,
-                                        idx,
-                                        update: Box::new(move |mapped_list| {
-                                            if mapped_list.len() > 1 {
-                                                mapped_list.remove(list_idx);
-                                            }
-                                        }),
-                                    },
+                        Events::new().on("click", {
+                            let prop_id = BlockId::clone(prop_id);
+                            move |e| {
+                                e.stop_propagation();
+                                Msg::UpdateMappedList {
+                                    prop_id,
+                                    idx,
+                                    update: Box::new(move |mapped_list| {
+                                        if mapped_list.len() > 1 {
+                                            mapped_list.remove(list_idx);
+                                        }
+                                    }),
                                 }
-                            }),
-                            Html::text("削除"),
-                        )],
+                            }
+                        }),
+                        vec![Html::text("削除")],
                     )
                 } else {
                     Html::none()
@@ -600,17 +578,15 @@ impl BlockProp {
         Html::div(
             Attributes::new().class(Self::class("banner")),
             Events::new(),
-            vec![Btn::with_child(
-                btn::Props {
-                    variant: btn::Variant::Secondary,
-                },
-                Subscription::new(move |sub| match sub {
-                    btn::On::Click => Msg::Sub(On::AddPropertyChild {
+            vec![Btn::secondary(
+                Attributes::new(),
+                Events::new().on_click(|_| {
+                    Msg::Sub(On::AddPropertyChild {
                         property_id: prop_id,
                         name: String::from(""),
-                    }),
+                    })
                 }),
-                Html::text("追加"),
+                vec![Html::text("追加")],
             )],
         )
     }
@@ -653,35 +629,31 @@ impl BlockProp {
             },
             Subscription::none(),
             vec![
-                Btn::with_child(
-                    btn::Props {
-                        variant: btn::Variant::MenuAsSecondary,
-                    },
-                    Subscription::new({
+                Btn::menu_as_secondary(
+                    Attributes::new(),
+                    Events::new().on_click({
                         let prop_id = BlockId::clone(prop_id);
-                        move |sub| match sub {
-                            btn::On::Click => Msg::Sub(On::SetPropertyValueMode {
+                        move |_| {
+                            Msg::Sub(On::SetPropertyValueMode {
                                 property_id: prop_id,
                                 value_mode: block::property::ValueMode::List,
-                            }),
+                            })
                         }
                     }),
-                    Html::text("リスト"),
+                    vec![Html::text("リスト")],
                 ),
-                Btn::with_child(
-                    btn::Props {
-                        variant: btn::Variant::MenuAsSecondary,
-                    },
-                    Subscription::new({
+                Btn::menu_as_secondary(
+                    Attributes::new(),
+                    Events::new().on_click({
                         let prop_id = BlockId::clone(prop_id);
-                        move |sub| match sub {
-                            btn::On::Click => Msg::Sub(On::SetPropertyValueMode {
+                        move |sub| {
+                            Msg::Sub(On::SetPropertyValueMode {
                                 property_id: prop_id,
                                 value_mode: block::property::ValueMode::Column,
-                            }),
+                            })
                         }
                     }),
-                    Html::text("テーブル"),
+                    vec![Html::text("テーブル")],
                 ),
             ],
         )
@@ -700,24 +672,20 @@ impl BlockProp {
                 Attributes::new().class(Self::class("ok-cancel")),
                 Events::new(),
                 vec![
-                    Btn::with_child(
-                        btn::Props {
-                            variant: btn::Variant::Danger,
-                        },
-                        Subscription::new(move |sub| match sub {
-                            btn::On::Click => Msg::Sub(On::RemoveProperty {
+                    Btn::danger(
+                        Attributes::new(),
+                        Events::new().on_click(move |_| {
+                            Msg::Sub(On::RemoveProperty {
                                 property_id: parent_id,
                                 idx: self_idx,
-                            }),
+                            })
                         }),
-                        Html::text("OK"),
+                        vec![Html::text("OK")],
                     ),
-                    Btn::with_child(
-                        btn::Props {
-                            variant: btn::Variant::Primary,
-                        },
-                        Subscription::none(),
-                        Html::text("キャンセル"),
+                    Btn::primary(
+                        Attributes::new(),
+                        Events::new(),
+                        vec![Html::text("キャンセル")],
                     ),
                 ],
             )],
@@ -728,16 +696,14 @@ impl BlockProp {
         Html::div(
             Attributes::new().class(Self::class("banner")),
             Events::new(),
-            vec![Btn::with_child(
-                btn::Props {
-                    variant: btn::Variant::Dark,
-                },
-                Subscription::new(move |sub| match sub {
-                    btn::On::Click => Msg::Sub(On::AddPropertyValue {
+            vec![Btn::dark(
+                Attributes::new(),
+                Events::new().on_click(move |_| {
+                    Msg::Sub(On::AddPropertyValue {
                         property_id: prop_id,
-                    }),
+                    })
                 }),
-                Html::text("追加"),
+                vec![Html::text("追加")],
             )],
         )
     }
@@ -781,32 +747,26 @@ impl BlockProp {
         idx: usize,
         value: &block::property::Value,
     ) -> Html {
-        Btn::with_child(
-            btn::Props {
-                variant: btn::Variant::Menu,
-            },
-            Subscription::new({
+        Btn::menu(
+            Attributes::new(),
+            Events::new().on_click({
                 let prop_id = BlockId::clone(prop_id);
                 let value = block::property::Value::clone(value);
-                move |sub| match sub {
-                    btn::On::Click => match value {
-                        block::property::Value::Text(..) => Msg::NoOp,
-                        block::property::Value::MultiLineText(x) => {
-                            Msg::Sub(On::SetPropertyValue {
-                                property_id: prop_id,
-                                idx,
-                                value: block::property::Value::Text(x),
-                            })
-                        }
-                        _ => Msg::Sub(On::SetPropertyValue {
-                            property_id: prop_id,
-                            idx,
-                            value: block::property::Value::Text(String::new()),
-                        }),
-                    },
+                move |_| match value {
+                    block::property::Value::Text(..) => Msg::NoOp,
+                    block::property::Value::MultiLineText(x) => Msg::Sub(On::SetPropertyValue {
+                        property_id: prop_id,
+                        idx,
+                        value: block::property::Value::Text(x),
+                    }),
+                    _ => Msg::Sub(On::SetPropertyValue {
+                        property_id: prop_id,
+                        idx,
+                        value: block::property::Value::Text(String::new()),
+                    }),
                 }
             }),
-            Html::text("テキスト"),
+            vec![Html::text("テキスト")],
         )
     }
 
@@ -816,30 +776,26 @@ impl BlockProp {
         idx: usize,
         value: &block::property::Value,
     ) -> Html {
-        Btn::with_child(
-            btn::Props {
-                variant: btn::Variant::Menu,
-            },
-            Subscription::new({
+        Btn::menu(
+            Attributes::new(),
+            Events::new().on_click({
                 let prop_id = BlockId::clone(prop_id);
                 let value = block::property::Value::clone(value);
-                move |sub| match sub {
-                    btn::On::Click => match value {
-                        block::property::Value::MultiLineText(..) => Msg::NoOp,
-                        block::property::Value::Text(x) => Msg::Sub(On::SetPropertyValue {
-                            property_id: prop_id,
-                            idx,
-                            value: block::property::Value::MultiLineText(x),
-                        }),
-                        _ => Msg::Sub(On::SetPropertyValue {
-                            property_id: prop_id,
-                            idx,
-                            value: block::property::Value::MultiLineText(String::new()),
-                        }),
-                    },
+                move |_| match value {
+                    block::property::Value::MultiLineText(..) => Msg::NoOp,
+                    block::property::Value::Text(x) => Msg::Sub(On::SetPropertyValue {
+                        property_id: prop_id,
+                        idx,
+                        value: block::property::Value::MultiLineText(x),
+                    }),
+                    _ => Msg::Sub(On::SetPropertyValue {
+                        property_id: prop_id,
+                        idx,
+                        value: block::property::Value::MultiLineText(String::new()),
+                    }),
                 }
             }),
-            Html::text("ノート"),
+            vec![Html::text("ノート")],
         )
     }
 
@@ -849,29 +805,25 @@ impl BlockProp {
         idx: usize,
         value: &block::property::Value,
     ) -> Html {
-        Btn::with_child(
-            btn::Props {
-                variant: btn::Variant::Menu,
-            },
-            Subscription::new({
+        Btn::menu(
+            Attributes::new(),
+            Events::new().on_click({
                 let prop_id = BlockId::clone(prop_id);
                 let value = block::property::Value::clone(value);
-                move |sub| match sub {
-                    btn::On::Click => match value {
-                        block::property::Value::ResourceMinMax { .. } => Msg::NoOp,
-                        _ => Msg::Sub(On::SetPropertyValue {
-                            property_id: prop_id,
-                            idx,
-                            value: block::property::Value::ResourceMinMax {
-                                min: 0.0,
-                                val: 50.0,
-                                max: 100.0,
-                            },
-                        }),
-                    },
+                move |_| match value {
+                    block::property::Value::ResourceMinMax { .. } => Msg::NoOp,
+                    _ => Msg::Sub(On::SetPropertyValue {
+                        property_id: prop_id,
+                        idx,
+                        value: block::property::Value::ResourceMinMax {
+                            min: 0.0,
+                            val: 50.0,
+                            max: 100.0,
+                        },
+                    }),
                 }
             }),
-            Html::text("上限付きリソース"),
+            vec![Html::text("上限付きリソース")],
         )
     }
 
@@ -881,31 +833,27 @@ impl BlockProp {
         idx: usize,
         value: &block::property::Value,
     ) -> Html {
-        Btn::with_child(
-            btn::Props {
-                variant: btn::Variant::Menu,
-            },
-            Subscription::new({
+        Btn::menu(
+            Attributes::new(),
+            Events::new().on_click({
                 let prop_id = BlockId::clone(prop_id);
                 let value = block::property::Value::clone(value);
-                move |sub| match sub {
-                    btn::On::Click => match value {
-                        block::property::Value::MappedList { .. } => Msg::NoOp,
-                        _ => Msg::Sub(On::SetPropertyValue {
-                            property_id: prop_id,
-                            idx,
-                            value: block::property::Value::MappedList(SelectList::new(
-                                vec![
-                                    (String::from("Yes"), String::from("1")),
-                                    (String::from("No"), String::from("0")),
-                                ],
-                                0,
-                            )),
-                        }),
-                    },
+                move |_| match value {
+                    block::property::Value::MappedList { .. } => Msg::NoOp,
+                    _ => Msg::Sub(On::SetPropertyValue {
+                        property_id: prop_id,
+                        idx,
+                        value: block::property::Value::MappedList(SelectList::new(
+                            vec![
+                                (String::from("Yes"), String::from("1")),
+                                (String::from("No"), String::from("0")),
+                            ],
+                            0,
+                        )),
+                    }),
                 }
             }),
-            Html::text("選択肢"),
+            vec![Html::text("選択肢")],
         )
     }
 
@@ -923,24 +871,20 @@ impl BlockProp {
                     Attributes::new().class(Self::class("ok-cancel")),
                     Events::new(),
                     vec![
-                        Btn::with_child(
-                            btn::Props {
-                                variant: btn::Variant::Danger,
-                            },
-                            Subscription::new(move |sub| match sub {
-                                btn::On::Click => Msg::Sub(On::RemovePropertyValue {
+                        Btn::danger(
+                            Attributes::new(),
+                            Events::new().on_click(move |_| {
+                                Msg::Sub(On::RemovePropertyValue {
                                     property_id: prop_id,
                                     idx,
-                                }),
+                                })
                             }),
-                            Html::text("OK"),
+                            vec![Html::text("OK")],
                         ),
-                        Btn::with_child(
-                            btn::Props {
-                                variant: btn::Variant::Primary,
-                            },
-                            Subscription::none(),
-                            Html::text("キャンセル"),
+                        Btn::primary(
+                            Attributes::new(),
+                            Events::new(),
+                            vec![Html::text("キャンセル")],
                         ),
                     ],
                 )],

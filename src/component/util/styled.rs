@@ -1,5 +1,4 @@
 use async_std::sync::Mutex;
-use kagura::prelude::*;
 use lazy_static::lazy_static;
 use std::any;
 use std::cell::RefCell;
@@ -30,7 +29,7 @@ fn styled_class<C>(class_name: &str) -> String {
 
 pub trait Styled: Sized {
     fn style() -> Style;
-    fn styled(node: Html) -> Html {
+    fn styled<T>(node: T) -> T {
         wasm_bindgen_futures::spawn_local(async {
             let mut styled = STYLED.lock().await;
             let component_id = hash_of_type::<Self>();

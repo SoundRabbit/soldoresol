@@ -23,17 +23,7 @@ pub enum Variant {
     MenuAsSecondary,
 }
 
-pub enum Msg {
-    Clicked,
-}
-
-pub enum On {
-    Click,
-}
-
-pub struct Btn {
-    variant: Variant,
-}
+pub struct Btn {}
 
 impl Variant {
     fn is_disable(&self) -> bool {
@@ -44,50 +34,7 @@ impl Variant {
     }
 }
 
-impl Constructor for Btn {
-    fn constructor(props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) -> Self {
-        Self {
-            variant: props.variant,
-        }
-    }
-}
-
-impl Component for Btn {
-    type Props = Props;
-    type Msg = Msg;
-    type Sub = On;
-
-    fn init(&mut self, props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) {
-        self.variant = props.variant;
-    }
-
-    fn update(&mut self, msg: Self::Msg) -> Cmd<Self::Msg, Self::Sub> {
-        match msg {
-            Msg::Clicked => Cmd::sub(On::Click),
-        }
-    }
-
-    fn render(&self, children: Vec<Html>) -> Html {
-        Self::styled(Html::button(
-            Attributes::new()
-                .class("pure-button")
-                .class(Self::class_name(&self.variant))
-                .flag(if self.variant.is_disable() {
-                    "disabled"
-                } else {
-                    ""
-                }),
-            Events::new().on("click", Self::on_click),
-            children,
-        ))
-    }
-}
-
 impl Btn {
-    fn on_click(_: web_sys::Event) -> Msg {
-        Msg::Clicked
-    }
-
     pub fn class_name(variant: &Variant) -> String {
         match variant {
             Variant::Primary => Self::class("primary"),
@@ -105,6 +52,46 @@ impl Btn {
                 Self::class("menu-secondary") + " " + &Self::class("like-menu")
             }
         }
+    }
+
+    pub fn with_variant(
+        variant: Variant,
+        attrs: Attributes,
+        events: Events,
+        children: Vec<Html>,
+    ) -> Html {
+        Self::styled(Html::button(
+            Attributes::new()
+                .class("pure-button")
+                .class(Self::class_name(&variant))
+                .flag(if variant.is_disable() { "disabled" } else { "" }),
+            events,
+            children,
+        ))
+    }
+
+    pub fn primary(attrs: Attributes, events: Events, children: Vec<Html>) -> Html {
+        Self::with_variant(Variant::Primary, attrs, events, children)
+    }
+
+    pub fn secondary(attrs: Attributes, events: Events, children: Vec<Html>) -> Html {
+        Self::with_variant(Variant::Secondary, attrs, events, children)
+    }
+
+    pub fn danger(attrs: Attributes, events: Events, children: Vec<Html>) -> Html {
+        Self::with_variant(Variant::Danger, attrs, events, children)
+    }
+
+    pub fn dark(attrs: Attributes, events: Events, children: Vec<Html>) -> Html {
+        Self::with_variant(Variant::Dark, attrs, events, children)
+    }
+
+    pub fn menu(attrs: Attributes, events: Events, children: Vec<Html>) -> Html {
+        Self::with_variant(Variant::Menu, attrs, events, children)
+    }
+
+    pub fn menu_as_secondary(attrs: Attributes, events: Events, children: Vec<Html>) -> Html {
+        Self::with_variant(Variant::MenuAsSecondary, attrs, events, children)
     }
 }
 

@@ -69,14 +69,10 @@ impl Component for Modal {
                                 Events::new(),
                                 vec![Html::text(&self.header_title)],
                             ),
-                            Btn::with_child(
-                                btn::Props {
-                                    variant: btn::Variant::Secondary,
-                                },
-                                Subscription::new(|sub| match sub {
-                                    btn::On::Click => Msg::CloseSelf,
-                                }),
-                                fa::i("fa-times"),
+                            Btn::secondary(
+                                Attributes::new(),
+                                Events::new().on_click(|_| Msg::CloseSelf),
+                                vec![fa::i("fa-times")],
                             ),
                         ],
                     ),

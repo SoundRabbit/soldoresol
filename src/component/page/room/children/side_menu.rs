@@ -195,18 +195,15 @@ impl SideMenu {
                         Events::new(),
                         vec![Html::text(text as &String)],
                     ),
-                    _ => Btn::with_child(
-                        btn::Props {
-                            variant: if tool_idx == self.tools.selected_idx() {
-                                btn::Variant::Primary
-                            } else {
-                                btn::Variant::Dark
-                            },
+                    _ => Btn::with_variant(
+                        if tool_idx == self.tools.selected_idx() {
+                            btn::Variant::Primary
+                        } else {
+                            btn::Variant::Dark
                         },
-                        Subscription::new(move |sub| match sub {
-                            btn::On::Click => Msg::SetSelectedIdx(tool_idx),
-                        }),
-                        match table_tool {
+                        Attributes::new(),
+                        Events::new().on_click(move |_| Msg::SetSelectedIdx(tool_idx)),
+                        vec![match table_tool {
                             TableTool::Hr(..) => unreachable!(),
                             TableTool::Selector => fa::i("fa-mouse-pointer"),
                             TableTool::TableEditor => fa::i("fa-vector-square"),
@@ -218,7 +215,7 @@ impl SideMenu {
                             TableTool::Terranblock(..) => fa::i("fa-edit"),
                             TableTool::TerranblockEraser => fa::far_i("far fa-edit"),
                             TableTool::Pointlight(..) => fa::i("fa-lightbulb"),
-                        },
+                        }],
                     ),
                 })
                 .collect(),
@@ -239,14 +236,10 @@ impl SideMenu {
                 .class(Self::class("sub"))
                 .class(Self::class("sub--closed")),
             Events::new(),
-            vec![Btn::with_child(
-                btn::Props {
-                    variant: btn::Variant::Dark,
-                },
-                Subscription::new(|sub| match sub {
-                    btn::On::Click => Msg::SetShowSub(true),
-                }),
-                fa::i("fa-caret-right"),
+            vec![Btn::dark(
+                Attributes::new(),
+                Events::new().on_click(|_| Msg::SetShowSub(true)),
+                vec![fa::i("fa-caret-right")],
             )],
         )
     }
@@ -268,14 +261,10 @@ impl SideMenu {
                             Events::new(),
                             vec![Html::text(format!("［{}］ツール", selected_tool_name))],
                         ),
-                        Btn::with_child(
-                            btn::Props {
-                                variant: btn::Variant::Dark,
-                            },
-                            Subscription::new(|sub| match sub {
-                                btn::On::Click => Msg::SetShowSub(false),
-                            }),
-                            fa::i("fa-caret-left"),
+                        Btn::dark(
+                            Attributes::new(),
+                            Events::new().on_click(|_| Msg::SetShowSub(false)),
+                            vec![fa::i("fa-caret-left")],
                         ),
                     ],
                 ),
@@ -501,14 +490,11 @@ impl SideMenu {
                                 )
                             })
                             .unwrap_or(Html::none()),
-                        Btn::with_child(
-                            btn::Props {
-                                variant: btn::Variant::Primary,
-                            },
-                            Subscription::new(|sub| match sub {
-                                btn::On::Click => Msg::SetModal(Modal::SelectTableBackgroundImage),
-                            }),
-                            Html::text("画像を選択する"),
+                        Btn::primary(
+                            Attributes::new(),
+                            Events::new()
+                                .on_click(|_| Msg::SetModal(Modal::SelectTableBackgroundImage)),
+                            vec![Html::text("画像を選択する")],
                         ),
                     ]
                 })
@@ -579,23 +565,20 @@ impl SideMenu {
                         .iter()
                         .enumerate()
                         .map(|(tool_idx, shape_tool)| {
-                            Btn::with_children(
-                                btn::Props {
-                                    variant: if tool_idx == tools.selected_idx() {
-                                        btn::Variant::Primary
-                                    } else {
-                                        btn::Variant::Dark
-                                    },
+                            Btn::with_variant(
+                                if tool_idx == tools.selected_idx() {
+                                    btn::Variant::Primary
+                                } else {
+                                    btn::Variant::Dark
                                 },
-                                Subscription::new({
+                                Attributes::new(),
+                                Events::new().on_click({
                                     let mut tools = SelectList::clone_of(tools);
-                                    move |sub| match sub {
-                                        btn::On::Click => {
-                                            tools.set_selected_idx(tool_idx);
-                                            Msg::Sub(On::SetSelectedTool {
-                                                tool: TableTool::Shape(tools),
-                                            })
-                                        }
+                                    move |sub| {
+                                        tools.set_selected_idx(tool_idx);
+                                        Msg::Sub(On::SetSelectedTool {
+                                            tool: TableTool::Shape(tools),
+                                        })
                                     }
                                 }),
                                 match shape_tool {
@@ -904,19 +887,13 @@ impl SideMenu {
                         )
                     })
                     .unwrap_or(Html::none()),
-                Btn::with_child(
-                    btn::Props {
-                        variant: btn::Variant::Primary,
-                    },
-                    Subscription::new({
+                Btn::primary(
+                    Attributes::new(),
+                    Events::new().on_click({
                         let character = CharacterTool::clone_of(character);
-                        move |sub| match sub {
-                            btn::On::Click => {
-                                Msg::SetModal(Modal::SelectCharacterTexture(character))
-                            }
-                        }
+                        move |_| Msg::SetModal(Modal::SelectCharacterTexture(character))
                     }),
-                    Html::text("画像を選択する"),
+                    vec![Html::text("画像を選択する")],
                 ),
             ],
         )
@@ -1014,56 +991,44 @@ impl SideMenu {
                     },
                     Subscription::none(),
                     vec![
-                        Btn::with_child(
-                            btn::Props {
-                                variant: btn::Variant::Menu,
-                            },
-                            Subscription::new({
+                        Btn::menu(
+                            Attributes::new(),
+                            Events::new().on_click({
                                 let mut boxblock = BoxblockTool::clone_of(boxblock);
-                                move |sub| match sub {
-                                    btn::On::Click => {
-                                        boxblock.shape = block::boxblock::Shape::Cube;
-                                        Msg::Sub(On::SetSelectedTool {
-                                            tool: TableTool::Boxblock(boxblock),
-                                        })
-                                    }
+                                move |_| {
+                                    boxblock.shape = block::boxblock::Shape::Cube;
+                                    Msg::Sub(On::SetSelectedTool {
+                                        tool: TableTool::Boxblock(boxblock),
+                                    })
                                 }
                             }),
-                            Html::text("立方体"),
+                            vec![Html::text("立方体")],
                         ),
-                        Btn::with_child(
-                            btn::Props {
-                                variant: btn::Variant::Menu,
-                            },
-                            Subscription::new({
+                        Btn::menu(
+                            Attributes::new(),
+                            Events::new().on_click({
                                 let mut boxblock = BoxblockTool::clone_of(boxblock);
-                                move |sub| match sub {
-                                    btn::On::Click => {
-                                        boxblock.shape = block::boxblock::Shape::Sphere;
-                                        Msg::Sub(On::SetSelectedTool {
-                                            tool: TableTool::Boxblock(boxblock),
-                                        })
-                                    }
+                                move |_| {
+                                    boxblock.shape = block::boxblock::Shape::Sphere;
+                                    Msg::Sub(On::SetSelectedTool {
+                                        tool: TableTool::Boxblock(boxblock),
+                                    })
                                 }
                             }),
-                            Html::text("球体"),
+                            vec![Html::text("球体")],
                         ),
-                        Btn::with_child(
-                            btn::Props {
-                                variant: btn::Variant::Menu,
-                            },
-                            Subscription::new({
+                        Btn::menu(
+                            Attributes::new(),
+                            Events::new().on_click({
                                 let mut boxblock = BoxblockTool::clone_of(boxblock);
-                                move |sub| match sub {
-                                    btn::On::Click => {
-                                        boxblock.shape = block::boxblock::Shape::Cyliner;
-                                        Msg::Sub(On::SetSelectedTool {
-                                            tool: TableTool::Boxblock(boxblock),
-                                        })
-                                    }
+                                move |_| {
+                                    boxblock.shape = block::boxblock::Shape::Cyliner;
+                                    Msg::Sub(On::SetSelectedTool {
+                                        tool: TableTool::Boxblock(boxblock),
+                                    })
                                 }
                             }),
-                            Html::text("円柱"),
+                            vec![Html::text("円柱")],
                         ),
                     ],
                 ),
@@ -1108,39 +1073,31 @@ impl SideMenu {
                     },
                     Subscription::none(),
                     vec![
-                        Btn::with_child(
-                            btn::Props {
-                                variant: btn::Variant::Menu,
-                            },
-                            Subscription::new({
+                        Btn::menu(
+                            Attributes::new(),
+                            Events::new().on_click({
                                 let mut terranblock = TerranblockTool::clone_of(terranblock);
-                                move |sub| match sub {
-                                    btn::On::Click => {
-                                        terranblock.is_fillable = false;
-                                        Msg::Sub(On::SetSelectedTool {
-                                            tool: TableTool::Terranblock(terranblock),
-                                        })
-                                    }
+                                move |_| {
+                                    terranblock.is_fillable = false;
+                                    Msg::Sub(On::SetSelectedTool {
+                                        tool: TableTool::Terranblock(terranblock),
+                                    })
                                 }
                             }),
-                            Html::text("1つずつ配置"),
+                            vec![Html::text("1つずつ配置")],
                         ),
-                        Btn::with_child(
-                            btn::Props {
-                                variant: btn::Variant::Menu,
-                            },
-                            Subscription::new({
+                        Btn::menu(
+                            Attributes::new(),
+                            Events::new().on_click({
                                 let mut terranblock = TerranblockTool::clone_of(terranblock);
-                                move |sub| match sub {
-                                    btn::On::Click => {
-                                        terranblock.is_fillable = true;
-                                        Msg::Sub(On::SetSelectedTool {
-                                            tool: TableTool::Terranblock(terranblock),
-                                        })
-                                    }
+                                move |_| {
+                                    terranblock.is_fillable = true;
+                                    Msg::Sub(On::SetSelectedTool {
+                                        tool: TableTool::Terranblock(terranblock),
+                                    })
                                 }
                             }),
-                            Html::text("塗りつぶし"),
+                            vec![Html::text("塗りつぶし")],
                         ),
                     ],
                 ),

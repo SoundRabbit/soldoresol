@@ -93,14 +93,10 @@ impl Component for ModalNotification {
                         Html::div(
                             Attributes::new().class(Self::class("container")),
                             Events::new().on_click(|_| Msg::CloseSelf),
-                            vec![Btn::with_child(
-                                btn::Props {
-                                    variant: btn::Variant::Primary,
-                                },
-                                Subscription::new(|sub| match sub {
-                                    btn::On::Click => Msg::CloseSelf,
-                                }),
-                                Html::text("閉じる"),
+                            vec![Btn::primary(
+                                Attributes::new(),
+                                Events::new().on_click(|_| Msg::CloseSelf),
+                                vec![Html::text("閉じる")],
                             )],
                         ),
                     ],

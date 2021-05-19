@@ -86,13 +86,7 @@ impl ChatChannel {
                     Events::new(),
                     vec![],
                 ),
-                Btn::with_child(
-                    btn::Props {
-                        variant: btn::Variant::Primary,
-                    },
-                    Subscription::none(),
-                    Html::text("更新"),
-                ),
+                Btn::primary(Attributes::new(), Events::new(), vec![Html::text("更新")]),
             ])],
         )
     }
