@@ -74,17 +74,12 @@ impl Component for TabMenu {
                         .iter()
                         .enumerate()
                         .map(|(tab_idx, tab_name)| {
-                            TabBtn::with_child(
-                                tab_btn::Props {
-                                    is_selected: tab_idx == self.selected_idx,
-                                    data: String::from(""),
-                                    draggable: false,
-                                },
-                                Subscription::new(move |sub| match sub {
-                                    tab_btn::On::Click => Msg::SetSelectedIdx(tab_idx),
-                                    _ => Msg::NoOp,
-                                }),
-                                Html::text(tab_name),
+                            TabBtn::new(
+                                false,
+                                tab_idx == self.selected_idx,
+                                Attributes::new(),
+                                Events::new().on_click(move |_| Msg::SetSelectedIdx(tab_idx)),
+                                vec![Html::text(tab_name)],
                             )
                         })
                         .collect(),

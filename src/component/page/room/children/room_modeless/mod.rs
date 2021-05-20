@@ -8,6 +8,7 @@ use crate::arena::block::{self, BlockId};
 use crate::arena::resource::{self, ResourceId};
 use crate::libs::color::color_system;
 use crate::libs::select_list::SelectList;
+use crate::libs::type_id::type_id;
 use isaribi::{
     style,
     styled::{Style, Styled},
@@ -197,8 +198,7 @@ impl Component for RoomModeless {
 
 impl RoomModeless {
     pub fn tag_id() -> String {
-        use std::any;
-        any::type_name::<Self>().to_string()
+        type_id::<Self>()
     }
 
     fn render_minimized(&self) -> Html {
@@ -319,32 +319,32 @@ impl RoomModeless {
                         }).unwrap_or(String::new()))
                     ]
                 };
-                Html::div(
-                    Attributes::new().class(Self::class("header-tab-btn")),
-                    Events::new(),
-                    vec![TabBtn::with_children(
-                        tab_btn::Props {
-                            is_selected,
-                            data: Self::tag_id(),
-                            draggable: true,
-                        },
-                        Subscription::new(move |sub| match sub {
-                            tab_btn::On::Click => Msg::Sub(On::SelectTab { tab_idx }),
-                            tab_btn::On::DragStart => Msg::Sub(On::DragTabStart { tab_idx }),
-                            tab_btn::On::Drop(e) => {
-                                let data_transfer = unwrap_or!(e.data_transfer(); Msg::NoOp);
-                                let data = unwrap_or!(data_transfer.get_data("text/plain").ok(); Msg::NoOp);
-                                if data == Self::tag_id() {
-                                    e.prevent_default();
-                                    e.stop_propagation();
-                                    Msg::Sub(On::DropTab { tab_idx: Some(tab_idx) })
-                                } else {
-                                    Msg::NoOp
-                                }
-                            },
-                        }),
-                        tab_heading,
-                    )],
+                TabBtn::new(
+                    true,
+                    is_selected,
+                    Attributes::new(),
+                    Events::new()
+                        .on_click(move |_|Msg::Sub(On::SelectTab { tab_idx }))
+                        .on("dragstart", move |e| {
+                            let e = unwrap_or!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
+                            e.stop_propagation();
+                            let data_transfer = unwrap_or!(e.data_transfer(); Msg::NoOp);
+                            unwrap_or!(data_transfer.set_data("text/plain", &Self::tag_id()).ok(); Msg::NoOp);
+                            Msg::Sub(On::DragTabStart { tab_idx })
+                    })
+                    .on("drop", move |e| {
+                        let e = unwrap_or!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
+                        let data_transfer = unwrap_or!(e.data_transfer(); Msg::NoOp);
+                        let data = unwrap_or!(data_transfer.get_data("text/plain").ok(); Msg::NoOp);
+                        if data == Self::tag_id() {
+                            e.prevent_default();
+                            e.stop_propagation();
+                            Msg::Sub(On::DropTab { tab_idx: Some(tab_idx) })
+                        } else {
+                            Msg::NoOp
+                        }
+                    }),
+                    tab_heading
                 )
             })
             .collect::<Vec<_>>();

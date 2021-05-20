@@ -2,6 +2,8 @@
 pub mod macros;
 #[macro_use]
 pub mod js_object;
+#[macro_use]
+pub mod gen;
 
 pub mod annotated;
 pub mod clone_of;
@@ -13,3 +15,4 @@ pub mod random_id;
 pub mod select_list;
 pub mod skyway;
 pub mod try_ref;
+pub mod type_id;
