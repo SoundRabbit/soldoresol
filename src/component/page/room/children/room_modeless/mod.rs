@@ -14,6 +14,7 @@ use isaribi::{
     styled::{Style, Styled},
 };
 use kagura::prelude::*;
+use regex::Regex;
 use wasm_bindgen::JsCast;
 
 pub mod boxblock;
@@ -197,7 +198,7 @@ impl Component for RoomModeless {
 }
 
 impl RoomModeless {
-    pub fn tag_id() -> String {
+    pub fn tab_id() -> String {
         type_id::<Self>()
     }
 
@@ -267,7 +268,7 @@ impl RoomModeless {
                     let e = unwrap_or!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
                     let data_transfer = unwrap_or!(e.data_transfer(); Msg::NoOp);
                     let data = unwrap_or!(data_transfer.get_data("text/plain").ok(); Msg::NoOp);
-                    if data == Self::tag_id() {
+                    if data == Self::tab_id() {
                         e.prevent_default();
                         e.stop_propagation();
                         Msg::Sub(On::DropTab { tab_idx: None })
@@ -329,14 +330,14 @@ impl RoomModeless {
                             let e = unwrap_or!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
                             e.stop_propagation();
                             let data_transfer = unwrap_or!(e.data_transfer(); Msg::NoOp);
-                            unwrap_or!(data_transfer.set_data("text/plain", &Self::tag_id()).ok(); Msg::NoOp);
+                            unwrap_or!(data_transfer.set_data("text/plain", &Self::tab_id()).ok(); Msg::NoOp);
                             Msg::Sub(On::DragTabStart { tab_idx })
                     })
                     .on("drop", move |e| {
                         let e = unwrap_or!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
                         let data_transfer = unwrap_or!(e.data_transfer(); Msg::NoOp);
                         let data = unwrap_or!(data_transfer.get_data("text/plain").ok(); Msg::NoOp);
-                        if data == Self::tag_id() {
+                        if data == Self::tab_id() {
                             e.prevent_default();
                             e.stop_propagation();
                             Msg::Sub(On::DropTab { tab_idx: Some(tab_idx) })

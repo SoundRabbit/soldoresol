@@ -358,7 +358,7 @@ impl Implement {
                         let e = unwrap_or!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
                         let data_transfer = unwrap_or!(e.data_transfer(); Msg::NoOp);
                         let data = unwrap_or!(data_transfer.get_data("text/plain").ok(); Msg::NoOp);
-                        if data == RoomModeless::tag_id() {
+                        if data == RoomModeless::tab_id() {
                             e.prevent_default();
                             e.stop_propagation();
                             let page_x = e.page_x();
