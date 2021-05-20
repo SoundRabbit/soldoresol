@@ -2,11 +2,13 @@ use super::atom::btn::{self, Btn};
 use super::atom::dropdown::{self, Dropdown};
 use super::atom::text;
 use super::molecule::modal::{self, Modal};
-use super::util::styled::{Style, Styled};
 use crate::arena::block;
+use isaribi::{
+    style,
+    styled::{Style, Styled},
+};
 use kagura::prelude::*;
 use std::rc::Rc;
-use wasm_bindgen::JsCast;
 
 use block::chat::channel::{ChannelPermission, ChannelType};
 
@@ -217,7 +219,7 @@ impl ModalNewChannel {
 impl Styled for ModalNewChannel {
     fn style() -> Style {
         style! {
-            "base" {
+            ".base" {
                 "width": "100%";
                 "height": "100%";
                 "overflow-y": "scroll";
@@ -228,7 +230,7 @@ impl Styled for ModalNewChannel {
                 "row-gap": ".65rem";
             }
 
-            "item" {
+            ".item" {
                 "display": "grid";
                 "grid-template-columns": "max-content 1fr";
                 "grid-auto-rows": "max-content";
@@ -237,7 +239,7 @@ impl Styled for ModalNewChannel {
                 "row-gap": ".65rem";
             }
 
-            "centering" {
+            ".centering" {
                 "display": "grid";
                 "justify-items": "center";
             }

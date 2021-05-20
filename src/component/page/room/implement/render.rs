@@ -3,9 +3,7 @@ use super::super::{
     super::atom::dropdown::{self, Dropdown},
     super::atom::fa,
     super::atom::header::{self, Header},
-    super::atom::text,
     super::template::basic_app::{self, BasicApp},
-    super::util::styled::Styled,
     children::modal_imported_files::{self, ModalImportedFiles},
     children::modal_new_channel::{self, ModalNewChannel},
     children::room_modeless::{self, RoomModeless},
@@ -14,6 +12,7 @@ use super::super::{
 use super::{ContextmenuKind, Implement, Modal, Msg, Overlay};
 use crate::arena::block::{self, BlockId};
 use crate::libs::random_id::U128Id;
+use isaribi::styled::Styled;
 use kagura::prelude::*;
 use std::rc::Rc;
 use wasm_bindgen::JsCast;

@@ -1,13 +1,11 @@
-use super::atom::{
-    btn::{self, Btn},
-    fa,
-};
+use super::atom::{btn::Btn, fa};
 use super::constant;
-use super::util::styled::{Style, Styled};
 use crate::libs::color::color_system;
+use isaribi::{
+    style,
+    styled::{Style, Styled},
+};
 use kagura::prelude::*;
-use std::cell::RefCell;
-use std::rc::Rc;
 
 pub struct Props {
     pub header_title: String,
@@ -95,7 +93,7 @@ impl Component for Modal {
 impl Styled for Modal {
     fn style() -> Style {
         style! {
-            "background" {
+            ".background" {
                 "position": "fixed";
                 "top": "0";
                 "left": "0";
@@ -107,7 +105,7 @@ impl Styled for Modal {
                 "align-items": "center";
                 "justify-items": "center";
             }
-            "base" {
+            ".base" {
                 "width": "50%";
                 "height": "50%";
                 "display": "grid";
@@ -115,7 +113,7 @@ impl Styled for Modal {
                 "border-radius": "2px";
                 "overflow": "hidden";
             }
-            "header" {
+            ".header" {
                 "display": "grid";
                 "grid-template-columns": "1fr max-content";
                 "align-items": "center";
@@ -123,23 +121,23 @@ impl Styled for Modal {
                 "background-color": color_system::gray(100, 8).to_string();
                 "padding-left": "1em";
             }
-            "body" {
+            ".body" {
                 "background-color": color_system::gray(100, 0).to_string();
             }
-            "footer" {
+            ".footer" {
                 "color": color_system::gray(100, 0).to_string();
                 "background-color": color_system::gray(100, 8).to_string();
                 "padding" : ".5em 1em";
             }
 
             @media "(orientation: portrait), (max-width: 60rem)" {
-                "base" {
+                ".base" {
                     "width": "95%";
                 }
             }
 
             @media "(max-height: 60rem)" {
-                "base" {
+                ".base" {
                     "height": "80%";
                 }
             }

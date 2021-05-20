@@ -1,6 +1,6 @@
 use super::{
-    block, BlockId, BoxblockTool, CharacterTool, CloneOf, HashSet, Implement, ObjectId,
-    PointlightTool, ResourceId, ShapeTool, TableTool, TerranblockTool,
+    block, BlockId, BoxblockTool, CharacterTool, CloneOf, Implement, ObjectId, PointlightTool,
+    ResourceId, ShapeTool, TableTool, TerranblockTool,
 };
 
 impl Implement {

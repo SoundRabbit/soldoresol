@@ -1,10 +1,8 @@
 use super::template::loader::{self, Loader};
-use super::util::{Prop, State};
 use crate::libs::skyway::{MeshRoom, Peer};
 use crate::model::config::Config;
 use kagura::prelude::*;
 use std::rc::Rc;
-use wasm_bindgen::{prelude::*, JsCast};
 
 mod children;
 mod implement;

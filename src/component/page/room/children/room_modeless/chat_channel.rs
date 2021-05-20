@@ -1,7 +1,9 @@
-use super::super::atom::btn::{self, Btn};
-use super::super::util::styled::{Style, Styled};
+use super::super::atom::btn::Btn;
 use crate::arena::block;
-use async_std::sync::{Arc, Mutex};
+use isaribi::{
+    style,
+    styled::{Style, Styled},
+};
 use kagura::prelude::*;
 
 pub struct Props {
@@ -95,7 +97,7 @@ impl ChatChannel {
 impl Styled for ChatChannel {
     fn style() -> Style {
         style! {
-            "base" {
+            ".base" {
                 "display": "grid";
                 "grid-template-columns": "max-content 1fr max-content";
                 "grid-auto-rows": "max-content";
@@ -103,7 +105,7 @@ impl Styled for ChatChannel {
                 "column-gap": ".35em";
                 "row-gap": ".65em";
             }
-            "label" {
+            ".label" {
                 "display": "grid";
                 "align-items": "center";
                 "line-height": "1";

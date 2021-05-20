@@ -1,4 +1,7 @@
-use super::util::styled::{Style, Styled};
+use isaribi::{
+    style,
+    styled::{Style, Styled},
+};
 use kagura::prelude::*;
 
 pub struct Heading {}
@@ -76,39 +79,39 @@ impl Heading {
 impl Styled for Heading {
     fn style() -> Style {
         style! {
-            "base" {
+            ".base" {
                 "margin" : "1.7em 0 0.7em";
                 "padding" : "0.3em 1em 0.3em";
                 "font-weight": "700";
             }
 
-            "base--dark" {
+            ".base--dark" {
                 "color" : format!("{}", crate::libs::color::Pallet::gray(2).a(100));
                 "border-bottom" : format!("0.1em solid {}", crate::libs::color::Pallet::gray(2).a(100));
             }
 
-            "base--light" {
+            ".base--light" {
                 "color" : format!("{}", crate::libs::color::Pallet::gray(6).a(100));
                 "border-bottom" : format!("0.1em solid {}", crate::libs::color::Pallet::gray(6).a(100));
             }
 
-            "base--2" {
+            ".base--2" {
                 "font-size": "1.5em";
             }
 
-            "base--3" {
+            ".base--3" {
                 "font-size": "1.25em";
             }
 
-            "base--4" {
+            ".base--4" {
                 "font-size": "1.13em";
             }
 
-            "base--5" {
+            ".base--5" {
                 "font-size": "1.06em";
             }
 
-            "base--6" {
+            ".base--6" {
                 "font-size": "1.03em";
             }
         }

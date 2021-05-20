@@ -1,5 +1,8 @@
 use super::atom::loading_circle::{self, LoadingCircle};
-use super::util::styled::{Style, Styled};
+use isaribi::{
+    style,
+    styled::{Style, Styled},
+};
 use kagura::prelude::*;
 
 pub struct Props {}
@@ -46,7 +49,7 @@ impl Component for Loader {
 impl Styled for Loader {
     fn style() -> Style {
         style! {
-            "base" {
+            ".base" {
                 "display": "grid";
                 "height": "100%";
                 "grid-template-columns": "max-content max-content";

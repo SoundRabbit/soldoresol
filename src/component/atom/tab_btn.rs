@@ -1,5 +1,8 @@
-use super::util::styled::{Style, Styled};
 use crate::libs::color::color_system;
+use isaribi::{
+    style,
+    styled::{Style, Styled},
+};
 use kagura::prelude::*;
 use std::rc::Rc;
 use wasm_bindgen::JsCast;
@@ -27,6 +30,7 @@ pub struct TabBtn {
     draggable: bool,
 }
 
+// e.dyn_into::<web_sys::DragEvent>()のフォールバックとしてMsg::NoOpが欲しいので、コンポーネント化
 impl Constructor for TabBtn {
     fn constructor(props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) -> Self {
         Self {
@@ -95,14 +99,14 @@ impl Component for TabBtn {
 impl Styled for TabBtn {
     fn style() -> Style {
         style! {
-            "base" {
+            ".base" {
                 "max-width": "max-content";
                 "min-width": "max-content";
                 "max-height": "max-content";
                 "min-height": "max-content";
             }
 
-            "btn" {
+            ".btn" {
                 "border-radius": "2px 2px 0 0";
                 "color": color_system::gray(100, 0).to_string();
                 "max-width": "12em";
@@ -110,11 +114,11 @@ impl Styled for TabBtn {
                 "text-overflow": "ellipsis";
             }
 
-            r#"btn[data-tab-selected="true"]"# {
+            r#".btn[data-tab-selected="true"]"# {
                 "background-color": color_system::blue(100, 5).to_string();
             }
 
-            r#"btn[data-tab-selected="false"]"# {
+            r#".btn[data-tab-selected="false"]"# {
                 "background-color": color_system::gray(100, 9).to_string();
             }
         }

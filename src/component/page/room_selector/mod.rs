@@ -10,7 +10,10 @@ use super::template::{
     basic_app::{self, BasicApp},
     loader::{self, Loader},
 };
-use super::util::styled::{Style, Styled};
+use isaribi::{
+    style,
+    styled::{Style, Styled},
+};
 use kagura::prelude::*;
 use regex::Regex;
 use std::rc::Rc;
@@ -288,64 +291,64 @@ impl RoomSelector {
 impl Styled for RoomSelector {
     fn style() -> Style {
         style! {
-            "header-row" {
+            ".header-row" {
                 "display": "grid";
                 "grid-template-columns": "1fr 1fr";
             }
 
-            "input-room-id" {
+            ".input-room-id" {
                 "display": "grid";
                 "grid-template-columns": "max-content 1fr max-content";
                 "column-gap": "0.65em";
             }
 
-            "label" {
+            ".label" {
                 "display": "grid";
                 "align-items": "center";
                 "line-height": "1";
             }
 
-            "right" {
+            ".right" {
                 "display": "flex";
                 "justify-content": "flex-end";
             }
 
-            "body" {
+            ".body" {
                 "padding": "0.65em";
             }
 
-            "card-container" {
+            ".card-container" {
                 "display": "flex";
                 "flex-wrap": "wrap";
             }
 
-            "card" {
+            ".card" {
                 "max-width": "max-content";
                 "max-height": "max-content";
             }
 
-            "room-id" {
+            ".room-id" {
                 "background-color": crate::libs::color::color_system::gray(100, 2).to_string();
                 "padding": "0.25em";
                 "border-radius": "2px";
             }
 
             @media "(max-width: 40rem)" {
-                "header-row" {
+                ".header-row" {
                     "display": "flex";
                     "flex-direction": "column-reverse";
                 }
 
-                "input-room-id" {
+                ".input-room-id" {
                     "grid-template-columns": "1fr max-content";
                     "grid-auto-rows": "max-content";
                 }
 
-                "input-room-id-label" {
+                ".input-room-id-label" {
                     "grid-column": "1 / -1";
                 }
 
-                "card-container" {
+                ".card-container" {
                     "justify-content": "center";
                 }
             }

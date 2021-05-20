@@ -1,8 +1,7 @@
 use super::id_table::{IdTable, ObjectId, Surface};
-use super::matrix::{camera::CameraMatrix, model::ModelMatrix};
+use super::matrix::model::ModelMatrix;
 use super::webgl::{ProgramType, WebGlF32Vbo, WebGlI16Ibo, WebGlRenderingContext};
 use crate::arena::block::{self, BlockId};
-use crate::arena::resource;
 use ndarray::Array2;
 
 pub struct Boxblock {

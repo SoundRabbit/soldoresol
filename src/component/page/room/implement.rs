@@ -1,6 +1,5 @@
 use super::{
     super::util::cmds::Cmds,
-    super::util::styled::{Style, Styled},
     super::util::State,
     children::room_modeless,
     model::controller_state::MouseState,
@@ -15,6 +14,10 @@ use crate::libs::modeless_list::ModelessList;
 use crate::libs::random_id::U128Id;
 use crate::libs::select_list::SelectList;
 use crate::libs::skyway::{MeshRoom, Peer};
+use isaribi::{
+    style,
+    styled::{Style, Styled},
+};
 use kagura::prelude::*;
 use std::rc::Rc;
 
@@ -317,7 +320,7 @@ impl Component for Implement {
 impl Styled for Implement {
     fn style() -> Style {
         style! {
-            "overlay" {
+            ".overlay" {
                 "position": "fixed";
                 "top": "0";
                 "left": "0";
@@ -326,11 +329,11 @@ impl Styled for Implement {
                 "z-index": format!("{}", super::super::constant::z_index::OVERLAY);
             }
 
-            "overlay-file-import" {
+            ".overlay-file-import" {
                 "background-color": format!("{}", crate::libs::color::color_system::gray(25, 9));
             }
 
-            "overlay-file-import-text" {
+            ".overlay-file-import-text" {
                 "position": "absolute";
                 "color": format!("{}", crate::libs::color::color_system::gray(100, 0));
                 "font-size": "4rem";
@@ -338,7 +341,7 @@ impl Styled for Implement {
                 "right": "1em";
             }
 
-            "contextmenu" {
+            ".contextmenu" {
                 "position": "absolute";
                 "grid-template-columns": "max-content";
                 "grid-auto-rows": "max-content";
@@ -350,40 +353,40 @@ impl Styled for Implement {
                 "display": "grid";
             }
 
-            "header-row" {
+            ".header-row" {
                 "display": "grid";
                 "grid-template-columns": "1fr 1fr";
             }
 
-            "header-room-id" {
+            ".header-room-id" {
                 "display": "grid";
                 "grid-template-columns": "max-content 1fr";
                 "column-gap": "0.65em";
             }
 
-            "header-controller-menu" {
+            ".header-controller-menu" {
                 "display": "grid";
                 "grid-auto-columns": "max-content";
                 "grid-auto-flow": "column";
                 "column-gap": "0.65em";
             }
 
-            "body" {
+            ".body" {
                 "display": "grid";
                 "grid-template-columns": "max-content 1fr";
             }
 
-            "side-menu" {
+            ".side-menu" {
                 "z-index": "1";
                 "min-height": "max-content";
                 "min-width": "max-content";
             }
 
-            "main" {
+            ".main" {
                 "position": "relative";
             }
 
-            "canvas" {
+            ".canvas" {
                 "position": "absolute";
                 "top": "0";
                 "left": "0";
@@ -391,7 +394,7 @@ impl Styled for Implement {
                 "height": "100%";
             }
 
-            "modeless-container" {
+            ".modeless-container" {
                 "position": "absolute";
                 "top": "0";
                 "left": "0";

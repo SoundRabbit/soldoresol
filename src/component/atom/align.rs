@@ -1,4 +1,7 @@
-use super::util::styled::{Style, Styled};
+use isaribi::{
+    style,
+    styled::{Style, Styled},
+};
 use kagura::prelude::*;
 
 pub struct Align {}
@@ -12,7 +15,7 @@ impl Align {
 impl Styled for Align {
     fn style() -> Style {
         style! {
-            "key-value" {
+            ".key-value" {
                 "display": "grid";
                 "grid-template-columns": "max-content 1fr";
                 "grid-auto-rows": "max-content";

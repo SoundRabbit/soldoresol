@@ -1,9 +1,9 @@
-use super::util::styled::{Style, Styled};
 use crate::libs::color::color_system;
-use async_std::sync::{Arc, Mutex};
+use isaribi::{
+    style,
+    styled::{Style, Styled},
+};
 use kagura::prelude::*;
-use wasm_bindgen::prelude::*;
-use wasm_bindgen::JsCast;
 
 pub struct Props {
     pub variant: Variant,
@@ -98,57 +98,57 @@ impl Btn {
 impl Styled for Btn {
     fn style() -> Style {
         style! {
-            "primary" {
+            ".primary" {
                 "line-height": "1.5";
                 "background-color": color_system::blue(100, 5).to_string();
                 "color": color_system::gray(100, 0).to_string();
             }
 
-            "secondary" {
+            ".secondary" {
                 "line-height": "1.5";
                 "background-color": color_system::gray(100, 5).to_string();
                 "color": color_system::gray(100, 0).to_string();
             }
 
-            "danger" {
+            ".danger" {
                 "line-height": "1.5";
                 "background-color": color_system::red(100, 5).to_string();
                 "color": color_system::gray(100, 0).to_string();
             }
 
-            "dark" {
+            ".dark" {
                 "line-height": "1.5";
                 "background-color": color_system::gray(100, 9).to_string();
                 "color": color_system::gray(100, 0).to_string();
             }
 
-            "transparent-dark" {
+            ".transparent-dark" {
                 "line-height": "1.5";
                 "background-color": "transparent";
                 "color": color_system::gray(100, 0).to_string();
             }
 
-            "like-menu" {
+            ".like-menu" {
                 "text-align": "left";
             }
 
-            "menu" {
+            ".menu" {
                 "line-height": "1.5";
                 "background-color": color_system::gray(100, 9).to_string();
                 "color": color_system::gray(100, 0).to_string();
             }
 
-            "menu:hover" {
+            ".menu:hover" {
                 "background-color": color_system::blue(100, 5).to_string();
             }
 
-            "menu-secondary" {
+            ".menu-secondary" {
                 "line-height": "1.5";
                 "background-color": color_system::gray(100, 5).to_string();
                 "color": color_system::gray(100, 0).to_string();
             }
 
-            "menu-secondary:hover" {
+            ".menu-secondary:hover" {
                 "background-color": color_system::blue(100, 5).to_string();
             }
         }

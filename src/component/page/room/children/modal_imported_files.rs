@@ -1,6 +1,9 @@
 use super::molecule::modal::{self, Modal};
-use super::util::styled::{Style, Styled};
 use crate::arena::resource::{self, ResourceId};
+use isaribi::{
+    style,
+    styled::{Style, Styled},
+};
 use kagura::prelude::*;
 
 pub struct Props {

@@ -1,7 +1,10 @@
 use super::atom::heading::{self, Heading};
 use super::atom::slider::{self, Slider};
-use super::util::styled::{Style, Styled};
 use crate::libs::color::{pallet, Pallet};
+use isaribi::{
+    style,
+    styled::{Style, Styled},
+};
 use kagura::prelude::*;
 
 pub struct Props {
@@ -178,7 +181,7 @@ impl ColorPallet {
 impl Styled for ColorPallet {
     fn style() -> Style {
         style! {
-            "base" {
+            ".base" {
                 "display": "grid";
                 "grid-auto-rows": "max-content";
                 "row-gap": "0.35em";
@@ -186,32 +189,32 @@ impl Styled for ColorPallet {
                 "padding": "0.35em";
             }
 
-            "table" {
+            ".table" {
                 "display": "grid";
                 "grid-template-rows": "repeat(10, max-content)";
                 "grid-auto-columns": "1fr";
                 "grid-auto-flow": "column";
             }
 
-            "cell" {
+            ".cell" {
                 "min-width": "2rem";
                 "max-width": "100%";
                 "height": "2rem";
             }
 
-            "cell:hover" {
+            ".cell:hover" {
                 "cursor": "pointer";
             }
 
-            "cell--selected-dark" {
+            ".cell--selected-dark" {
                 "box-shadow": format!("0 0 0.1em 0.1em {} inset", Pallet::gray(9).a(100));
             }
 
-            "cell--selected-light" {
+            ".cell--selected-light" {
                 "box-shadow": format!("0 0 0.1em 0.1em {} inset", Pallet::gray(0).a(100));
             }
 
-            "color-base" {
+            ".color-base" {
                 "width": "100%";
                 "height": "2rem";
                 "background-color": format!("{}", Pallet::gray(2).a(100));
@@ -222,7 +225,7 @@ impl Styled for ColorPallet {
                 "border": format!("0.1rem solid {}", Pallet::gray(0).a(100));
             }
 
-            "color-sample" {
+            ".color-sample" {
                 "width": "100%";
                 "height": "100%";
             }

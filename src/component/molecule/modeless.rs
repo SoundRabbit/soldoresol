@@ -1,15 +1,10 @@
-use super::atom::{
-    btn::{self, Btn},
-    fa,
-};
-use super::constant;
-use super::util::styled::{Style, Styled};
 use super::util::Prop;
 use crate::libs::color::color_system;
-use crate::libs::select_list::SelectList;
+use isaribi::{
+    style,
+    styled::{Style, Styled},
+};
 use kagura::prelude::*;
-use std::cell::RefCell;
-use std::rc::Rc;
 
 pub struct Props {
     pub size: [f32; 2],
@@ -338,12 +333,12 @@ impl Modeless {
 impl Styled for Modeless {
     fn style() -> Style {
         style! {
-            "base" {
+            ".base" {
                 "position": "absolute";
                 "overflow": "visible";
             }
 
-            "container" {
+            ".container" {
                 "width": "100%";
                 "height": "100%";
                 "overflow": "hidden";
@@ -351,7 +346,7 @@ impl Styled for Modeless {
                 "box-shadow": format!("0 0 0.1rem 0.1rem {}", color_system::gray(255, 9));
             }
 
-            "rsz-top" {
+            ".rsz-top" {
                 "position": "absolute";
                 "top": "-0.9rem";
                 "left": "0.1rem";
@@ -359,11 +354,11 @@ impl Styled for Modeless {
                 "height": "1rem";
             }
 
-            "rsz-top:hover" {
+            ".rsz-top:hover" {
                 "cursor": "ns-resize";
             }
 
-            "rsz-top-left" {
+            ".rsz-top-left" {
                 "position": "absolute";
                 "top": "-0.9rem";
                 "left": "-0.9rem";
@@ -371,11 +366,11 @@ impl Styled for Modeless {
                 "height": "1rem";
             }
 
-            "rsz-top-left:hover" {
+            ".rsz-top-left:hover" {
                 "cursor": "nwse-resize";
             }
 
-            "rsz-left" {
+            ".rsz-left" {
                 "position": "absolute";
                 "top": "0.1rem";
                 "left": "-0.9rem";
@@ -383,11 +378,11 @@ impl Styled for Modeless {
                 "height": "calc(100% - 0.2rem)";
             }
 
-            "rsz-left:hover" {
+            ".rsz-left:hover" {
                 "cursor": "ew-resize";
             }
 
-            "rsz-bottom-left" {
+            ".rsz-bottom-left" {
                 "position": "absolute";
                 "top": "calc(100% - 0.2rem)";
                 "left": "-0.9rem";
@@ -395,11 +390,11 @@ impl Styled for Modeless {
                 "height": "1rem";
             }
 
-            "rsz-bottom-left:hover" {
+            ".rsz-bottom-left:hover" {
                 "cursor": "nesw-resize";
             }
 
-            "rsz-bottom" {
+            ".rsz-bottom" {
                 "position": "absolute";
                 "top": "calc(100% - 0.2rem)";
                 "left": "0.1rem";
@@ -407,11 +402,11 @@ impl Styled for Modeless {
                 "height": "1rem";
             }
 
-            "rsz-bottom:hover" {
+            ".rsz-bottom:hover" {
                 "cursor": "ns-resize";
             }
 
-            "rsz-bottom-right" {
+            ".rsz-bottom-right" {
                 "position": "absolute";
                 "top": "calc(100% - 0.2rem)";
                 "left": "calc(100% - 0.2rem)";
@@ -419,11 +414,11 @@ impl Styled for Modeless {
                 "height": "1rem";
             }
 
-            "rsz-bottom-right:hover" {
+            ".rsz-bottom-right:hover" {
                 "cursor": "nwse-resize";
             }
 
-            "rsz-right" {
+            ".rsz-right" {
                 "position": "absolute";
                 "top": "0.1rem";
                 "left": "calc(100% - 0.2rem)";
@@ -431,11 +426,11 @@ impl Styled for Modeless {
                 "height": "calc(100% - 0.2rem)";
             }
 
-            "rsz-right:hover" {
+            ".rsz-right:hover" {
                 "cursor": "ew-resize";
             }
 
-            "rsz-top-right" {
+            ".rsz-top-right" {
                 "position": "absolute";
                 "top": "-0.9rem";
                 "left": "calc(100% - 0.2rem)";
@@ -443,7 +438,7 @@ impl Styled for Modeless {
                 "height": "1rem";
             }
 
-            "rsz-top-right:hover" {
+            ".rsz-top-right:hover" {
                 "cursor": "nesw-resize";
             }
         }

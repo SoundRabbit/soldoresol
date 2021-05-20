@@ -2,7 +2,6 @@ use super::matrix::{camera::CameraMatrix, model::ModelMatrix};
 use super::tex_table::TexTable;
 use super::webgl::{ProgramType, WebGlF32Vbo, WebGlI16Ibo, WebGlRenderingContext};
 use crate::arena::block::{self, block_trait::DisplayNamed, BlockId};
-use crate::libs::random_id::U128Id;
 use ndarray::Array2;
 
 pub struct Nameplate {

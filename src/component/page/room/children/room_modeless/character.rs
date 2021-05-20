@@ -5,9 +5,12 @@ use super::super::modal_imported_files::{self, ModalImportedFiles};
 use super::super::molecule::block_prop::{self, BlockProp};
 use super::super::molecule::color_pallet::{self, ColorPallet};
 use super::super::molecule::tab_menu::{self, TabMenu};
-use super::super::util::styled::{Style, Styled};
 use crate::arena::block::{self, BlockId};
 use crate::arena::resource;
+use isaribi::{
+    style,
+    styled::{Style, Styled},
+};
 use kagura::prelude::*;
 use wasm_bindgen::JsCast;
 

@@ -1,7 +1,10 @@
 use super::atom::fa;
 use super::atom::text;
-use super::util::styled::{Style, Styled};
 use crate::arena::block::{self, BlockId};
+use isaribi::{
+    style,
+    styled::{Style, Styled},
+};
 use kagura::prelude::*;
 
 pub struct Props {
@@ -89,13 +92,13 @@ impl Tag {
 impl Styled for Tag {
     fn style() -> Style {
         style! {
-            "base" {
+            ".base" {
                 "display": "grid";
                 "grid-template-columns": "max-content max-content";
                 "align-items": "center";
             }
 
-            "btn" {
+            ".btn" {
                 "background-color": format!("{}", crate::libs::color::Pallet::gray(0).a(25));
                 "width": "1em";
                 "height": "1em";

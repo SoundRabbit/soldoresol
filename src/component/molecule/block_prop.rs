@@ -2,10 +2,13 @@ use super::atom::btn::{self, Btn};
 use super::atom::dropdown::{self, Dropdown};
 use super::atom::slider::{self, Slider};
 use super::atom::text;
-use super::util::styled::{Style, Styled};
 use crate::arena::block::{self, BlockId};
 use crate::libs::clone_of::CloneOf;
 use crate::libs::select_list::SelectList;
+use isaribi::{
+    style,
+    styled::{Style, Styled},
+};
 use kagura::prelude::*;
 
 pub struct Props {
@@ -898,20 +901,20 @@ impl BlockProp {
 impl Styled for BlockProp {
     fn style() -> Style {
         style! {
-            "base" {
+            ".base" {
                 "display": "grid";
                 "row-gap": ".65em";
                 "grid-template-columns": "1fr";
                 "width": "100%";
             }
 
-            "prop-list-container" {
+            ".prop-list-container" {
                 "grid-column-start": "1";
                 "grid-column-end": "-1";
                 "padding-left": "2rem";
             }
 
-            "prop-list" {
+            ".prop-list" {
                 "display": "grid";
                 "column-gap": ".35em";
                 "row-gap": ".65em";
@@ -919,19 +922,19 @@ impl Styled for BlockProp {
                 "align-items": "start";
             }
 
-            "prop-name" {
+            ".prop-name" {
                 "display": "grid";
                 "row-gap": ".65em";
                 "align-items": "start";
             }
 
-            "prop-menu" {
+            ".prop-menu" {
                 "display": "grid";
                 "column-gap": ".35em";
                 "grid-template-columns": "1fr max-content";
             }
 
-            "prop-value-list" {
+            ".prop-value-list" {
                 "display": "grid";
                 "column-gap": ".35em";
                 "row-gap": ".65em";
@@ -939,7 +942,7 @@ impl Styled for BlockProp {
                 "align-items": "start";
             }
 
-            "prop-value-list--editable" {
+            ".prop-value-list--editable" {
                 "display": "grid";
                 "column-gap": ".35em";
                 "row-gap": ".65em";
@@ -947,7 +950,7 @@ impl Styled for BlockProp {
                 "align-items": "start";
             }
 
-            "prop-value-column" {
+            ".prop-value-column" {
                 "display": "grid";
                 "column-gap": ".35em";
                 "grid-auto-columns": "1fr";
@@ -955,53 +958,53 @@ impl Styled for BlockProp {
                 "align-items": "start";
             }
 
-            "prop-value-column > *" {
+            ".prop-value-column > *" {
                 "width": "100%";
             }
 
-            "prop-value--table-column" {
+            ".prop-value--table-column" {
                 "display": "grid";
                 "row-gap": ".65em";
                 "grid-template-columns": "1fr";
                 "grid-auto-flow": "row";
             }
 
-            "prop-value--value-key" {
+            ".prop-value--value-key" {
                 "display": "grid";
                 "column-gap": ".15em";
                 "grid-template-columns": "1fr max-content";
                 "align-items": "center";
             }
 
-            "prop-value--value-key-value" {
+            ".prop-value--value-key-value" {
                 "display": "grid";
                 "column-gap": ".35em";
                 "grid-template-columns": "1fr max-content 1fr";
                 "align-items": "center";
             }
 
-            "banner" {
+            ".banner" {
                 "grid-column-start": "1";
                 "grid-column-end": "-1";
             }
 
-            "banner-2c" {
+            ".banner-2c" {
                 "grid-column": "span 2";
             }
 
-            "banner > button" {
+            ".banner > button" {
                 "width": "100%";
             }
 
-            "banner > input" {
+            ".banner > input" {
                 "width": "100%";
             }
 
-            "banner-2c > button" {
+            ".banner-2c > button" {
                 "width": "100%";
             }
 
-            "ok-cancel" {
+            ".ok-cancel" {
                 "display": "grid";
                 "grid-template-columns": "max-content max-content";
                 "column-gap": "0.05rem";

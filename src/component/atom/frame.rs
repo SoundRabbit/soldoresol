@@ -1,4 +1,7 @@
-use super::util::styled::{Style, Styled};
+use isaribi::{
+    style,
+    styled::{Style, Styled},
+};
 use kagura::prelude::*;
 
 pub struct Props {
@@ -98,7 +101,7 @@ impl Component for Frame {
 impl Styled for Frame {
     fn style() -> Style {
         style! {
-            "base" {
+            ".base" {
                 "display": "grid";
             }
         }

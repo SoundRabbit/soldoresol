@@ -1,12 +1,8 @@
 use super::id_table::{IdTable, ObjectId, Surface};
-use super::matrix::{camera::CameraMatrix, model::ModelMatrix};
+use super::matrix::model::ModelMatrix;
 use super::webgl::{ProgramType, WebGlF32Vbo, WebGlI16Ibo, WebGlRenderingContext};
 use crate::arena::block::{self, BlockId};
-use crate::arena::resource;
-use crate::libs::color::Pallet;
-use crate::libs::random_id::U128Id;
-use ndarray::{arr1, Array2};
-use ordered_float::OrderedFloat;
+use ndarray::Array2;
 use std::collections::HashMap;
 
 pub struct Terran {

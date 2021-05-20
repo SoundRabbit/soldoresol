@@ -1,4 +1,3 @@
-use super::super::util::{Prop, State};
 use crate::libs::idb;
 use crate::libs::skyway::MeshRoom;
 use crate::model::config::Config;

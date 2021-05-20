@@ -1,6 +1,9 @@
 use super::atom::btn::{self, Btn};
 use super::atom::fa;
-use super::util::styled::{Style, Styled};
+use isaribi::{
+    style,
+    styled::{Style, Styled},
+};
 use kagura::prelude::*;
 
 pub struct Props {
@@ -226,35 +229,35 @@ impl Dropdown {
 impl Styled for Dropdown {
     fn style() -> Style {
         style! {
-            "base" {
+            ".base" {
                 "position": "relative";
             }
 
-            "base-menu" {
+            ".base-menu" {
                 "justify-self": "stretch";
                 "display": "grid";
             }
 
-            "base-default" {
+            ".base-default" {
                 "max-width": "max-content";
             }
 
-            r#"root-btn[data-toggled="false"]"# {
+            r#".root-btn[data-toggled="false"]"# {
                 "z-index": "auto";
             }
 
-            r#"root-btn[data-toggled="true"]"# {
+            r#".root-btn[data-toggled="true"]"# {
                 "z-index": format!("{}", super::constant::z_index::MASK + 1);
             }
 
-            "btn" {
+            ".btn" {
                 "display": "grid";
                 "grid-template-columns": "1fr max-content";
                 "align-items": "center";
                 "column-gap": "1ch";
             }
 
-            "mask" {
+            ".mask" {
                 "position": "fixed";
                 "top": "0";
                 "left": "0";
@@ -263,15 +266,15 @@ impl Styled for Dropdown {
                 "z-index": format!("{}", super::constant::z_index::MASK);
             }
 
-            r#"mask[data-toggled="false"]"# {
+            r#".mask[data-toggled="false"]"# {
                 "display": "none";
             }
 
-            r#"mask[data-toggled="true"]"# {
+            r#".mask[data-toggled="true"]"# {
                 "display": "block";
             }
 
-            "content" {
+            ".content" {
                 "position": "absolute";
                 "z-index": format!("{}", super::constant::z_index::MASK + 1);
                 "grid-auto-rows": "max-content";
@@ -284,35 +287,35 @@ impl Styled for Dropdown {
                 "border-radius": "2px";
             }
 
-            r#"content[data-toggled="false"]"# {
+            r#".content[data-toggled="false"]"# {
                 "display": "none";
             }
-            r#"content[data-toggled="true"]"# {
+            r#".content[data-toggled="true"]"# {
                 "display": "grid";
             }
 
-            "content-bottom" {
+            ".content-bottom" {
                 "top": "100%";
                 "left": "0";
                 "right": "0";
                 "grid-template-columns": "1fr";
             }
 
-            "content-bottom-left" {
+            ".content-bottom-left" {
                 "top": "100%";
                 "right": "0";
                 "grid-template-columns": "max-content";
 
             }
 
-            "content-bottom-right" {
+            ".content-bottom-right" {
                 "top": "100%";
                 "left": "0";
                 "grid-template-columns": "max-content";
 
             }
 
-            "content-right-bottom" {
+            ".content-right-bottom" {
                 "top": "0";
                 "left": "100%";
                 "grid-template-columns": "max-content";

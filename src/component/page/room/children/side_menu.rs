@@ -2,7 +2,6 @@ use super::super::model::table::{
     BoxblockTool, CharacterTool, EraserTool, FillShapeTool, LineShapeTool, PenTool, PointlightTool,
     ShapeTool, TableTool, TerranblockTool,
 };
-use super::atom::align::Align;
 use super::atom::btn::{self, Btn};
 use super::atom::dropdown::{self, Dropdown};
 use super::atom::fa;
@@ -12,13 +11,16 @@ use super::atom::text;
 use super::modal_imported_files::{self, ModalImportedFiles};
 use super::molecule::color_pallet::{self, ColorPallet};
 use super::molecule::tab_menu::{self, TabMenu};
-use super::util::styled::{Style, Styled};
 use super::util::Prop;
 use crate::arena::block::{self, BlockId};
 use crate::arena::resource::{self, ResourceId};
 use crate::libs::clone_of::CloneOf;
 use crate::libs::color::Pallet;
 use crate::libs::select_list::SelectList;
+use isaribi::{
+    style,
+    styled::{Style, Styled},
+};
 use kagura::prelude::*;
 
 pub struct Props {
@@ -1202,14 +1204,14 @@ impl SideMenu {
 impl Styled for SideMenu {
     fn style() -> Style {
         style! {
-            "base" {
+            ".base" {
                 "background-color": format!("{}", crate::libs::color::color_system::gray(100,8));
                 "color": format!("{}", crate::libs::color::color_system::gray(100,0));
                 "position": "relative";
                 "height": "100%";
             }
 
-            "main" {
+            ".main" {
                 "display": "grid";
                 "grid-auto-flow": "row";
                 "padding": "0.65em";
@@ -1220,17 +1222,17 @@ impl Styled for SideMenu {
                 "border-right": format!("0.1em solid {}", crate::libs::color::color_system::gray(100, 9));
             }
 
-            "sub" {
+            ".sub" {
                 "position": "absolute";
                 "left": "100%";
                 "top": "0";
             }
 
-            "sub--closed" {
+            ".sub--closed" {
                 "padding": "0.65em";
             }
 
-            "sub--opend" {
+            ".sub--opend" {
                 "background-color": format!("{}", crate::libs::color::color_system::gray(100,8));
                 "min-width": "20rem";
                 "max-width": "10vw";
@@ -1241,7 +1243,7 @@ impl Styled for SideMenu {
                 "border-right": format!("0.1em solid {}", crate::libs::color::color_system::gray(100, 9));
             }
 
-            "sub-header" {
+            ".sub-header" {
                 "display": "grid";
                 "grid-template-columns": "1fr max-content";
                 "align-items": "center";
@@ -1249,11 +1251,11 @@ impl Styled for SideMenu {
                 "border-bottom": format!("0.1em solid {}", crate::libs::color::color_system::gray(100, 9));
             }
 
-            "sub-body" {
+            ".sub-body" {
                 "padding": "0.65em";
             }
 
-            "sub-tool-list" {
+            ".sub-tool-list" {
                 "display": "grid";
                 "grid-template-columns": "1fr 1fr";
                 "grid-auto-flow": "row";
@@ -1262,7 +1264,7 @@ impl Styled for SideMenu {
                 "padding-bottom": "0.65em";
             }
 
-            "sub-menu" {
+            ".sub-menu" {
                 "display": "grid";
                 "grid-template-columns": "100%";
                 "grid-auto-rows": "max-content";
@@ -1272,7 +1274,7 @@ impl Styled for SideMenu {
                 "overflow-y": "scroll";
             }
 
-            "sub-menu img" {
+            ".sub-menu img" {
                 "width": "100%";
             }
         }

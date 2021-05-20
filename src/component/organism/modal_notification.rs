@@ -1,7 +1,10 @@
-use super::atom::btn::{self, Btn};
+use super::atom::btn::Btn;
 use super::atom::heading::{self, Heading};
 use super::molecule::modal::{self, Modal};
-use super::util::styled::{Style, Styled};
+use isaribi::{
+    style,
+    styled::{Style, Styled},
+};
 use kagura::prelude::*;
 
 pub struct Props {}
@@ -111,17 +114,17 @@ impl Component for ModalNotification {
 impl Styled for ModalNotification {
     fn style() -> Style {
         style! {
-            "base" {
+            ".base" {
                 "display": "grid";
                 "grid-template-rows": "1fr max-content";
                 "justify-items": "center";
                 "height": "100%";
             }
-            "content" {
+            ".content" {
                 "overflow-y": "scroll";
                 "width": "100%";
             }
-            "container" {
+            ".container" {
                 "padding": ".5em 1em";
             }
         }

@@ -1,7 +1,6 @@
-use super::matrix::{camera::CameraMatrix, model::ModelMatrix};
+use super::matrix::model::ModelMatrix;
 use super::webgl::{ProgramType, WebGlF32Vbo, WebGlI16Ibo, WebGlRenderingContext};
-use crate::arena::block::{self, BlockId};
-use crate::arena::resource;
+use crate::arena::block;
 use ndarray::Array2;
 
 pub struct Table {

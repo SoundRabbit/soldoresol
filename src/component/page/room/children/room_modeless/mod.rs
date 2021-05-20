@@ -3,15 +3,17 @@ use super::atom::dropdown::{self, Dropdown};
 use super::atom::fa;
 use super::atom::tab_btn::{self, TabBtn};
 use super::molecule::modeless::{self, Modeless};
-use super::util::styled::{Style, Styled};
 use super::util::Prop;
 use crate::arena::block::{self, BlockId};
 use crate::arena::resource::{self, ResourceId};
 use crate::libs::color::color_system;
-use crate::libs::random_id::U128Id;
 use crate::libs::select_list::SelectList;
+use isaribi::{
+    style,
+    styled::{Style, Styled},
+};
 use kagura::prelude::*;
-use wasm_bindgen::{prelude::*, JsCast};
+use wasm_bindgen::JsCast;
 
 pub mod boxblock;
 pub mod character;
@@ -500,7 +502,7 @@ impl RoomModeless {
 impl Styled for RoomModeless {
     fn style() -> Style {
         style! {
-            "base" {
+            ".base" {
                 "display": "grid";
                 "grid-template-rows": "max-content 1fr";
                 "align-items": "stretch";
@@ -508,7 +510,7 @@ impl Styled for RoomModeless {
                 "height": "100%";
             }
 
-            "header" {
+            ".header" {
                 "display": "grid";
                 "grid-template-columns": "1fr";
                 "grid-auto-colmuns": "max-content";
@@ -516,12 +518,12 @@ impl Styled for RoomModeless {
                 "background-color": format!("{}", color_system::gray(255, 8));
             }
 
-            "header-tab-container" {
+            ".header-tab-container" {
                 "display": "flex";
                 "flex-wrap": "wrap";
             }
 
-            "body" {
+            ".body" {
                 "background-color": format!("{}", color_system::gray(255, 0));
                 "overflow": "hidden";
             }

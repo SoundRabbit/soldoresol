@@ -1,5 +1,8 @@
 use super::atom::tab_btn::{self, TabBtn};
-use super::util::styled::{Style, Styled};
+use isaribi::{
+    style,
+    styled::{Style, Styled},
+};
 use kagura::prelude::*;
 
 pub struct Props {
@@ -95,7 +98,7 @@ impl Component for TabMenu {
 impl Styled for TabMenu {
     fn style() -> Style {
         style! {
-            "base" {
+            ".base" {
                 "display": "grid";
                 "grid-template-rows": "max-content 1fr";
                 "max-height": "100%";
@@ -103,7 +106,7 @@ impl Styled for TabMenu {
                 "overflow": "hidden";
             }
 
-            "tabs" {
+            ".tabs" {
                 "display": "flex";
                 "flex-wrap": "wrap";
             }

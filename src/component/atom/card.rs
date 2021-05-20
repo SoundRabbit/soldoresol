@@ -1,5 +1,8 @@
-use super::util::styled::{Style, Styled};
 use crate::libs::color::color_system;
+use isaribi::{
+    style,
+    styled::{Style, Styled},
+};
 use kagura::prelude::*;
 
 pub struct Props {}
@@ -41,7 +44,7 @@ impl Component for Card {
 impl Styled for Card {
     fn style() -> Style {
         style! {
-            "base"{
+            ".base"{
                 "background-color": color_system::gray(100, 0).to_string();
                 "color": color_system::gray(100, 9).to_string();
                 "padding": ".4em";
@@ -50,7 +53,7 @@ impl Styled for Card {
                 "border-radius": "2px";
             }
 
-            "base--medium" {
+            ".base--medium" {
                 "width": "18em";
                 "height": "24em";
             }

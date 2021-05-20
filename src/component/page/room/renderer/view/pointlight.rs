@@ -1,7 +1,6 @@
 use super::matrix::model::ModelMatrix;
 use super::webgl::{ProgramType, WebGlF32Vbo, WebGlI16Ibo, WebGlRenderingContext};
 use crate::arena::block::{self, BlockId};
-use crate::libs::random_id::U128Id;
 use ndarray::Array2;
 
 pub struct Pointlight {

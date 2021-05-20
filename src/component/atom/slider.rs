@@ -1,7 +1,9 @@
-use super::util::styled::{Style, Styled};
 use crate::libs::color::color_system;
+use isaribi::{
+    style,
+    styled::{Style, Styled},
+};
 use kagura::prelude::*;
-use wasm_bindgen::{prelude::*, JsCast};
 
 pub struct Props {
     pub position: Position,
@@ -284,7 +286,7 @@ impl Slider {
 impl Styled for Slider {
     fn style() -> Style {
         style! {
-            "base" {
+            ".base" {
                 "display": "grid";
                 "grid-template-columns": "1fr max-content";
                 "grid-auto-rows": "max-content";
@@ -292,12 +294,12 @@ impl Styled for Slider {
                 "column-gap": "0.35em";
             }
 
-            "input" {
+            ".input" {
                 "width": "5em";
                 "outline": "none";
             }
 
-            "slider" {
+            ".slider" {
                 "width": "100%";
                 "height": "1em";
                 "-webkit-appearance": "none";
@@ -307,7 +309,7 @@ impl Styled for Slider {
                 "font-size": "1.3em";
             }
 
-            "slider::-webkit-slider-thumb" {
+            ".slider::-webkit-slider-thumb" {
                 "-webkit-appearance": "none";
                 "appearance": "none";
                 "background-color": format!("{}", color_system::gray(100, 5));
@@ -316,41 +318,41 @@ impl Styled for Slider {
                 "border-radius": "50%";
             }
 
-            "range" {
+            ".range" {
                 "display": "flex";
                 "align-items": "center";
             }
 
-            "range--linear" {
+            ".range--linear" {
                 "justify-content": "space-between";
             }
 
-            "range--inf" {
+            ".range--inf" {
                 "justify-content": "center";
             }
 
-            "allow" {
+            ".allow" {
                 "position": "relative";
             }
 
-            "allow:before" {
+            ".allow:before" {
                 "content":"\"\"";
                 "position": "absolute";
                 "border": "0.5em solid transparent";
                 "border-bottom": format!("0.5em solid {}", color_system::gray(100, 0));
             }
 
-            "allow--left:before" {
+            ".allow--left:before" {
                 "top": "-1em";
                 "left": "0";
             }
 
-            "allow--center:before" {
+            ".allow--center:before" {
                 "top": "-1em";
                 "left": "calc(50% - 0.5em)";
             }
 
-            "allow--right:before" {
+            ".allow--right:before" {
                 "top": "-1em";
                 "left": "calc(100% - 1em)";
             }

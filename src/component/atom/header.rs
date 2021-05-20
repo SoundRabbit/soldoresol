@@ -1,5 +1,8 @@
-use super::util::styled::{Style, Styled};
 use crate::libs::color::color_system;
+use isaribi::{
+    style,
+    styled::{Style, Styled},
+};
 use kagura::prelude::*;
 
 pub struct Props {
@@ -57,7 +60,7 @@ impl Component for Header {
 impl Styled for Header {
     fn style() -> Style {
         style! {
-            "base"{
+            ".base"{
                 "background-color": color_system::gray(255, 8).to_string();
                 "color": color_system::gray(255, 0).to_string();
                 "padding": ".65em";

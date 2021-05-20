@@ -1,6 +1,3 @@
-#[macro_use]
-pub mod styled;
-
 pub mod cmds;
 pub mod state;
 

@@ -1,6 +1,9 @@
-use super::util::styled::{Style, Styled};
+use isaribi::{
+    style,
+    styled::{Style, Styled},
+};
 use kagura::prelude::*;
-use wasm_bindgen::{prelude::*, JsCast};
+use wasm_bindgen::JsCast;
 
 pub struct Props {}
 
@@ -61,7 +64,7 @@ impl Component for BasicApp {
 impl Styled for BasicApp {
     fn style() -> Style {
         style! {
-            "base" {
+            ".base" {
                 "display": "grid";
                 "grid-template-rows": "max-content 1fr";
                 "width": "100vw";

@@ -2,11 +2,8 @@ use super::matrix::{camera::CameraMatrix, model::ModelMatrix};
 use super::tex_table::TexTable;
 use super::webgl::{ProgramType, WebGlF32Vbo, WebGlI16Ibo, WebGlRenderingContext};
 use crate::arena::block::{self, BlockId};
-use crate::arena::resource;
 use crate::libs::random_id::U128Id;
-use ndarray::{arr1, Array2};
-use ordered_float::OrderedFloat;
-use std::collections::BTreeMap;
+use ndarray::Array2;
 
 pub struct Boxblock {
     vertexis_buffer: WebGlF32Vbo,

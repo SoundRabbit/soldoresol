@@ -1,5 +1,8 @@
-use super::util::styled::{Style, Styled};
 use crate::libs::color::color_system;
+use isaribi::{
+    style,
+    styled::{Style, Styled},
+};
 use kagura::prelude::*;
 
 pub enum Variant {
@@ -55,7 +58,7 @@ impl Component for LoadingCircle {
 impl Styled for LoadingCircle {
     fn style() -> Style {
         style! {
-            "base" {
+            ".base" {
                 "display": "inline-block";
                 "padding": "0";
                 "margin": "0";
@@ -65,14 +68,14 @@ impl Styled for LoadingCircle {
                 "animation": "0.5s linear infinite rotation";
             }
 
-            "dark" {
+            ".dark" {
                 "border-top": format!("0.2em solid {}", color_system::blue(100, 6).to_string());
                 "border-left": format!("0.2em solid {}", color_system::blue(75, 6).to_string());
                 "border-bottom": format!("0.2em solid {}", color_system::blue(50, 6).to_string());
                 "border-right": format!("0.2em solid {}", color_system::blue(25, 6).to_string());
             }
 
-            "light" {
+            ".light" {
                 "border-top": format!("0.2em solid {}", color_system::blue(100, 3).to_string());
                 "border-left": format!("0.2em solid {}", color_system::blue(75, 3).to_string());
                 "border-bottom": format!("0.2em solid {}", color_system::blue(50, 3).to_string());

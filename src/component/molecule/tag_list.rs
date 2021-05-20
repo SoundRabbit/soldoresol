@@ -1,8 +1,9 @@
-use super::atom::fa;
 use super::atom::tag::{self, Tag};
-use super::atom::text;
-use super::util::styled::{Style, Styled};
 use crate::arena::block::{self, BlockId};
+use isaribi::{
+    style,
+    styled::{Style, Styled},
+};
 use kagura::prelude::*;
 
 pub struct Props {
