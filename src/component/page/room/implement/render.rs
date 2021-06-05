@@ -34,8 +34,10 @@ impl Implement {
                     basic_app::On::DragLeave(_) => Msg::NoOp,
                     basic_app::On::DragOver(e) => {
                         let data_transfer = unwrap_or!(e.data_transfer(); Msg::NoOp);
-                        let data = unwrap_or!(data_transfer.get_data("text/plain").ok(); Msg::NoOp);
-                        if !TabBtn::validate_id(&data) {
+                        let data_type =
+                            unwrap_or!(data_transfer.types().get(0).as_string(); Msg::NoOp);
+                        crate::debug::log_1(data_type.as_str());
+                        if data_type == "Files" {
                             e.prevent_default();
                             Msg::SetOverlay {
                                 overlay: Overlay::DragFile,
