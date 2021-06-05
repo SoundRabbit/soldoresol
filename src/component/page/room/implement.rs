@@ -78,17 +78,17 @@ pub enum Msg {
     SetModelessContainerElement {
         element: web_sys::Element,
     },
-    SetDraggingModelessTab {
-        modeless_id: U128Id,
-        tab_idx: usize,
-    },
     MoveModelessTab {
         modeless_id: U128Id,
-        tab_idx: Option<usize>,
+        modeless_tab_idx: Option<usize>,
+        tab_modeless_id: U128Id,
+        tab_idx: usize,
     },
     DropModelessTab {
         page_x: i32,
         page_y: i32,
+        tab_modeless_id: U128Id,
+        tab_idx: usize,
     },
     SelectModelessTab {
         modeless_id: U128Id,
@@ -233,7 +233,6 @@ pub struct Implement {
     table_tools: State<SelectList<TableTool>>,
     modeless_list: ModelessList<ModelessContent>,
     modeless_container_element: Option<State<web_sys::Element>>,
-    dragging_modeless_tab: Option<(U128Id, usize)>,
 
     block_arena: block::Arena,
     local_block_arena: block::Arena,

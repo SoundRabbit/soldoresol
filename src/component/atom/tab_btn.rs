@@ -1,4 +1,5 @@
 use crate::libs::color::color_system;
+use crate::libs::type_id::type_id;
 use isaribi::{
     style,
     styled::{Style, Styled},
@@ -27,6 +28,44 @@ impl TabBtn {
                 children,
             )],
         ))
+    }
+
+    pub fn id<T>(suffix: Vec<&str>) -> String {
+        let mut id = type_id::<Self>() + ";" + &type_id::<T>();
+
+        for s in suffix {
+            id += ";";
+            id += s;
+        }
+
+        id
+    }
+
+    pub fn validate_id(id: &str) -> bool {
+        let id = id.split(";").collect::<Vec<_>>();
+        if id.len() > 1 {
+            id[0] == type_id::<Self>()
+        } else {
+            false
+        }
+    }
+
+    pub fn validate_prefix<T>(id: &str) -> bool {
+        if Self::validate_id(id) {
+            let id = id.split(";").collect::<Vec<_>>();
+            id[1] == type_id::<T>()
+        } else {
+            false
+        }
+    }
+
+    pub fn get_suffix(id: &str) -> Vec<&str> {
+        if Self::validate_id(id) {
+            let mut id = id.split(";").collect::<Vec<_>>();
+            id.drain(2..).collect()
+        } else {
+            vec![]
+        }
     }
 }
 

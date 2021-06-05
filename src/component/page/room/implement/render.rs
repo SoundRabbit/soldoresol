@@ -3,6 +3,7 @@ use super::super::{
     super::atom::dropdown::{self, Dropdown},
     super::atom::fa,
     super::atom::header::{self, Header},
+    super::atom::tab_btn::TabBtn,
     super::template::basic_app::{self, BasicApp},
     children::modal_imported_files::{self, ModalImportedFiles},
     children::modal_new_channel::{self, ModalNewChannel},
@@ -29,11 +30,12 @@ impl Implement {
         BasicApp::with_children(
             basic_app::Props {},
             Subscription::new({
-                let tab_is_dragging = self.dragging_modeless_tab.is_some();
                 move |sub| match sub {
                     basic_app::On::DragLeave(_) => Msg::NoOp,
                     basic_app::On::DragOver(e) => {
-                        if !tab_is_dragging {
+                        let data_transfer = unwrap_or!(e.data_transfer(); Msg::NoOp);
+                        let data = unwrap_or!(data_transfer.get_data("text/plain").ok(); Msg::NoOp);
+                        if !TabBtn::validate_id(&data) {
                             e.prevent_default();
                             Msg::SetOverlay {
                                 overlay: Overlay::DragFile,
@@ -43,7 +45,9 @@ impl Implement {
                         }
                     }
                     basic_app::On::Drop(e) => {
-                        if !tab_is_dragging {
+                        let data_transfer = unwrap_or!(e.data_transfer(); Msg::NoOp);
+                        let data = unwrap_or!(data_transfer.get_data("text/plain").ok(); Msg::NoOp);
+                        if !TabBtn::validate_id(&data) {
                             let data_transfer = unwrap_or!(e.data_transfer(); Msg::NoOp);
                             let file_list = unwrap_or!(data_transfer.files(); Msg::NoOp);
 
@@ -358,15 +362,25 @@ impl Implement {
                         let e = unwrap_or!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
                         let data_transfer = unwrap_or!(e.data_transfer(); Msg::NoOp);
                         let data = unwrap_or!(data_transfer.get_data("text/plain").ok(); Msg::NoOp);
-                        if data == RoomModeless::tab_id() {
-                            e.prevent_default();
-                            e.stop_propagation();
-                            let page_x = e.page_x();
-                            let page_y = e.page_y();
-                            Msg::DropModelessTab { page_x, page_y }
-                        } else {
-                            Msg::NoOp
+                        if TabBtn::validate_prefix::<RoomModeless>(&data) {
+                            let suffix = TabBtn::get_suffix(&data);
+                            if let Some((tab_modeless_id, tab_idx)) = join_some!(
+                                suffix.get(0).and_then(|x| U128Id::from_hex(x)),
+                                suffix.get(1).and_then(|x| x.parse().ok())
+                            ) {
+                                e.prevent_default();
+                                e.stop_propagation();
+                                let page_x = e.page_x();
+                                let page_y = e.page_y();
+                                return Msg::DropModelessTab {
+                                    page_x,
+                                    page_y,
+                                    tab_modeless_id,
+                                    tab_idx,
+                                };
+                            }
                         }
+                        Msg::NoOp
                     })
                     .on("mousemove", move |e| {
                         let e = unwrap_or!(e.dyn_into::<web_sys::MouseEvent>().ok(); Msg::NoOp);
@@ -402,6 +416,7 @@ impl Implement {
                                     minimized: modeless.minimized,
                                     block_arena: self.block_arena.as_ref(),
                                     resource_arena: self.resource_arena.as_ref(),
+                                    modeless_id: U128Id::clone(&modeless_id),
                                 },
                                 Subscription::new({
                                     let modeless_id = U128Id::clone(&modeless_id);
@@ -418,18 +433,17 @@ impl Implement {
                                         room_modeless::On::Restore => {
                                             Msg::RestoreModeless { modeless_id }
                                         }
-                                        room_modeless::On::DragTabStart { tab_idx } => {
-                                            Msg::SetDraggingModelessTab {
-                                                modeless_id,
-                                                tab_idx,
-                                            }
-                                        }
-                                        room_modeless::On::DropTab { tab_idx } => {
-                                            Msg::MoveModelessTab {
-                                                modeless_id,
-                                                tab_idx,
-                                            }
-                                        }
+                                        room_modeless::On::DropTab {
+                                            modeless_id,
+                                            modeless_tab_idx,
+                                            tab_modeless_id,
+                                            tab_idx,
+                                        } => Msg::MoveModelessTab {
+                                            modeless_id,
+                                            modeless_tab_idx,
+                                            tab_modeless_id,
+                                            tab_idx,
+                                        },
                                         room_modeless::On::SelectTab { tab_idx } => {
                                             Msg::SelectModelessTab {
                                                 modeless_id,

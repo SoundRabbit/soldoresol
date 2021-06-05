@@ -206,67 +206,63 @@ impl Implement {
                 self.modeless_container_element = Some(State::new(element));
             }
 
-            Msg::SetDraggingModelessTab {
-                modeless_id,
-                tab_idx,
-            } => {
-                self.dragging_modeless_tab = Some((modeless_id, tab_idx));
-            }
-
             Msg::MoveModelessTab {
-                modeless_id: to_id,
+                modeless_id,
+                modeless_tab_idx,
+                tab_modeless_id,
                 tab_idx,
             } => {
-                if let Some((from_id, from_idx)) = self.dragging_modeless_tab.take() {
-                    let tab = if let Some(tab) = self
-                        .modeless_list
-                        .get_mut(&from_id)
-                        .and_then(|c| c.content.remove(from_idx))
-                    {
-                        Some(tab)
+                let tab = if let Some(tab) = self
+                    .modeless_list
+                    .get_mut(&tab_modeless_id)
+                    .and_then(|c| c.content.remove(tab_idx))
+                {
+                    Some(tab)
+                } else {
+                    None
+                };
+                if let Some((tab, modeless)) =
+                    join_some!(tab, self.modeless_list.get_mut(&modeless_id))
+                {
+                    if let Some(modeless_tab_idx) = modeless_tab_idx {
+                        modeless.content.insert(modeless_tab_idx, tab);
                     } else {
-                        None
-                    };
-                    if let Some((tab, to_content)) =
-                        join_some!(tab, self.modeless_list.get_mut(&to_id))
-                    {
-                        if let Some(tab_idx) = tab_idx {
-                            to_content.content.insert(tab_idx, tab);
-                        } else {
-                            to_content.content.push(tab);
-                        }
+                        modeless.content.push(tab);
                     }
-                    if let Some(from_content) = self.modeless_list.get(&from_id) {
-                        if from_content.content.len() < 1 {
-                            self.modeless_list.remove(&from_id);
-                        }
+                }
+                if let Some(modeless) = self.modeless_list.get(&tab_modeless_id) {
+                    if modeless.content.len() < 1 {
+                        self.modeless_list.remove(&tab_modeless_id);
                     }
                 }
             }
 
-            Msg::DropModelessTab { page_x, page_y } => {
-                if let Some((from_id, from_idx)) = self.dragging_modeless_tab.take() {
-                    let tab = if let Some(tab) = self
-                        .modeless_list
-                        .get_mut(&from_id)
-                        .and_then(|c| c.content.remove(from_idx))
-                    {
-                        Some(tab)
-                    } else {
-                        None
-                    };
-                    if let Some(tab) = tab {
-                        self.modeless_list.push(ModelessContent {
-                            content: State::new(SelectList::new(vec![tab], 0)),
-                            page_x,
-                            page_y,
-                            minimized: false,
-                        });
-                    }
-                    if let Some(from_content) = self.modeless_list.get(&from_id) {
-                        if from_content.content.len() < 1 {
-                            self.modeless_list.remove(&from_id);
-                        }
+            Msg::DropModelessTab {
+                page_x,
+                page_y,
+                tab_modeless_id,
+                tab_idx,
+            } => {
+                let tab = if let Some(tab) = self
+                    .modeless_list
+                    .get_mut(&tab_modeless_id)
+                    .and_then(|c| c.content.remove(tab_idx))
+                {
+                    Some(tab)
+                } else {
+                    None
+                };
+                if let Some(tab) = tab {
+                    self.modeless_list.push(ModelessContent {
+                        content: State::new(SelectList::new(vec![tab], 0)),
+                        page_x,
+                        page_y,
+                        minimized: false,
+                    });
+                }
+                if let Some(modeless) = self.modeless_list.get(&tab_modeless_id) {
+                    if modeless.content.len() < 1 {
+                        self.modeless_list.remove(&tab_modeless_id);
                     }
                 }
             }

@@ -1,20 +1,19 @@
 use super::atom::btn::{self, Btn};
 use super::atom::dropdown::{self, Dropdown};
 use super::atom::fa;
-use super::atom::tab_btn::{self, TabBtn};
+use super::atom::tab_btn::TabBtn;
 use super::molecule::modeless::{self, Modeless};
 use super::util::Prop;
 use crate::arena::block::{self, BlockId};
 use crate::arena::resource::{self, ResourceId};
 use crate::libs::color::color_system;
+use crate::libs::random_id::U128Id;
 use crate::libs::select_list::SelectList;
-use crate::libs::type_id::type_id;
 use isaribi::{
     style,
     styled::{Style, Styled},
 };
 use kagura::prelude::*;
-use regex::Regex;
 use wasm_bindgen::JsCast;
 
 pub mod boxblock;
@@ -40,6 +39,7 @@ pub struct Props {
     pub minimized: bool,
     pub block_arena: block::ArenaRef,
     pub resource_arena: resource::ArenaRef,
+    pub modeless_id: U128Id,
 }
 
 pub enum Msg {
@@ -54,11 +54,15 @@ pub enum On {
     Minimize,
     Restore,
     Focus,
-    DragTabStart {
-        tab_idx: usize,
-    },
     DropTab {
-        tab_idx: Option<usize>,
+        /// ドロップされたタブのインデックス
+        tab_idx: usize,
+        /// ドロップされたタブが元居たモードレス
+        tab_modeless_id: U128Id,
+        /// ドロップ先のタブのインデックス
+        modeless_tab_idx: Option<usize>,
+        /// ドロップ先のモードレス
+        modeless_id: U128Id,
     },
     SelectTab {
         tab_idx: usize,
@@ -138,6 +142,7 @@ pub struct RoomModeless {
     minimized: bool,
     block_arena: block::ArenaRef,
     resource_arena: resource::ArenaRef,
+    modeless_id: U128Id,
 }
 
 impl Constructor for RoomModeless {
@@ -152,6 +157,7 @@ impl Constructor for RoomModeless {
             minimized: props.minimized,
             block_arena: props.block_arena,
             resource_arena: props.resource_arena,
+            modeless_id: props.modeless_id,
         }
     }
 }
@@ -167,6 +173,7 @@ impl Component for RoomModeless {
         self.container_element = props.container_element;
         self.minimized = props.minimized;
         self.block_arena = props.block_arena;
+        self.modeless_id = props.modeless_id;
     }
 
     fn update(&mut self, msg: Self::Msg) -> Cmd<Self::Msg, Self::Sub> {
@@ -198,10 +205,6 @@ impl Component for RoomModeless {
 }
 
 impl RoomModeless {
-    pub fn tab_id() -> String {
-        type_id::<Self>()
-    }
-
     fn render_minimized(&self) -> Html {
         self.render_header()
     }
@@ -264,15 +267,28 @@ impl RoomModeless {
                     e.prevent_default();
                     Msg::NoOp
                 })
-                .on("drop", |e| {
-                    let e = unwrap_or!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
-                    let data_transfer = unwrap_or!(e.data_transfer(); Msg::NoOp);
-                    let data = unwrap_or!(data_transfer.get_data("text/plain").ok(); Msg::NoOp);
-                    if data == Self::tab_id() {
-                        e.prevent_default();
-                        e.stop_propagation();
-                        Msg::Sub(On::DropTab { tab_idx: None })
-                    } else {
+                .on("drop", {
+                    let modeless_id = U128Id::clone(&self.modeless_id);
+                    move |e| {
+                        let e = unwrap_or!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
+                        let data_transfer = unwrap_or!(e.data_transfer(); Msg::NoOp);
+                        let data = unwrap_or!(data_transfer.get_data("text/plain").ok(); Msg::NoOp);
+                        if TabBtn::validate_prefix::<Self>(&data) {
+                            let suffix = TabBtn::get_suffix(&data);
+                            if let Some((tab_modeless_id, tab_idx)) = join_some!(
+                                suffix.get(0).and_then(|x| U128Id::from_hex(x)),
+                                suffix.get(1).and_then(|x| x.parse().ok())
+                            ) {
+                                e.prevent_default();
+                                e.stop_propagation();
+                                return Msg::Sub(On::DropTab {
+                                    tab_idx,
+                                    tab_modeless_id,
+                                    modeless_tab_idx: None,
+                                    modeless_id,
+                                });
+                            }
+                        }
                         Msg::NoOp
                     }
                 }),
@@ -325,26 +341,34 @@ impl RoomModeless {
                     is_selected,
                     Attributes::new(),
                     Events::new()
-                        .on_click(move |_|Msg::Sub(On::SelectTab { tab_idx }))
-                        .on("dragstart", move |e| {
-                            let e = unwrap_or!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
-                            e.stop_propagation();
-                            let data_transfer = unwrap_or!(e.data_transfer(); Msg::NoOp);
-                            unwrap_or!(data_transfer.set_data("text/plain", &Self::tab_id()).ok(); Msg::NoOp);
-                            Msg::Sub(On::DragTabStart { tab_idx })
-                    })
-                    .on("drop", move |e| {
+                    .on_mousedown(|e|{ e.stop_propagation(); Msg::NoOp})
+                    .on_click(move |_|Msg::Sub(On::SelectTab { tab_idx }))
+                    .on("dragstart", {
+                        let modeless_id = U128Id::clone(&self.modeless_id);
+                        move |e| {
+                        let e = unwrap_or!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
+                        e.stop_propagation();
+                        let data_transfer = unwrap_or!(e.data_transfer(); Msg::NoOp);
+                        unwrap_or!(data_transfer.set_data("text/plain", &TabBtn::id::<Self>(vec![&modeless_id.to_string(), &tab_idx.to_string()])).ok(); Msg::NoOp);
+                        Msg::NoOp
+                    }})
+                    .on("drop", {
+                        let modeless_id = U128Id::clone(&self.modeless_id);
+                        move |e| {
                         let e = unwrap_or!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
                         let data_transfer = unwrap_or!(e.data_transfer(); Msg::NoOp);
                         let data = unwrap_or!(data_transfer.get_data("text/plain").ok(); Msg::NoOp);
-                        if data == Self::tab_id() {
-                            e.prevent_default();
-                            e.stop_propagation();
-                            Msg::Sub(On::DropTab { tab_idx: Some(tab_idx) })
-                        } else {
-                            Msg::NoOp
+                        if TabBtn::validate_prefix::<Self>(&data) {
+                            let suffix = TabBtn::get_suffix(&data);
+                            let modeless_tab_idx = tab_idx;
+                            if let Some((tab_modeless_id, tab_idx)) = join_some!(suffix.get(0).and_then(|x| U128Id::from_hex(x)), suffix.get(1).and_then(|x| x.parse().ok())) {
+                                e.prevent_default();
+                                e.stop_propagation();
+                                return Msg::Sub(On::DropTab { tab_idx, tab_modeless_id, modeless_tab_idx: Some(modeless_tab_idx) ,modeless_id});
+                            }
                         }
-                    }),
+                        Msg::NoOp
+                    }}),
                     tab_heading
                 )
             })

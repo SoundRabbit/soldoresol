@@ -165,7 +165,6 @@ impl Implement {
             )),
             modeless_list: ModelessList::new(),
             modeless_container_element: None,
-            dragging_modeless_tab: None,
 
             block_arena,
             local_block_arena,
