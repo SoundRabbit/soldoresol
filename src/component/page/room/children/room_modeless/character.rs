@@ -578,14 +578,14 @@ impl Character {
 impl Styled for Character {
     fn style() -> Style {
         style! {
-            "base" {
+            ".base" {
                 "display": "grid";
                 "grid-template-columns": "1fr";
                 "grid-template-rows": "1fr max-content";
                 "height": "100%";
             }
 
-            "content-base" {
+            ".content-base" {
                 "display": "grid";
                 "grid-template-columns": "1fr";
                 "grid-auto-rows": "max-content";
@@ -597,11 +597,11 @@ impl Styled for Character {
                 "padding": "1.2ch 0 1.2ch 1.2ch";
             }
 
-            "base textarea" {
+            ".base textarea" {
                 "resize": "none";
             }
 
-            "common" {
+            ".common" {
                 "display": "grid";
                 "grid-template-columns": "1fr max-content";
                 "grid-template-rows": "20rem";
@@ -609,7 +609,7 @@ impl Styled for Character {
                 "row-gap": ".65em";
             }
 
-            "common-props" {
+            ".common-props" {
                 "display": "grid";
                 "grid-template-columns": "1fr";
                 "grid-template-rows": "max-content 1fr";
@@ -618,7 +618,7 @@ impl Styled for Character {
                 "row-gap": ".65em";
             }
 
-            "common-imgs" {
+            ".common-imgs" {
                 "display": "grid";
                 "grid-template-rows": "max-content max-content 1fr max-content";
                 "row-gap": "0.35em";
@@ -626,36 +626,36 @@ impl Styled for Character {
                 "min-height": "100%";
             }
 
-            "common-imgs-container" {
+            ".common-imgs-container" {
                 "overflow": "hidden";
             }
 
-            "common-imgs-img" {
+            ".common-imgs-img" {
                 "height": "100%";
                 "width": "100%";
                 "object-fit": "contain";
             }
 
-            "common-imgs-list-item" {
+            ".common-imgs-list-item" {
                 "display": "grid";
                 "grid-template-columns": "1fr max-content";
                 "column-gap": ".15em";
             }
 
-            "key-value" {
+            ".key-value" {
                 "display": "grid";
                 "column-gap": ".35em";
                 "row-gap": ".65em";
                 "grid-template-columns": "max-content 1fr";
             }
 
-            "root-prop" {
+            ".root-prop" {
                 "display": "grid";
                 "row-gap": ".65em";
                 "grid-template-columns": "1fr";
             }
 
-            "bottom-menu" {
+            ".bottom-menu" {
                 "background-color": crate::libs::color::color_system::gray(100, 0).to_string();
                 "display": "grid";
                 "grid-template-columns": "1fr max-content";
