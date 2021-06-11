@@ -5,6 +5,7 @@ use super::super::modal_imported_files::{self, ModalImportedFiles};
 use super::super::molecule::block_prop::{self, BlockProp};
 use super::super::molecule::color_pallet::{self, ColorPallet};
 use super::super::molecule::tab_menu::{self, TabMenu};
+use super::super::organism::block_option::{self, BlockOption};
 use crate::arena::block::{self, BlockId};
 use crate::arena::resource;
 use isaribi::{
@@ -200,45 +201,58 @@ impl Component for Character {
                 .map(
                     &self.character_id,
                     |character: &block::character::Character| {
-                        let prop_num = character.properties().count();
-
-                        let mut prop_names =
-                            vec![String::from("[common]"), String::from("[立ち絵]")];
-                        let mut prop_tabs =
-                            vec![self.render_common(character), self.render_tex(character)];
-
-                        for prop_id in character.properties() {
-                            self.block_arena
-                                .map(prop_id, |prop: &block::property::Property| {
-                                    prop_names.push(prop.name().clone());
-                                });
-                            prop_tabs.push(self.render_tab(prop_id));
-                        }
-                        prop_names.push(String::from("[追加]"));
-
                         Html::div(
                             Attributes::new().class(Self::class("base")),
                             Events::new(),
                             vec![
-                                TabMenu::with_children(
-                                    tab_menu::Props {
-                                        selected: self.selected_tab_idx,
-                                        tabs: prop_names,
-                                        controlled: true,
+                                BlockOption::with_children(
+                                    block_option::Props {
+                                        tabs: vec![
+                                            String::from("[common]"),
+                                            String::from("[立ち絵]"),
+                                        ],
+                                        props: character
+                                            .properties()
+                                            .map(|x| BlockId::clone(x))
+                                            .collect(),
+                                        block_arena: block::ArenaRef::clone(&self.block_arena),
                                     },
-                                    Subscription::new(move |sub| match sub {
-                                        tab_menu::On::ChangeSelectedTab(idx) => {
-                                            if idx <= prop_num + 1 {
-                                                Msg::SetSelectedTabIdx(idx)
-                                            } else {
-                                                Msg::Sub(On::AddPropertyChild {
-                                                    property_id: None,
-                                                    name: String::from("新規タブ"),
-                                                })
-                                            }
+                                    Subscription::new(|sub| match sub {
+                                        block_option::On::AddPropertyChild {
+                                            property_id,
+                                            name,
+                                        } => Msg::Sub(On::AddPropertyChild { property_id, name }),
+                                        block_option::On::AddPropertyValue { property_id } => {
+                                            Msg::Sub(On::AddPropertyValue { property_id })
+                                        }
+                                        block_option::On::SetPropertyName { property_id, name } => {
+                                            Msg::Sub(On::SetPropertyName { property_id, name })
+                                        }
+                                        block_option::On::SetPropertyValue {
+                                            property_id,
+                                            idx,
+                                            value,
+                                        } => Msg::Sub(On::SetPropertyValue {
+                                            property_id,
+                                            idx,
+                                            value,
+                                        }),
+                                        block_option::On::RemovePropertyValue {
+                                            property_id,
+                                            idx,
+                                        } => Msg::Sub(On::RemovePropertyValue { property_id, idx }),
+                                        block_option::On::SetPropertyValueMode {
+                                            property_id,
+                                            value_mode,
+                                        } => Msg::Sub(On::SetPropertyValueMode {
+                                            property_id,
+                                            value_mode,
+                                        }),
+                                        block_option::On::RemoveProperty { property_id, idx } => {
+                                            Msg::Sub(On::RemoveProperty { property_id, idx })
                                         }
                                     }),
-                                    prop_tabs,
+                                    vec![self.render_common(character), self.render_tex(character)],
                                 ),
                                 self.render_bottom_menu(),
                                 self.render_modal(character.current_tex_idx()),
