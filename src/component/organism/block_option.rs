@@ -1,3 +1,4 @@
+use super::atom::align::Align;
 use super::atom::text;
 use super::molecule::block_prop::{self, BlockProp};
 use super::molecule::tab_menu::{self, TabMenu};
@@ -118,120 +119,136 @@ impl Component for BlockOption {
 
         let tab_num = tabs.len() - 1;
 
-        Self::styled(Html::div(
-            Attributes::new().class(Self::class("base")),
-            Events::new(),
-            vec![TabMenu::with_children(
-                tab_menu::Props {
-                    selected: self.selected_tab_idx,
-                    tabs: tabs,
-                    controlled: true,
-                },
-                Subscription::new(move |sub| match sub {
-                    tab_menu::On::ChangeSelectedTab(idx) => {
-                        if idx < tab_num {
-                            Msg::SetSelectedTabIdx(idx)
-                        } else {
-                            Msg::Sub(On::AddPropertyChild {
-                                property_id: None,
-                                name: String::from("新規タブ"),
-                            })
-                        }
+        Self::styled(TabMenu::with_children(
+            tab_menu::Props {
+                selected: self.selected_tab_idx,
+                tabs: tabs,
+                controlled: true,
+            },
+            Subscription::new(move |sub| match sub {
+                tab_menu::On::ChangeSelectedTab(idx) => {
+                    if idx < tab_num {
+                        Msg::SetSelectedTabIdx(idx)
+                    } else {
+                        Msg::Sub(On::AddPropertyChild {
+                            property_id: None,
+                            name: String::from("新規タブ"),
+                        })
                     }
-                }),
-                contents,
-            )],
+                }
+            }),
+            contents,
         ))
     }
 }
 
 impl BlockOption {
-    fn render_custom_content(&self, content: Html) -> Html {
+    pub fn content_base(attrs: Attributes, events: Events, children: Vec<Html>) -> Html {
         Html::div(
-            Attributes::new()
-                .class(Self::class("content-base"))
-                .class("pure-form"),
-            Events::new(),
-            vec![content],
+            attrs.class(Self::class("content-base")).class("pure-form"),
+            events,
+            children,
         )
     }
 
     fn render_content(&self, prop_id: &BlockId, prop: &block::property::Property) -> Html {
-        self.render_custom_content(Html::div(
-            Attributes::new().class(Self::class("root-prop")),
+        Self::content_base(
+            Attributes::new(),
             Events::new(),
-            vec![
-                Html::div(
-                    Attributes::new().class(Self::class("key-value")),
-                    Events::new(),
-                    vec![
-                        text::label("タブ名", &self.element_id.input_tab_name),
-                        Html::input(
-                            Attributes::new()
-                                .value(prop.name())
-                                .id(&self.element_id.input_tab_name),
-                            Events::new().on_input({
-                                let prop_id = BlockId::clone(prop_id);
-                                move |name| {
-                                    Msg::Sub(On::SetPropertyName {
-                                        property_id: prop_id,
-                                        name,
-                                    })
-                                }
+            vec![Html::div(
+                Attributes::new().class(Self::class("root-prop")),
+                Events::new(),
+                vec![
+                    Align::key_value(
+                        Attributes::new(),
+                        Events::new(),
+                        vec![
+                            text::label("タブ名", &self.element_id.input_tab_name),
+                            Html::input(
+                                Attributes::new()
+                                    .value(prop.name())
+                                    .id(&self.element_id.input_tab_name),
+                                Events::new().on_input({
+                                    let prop_id = BlockId::clone(prop_id);
+                                    move |name| {
+                                        Msg::Sub(On::SetPropertyName {
+                                            property_id: prop_id,
+                                            name,
+                                        })
+                                    }
+                                }),
+                                vec![],
+                            ),
+                        ],
+                    ),
+                    BlockProp::empty(
+                        block_prop::Props {
+                            root_prop: BlockId::clone(prop_id),
+                            block_arena: block::ArenaRef::clone(&self.block_arena),
+                        },
+                        Subscription::new(|sub| match sub {
+                            block_prop::On::AddPropertyChild { property_id, name } => {
+                                Msg::Sub(On::AddPropertyChild {
+                                    property_id: Some(property_id),
+                                    name,
+                                })
+                            }
+                            block_prop::On::AddPropertyValue { property_id } => {
+                                Msg::Sub(On::AddPropertyValue { property_id })
+                            }
+                            block_prop::On::SetPropertyName { property_id, name } => {
+                                Msg::Sub(On::SetPropertyName { property_id, name })
+                            }
+                            block_prop::On::SetPropertyValue {
+                                property_id,
+                                idx,
+                                value,
+                            } => Msg::Sub(On::SetPropertyValue {
+                                property_id,
+                                idx,
+                                value,
                             }),
-                            vec![],
-                        ),
-                    ],
-                ),
-                BlockProp::empty(
-                    block_prop::Props {
-                        root_prop: BlockId::clone(prop_id),
-                        block_arena: block::ArenaRef::clone(&self.block_arena),
-                    },
-                    Subscription::new(|sub| match sub {
-                        block_prop::On::AddPropertyChild { property_id, name } => {
-                            Msg::Sub(On::AddPropertyChild {
-                                property_id: Some(property_id),
-                                name,
-                            })
-                        }
-                        block_prop::On::AddPropertyValue { property_id } => {
-                            Msg::Sub(On::AddPropertyValue { property_id })
-                        }
-                        block_prop::On::SetPropertyName { property_id, name } => {
-                            Msg::Sub(On::SetPropertyName { property_id, name })
-                        }
-                        block_prop::On::SetPropertyValue {
-                            property_id,
-                            idx,
-                            value,
-                        } => Msg::Sub(On::SetPropertyValue {
-                            property_id,
-                            idx,
-                            value,
+                            block_prop::On::RemovePropertyValue { property_id, idx } => {
+                                Msg::Sub(On::RemovePropertyValue { property_id, idx })
+                            }
+                            block_prop::On::SetPropertyValueMode {
+                                property_id,
+                                value_mode,
+                            } => Msg::Sub(On::SetPropertyValueMode {
+                                property_id,
+                                value_mode,
+                            }),
+                            block_prop::On::RemoveProperty { property_id, idx } => {
+                                Msg::Sub(On::RemoveProperty { property_id, idx })
+                            }
                         }),
-                        block_prop::On::RemovePropertyValue { property_id, idx } => {
-                            Msg::Sub(On::RemovePropertyValue { property_id, idx })
-                        }
-                        block_prop::On::SetPropertyValueMode {
-                            property_id,
-                            value_mode,
-                        } => Msg::Sub(On::SetPropertyValueMode {
-                            property_id,
-                            value_mode,
-                        }),
-                        block_prop::On::RemoveProperty { property_id, idx } => {
-                            Msg::Sub(On::RemoveProperty { property_id, idx })
-                        }
-                    }),
-                ),
-            ],
-        ))
+                    ),
+                ],
+            )],
+        )
     }
 }
 
 impl Styled for BlockOption {
     fn style() -> Style {
-        style! {}
+        style! {
+            ".content-base" {
+                "display": "grid";
+                "grid-template-columns": "1fr";
+                "grid-auto-rows": "max-content";
+                "grid-auto-flow": "row";
+                "row-gap": ".65em";
+                "overflow-y": "scroll";
+                "overflow-x": "hidden";
+                "max-height": "100%";
+                "padding": "1.2ch 0 1.2ch 1.2ch";
+            }
+
+            ".root-prop" {
+                "display": "grid";
+                "row-gap": ".65em";
+                "grid-template-columns": "1fr";
+            }
+        }
     }
 }

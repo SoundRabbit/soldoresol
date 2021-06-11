@@ -267,10 +267,8 @@ impl Component for Character {
 
 impl Character {
     fn render_common(&self, character: &block::character::Character) -> Html {
-        Html::div(
-            Attributes::new()
-                .class(Self::class("content-base"))
-                .class("pure-form"),
+        BlockOption::content_base(
+            Attributes::new(),
             Events::new(),
             vec![Html::div(
                 Attributes::new().class(Self::class("common")),
@@ -361,10 +359,8 @@ impl Character {
     }
 
     fn render_tex(&self, character: &block::character::Character) -> Html {
-        Html::div(
-            Attributes::new()
-                .class(Self::class("content-base"))
-                .class("pure-form"),
+        BlockOption::content_base(
+            Attributes::new(),
             Events::new(),
             vec![Html::div(
                 Attributes::new().class(Self::class("common-imgs")),
@@ -599,18 +595,6 @@ impl Styled for Character {
                 "height": "100%";
             }
 
-            ".content-base" {
-                "display": "grid";
-                "grid-template-columns": "1fr";
-                "grid-auto-rows": "max-content";
-                "grid-auto-flow": "row";
-                "row-gap": ".65em";
-                "overflow-y": "scroll";
-                "overflow-x": "hidden";
-                "max-height": "100%";
-                "padding": "1.2ch 0 1.2ch 1.2ch";
-            }
-
             ".base textarea" {
                 "resize": "none";
             }
@@ -661,12 +645,6 @@ impl Styled for Character {
                 "column-gap": ".35em";
                 "row-gap": ".65em";
                 "grid-template-columns": "max-content 1fr";
-            }
-
-            ".root-prop" {
-                "display": "grid";
-                "row-gap": ".65em";
-                "grid-template-columns": "1fr";
             }
 
             ".bottom-menu" {
