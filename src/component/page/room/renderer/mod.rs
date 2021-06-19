@@ -293,8 +293,6 @@ impl Renderer {
         let smh = size_shadowmap[1] as i32;
         Self::resize_renderbuffer(&gl, &depth_shadowmap, smw, smh);
 
-        let filter = web_sys::WebGlRenderingContext::NEAREST;
-
         let tex_shadowmap = [
             Self::create_screen_texture(&gl, &mut tex_table, smw, smh, None),
             Self::create_screen_texture(&gl, &mut tex_table, smw, smh, None),
@@ -609,13 +607,20 @@ impl Renderer {
                             Some(pointlight.light_attenation()),
                         );
 
-                        self.render_frontscreen();
+                        self.render_frontscreen(true);
                     },
                 );
 
                 self.begin_to_render_backscreen();
 
                 self.clear();
+
+                self.gl.blend_func_separate(
+                    web_sys::WebGlRenderingContext::SRC_ALPHA,
+                    web_sys::WebGlRenderingContext::ONE_MINUS_SRC_ALPHA,
+                    web_sys::WebGlRenderingContext::ONE,
+                    web_sys::WebGlRenderingContext::ONE,
+                );
 
                 self.render_view_table_texture.render(
                     &mut self.gl,
@@ -710,6 +715,12 @@ impl Renderer {
                     world.characters().map(BlockId::clone),
                 );
 
+                self.render_frontscreen(true);
+
+                self.begin_to_render_backscreen();
+
+                self.clear();
+
                 self.gl.blend_func_separate(
                     web_sys::WebGlRenderingContext::SRC_ALPHA,
                     web_sys::WebGlRenderingContext::ONE_MINUS_SRC_ALPHA,
@@ -727,7 +738,7 @@ impl Renderer {
                     world.characters().map(BlockId::clone),
                 );
 
-                self.render_frontscreen();
+                self.render_frontscreen(false);
 
                 // 当たり判定用のオフスクリーンレンダリング
 
@@ -808,7 +819,7 @@ impl Renderer {
         );
     }
 
-    fn render_frontscreen(&mut self) {
+    fn render_frontscreen(&mut self, add_blend: bool) {
         self.gl.framebuffer_texture_2d(
             web_sys::WebGlRenderingContext::FRAMEBUFFER,
             web_sys::WebGlRenderingContext::COLOR_ATTACHMENT0,
@@ -817,10 +828,12 @@ impl Renderer {
             0,
         );
 
-        self.gl.blend_func(
-            web_sys::WebGlRenderingContext::SRC_ALPHA,
-            web_sys::WebGlRenderingContext::ONE,
-        );
+        if add_blend {
+            self.gl.blend_func(
+                web_sys::WebGlRenderingContext::SRC_ALPHA,
+                web_sys::WebGlRenderingContext::ONE,
+            );
+        }
 
         self.render_screen.render(
             &mut self.gl,

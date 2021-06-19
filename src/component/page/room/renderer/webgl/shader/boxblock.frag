@@ -49,14 +49,13 @@ vec4 colorWithLight(float intensity) {
     return vec4(u_bgColor.xyz * u_lightColor.xyz * intensity, 1.0);
 }
 
-float normalVecIntensity(vec3 invLight) {
-    float diffuse = clamp(dot(g_surface.n, invLight), 0.0, 1.0) * u_shadeIntensity + 1.0 - u_shadeIntensity;
+float normalVecIntensity(vec3 light) {
+    float diffuse = clamp(dot(g_surface.n, light), 0.0, 1.0) * u_shadeIntensity + 1.0 - u_shadeIntensity;
     return diffuse * u_lightIntensity;
 }
 
 vec4 colorWithEnvLight() {
-    vec3 invLight = normalize(u_invModel * vec4(u_light, 0.0)).xyz;
-    float envIntensity = normalVecIntensity(invLight);
+    float envIntensity = normalVecIntensity(normalize(u_light));
     return colorWithLight(envIntensity);
 }
 
@@ -75,7 +74,7 @@ float shadowmappedBy(mat4 lightVp, sampler2D shadowmap) {
     float far  = 100.0;
     float linerDepth = pLight.z / pLight.w / (far - near);
     linerDepth = linerDepth;
-    float shadeIntensity = smoothstep(-1.0/1024.0, 1.0/1024.0, shadow - linerDepth);
+    float shadeIntensity = linerDepth > shadow ? 0.0 : 1.0;
     return shadeIntensity;
 }
 
@@ -91,9 +90,9 @@ vec4 shadowmapped() {
         IS_MAX(absY, absZ, absX) ? (lp.y > 0.0 ? shadowmappedBy(u_lightVpPy, u_shadowmapPy) : shadowmappedBy(u_lightVpNy, u_shadowmapNy)) :
         (lp.z > 0.0 ? shadowmappedBy(u_lightVpPz, u_shadowmapPz) : shadowmappedBy(u_lightVpNz, u_shadowmapNz));
 
-    float envIntensity = normalVecIntensity(lp);
+    float envIntensity = normalVecIntensity(normalize(u_light - g_surface.p));
 
-    float shadeIntensity = min(envIntensity, shadowmappedIntensity);
+    float shadeIntensity = envIntensity * shadowmappedIntensity;
 
     float lightIntensity = u_attenation > 0.0 ? pow(u_lightIntensity / max(1.0, len - u_attenation  + 1.0), 2.0) : pow(u_lightIntensity, 2.0);
     return colorWithLight(shadeIntensity * lightIntensity);

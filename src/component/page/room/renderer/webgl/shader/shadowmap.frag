@@ -42,7 +42,7 @@ float fragDepth(vec3 s) {
 }
 
 float linerDepth(vec3 s) {
-    vec4 p = u_vp * vec4(s, 1.0);
+    vec4 p = u_vp * vec4(s.xy, s.z + 0.05, 1.0);
     float near = 0.5;
     float far  = 100.0;
     return p.z / p.w / (far - near);
