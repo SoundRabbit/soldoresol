@@ -1,34 +1,30 @@
-#ifdef USE_FRAG_DEPTH
-#extension GL_EXT_frag_depth : enable
-#endif
-
 // その他uniform変数
 uniform vec3 u_cameraPosition;
 uniform mat4 u_invModelMatrix;
 uniform mat4 u_modelMatrix;
-uniform uint u_shape;
+uniform int u_shape;
 uniform mat4 u_vpMatrix;
 
 // 背景色
-uniform uint u_bgColor1;
-uniform uint u_bgColor2;
+uniform int u_bgColor1;
+uniform int u_bgColor2;
 uniform vec4 u_bgColor1Value;
 uniform vec4 u_bgColor2Value;
 
 // ID
-uniform uint u_id;
-uniform uint u_idValue;
+uniform int u_id;
+uniform int u_idValue;
 
 // テクスチャ
-uniform uint u_texture0;
-uniform uint u_texture1;
-uniform uint u_texture2;
+uniform int u_texture0;
+uniform int u_texture1;
+uniform int u_texture2;
 uniform sampler2D u_texture0Sampler;
 uniform sampler2D u_texture1Sampler;
 uniform sampler2D u_texture2Sampler;
 
 // ライティング／シェ―ディング
-uniform uint u_light;
+uniform int u_light;
 uniform float u_lightAttenation;
 uniform vec4 u_lightColor;
 uniform float u_lightIntensity;

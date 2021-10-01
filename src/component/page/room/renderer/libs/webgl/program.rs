@@ -173,6 +173,7 @@ fn compile_shader(
         let info_log = context
             .get_shader_info_log(&shader)
             .unwrap_or_else(|| String::from("Unknown error creating shader"));
+        crate::debug::log_1(shader_source);
         crate::debug::log_1(&info_log);
         Err(info_log)
     }
