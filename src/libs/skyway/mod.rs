@@ -1,4 +1,4 @@
-use super::{color::Color, js_object::JsObject, random_id::U128Id};
+use super::{color::Color, js_object::Object, random_id::U128Id};
 use js_sys::Array;
 use std::{collections::HashMap, rc::Rc};
 use wasm_bindgen::prelude::*;
@@ -62,7 +62,7 @@ extern "C" {
     pub fn src(this: &ReceiveData) -> String;
 
     #[wasm_bindgen(method, getter)]
-    pub fn data(this: &ReceiveData) -> Option<JsObject>;
+    pub fn data(this: &ReceiveData) -> Option<Object>;
 }
 
 pub enum Msg {
@@ -111,8 +111,8 @@ impl Msg {
     }
 }
 
-impl Into<JsObject> for Msg {
-    fn into(self) -> JsObject {
+impl Into<Object> for Msg {
+    fn into(self) -> Object {
         let type_name = self.type_name();
         let payload: JsValue = match self {
             Self::None => JsValue::NULL,
@@ -169,8 +169,8 @@ impl Into<JsObject> for Msg {
     }
 }
 
-impl From<JsObject> for Msg {
-    fn from(obj: JsObject) -> Self {
+impl From<Object> for Msg {
+    fn from(obj: Object) -> Self {
         if let (Some(msg_type), Some(payload)) = (
             obj.get("type").and_then(|t| t.as_string()),
             obj.get("payload"),

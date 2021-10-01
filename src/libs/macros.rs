@@ -14,7 +14,7 @@ macro_rules! set {
 }
 
 macro_rules! map {
-    { $( $n:ident : $v:expr ),* } => {
+    { $( $n:tt : $v:expr ),* } => {
         {
             use std::collections::HashMap;
 

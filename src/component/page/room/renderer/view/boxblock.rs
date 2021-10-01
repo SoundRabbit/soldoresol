@@ -1,19 +1,23 @@
+use super::id_table::{IdColor, IdTable, ObjectId, Surface};
 use super::matrix::{camera::CameraMatrix, model::ModelMatrix};
 use super::tex_table::TexTable;
-use super::webgl::{ProgramType, WebGlF32Vbo, WebGlI16Ibo, WebGlRenderingContext};
+use super::webgl::{program, ProgramType, WebGlF32Vbo, WebGlI16Ibo, WebGlRenderingContext};
 use crate::arena::block::{self, BlockId};
 use crate::libs::random_id::U128Id;
 use ndarray::Array2;
 
 pub struct Boxblock {
-    vertexis_buffer: WebGlF32Vbo,
-    normals_buffer: WebGlF32Vbo,
-    poly_index_buffer: WebGlI16Ibo,
+    vertex_buffer: WebGlF32Vbo,
+    v_color_buffer: WebGlF32Vbo,
+    id_color_buffer: WebGlF32Vbo,
+    normal_buffer: WebGlF32Vbo,
+    index_buffer: WebGlI16Ibo,
+    texture_coord_buffer: WebGlF32Vbo,
 }
 
 impl Boxblock {
     pub fn new(gl: &WebGlRenderingContext) -> Self {
-        let vertexis_buffer = gl.create_vbo_with_f32array(
+        let vertex_buffer = gl.create_vbo_with_f32array(
             &[
                 [
                     [0.5, 0.5, 0.5],
@@ -60,36 +64,105 @@ impl Boxblock {
             ]
             .concat(),
         );
-        let normals_buffer = gl.create_vbo_with_f32array(
+        let id_color_buffer = gl.create_vbo_with_f32array(
             &[
-                Self::n(0.0, 0.0, 1.0),
-                Self::n(0.0, 0.0, 1.0),
-                Self::n(0.0, 0.0, 1.0),
-                Self::n(0.0, 0.0, 1.0),
-                Self::n(0.0, 1.0, 0.0),
-                Self::n(0.0, 1.0, 0.0),
-                Self::n(0.0, 1.0, 0.0),
-                Self::n(0.0, 1.0, 0.0),
-                Self::n(1.0, 0.0, 0.0),
-                Self::n(1.0, 0.0, 0.0),
-                Self::n(1.0, 0.0, 0.0),
-                Self::n(1.0, 0.0, 0.0),
-                Self::n(-1.0, 0.0, 0.0),
-                Self::n(-1.0, 0.0, 0.0),
-                Self::n(-1.0, 0.0, 0.0),
-                Self::n(-1.0, 0.0, 0.0),
-                Self::n(0.0, -1.0, 0.0),
-                Self::n(0.0, -1.0, 0.0),
-                Self::n(0.0, -1.0, 0.0),
-                Self::n(0.0, -1.0, 0.0),
-                Self::n(0.0, 0.0, -1.0),
-                Self::n(0.0, 0.0, -1.0),
-                Self::n(0.0, 0.0, -1.0),
-                Self::n(0.0, 0.0, -1.0),
+                IdColor::from(0).to_f32array(),
+                IdColor::from(0).to_f32array(),
+                IdColor::from(0).to_f32array(),
+                IdColor::from(0).to_f32array(),
+                IdColor::from(1).to_f32array(),
+                IdColor::from(1).to_f32array(),
+                IdColor::from(1).to_f32array(),
+                IdColor::from(1).to_f32array(),
+                IdColor::from(2).to_f32array(),
+                IdColor::from(2).to_f32array(),
+                IdColor::from(2).to_f32array(),
+                IdColor::from(2).to_f32array(),
+                IdColor::from(3).to_f32array(),
+                IdColor::from(3).to_f32array(),
+                IdColor::from(3).to_f32array(),
+                IdColor::from(3).to_f32array(),
+                IdColor::from(4).to_f32array(),
+                IdColor::from(4).to_f32array(),
+                IdColor::from(4).to_f32array(),
+                IdColor::from(4).to_f32array(),
+                IdColor::from(5).to_f32array(),
+                IdColor::from(5).to_f32array(),
+                IdColor::from(5).to_f32array(),
+                IdColor::from(5).to_f32array(),
             ]
             .concat(),
         );
-        let poly_index_buffer = gl.create_ibo_with_i16array(
+        let v_color_buffer = gl.create_vbo_with_f32array(
+            &[
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+            ]
+            .concat(),
+        );
+        let normal_buffer = gl.create_vbo_with_f32array(
+            &[
+                [0.0, 0.0, 1.0],
+                [0.0, 0.0, 1.0],
+                [0.0, 0.0, 1.0],
+                [0.0, 0.0, 1.0],
+                [0.0, 1.0, 0.0],
+                [0.0, 1.0, 0.0],
+                [0.0, 1.0, 0.0],
+                [0.0, 1.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [-1.0, 0.0, 0.0],
+                [-1.0, 0.0, 0.0],
+                [-1.0, 0.0, 0.0],
+                [-1.0, 0.0, 0.0],
+                [0.0, -1.0, 0.0],
+                [0.0, -1.0, 0.0],
+                [0.0, -1.0, 0.0],
+                [0.0, -1.0, 0.0],
+                [0.0, 0.0, -1.0],
+                [0.0, 0.0, -1.0],
+                [0.0, 0.0, -1.0],
+                [0.0, 0.0, -1.0],
+            ]
+            .concat(),
+        );
+        let texture_coord_buffer = gl.create_vbo_with_f32array(
+            &[
+                [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]].concat(), //PZ
+                [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]].concat(), // PY
+                [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]].concat(), // PX
+                [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]].concat(), // NX
+                [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]].concat(), // NY
+                [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]].concat(), // NZ,
+            ]
+            .concat(),
+        );
+        let index_buffer = gl.create_ibo_with_i16array(
             &[
                 [0, 1, 2, 3, 2, 1],
                 [4, 5, 6, 7, 6, 5],
@@ -102,15 +175,19 @@ impl Boxblock {
         );
 
         Self {
-            vertexis_buffer,
-            poly_index_buffer,
-            normals_buffer,
+            vertex_buffer,
+            v_color_buffer,
+            id_color_buffer,
+            index_buffer,
+            texture_coord_buffer,
+            normal_buffer,
         }
     }
 
     pub fn render(
         &self,
         gl: &mut WebGlRenderingContext,
+        id_value: &mut HashMap<BlockId, IdColor>,
         camera: &CameraMatrix,
         vp_matrix: &Array2<f32>,
         block_arena: &block::Arena,
@@ -123,38 +200,43 @@ impl Boxblock {
         light_vps: Option<&[Array2<f32>; 6]>,
         light_attenation: Option<f32>,
     ) {
+        gl.use_program(ProgramType::ShapedProgram);
         gl.depth_func(web_sys::WebGlRenderingContext::LEQUAL);
-        gl.use_program(ProgramType::BoxblockProgram);
-
-        gl.set_attr_vertex(&self.vertexis_buffer, 3, 0);
-
-        gl.set_attr_normal(&self.normals_buffer, 3, 0);
-
+        gl.set_a_vertex(&self.vertex_buffer, 3, 0);
+        gl.set_a_texture_coord(&self.texture_coord_buffer, 2, 0);
+        gl.set_a_id_color(&self.id_color_buffer, 4, 0);
+        gl.set_a_v_color(&self.v_color_buffer, 4, 0);
+        gl.set_a_normal(&self.normal_buffer, 3, 0);
         gl.bind_buffer(
             web_sys::WebGlRenderingContext::ELEMENT_ARRAY_BUFFER,
-            Some(&self.poly_index_buffer),
+            Some(&self.index_buffer),
         );
+        gl.set_u_bg_color_2(program::COLOR_NONE);
+        gl.set_u_id(program::ID_V_READ);
+        gl.set_u_texture_0(program::TEXTURE_NONE);
+        gl.set_u_texture_1(program::TEXTURE_NONE);
+        gl.set_u_texture_2(program::TEXTURE_NONE);
 
         if let (Some(light_vps), Some(light_attenation)) = (light_vps, light_attenation) {
-            gl.set_unif_light_vp_px(light_vps[0].clone().reversed_axes());
-            gl.set_unif_light_vp_py(light_vps[1].clone().reversed_axes());
-            gl.set_unif_light_vp_pz(light_vps[2].clone().reversed_axes());
-            gl.set_unif_light_vp_nx(light_vps[3].clone().reversed_axes());
-            gl.set_unif_light_vp_ny(light_vps[4].clone().reversed_axes());
-            gl.set_unif_light_vp_nz(light_vps[5].clone().reversed_axes());
-            gl.set_unif_is_shadowmap(1);
-            gl.set_unif_attenation(light_attenation);
-            gl.set_unif_shade_intensity(1.0);
+            gl.set_u_light_vp_px(light_vps[0].clone().reversed_axes());
+            gl.set_u_light_vp_py(light_vps[1].clone().reversed_axes());
+            gl.set_u_light_vp_pz(light_vps[2].clone().reversed_axes());
+            gl.set_u_light_vp_nx(light_vps[3].clone().reversed_axes());
+            gl.set_u_light_vp_ny(light_vps[4].clone().reversed_axes());
+            gl.set_u_light_vp_nz(light_vps[5].clone().reversed_axes());
+            gl.set_u_light(program::LIGHT_POINT_WITH_ID);
+            gl.set_u_light_attenation(light_attenation);
+            gl.set_u_shade_intensity(1.0);
         } else {
-            gl.set_unif_shade_intensity(0.5);
-            gl.set_unif_attenation(1.0);
-            gl.set_unif_is_shadowmap(0);
+            gl.set_u_light(program::LIGHT_AMBIENT);
+            gl.set_u_light_attenation(1.0);
+            gl.set_u_shade_intensity(0.5);
         }
 
-        gl.set_unif_camera(&camera.position());
-        gl.set_unif_light(light);
-        gl.set_unif_light_color(&light_color.to_color().to_f32array());
-        gl.set_unif_light_intensity(light_intensity);
+        gl.set_u_camera_position(&camera.position());
+        gl.set_u_light_position(light);
+        gl.set_u_light_color(&light_color.to_color().to_f32array());
+        gl.set_u_light_intensity(light_intensity);
 
         if let (Some(tex_table), Some(shadowmap)) = (tex_table.as_mut(), shadowmap.as_ref()) {
             for i in 0..6 {
@@ -166,22 +248,22 @@ impl Boxblock {
                 );
                 match i {
                     0 => {
-                        gl.set_unif_shadowmap_px(tex_idx);
+                        gl.set_u_light_map_px(tex_idx);
                     }
                     1 => {
-                        gl.set_unif_shadowmap_py(tex_idx);
+                        gl.set_u_light_map_py(tex_idx);
                     }
                     2 => {
-                        gl.set_unif_shadowmap_pz(tex_idx);
+                        gl.set_u_light_map_pz(tex_idx);
                     }
                     3 => {
-                        gl.set_unif_shadowmap_nx(tex_idx);
+                        gl.set_u_light_map_nx(tex_idx);
                     }
                     4 => {
-                        gl.set_unif_shadowmap_ny(tex_idx);
+                        gl.set_u_light_map_ny(tex_idx);
                     }
                     5 => {
-                        gl.set_unif_shadowmap_nz(tex_idx);
+                        gl.set_u_light_map_nz(tex_idx);
                     }
                     _ => {
                         unreachable!();
@@ -190,7 +272,7 @@ impl Boxblock {
             }
         }
 
-        gl.set_unif_vp(vp_matrix.clone().reversed_axes());
+        gl.set_u_vp_matrix(vp_matrix.clone().reversed_axes());
 
         let _ = block_arena.iter_map_with_ids(
             boxblock_ids,

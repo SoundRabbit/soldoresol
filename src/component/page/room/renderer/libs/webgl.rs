@@ -2,24 +2,15 @@ use std::collections::HashMap;
 use std::ops::Deref;
 use std::rc::Rc;
 
-mod program;
+pub mod program;
 
 use program::Program;
 
 #[derive(Hash, PartialEq, Eq, Clone)]
 pub enum ProgramType {
-    AreaProgram,
-    CharacterProgram,
-    DefaultProgram,
-    OffscreenProgram,
-    TablemaskProgram,
-    TablegridProgram,
-    TabletextureProgram,
-    BoxblockProgram,
+    ShapedProgram,
+    UnshapedProgram,
     ScreenProgram,
-    ShadowmapProgram,
-    NamePlateProgram,
-    TerranProgram,
 }
 
 pub struct WebGlF32Vbo(web_sys::WebGlBuffer);
@@ -219,41 +210,14 @@ impl WebGlRenderingContext {
     pub fn use_program(&mut self, program_type: ProgramType) {
         if !self.program_table.contains_key(&program_type) {
             let program = match &program_type {
-                ProgramType::AreaProgram => {
-                    Box::new(program::AreaProgram::new(&self)) as Box<dyn Program>
+                ProgramType::ShapedProgram => {
+                    Box::new(program::ShapedProgram::new(&self)) as Box<dyn Program>
                 }
-                ProgramType::CharacterProgram => {
-                    Box::new(program::CharacterProgram::new(&self)) as Box<dyn Program>
-                }
-                ProgramType::DefaultProgram => {
-                    Box::new(program::DefaultProgram::new(&self)) as Box<dyn Program>
-                }
-                ProgramType::OffscreenProgram => {
-                    Box::new(program::OffscreenProgram::new(&self)) as Box<dyn Program>
-                }
-                ProgramType::TablegridProgram => {
-                    Box::new(program::TablegridProgram::new(&self)) as Box<dyn Program>
-                }
-                ProgramType::TablemaskProgram => {
-                    Box::new(program::TablemaskProgram::new(&self)) as Box<dyn Program>
-                }
-                ProgramType::TabletextureProgram => {
-                    Box::new(program::TabletextureProgram::new(&self)) as Box<dyn Program>
-                }
-                ProgramType::BoxblockProgram => {
-                    Box::new(program::BoxblockProgram::new(&self)) as Box<dyn Program>
+                ProgramType::UnshapedProgram => {
+                    Box::new(program::UnshapedProgram::new(&self)) as Box<dyn Program>
                 }
                 ProgramType::ScreenProgram => {
                     Box::new(program::ScreenProgram::new(&self)) as Box<dyn Program>
-                }
-                ProgramType::ShadowmapProgram => {
-                    Box::new(program::ShadowmapProgram::new(&self)) as Box<dyn Program>
-                }
-                ProgramType::NamePlateProgram => {
-                    Box::new(program::NamePlateProgram::new(&self)) as Box<dyn Program>
-                }
-                ProgramType::TerranProgram => {
-                    Box::new(program::TerranProgram::new(&self)) as Box<dyn Program>
                 }
             };
             self.program_table.insert(program_type.clone(), program);
@@ -275,48 +239,53 @@ impl WebGlRenderingContext {
         self.using_program = Some(program_type);
     }
 
-    setter!(attr attr_tex_coord: WebGlF32Vbo as set_attr_tex_coord);
-    setter!(attr attr_vertex: WebGlF32Vbo as set_attr_vertex);
-    setter!(attr attr_normal: WebGlF32Vbo as set_attr_normal);
-    setter!(attr attr_color: WebGlF32Vbo as set_attr_color);
+    setter!(attr a_id_color: WebGlF32Vbo as set_a_id_color);
+    setter!(attr a_normal: WebGlF32Vbo as set_a_normal);
+    setter!(attr a_texture_coord: WebGlF32Vbo as set_a_texture_coord);
+    setter!(attr a_v_color: WebGlF32Vbo as set_a_v_color);
+    setter!(attr a_vertex: WebGlF32Vbo as set_a_vertex);
 
-    setter!(unif unif_area_size: 2fv as set_unif_area_size);
-    setter!(unif unif_attenation: 1f as set_unif_attenation);
-    setter!(unif unif_bg_color: 4fv as set_unif_bg_color);
-    setter!(unif unif_bg_color_1: 4fv as set_unif_bg_color_1);
-    setter!(unif unif_bg_color_2: 4fv as set_unif_bg_color_2);
-    setter!(unif unif_camera: 3fv as set_unif_camera);
-    setter!(unif unif_flag_round: 1i as set_unif_flag_round);
-    setter!(unif unif_inv_model: matrix4fv as set_unif_inv_model);
-    setter!(unif unif_is_shadowmap: 1i as set_unif_is_shadowmap);
-    setter!(unif unif_light: 3fv as set_unif_light);
-    setter!(unif unif_light_color: 4fv as set_unif_light_color);
-    setter!(unif unif_light_intensity: 1f as set_unif_light_intensity);
-    setter!(unif unif_light_vp_nx: matrix4fv as set_unif_light_vp_nx);
-    setter!(unif unif_light_vp_ny: matrix4fv as set_unif_light_vp_ny);
-    setter!(unif unif_light_vp_nz: matrix4fv as set_unif_light_vp_nz);
-    setter!(unif unif_light_vp_px: matrix4fv as set_unif_light_vp_px);
-    setter!(unif unif_light_vp_py: matrix4fv as set_unif_light_vp_py);
-    setter!(unif unif_light_vp_pz: matrix4fv as set_unif_light_vp_pz);
-    setter!(unif unif_model: matrix4fv as set_unif_model);
-    setter!(unif unif_object_type: 1i as set_unif_object_type);
-    setter!(unif unif_point_size: 1f as set_unif_point_size);
-    setter!(unif unif_screen_size: 2fv as set_unif_screen_size);
-    setter!(unif unif_shade_intensity: 1f as set_unif_shade_intensity);
-    setter!(unif unif_shadowmap_nx: 1i as set_unif_shadowmap_nx);
-    setter!(unif unif_shadowmap_ny: 1i as set_unif_shadowmap_ny);
-    setter!(unif unif_shadowmap_nz: 1i as set_unif_shadowmap_nz);
-    setter!(unif unif_shadowmap_px: 1i as set_unif_shadowmap_px);
-    setter!(unif unif_shadowmap_py: 1i as set_unif_shadowmap_py);
-    setter!(unif unif_shadowmap_pz: 1i as set_unif_shadowmap_pz);
-    setter!(unif unif_shape: 1i as set_unif_shape);
-    setter!(unif unif_text_color_1: 3fv as set_unif_text_color_1);
-    setter!(unif unif_text_color_2: 3fv as set_unif_text_color_2);
-    setter!(unif unif_texture: 1i as set_unif_texture);
-    setter!(unif unif_texture_1: 1i as set_unif_texture_1);
-    setter!(unif unif_texture_2: 1i as set_unif_texture_2);
-    setter!(unif unif_texture_2_is_available: 1i as set_unif_texture_2_is_available);
-    setter!(unif unif_translate: matrix4fv as set_unif_translate);
-    setter!(unif unif_use_texture_as_mask: 1i as set_unif_use_texture_as_mask);
-    setter!(unif unif_vp: matrix4fv as set_unif_vp);
+    setter!(unif u_translate: matrix4fv as set_u_translate);
+
+    setter!(unif u_camera_position: 3fv as set_u_camera_position);
+    setter!(unif u_inv_model_matrix: matrix4fv as set_u_inv_model_matrix);
+    setter!(unif u_model_matrix: matrix4fv as set_u_model_matrix);
+    setter!(unif u_shape: 1i as set_u_shape);
+    setter!(unif u_vp_matrix: matrix4fv as set_u_vp_matrix);
+
+    setter!(unif u_bg_color_1: 1i as set_u_bg_color_1);
+    setter!(unif u_bg_color_2: 1i as set_u_bg_color_2);
+    setter!(unif u_bg_color_1_value: 4fv as set_u_bg_color_1_value);
+    setter!(unif u_bg_color_2_value: 4fv as set_u_bg_color_2_value);
+
+    setter!(unif u_id: 1i as set_u_id);
+    setter!(unif u_id_value: 1i as set_u_id_value);
+
+    setter!(unif u_texture_0: 1i as set_u_texture_0);
+    setter!(unif u_texture_1: 1i as set_u_texture_1);
+    setter!(unif u_texture_2: 1i as set_u_texture_2);
+    setter!(unif u_texture_0_sampler: 1i as set_u_texture_0_sampler);
+    setter!(unif u_texture_1_sampler: 1i as set_u_texture_1_sampler);
+    setter!(unif u_texture_2_sampler: 1i as set_u_texture_2_sampler);
+
+    setter!(unif u_light: 1i as set_u_light);
+    setter!(unif u_light_attenation: 1f as set_u_light_attenation);
+    setter!(unif u_light_color: 4fv as set_u_light_color);
+    setter!(unif u_light_intensity: 1f as set_u_light_intensity);
+    setter!(unif u_light_map_nx: 1i as set_u_light_map_nx);
+    setter!(unif u_light_map_ny: 1i as set_u_light_map_ny);
+    setter!(unif u_light_map_nz: 1i as set_u_light_map_nz);
+    setter!(unif u_light_map_px: 1i as set_u_light_map_px);
+    setter!(unif u_light_map_py: 1i as set_u_light_map_py);
+    setter!(unif u_light_map_pz: 1i as set_u_light_map_pz);
+    setter!(unif u_light_position: 3fv as set_u_light_position);
+    setter!(unif u_light_vp_nx: matrix4fv as set_u_light_vp_nx);
+    setter!(unif u_light_vp_ny: matrix4fv as set_u_light_vp_ny);
+    setter!(unif u_light_vp_nz: matrix4fv as set_u_light_vp_nz);
+    setter!(unif u_light_vp_px: matrix4fv as set_u_light_vp_px);
+    setter!(unif u_light_vp_py: matrix4fv as set_u_light_vp_py);
+    setter!(unif u_light_vp_pz: matrix4fv as set_u_light_vp_pz);
+    setter!(unif u_shade_intensity: 1f as set_u_shade_intensity);
+
+    setter!(unif u_screen_size: 2fv as set_u_screen_size);
 }

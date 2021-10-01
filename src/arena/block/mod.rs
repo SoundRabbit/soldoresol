@@ -1,5 +1,5 @@
 use super::Insert;
-use crate::libs::js_object::JsObject;
+use crate::libs::js_object::Object;
 use crate::libs::random_id::U128Id;
 use crate::libs::try_ref::{TryMut, TryRef};
 use std::cell::RefCell;
@@ -211,7 +211,7 @@ impl ArenaBlock {
     }
 
     async fn unpack(val: JsValue) -> Option<Self> {
-        let val = unwrap_or!(val.dyn_into::<JsObject>().ok(); None);
+        let val = unwrap_or!(val.dyn_into::<Object>().ok(); None);
 
         let type_name = unwrap_or!(val.get("type_name").and_then(|x| x.as_string()); None);
         let timestamp = unwrap_or!(val.get("timestamp").and_then(|x| x.as_f64()); None);
@@ -378,10 +378,10 @@ impl Arena {
         self.map(block_id, f).unwrap_or(None)
     }
 
-    pub fn iter_map_with_ids<T, U>(
+    pub fn iter_map_with_ids<'a, T, U>(
         &self,
-        block_ids: impl Iterator<Item = BlockId>,
-        mut f: impl FnMut(BlockId, &T) -> U,
+        block_ids: impl Iterator<Item = &'a BlockId>,
+        mut f: impl FnMut(&'a BlockId, &T) -> U,
     ) -> impl Iterator<Item = U>
     where
         Block: TryRef<T>,

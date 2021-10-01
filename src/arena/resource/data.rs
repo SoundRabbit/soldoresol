@@ -1,4 +1,4 @@
-use crate::libs::js_object::JsObject;
+use crate::libs::js_object::Object;
 use crate::libs::try_ref::TryRef;
 use async_trait::async_trait;
 use js_sys::Promise;
@@ -49,7 +49,7 @@ impl Data {
 
     pub async fn unpack(val: JsValue) -> Option<Self> {
         let obj = val.dyn_into::<js_sys::Object>().unwrap();
-        let obj = obj.dyn_into::<JsObject>().unwrap();
+        let obj = obj.dyn_into::<Object>().unwrap();
         let blob_type = obj.get("type").unwrap().as_string().unwrap();
         let payload = obj.get("payload").unwrap();
         if let Some(array_buffer) = payload.dyn_ref::<js_sys::ArrayBuffer>() {

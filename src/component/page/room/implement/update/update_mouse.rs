@@ -669,18 +669,19 @@ impl Implement {
                                         < table_size[0] * 0.5
                                         && (p[1] as f32 - table_size_offset[1]).abs()
                                             < table_size[1] * 0.5
-                                        && (terran.is_adjasted(&p, 5) || p[2] == 0)
+                                        && (terran.is_adjasted(&p, &block::terran::Surface::NZ)
+                                            || p[2] == 0)
                                     {
-                                        if !terran.is_adjasted(&p, 0) {
+                                        if !terran.is_adjasted(&p, &block::terran::Surface::PX) {
                                             stack.push([p[0] + 1, p[1], p[2]]);
                                         }
-                                        if !terran.is_adjasted(&p, 1) {
+                                        if !terran.is_adjasted(&p, &block::terran::Surface::PY) {
                                             stack.push([p[0], p[1] + 1, p[2]]);
                                         }
-                                        if !terran.is_adjasted(&p, 3) {
+                                        if !terran.is_adjasted(&p, &block::terran::Surface::NX) {
                                             stack.push([p[0] - 1, p[1], p[2]]);
                                         }
-                                        if !terran.is_adjasted(&p, 4) {
+                                        if !terran.is_adjasted(&p, &block::terran::Surface::NY) {
                                             stack.push([p[0], p[1] - 1, p[2]]);
                                         }
                                         terran.enqueue(

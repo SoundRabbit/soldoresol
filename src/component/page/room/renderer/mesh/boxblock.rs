@@ -1,9 +1,33 @@
-use super::id_table::{IdColor, IdTable, ObjectId, Surface};
-use super::matrix::model::ModelMatrix;
-use super::webgl::{program, ProgramType, WebGlF32Vbo, WebGlI16Ibo, WebGlRenderingContext};
+use super::libs::id_table::{IdColor, IdTable, IdTableBuilder, ObjectId, Surface};
+use super::libs::matrix::{camera::CameraMatrix, model::ModelMatrix};
+use super::libs::tex_table::TexTable;
+use super::libs::webgl::{program, ProgramType, WebGlF32Vbo, WebGlI16Ibo, WebGlRenderingContext};
 use crate::arena::block::{self, BlockId};
+use crate::libs::random_id::U128Id;
 use ndarray::Array2;
-use std::collections::HashMap;
+
+pub enum LightingMode<'a> {
+    PointLight {
+        position: &'a [f32; 3],
+        id_map: &'a [(web_sys::WebGlTexture, U128Id, Array2<f32>); 6],
+        light_attenation: f32,
+    },
+    AmbientLight {
+        direction: &'a [f32; 3],
+    },
+}
+
+pub enum RenderingMode<'a> {
+    IdMap {
+        grabbed: &'a ObjectId,
+    },
+    View {
+        lighting: LightingMode<'a>,
+        light_color: &'a crate::libs::color::Pallet,
+        light_intensity: f32,
+        camera: &'a CameraMatrix,
+    },
+}
 
 pub struct Boxblock {
     vertex_buffer: WebGlF32Vbo,
@@ -121,14 +145,27 @@ impl Boxblock {
             ]
             .concat(),
         );
+
+        //テクスチャ座標用のメモ
+        //[0.00,1.00][0.25,1.00][0.50,1.00][0.75,1.00][1.00,1.00]
+        //[0.00,0.70][0.25,0.70][0.50,0.70][0.75,0.70][1.00,0.70]
+        //[0.00,0.65][0.25,0.65][0.50,0.65][0.75,0.65][1.00,0.65]
+        //[0.00,0.45][0.25,0.45][0.50,0.45][0.75,0.45][1.00,0.45]
+        //[0.00,0.30][0.25,0.30][0.50,0.30][0.75,0.30][1.00,0.30]
+        //[0.00,0.00][0.25,0.00][0.50,0.00][0.75,0.00][1.00,0.00]
+
+        //PZ
+        //PX PY NX NY
+        //NZ
+
         let texture_coord_buffer = gl.create_vbo_with_f32array(
             &[
-                [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]].concat(), //PZ
-                [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]].concat(), // PY
-                [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]].concat(), // PX
-                [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]].concat(), // NX
-                [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]].concat(), // NY
-                [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]].concat(), // NZ,
+                [[0.00, 1.00], [0.25, 1.00], [0.00, 0.70], [0.25, 0.70]].concat(), //PZ
+                [[0.25, 0.65], [0.50, 0.65], [0.25, 0.45], [0.50, 0.45]].concat(), // PY
+                [[0.00, 0.65], [0.25, 0.65], [0.00, 0.45], [0.25, 0.45]].concat(), // PX
+                [[0.50, 0.65], [0.75, 0.65], [0.50, 0.45], [0.75, 0.45]].concat(), // NX
+                [[0.75, 0.65], [1.00, 0.65], [0.75, 0.45], [1.00, 0.45]].concat(), // NY
+                [[0.00, 0.30], [0.25, 0.30], [0.00, 0.00], [0.25, 0.00]].concat(), // NZ,
             ]
             .concat(),
         );
@@ -183,17 +220,43 @@ impl Boxblock {
         }
     }
 
-    pub fn render(
+    pub fn update_id<'a>(
+        &self,
+        builder: &mut IdTableBuilder,
+        block_arena: &block::Arena,
+        boxblock_ids: impl Iterator<Item = &'a BlockId>,
+    ) {
+        block_arena.iter_map_with_ids(
+            boxblock_ids,
+            |boxblock_id, boxblock: &block::boxblock::Boxblock| {
+                for srfs in 0..6 {
+                    builder.insert(
+                        boxblock_id,
+                        IdColor::from(srfs),
+                        ObjectId::Boxblock(
+                            BlockId::clone(&boxblock_id),
+                            Self::surface_of(boxblock, srfs),
+                        ),
+                    );
+                }
+            },
+        );
+    }
+
+    pub fn render<'a>(
         &self,
         gl: &mut WebGlRenderingContext,
-        id_table: &mut IdTable,
-        id_value: &mut HashMap<BlockId, IdColor>,
+        id_table: &IdTable,
         vp_matrix: &Array2<f32>,
         block_arena: &block::Arena,
-        boxblock_ids: impl Iterator<Item = BlockId>,
-        grabbed_object_id: &ObjectId,
+        boxblock_ids: impl Iterator<Item = &'a BlockId>,
+        rendering_mode: &RenderingMode,
+        tex_table: &'a mut TexTable,
     ) {
-        gl.use_program(ProgramType::UnshapedProgram);
+        gl.use_program(match rendering_mode {
+            RenderingMode::IdMap { .. } => ProgramType::UnshapedProgram,
+            RenderingMode::View { .. } => ProgramType::ShapedProgram,
+        });
         gl.depth_func(web_sys::WebGlRenderingContext::LEQUAL);
         gl.set_a_vertex(&self.vertex_buffer, 3, 0);
         gl.set_a_texture_coord(&self.texture_coord_buffer, 2, 0);
@@ -205,46 +268,120 @@ impl Boxblock {
             Some(&self.index_buffer),
         );
         gl.set_u_shape(program::SHAPE_3D_BOX);
-        gl.set_u_bg_color_1(program::COLOR_NONE);
         gl.set_u_bg_color_2(program::COLOR_NONE);
-        gl.set_u_id(program::ID_V_WRITE);
         gl.set_u_texture_0(program::TEXTURE_NONE);
         gl.set_u_texture_1(program::TEXTURE_NONE);
         gl.set_u_texture_2(program::TEXTURE_NONE);
-        gl.set_u_light(program::LIGHT_NONE);
+        gl.set_u_vp_matrix(vp_matrix.clone().reversed_axes());
+
+        match rendering_mode {
+            RenderingMode::IdMap { .. } => {
+                gl.set_u_bg_color_1(program::COLOR_NONE);
+                gl.set_u_id(program::ID_V_WRITE);
+                gl.set_u_light(program::LIGHT_NONE);
+            }
+            RenderingMode::View {
+                lighting,
+                light_intensity,
+                light_color,
+                camera,
+            } => {
+                gl.set_u_id(program::ID_V_READ);
+                gl.set_u_camera_position(&camera.position());
+                gl.set_u_light_color(&light_color.to_color().to_f32array());
+                gl.set_u_light_intensity(*light_intensity);
+                match lighting {
+                    LightingMode::AmbientLight { direction } => {
+                        gl.set_u_light(program::LIGHT_AMBIENT);
+                        gl.set_u_light_position(*direction);
+                        gl.set_u_light_attenation(1.0);
+                    }
+                    LightingMode::PointLight {
+                        position,
+                        id_map,
+                        light_attenation,
+                    } => {
+                        gl.set_u_light_vp_px(id_map[0].2.clone().reversed_axes());
+                        gl.set_u_light_vp_py(id_map[1].2.clone().reversed_axes());
+                        gl.set_u_light_vp_pz(id_map[2].2.clone().reversed_axes());
+                        gl.set_u_light_vp_nx(id_map[3].2.clone().reversed_axes());
+                        gl.set_u_light_vp_ny(id_map[4].2.clone().reversed_axes());
+                        gl.set_u_light_vp_nz(id_map[5].2.clone().reversed_axes());
+                        gl.set_u_light(program::LIGHT_POINT_WITH_ID);
+                        gl.set_u_light_position(*position);
+                        gl.set_u_light_attenation(*light_attenation);
+
+                        let set_tex = [
+                            WebGlRenderingContext::set_u_light_map_px,
+                            WebGlRenderingContext::set_u_light_map_py,
+                            WebGlRenderingContext::set_u_light_map_pz,
+                            WebGlRenderingContext::set_u_light_map_nx,
+                            WebGlRenderingContext::set_u_light_map_ny,
+                            WebGlRenderingContext::set_u_light_map_nz,
+                        ];
+
+                        for i in 0..6 {
+                            let (tex_idx, tex_flag) = tex_table.use_custom(&id_map[i].1);
+                            gl.active_texture(tex_flag);
+                            gl.bind_texture(
+                                web_sys::WebGlRenderingContext::TEXTURE_2D,
+                                Some(&id_map[i].0),
+                            );
+                            set_tex[i](gl, tex_idx);
+                        }
+                    }
+                }
+            }
+        }
 
         let _ = block_arena.iter_map_with_ids(
             boxblock_ids,
             |boxblock_id, boxblock: &block::boxblock::Boxblock| {
-                if grabbed_object_id.eq(&boxblock_id) {
-                    return;
+                if let RenderingMode::IdMap { grabbed } = rendering_mode {
+                    if grabbed.eq(&boxblock_id) {
+                        return;
+                    }
                 }
 
-                let s = boxblock.size();
+                let id_offset_color = if let Some(x) = id_table.offset_color(boxblock_id) {
+                    x
+                } else {
+                    return;
+                };
+
+                let s = {
+                    let s = boxblock.size();
+                    [
+                        s[0].abs().max(1.0 / 128.0).copysign(s[0]),
+                        s[1].abs().max(1.0 / 128.0).copysign(s[1]),
+                        s[2].abs().max(1.0 / 128.0).copysign(s[2]),
+                    ]
+                };
                 let p = boxblock.position();
                 let model_matrix: Array2<f32> =
-                    ModelMatrix::new().with_scale(s).with_movement(p).into();
+                    ModelMatrix::new().with_scale(&s).with_movement(p).into();
                 let mvp_matrix = vp_matrix.dot(&model_matrix);
                 gl.set_u_translate(mvp_matrix.reversed_axes());
-                let id_offset = id_table.len() as u32 | 0xFF000000;
-                gl.set_u_id_value(id_offset as i32);
+                gl.set_u_id_value(id_offset_color.value() as i32);
+                gl.set_u_shape(boxblock.shape().as_num());
+
+                if let RenderingMode::View { .. } = rendering_mode {
+                    let inv_model_matrix: Array2<f32> = ModelMatrix::new()
+                        .with_movement(&[-p[0], -p[1], -p[2]])
+                        .with_scale(&[1.0 / s[0], 1.0 / s[1], 1.0 / s[2]])
+                        .into();
+                    gl.set_u_model_matrix(model_matrix.reversed_axes());
+                    gl.set_u_inv_model_matrix(inv_model_matrix.reversed_axes());
+                    gl.set_u_bg_color_1(program::COLOR_SOME);
+                    gl.set_u_bg_color_1_value(&boxblock.color().to_color().to_f32array());
+                }
+
                 gl.draw_elements_with_i32(
                     web_sys::WebGlRenderingContext::TRIANGLES,
                     36,
                     web_sys::WebGlRenderingContext::UNSIGNED_SHORT,
                     0,
                 );
-
-                id_value.insert(BlockId::clone(&boxblock_id), IdColor::from(id_offset));
-                for srfs in 0..6 {
-                    id_table.insert(
-                        IdColor::from(id_offset + srfs),
-                        ObjectId::Boxblock(
-                            BlockId::clone(&boxblock_id),
-                            Self::surface_of(boxblock, srfs),
-                        ),
-                    );
-                }
             },
         );
     }

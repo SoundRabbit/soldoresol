@@ -18,10 +18,12 @@ extern crate serde;
 extern crate serde_json;
 extern crate serde_yaml;
 extern crate toml;
-extern crate wasm_bindgen;
 extern crate wasm_bindgen_futures;
 extern crate web_sys;
 extern crate xmltree;
+
+#[macro_use]
+extern crate wasm_bindgen;
 
 #[macro_use]
 mod libs;

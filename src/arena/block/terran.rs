@@ -2,6 +2,16 @@ use crate::libs::color::Pallet;
 use std::collections::HashMap;
 use std::collections::VecDeque;
 
+#[derive(PartialEq, Eq, Clone, Copy, Hash)]
+pub enum Surface {
+    PX,
+    PY,
+    PZ,
+    NX,
+    NY,
+    NZ,
+}
+
 #[derive(Clone)]
 pub struct TerranBlock {
     color: Pallet,
@@ -11,6 +21,12 @@ pub struct TerranBlock {
 pub struct Terran {
     list: VecDeque<[i32; 3]>,
     table: HashMap<[i32; 3], TerranBlock>,
+}
+
+impl Surface {
+    pub fn iter() -> impl Iterator<Item = Self> {
+        vec![Self::PX, Self::PY, Self::PZ, Self::NX, Self::NY, Self::NZ].into_iter()
+    }
 }
 
 impl TerranBlock {
@@ -37,28 +53,26 @@ impl Terran {
         }
     }
 
-    pub fn is_covered(&self, p: &[i32; 3], surface: usize) -> bool {
-        let p = match surface % 6 {
-            0 => [p[0] + 1, p[1] + 0, p[2] + 0],
-            1 => [p[0] + 0, p[1] + 1, p[2] + 0],
-            2 => [p[0] + 0, p[1] + 0, p[2] + 1],
-            3 => [p[0] - 1, p[1] + 0, p[2] + 0],
-            4 => [p[0] + 0, p[1] - 1, p[2] + 0],
-            5 => [p[0] + 0, p[1] + 0, p[2] - 1],
-            _ => unreachable!(),
+    pub fn is_covered(&self, p: &[i32; 3], surface: &Surface) -> bool {
+        let p = match surface {
+            Surface::PX => [p[0] + 1, p[1] + 0, p[2] + 0],
+            Surface::PY => [p[0] + 0, p[1] + 1, p[2] + 0],
+            Surface::PZ => [p[0] + 0, p[1] + 0, p[2] + 1],
+            Surface::NX => [p[0] - 1, p[1] + 0, p[2] + 0],
+            Surface::NY => [p[0] + 0, p[1] - 1, p[2] + 0],
+            Surface::NZ => [p[0] + 0, p[1] + 0, p[2] - 1],
         };
         self.table.get(&p).is_some()
     }
 
-    pub fn is_adjasted(&self, p: &[i32; 3], surface: usize) -> bool {
-        let p = match surface % 6 {
-            0 => [p[0] + 1, p[1] + 0, p[2] + 0],
-            1 => [p[0] + 0, p[1] + 1, p[2] + 0],
-            2 => [p[0] + 0, p[1] + 0, p[2] + 1],
-            3 => [p[0] - 1, p[1] + 0, p[2] + 0],
-            4 => [p[0] + 0, p[1] - 1, p[2] + 0],
-            5 => [p[0] + 0, p[1] + 0, p[2] - 1],
-            _ => unreachable!(),
+    pub fn is_adjasted(&self, p: &[i32; 3], surface: &Surface) -> bool {
+        let p = match surface {
+            Surface::PX => [p[0] + 1, p[1] + 0, p[2] + 0],
+            Surface::PY => [p[0] + 0, p[1] + 1, p[2] + 0],
+            Surface::PZ => [p[0] + 0, p[1] + 0, p[2] + 1],
+            Surface::NX => [p[0] - 1, p[1] + 0, p[2] + 0],
+            Surface::NY => [p[0] + 0, p[1] - 1, p[2] + 0],
+            Surface::NZ => [p[0] + 0, p[1] + 0, p[2] - 1],
         };
         self.table.get(&p).is_some()
     }

@@ -1,6 +1,6 @@
 use super::RoomData;
 use crate::libs::idb;
-use crate::libs::js_object::JsObject;
+use crate::libs::js_object::Object;
 use wasm_bindgen::{prelude::*, JsCast};
 
 pub async fn get_room_index(common_database: &web_sys::IdbDatabase) -> Option<Vec<RoomData>> {
@@ -21,7 +21,7 @@ pub async fn get_room_index(common_database: &web_sys::IdbDatabase) -> Option<Ve
             )
             .await;
 
-            if let Some(room_data) = room_data.and_then(|x| x.dyn_into::<JsObject>().ok()) {
+            if let Some(room_data) = room_data.and_then(|x| x.dyn_into::<Object>().ok()) {
                 let last_access_time = room_data.get("last_access_time").unwrap().as_f64().unwrap();
                 let last_access_time = js_sys::Date::new(&JsValue::from(last_access_time));
 
