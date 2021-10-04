@@ -292,15 +292,15 @@ impl Renderer {
 
                 let vp_matrix = camera_matrix.vp_matrix(&self.canvas_size);
 
-                self.view_frame.bind_self(&self.gl);
-                self.clear();
-                // self.screen_frame
-                //     .begin_to_render_frontscreen(&self.gl, &self.tex_table);
-                // self.clear();
+                self.screen_frame.bind_self(&self.gl);
 
-                // self.screen_frame
-                //     .begin_to_render_backscreen(&self.gl, &self.tex_table);
-                // self.clear();
+                self.screen_frame
+                    .begin_to_render_frontscreen(&self.gl, &self.tex_table);
+                self.clear();
+
+                self.screen_frame
+                    .begin_to_render_backscreen(&self.gl, &self.tex_table);
+                self.clear();
 
                 self.gl.blend_func_separate(
                     web_sys::WebGlRenderingContext::SRC_ALPHA,
@@ -333,7 +333,7 @@ impl Renderer {
                     &mut self.tex_table,
                 );
 
-                // self.render_frontscreen(false);
+                self.render_frontscreen();
 
                 // 当たり判定用のオフスクリーンレンダリング
                 self.idmap_frame.bind_self(&self.gl);
@@ -357,9 +357,9 @@ impl Renderer {
                     &mut self.tex_table,
                 );
 
-                // self.view_frame.bind_self(&self.gl);
-                // self.clear();
-                // self.flip();
+                self.view_frame.bind_self(&self.gl);
+                self.clear();
+                self.flip();
             });
         });
     }
@@ -372,17 +372,7 @@ impl Renderer {
         );
     }
 
-    fn begin_to_render_backscreen(&self) {
-        self.gl.framebuffer_texture_2d(
-            web_sys::WebGlRenderingContext::FRAMEBUFFER,
-            web_sys::WebGlRenderingContext::COLOR_ATTACHMENT0,
-            web_sys::WebGlRenderingContext::TEXTURE_2D,
-            Some(&self.screen_frame.backscreen_tex().0),
-            0,
-        );
-    }
-
-    fn render_frontscreen(&mut self, add_blend: bool) {
+    fn render_frontscreen(&mut self) {
         self.screen_frame
             .begin_to_render_frontscreen(&self.gl, &self.tex_table);
 
