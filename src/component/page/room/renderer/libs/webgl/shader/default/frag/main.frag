@@ -24,7 +24,7 @@ float defaultMain() {
         u_shape == SHAPE_2D_BOX ? setGSurfaceAs2dBox()
         : u_shape == SHAPE_2D_CIRCLE ? setGSurfaceAs2dCircle()
         : u_shape == SHAPE_3D_BOX ? setGSurfaceAs3dBox()
-        : u_shape == SHAPE_3D_SPHARE ? setGSurfaceAs3dSphare()
+        : u_shape == SHAPE_3D_SPHERE ? setGSurfaceAs3dSphare()
         : u_shape == SHAPE_3D_CYLINDER ? setGSurfaceAs3dCylinder()
         : true;
 

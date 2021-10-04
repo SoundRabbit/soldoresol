@@ -254,7 +254,7 @@ impl Boxblock {
     ) {
         gl.use_program(match rendering_mode {
             RenderingMode::IdMap { .. } => ProgramType::UnshapedProgram,
-            RenderingMode::View { .. } => ProgramType::UnshapedProgram,
+            RenderingMode::View { .. } => ProgramType::ShapedProgram,
         });
         gl.depth_func(web_sys::WebGlRenderingContext::LEQUAL);
         gl.set_a_vertex(&self.vertex_buffer, 3, 0);
@@ -267,7 +267,6 @@ impl Boxblock {
             Some(&self.index_buffer),
         );
         gl.set_u_camera_position(camera_position);
-        gl.set_u_shape(program::SHAPE_3D_BOX);
         gl.set_u_vp_matrix(vp_matrix.clone().reversed_axes());
         gl.set_u_bg_color_2(program::COLOR_NONE);
         gl.set_u_texture_0(program::TEXTURE_NONE);
@@ -369,6 +368,12 @@ impl Boxblock {
                 gl.set_u_id_value(id_offset_color.value() as i32);
                 gl.set_u_model_matrix(model_matrix.reversed_axes());
                 gl.set_u_inv_model_matrix(inv_model_matrix.reversed_axes());
+
+                gl.set_u_shape(match boxblock.shape() {
+                    block::boxblock::Shape::Cube => program::SHAPE_3D_BOX,
+                    block::boxblock::Shape::Cyliner => program::SHAPE_3D_CYLINDER,
+                    block::boxblock::Shape::Sphere => program::SHAPE_3D_SPHERE,
+                });
 
                 if let RenderingMode::View { .. } = rendering_mode {
                     gl.set_u_bg_color_1_value(&boxblock.color().to_color().to_f32array());

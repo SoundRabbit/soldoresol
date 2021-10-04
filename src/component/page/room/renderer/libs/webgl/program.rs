@@ -23,7 +23,7 @@ pub const LIGHT_POINT_WITH_ID: i32 = 0x01000001;
 pub const SHAPE_2D_BOX: i32 = 0x02000000;
 pub const SHAPE_2D_CIRCLE: i32 = 0x02000001;
 pub const SHAPE_3D_BOX: i32 = 0x03000000;
-pub const SHAPE_3D_SPHARE: i32 = 0x03000001;
+pub const SHAPE_3D_SPHERE: i32 = 0x03000001;
 pub const SHAPE_3D_CYLINDER: i32 = 0x03000002;
 
 macro_rules! import_shader {

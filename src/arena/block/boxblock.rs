@@ -18,16 +18,6 @@ pub struct Boxblock {
     shape: Shape,
 }
 
-impl Shape {
-    pub fn as_num(&self) -> i32 {
-        match self {
-            Self::Cube => 0,
-            Self::Sphere => 1,
-            Self::Cyliner => 2,
-        }
-    }
-}
-
 impl Boxblock {
     pub fn new(position: [f32; 3], size: [f32; 3], color: Pallet, shape: Shape) -> Self {
         Self {
