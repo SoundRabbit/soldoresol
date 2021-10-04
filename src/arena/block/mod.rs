@@ -30,6 +30,8 @@ pub use shape_group::ShapeGroup;
 pub use table::Table;
 pub use texture::Texture;
 
+use block_trait::Pack;
+
 #[derive(Clone)]
 pub enum Block {
     //root
@@ -209,9 +211,9 @@ impl ArenaBlock {
         };
 
         (object! {
-            type_name: type_name,
-            timestamp: self.timestamp,
-            payload: payload
+            "type_name": type_name,
+            "timestamp": self.timestamp,
+            "payload": payload
         })
         .into()
     }

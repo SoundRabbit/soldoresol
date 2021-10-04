@@ -118,8 +118,8 @@ impl Into<Object> for Msg {
             Self::None => JsValue::NULL,
             Self::SetContext { chat, world } => {
                 let payload = object! {
-                    chat: chat.to_jsvalue(),
-                    world: world.to_jsvalue()
+                    "chat": chat.to_jsvalue(),
+                    "world": world.to_jsvalue()
                 };
                 let payload: js_sys::Object = payload.into();
                 payload.into()
@@ -163,8 +163,8 @@ impl Into<Object> for Msg {
             Self::ClearTable { texture } => texture.to_jsvalue(),
         };
         object! {
-            type: type_name,
-            payload: payload
+            "type": type_name,
+            "payload": payload
         }
     }
 }

@@ -134,8 +134,8 @@ impl Renderer {
         let canvas_size = Self::reset_canvas_size(&canvas, device_pixel_ratio);
 
         let option: JsValue = object! {
-            preserveDrawingBuffer: true,
-            stenchil: true
+            "preserveDrawingBuffer": true,
+            "stenchil": true
         }
         .into();
         let gl = canvas

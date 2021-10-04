@@ -90,8 +90,34 @@ impl Texture {
     pub fn set_is_mask(&mut self, is_mask: bool) {
         self.is_mask = is_mask;
     }
+}
 
-    pub async fn pack(&self) -> JsValue {
-        (object! {}).into()
+use super::block_trait::{Pack, Unpack};
+use async_trait::async_trait;
+use js_sys::Promise;
+use wasm_bindgen_futures::JsFuture;
+
+#[async_trait(?Send)]
+impl Pack for Texture {
+    async fn pack(&self) -> JsValue {
+        let element = JsFuture::from(Promise::new(&mut move |resolve, _| {
+            let a = Closure::once(Box::new(move |blob| {
+                let _ = resolve.call1(&js_sys::global(), &blob);
+            }) as Box<dyn FnOnce(JsValue)>);
+            let _ = self.element.to_blob(a.as_ref().unchecked_ref());
+            a.forget();
+        }))
+        .await
+        .ok()
+        .and_then(|x| x.dyn_into::<web_sys::Blob>().ok());
+        let element = unwrap_or!(element; JsValue::NULL);
+
+        (object! {
+            "element": element,
+            "buffer_size": array![self.buffer_size[0], self.buffer_size[1]],
+            "size": array![self.size[0], self.size[1]],
+            "is_mask": self.is_mask
+        })
+        .into()
     }
 }

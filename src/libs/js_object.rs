@@ -13,7 +13,7 @@ extern "C" {
 }
 
 macro_rules! object {
-    { $( $n:ident : $v:expr ),* } => {
+    { $( $n:tt : $v:expr ),* } => {
         {
             #[allow(unused_imports)]
             use wasm_bindgen::{prelude::*, JsCast};
@@ -21,7 +21,7 @@ macro_rules! object {
 
             let tmp = js_sys::Object::new().dyn_into::<Object>().unwrap();
             $(
-                tmp.set(stringify!($n), &JsValue::from($v));
+                tmp.set($n, &JsValue::from($v));
             )*
             tmp
         }

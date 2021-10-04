@@ -22,7 +22,7 @@ pub async fn initialize(
 
     if let Some((room_db, table_db, room)) = join_some!(props.0, props.1, props.2) {
         let room_meta_data: js_sys::Object = object! {
-            last_access_time: js_sys::Date::now()
+            "last_access_time": js_sys::Date::now()
         }
         .into();
         idb::assign(

@@ -40,8 +40,8 @@ impl Data {
     pub async fn pack(&self) -> JsValue {
         match self {
             Self::Image(data) => (object! {
-                type: data.blob.type_(),
-                payload: data.blob.as_ref()
+                "type": data.blob.type_(),
+                "payload": data.blob.as_ref()
             })
             .into(),
         }
