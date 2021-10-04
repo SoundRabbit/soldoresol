@@ -91,14 +91,13 @@ bool setGSurfaceAs3dCylinder() {
 #define COLOR_MASK(bg, mk) (vec4(bg.xyz, bg.w * (1.0 - mk.w)))
 
 vec4 colorWithLightAsNone() {
-    vec4 noColor =  v_vColor;
-    vec4 bgColor1 = u_bgColor1 == COLOR_NONE ? noColor : u_bgColor1Value;
-    vec4 bgColor2 = u_bgColor2 == COLOR_NONE ? noColor : u_bgColor2Value;
-    vec4 texColor0 = u_texture0 == TEXTURE_NONE ? noColor : texture2D(u_texture0Sampler, v_textureCoord);
-    vec4 texColor1 = u_texture1 == TEXTURE_NONE ? noColor : texture2D(u_texture1Sampler, v_textureCoord);
-    vec4 texColor2 = u_texture2 == TEXTURE_NONE ? noColor : texture2D(u_texture2Sampler, v_textureCoord);
+    vec4 bgColor1 = u_bgColor1 == COLOR_NONE ? vec4(0.0) : u_bgColor1Value;
+    vec4 bgColor2 = u_bgColor2 == COLOR_NONE ? vec4(0.0) : u_bgColor2Value;
+    vec4 texColor0 = u_texture0 == TEXTURE_NONE ? vec4(0.0) : texture2D(u_texture0Sampler, v_textureCoord);
+    vec4 texColor1 = u_texture1 == TEXTURE_NONE ? vec4(0.0) : texture2D(u_texture1Sampler, v_textureCoord);
+    vec4 texColor2 = u_texture2 == TEXTURE_NONE ? vec4(0.0) : texture2D(u_texture2Sampler, v_textureCoord);
 
-    vec4 color = COLOR_BLEND(bgColor1, bgColor2);
+    vec4 color = COLOR_BLEND(v_vColor, COLOR_BLEND(bgColor1, bgColor2));
     color = u_texture0 == TEXTURE_MASK ? COLOR_MASK(color, texColor0) : COLOR_BLEND(color, texColor0);
     color = u_texture1 == TEXTURE_MASK ? COLOR_MASK(color, texColor1) : COLOR_BLEND(color, texColor1);
     color = u_texture2 == TEXTURE_MASK ? COLOR_MASK(color, texColor2) : COLOR_BLEND(color, texColor2);
@@ -108,7 +107,7 @@ vec4 colorWithLightAsNone() {
 
 #define NORMAL_VEC_INTENSITY_DEFUSE(light) (clamp(dot(g_surface.n, light), 0.0, 1.0) * u_shadeIntensity + 1.0 - u_shadeIntensity)
 #define NORMAL_VEC_INTENSITY(light) (NORMAL_VEC_INTENSITY_DEFUSE(light) * u_lightIntensity)
-#define COLOR_WITH_LIGHT_INTENSITY(i) vec4(colorWithLightAsNone().xyz * u_lightColor.xyz * i, 1.0)
+#define COLOR_WITH_LIGHT_INTENSITY(_i) vec4(colorWithLightAsNone().xyz * u_lightColor.xyz * (_i), 1.0)
 
 
 vec4 colorWithLightAsAmbient() {

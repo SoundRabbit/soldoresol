@@ -12,7 +12,7 @@ vec4 colorFromId(int id) {
     return vec4(float(r) / 255.0, float(g) / 255.0, float(b) / 255.0, float(a) / 255.0);
 }
 
-void defaultMain() {
+float defaultMain() {
     g_idValue =
         u_id == ID_U_READ || u_id == ID_U_WRITE ? u_idValue
         : u_id == ID_V_READ || u_id == ID_V_WRITE ? ID_FROM_VEC_COLOR(v_idColor) + u_idValue
@@ -38,9 +38,5 @@ void defaultMain() {
         : u_light == LIGHT_POINT_WITH_ID ? colorWithLightAsPointWithId()
         : vec4(0.0);
 
-    #ifdef USE_FRAG_DEPTH
-    
-    gl_FragDepthEXT = is_disable ? 1.0 : fragDepth();
-
-    #endif
+    return is_disable ? 1.0 : fragDepth();
 }

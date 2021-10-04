@@ -25,7 +25,6 @@ pub enum RenderingMode<'a> {
         lighting: LightingMode<'a>,
         light_color: &'a crate::libs::color::Pallet,
         light_intensity: f32,
-        camera: &'a CameraMatrix,
     },
 }
 
@@ -226,21 +225,20 @@ impl Boxblock {
         block_arena: &block::Arena,
         boxblock_ids: impl Iterator<Item = &'a BlockId>,
     ) {
-        block_arena.iter_map_with_ids(
-            boxblock_ids,
-            |boxblock_id, boxblock: &block::boxblock::Boxblock| {
+        for block_id in boxblock_ids {
+            block_arena.map(block_id, |boxblock: &block::Boxblock| {
                 for srfs in 0..6 {
                     builder.insert(
-                        boxblock_id,
+                        &block_id,
                         IdColor::from(srfs),
                         ObjectId::Boxblock(
-                            BlockId::clone(&boxblock_id),
+                            BlockId::clone(&block_id),
                             Self::surface_of(boxblock, srfs),
                         ),
                     );
                 }
-            },
-        );
+            });
+        }
     }
 
     pub fn render<'a>(
@@ -248,6 +246,7 @@ impl Boxblock {
         gl: &mut WebGlRenderingContext,
         id_table: &IdTable,
         vp_matrix: &Array2<f32>,
+        camera_position: &[f32; 3],
         block_arena: &block::Arena,
         boxblock_ids: impl Iterator<Item = &'a BlockId>,
         rendering_mode: &RenderingMode,
@@ -255,9 +254,9 @@ impl Boxblock {
     ) {
         gl.use_program(match rendering_mode {
             RenderingMode::IdMap { .. } => ProgramType::UnshapedProgram,
-            RenderingMode::View { .. } => ProgramType::ShapedProgram,
+            RenderingMode::View { .. } => ProgramType::UnshapedProgram,
         });
-        gl.depth_func(web_sys::WebGlRenderingContext::LEQUAL);
+        gl.depth_func(web_sys::WebGlRenderingContext::ALWAYS);
         gl.set_a_vertex(&self.vertex_buffer, 3, 0);
         gl.set_a_texture_coord(&self.texture_coord_buffer, 2, 0);
         gl.set_a_id_color(&self.id_color_buffer, 4, 0);
@@ -267,12 +266,16 @@ impl Boxblock {
             web_sys::WebGlRenderingContext::ELEMENT_ARRAY_BUFFER,
             Some(&self.index_buffer),
         );
+        gl.set_u_camera_position(camera_position);
         gl.set_u_shape(program::SHAPE_3D_BOX);
+        gl.set_u_vp_matrix(vp_matrix.clone().reversed_axes());
+        gl.set_u_bg_color_1(program::COLOR_SOME);
         gl.set_u_bg_color_2(program::COLOR_NONE);
+        gl.set_u_id(program::ID_NONE);
         gl.set_u_texture_0(program::TEXTURE_NONE);
         gl.set_u_texture_1(program::TEXTURE_NONE);
         gl.set_u_texture_2(program::TEXTURE_NONE);
-        gl.set_u_vp_matrix(vp_matrix.clone().reversed_axes());
+        gl.set_u_light(program::LIGHT_NONE);
 
         match rendering_mode {
             RenderingMode::IdMap { .. } => {
@@ -284,17 +287,17 @@ impl Boxblock {
                 lighting,
                 light_intensity,
                 light_color,
-                camera,
             } => {
                 gl.set_u_id(program::ID_V_READ);
-                gl.set_u_camera_position(&camera.position());
                 gl.set_u_light_color(&light_color.to_color().to_f32array());
                 gl.set_u_light_intensity(*light_intensity);
+                gl.set_u_shade_intensity(1.0);
+                gl.set_u_bg_color_1(program::COLOR_SOME);
                 match lighting {
                     LightingMode::AmbientLight { direction } => {
                         gl.set_u_light(program::LIGHT_AMBIENT);
                         gl.set_u_light_position(*direction);
-                        gl.set_u_light_attenation(1.0);
+                        gl.set_u_light_attenation(0.0);
                     }
                     LightingMode::PointLight {
                         position,
@@ -343,11 +346,7 @@ impl Boxblock {
                     }
                 }
 
-                let id_offset_color = if let Some(x) = id_table.offset_color(boxblock_id) {
-                    x
-                } else {
-                    return;
-                };
+                let id_offset_color = some_or_return!(id_table.offset_color(boxblock_id));
 
                 let s = {
                     let s = boxblock.size();
@@ -358,24 +357,22 @@ impl Boxblock {
                     ]
                 };
                 let p = boxblock.position();
+
                 let model_matrix: Array2<f32> =
                     ModelMatrix::new().with_scale(&s).with_movement(p).into();
+                let inv_model_matrix: Array2<f32> = ModelMatrix::new()
+                    .with_movement(&[-p[0], -p[1], -p[2]])
+                    .with_scale(&[1.0 / s[0], 1.0 / s[1], 1.0 / s[2]])
+                    .into();
                 let mvp_matrix = vp_matrix.dot(&model_matrix);
                 gl.set_u_translate(mvp_matrix.reversed_axes());
                 gl.set_u_id_value(id_offset_color.value() as i32);
-                gl.set_u_shape(boxblock.shape().as_num());
+                gl.set_u_model_matrix(model_matrix.reversed_axes());
+                gl.set_u_inv_model_matrix(inv_model_matrix.reversed_axes());
 
                 if let RenderingMode::View { .. } = rendering_mode {
-                    let inv_model_matrix: Array2<f32> = ModelMatrix::new()
-                        .with_movement(&[-p[0], -p[1], -p[2]])
-                        .with_scale(&[1.0 / s[0], 1.0 / s[1], 1.0 / s[2]])
-                        .into();
-                    gl.set_u_model_matrix(model_matrix.reversed_axes());
-                    gl.set_u_inv_model_matrix(inv_model_matrix.reversed_axes());
-                    gl.set_u_bg_color_1(program::COLOR_SOME);
                     gl.set_u_bg_color_1_value(&boxblock.color().to_color().to_f32array());
                 }
-
                 gl.draw_elements_with_i32(
                     web_sys::WebGlRenderingContext::TRIANGLES,
                     36,

@@ -1,3 +1,3 @@
 void main() {
-    defaultMain();
+    gl_FragDepthEXT = defaultMain();
 }

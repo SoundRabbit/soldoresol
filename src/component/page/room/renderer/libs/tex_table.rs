@@ -244,6 +244,15 @@ impl TexTable {
         }
     }
 
+    pub fn try_use_custom(&self, id: &U128Id) -> Option<(i32, u32)> {
+        let tex_id = TextureId::Custom(U128Id::clone(id));
+        if let Some(tex_idx) = self.tex_idx.get(&tex_id) {
+            Some((*tex_idx, Self::tex_flag(*tex_idx)))
+        } else {
+            None
+        }
+    }
+
     fn use_idx(&mut self) -> i32 {
         if let Some(tex_idx) = self.unused_tex_idx.pop_front() {
             tex_idx

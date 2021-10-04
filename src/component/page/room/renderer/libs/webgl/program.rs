@@ -14,7 +14,7 @@ pub const ID_V_WRITE: i32 = 0x02000002;
 
 pub const TEXTURE_NONE: i32 = 0x00000000;
 pub const TEXTURE_NORMAL: i32 = 0x00000001;
-pub const TEXTURE_MASK: i32 = 0x00000001;
+pub const TEXTURE_MASK: i32 = 0x00000002;
 
 pub const LIGHT_NONE: i32 = 0x00000000;
 pub const LIGHT_AMBIENT: i32 = 0x00000001;

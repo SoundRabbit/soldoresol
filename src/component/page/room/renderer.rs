@@ -30,10 +30,12 @@ pub struct Renderer {
     id_table: IdTable,
 
     view_frame: framebuffer::View,
+    screen_frame: framebuffer::Screen,
     idmap_frame: framebuffer::Idmap,
     shadomap_frame: framebuffer::Shadowmap,
 
     screen_mesh: mesh::Screen,
+    table_grid_mesh: mesh::TableGrid,
     boxblock_mesh: mesh::Boxblock,
 }
 
@@ -158,6 +160,7 @@ impl Renderer {
 
         gl.clear_color(0.0, 0.0, 0.0, 0.0);
         gl.clear_stencil(0);
+        gl.stencil_func(web_sys::WebGlRenderingContext::ALWAYS, 0, 0);
 
         let mut tex_table = tex_table::TexTable::new(&gl);
         let id_table = id_table::IdTable::from(IdTableBuilder::new());
@@ -165,11 +168,13 @@ impl Renderer {
         let sw = canvas_size[0] as i32;
         let sh = canvas_size[1] as i32;
 
-        let view_frame = framebuffer::View::new(&gl, sw, sh, &mut tex_table);
+        let view_frame = framebuffer::View::new();
+        let screen_frame = framebuffer::Screen::new(&gl, sw, sh, &mut tex_table);
         let idmap_frame = framebuffer::Idmap::new(&gl, sw, sh, &mut tex_table);
         let shadomap_frame = framebuffer::Shadowmap::new(&gl, &mut tex_table);
 
         let screen_mesh = mesh::Screen::new(&gl);
+        let table_grid_mesh = mesh::TableGrid::new(&gl);
         let boxblock_mesh = mesh::Boxblock::new(&gl);
 
         Self {
@@ -183,10 +188,12 @@ impl Renderer {
             id_table,
 
             view_frame,
+            screen_frame,
             idmap_frame,
             shadomap_frame,
 
             screen_mesh,
+            table_grid_mesh,
             boxblock_mesh,
         }
     }
@@ -197,7 +204,7 @@ impl Renderer {
         let sh = canvas_size[1] as i32;
 
         self.gl.viewport(0, 0, sw, sh);
-        self.view_frame
+        self.screen_frame
             .reset_size(&self.gl, sw, sh, &mut self.tex_table);
         self.idmap_frame
             .reset_size(&self.gl, sw, sh, &mut self.tex_table);
@@ -286,12 +293,14 @@ impl Renderer {
                 let vp_matrix = camera_matrix.vp_matrix(&self.canvas_size);
 
                 self.view_frame.bind_self(&self.gl);
-
-                self.view_frame.begin_to_render_frontscreen(&self.gl);
                 self.clear();
+                // self.screen_frame
+                //     .begin_to_render_frontscreen(&self.gl, &self.tex_table);
+                // self.clear();
 
-                self.view_frame.begin_to_render_backscreen(&self.gl);
-                self.clear();
+                // self.screen_frame
+                //     .begin_to_render_backscreen(&self.gl, &self.tex_table);
+                // self.clear();
 
                 self.gl.blend_func_separate(
                     web_sys::WebGlRenderingContext::SRC_ALPHA,
@@ -300,38 +309,46 @@ impl Renderer {
                     web_sys::WebGlRenderingContext::ONE,
                 );
 
+                self.table_grid_mesh.render(
+                    &mut self.gl,
+                    &vp_matrix,
+                    &camera_matrix.position(),
+                    table,
+                );
+
                 self.boxblock_mesh.render(
                     &mut self.gl,
                     &self.id_table,
                     &vp_matrix,
+                    &camera_matrix.position(),
                     &block_arena,
                     table.boxblocks(),
                     &mesh::boxblock::RenderingMode::View {
                         lighting: mesh::boxblock::LightingMode::AmbientLight {
                             direction: &[1.0, 1.0, 1.0],
                         },
-                        light_color: &crate::libs::color::Pallet::gray(0),
-                        light_intensity: 0.5,
-                        camera: &camera_matrix,
+                        light_color: &crate::libs::color::Pallet::gray(5),
+                        light_intensity: 1.0,
                     },
                     &mut self.tex_table,
                 );
 
-                self.render_frontscreen(false);
+                // self.render_frontscreen(false);
 
                 // 当たり判定用のオフスクリーンレンダリング
-                self.idmap_frame.bind_self(&self.gl);
-                self.clear();
+                // self.idmap_frame.bind_self(&self.gl);
+                // self.clear();
 
-                self.gl.blend_func(
-                    web_sys::WebGlRenderingContext::ONE,
-                    web_sys::WebGlRenderingContext::ZERO,
-                );
+                // self.gl.blend_func(
+                //     web_sys::WebGlRenderingContext::ONE,
+                //     web_sys::WebGlRenderingContext::ZERO,
+                // );
 
-                self.gl
-                    .bind_framebuffer(web_sys::WebGlRenderingContext::FRAMEBUFFER, None);
-                self.clear();
-                self.flip();
+                // self.view_frame.bind_self(&self.gl);
+                // self.clear();
+                // self.flip();
+
+                self.gl.finish();
             });
         });
     }
@@ -349,32 +366,20 @@ impl Renderer {
             web_sys::WebGlRenderingContext::FRAMEBUFFER,
             web_sys::WebGlRenderingContext::COLOR_ATTACHMENT0,
             web_sys::WebGlRenderingContext::TEXTURE_2D,
-            Some(&self.view_frame.backscreen_tex().0),
+            Some(&self.screen_frame.backscreen_tex().0),
             0,
         );
     }
 
     fn render_frontscreen(&mut self, add_blend: bool) {
-        self.gl.framebuffer_texture_2d(
-            web_sys::WebGlRenderingContext::FRAMEBUFFER,
-            web_sys::WebGlRenderingContext::COLOR_ATTACHMENT0,
-            web_sys::WebGlRenderingContext::TEXTURE_2D,
-            Some(&self.view_frame.frontscreen_tex().0),
-            0,
-        );
-
-        if add_blend {
-            self.gl.blend_func(
-                web_sys::WebGlRenderingContext::SRC_ALPHA,
-                web_sys::WebGlRenderingContext::ONE,
-            );
-        }
+        self.screen_frame
+            .begin_to_render_frontscreen(&self.gl, &self.tex_table);
 
         self.screen_mesh.render(
             &mut self.gl,
-            &self.view_frame.backscreen_tex().1,
+            &self.screen_frame.backscreen_tex().1,
             &mut self.tex_table,
-            &self.view_frame.backscreen_tex().0,
+            &self.screen_frame.backscreen_tex().0,
             &self.canvas_size,
         );
     }
@@ -382,9 +387,9 @@ impl Renderer {
     fn flip(&mut self) {
         self.screen_mesh.render(
             &mut self.gl,
-            &self.view_frame.frontscreen_tex().1,
+            &self.screen_frame.frontscreen_tex().1,
             &mut self.tex_table,
-            &self.view_frame.frontscreen_tex().0,
+            &self.screen_frame.frontscreen_tex().0,
             &self.canvas_size,
         );
     }

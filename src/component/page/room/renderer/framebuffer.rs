@@ -4,10 +4,12 @@ use libs::tex_table::TexTable;
 use libs::webgl::WebGlRenderingContext;
 
 pub mod idmap;
+pub mod screen;
 pub mod shadowmap;
 pub mod view;
 
 pub use idmap::Idmap;
+pub use screen::Screen;
 pub use shadowmap::Shadowmap;
 pub use view::View;
 

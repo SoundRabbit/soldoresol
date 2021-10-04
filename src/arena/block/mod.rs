@@ -20,6 +20,8 @@ pub mod terran;
 pub mod texture;
 pub mod world;
 
+pub use boxblock::Boxblock;
+
 pub enum Block {
     World(world::World),
     Table(table::Table),
