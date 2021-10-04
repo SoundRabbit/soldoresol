@@ -1,26 +1,17 @@
 use super::block_trait::DisplayNamed;
 use super::BlockId;
 use crate::arena::resource::ResourceId;
-use crate::libs::clone_of::CloneOf;
 use crate::libs::color::Pallet;
 use crate::libs::select_list::SelectList;
 
+#[derive(Clone)]
 pub struct CharacterTexture {
     name: String,
     texture_id: Option<ResourceId>,
     height: f32,
 }
 
-impl Clone for CharacterTexture {
-    fn clone(&self) -> Self {
-        Self {
-            name: self.name.clone(),
-            texture_id: self.texture_id.as_ref().map(|x| ResourceId::clone(x)),
-            height: self.height,
-        }
-    }
-}
-
+#[derive(Clone)]
 pub struct Character {
     size: f32,
     name: String,
@@ -50,19 +41,6 @@ impl Character {
             ),
             properties: vec![],
             name_color: Pallet::gray(9).a(100),
-        }
-    }
-
-    pub fn clone(this: &Self) -> Self {
-        Self {
-            size: this.size,
-            name: this.name.clone(),
-            display_name: this.display_name.clone(),
-            description: this.description.clone(),
-            position: this.position.clone(),
-            textures: SelectList::clone_of(&this.textures),
-            properties: this.properties.iter().map(BlockId::clone).collect(),
-            name_color: this.name_color.clone(),
         }
     }
 

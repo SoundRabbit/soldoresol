@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use wasm_bindgen::{prelude::*, JsCast};
 
+#[derive(Clone)]
 pub struct Table {
     name: Rc<String>,
     size: [f32; 2],
@@ -48,29 +49,6 @@ impl Table {
             boxblocks: vec![],
             pointlights: vec![],
             env_light_intensity: 1.0,
-        }
-    }
-
-    pub fn clone(this: &Self) -> Self {
-        Self {
-            name: Rc::clone(&this.name),
-            size: this.size.clone(),
-            is_bind_to_grid: this.is_bind_to_grid,
-            is_showing_grid: this.is_showing_grid,
-            drawing_texture_id: BlockId::clone(&this.drawing_texture_id),
-            drawed_texture_id: BlockId::clone(&this.drawed_texture_id),
-            drawing_terran_id: BlockId::clone(&this.drawing_terran_id),
-            drawed_terran_id: BlockId::clone(&this.drawed_terran_id),
-            terran_height: this.terran_height,
-            background_texture_id: this
-                .background_texture_id
-                .as_ref()
-                .map(|r_id| ResourceId::clone(r_id)),
-            background_color: this.background_color,
-            grid_color: this.grid_color,
-            boxblocks: this.boxblocks.iter().map(BlockId::clone).collect(),
-            pointlights: this.pointlights.iter().map(BlockId::clone).collect(),
-            env_light_intensity: this.env_light_intensity,
         }
     }
 

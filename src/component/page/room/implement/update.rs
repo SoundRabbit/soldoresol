@@ -10,7 +10,6 @@ use super::{Cmd, Contextmenu, ContextmenuKind, Implement, Modal, ModelessContent
 use crate::arena::block::{self, BlockId};
 use crate::arena::resource::{self, ResourceId};
 use crate::arena::Insert;
-use crate::libs::clone_of::CloneOf;
 use crate::libs::color::Pallet;
 use crate::libs::select_list::SelectList;
 use js_sys::Promise;

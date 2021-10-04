@@ -1,6 +1,7 @@
 use crate::libs::color::Pallet;
 use std::rc::Rc;
 
+#[derive(Clone)]
 pub struct Tag {
     name: Rc<String>,
     color: Pallet,
@@ -11,13 +12,6 @@ impl Tag {
         Self {
             name: Rc::new(String::from("")),
             color: Pallet::blue(5).a(100),
-        }
-    }
-
-    pub fn clone(this: &Self) -> Self {
-        Self {
-            name: Rc::clone(&this.name),
-            color: this.color,
         }
     }
 

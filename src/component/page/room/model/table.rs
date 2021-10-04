@@ -1,9 +1,9 @@
 use crate::arena::resource::ResourceId;
-use crate::libs::clone_of::CloneOf;
 use crate::libs::color::Pallet;
 use crate::libs::select_list::SelectList;
 use std::rc::Rc;
 
+#[derive(Clone)]
 pub enum TableTool {
     Hr(Rc<String>),
     Selector,
@@ -36,30 +36,13 @@ impl TableTool {
     }
 }
 
-impl CloneOf for TableTool {
-    fn clone_of(this: &Self) -> Self {
-        match this {
-            Self::Hr(x) => Self::Hr(Rc::clone_of(x)),
-            Self::Selector => Self::Selector,
-            Self::TableEditor => Self::TableEditor,
-            Self::Pen(x) => Self::Pen(PenTool::clone_of(x)),
-            Self::Shape(x) => Self::Shape(SelectList::clone_of(x)),
-            Self::Eraser(x) => Self::Eraser(EraserTool::clone_of(x)),
-            Self::Character(x) => Self::Character(CharacterTool::clone_of(x)),
-            Self::Boxblock(x) => Self::Boxblock(BoxblockTool::clone_of(x)),
-            Self::Pointlight(x) => Self::Pointlight(PointlightTool::clone_of(x)),
-            Self::Terranblock(x) => Self::Terranblock(TerranblockTool::clone_of(x)),
-            Self::TerranblockEraser => Self::TerranblockEraser,
-        }
-    }
-}
-
 #[derive(Clone)]
 pub struct PenTool {
     pub line_width: f64,
     pub pallet: Pallet,
 }
 
+#[derive(Clone)]
 pub enum ShapeTool {
     Line(LineShapeTool),
     Rect(FillShapeTool),
@@ -94,16 +77,6 @@ impl ShapeTool {
     }
 }
 
-impl CloneOf for ShapeTool {
-    fn clone_of(this: &Self) -> Self {
-        match this {
-            Self::Line(x) => Self::Line(LineShapeTool::clone_of(x)),
-            Self::Rect(x) => Self::Rect(FillShapeTool::clone_of(x)),
-            Self::Ellipse(x) => Self::Ellipse(FillShapeTool::clone_of(x)),
-        }
-    }
-}
-
 #[derive(Clone)]
 pub struct LineShapeTool {
     pub line_width: f64,
@@ -123,22 +96,12 @@ pub struct EraserTool {
     pub alpha: u8,
 }
 
+#[derive(Clone)]
 pub struct CharacterTool {
     pub size: f64,
     pub height: f64,
     pub tex_id: Option<ResourceId>,
     pub name: String,
-}
-
-impl CloneOf for CharacterTool {
-    fn clone_of(this: &Self) -> Self {
-        Self {
-            size: this.size,
-            height: this.height,
-            tex_id: this.tex_id.as_ref().map(|x| ResourceId::clone(x)),
-            name: this.name.clone(),
-        }
-    }
 }
 
 #[derive(Clone)]

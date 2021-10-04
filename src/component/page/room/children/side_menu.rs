@@ -14,7 +14,6 @@ use super::molecule::tab_menu::{self, TabMenu};
 use super::util::Prop;
 use crate::arena::block::{self, BlockId};
 use crate::arena::resource::{self, ResourceId};
-use crate::libs::clone_of::CloneOf;
 use crate::libs::color::Pallet;
 use crate::libs::select_list::SelectList;
 use isaribi::{
@@ -155,7 +154,7 @@ impl Component for SideMenu {
                         }
                     }),
                     Modal::SelectCharacterTexture(character) => self.render_modal_select_image({
-                        let mut character = CharacterTool::clone_of(character);
+                        let mut character = CharacterTool::clone(character);
                         move |r_id| {
                             character.tex_id = Some(r_id);
                             Msg::Sub(On::SetSelectedTool {
@@ -575,7 +574,7 @@ impl SideMenu {
                                 },
                                 Attributes::new(),
                                 Events::new().on_click({
-                                    let mut tools = SelectList::clone_of(tools);
+                                    let mut tools = SelectList::clone(tools);
                                     move |sub| {
                                         tools.set_selected_idx(tool_idx);
                                         Msg::Sub(On::SetSelectedTool {
@@ -635,7 +634,7 @@ impl SideMenu {
                     },
                     Subscription::new({
                         let mut line_shape = LineShapeTool::clone(line_shape);
-                        let mut tools = SelectList::clone_of(tools);
+                        let mut tools = SelectList::clone(tools);
                         move |sub| match sub {
                             slider::On::Input(val) => {
                                 line_shape.line_width = val;
@@ -657,7 +656,7 @@ impl SideMenu {
                     },
                     Subscription::new({
                         let mut line_shape = LineShapeTool::clone(line_shape);
-                        let mut tools = SelectList::clone_of(tools);
+                        let mut tools = SelectList::clone(tools);
                         move |sub| match sub {
                             color_pallet::On::SelectColor(pallet) => {
                                 line_shape.pallet = pallet;
@@ -695,8 +694,8 @@ impl SideMenu {
                         range_is_editable: false,
                     },
                     Subscription::new({
-                        let mut fill_shape = FillShapeTool::clone_of(fill_shape);
-                        let mut tools = SelectList::clone_of(tools);
+                        let mut fill_shape = FillShapeTool::clone(fill_shape);
+                        let mut tools = SelectList::clone(tools);
                         move |sub| match sub {
                             slider::On::Input(val) => {
                                 fill_shape.line_width = val;
@@ -725,8 +724,8 @@ impl SideMenu {
                                 ..Default::default()
                             },
                             Subscription::new({
-                                let mut fill_shape = FillShapeTool::clone_of(fill_shape);
-                                let mut tools = SelectList::clone_of(tools);
+                                let mut fill_shape = FillShapeTool::clone(fill_shape);
+                                let mut tools = SelectList::clone(tools);
                                 move |sub| match sub {
                                     color_pallet::On::SelectColor(pallet) => {
                                         fill_shape.line_pallet = pallet;
@@ -746,8 +745,8 @@ impl SideMenu {
                                 ..Default::default()
                             },
                             Subscription::new({
-                                let mut fill_shape = FillShapeTool::clone_of(fill_shape);
-                                let mut tools = SelectList::clone_of(tools);
+                                let mut fill_shape = FillShapeTool::clone(fill_shape);
+                                let mut tools = SelectList::clone(tools);
                                 move |sub| match sub {
                                     color_pallet::On::SelectColor(pallet) => {
                                         fill_shape.fill_pallet = pallet;
@@ -842,7 +841,7 @@ impl SideMenu {
                         range_is_editable: false,
                     },
                     Subscription::new({
-                        let mut character = CharacterTool::clone_of(character);
+                        let mut character = CharacterTool::clone(character);
                         move |sub| match sub {
                             slider::On::Input(size) => {
                                 character.size = size;
@@ -865,7 +864,7 @@ impl SideMenu {
                         range_is_editable: false,
                     },
                     Subscription::new({
-                        let mut character = CharacterTool::clone_of(character);
+                        let mut character = CharacterTool::clone(character);
                         move |sub| match sub {
                             slider::On::Input(tex_scale) => {
                                 character.height = tex_scale;
@@ -892,7 +891,7 @@ impl SideMenu {
                 Btn::primary(
                     Attributes::new(),
                     Events::new().on_click({
-                        let character = CharacterTool::clone_of(character);
+                        let character = CharacterTool::clone(character);
                         move |_| Msg::SetModal(Modal::SelectCharacterTexture(character))
                     }),
                     vec![Html::text("画像を選択する")],
@@ -920,7 +919,7 @@ impl SideMenu {
                         range_is_editable: false,
                     },
                     Subscription::new({
-                        let mut boxblock = BoxblockTool::clone_of(boxblock);
+                        let mut boxblock = BoxblockTool::clone(boxblock);
                         move |sub| match sub {
                             slider::On::Input(a) => {
                                 boxblock.size[0] = a;
@@ -944,7 +943,7 @@ impl SideMenu {
                         range_is_editable: false,
                     },
                     Subscription::new({
-                        let mut boxblock = BoxblockTool::clone_of(boxblock);
+                        let mut boxblock = BoxblockTool::clone(boxblock);
                         move |sub| match sub {
                             slider::On::Input(a) => {
                                 boxblock.size[1] = a;
@@ -968,7 +967,7 @@ impl SideMenu {
                         range_is_editable: false,
                     },
                     Subscription::new({
-                        let mut boxblock = BoxblockTool::clone_of(boxblock);
+                        let mut boxblock = BoxblockTool::clone(boxblock);
                         move |sub| match sub {
                             slider::On::Input(a) => {
                                 boxblock.size[2] = a;
@@ -996,7 +995,7 @@ impl SideMenu {
                         Btn::menu(
                             Attributes::new(),
                             Events::new().on_click({
-                                let mut boxblock = BoxblockTool::clone_of(boxblock);
+                                let mut boxblock = BoxblockTool::clone(boxblock);
                                 move |_| {
                                     boxblock.shape = block::boxblock::Shape::Cube;
                                     Msg::Sub(On::SetSelectedTool {
@@ -1009,7 +1008,7 @@ impl SideMenu {
                         Btn::menu(
                             Attributes::new(),
                             Events::new().on_click({
-                                let mut boxblock = BoxblockTool::clone_of(boxblock);
+                                let mut boxblock = BoxblockTool::clone(boxblock);
                                 move |_| {
                                     boxblock.shape = block::boxblock::Shape::Sphere;
                                     Msg::Sub(On::SetSelectedTool {
@@ -1022,7 +1021,7 @@ impl SideMenu {
                         Btn::menu(
                             Attributes::new(),
                             Events::new().on_click({
-                                let mut boxblock = BoxblockTool::clone_of(boxblock);
+                                let mut boxblock = BoxblockTool::clone(boxblock);
                                 move |_| {
                                     boxblock.shape = block::boxblock::Shape::Cyliner;
                                     Msg::Sub(On::SetSelectedTool {
@@ -1040,7 +1039,7 @@ impl SideMenu {
                         title: Some(String::from("ブロック色")),
                     },
                     Subscription::new({
-                        let mut boxblock = BoxblockTool::clone_of(boxblock);
+                        let mut boxblock = BoxblockTool::clone(boxblock);
                         move |sub| match sub {
                             color_pallet::On::SelectColor(a) => {
                                 boxblock.color = a;
@@ -1078,7 +1077,7 @@ impl SideMenu {
                         Btn::menu(
                             Attributes::new(),
                             Events::new().on_click({
-                                let mut terranblock = TerranblockTool::clone_of(terranblock);
+                                let mut terranblock = TerranblockTool::clone(terranblock);
                                 move |_| {
                                     terranblock.is_fillable = false;
                                     Msg::Sub(On::SetSelectedTool {
@@ -1091,7 +1090,7 @@ impl SideMenu {
                         Btn::menu(
                             Attributes::new(),
                             Events::new().on_click({
-                                let mut terranblock = TerranblockTool::clone_of(terranblock);
+                                let mut terranblock = TerranblockTool::clone(terranblock);
                                 move |_| {
                                     terranblock.is_fillable = true;
                                     Msg::Sub(On::SetSelectedTool {
@@ -1109,7 +1108,7 @@ impl SideMenu {
                         title: Some(String::from("ブロック色")),
                     },
                     Subscription::new({
-                        let mut terranblock = TerranblockTool::clone_of(terranblock);
+                        let mut terranblock = TerranblockTool::clone(terranblock);
                         move |sub| match sub {
                             color_pallet::On::SelectColor(a) => {
                                 terranblock.color = a;
@@ -1143,7 +1142,7 @@ impl SideMenu {
                         range_is_editable: false,
                     },
                     Subscription::new({
-                        let mut pointlight = PointlightTool::clone_of(pointlight);
+                        let mut pointlight = PointlightTool::clone(pointlight);
                         move |sub| match sub {
                             slider::On::Input(a) => {
                                 pointlight.light_intensity = a;
@@ -1167,7 +1166,7 @@ impl SideMenu {
                         range_is_editable: false,
                     },
                     Subscription::new({
-                        let mut pointlight = PointlightTool::clone_of(pointlight);
+                        let mut pointlight = PointlightTool::clone(pointlight);
                         move |sub| match sub {
                             slider::On::Input(a) => {
                                 pointlight.light_attenation = a;
@@ -1185,7 +1184,7 @@ impl SideMenu {
                         title: Some(String::from("光源色")),
                     },
                     Subscription::new({
-                        let mut pointlight = PointlightTool::clone_of(pointlight);
+                        let mut pointlight = PointlightTool::clone(pointlight);
                         move |sub| match sub {
                             color_pallet::On::SelectColor(a) => {
                                 pointlight.color = a;

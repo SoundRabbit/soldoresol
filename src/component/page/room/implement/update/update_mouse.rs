@@ -1,6 +1,6 @@
 use super::{
-    block, BlockId, BoxblockTool, CharacterTool, CloneOf, Implement, ObjectId, PointlightTool,
-    ResourceId, ShapeTool, TableTool, TerranblockTool,
+    block, BlockId, BoxblockTool, CharacterTool, Implement, ObjectId, PointlightTool, ResourceId,
+    ShapeTool, TableTool, TerranblockTool,
 };
 
 impl Implement {
@@ -581,7 +581,7 @@ impl Implement {
     fn update_tabletool_character(&mut self) {
         if self.mouse_state.primary_btn().is_clicked() {
             let character = if let Some(TableTool::Character(x)) = self.table_tools.selected() {
-                CharacterTool::clone_of(x)
+                CharacterTool::clone(x)
             } else {
                 return;
             };
@@ -606,7 +606,7 @@ impl Implement {
     fn update_tabletool_boxblock(&mut self) {
         if self.mouse_state.primary_btn().is_clicked() {
             let boxblock = if let Some(TableTool::Boxblock(x)) = self.table_tools.selected() {
-                BoxblockTool::clone_of(x)
+                BoxblockTool::clone(x)
             } else {
                 return;
             };
@@ -634,7 +634,7 @@ impl Implement {
 
     fn update_tabletool_terranblock(&mut self) {
         let terranblock = if let Some(TableTool::Terranblock(x)) = self.table_tools.selected() {
-            TerranblockTool::clone_of(x)
+            TerranblockTool::clone(x)
         } else {
             return;
         };
@@ -755,7 +755,7 @@ impl Implement {
     fn update_tabletool_pointlight(&mut self) {
         if self.mouse_state.primary_btn().is_clicked() {
             let pointlight = if let Some(TableTool::Pointlight(x)) = self.table_tools.selected() {
-                PointlightTool::clone_of(x)
+                PointlightTool::clone(x)
             } else {
                 return;
             };

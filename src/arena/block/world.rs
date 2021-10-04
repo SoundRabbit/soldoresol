@@ -1,6 +1,7 @@
 use super::BlockId;
 use wasm_bindgen::{prelude::*, JsCast};
 
+#[derive(Clone)]
 pub struct World {
     selecting_table: BlockId,
     tables: Vec<BlockId>,
@@ -18,36 +19,6 @@ impl World {
             characters: vec![],
             memos: vec![],
             tags: vec![],
-        }
-    }
-
-    pub fn clone(this: &Self) -> Self {
-        let characters = this
-            .characters
-            .iter()
-            .map(|b_id| BlockId::clone(b_id))
-            .collect::<Vec<_>>();
-        let tables = this
-            .tables
-            .iter()
-            .map(|b_id| BlockId::clone(b_id))
-            .collect::<Vec<_>>();
-        let memos = this
-            .memos
-            .iter()
-            .map(|b_id| BlockId::clone(b_id))
-            .collect::<Vec<_>>();
-        let tags = this
-            .tags
-            .iter()
-            .map(|b_id| BlockId::clone(b_id))
-            .collect::<Vec<_>>();
-        Self {
-            selecting_table: BlockId::clone(&this.selecting_table),
-            characters,
-            tables,
-            memos,
-            tags,
         }
     }
 

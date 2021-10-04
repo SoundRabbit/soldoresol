@@ -1,6 +1,5 @@
 use crate::arena::block::{self, BlockId};
 use crate::arena::resource::{self};
-use crate::libs::clone_of::CloneOf;
 use crate::libs::random_id::U128Id;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -230,7 +229,7 @@ impl Renderer {
             let table_id = u32::from_be_bytes([table_id[3], table_id[0], table_id[1], table_id[2]]);
             self.id_table
                 .object_id(&IdColor::from(table_id))
-                .map(|x| ObjectId::clone_of(x))
+                .map(|x| ObjectId::clone(x))
                 .unwrap_or(ObjectId::None)
         } else {
             ObjectId::None

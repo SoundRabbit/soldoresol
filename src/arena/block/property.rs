@@ -1,7 +1,7 @@
 use super::BlockId;
-use crate::libs::clone_of::CloneOf;
 use crate::libs::select_list::SelectList;
 
+#[derive(Clone)]
 pub enum Value {
     None,
     Text(String),
@@ -16,27 +16,12 @@ pub enum ValueMode {
     Column,
 }
 
+#[derive(Clone)]
 pub struct Property {
     name: String,
     values: Vec<Value>,
     children: Vec<BlockId>,
     value_mode: ValueMode,
-}
-
-impl Value {
-    pub fn clone(this: &Self) -> Self {
-        match this {
-            Self::None => Self::None,
-            Self::Text(x) => Self::Text(x.clone()),
-            Self::MultiLineText(x) => Self::MultiLineText(x.clone()),
-            Self::ResourceMinMax { min, val, max } => Self::ResourceMinMax {
-                min: *min,
-                val: *val,
-                max: *max,
-            },
-            Self::MappedList(x) => Self::MappedList(SelectList::clone_of(x)),
-        }
-    }
 }
 
 impl Property {
@@ -46,15 +31,6 @@ impl Property {
             values: vec![],
             children: vec![],
             value_mode: ValueMode::List,
-        }
-    }
-
-    pub fn clone(this: &Self) -> Self {
-        Self {
-            name: this.name.clone(),
-            values: this.values.iter().map(|x| Value::clone(x)).collect(),
-            children: this.children.iter().map(|x| BlockId::clone(x)).collect(),
-            value_mode: this.value_mode.clone(),
         }
     }
 

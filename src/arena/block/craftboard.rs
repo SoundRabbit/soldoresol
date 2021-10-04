@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use wasm_bindgen::{prelude::*, JsCast};
 
+#[derive(Clone)]
 pub struct Craftboard {
     name: Rc<String>,
     size: [f32; 2],
@@ -37,21 +38,6 @@ impl Craftboard {
             grid_color: Pallet::gray(9).a(100),
             env_light_intensity: 1.0,
             layer_group_id,
-        }
-    }
-
-    pub fn clone(this: &Self) -> Self {
-        Self {
-            name: Rc::clone(&this.name),
-            size: this.size.clone(),
-            is_bind_to_grid: this.is_bind_to_grid,
-            is_showing_grid: this.is_showing_grid,
-            drawing_terran_id: BlockId::clone(&this.drawing_terran_id),
-            drawed_terran_id: BlockId::clone(&this.drawed_terran_id),
-            terran_height: this.terran_height,
-            grid_color: this.grid_color,
-            env_light_intensity: this.env_light_intensity,
-            layer_group_id: BlockId::clone(&this.layer_group_id),
         }
     }
 

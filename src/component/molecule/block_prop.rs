@@ -3,7 +3,6 @@ use super::atom::dropdown::{self, Dropdown};
 use super::atom::slider::{self, Slider};
 use super::atom::text;
 use crate::arena::block::{self, BlockId};
-use crate::libs::clone_of::CloneOf;
 use crate::libs::select_list::SelectList;
 use isaribi::{
     style,
@@ -102,7 +101,7 @@ impl Component for BlockProp {
                     &BlockId::clone(&prop_id),
                     move |prop: &block::property::Property| {
                         if let block::property::Value::MappedList(mapped_list) = prop.value(idx) {
-                            let mut mapped_list = SelectList::clone_of(mapped_list);
+                            let mut mapped_list = SelectList::clone(mapped_list);
                             update(&mut mapped_list);
                             Cmd::sub(On::SetPropertyValue {
                                 property_id: prop_id,

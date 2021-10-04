@@ -1,5 +1,6 @@
 use crate::libs::color::Pallet;
 
+#[derive(Clone)]
 pub struct Pointlight {
     position: [f32; 3],
     light_intensity: f32,
@@ -14,15 +15,6 @@ impl Pointlight {
             light_attenation: 0.1,
             light_intensity: 0.5,
             color: Pallet::gray(0),
-        }
-    }
-
-    pub fn clone(this: &Self) -> Self {
-        Self {
-            position: this.position.clone(),
-            light_attenation: this.light_attenation,
-            light_intensity: this.light_intensity,
-            color: Pallet::clone(&this.color),
         }
     }
 

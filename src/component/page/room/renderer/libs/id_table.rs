@@ -1,7 +1,7 @@
 use crate::arena::block::BlockId;
-use crate::libs::clone_of::CloneOf;
 use std::collections::HashMap;
 
+#[derive(Clone)]
 pub enum ObjectId {
     None,
     Character(BlockId, Surface),
@@ -37,18 +37,6 @@ impl ObjectId {
         match &self {
             Self::None => true,
             _ => false,
-        }
-    }
-}
-
-impl CloneOf for ObjectId {
-    fn clone_of(this: &Self) -> Self {
-        match this {
-            Self::None => Self::None,
-            Self::Character(b_id, s) => Self::Character(BlockId::clone(b_id), s.clone()),
-            Self::Boxblock(b_id, s) => Self::Boxblock(BlockId::clone(b_id), s.clone()),
-            Self::Pointlight(b_id, s) => Self::Pointlight(BlockId::clone(b_id), s.clone()),
-            Self::Terran(b_id, s) => Self::Terran(BlockId::clone(b_id), s.clone()),
         }
     }
 }

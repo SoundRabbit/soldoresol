@@ -8,6 +8,7 @@ pub enum Shape {
     Cyliner,
 }
 
+#[derive(Clone)]
 pub struct Boxblock {
     position: [f32; 3],
     size: [f32; 3],
@@ -28,18 +29,6 @@ impl Boxblock {
             name: String::new(),
             display_name: String::new(),
             shape,
-        }
-    }
-
-    pub fn clone(&self) -> Self {
-        Self {
-            position: self.position.clone(),
-            size: self.size.clone(),
-            color: self.color,
-            is_fixed: self.is_fixed,
-            name: self.name.clone(),
-            display_name: self.display_name.clone(),
-            shape: self.shape.clone(),
         }
     }
 

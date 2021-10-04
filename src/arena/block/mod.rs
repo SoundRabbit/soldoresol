@@ -30,6 +30,7 @@ pub use shape_group::ShapeGroup;
 pub use table::Table;
 pub use texture::Texture;
 
+#[derive(Clone)]
 pub enum Block {
     //root
     Chat(chat::Chat),
@@ -66,26 +67,6 @@ impl Block {
         match self {
             Self::None => true,
             _ => false,
-        }
-    }
-
-    fn clone(this: &Self) -> Self {
-        match this {
-            Self::World(block) => Self::World(world::World::clone(block)),
-            Self::Table(block) => Self::Table(table::Table::clone(block)),
-            Self::Texture(block) => Self::Texture(texture::Texture::clone(block)),
-            Self::Chat(block) => Self::Chat(chat::Chat::clone(block)),
-            Self::ChatChannel(block) => Self::ChatChannel(chat::channel::Channel::clone(block)),
-            Self::ChatMessage(block) => Self::ChatMessage(chat::message::Message::clone(block)),
-            Self::Character(block) => Self::Character(character::Character::clone(block)),
-            Self::Tag(block) => Self::Tag(tag::Tag::clone(block)),
-            Self::Boxblock(block) => Self::Boxblock(boxblock::Boxblock::clone(block)),
-            Self::Property(block) => Self::Property(property::Property::clone(block)),
-            Self::Pointlight(block) => Self::Pointlight(pointlight::Pointlight::clone(block)),
-            Self::Terran(block) => Self::Terran(terran::Terran::clone(block)),
-            Self::Craftboard(block) => Self::Craftboard(Craftboard::clone(block)),
-            Self::LayerGroup(block) => Self::LayerGroup(LayerGroup::clone(block)),
-            Self::None => Self::None,
         }
     }
 
@@ -316,10 +297,10 @@ pub struct ArenaRef {
     arena: Arena,
 }
 
-impl ArenaRef {
-    pub fn clone(this: &Self) -> Self {
+impl Clone for ArenaRef {
+    fn clone(&self) -> Self {
         Self {
-            arena: Arena::clone(&this.arena),
+            arena: Arena::clone(&self.arena),
         }
     }
 }

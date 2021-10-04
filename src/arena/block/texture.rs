@@ -4,6 +4,7 @@ use crate::libs::color::Color;
 use std::rc::Rc;
 use wasm_bindgen::{prelude::*, JsCast};
 
+#[derive(Clone)]
 pub struct Texture {
     element: Rc<web_sys::HtmlCanvasElement>,
     context: Rc<web_sys::CanvasRenderingContext2d>,
@@ -50,17 +51,6 @@ impl Texture {
         this.set_size(size);
 
         this
-    }
-
-    pub fn clone(this: &Self) -> Self {
-        Self {
-            element: Rc::clone(&this.element),
-            context: Rc::clone(&this.context),
-            size: this.size.clone(),
-            buffer_size: this.buffer_size.clone(),
-            pixel_ratio: this.pixel_ratio.clone(),
-            is_mask: this.is_mask,
-        }
     }
 
     pub fn element(&self) -> &web_sys::HtmlCanvasElement {
