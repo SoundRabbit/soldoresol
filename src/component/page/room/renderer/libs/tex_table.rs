@@ -1,6 +1,7 @@
 use super::webgl::WebGlRenderingContext;
 use crate::arena::resource::{self, ResourceId};
 use crate::libs::random_id::U128Id;
+use std::cell::Cell;
 use std::collections::HashMap;
 use std::collections::VecDeque;
 use std::rc::Rc;
@@ -25,12 +26,56 @@ impl TextureId {
     }
 }
 
+struct Lifespan<V> {
+    value: V,
+    life_expectancy: usize,
+    is_used: Cell<bool>,
+}
+
+impl<V> Lifespan<V> {
+    pub fn new(value: V) -> Self {
+        Self {
+            value,
+            life_expectancy: 0,
+            is_used: Cell::new(true),
+        }
+    }
+
+    pub fn aging(&mut self) -> bool {
+        if self.is_used.get() {
+            self.life_expectancy += 1;
+            self.is_used.set(false);
+            false
+        } else if self.life_expectancy == 0 {
+            true
+        } else {
+            self.life_expectancy -= 1;
+            false
+        }
+    }
+}
+
+impl<V> std::ops::Deref for Lifespan<V> {
+    type Target = V;
+    fn deref(&self) -> &Self::Target {
+        self.is_used.set(true);
+        &self.value
+    }
+}
+
+impl<V> std::ops::DerefMut for Lifespan<V> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.is_used.set(true);
+        &mut self.value
+    }
+}
+
 pub struct TexTable {
     max_tex_num: i32,
     unused_tex_idx: VecDeque<i32>,
     used_tex_idx: VecDeque<(i32, TextureId)>,
     string_tex_usage: VecDeque<String>,
-    string_tex_table: HashMap<String, (Rc<web_sys::WebGlTexture>, [f64; 2])>,
+    string_tex_table: HashMap<String, Lifespan<(Rc<web_sys::WebGlTexture>, [f64; 2])>>,
     resource_tex_table: HashMap<ResourceId, Rc<web_sys::WebGlTexture>>,
     tex_idx: HashMap<TextureId, i32>,
     string_canvas: web_sys::HtmlCanvasElement,
@@ -60,6 +105,21 @@ impl TexTable {
             resource_tex_table: HashMap::new(),
             tex_idx: HashMap::new(),
             string_canvas,
+        }
+    }
+
+    pub fn update(&mut self, gl: &WebGlRenderingContext) {
+        let mut deleted = vec![];
+        for (key_text, tex) in &mut self.string_tex_table {
+            if tex.aging() {
+                deleted.push(key_text.clone());
+            }
+        }
+
+        for key_text in &deleted {
+            if let Some(tex) = self.string_tex_table.remove(key_text) {
+                gl.delete_texture(Some(&tex.0));
+            }
         }
     }
 
@@ -139,7 +199,7 @@ impl TexTable {
         if let Some((tex_buf, size)) = self
             .string_tex_table
             .get(text)
-            .map(|(tex_buf, size)| (Rc::clone(&tex_buf), size.clone()))
+            .map(|tex| (Rc::clone(&tex.0), tex.1.clone()))
         {
             if let Some(tex_idx) = self.tex_idx.get(&tex_id) {
                 Some((*tex_idx, size))
@@ -217,8 +277,10 @@ impl TexTable {
                 web_sys::WebGlRenderingContext::UNSIGNED_BYTE,
                 &self.string_canvas,
             );
-            self.string_tex_table
-                .insert(text.clone(), (Rc::new(tex_buf), [width, height]));
+            self.string_tex_table.insert(
+                text.clone(),
+                Lifespan::new((Rc::new(tex_buf), [width, height])),
+            );
             self.tex_idx.insert(TextureId::clone(&tex_id), tex_idx);
             self.used_tex_idx.push_back((tex_idx, tex_id));
             self.string_tex_usage.push_back(text.clone());

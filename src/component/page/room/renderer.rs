@@ -360,6 +360,8 @@ impl Renderer {
                 self.view_frame.bind_self(&self.gl);
                 self.clear();
                 self.flip();
+
+                self.tex_table.update(&self.gl);
             });
         });
     }
