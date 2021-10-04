@@ -325,9 +325,9 @@ impl Renderer {
                     table.boxblocks(),
                     &mesh::boxblock::RenderingMode::View {
                         lighting: mesh::boxblock::LightingMode::AmbientLight {
-                            direction: &[1.0, 1.0, 1.0],
+                            direction: &[1.0, -2.0, 3.0],
                         },
-                        light_color: &crate::libs::color::Pallet::gray(5),
+                        light_color: &crate::libs::color::Pallet::gray(0),
                         light_intensity: 1.0,
                     },
                     &mut self.tex_table,
@@ -336,19 +336,30 @@ impl Renderer {
                 // self.render_frontscreen(false);
 
                 // 当たり判定用のオフスクリーンレンダリング
-                // self.idmap_frame.bind_self(&self.gl);
-                // self.clear();
+                self.idmap_frame.bind_self(&self.gl);
+                self.clear();
 
-                // self.gl.blend_func(
-                //     web_sys::WebGlRenderingContext::ONE,
-                //     web_sys::WebGlRenderingContext::ZERO,
-                // );
+                self.gl.blend_func(
+                    web_sys::WebGlRenderingContext::ONE,
+                    web_sys::WebGlRenderingContext::ZERO,
+                );
+
+                self.boxblock_mesh.render(
+                    &mut self.gl,
+                    &self.id_table,
+                    &vp_matrix,
+                    &camera_matrix.position(),
+                    &block_arena,
+                    table.boxblocks(),
+                    &mesh::boxblock::RenderingMode::IdMap {
+                        grabbed: grabbed_object_id,
+                    },
+                    &mut self.tex_table,
+                );
 
                 // self.view_frame.bind_self(&self.gl);
                 // self.clear();
                 // self.flip();
-
-                self.gl.finish();
             });
         });
     }

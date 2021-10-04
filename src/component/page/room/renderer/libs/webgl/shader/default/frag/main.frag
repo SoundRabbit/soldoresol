@@ -1,15 +1,13 @@
 vec4 colorFromId(int id) {
-    int a = id;
-    int r = a * 0x100;
+    int r = id * 0x100;
     int g = r * 0x100;
     int b = g * 0x100;
 
-    a /= 0x01000000;
     r /= 0x01000000;
     g /= 0x01000000;
     b /= 0x01000000;
 
-    return vec4(float(r) / 255.0, float(g) / 255.0, float(b) / 255.0, float(a) / 255.0);
+    return vec4(float(r) / 255.0, float(g) / 255.0, float(b) / 255.0, 1.0);
 }
 
 float defaultMain() {

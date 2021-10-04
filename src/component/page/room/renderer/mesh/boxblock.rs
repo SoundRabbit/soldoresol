@@ -256,7 +256,7 @@ impl Boxblock {
             RenderingMode::IdMap { .. } => ProgramType::UnshapedProgram,
             RenderingMode::View { .. } => ProgramType::UnshapedProgram,
         });
-        gl.depth_func(web_sys::WebGlRenderingContext::ALWAYS);
+        gl.depth_func(web_sys::WebGlRenderingContext::LEQUAL);
         gl.set_a_vertex(&self.vertex_buffer, 3, 0);
         gl.set_a_texture_coord(&self.texture_coord_buffer, 2, 0);
         gl.set_a_id_color(&self.id_color_buffer, 4, 0);
@@ -269,13 +269,10 @@ impl Boxblock {
         gl.set_u_camera_position(camera_position);
         gl.set_u_shape(program::SHAPE_3D_BOX);
         gl.set_u_vp_matrix(vp_matrix.clone().reversed_axes());
-        gl.set_u_bg_color_1(program::COLOR_SOME);
         gl.set_u_bg_color_2(program::COLOR_NONE);
-        gl.set_u_id(program::ID_NONE);
         gl.set_u_texture_0(program::TEXTURE_NONE);
         gl.set_u_texture_1(program::TEXTURE_NONE);
         gl.set_u_texture_2(program::TEXTURE_NONE);
-        gl.set_u_light(program::LIGHT_NONE);
 
         match rendering_mode {
             RenderingMode::IdMap { .. } => {
@@ -348,13 +345,16 @@ impl Boxblock {
 
                 let id_offset_color = some_or_return!(id_table.offset_color(boxblock_id));
 
-                let s = {
-                    let s = boxblock.size();
-                    [
-                        s[0].abs().max(1.0 / 128.0).copysign(s[0]),
-                        s[1].abs().max(1.0 / 128.0).copysign(s[1]),
-                        s[2].abs().max(1.0 / 128.0).copysign(s[2]),
-                    ]
+                let s = match rendering_mode {
+                    RenderingMode::IdMap { .. } => boxblock.size().clone(),
+                    RenderingMode::View { .. } => {
+                        let s = boxblock.size();
+                        [
+                            s[0].abs().max(1.0 / 128.0).copysign(s[0]),
+                            s[1].abs().max(1.0 / 128.0).copysign(s[1]),
+                            s[2].abs().max(1.0 / 128.0).copysign(s[2]),
+                        ]
+                    }
                 };
                 let p = boxblock.position();
 

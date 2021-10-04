@@ -148,7 +148,7 @@ impl From<IdTableBuilder> for IdTable {
 
         for block_id in builder.queue {
             if let Some(objects) = builder.object.remove(&block_id) {
-                offset.insert(block_id, IdColor::from(offset_color | 0xFF000000));
+                offset.insert(block_id, IdColor::from(offset_color));
 
                 let mut delta_max = 0;
                 for (delta_color, object_id) in objects {
