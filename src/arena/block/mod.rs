@@ -12,8 +12,11 @@ pub mod block_trait;
 pub mod boxblock;
 pub mod character;
 pub mod chat;
+pub mod craftboard;
+pub mod layer_group;
 pub mod pointlight;
 pub mod property;
+pub mod shape_group;
 pub mod table;
 pub mod tag;
 pub mod terran;
@@ -21,20 +24,40 @@ pub mod texture;
 pub mod world;
 
 pub use boxblock::Boxblock;
+pub use craftboard::Craftboard;
+pub use layer_group::LayerGroup;
+pub use shape_group::ShapeGroup;
+pub use table::Table;
+pub use texture::Texture;
 
 pub enum Block {
-    World(world::World),
-    Table(table::Table),
-    Texture(texture::Texture),
+    //root
     Chat(chat::Chat),
+    World(world::World),
+
+    //Chat直轄
     ChatChannel(chat::channel::Channel),
+
+    //ChatChannel直轄
     ChatMessage(chat::message::Message),
+
+    //World直轄
     Character(character::Character),
+    Table(table::Table),
     Tag(tag::Tag),
-    Boxblock(boxblock::Boxblock),
-    Property(property::Property),
+
+    //テーブル直轄
+    Boxblock(Boxblock),
     Pointlight(pointlight::Pointlight),
+    Craftboard(Craftboard),
+
+    //ボード直轄
     Terran(terran::Terran),
+    LayerGroup(LayerGroup),
+
+    //floating
+    Texture(texture::Texture),
+    Property(property::Property),
     None,
 }
 
@@ -60,6 +83,8 @@ impl Block {
             Self::Property(block) => Self::Property(property::Property::clone(block)),
             Self::Pointlight(block) => Self::Pointlight(pointlight::Pointlight::clone(block)),
             Self::Terran(block) => Self::Terran(terran::Terran::clone(block)),
+            Self::Craftboard(block) => Self::Craftboard(Craftboard::clone(block)),
+            Self::LayerGroup(block) => Self::LayerGroup(LayerGroup::clone(block)),
             Self::None => Self::None,
         }
     }
@@ -118,8 +143,10 @@ try_ref_mut!(Block: Boxblock => boxblock::Boxblock);
 try_ref_mut!(Block: Property => property::Property);
 try_ref_mut!(Block: Pointlight => pointlight::Pointlight);
 try_ref_mut!(Block: Terran => terran::Terran);
+try_ref_mut!(Block: Craftboard => Craftboard);
+try_ref_mut!(Block: LayerGroup => LayerGroup);
 
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct BlockId {
     id: U128Id,
 }
@@ -143,12 +170,6 @@ impl BlockId {
 
     pub fn to_id(&self) -> U128Id {
         U128Id::clone(&self.id)
-    }
-
-    pub fn clone(this: &Self) -> Self {
-        Self {
-            id: U128Id::clone(&this.id),
-        }
     }
 }
 
@@ -192,15 +213,17 @@ impl ArenaBlock {
             Block::World(x) => (x.pack().await, "World"),
             Block::Table(x) => (x.pack().await, "Table"),
             Block::Texture(x) => (x.pack().await, "Texture"),
-            Block::Chat(x) => (object! {}.into(), "None"),
-            Block::ChatChannel(x) => (object! {}.into(), "None"),
-            Block::ChatMessage(x) => (object! {}.into(), "None"),
-            Block::Character(x) => (object! {}.into(), "None"),
-            Block::Tag(x) => (object! {}.into(), "None"),
-            Block::Boxblock(x) => (object! {}.into(), "None"),
-            Block::Property(x) => (object! {}.into(), "None"),
-            Block::Pointlight(x) => (object! {}.into(), "None"),
-            Block::Terran(x) => (object! {}.into(), "None"),
+            Block::Chat(_) => (object! {}.into(), "None"),
+            Block::ChatChannel(_) => (object! {}.into(), "None"),
+            Block::ChatMessage(_) => (object! {}.into(), "None"),
+            Block::Character(_) => (object! {}.into(), "None"),
+            Block::Tag(_) => (object! {}.into(), "None"),
+            Block::Boxblock(_) => (object! {}.into(), "None"),
+            Block::Property(_) => (object! {}.into(), "None"),
+            Block::Pointlight(_) => (object! {}.into(), "None"),
+            Block::Terran(_) => (object! {}.into(), "None"),
+            Block::Craftboard(_) => (object! {}.into(), "None"),
+            Block::LayerGroup(_) => (object! {}.into(), "None"),
             Block::None => (object! {}.into(), "None"),
         };
 
@@ -528,3 +551,5 @@ insert!(Arena: boxblock::Boxblock => Boxblock);
 insert!(Arena: property::Property => Property);
 insert!(Arena: pointlight::Pointlight => Pointlight);
 insert!(Arena: terran::Terran => Terran);
+insert!(Arena: Craftboard => Craftboard);
+insert!(Arena: LayerGroup => LayerGroup);

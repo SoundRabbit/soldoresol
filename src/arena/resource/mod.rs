@@ -12,7 +12,7 @@ mod data;
 pub use data::Data;
 pub use data::ImageData;
 
-#[derive(Hash, PartialEq, Eq)]
+#[derive(Clone, Hash, PartialEq, Eq)]
 pub struct ResourceId {
     id: U128Id,
 }

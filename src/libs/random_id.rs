@@ -94,9 +94,11 @@ impl U128Id {
             None
         }
     }
+}
 
-    pub fn clone(this: &Self) -> Self {
-        Self(Arc::clone(&this.0))
+impl Clone for U128Id {
+    fn clone(&self) -> Self {
+        Self(Arc::clone(&self.0))
     }
 }
 
