@@ -1,5 +1,6 @@
 use super::atom::btn::{self, Btn};
 use super::atom::fa;
+use component::Cmd;
 use isaribi::{
     style,
     styled::{Style, Styled},
@@ -43,7 +44,7 @@ impl std::fmt::Display for Direction {
 }
 
 impl Direction {
-    fn render_caret(&self) -> Html {
+    fn render_caret<C: Component>(&self) -> Html<C> {
         match self {
             Self::Bottom | Self::BottomLeft | Self::BottomRight => fa::i("fa-caret-down"),
             Self::RightBottom => fa::i("fa-caret-right"),
@@ -66,15 +67,17 @@ pub enum Msg {
 pub enum On {}
 
 pub struct Dropdown {
-    direction: Direction,
     is_dropdowned: bool,
-    text: String,
-    toggle_type: ToggleType,
-    variant: btn::Variant,
+}
+
+impl Component for Dropdown {
+    type Props = Props;
+    type Msg = Msg;
+    type Sub = On;
 }
 
 impl Constructor for Dropdown {
-    fn constructor(props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) -> Self {
+    fn constructor(props: &Props) -> Self {
         let is_dropdowned = if let ToggleType::Manual(is_dropdowned) = &props.toggle_type {
             *is_dropdowned
         } else {
@@ -83,30 +86,19 @@ impl Constructor for Dropdown {
 
         Self {
             is_dropdowned: is_dropdowned,
-            direction: props.direction,
-            text: props.text,
-            toggle_type: props.toggle_type,
-            variant: props.variant,
         }
     }
 }
 
-impl Component for Dropdown {
-    type Props = Props;
-    type Msg = Msg;
-    type Sub = On;
-
-    fn init(&mut self, props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) {
+impl Update for Dropdown {
+    fn on_load(&mut self, props: &Props) -> Cmd<Self> {
         if let ToggleType::Manual(is_dropdowned) = &props.toggle_type {
             self.is_dropdowned = *is_dropdowned;
         }
-        self.direction = props.direction;
-        self.text = props.text;
-        self.toggle_type = props.toggle_type;
-        self.variant = props.variant;
+        Cmd::none()
     }
 
-    fn update(&mut self, msg: Self::Msg) -> Cmd<Self::Msg, Self::Sub> {
+    fn update(&mut self, props: &Props, msg: Msg) -> Cmd<Self> {
         match msg {
             Msg::NoOp => Cmd::none(),
             Msg::Toggle => {
@@ -119,12 +111,14 @@ impl Component for Dropdown {
             }
         }
     }
+}
 
-    fn render(&self, children: Vec<Html>) -> Html {
-        Self::styled(match &self.toggle_type {
-            ToggleType::Click => self.render_toggle_by_click(children),
-            ToggleType::Hover => self.render_toggle_by_hover(children),
-            ToggleType::Manual(_) => self.render_toggle_by_manual(children),
+impl Render for Dropdown {
+    fn render(&self, props: &Props, children: Vec<Html<Self>>) -> Html<Self> {
+        Self::styled(match &props.toggle_type {
+            ToggleType::Click => self.render_toggle_by_click(props, children),
+            ToggleType::Hover => self.render_toggle_by_hover(props, children),
+            ToggleType::Manual(_) => self.render_toggle_by_manual(props, children),
         })
     }
 }
@@ -142,8 +136,8 @@ impl Dropdown {
         Msg::ToggleTo(true)
     }
 
-    fn base_class_option(&self) -> &str {
-        match &self.variant {
+    fn base_class_option(&self, props: &Props) -> &str {
+        match &props.variant {
             btn::Variant::Menu => "base-menu",
             btn::Variant::MenuAsSecondary => "base-menu",
             btn::Variant::DarkLikeMenu => "base-menu",
@@ -152,59 +146,65 @@ impl Dropdown {
         }
     }
 
-    fn render_toggle_by_click(&self, children: Vec<Html>) -> Html {
+    fn render_toggle_by_click(&self, props: &Props, children: Vec<Html<Self>>) -> Html<Self> {
         Html::div(
             Attributes::new()
                 .class(Self::class("base"))
-                .class(Self::class(self.base_class_option())),
+                .class(Self::class(self.base_class_option(props))),
             Events::new().on("click", Self::toggle),
             vec![
-                self.render_toggle_btn(),
+                self.render_toggle_btn(props),
                 self.render_toggle_mask(),
-                self.render_toggled(children),
+                self.render_toggled(props, children),
             ],
         )
     }
 
-    fn render_toggle_by_hover(&self, children: Vec<Html>) -> Html {
+    fn render_toggle_by_hover(&self, props: &Props, children: Vec<Html<Self>>) -> Html<Self> {
         Html::div(
             Attributes::new()
                 .class(Self::class("base"))
-                .class(Self::class(self.base_class_option())),
+                .class(Self::class(self.base_class_option(props))),
             Events::new()
                 .on("mouseenter", Self::toggle_to_drop)
                 .on("mouseleave", Self::toggle_to_up),
-            vec![self.render_toggle_btn(), self.render_toggled(children)],
+            vec![
+                self.render_toggle_btn(props),
+                self.render_toggled(props, children),
+            ],
         )
     }
 
-    fn render_toggle_by_manual(&self, children: Vec<Html>) -> Html {
+    fn render_toggle_by_manual(&self, props: &Props, children: Vec<Html<Self>>) -> Html<Self> {
         Html::div(
             Attributes::new()
                 .class(Self::class("base"))
-                .class(Self::class(self.base_class_option())),
+                .class(Self::class(self.base_class_option(props))),
             Events::new(),
-            vec![self.render_toggle_btn(), self.render_toggled(children)],
+            vec![
+                self.render_toggle_btn(props),
+                self.render_toggled(props, children),
+            ],
         )
     }
 
-    fn render_toggle_btn(&self) -> Html {
+    fn render_toggle_btn(&self, props: &Props) -> Html<Self> {
         Html::button(
             Attributes::new()
                 .class("pure-button")
-                .class(Btn::class_name(&self.variant))
+                .class(Btn::class_name(&props.variant))
                 .class(Self::class("root-btn"))
                 .string("data-toggled", self.is_dropdowned.to_string()),
             Events::new(),
             vec![Html::div(
                 Attributes::new().class(Self::class("btn")),
                 Events::new(),
-                vec![Html::text(&self.text), self.direction.render_caret()],
+                vec![Html::text(&props.text), props.direction.render_caret()],
             )],
         )
     }
 
-    fn render_toggle_mask(&self) -> Html {
+    fn render_toggle_mask(&self) -> Html<Self> {
         Html::div(
             Attributes::new()
                 .class(Self::class("mask"))
@@ -214,11 +214,11 @@ impl Dropdown {
         )
     }
 
-    fn render_toggled(&self, children: Vec<Html>) -> Html {
+    fn render_toggled(&self, props: &Props, children: Vec<Html<Self>>) -> Html<Self> {
         Html::div(
             Attributes::new()
                 .class(Self::class("content"))
-                .class(Self::class(&format!("content-{}", &self.direction)))
+                .class(Self::class(&format!("content-{}", &props.direction)))
                 .string("data-toggled", self.is_dropdowned.to_string()),
             Events::new(),
             if self.is_dropdowned { children } else { vec![] },

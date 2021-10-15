@@ -1,4 +1,5 @@
 use crate::libs::color::color_system;
+use component::{Cmd, Sub};
 use isaribi::{
     style,
     styled::{Style, Styled},
@@ -23,10 +24,7 @@ pub enum On {
     InputMid(f64),
 }
 
-pub struct Slider {
-    position: Position,
-    range_is_editable: bool,
-}
+pub struct Slider {}
 
 pub enum Position {
     Linear {
@@ -56,39 +54,33 @@ impl Default for Props {
     }
 }
 
-impl Constructor for Slider {
-    fn constructor(props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) -> Self {
-        Self {
-            position: props.position,
-            range_is_editable: props.range_is_editable,
-        }
-    }
-}
-
 impl Component for Slider {
     type Props = Props;
     type Msg = Msg;
     type Sub = On;
+}
 
-    fn init(&mut self, props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) {
-        self.position = props.position;
-        self.range_is_editable = props.range_is_editable;
+impl Constructor for Slider {
+    fn constructor(_: &Props) -> Self {
+        Self {}
     }
+}
 
-    fn update(&mut self, msg: Self::Msg) -> Cmd<Self::Msg, Self::Sub> {
+impl Update for Slider {
+    fn update(&mut self, props: &Props, msg: Self::Msg) -> Cmd<Self> {
         match msg {
             Msg::NoOp => Cmd::none(),
-            Msg::Sub(sub) => Cmd::sub(sub),
+            Msg::Sub(sub) => Cmd::Sub(sub),
             Msg::SetValue(input_val) => {
-                let new_val = match &mut self.position {
+                let new_val = match &props.position {
                     Position::Linear { .. } => input_val,
                     Position::Inf { .. } => input_val,
                 };
 
-                Cmd::sub(On::Input(new_val))
+                Cmd::Sub(On::Input(new_val))
             }
             Msg::InputSliderValue(input_val) => {
-                let new_val = match &mut self.position {
+                let new_val = match &props.position {
                     Position::Linear { .. } => input_val,
                     Position::Inf { mid, step, .. } => {
                         let val = -(*mid) * (1.0 - input_val.min(1.0 - 1e-15).max(0.0)).log2();
@@ -96,13 +88,15 @@ impl Component for Slider {
                         val
                     }
                 };
-                Cmd::sub(On::Input(new_val))
+                Cmd::Sub(On::Input(new_val))
             }
         }
     }
+}
 
-    fn render(&self, _: Vec<Html>) -> Html {
-        let (min, max, val, slider_val, step, slider_step) = match &self.position {
+impl Render for Slider {
+    fn render(&self, props: &Props, _: Vec<Html<Self>>) -> Html<Self> {
+        let (min, max, val, slider_val, step, slider_step) = match &props.position {
             Position::Linear {
                 min,
                 max,
@@ -172,9 +166,9 @@ impl Component for Slider {
                         }),
                     vec![],
                 ),
-                match &self.position {
-                    Position::Linear {min,max, ..} => self.render_range_linear(*min, *max),
-                    Position::Inf {mid, ..} => self.render_range_inf(*mid)
+                match &props.position {
+                    Position::Linear {min,max, ..} => self.render_range_linear(props,*min, *max, ),
+                    Position::Inf {mid, ..} => self.render_range_inf(props,*mid)
                 }
             ],
         ))
@@ -182,7 +176,7 @@ impl Component for Slider {
 }
 
 impl Slider {
-    fn render_range_linear(&self, min: f64, max: f64) -> Html {
+    fn render_range_linear(&self, props: &Props, min: f64, max: f64) -> Html<Self> {
         Html::div(
             Attributes::new()
                 .class(Self::class("range"))
@@ -200,7 +194,7 @@ impl Slider {
                                 .type_("number")
                                 .value(format!("{}", min))
                                 .class(Self::class("input"));
-                            if self.range_is_editable {
+                            if props.range_is_editable {
                                 attrs
                             } else {
                                 attrs.flag("readonly")
@@ -227,7 +221,7 @@ impl Slider {
                                 .type_("number")
                                 .value(format!("{}", max))
                                 .class(Self::class("input"));
-                            if self.range_is_editable {
+                            if props.range_is_editable {
                                 attrs
                             } else {
                                 attrs.flag("readonly")
@@ -246,7 +240,7 @@ impl Slider {
             ],
         )
     }
-    fn render_range_inf(&self, mid: f64) -> Html {
+    fn render_range_inf(&self, props: &Props, mid: f64) -> Html<Self> {
         Html::div(
             Attributes::new()
                 .class(Self::class("range"))
@@ -263,7 +257,7 @@ impl Slider {
                             .type_("number")
                             .value(format!("{}", mid))
                             .class(Self::class("input"));
-                        if self.range_is_editable {
+                        if props.range_is_editable {
                             attrs
                         } else {
                             attrs.flag("readonly")

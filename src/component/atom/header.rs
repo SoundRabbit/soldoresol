@@ -13,9 +13,7 @@ pub enum Msg {}
 
 pub enum On {}
 
-pub struct Header {
-    class: Option<String>,
-}
+pub struct Header {}
 
 impl Props {
     pub fn new() -> Self {
@@ -28,26 +26,24 @@ impl Props {
     }
 }
 
-impl Constructor for Header {
-    fn constructor(props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) -> Self {
-        Self { class: props.class }
-    }
-}
-
 impl Component for Header {
     type Props = Props;
     type Msg = Msg;
     type Sub = On;
+}
 
-    fn init(&mut self, _: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) {}
-
-    fn update(&mut self, _: Self::Msg) -> Cmd<Self::Msg, Self::Sub> {
-        Cmd::none()
+impl Constructor for Header {
+    fn constructor(props: &Props) -> Self {
+        Self {}
     }
+}
 
-    fn render(&self, children: Vec<Html>) -> Html {
+impl Update for Header {}
+
+impl Render for Header {
+    fn render(&self, props: &Props, children: Vec<Html<Self>>) -> Html<Self> {
         let attrs = Attributes::new().class(Self::class("base"));
-        let attrs = if let Some(class_name) = &self.class {
+        let attrs = if let Some(class_name) = &props.class {
             attrs.class(class_name)
         } else {
             attrs

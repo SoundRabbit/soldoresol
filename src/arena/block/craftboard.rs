@@ -9,6 +9,7 @@ use wasm_bindgen::{prelude::*, JsCast};
 pub struct Craftboard {
     name: Rc<String>,
     size: [f32; 2],
+    position: [f32; 3],
     is_bind_to_grid: bool,
     is_showing_grid: bool,
     drawing_terran_id: BlockId,
@@ -25,11 +26,13 @@ impl Craftboard {
         drawing_terran_id: BlockId,
         drawed_terran_id: BlockId,
         size: [f32; 2],
+        position: [f32; 3],
         name: impl Into<String>,
     ) -> Self {
         Self {
             name: Rc::new(name.into()),
             size,
+            position,
             is_bind_to_grid: true,
             is_showing_grid: true,
             drawing_terran_id,
@@ -55,6 +58,14 @@ impl Craftboard {
 
     pub fn set_size(&mut self, size: [f32; 2]) {
         self.size = size;
+    }
+
+    pub fn position(&self) -> &[f32; 3] {
+        &self.position
+    }
+
+    pub fn set_position(&mut self, position: [f32; 3]) {
+        self.position = position;
     }
 
     pub fn is_bind_to_grid(&self) -> bool {

@@ -4,6 +4,7 @@ use super::atom::slider::{self, Slider};
 use super::atom::text;
 use crate::arena::block::{self, BlockId};
 use crate::libs::select_list::SelectList;
+use component::{Cmd, Sub};
 use isaribi::{
     style,
     styled::{Style, Styled},
@@ -58,35 +59,26 @@ pub enum On {
 }
 
 pub struct BlockProp {
-    root_prop: BlockId,
-    block_arena: block::ArenaRef,
     is_editable: bool,
-}
-
-impl Constructor for BlockProp {
-    fn constructor(props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) -> Self {
-        Self {
-            root_prop: props.root_prop,
-            block_arena: props.block_arena,
-            is_editable: false,
-        }
-    }
 }
 
 impl Component for BlockProp {
     type Props = Props;
     type Msg = Msg;
     type Sub = On;
+}
 
-    fn init(&mut self, props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) {
-        self.root_prop = props.root_prop;
-        self.block_arena = props.block_arena;
+impl Constructor for BlockProp {
+    fn constructor(props: &Props) -> Self {
+        Self { is_editable: false }
     }
+}
 
-    fn update(&mut self, msg: Self::Msg) -> Cmd<Self::Msg, Self::Sub> {
+impl Update for BlockProp {
+    fn update(&mut self, props: &Props, msg: Msg) -> Cmd<Self> {
         match msg {
             Msg::NoOp => Cmd::none(),
-            Msg::Sub(sub) => Cmd::sub(sub),
+            Msg::Sub(sub) => Cmd::Sub(sub),
             Msg::SetIsEditable(is_editable) => {
                 self.is_editable = is_editable;
                 Cmd::none()
@@ -95,7 +87,7 @@ impl Component for BlockProp {
                 prop_id,
                 idx,
                 update,
-            } => self
+            } => props
                 .block_arena
                 .map(
                     &BlockId::clone(&prop_id),
@@ -103,7 +95,7 @@ impl Component for BlockProp {
                         if let block::property::Value::MappedList(mapped_list) = prop.value(idx) {
                             let mut mapped_list = SelectList::clone(mapped_list);
                             update(&mut mapped_list);
-                            Cmd::sub(On::SetPropertyValue {
+                            Cmd::Sub(On::SetPropertyValue {
                                 property_id: prop_id,
                                 idx: idx,
                                 value: block::property::Value::MappedList(mapped_list),
@@ -116,8 +108,10 @@ impl Component for BlockProp {
                 .unwrap_or(Cmd::none()),
         }
     }
+}
 
-    fn render(&self, _: Vec<Html>) -> Html {
+impl Render for BlockProp {
+    fn render(&self, props: &Props, _: Vec<Html<Self>>) -> Html<Self> {
         Self::styled(Html::div(
             Attributes::new().class(Self::class("base")),
             Events::new(),
@@ -134,9 +128,14 @@ impl Component for BlockProp {
                         "編集開始"
                     })],
                 ),
-                self.block_arena
-                    .map(&self.root_prop, |root_prop: &block::property::Property| {
-                        self.render_prop_children(BlockId::clone(&self.root_prop), root_prop)
+                props
+                    .block_arena
+                    .map(&props.root_prop, |root_prop: &block::property::Property| {
+                        self.render_prop_children(
+                            props,
+                            BlockId::clone(&props.root_prop),
+                            root_prop,
+                        )
                     })
                     .unwrap_or(Html::none()),
             ],
@@ -145,7 +144,12 @@ impl Component for BlockProp {
 }
 
 impl BlockProp {
-    fn render_prop_children(&self, prop_id: BlockId, prop: &block::property::Property) -> Html {
+    fn render_prop_children(
+        &self,
+        props: &Props,
+        prop_id: BlockId,
+        prop: &block::property::Property,
+    ) -> Html<Self> {
         Html::div(
             Attributes::new().class(Self::class("prop-list")),
             Events::new(),
@@ -153,7 +157,7 @@ impl BlockProp {
                 let mut children: Vec<_> = prop
                     .children()
                     .enumerate()
-                    .map(|(p_idx, p_id)| self.render_prop(&prop_id, p_id, p_idx))
+                    .map(|(p_idx, p_id)| self.render_prop(props, &prop_id, p_id, p_idx))
                     .flatten()
                     .collect();
                 if self.is_editable {
@@ -164,8 +168,15 @@ impl BlockProp {
         )
     }
 
-    fn render_prop(&self, parent_id: &BlockId, prop_id: &BlockId, self_idx: usize) -> Vec<Html> {
-        self.block_arena
+    fn render_prop(
+        &self,
+        props: &Props,
+        parent_id: &BlockId,
+        prop_id: &BlockId,
+        self_idx: usize,
+    ) -> Vec<Html<Self>> {
+        props
+            .block_arena
             .map(prop_id, |prop: &block::property::Property| {
                 vec![
                     self.render_prop_name(prop_id, prop),
@@ -184,7 +195,7 @@ impl BlockProp {
                         Html::div(
                             Attributes::new().class(Self::class("prop-list-container")),
                             Events::new(),
-                            vec![self.render_prop_children(BlockId::clone(prop_id), prop)],
+                            vec![self.render_prop_children(props, BlockId::clone(prop_id), prop)],
                         )
                     } else {
                         Html::none()
@@ -194,7 +205,7 @@ impl BlockProp {
             .unwrap_or(vec![])
     }
 
-    fn render_prop_name(&self, prop_id: &BlockId, prop: &block::property::Property) -> Html {
+    fn render_prop_name(&self, prop_id: &BlockId, prop: &block::property::Property) -> Html<Self> {
         let attr = Attributes::new().class(Self::class("prop-name"));
         let attr = if prop.values().count() > 0 || self.is_editable {
             attr
@@ -220,7 +231,7 @@ impl BlockProp {
         )
     }
 
-    fn render_value_list(&self, prop_id: &BlockId, prop: &block::property::Property) -> Html {
+    fn render_value_list(&self, prop_id: &BlockId, prop: &block::property::Property) -> Html<Self> {
         Html::div(
             if self.is_editable {
                 Attributes::new().class(Self::class("prop-value-list--editable"))
@@ -255,7 +266,7 @@ impl BlockProp {
         prop_id: &BlockId,
         idx: usize,
         value: &block::property::Value,
-    ) -> Vec<Html> {
+    ) -> Vec<Html<Self>> {
         match value {
             block::property::Value::None => self.render_value_none(prop_id, idx, value),
             block::property::Value::Text(text) => self.render_value_text(prop_id, idx, value, text),
@@ -276,7 +287,7 @@ impl BlockProp {
         prop_id: &BlockId,
         idx: usize,
         value: &block::property::Value,
-    ) -> Vec<Html> {
+    ) -> Vec<Html<Self>> {
         if self.is_editable {
             vec![
                 Html::div(
@@ -297,7 +308,7 @@ impl BlockProp {
         idx: usize,
         value: &block::property::Value,
         text: &String,
-    ) -> Vec<Html> {
+    ) -> Vec<Html<Self>> {
         vec![
             Html::input(
                 Attributes::new().value(text),
@@ -324,7 +335,7 @@ impl BlockProp {
         idx: usize,
         value: &block::property::Value,
         text: &String,
-    ) -> Vec<Html> {
+    ) -> Vec<Html<Self>> {
         vec![
             Html::textarea(
                 Attributes::new().value(text).nut("rows", 4),
@@ -353,7 +364,7 @@ impl BlockProp {
         min: f64,
         val: f64,
         max: f64,
-    ) -> Vec<Html> {
+    ) -> Vec<Html<Self>> {
         vec![
             Slider::empty(
                 slider::Props {
@@ -365,16 +376,16 @@ impl BlockProp {
                     },
                     range_is_editable: true,
                 },
-                Subscription::new({
+                Sub::map({
                     let prop_id = BlockId::clone(prop_id);
                     move |sub| match sub {
                         slider::On::Input(val) => Msg::Sub(On::SetPropertyValue {
-                            property_id: prop_id,
+                            property_id: BlockId::clone(&prop_id),
                             idx,
                             value: block::property::Value::ResourceMinMax { min, val, max },
                         }),
                         slider::On::InputRange { min, max } => Msg::Sub(On::SetPropertyValue {
-                            property_id: prop_id,
+                            property_id: BlockId::clone(&prop_id),
                             idx,
                             value: block::property::Value::ResourceMinMax { min, val, max },
                         }),
@@ -393,7 +404,7 @@ impl BlockProp {
         idx: usize,
         value: &block::property::Value,
         mapped_list: &SelectList<(String, String)>,
-    ) -> Vec<Html> {
+    ) -> Vec<Html<Self>> {
         vec![
             Html::div(
                 Attributes::new().class(Self::class("prop-value--table-column")),
@@ -409,7 +420,7 @@ impl BlockProp {
                             toggle_type: dropdown::ToggleType::Click,
                             variant: btn::Variant::DarkLikeMenu,
                         },
-                        Subscription::none(),
+                        Sub::none(),
                         {
                             let mut x: Vec<_> = mapped_list
                                 .iter()
@@ -469,7 +480,7 @@ impl BlockProp {
         list_idx: usize,
         a: &String,
         b: &String,
-    ) -> Html {
+    ) -> Html<Self> {
         Html::div(
             Attributes::new().class(Self::class("prop-value--value-key")),
             Events::new(),
@@ -520,7 +531,7 @@ impl BlockProp {
         prop_id: &BlockId,
         idx: usize,
         mapped_list: &SelectList<(String, String)>,
-    ) -> Html {
+    ) -> Html<Self> {
         if self.is_editable {
             Html::div(
                 Attributes::new().class(Self::class("prop-value--value-key-value")),
@@ -576,7 +587,7 @@ impl BlockProp {
         }
     }
 
-    fn render_btn_add_prop(&self, prop_id: BlockId) -> Html {
+    fn render_btn_add_prop(&self, prop_id: BlockId) -> Html<Self> {
         Html::div(
             Attributes::new().class(Self::class("banner")),
             Events::new(),
@@ -599,7 +610,7 @@ impl BlockProp {
         prop_id: &BlockId,
         self_idx: usize,
         value_mode: &block::property::ValueMode,
-    ) -> Html {
+    ) -> Html<Self> {
         if self.is_editable {
             Html::div(
                 Attributes::new().class(Self::class("prop-menu")),
@@ -618,7 +629,7 @@ impl BlockProp {
         &self,
         prop_id: &BlockId,
         value_mode: &block::property::ValueMode,
-    ) -> Html {
+    ) -> Html<Self> {
         Dropdown::with_children(
             dropdown::Props {
                 direction: dropdown::Direction::BottomLeft,
@@ -629,7 +640,7 @@ impl BlockProp {
                 toggle_type: dropdown::ToggleType::Click,
                 variant: btn::Variant::SecondaryLikeMenu,
             },
-            Subscription::none(),
+            Sub::none(),
             vec![
                 Btn::menu_as_secondary(
                     Attributes::new(),
@@ -661,7 +672,7 @@ impl BlockProp {
         )
     }
 
-    fn render_btn_remove_prop(&self, parent_id: BlockId, self_idx: usize) -> Html {
+    fn render_btn_remove_prop(&self, parent_id: BlockId, self_idx: usize) -> Html<Self> {
         Dropdown::with_children(
             dropdown::Props {
                 direction: dropdown::Direction::BottomLeft,
@@ -669,7 +680,7 @@ impl BlockProp {
                 toggle_type: dropdown::ToggleType::Click,
                 variant: btn::Variant::Danger,
             },
-            Subscription::none(),
+            Sub::none(),
             vec![Html::div(
                 Attributes::new().class(Self::class("ok-cancel")),
                 Events::new(),
@@ -694,7 +705,7 @@ impl BlockProp {
         )
     }
 
-    fn render_btn_add_value(&self, prop_id: BlockId) -> Html {
+    fn render_btn_add_value(&self, prop_id: BlockId) -> Html<Self> {
         Html::div(
             Attributes::new().class(Self::class("banner")),
             Events::new(),
@@ -715,7 +726,7 @@ impl BlockProp {
         prop_id: &BlockId,
         idx: usize,
         value: &block::property::Value,
-    ) -> Html {
+    ) -> Html<Self> {
         if self.is_editable {
             Dropdown::with_children(
                 dropdown::Props {
@@ -730,7 +741,7 @@ impl BlockProp {
                     toggle_type: dropdown::ToggleType::Click,
                     variant: btn::Variant::DarkLikeMenu,
                 },
-                Subscription::none(),
+                Sub::none(),
                 vec![
                     self.render_btn_set_value_type_as_text(prop_id, idx, value),
                     self.render_btn_set_value_type_as_muti_line_text(prop_id, idx, value),
@@ -748,7 +759,7 @@ impl BlockProp {
         prop_id: &BlockId,
         idx: usize,
         value: &block::property::Value,
-    ) -> Html {
+    ) -> Html<Self> {
         Btn::menu(
             Attributes::new(),
             Events::new().on_click({
@@ -777,7 +788,7 @@ impl BlockProp {
         prop_id: &BlockId,
         idx: usize,
         value: &block::property::Value,
-    ) -> Html {
+    ) -> Html<Self> {
         Btn::menu(
             Attributes::new(),
             Events::new().on_click({
@@ -806,7 +817,7 @@ impl BlockProp {
         prop_id: &BlockId,
         idx: usize,
         value: &block::property::Value,
-    ) -> Html {
+    ) -> Html<Self> {
         Btn::menu(
             Attributes::new(),
             Events::new().on_click({
@@ -834,7 +845,7 @@ impl BlockProp {
         prop_id: &BlockId,
         idx: usize,
         value: &block::property::Value,
-    ) -> Html {
+    ) -> Html<Self> {
         Btn::menu(
             Attributes::new(),
             Events::new().on_click({
@@ -859,7 +870,7 @@ impl BlockProp {
         )
     }
 
-    fn render_btn_remove_value(&self, prop_id: BlockId, idx: usize) -> Html {
+    fn render_btn_remove_value(&self, prop_id: BlockId, idx: usize) -> Html<Self> {
         if self.is_editable {
             Dropdown::with_children(
                 dropdown::Props {
@@ -868,7 +879,7 @@ impl BlockProp {
                     toggle_type: dropdown::ToggleType::Click,
                     variant: btn::Variant::Danger,
                 },
-                Subscription::none(),
+                Sub::none(),
                 vec![Html::div(
                     Attributes::new().class(Self::class("ok-cancel")),
                     Events::new(),

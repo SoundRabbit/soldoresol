@@ -1,4 +1,5 @@
 use super::atom::loading_circle::{self, LoadingCircle};
+use component::Sub;
 use isaribi::{
     style,
     styled::{Style, Styled},
@@ -9,33 +10,31 @@ pub struct Props {}
 
 pub enum Msg {}
 
-pub enum Sub {}
+pub enum On {}
 
 pub struct Loader {}
-
-impl Constructor for Loader {
-    fn constructor(_: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) -> Self {
-        Self {}
-    }
-}
 
 impl Component for Loader {
     type Props = Props;
     type Msg = Msg;
-    type Sub = Sub;
+    type Sub = On;
+}
 
-    fn init(&mut self, _: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) {}
-
-    fn update(&mut self, _: Self::Msg) -> Cmd<Self::Msg, Self::Sub> {
-        Cmd::none()
+impl Constructor for Loader {
+    fn constructor(_: &Props) -> Self {
+        Self {}
     }
+}
 
-    fn render(&self, _: Vec<Html>) -> Html {
+impl Update for Loader {}
+
+impl Render for Loader {
+    fn render(&self, _: &Props, _: Vec<Html<Self>>) -> Html<Self> {
         Self::styled(Html::div(
             Attributes::new().class(Self::class("base")),
             Events::new(),
             vec![
-                LoadingCircle::empty(loading_circle::Variant::Dark, Subscription::none()),
+                LoadingCircle::empty(loading_circle::Variant::Dark, Sub::none()),
                 Html::span(
                     Attributes::new(),
                     Events::new(),

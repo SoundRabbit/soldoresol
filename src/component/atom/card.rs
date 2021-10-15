@@ -13,24 +13,22 @@ pub enum On {}
 
 pub struct Card {}
 
-impl Constructor for Card {
-    fn constructor(props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) -> Self {
-        Self {}
-    }
-}
-
 impl Component for Card {
     type Props = Props;
     type Msg = Msg;
     type Sub = On;
+}
 
-    fn init(&mut self, _: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) {}
-
-    fn update(&mut self, _: Self::Msg) -> Cmd<Self::Msg, Self::Sub> {
-        Cmd::none()
+impl Constructor for Card {
+    fn constructor(props: &Props) -> Self {
+        Self {}
     }
+}
 
-    fn render(&self, children: Vec<Html>) -> Html {
+impl Update for Card {}
+
+impl Render for Card {
+    fn render(&self, _: &Props, children: Vec<Html<Self>>) -> Html<Self> {
         Self::styled(Html::div(
             Attributes::new()
                 .class(Self::class("base"))

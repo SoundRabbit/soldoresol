@@ -38,5 +38,16 @@ use wasm_bindgen::prelude::*;
 #[wasm_bindgen(start)]
 pub fn main() {
     use component::{app, App};
-    kagura::run::<App, _, _, _>("app", app::Props {}, vec![]);
+    use kagura::prelude::{component::Sub, Constructor, Kagura};
+
+    let entry_point = web_sys::window()
+        .unwrap()
+        .document()
+        .unwrap()
+        .get_element_by_id("app")
+        .unwrap();
+
+    Kagura::mount(entry_point.into(), || {
+        vec![App::empty(app::Props {}, Sub::none())]
+    });
 }

@@ -10,6 +10,7 @@ use super::template::{
     basic_app::{self, BasicApp},
     loader::{self, Loader},
 };
+use component::{Cmd, Sub};
 use isaribi::{
     style,
     styled::{Style, Styled},
@@ -54,25 +55,14 @@ struct ElementId {
     input_room_id: String,
 }
 
-impl Constructor for RoomSelector {
-    fn constructor(
-        props: Self::Props,
-        builder: &mut ComponentBuilder<Self::Msg, Self::Sub>,
-    ) -> Self {
-        builder.set_cmd(Cmd::task({
-            let common_db = props.common_db.clone();
-            move |resolve| {
-                wasm_bindgen_futures::spawn_local(async move {
-                    if let Some(rooms) = task::get_room_index(&common_db).await {
-                        crate::debug::log_1("success to load index of rooms");
-                        resolve(Msg::SetRooms(rooms));
-                    } else {
-                        crate::debug::log_1("faild to load index of rooms");
-                    }
-                });
-            }
-        }));
+impl Component for RoomSelector {
+    type Props = Props;
+    type Msg = Msg;
+    type Sub = On;
+}
 
+impl Constructor for RoomSelector {
+    fn constructor(_: &Props) -> Self {
         Self {
             rooms: None,
             inputing_room_id: String::from(""),
@@ -84,14 +74,22 @@ impl Constructor for RoomSelector {
     }
 }
 
-impl Component for RoomSelector {
-    type Props = Props;
-    type Msg = Msg;
-    type Sub = On;
+impl Update for RoomSelector {
+    fn on_assemble(&mut self, props: &Props) -> Cmd<Self> {
+        let common_db = props.common_db.clone();
+        Cmd::task(move |resolve| {
+            wasm_bindgen_futures::spawn_local(async move {
+                if let Some(rooms) = task::get_room_index(&common_db).await {
+                    crate::debug::log_1("success to load index of rooms");
+                    resolve(Msg::SetRooms(rooms));
+                } else {
+                    crate::debug::log_1("faild to load index of rooms");
+                }
+            });
+        })
+    }
 
-    fn init(&mut self, _: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) {}
-
-    fn update(&mut self, msg: Self::Msg) -> Cmd<Self::Msg, Self::Sub> {
+    fn update(&mut self, _: &Props, msg: Self::Msg) -> Cmd<Self> {
         match msg {
             Msg::SetRooms(rooms) => {
                 self.rooms = Some(rooms);
@@ -101,32 +99,34 @@ impl Component for RoomSelector {
                 self.inputing_room_id = inputing_room_id;
                 Cmd::none()
             }
-            Msg::ConnectWithRoomId(room_id) => Cmd::sub(On::Connect(room_id)),
+            Msg::ConnectWithRoomId(room_id) => Cmd::Sub(On::Connect(room_id)),
             Msg::ConnectWithInputingRoomId => {
                 if self.room_id_validator.is_match(&self.inputing_room_id) {
-                    Cmd::sub(On::Connect(self.inputing_room_id.clone()))
+                    Cmd::Sub(On::Connect(self.inputing_room_id.clone()))
                 } else {
                     Cmd::none()
                 }
             }
             Msg::ConnectWithNewRoomId => {
                 let room_id = crate::libs::random_id::base64url();
-                Cmd::sub(On::Connect(room_id))
+                Cmd::Sub(On::Connect(room_id))
             }
         }
     }
+}
 
-    fn render(&self, _: Vec<Html>) -> Html {
+impl Render for RoomSelector {
+    fn render(&self, props: &Props, _: Vec<Html<Self>>) -> Html<Self> {
         Self::styled(match &self.rooms {
-            None => Loader::empty(loader::Props {}, Subscription::none()),
+            None => Loader::empty(loader::Props {}, Sub::none()),
             Some(rooms) => BasicApp::with_children(
                 basic_app::Props {},
-                Subscription::none(),
+                Sub::none(),
                 vec![
-                    ModalNotification::empty(modal_notification::Props {}, Subscription::none()),
+                    ModalNotification::empty(modal_notification::Props {}, Sub::none()),
                     Header::with_children(
                         header::Props::new(),
-                        Subscription::none(),
+                        Sub::none(),
                         vec![self.render_header_row_0()],
                     ),
                     Html::div(
@@ -156,7 +156,7 @@ impl Component for RoomSelector {
 }
 
 impl RoomSelector {
-    fn render_header_row_0(&self) -> Html {
+    fn render_header_row_0(&self) -> Html<Self> {
         Html::div(
             Attributes::new()
                 .class(Self::class("header-row"))
@@ -177,7 +177,7 @@ impl RoomSelector {
         )
     }
 
-    fn render_header_row_0_left(&self) -> Html {
+    fn render_header_row_0_left(&self) -> Html<Self> {
         Html::div(
             Attributes::new().class(Self::class("input-room-id")),
             Events::new(),
@@ -211,13 +211,13 @@ impl RoomSelector {
         )
     }
 
-    fn render_roomcard(&self, room: &RoomData) -> Html {
+    fn render_roomcard(&self, room: &RoomData) -> Html<Self> {
         Html::div(
             Attributes::new().class(Self::class("card")),
             Events::new(),
             vec![Card::with_children(
                 card::Props {},
-                Subscription::none(),
+                Sub::none(),
                 vec![
                     Dropdown::with_children(
                         dropdown::Props {
@@ -226,7 +226,7 @@ impl RoomSelector {
                             variant: btn::Variant::Menu,
                             ..Default::default()
                         },
-                        Subscription::none(),
+                        Sub::none(),
                         vec![
                             Btn::menu(
                                 Attributes::new(),

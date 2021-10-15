@@ -1,3 +1,4 @@
+use component::Cmd;
 use isaribi::{
     style,
     styled::{Style, Styled},
@@ -20,27 +21,29 @@ pub enum On {
 
 pub struct BasicApp;
 
-impl Constructor for BasicApp {
-    fn constructor(_: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) -> Self {
-        Self {}
-    }
-}
-
 impl Component for BasicApp {
     type Props = Props;
     type Msg = Msg;
     type Sub = On;
+}
 
-    fn init(&mut self, _: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) {}
+impl Constructor for BasicApp {
+    fn constructor(_: &Props) -> Self {
+        Self {}
+    }
+}
 
-    fn update(&mut self, msg: Self::Msg) -> Cmd<Self::Msg, Self::Sub> {
+impl Update for BasicApp {
+    fn update(&mut self, _: &Props, msg: Msg) -> Cmd<Self> {
         match msg {
             Msg::NoOp => Cmd::none(),
-            Msg::Sub(sub) => Cmd::sub(sub),
+            Msg::Sub(sub) => Cmd::Sub(sub),
         }
     }
+}
 
-    fn render(&self, children: Vec<Html>) -> Html {
+impl Render for BasicApp {
+    fn render(&self, props: &Props, children: Vec<Html<Self>>) -> Html<Self> {
         Self::styled(Html::div(
             Attributes::new().class(Self::class("base")),
             Events::new()

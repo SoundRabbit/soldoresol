@@ -1,6 +1,6 @@
 use kagura::prelude::*;
 
-pub fn i(name: impl Into<String>) -> Html {
+pub fn i<C: Component>(name: impl Into<String>) -> Html<C> {
     Html::i(
         Attributes::new()
             .class("fas")
@@ -11,7 +11,7 @@ pub fn i(name: impl Into<String>) -> Html {
     )
 }
 
-pub fn far_i(name: impl Into<String>) -> Html {
+pub fn far_i<C: Component>(name: impl Into<String>) -> Html<C> {
     Html::i(
         Attributes::new()
             .class("far")

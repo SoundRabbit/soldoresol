@@ -1,6 +1,7 @@
 use super::atom::btn::Btn;
 use super::atom::heading::{self, Heading};
 use super::molecule::modal::{self, Modal};
+use component::{Cmd, Sub};
 use isaribi::{
     style,
     styled::{Style, Styled},
@@ -19,36 +20,50 @@ pub struct ModalNotification {
     is_showing: bool,
 }
 
-impl Constructor for ModalNotification {
-    fn constructor(props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) -> Self {
-        Self { is_showing: true }
-    }
-}
-
 impl Component for ModalNotification {
     type Props = Props;
     type Msg = Msg;
     type Sub = On;
+}
 
-    fn init(&mut self, _: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) {}
+impl Constructor for ModalNotification {
+    fn constructor(_: &Props) -> Self {
+        Self { is_showing: true }
+    }
+}
 
-    fn update(&mut self, msg: Self::Msg) -> Cmd<Self::Msg, Self::Sub> {
+impl Update for ModalNotification {
+    fn on_assemble(&mut self, _: &Props) -> Cmd<Self> {
+        crate::debug::log_1("on_assemble");
+        Cmd::none()
+    }
+
+    fn on_load(&mut self, _: &Props) -> Cmd<Self> {
+        crate::debug::log_1("on_load");
+        Cmd::none()
+    }
+
+    fn update(&mut self, _: &Props, msg: Self::Msg) -> Cmd<Self> {
         match msg {
             Msg::CloseSelf => {
+                crate::debug::log_1(format!("{} -> false", self.is_showing));
                 self.is_showing = false;
                 Cmd::none()
             }
         }
     }
+}
 
-    fn render(&self, _: Vec<Html>) -> Html {
+impl Render for ModalNotification {
+    fn render(&self, _: &Props, _: Vec<Html<Self>>) -> Html<Self> {
+        crate::debug::log_1("render");
         if self.is_showing {
             Self::styled(Modal::with_children(
                 modal::Props {
                     header_title: String::from("更新情報"),
                     footer_message: String::from("開発者 twitter：@SoundRabbit_"),
                 },
-                Subscription::new(|sub| match sub {
+                Sub::map(|sub| match sub {
                     modal::On::Close => Msg::CloseSelf,
                 }),
                 vec![Html::div(

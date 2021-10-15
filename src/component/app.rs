@@ -1,131 +1,160 @@
 use super::page::{
     initializer::{self, Initializer},
-    room::{self, Room},
+    // room::{self, Room},
+    // room_initializer::{self, RoomInisializer},
     room_selector::{self, RoomSelector},
 };
-use crate::libs::skyway::Peer;
+use crate::libs::skyway;
 use crate::model::config::Config;
+use component::{Cmd, Sub};
 use kagura::prelude::*;
 use std::rc::Rc;
 
 pub struct Props {}
 
-pub enum Msg {
-    Init {
-        config: Config,
-        common_db: web_sys::IdbDatabase,
-        client_id: String,
-        peer: Peer,
-        peer_id: String,
-    },
-    SetRoomId(String),
+#[derive(Clone)]
+pub struct CommonPageData {
+    config: Rc<Config>,
+    common_db: Rc<web_sys::IdbDatabase>,
+    client_id: Rc<String>,
+    peer: Rc<skyway::Peer>,
+    peer_id: Rc<String>,
 }
 
-pub enum Sub {}
+pub enum Page {
+    Initializer {},
+    RoomSelector {
+        common: CommonPageData,
+    },
+    RoomInisializer {
+        common: CommonPageData,
+        room_id: Rc<String>,
+    },
+    Room {
+        common: CommonPageData,
+        meshroom: Rc<skyway::MeshRoom>,
+        room_id: Rc<String>,
+        room_db: Rc<web_sys::IdbDatabase>,
+        table_db: Rc<web_sys::IdbDatabase>,
+    },
+}
+
+pub enum Msg {
+    Show(Page),
+}
+
+pub enum On {}
 
 pub struct App {
-    config: Option<Rc<Config>>,
-    common_db: Option<Rc<web_sys::IdbDatabase>>,
-    client_id: Option<Rc<String>>,
-    peer: Option<Rc<Peer>>,
-    peer_id: Option<Rc<String>>,
-    room_id: Option<Rc<String>>,
-}
-
-impl Constructor for App {
-    fn constructor(_: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) -> Self {
-        Self {
-            config: None,
-            common_db: None,
-            client_id: None,
-            peer: None,
-            peer_id: None,
-            room_id: None,
-        }
-    }
+    page: Page,
 }
 
 impl Component for App {
     type Props = Props;
     type Msg = Msg;
-    type Sub = Sub;
+    type Sub = On;
+}
 
-    fn init(&mut self, _: Props, _: &mut ComponentBuilder<Msg, Sub>) {}
+impl Constructor for App {
+    fn constructor(props: &Props) -> Self {
+        Self {
+            page: Page::Initializer {},
+        }
+    }
+}
 
-    fn update(&mut self, msg: Msg) -> Cmd<Msg, Sub> {
+impl Update for App {
+    fn update(&mut self, _: &Props, msg: Msg) -> Cmd<Self> {
         match msg {
-            Msg::Init {
-                config,
-                common_db,
-                client_id,
-                peer,
-                peer_id,
-            } => {
-                self.config = Some(Rc::new(config));
-                self.common_db = Some(Rc::new(common_db));
-                self.client_id = Some(Rc::new(client_id));
-                self.peer = Some(Rc::new(peer));
-                self.peer_id = Some(Rc::new(peer_id));
-                Cmd::none()
-            }
-            Msg::SetRoomId(room_id) => {
-                self.room_id = Some(Rc::new(room_id));
+            Msg::Show(page) => {
+                self.page = page;
                 Cmd::none()
             }
         }
     }
+}
 
-    fn render(&self, _: Vec<Html>) -> Html {
-        if let (Some(config), Some(common_db), Some(client_id), Some(peer), Some(peer_id)) = (
-            &self.config,
-            &self.common_db,
-            &self.client_id,
-            &self.peer,
-            &self.peer_id,
-        ) {
-            if let Some(room_id) = &self.room_id {
-                Room::empty(
-                    room::Props {
-                        config: Rc::clone(&config),
-                        common_db: Rc::clone(&common_db),
-                        peer: Rc::clone(&peer),
-                        peer_id: Rc::clone(&peer_id),
-                        room_id: Rc::clone(&room_id),
-                        client_id: Rc::clone(&client_id),
-                    },
-                    Subscription::none(),
-                )
-            } else {
-                RoomSelector::empty(
-                    room_selector::Props {
-                        common_db: Rc::clone(&common_db),
-                    },
-                    Subscription::new(|sub| match sub {
-                        room_selector::On::Connect(room_id) => Msg::SetRoomId(room_id),
-                    }),
-                )
-            }
-        } else {
-            Initializer::empty(
+impl Render for App {
+    fn render(&self, _: &Props, _: Vec<Html<Self>>) -> Html<Self> {
+        match &self.page {
+            Page::Initializer {} => Initializer::empty(
                 initializer::Props {},
-                Subscription::new(|sub| match sub {
+                Sub::map(|sub| match sub {
                     initializer::On::Load {
                         config,
                         common_db,
                         client_id,
                         peer,
                         peer_id,
-                    } => Msg::Init {
-                        config,
-                        common_db,
-                        client_id,
-                        peer,
-                        peer_id,
-                    },
+                    } => Msg::Show(Page::RoomSelector {
+                        common: CommonPageData {
+                            config: Rc::new(config),
+                            common_db: Rc::new(common_db),
+                            client_id: Rc::new(client_id),
+                            peer: Rc::new(peer),
+                            peer_id: Rc::new(peer_id),
+                        },
+                    }),
                 }),
-            )
+            ),
+            Page::RoomSelector { common } => RoomSelector::empty(
+                room_selector::Props {
+                    common_db: Rc::clone(&common.common_db),
+                },
+                Sub::once({
+                    let common = CommonPageData::clone(&common);
+                    move |sub| match sub {
+                        room_selector::On::Connect(room_id) => Msg::Show(Page::RoomInisializer {
+                            common: common,
+                            room_id: Rc::new(room_id),
+                        }),
+                    }
+                }),
+            ),
+            _ => Html::none()
+            // Page::RoomInisializer { common, room_id } => RoomInisializer::empty(
+            //     room_initializer::Props {
+            //         config: Rc::clone(&common.config),
+            //         common_db: Rc::clone(&common.common_db),
+            //         peer: Rc::clone(&common.peer),
+            //         peer_id: Rc::clone(&common.peer_id),
+            //         client_id: Rc::clone(&common.client_id),
+            //         room_id: Rc::clone(&room_id),
+            //     },
+            //     Subscription::new({
+            //         let common = CommonPageData::clone(&common);
+            //         let room_id = Rc::clone(&room_id);
+            //         move |sub| match sub {
+            //             room_initializer::On::Load {
+            //                 room_db,
+            //                 table_db,
+            //                 meshroom,
+            //             } => Msg::Show(Page::Room {
+            //                 common: common,
+            //                 room_id: room_id,
+            //                 room_db: Rc::new(room_db),
+            //                 table_db: Rc::new(table_db),
+            //                 meshroom: meshroom,
+            //             }),
+            //         }
+            //     }),
+            // ),
+            // Page::Room {
+            //     common,
+            //     room_id,
+            //     room_db,
+            //     table_db,
+            //     meshroom,
+            // } => Room::empty(
+            //     room::Props {
+            //         peer: Rc::clone(&common.peer),
+            //         peer_id: Rc::clone(&common.peer_id),
+            //         meshroom: Rc::clone(&meshroom),
+            //         client_id: Rc::clone(&common.client_id),
+            //         room_id: Rc::clone(&room_id),
+            //     },
+            //     Subscription::none(),
+            // ),
         }
     }
 }
-
-impl App {}

@@ -7,7 +7,11 @@ use kagura::prelude::*;
 pub struct Align {}
 
 impl Align {
-    pub fn key_value(attrs: Attributes, events: Events, children: Vec<Html>) -> Html {
+    pub fn key_value<C: Component>(
+        attrs: Attributes,
+        events: Events<C::Msg>,
+        children: Vec<Html<C>>,
+    ) -> Html<C> {
         Html::div(attrs.class(Self::class("key-value")), events, children)
     }
 }

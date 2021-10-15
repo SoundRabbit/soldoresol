@@ -1,5 +1,6 @@
 use super::BlockId;
 use crate::arena::resource::ResourceId;
+use crate::libs::select_list::SelectList;
 
 #[derive(Clone)]
 pub struct Drawing {
@@ -89,16 +90,29 @@ impl Layer {
     pub fn new_layer_group(layer_group: BlockId) -> Self {
         Self::LayerGroup(layer_group)
     }
+
+    pub fn as_drawing(&self) -> Option<&Drawing> {
+        match self {
+            Self::Drawing(x) => Some(x),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Clone)]
 pub struct LayerGroup {
-    layers: Vec<Layer>,
+    layers: SelectList<Layer>,
 }
 
 impl LayerGroup {
     pub fn new() -> Self {
-        Self { layers: vec![] }
+        Self {
+            layers: SelectList::new(vec![], 0),
+        }
+    }
+
+    pub fn layers(&self) -> std::slice::Iter<Layer> {
+        self.layers.iter()
     }
 
     pub fn add_layer(&mut self, layer: Layer) {
@@ -106,10 +120,10 @@ impl LayerGroup {
     }
 
     pub fn remove_layer(&mut self, idx: usize) -> Option<Layer> {
-        if idx < self.layers.len() {
-            Some(self.layers.remove(idx))
-        } else {
-            None
-        }
+        self.layers.remove(idx)
+    }
+
+    pub fn selected_layer(&self) -> Option<&Layer> {
+        self.layers.selected()
     }
 }

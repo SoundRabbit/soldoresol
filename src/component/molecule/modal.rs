@@ -1,6 +1,7 @@
 use super::atom::{btn::Btn, fa};
 use super::constant;
 use crate::libs::color::color_system;
+use component::Cmd;
 use isaribi::{
     style,
     styled::{Style, Styled},
@@ -20,37 +21,30 @@ pub enum On {
     Close,
 }
 
-pub struct Modal {
-    header_title: String,
-    footer_message: String,
-}
-
-impl Constructor for Modal {
-    fn constructor(props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) -> Self {
-        Self {
-            header_title: props.header_title,
-            footer_message: props.footer_message,
-        }
-    }
-}
+pub struct Modal {}
 
 impl Component for Modal {
     type Props = Props;
     type Msg = Msg;
     type Sub = On;
+}
 
-    fn init(&mut self, props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) {
-        self.header_title = props.header_title;
-        self.footer_message = props.footer_message;
+impl Constructor for Modal {
+    fn constructor(props: &Props) -> Self {
+        Self {}
     }
+}
 
-    fn update(&mut self, msg: Self::Msg) -> Cmd<Self::Msg, Self::Sub> {
+impl Update for Modal {
+    fn update(&mut self, _: &Props, msg: Msg) -> Cmd<Self> {
         match msg {
-            Msg::CloseSelf => Cmd::sub(On::Close),
+            Msg::CloseSelf => Cmd::Sub(On::Close),
         }
     }
+}
 
-    fn render(&self, children: Vec<Html>) -> Html {
+impl Render for Modal {
+    fn render(&self, props: &Props, children: Vec<Html<Self>>) -> Html<Self> {
         Self::styled(Html::div(
             Attributes::new().class(Self::class("background")),
             Events::new(),
@@ -65,7 +59,7 @@ impl Component for Modal {
                             Html::div(
                                 Attributes::new(),
                                 Events::new(),
-                                vec![Html::text(&self.header_title)],
+                                vec![Html::text(&props.header_title)],
                             ),
                             Btn::secondary(
                                 Attributes::new(),
@@ -82,7 +76,7 @@ impl Component for Modal {
                     Html::div(
                         Attributes::new().class(Self::class("footer")),
                         Events::new(),
-                        vec![Html::text(&self.footer_message)],
+                        vec![Html::text(&props.footer_message)],
                     ),
                 ],
             )],

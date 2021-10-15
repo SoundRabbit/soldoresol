@@ -23,32 +23,28 @@ pub enum Msg {}
 
 pub enum On {}
 
-pub struct LoadingCircle {
-    variant: Variant,
-}
-
-impl Constructor for LoadingCircle {
-    fn constructor(variant: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) -> Self {
-        Self { variant: variant }
-    }
-}
+pub struct LoadingCircle {}
 
 impl Component for LoadingCircle {
     type Props = Variant;
     type Msg = Msg;
     type Sub = On;
+}
 
-    fn init(&mut self, _: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) {}
-
-    fn update(&mut self, _: Self::Msg) -> Cmd<Self::Msg, Self::Sub> {
-        Cmd::none()
+impl Constructor for LoadingCircle {
+    fn constructor(variant: &Variant) -> Self {
+        Self {}
     }
+}
 
-    fn render(&self, _: Vec<Html>) -> Html {
+impl Update for LoadingCircle {}
+
+impl Render for LoadingCircle {
+    fn render(&self, variant: &Variant, _: Vec<Html<Self>>) -> Html<Self> {
         Self::styled(Html::span(
             Attributes::new()
                 .class(Self::class("base"))
-                .class(Self::class(&format!("{}", self.variant))),
+                .class(Self::class(&format!("{}", variant))),
             Events::new(),
             vec![],
         ))

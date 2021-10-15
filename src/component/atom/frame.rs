@@ -1,8 +1,10 @@
+use component::{Cmd, Sub};
 use isaribi::{
     style,
     styled::{Style, Styled},
 };
 use kagura::prelude::*;
+use wasm_bindgen::JsCast;
 
 pub struct Props {
     resize_height: bool,
@@ -48,11 +50,14 @@ impl Props {
     }
 }
 
+impl Component for Frame {
+    type Props = Props;
+    type Msg = Msg;
+    type Sub = On;
+}
+
 impl Constructor for Frame {
-    fn constructor(
-        props: Self::Props,
-        builder: &mut ComponentBuilder<Self::Msg, Self::Sub>,
-    ) -> Self {
+    fn constructor(props: &Props) -> Self {
         Self {
             resize_height: props.resize_height,
             resize_width: props.resize_width,
@@ -62,39 +67,34 @@ impl Constructor for Frame {
     }
 }
 
-impl Component for Frame {
-    type Props = Props;
-    type Msg = Msg;
-    type Sub = On;
-
-    fn init(&mut self, props: Self::Props, builder: &mut ComponentBuilder<Self::Msg, Self::Sub>) {}
-
-    fn update(&mut self, msg: Self::Msg) -> Cmd<Self::Msg, Self::Sub> {
-        match msg {
-            Msg::SetElement(el) => {
-                self.element = Some(el);
-                Cmd::none()
+impl Update for Frame {
+    fn ref_node(&mut self, _: &Props, node_name: String, node: web_sys::Node) -> Cmd<Self> {
+        if node_name == "frame" && self.element.is_none() {
+            if let Ok(element) = node.dyn_into::<web_sys::Element>() {
+                self.element = Some(element);
             }
         }
+        Cmd::none()
     }
+}
 
-    fn render(&self, _: Vec<Html>) -> Html {
-        Self::styled(Html::div(
-            {
-                let attrs = Attributes::new().class(Self::class("base"));
-                if let Some(class_name) = &self.class_name {
-                    attrs.class(class_name)
-                } else {
-                    attrs
-                }
-            },
-            Events::new().rendered(if self.element.is_some() {
-                None
-            } else {
-                Some(|el| Msg::SetElement(el))
-            }),
-            vec![Html::div(Attributes::new(), Events::new(), vec![])],
-        ))
+impl Render for Frame {
+    fn render(&self, _: &Props, _: Vec<Html<Self>>) -> Html<Self> {
+        Self::styled(
+            Html::div(
+                {
+                    let attrs = Attributes::new().class(Self::class("base"));
+                    if let Some(class_name) = &self.class_name {
+                        attrs.class(class_name)
+                    } else {
+                        attrs
+                    }
+                },
+                Events::new(),
+                vec![Html::div(Attributes::new(), Events::new(), vec![])],
+            )
+            .ref_name("frame"),
+        )
     }
 }
 

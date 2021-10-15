@@ -314,6 +314,52 @@ impl std::ops::Deref for ArenaRef {
     }
 }
 
+pub struct Chain<'a> {
+    block_id: Option<&'a BlockId>,
+    arena: &'a Arena,
+}
+
+impl<'a> Chain<'a> {
+    fn empty(arena: &'a Arena) -> Self {
+        Self {
+            block_id: None,
+            arena,
+        }
+    }
+
+    pub fn map<T, U>(&self, f: impl FnOnce(&BlockId, &T) -> U) -> Option<U>
+    where
+        Block: TryRef<T>,
+    {
+        self.block_id
+            .as_ref()
+            .and_then(|block_id| self.arena.map(&block_id, |x| f(&block_id, x)))
+    }
+
+    pub fn and_then<T, U>(&self, f: impl FnOnce(&BlockId, &T) -> Option<U>) -> Option<U>
+    where
+        Block: TryRef<T>,
+    {
+        self.block_id
+            .as_ref()
+            .and_then(|block_id| self.arena.and_then(&block_id, |x| f(&block_id, x)))
+    }
+
+    pub fn chain<'b, T: 'b>(
+        &self,
+        f: impl FnOnce(&'a BlockId, &T) -> Option<&'b BlockId>,
+    ) -> Chain<'b>
+    where
+        'a: 'b,
+        Block: TryRef<T>,
+    {
+        self.block_id
+            .as_ref()
+            .map(|block_id| self.arena.chain(&block_id, |x| f(&block_id, x)))
+            .unwrap_or(Self::empty(&self.arena))
+    }
+}
+
 pub struct Arena {
     table: Rc<RefCell<HashMap<BlockId, ArenaBlock>>>,
 }
@@ -384,6 +430,21 @@ impl Arena {
         Block: TryRef<T>,
     {
         self.map(block_id, f).unwrap_or(None)
+    }
+
+    pub fn chain<'a, T>(
+        &'a self,
+        block_id: &BlockId,
+        f: impl FnOnce(&T) -> Option<&'a BlockId>,
+    ) -> Chain<'a>
+    where
+        Block: TryRef<T>,
+    {
+        let block_id = self.map(block_id, f).unwrap_or(None);
+        Chain {
+            block_id,
+            arena: self,
+        }
     }
 
     pub fn iter_map_with_ids<'a, T, U>(
