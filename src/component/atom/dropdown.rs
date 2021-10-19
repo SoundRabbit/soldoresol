@@ -1,10 +1,10 @@
 use super::atom::btn::{self, Btn};
 use super::atom::fa;
-use component::Cmd;
 use isaribi::{
     style,
     styled::{Style, Styled},
 };
+use kagura::component::Cmd;
 use kagura::prelude::*;
 
 pub struct Props {

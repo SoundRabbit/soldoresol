@@ -1,4 +1,4 @@
-use component::Cmd;
+use kagura::component::Cmd;
 use kagura::prelude::*;
 use std::collections::VecDeque;
 

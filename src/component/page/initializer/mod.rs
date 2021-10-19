@@ -1,7 +1,7 @@
 use super::template::loader::{self, Loader};
 use crate::libs::skyway::Peer;
 use crate::model::config::Config;
-use component::{Cmd, Sub};
+use kagura::component::{Cmd, Sub};
 use kagura::prelude::*;
 
 mod task;

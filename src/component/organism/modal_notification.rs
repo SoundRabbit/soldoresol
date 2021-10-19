@@ -1,11 +1,11 @@
 use super::atom::btn::Btn;
 use super::atom::heading::{self, Heading};
 use super::molecule::modal::{self, Modal};
-use component::{Cmd, Sub};
 use isaribi::{
     style,
     styled::{Style, Styled},
 };
+use kagura::component::{Cmd, Sub};
 use kagura::prelude::*;
 
 pub struct Props {}

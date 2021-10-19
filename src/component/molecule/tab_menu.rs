@@ -1,8 +1,9 @@
-use super::atom::tab_btn::{self, TabBtn};
+use super::atom::tab_btn::TabBtn;
 use isaribi::{
     style,
     styled::{Style, Styled},
 };
+use kagura::component::Cmd;
 use kagura::prelude::*;
 
 pub struct Props {
@@ -26,29 +27,33 @@ pub struct TabMenu {
     is_controlled: bool,
 }
 
+impl Component for TabMenu {
+    type Props = Props;
+    type Msg = Msg;
+    type Sub = On;
+}
+
 impl Constructor for TabMenu {
-    fn constructor(props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) -> Self {
+    fn constructor(props: &Props) -> Self {
         Self {
             selected_idx: props.selected,
-            tabs: props.tabs,
+            tabs: props.tabs.clone(),
             is_controlled: props.controlled,
         }
     }
 }
 
-impl Component for TabMenu {
-    type Props = Props;
-    type Msg = Msg;
-    type Sub = On;
-
-    fn init(&mut self, props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) {
+impl Update for TabMenu {
+    fn on_load(&mut self, props: &Props) -> Cmd<Self> {
         if self.is_controlled {
             self.selected_idx = props.selected;
-            self.tabs = props.tabs;
+            self.tabs = props.tabs.clone();
         }
+
+        Cmd::none()
     }
 
-    fn update(&mut self, msg: Self::Msg) -> Cmd<Self::Msg, Self::Sub> {
+    fn update(&mut self, _: &Props, msg: Msg) -> Cmd<Self> {
         match msg {
             Msg::NoOp => Cmd::none(),
             Msg::SetSelectedIdx(idx) => {
@@ -61,8 +66,10 @@ impl Component for TabMenu {
             }
         }
     }
+}
 
-    fn render(&self, mut children: Vec<Html>) -> Html {
+impl Render for TabMenu {
+    fn render(&self, props: &Props, mut children: Vec<Html<Self>>) -> Html<Self> {
         Self::styled(Html::div(
             Attributes::new().class(Self::class("base")),
             Events::new(),

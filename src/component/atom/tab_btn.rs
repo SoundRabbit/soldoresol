@@ -9,13 +9,13 @@ use kagura::prelude::*;
 pub struct TabBtn {}
 
 impl TabBtn {
-    pub fn new(
+    pub fn new<C: Component>(
         is_draggable: bool,
         is_selected: bool,
         attrs: Attributes,
-        events: Events,
-        children: Vec<Html>,
-    ) -> Html {
+        events: Events<C::Msg>,
+        children: Vec<Html<C>>,
+    ) -> Html<C> {
         Self::styled(Html::div(
             attrs.class(Self::class("base")).draggable(is_draggable),
             events,

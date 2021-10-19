@@ -1,11 +1,11 @@
 use super::atom::{btn::Btn, fa};
 use super::constant;
 use crate::libs::color::color_system;
-use component::Cmd;
 use isaribi::{
     style,
     styled::{Style, Styled},
 };
+use kagura::component::Cmd;
 use kagura::prelude::*;
 
 pub struct Props {

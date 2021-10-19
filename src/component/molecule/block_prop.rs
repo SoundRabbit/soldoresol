@@ -4,11 +4,11 @@ use super::atom::slider::{self, Slider};
 use super::atom::text;
 use crate::arena::block::{self, BlockId};
 use crate::libs::select_list::SelectList;
-use component::{Cmd, Sub};
 use isaribi::{
     style,
     styled::{Style, Styled},
 };
+use kagura::component::{Cmd, Sub};
 use kagura::prelude::*;
 
 pub struct Props {

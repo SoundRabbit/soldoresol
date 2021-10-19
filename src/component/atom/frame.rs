@@ -1,8 +1,8 @@
-use component::{Cmd, Sub};
 use isaribi::{
     style,
     styled::{Style, Styled},
 };
+use kagura::component::{Cmd, Sub};
 use kagura::prelude::*;
 use wasm_bindgen::JsCast;
 
@@ -62,7 +62,7 @@ impl Constructor for Frame {
             resize_height: props.resize_height,
             resize_width: props.resize_width,
             element: None,
-            class_name: props.class_name,
+            class_name: props.class_name.clone(),
         }
     }
 }

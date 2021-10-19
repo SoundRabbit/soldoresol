@@ -1,8 +1,8 @@
-use component::Cmd;
 use isaribi::{
     style,
     styled::{Style, Styled},
 };
+use kagura::component::Cmd;
 use kagura::prelude::*;
 use wasm_bindgen::JsCast;
 

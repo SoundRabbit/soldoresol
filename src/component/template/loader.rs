@@ -1,9 +1,9 @@
 use super::atom::loading_circle::{self, LoadingCircle};
-use component::Sub;
 use isaribi::{
     style,
     styled::{Style, Styled},
 };
+use kagura::component::Sub;
 use kagura::prelude::*;
 
 pub struct Props {}

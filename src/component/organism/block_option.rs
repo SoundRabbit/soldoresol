@@ -7,10 +7,11 @@ use isaribi::{
     style,
     styled::{Style, Styled},
 };
+use kagura::component::{Cmd, Sub};
 use kagura::prelude::*;
 
 pub struct Props {
-    pub props: Vec<BlockId>,
+    pub prop_blocks: Vec<BlockId>,
     pub tabs: Vec<String>,
     pub block_arena: block::ArenaRef,
 }
@@ -52,9 +53,6 @@ pub enum On {
 }
 
 pub struct BlockOption {
-    props: Vec<BlockId>,
-    tabs: Vec<String>,
-    block_arena: block::ArenaRef,
     selected_tab_idx: usize,
     element_id: ElementId,
 }
@@ -63,12 +61,15 @@ struct ElementId {
     input_tab_name: String,
 }
 
+impl Component for BlockOption {
+    type Props = Props;
+    type Msg = Msg;
+    type Sub = On;
+}
+
 impl Constructor for BlockOption {
-    fn constructor(props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) -> Self {
+    fn constructor(_: &Props) -> Self {
         Self {
-            props: props.props,
-            tabs: props.tabs,
-            block_arena: props.block_arena,
             selected_tab_idx: 0,
             element_id: ElementId {
                 input_tab_name: format!("{:X}", crate::libs::random_id::u128val()),
@@ -77,18 +78,8 @@ impl Constructor for BlockOption {
     }
 }
 
-impl Component for BlockOption {
-    type Props = Props;
-    type Msg = Msg;
-    type Sub = On;
-
-    fn init(&mut self, props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) {
-        self.props = props.props;
-        self.tabs = props.tabs;
-        self.block_arena = props.block_arena;
-    }
-
-    fn update(&mut self, msg: Self::Msg) -> Cmd<Self::Msg, Self::Sub> {
+impl Update for BlockOption {
+    fn update(&mut self, _: &Props, msg: Self::Msg) -> Cmd<Self> {
         match msg {
             Msg::SetSelectedTabIdx(selected_tab_idx) => {
                 self.selected_tab_idx = selected_tab_idx;
@@ -98,17 +89,20 @@ impl Component for BlockOption {
             Msg::Sub(sub) => Cmd::sub(sub),
         }
     }
+}
 
-    fn render(&self, children: Vec<Html>) -> Html {
+impl Render for BlockOption {
+    fn render(&self, props: &Props, children: Vec<Html<Self>>) -> Html<Self> {
         let (tabs, contents) = {
-            let mut tabs = self.tabs.clone();
+            let mut tabs = props.tabs.clone();
             let mut contents = children;
 
-            for prop_id in &self.props {
-                self.block_arena
-                    .map(prop_id, |prop: &block::property::Property| {
-                        tabs.push(prop.name().clone());
-                        contents.push(self.render_content(prop_id, prop));
+            for prop_id in &props.prop_blocks {
+                props
+                    .block_arena
+                    .map(prop_id, |prop_block: &block::property::Property| {
+                        tabs.push(prop_block.name().clone());
+                        contents.push(self.render_content(props, prop_id, prop_block));
                     });
             }
 
@@ -125,7 +119,7 @@ impl Component for BlockOption {
                 tabs: tabs,
                 controlled: true,
             },
-            Subscription::new(move |sub| match sub {
+            Sub::map(move |sub| match sub {
                 tab_menu::On::ChangeSelectedTab(idx) => {
                     if idx < tab_num {
                         Msg::SetSelectedTabIdx(idx)
@@ -143,7 +137,11 @@ impl Component for BlockOption {
 }
 
 impl BlockOption {
-    pub fn content_base(attrs: Attributes, events: Events, children: Vec<Html>) -> Html {
+    pub fn content_base(
+        attrs: Attributes,
+        events: Events<Msg>,
+        children: Vec<Html<Self>>,
+    ) -> Html<Self> {
         Html::div(
             attrs.class(Self::class("content-base")).class("pure-form"),
             events,
@@ -151,7 +149,12 @@ impl BlockOption {
         )
     }
 
-    fn render_content(&self, prop_id: &BlockId, prop: &block::property::Property) -> Html {
+    fn render_content(
+        &self,
+        props: &Props,
+        prop_id: &BlockId,
+        prop_block: &block::property::Property,
+    ) -> Html<Self> {
         Self::content_base(
             Attributes::new(),
             Events::new(),
@@ -166,7 +169,7 @@ impl BlockOption {
                             text::label("タブ名", &self.element_id.input_tab_name),
                             Html::input(
                                 Attributes::new()
-                                    .value(prop.name())
+                                    .value(prop_block.name())
                                     .id(&self.element_id.input_tab_name),
                                 Events::new().on_input({
                                     let prop_id = BlockId::clone(prop_id);
@@ -184,9 +187,9 @@ impl BlockOption {
                     BlockProp::empty(
                         block_prop::Props {
                             root_prop: BlockId::clone(prop_id),
-                            block_arena: block::ArenaRef::clone(&self.block_arena),
+                            block_arena: block::ArenaRef::clone(&props.block_arena),
                         },
-                        Subscription::new(|sub| match sub {
+                        Sub::map(|sub| match sub {
                             block_prop::On::AddPropertyChild { property_id, name } => {
                                 Msg::Sub(On::AddPropertyChild {
                                     property_id: Some(property_id),

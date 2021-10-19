@@ -10,11 +10,11 @@ use super::template::{
     basic_app::{self, BasicApp},
     loader::{self, Loader},
 };
-use component::{Cmd, Sub};
 use isaribi::{
     style,
     styled::{Style, Styled},
 };
+use kagura::component::{Cmd, Sub};
 use kagura::prelude::*;
 use regex::Regex;
 use std::rc::Rc;

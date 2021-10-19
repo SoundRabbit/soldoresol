@@ -1,9 +1,9 @@
 use crate::libs::color::color_system;
-use component::{Cmd, Sub};
 use isaribi::{
     style,
     styled::{Style, Styled},
 };
+use kagura::component::{Cmd, Sub};
 use kagura::prelude::*;
 
 pub struct Props {
