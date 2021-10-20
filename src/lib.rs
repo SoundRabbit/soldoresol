@@ -33,13 +33,12 @@ mod component;
 mod debug;
 mod model;
 
+use component::{app, App};
+use kagura::{component::Sub, prelude::*};
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen(start)]
 pub fn main() {
-    use component::{app, App};
-    use kagura::prelude::{component::Sub, Constructor, Kagura};
-
     let entry_point = web_sys::window()
         .unwrap()
         .document()

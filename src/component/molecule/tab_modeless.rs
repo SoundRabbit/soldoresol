@@ -1,33 +1,30 @@
-use super::util::Prop;
+use super::atom::tab_btn::{self, TabBtn};
 use crate::libs::color::color_system;
+use crate::libs::random_id::U128Id;
+use crate::libs::select_list::SelectList;
 use isaribi::{
     style,
     styled::{Style, Styled},
 };
+use kagura::component::{Cmd, Sub};
 use kagura::prelude::*;
+use std::cell::RefCell;
+use std::rc::Rc;
+use wasm_bindgen::JsCast;
 
-pub struct Props {
+pub struct Props<T> {
     pub size: [f32; 2],
     pub page_x: i32,
     pub page_y: i32,
     pub z_index: usize,
-    pub container_element: Option<Prop<web_sys::Element>>,
+    pub container_element: Rc<web_sys::Element>,
+    pub contents: Rc<RefCell<SelectList<T>>>,
+    pub modeless_id: U128Id,
 }
 
-impl Default for Props {
-    fn default() -> Self {
-        Self {
-            size: [0.3, 0.3],
-            z_index: 0,
-            container_element: None,
-            page_x: 0,
-            page_y: 0,
-        }
-    }
-}
-
-pub enum Msg {
+pub enum Msg<T> {
     NoOp,
+    Sub(On<T>),
     DragStart {
         page_x: i32,
         page_y: i32,
@@ -38,20 +35,38 @@ pub enum Msg {
         page_x: i32,
         page_y: i32,
     },
+    DisconnectTab {
+        event_id: U128Id,
+        tab_idx: usize,
+    },
 }
 
-pub enum On {
+pub enum On<T> {
     Focus,
     Move(i32, i32),
     Resize([f32; 2]),
+    DisconnectTab {
+        event_id: U128Id,
+        content: T,
+        modeless_id: U128Id,
+    },
+    ConnectTab {
+        event_id: U128Id,
+        header_tab_idx: Option<usize>,
+        modeless_id: U128Id,
+    },
 }
 
-pub struct Modeless {
+pub struct TabModeless<Content: Constructor, TabName: Constructor<Props = Content::Props>>
+where
+    Content::Props: Clone,
+{
     size: [f32; 2],
     loc: [f32; 2],
-    z_index: usize,
     dragging: Option<([i32; 2], DragType)>,
-    container_element: Option<Prop<web_sys::Element>>,
+    container_element: Rc<web_sys::Element>,
+    _phantom_content: std::marker::PhantomData<Content>,
+    _phantom_tab_name: std::marker::PhantomData<TabName>,
 }
 
 pub enum DragType {
@@ -85,25 +100,37 @@ impl std::fmt::Display for DragDirection {
     }
 }
 
-impl Constructor for Modeless {
-    fn constructor(props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) -> Self {
-        let loc = if let Some(el) = props.container_element.as_ref() {
-            let rect = el.get_bounding_client_rect();
-            let client_x = props.page_x as f64 - rect.left();
-            let client_y = props.page_y as f64 - rect.top();
-            let loc_x = client_x / rect.width();
-            let loc_y = client_y / rect.height();
-            [(loc_x as f32).max(0.0), (loc_y as f32).max(0.0)]
-        } else {
-            [0.0, 0.0]
-        };
+impl<Content: Constructor, TabName: Constructor<Props = Content::Props>> Component
+    for TabModeless<Content, TabName>
+where
+    Content::Props: Clone,
+{
+    type Props = Props<Content::Props>;
+    type Msg = Msg<Content::Props>;
+    type Sub = On<Content::Props>;
+}
+
+impl<Content: Constructor, TabName: Constructor<Props = Content::Props>> Constructor
+    for TabModeless<Content, TabName>
+where
+    Content::Props: Clone,
+{
+    fn constructor(props: &Props<Content::Props>) -> Self {
+        let el = &props.container_element;
+        let rect = el.get_bounding_client_rect();
+        let client_x = props.page_x as f64 - rect.left();
+        let client_y = props.page_y as f64 - rect.top();
+        let loc_x = client_x / rect.width();
+        let loc_y = client_y / rect.height();
+        let loc = [(loc_x as f32).max(0.0), (loc_y as f32).max(0.0)];
 
         Self {
-            z_index: props.z_index,
             loc: loc,
-            size: props.size,
+            size: props.size.clone(),
             dragging: None,
-            container_element: props.container_element,
+            container_element: Rc::clone(&props.container_element),
+            _phantom_content: std::marker::PhantomData,
+            _phantom_tab_name: std::marker::PhantomData,
         }
     }
 }
@@ -125,18 +152,15 @@ macro_rules! on_drag {
     }};
 }
 
-impl Component for Modeless {
-    type Props = Props;
-    type Msg = Msg;
-    type Sub = On;
-
-    fn init(&mut self, props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) {
-        self.z_index = props.z_index;
-    }
-
-    fn update(&mut self, msg: Self::Msg) -> Cmd<Self::Msg, Self::Sub> {
+impl<Content: Constructor, TabName: Constructor<Props = Content::Props>> Update
+    for TabModeless<Content, TabName>
+where
+    Content::Props: Clone,
+{
+    fn update(&mut self, props: &Props<Content::Props>, msg: Msg<Content::Props>) -> Cmd<Self> {
         match msg {
             Msg::NoOp => Cmd::none(),
+            Msg::Sub(sub) => Cmd::sub(sub),
             Msg::DragStart {
                 page_x,
                 page_y,
@@ -149,14 +173,23 @@ impl Component for Modeless {
                 self.dragging = None;
                 Cmd::sub(On::Focus)
             }
+            Msg::DisconnectTab { event_id, tab_idx } => {
+                if let Some(content) = props.contents.borrow_mut().remove(tab_idx) {
+                    Cmd::sub(On::DisconnectTab {
+                        event_id,
+                        content,
+                        modeless_id: U128Id::clone(&props.modeless_id),
+                    })
+                } else {
+                    Cmd::none()
+                }
+            }
             Msg::Drag { page_x, page_y } => {
                 let cmd;
-                if let Some((dragging, container_element)) =
-                    join_some!(self.dragging.as_mut(), self.container_element.as_ref())
-                {
+                if let Some(dragging) = self.dragging.as_mut() {
                     let mov_x = (page_x - dragging.0[0]) as f32;
                     let mov_y = (page_y - dragging.0[1]) as f32;
-                    let container_element = container_element.get_bounding_client_rect();
+                    let container_element = self.container_element.get_bounding_client_rect();
                     let container_width = container_element.width() as f32;
                     let container_height = container_element.height() as f32;
 
@@ -246,27 +279,31 @@ impl Component for Modeless {
                     cmd = Cmd::none();
                 }
 
-                if let Some(container_element) = self.container_element.as_ref() {
-                    let rect = container_element.get_bounding_client_rect();
-                    if page_x < rect.left() as i32
-                        || page_x > rect.right() as i32
-                        || page_y < rect.top() as i32
-                        || page_y > rect.bottom() as i32
-                    {
-                        self.dragging = None;
-                    }
+                let rect = self.container_element.get_bounding_client_rect();
+                if page_x < rect.left() as i32
+                    || page_x > rect.right() as i32
+                    || page_y < rect.top() as i32
+                    || page_y > rect.bottom() as i32
+                {
+                    self.dragging = None;
                 }
 
                 cmd
             }
         }
     }
+}
 
-    fn render(&self, children: Vec<Html>) -> Html {
+impl<Content: Constructor, TabName: Constructor<Props = Content::Props>> Render
+    for TabModeless<Content, TabName>
+where
+    Content::Props: Clone,
+{
+    fn render(&self, props: &Props<Content::Props>, _: Vec<Html<Self>>) -> Html<Self> {
         Self::styled(Html::div(
             Attributes::new()
                 .class(Self::class("base"))
-                .style("z-index", format!("{}", self.z_index))
+                .style("z-index", format!("{}", props.z_index))
                 .style("left", format!("{}%", self.loc[0] * 100.0))
                 .style("top", format!("{}%", self.loc[1] * 100.0))
                 .style("width", format!("{}%", self.size[0] * 100.0))
@@ -292,9 +329,62 @@ impl Component for Modeless {
                 }),
             vec![
                 Html::div(
-                    Attributes::new().class(Self::class("container")),
+                    Attributes::new().class(Self::class("header")),
+                    Events::new()
+                        .on_dragover(|e| {
+                            e.prevent_default();
+                            Msg::NoOp
+                        })
+                        .on_drop({let modeless_id = U128Id::clone(&props.modeless_id);move |e| {
+                            Self::on_drop_tab(None, e,modeless_id)
+                        }}),
+                    props
+                        .contents
+                        .borrow()
+                        .iter()
+                        .enumerate()
+                        .map(|(tab_idx, content)| {
+                            TabBtn::new(
+                                true,
+                                tab_idx == props.contents.borrow().selected_idx(),
+                                Attributes::new(),
+                                Events::new()
+                                .on_mousedown(|e|{ e.stop_propagation(); Msg::NoOp})
+                                .on_dragstart(
+                                    move |e| {
+                                    e.stop_propagation();
+                                    let data_transfer = unwrap_or!(e.data_transfer(); Msg::NoOp);
+                                    let event_id = U128Id::new();
+                                    unwrap_or!(
+                                        data_transfer
+                                            .set_data("text/plain", &TabBtn::id::<Self>(vec![&event_id.to_string()]))
+                                            .ok();
+                                        Msg::NoOp
+                                    );
+                                    Msg::DisconnectTab {
+                                        event_id,
+                                        tab_idx,
+                                    }
+                                }).on_drop({
+                                    let modeless_id = U128Id::clone(&props.modeless_id);
+                                    move |e| {
+                                        Self::on_drop_tab(Some(tab_idx), e,modeless_id)
+                                    }
+                                }),
+                                vec![TabName::empty(Clone::clone(content), Sub::none())],
+                            )
+                        })
+                        .collect(),
+                ),
+                Html::div(
+                    Attributes::new().class(Self::class("content")),
                     Events::new(),
-                    children,
+                    vec![props
+                        .contents
+                        .borrow()
+                        .selected()
+                        .map(|content| Content::empty(Clone::clone(content), Sub::none()))
+                        .unwrap_or(Html::none())],
                 ),
                 self.render_rsz(DragDirection::Top),
                 self.render_rsz(DragDirection::TopLeft),
@@ -309,8 +399,12 @@ impl Component for Modeless {
     }
 }
 
-impl Modeless {
-    fn render_rsz(&self, drag_direction: DragDirection) -> Html {
+impl<Content: Constructor, TabName: Constructor<Props = Content::Props>>
+    TabModeless<Content, TabName>
+where
+    Content::Props: Clone,
+{
+    fn render_rsz(&self, drag_direction: DragDirection) -> Html<Self> {
         Html::div(
             Attributes::new().class(Self::class(&format!("rsz-{}", &drag_direction))),
             Events::new()
@@ -328,19 +422,47 @@ impl Modeless {
             vec![],
         )
     }
+
+    fn on_drop_tab(
+        tab_idx: Option<usize>,
+        e: web_sys::DragEvent,
+        modeless_id: U128Id,
+    ) -> Msg<Content::Props> {
+        let e = unwrap_or!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
+        let data_transfer = unwrap_or!(e.data_transfer(); Msg::NoOp);
+        let data = unwrap_or!(data_transfer.get_data("text/plain").ok(); Msg::NoOp);
+        if TabBtn::validate_prefix::<Self>(&data) {
+            let suffix = TabBtn::get_suffix(&data);
+            if let Some(event_id) = suffix.get(0).and_then(|x| U128Id::from_hex(x)) {
+                e.prevent_default();
+                e.stop_propagation();
+                return Msg::Sub(On::ConnectTab {
+                    event_id,
+                    header_tab_idx: tab_idx,
+                    modeless_id,
+                });
+            }
+        }
+        Msg::NoOp
+    }
 }
 
-impl Styled for Modeless {
+impl<Content: Constructor, TabName: Constructor<Props = Content::Props>> Styled
+    for TabModeless<Content, TabName>
+where
+    Content::Props: Clone,
+{
     fn style() -> Style {
         style! {
             ".base" {
                 "position": "absolute";
                 "overflow": "visible";
+                "display": "grid";
+                "grid-template-columns": "1fr";
+                "grid-template-rows": "max-content 1fr";
             }
 
-            ".container" {
-                "width": "100%";
-                "height": "100%";
+            ".content" {
                 "overflow": "hidden";
                 "border-radius": "2px";
                 "box-shadow": format!("0 0 0.1rem 0.1rem {}", color_system::gray(255, 9));
