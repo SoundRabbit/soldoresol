@@ -22,9 +22,9 @@ pub struct Props<T> {
     pub modeless_id: U128Id,
 }
 
-pub enum Msg<T> {
+pub enum Msg {
     NoOp,
-    Sub(On<T>),
+    Sub(On),
     DragStart {
         page_x: i32,
         page_y: i32,
@@ -41,13 +41,13 @@ pub enum Msg<T> {
     },
 }
 
-pub enum On<T> {
+pub enum On {
     Focus,
     Move(i32, i32),
     Resize([f32; 2]),
     DisconnectTab {
         event_id: U128Id,
-        content: T,
+        tab_idx: usize,
         modeless_id: U128Id,
     },
     ConnectTab {
@@ -106,8 +106,8 @@ where
     Content::Props: Clone,
 {
     type Props = Props<Content::Props>;
-    type Msg = Msg<Content::Props>;
-    type Sub = On<Content::Props>;
+    type Msg = Msg;
+    type Sub = On;
 }
 
 impl<Content: Constructor, TabName: Constructor<Props = Content::Props>> Constructor
@@ -157,7 +157,7 @@ impl<Content: Constructor, TabName: Constructor<Props = Content::Props>> Update
 where
     Content::Props: Clone,
 {
-    fn update(&mut self, props: &Props<Content::Props>, msg: Msg<Content::Props>) -> Cmd<Self> {
+    fn update(&mut self, props: &Props<Content::Props>, msg: Msg) -> Cmd<Self> {
         match msg {
             Msg::NoOp => Cmd::none(),
             Msg::Sub(sub) => Cmd::sub(sub),
@@ -173,17 +173,11 @@ where
                 self.dragging = None;
                 Cmd::sub(On::Focus)
             }
-            Msg::DisconnectTab { event_id, tab_idx } => {
-                if let Some(content) = props.contents.borrow_mut().remove(tab_idx) {
-                    Cmd::sub(On::DisconnectTab {
-                        event_id,
-                        content,
-                        modeless_id: U128Id::clone(&props.modeless_id),
-                    })
-                } else {
-                    Cmd::none()
-                }
-            }
+            Msg::DisconnectTab { event_id, tab_idx } => Cmd::sub(On::DisconnectTab {
+                event_id,
+                tab_idx,
+                modeless_id: U128Id::clone(&props.modeless_id),
+            }),
             Msg::Drag { page_x, page_y } => {
                 let cmd;
                 if let Some(dragging) = self.dragging.as_mut() {
@@ -423,11 +417,7 @@ where
         )
     }
 
-    fn on_drop_tab(
-        tab_idx: Option<usize>,
-        e: web_sys::DragEvent,
-        modeless_id: U128Id,
-    ) -> Msg<Content::Props> {
+    fn on_drop_tab(tab_idx: Option<usize>, e: web_sys::DragEvent, modeless_id: U128Id) -> Msg {
         let e = unwrap_or!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
         let data_transfer = unwrap_or!(e.data_transfer(); Msg::NoOp);
         let data = unwrap_or!(data_transfer.get_data("text/plain").ok(); Msg::NoOp);
@@ -460,12 +450,12 @@ where
                 "display": "grid";
                 "grid-template-columns": "1fr";
                 "grid-template-rows": "max-content 1fr";
+                "border-radius": "2px";
+                "box-shadow": format!("0 0 0.1rem 0.1rem {}", color_system::gray(255, 9));
             }
 
             ".content" {
                 "overflow": "hidden";
-                "border-radius": "2px";
-                "box-shadow": format!("0 0 0.1rem 0.1rem {}", color_system::gray(255, 9));
             }
 
             ".rsz-top" {

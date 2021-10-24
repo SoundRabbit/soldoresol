@@ -2,6 +2,18 @@ const path = require("path");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const WasmPackPlugin = require("@wasm-tool/wasm-pack-plugin");
 const HtmlWebpackInlineSourcePlugin = require("html-webpack-inline-source-plugin");
+const history = require('connect-history-api-fallback');
+
+history({
+    rewrites: [
+        {
+            from: /([^/]*)$/,
+            to: function (context) {
+                return '/' + context.match[1];
+            }
+        }
+    ]
+});
 
 module.exports = {
     entry: "./assets",
@@ -72,7 +84,16 @@ module.exports = {
         new HtmlWebpackInlineSourcePlugin(),
     ],
     devServer: {
-        historyApiFallback: true,
+        historyApiFallback: {
+            rewrites: [
+                {
+                    from: /([^/]*\.(js|wasm))$/,
+                    to: function (context) {
+                        return '/' + context.match[1];
+                    }
+                }
+            ]
+        },
         disableHostCheck: true,
     }
 };

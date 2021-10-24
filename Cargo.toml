@@ -65,6 +65,7 @@ features = [
     "File",
     "FileList",
     "FileReader",
+    "History",
     "HtmlCanvasElement",
     "HtmlCollection",
     "HtmlElement",

@@ -3,6 +3,7 @@ pub trait DisplayNamed {
     fn set_display_name(&mut self, name: String);
 }
 
+use super::ArenaRef;
 use async_trait::async_trait;
 use wasm_bindgen::JsValue;
 

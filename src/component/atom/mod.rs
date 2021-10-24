@@ -1,6 +1,7 @@
 pub mod align;
 pub mod btn;
 pub mod card;
+pub mod craftboard;
 pub mod dropdown;
 pub mod fa;
 pub mod frame;

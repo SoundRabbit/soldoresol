@@ -1,9 +1,10 @@
 use super::page::{
     initializer::{self, Initializer},
-    // room::{self, Room},
+    room::{self, Room},
     room_initializer::{self, RoomInisializer},
     room_selector::{self, RoomSelector},
 };
+use super::util::router;
 use crate::libs::skyway;
 use crate::model::config::Config;
 use kagura::component::{Cmd, Sub};
@@ -21,32 +22,24 @@ pub struct CommonPageData {
     peer_id: Rc<String>,
 }
 
-pub enum Page {
-    Initializer {},
-    RoomSelector {
-        common: CommonPageData,
-    },
-    RoomInisializer {
-        common: CommonPageData,
-        room_id: Rc<String>,
-    },
-    Room {
-        common: CommonPageData,
-        meshroom: Rc<skyway::MeshRoom>,
-        room_id: Rc<String>,
-        room_db: Rc<web_sys::IdbDatabase>,
-        table_db: Rc<web_sys::IdbDatabase>,
-    },
+#[derive(Clone)]
+pub struct RoomPageData {
+    meshroom: Rc<skyway::MeshRoom>,
+    room_db: Rc<web_sys::IdbDatabase>,
+    table_db: Rc<web_sys::IdbDatabase>,
 }
 
 pub enum Msg {
-    Show(Page),
+    NoOp,
+    SetCommonData(CommonPageData),
+    SetRoomData(RoomPageData),
 }
 
 pub enum On {}
 
 pub struct App {
-    page: Page,
+    common_data: Option<CommonPageData>,
+    room_data: Option<RoomPageData>,
 }
 
 impl Component for App {
@@ -58,7 +51,8 @@ impl Component for App {
 impl Constructor for App {
     fn constructor(props: &Props) -> Self {
         Self {
-            page: Page::Initializer {},
+            common_data: None,
+            room_data: None,
         }
     }
 }
@@ -66,8 +60,13 @@ impl Constructor for App {
 impl Update for App {
     fn update(&mut self, _: &Props, msg: Msg) -> Cmd<Self> {
         match msg {
-            Msg::Show(page) => {
-                self.page = page;
+            Msg::NoOp => Cmd::none(),
+            Msg::SetCommonData(data) => {
+                self.common_data = Some(data);
+                Cmd::none()
+            }
+            Msg::SetRoomData(data) => {
+                self.room_data = Some(data);
                 Cmd::none()
             }
         }
@@ -76,85 +75,87 @@ impl Update for App {
 
 impl Render for App {
     fn render(&self, _: &Props, _: Vec<Html<Self>>) -> Html<Self> {
-        match &self.page {
-            Page::Initializer {} => Initializer::empty(
-                initializer::Props {},
-                Sub::map(|sub| match sub {
-                    initializer::On::Load {
-                        config,
-                        common_db,
-                        client_id,
-                        peer,
-                        peer_id,
-                    } => Msg::Show(Page::RoomSelector {
-                        common: CommonPageData {
-                            config: Rc::new(config),
-                            common_db: Rc::new(common_db),
-                            client_id: Rc::new(client_id),
-                            peer: Rc::new(peer),
-                            peer_id: Rc::new(peer_id),
-                        },
-                    }),
-                }),
-            ),
-            Page::RoomSelector { common } => RoomSelector::empty(
-                room_selector::Props {
-                    common_db: Rc::clone(&common.common_db),
-                },
-                Sub::once({
-                    let common = CommonPageData::clone(&common);
-                    move |sub| match sub {
-                        room_selector::On::Connect(room_id) => Msg::Show(Page::RoomInisializer {
-                            common: common,
-                            room_id: Rc::new(room_id),
-                        }),
-                    }
-                }),
-            ),
-            Page::RoomInisializer { common, room_id } => RoomInisializer::empty(
-                room_initializer::Props {
-                    config: Rc::clone(&common.config),
-                    common_db: Rc::clone(&common.common_db),
-                    peer: Rc::clone(&common.peer),
-                    peer_id: Rc::clone(&common.peer_id),
-                    client_id: Rc::clone(&common.client_id),
-                    room_id: Rc::clone(&room_id),
-                },
-                Sub::map({
-                    let common = CommonPageData::clone(&common);
-                    let room_id = Rc::clone(&room_id);
-                    move |sub| match sub {
-                        room_initializer::On::Load {
-                            room_db,
-                            table_db,
-                            meshroom,
-                        } => Msg::Show(Page::Room {
-                            common: CommonPageData::clone(&common),
-                            room_id: Rc::clone(&room_id),
-                            room_db: Rc::new(room_db),
-                            table_db: Rc::new(table_db),
-                            meshroom: meshroom,
-                        }),
-                    }
-                }),
-            ),
-            _ => Html::none()
-            // Page::Room {
-            //     common,
-            //     room_id,
-            //     room_db,
-            //     table_db,
-            //     meshroom,
-            // } => Room::empty(
-            //     room::Props {
-            //         peer: Rc::clone(&common.peer),
-            //         peer_id: Rc::clone(&common.peer_id),
-            //         meshroom: Rc::clone(&meshroom),
-            //         client_id: Rc::clone(&common.client_id),
-            //         room_id: Rc::clone(&room_id),
-            //     },
-            //     Subscription::none(),
-            // ),
+        router! {
+            "/rooms" => {
+                let common_data = unwrap_or!(self.common_data.as_ref(); Self::render_initializer());
+                RoomSelector::empty(
+                    room_selector::Props {
+                        common_db: Rc::clone(&common_data.common_db),
+                    },
+                    Sub::map(move |sub| match sub {
+                        room_selector::On::Connect(room_id) => {
+                            router::jump_to(format!("/rooms/d/{}", room_id).as_str());
+                            Msg::NoOp
+                        }
+                    })
+                )
+            },
+            "/rooms/d/([A-Za-z0-9@#]{24})" (room_id) => {
+                let common_data = unwrap_or!(self.common_data.as_ref(); Self::render_initializer());
+                let room_id = Rc::new(String::from(room_id.get(1).unwrap().as_str()));
+                let room_data = unwrap_or!(self.room_data.as_ref(); Self::render_room_initializer(&common_data, &room_id));
+                Room::empty(
+                    room:: Props {
+                        peer: Rc::clone(&common_data.peer),
+                        peer_id: Rc::clone(&common_data.peer_id),
+                        room: Rc::clone(&room_data.meshroom),
+                        room_id: room_id,
+                        client_id: Rc::clone(&common_data.client_id)
+                    },
+                    Sub::none()
+                )
+            },
+            _ => {
+                router::jump_to("/rooms");
+                Self::render_initializer()
+            }
         }
+    }
+}
+
+impl App {
+    fn render_initializer() -> Html<Self> {
+        Initializer::empty(
+            initializer::Props {},
+            Sub::map(|sub| match sub {
+                initializer::On::Load {
+                    config,
+                    common_db,
+                    client_id,
+                    peer,
+                    peer_id,
+                } => Msg::SetCommonData(CommonPageData {
+                    config: Rc::new(config),
+                    common_db: Rc::new(common_db),
+                    client_id: Rc::new(client_id),
+                    peer: Rc::new(peer),
+                    peer_id: Rc::new(peer_id),
+                }),
+            }),
+        )
+    }
+
+    fn render_room_initializer(common: &CommonPageData, room_id: &Rc<String>) -> Html<Self> {
+        RoomInisializer::empty(
+            room_initializer::Props {
+                config: Rc::clone(&common.config),
+                common_db: Rc::clone(&common.common_db),
+                peer: Rc::clone(&common.peer),
+                peer_id: Rc::clone(&common.peer_id),
+                client_id: Rc::clone(&common.client_id),
+                room_id: Rc::clone(&room_id),
+            },
+            Sub::map(move |sub| match sub {
+                room_initializer::On::Load {
+                    room_db,
+                    table_db,
+                    meshroom,
+                } => Msg::SetRoomData(RoomPageData {
+                    meshroom,
+                    room_db: Rc::new(room_db),
+                    table_db: Rc::new(table_db),
+                }),
+            }),
+        )
     }
 }

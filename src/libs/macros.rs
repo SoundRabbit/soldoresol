@@ -52,16 +52,6 @@ macro_rules! join_some {
     };
 }
 
-macro_rules! some_or_return {
-    ($x:expr) => {
-        if let Some(x) = $x {
-            x
-        } else {
-            return;
-        }
-    };
-}
-
 macro_rules! unwrap {
     ($x:expr) => {
         if let Some(x) = $x {
