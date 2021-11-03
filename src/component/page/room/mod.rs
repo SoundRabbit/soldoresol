@@ -2,7 +2,6 @@ use super::atom::craftboard::{self, Craftboard};
 use super::organism::room_modeless::{self, RoomModeless};
 use super::organism::tab_modeless_container::{self, TabModelessContainer};
 use crate::arena::block;
-use crate::arena::player;
 use crate::arena::resource;
 use crate::libs::skyway::{MeshRoom, Peer};
 use kagura::prelude::*;
@@ -29,8 +28,6 @@ pub enum On {}
 pub struct Room {
     block_arena: block::Arena,
     local_block_arena: block::Arena,
-    player_arena: player::Arena,
-    resource_arena: resource::Arena,
 
     craftboard: PrepackedComponent<Craftboard>,
     modeless_container:

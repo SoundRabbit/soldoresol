@@ -18,7 +18,7 @@ history({
 module.exports = {
     entry: "./assets",
     output: {
-        path: path.join(__dirname, "./docs/dev")
+        path: path.join(__dirname, "./docs/dev"),
     },
     resolve: {
         extensions: [".js"]

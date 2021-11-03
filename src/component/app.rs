@@ -7,6 +7,10 @@ use super::page::{
 use super::util::router;
 use crate::libs::skyway;
 use crate::model::config::Config;
+use isaribi::{
+    style,
+    styled::{Style, Styled},
+};
 use kagura::component::{Cmd, Sub};
 use kagura::prelude::*;
 use std::rc::Rc;
@@ -157,5 +161,11 @@ impl App {
                 }),
             }),
         )
+    }
+}
+
+impl Styled for App {
+    fn style() -> Style {
+        style! {}
     }
 }

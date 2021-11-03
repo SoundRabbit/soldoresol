@@ -1,2 +1,4 @@
 import "../style/style.scss";
-import("../pkg");
+gapi.load("client:auth2", function () {
+    import("../pkg");
+});

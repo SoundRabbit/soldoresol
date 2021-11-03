@@ -8,6 +8,7 @@ pub mod gen;
 pub mod annotated;
 pub mod color;
 pub mod element;
+pub mod gapi;
 pub mod idb;
 pub mod modeless_list;
 pub mod random_id;

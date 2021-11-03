@@ -1,3 +1,4 @@
+use crate::libs::gapi::gapi;
 use crate::libs::idb;
 use crate::libs::random_id;
 use crate::libs::skyway::Peer;
@@ -30,6 +31,8 @@ pub async fn initialize() -> Option<(Config, web_sys::IdbDatabase, String, Peer,
     };
 
     let peer_id = peer.id();
+
+    initialize_gapi(&config.drive.api_key, &config.drive.client_id).await;
 
     Some((config, common_db, client_id, peer, peer_id))
 }
@@ -166,4 +169,23 @@ async fn initialize_peer_connection(key: &str) -> Option<Peer> {
     .await
     .ok()
     .and_then(|x| x.dyn_into::<Peer>().ok())
+}
+
+async fn initialize_gapi(api_key: &str, client_id: &str) {
+    let thaneble = gapi.client().init(
+        object! {
+            "apiKey": api_key,
+            "clientId": client_id,
+            "discoveryDocs": array!["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"],
+            "scope": "https://www.googleapis.com/auth/drive.metadata.readonly"
+        }
+        .as_ref(),
+    );
+
+    let _ = JsFuture::from(Promise::new(&mut move |resolve, reject| {
+        thaneble.then(&resolve, &reject);
+    }))
+    .await;
+
+    gapi.auth2().get_auth_instamce().sign_in();
 }
