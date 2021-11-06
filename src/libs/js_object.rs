@@ -13,7 +13,7 @@ extern "C" {
 }
 
 macro_rules! object {
-    { $( $n:tt : $v:expr ),* } => {
+    { $( $n:tt : $v:expr ),*$(,)? } => {
         {
             #[allow(unused_imports)]
             use wasm_bindgen::{prelude::*, JsCast};
@@ -29,7 +29,7 @@ macro_rules! object {
 }
 
 macro_rules! array {
-    [ $( $x:expr ),* ] => {
+    [ $( $x:expr ),*$(,)? ] => {
         {
             #[allow(unused_imports)]
             use wasm_bindgen::prelude::*;

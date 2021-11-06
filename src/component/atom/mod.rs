@@ -13,6 +13,7 @@ pub mod loading_circle;
 pub mod slider;
 pub mod tab_btn;
 // pub mod tag;
+pub mod empty;
 pub mod text;
 
 use super::*;

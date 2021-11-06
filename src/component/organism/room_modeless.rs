@@ -19,7 +19,7 @@ impl Component for TabName {
 }
 
 impl Constructor for TabName {
-    fn constructor(props: &Content) -> Self {
+    fn constructor(_: &Content) -> Self {
         Self {}
     }
 }

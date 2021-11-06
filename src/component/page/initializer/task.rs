@@ -177,15 +177,13 @@ async fn initialize_gapi(api_key: &str, client_id: &str) {
             "apiKey": api_key,
             "clientId": client_id,
             "discoveryDocs": array!["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"],
-            "scope": "https://www.googleapis.com/auth/drive.metadata.readonly"
+            "scope": "https://www.googleapis.com/auth/drive.appdata",
         }
         .as_ref(),
     );
 
     let _ = JsFuture::from(Promise::new(&mut move |resolve, reject| {
-        thaneble.then(&resolve, &reject);
+        thaneble.then(Some(&resolve), Some(&reject));
     }))
     .await;
-
-    gapi.auth2().get_auth_instamce().sign_in();
 }

@@ -11,13 +11,7 @@ mod constructor;
 mod render;
 mod update;
 
-pub struct Props {
-    pub peer: Rc<Peer>,
-    pub peer_id: Rc<String>,
-    pub room: Rc<MeshRoom>,
-    pub room_id: Rc<String>,
-    pub client_id: Rc<String>,
-}
+pub struct Props {}
 
 pub enum Msg {
     NoOp,

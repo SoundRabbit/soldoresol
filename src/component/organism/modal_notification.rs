@@ -1,5 +1,7 @@
-use super::atom::btn::Btn;
-use super::atom::heading::{self, Heading};
+use super::atom::{
+    btn::Btn,
+    heading::{self, Heading},
+};
 use super::molecule::modal::{self, Modal};
 use isaribi::{
     style,
@@ -8,7 +10,9 @@ use isaribi::{
 use kagura::component::{Cmd, Sub};
 use kagura::prelude::*;
 
-pub struct Props {}
+pub struct Props {
+    pub is_showing: Option<bool>,
+}
 
 pub enum Msg {
     CloseSelf,
@@ -55,9 +59,9 @@ impl Update for ModalNotification {
 }
 
 impl Render for ModalNotification {
-    fn render(&self, _: &Props, _: Vec<Html<Self>>) -> Html<Self> {
+    fn render(&self, props: &Props, _: Vec<Html<Self>>) -> Html<Self> {
         crate::debug::log_1("render");
-        if self.is_showing {
+        if props.is_showing.unwrap_or(self.is_showing) {
             Self::styled(Modal::with_children(
                 modal::Props {
                     header_title: String::from("更新情報"),

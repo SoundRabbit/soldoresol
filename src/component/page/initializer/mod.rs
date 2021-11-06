@@ -70,7 +70,7 @@ impl Update for Initializer {
 }
 
 impl Render for Initializer {
-    fn render(&self, props: &Props, _: Vec<Html<Self>>) -> Html<Self> {
+    fn render(&self, _: &Props, _: Vec<Html<Self>>) -> Html<Self> {
         Loader::empty(loader::Props {}, Sub::none())
     }
 }

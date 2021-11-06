@@ -5,11 +5,15 @@ use super::atom::{
     header::{self, Header},
     heading::{self, Heading},
 };
-use super::organism::modal_notification::{self, ModalNotification};
+use super::organism::{
+    modal_notification::{self, ModalNotification},
+    modal_sign_in::{self, ModalSignIn},
+};
 use super::template::{
     basic_app::{self, BasicApp},
     loader::{self, Loader},
 };
+use crate::libs::gapi::{gapi, GoogleResponse};
 use isaribi::{
     style,
     styled::{Style, Styled},
@@ -18,6 +22,7 @@ use kagura::component::{Cmd, Sub};
 use kagura::prelude::*;
 use regex::Regex;
 use std::rc::Rc;
+use wasm_bindgen::{prelude::*, JsCast};
 
 mod task;
 
@@ -26,11 +31,14 @@ pub struct Props {
 }
 
 pub enum Msg {
+    NoOp,
+    SetIsShowingModalSignIn(bool),
     SetRooms(Vec<RoomData>),
     SetInputingRoomId(String),
     ConnectWithRoomId(String),
     ConnectWithInputingRoomId,
     ConnectWithNewRoomId,
+    InitializeGoogleDrive,
 }
 
 pub enum On {
@@ -41,6 +49,7 @@ pub struct RoomSelector {
     rooms: Option<Vec<RoomData>>,
     inputing_room_id: String,
     room_id_validator: Regex,
+    is_showing_modal_sign_in: bool,
     element_id: ElementId,
 }
 
@@ -67,6 +76,7 @@ impl Constructor for RoomSelector {
             rooms: None,
             inputing_room_id: String::from(""),
             room_id_validator: Regex::new(r"^[A-Za-z0-9@#]{24}$").unwrap(),
+            is_showing_modal_sign_in: !gapi.auth2().get_auth_instance().is_signed_in().get(),
             element_id: ElementId {
                 input_room_id: format!("{:X}", crate::libs::random_id::u128val()),
             },
@@ -76,21 +86,53 @@ impl Constructor for RoomSelector {
 
 impl Update for RoomSelector {
     fn on_assemble(&mut self, props: &Props) -> Cmd<Self> {
-        let common_db = props.common_db.clone();
-        Cmd::task(move |resolve| {
-            wasm_bindgen_futures::spawn_local(async move {
-                if let Some(rooms) = task::get_room_index(&common_db).await {
-                    crate::debug::log_1("success to load index of rooms");
-                    resolve(Msg::SetRooms(rooms));
-                } else {
-                    crate::debug::log_1("faild to load index of rooms");
+        Cmd::list(vec![
+            Cmd::task({
+                let common_db = props.common_db.clone();
+                move |resolve| {
+                    wasm_bindgen_futures::spawn_local(async move {
+                        if let Some(rooms) = task::get_room_index(&common_db).await {
+                            crate::debug::log_1("success to load index of rooms");
+                            resolve(Msg::SetRooms(rooms));
+                        } else {
+                            crate::debug::log_1("faild to load index of rooms");
+                        }
+                    });
                 }
-            });
-        })
+            }),
+            Cmd::batch(|mut handle| {
+                let a = Closure::wrap(Box::new(move |is_signed_in| {
+                    if is_signed_in {
+                        wasm_bindgen_futures::spawn_local(async {
+                            task::initialize_google_drive().await;
+                        });
+                    } else {
+                        handle(Msg::NoOp);
+                    }
+                }) as Box<dyn FnMut(bool)>);
+                gapi.auth2()
+                    .get_auth_instance()
+                    .is_signed_in()
+                    .listen(a.as_ref().unchecked_ref());
+                a.forget();
+            }),
+            Cmd::task(|resolve| {
+                if gapi.auth2().get_auth_instance().is_signed_in().get() {
+                    wasm_bindgen_futures::spawn_local(async {
+                        task::initialize_google_drive().await;
+                    });
+                }
+            }),
+        ])
     }
 
     fn update(&mut self, _: &Props, msg: Self::Msg) -> Cmd<Self> {
         match msg {
+            Msg::NoOp => Cmd::none(),
+            Msg::SetIsShowingModalSignIn(is_showing) => {
+                self.is_showing_modal_sign_in = is_showing;
+                Cmd::none()
+            }
             Msg::SetRooms(rooms) => {
                 self.rooms = Some(rooms);
                 Cmd::none()
@@ -111,23 +153,35 @@ impl Update for RoomSelector {
                 let room_id = crate::libs::random_id::base64url();
                 Cmd::Sub(On::Connect(room_id))
             }
+            Msg::InitializeGoogleDrive => Cmd::task(|resolve| {}),
         }
     }
 }
 
 impl Render for RoomSelector {
-    fn render(&self, props: &Props, _: Vec<Html<Self>>) -> Html<Self> {
+    fn render(&self, _: &Props, _: Vec<Html<Self>>) -> Html<Self> {
         Self::styled(match &self.rooms {
             None => Loader::empty(loader::Props {}, Sub::none()),
             Some(rooms) => BasicApp::with_children(
                 basic_app::Props {},
                 Sub::none(),
                 vec![
-                    ModalNotification::empty(modal_notification::Props {}, Sub::none()),
+                    ModalNotification::empty(
+                        modal_notification::Props { is_showing: None },
+                        Sub::none(),
+                    ),
+                    ModalSignIn::empty(
+                        modal_sign_in::Props {
+                            is_showing: Some(self.is_showing_modal_sign_in),
+                        },
+                        Sub::map(|sub| match sub {
+                            modal_sign_in::On::Close => Msg::SetIsShowingModalSignIn(false),
+                        }),
+                    ),
                     Header::with_children(
                         header::Props::new(),
                         Sub::none(),
-                        vec![self.render_header_row_0()],
+                        vec![self.render_header_row_0(), self.render_header_row_1()],
                     ),
                     Html::div(
                         Attributes::new().class(Self::class("body")),
@@ -206,6 +260,38 @@ impl RoomSelector {
                     Attributes::new(),
                     Events::new().on_click(|_| Msg::ConnectWithInputingRoomId),
                     vec![Html::text("接続")],
+                ),
+            ],
+        )
+    }
+
+    fn render_header_row_1(&self) -> Html<Self> {
+        Html::div(
+            Attributes::new()
+                .class(Self::class("header-row"))
+                .class("pure-form"),
+            Events::new(),
+            vec![
+                Html::div(Attributes::new(), Events::new(), vec![]),
+                Html::div(
+                    Attributes::new().class(Self::class("right")),
+                    Events::new(),
+                    vec![if gapi.auth2().get_auth_instance().is_signed_in().get() {
+                        Btn::danger(
+                            Attributes::new(),
+                            Events::new().on_click(|_| {
+                                gapi.auth2().get_auth_instance().sign_out();
+                                Msg::NoOp
+                            }),
+                            vec![Html::text("サインアウト")],
+                        )
+                    } else {
+                        Btn::success(
+                            Attributes::new(),
+                            Events::new().on_click(|_| Msg::SetIsShowingModalSignIn(true)),
+                            vec![Html::text("サインイン")],
+                        )
+                    }],
                 ),
             ],
         )

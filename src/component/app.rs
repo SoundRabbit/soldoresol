@@ -1,6 +1,6 @@
 use super::page::{
+    connecter_skyway::{self, ConnecterSkyway},
     initializer::{self, Initializer},
-    room::{self, Room},
     room_initializer::{self, RoomInisializer},
     room_selector::{self, RoomSelector},
 };
@@ -14,6 +14,7 @@ use isaribi::{
 use kagura::component::{Cmd, Sub};
 use kagura::prelude::*;
 use std::rc::Rc;
+use wasm_bindgen::{prelude::*, JsCast};
 
 pub struct Props {}
 
@@ -62,6 +63,17 @@ impl Constructor for App {
 }
 
 impl Update for App {
+    fn on_assemble(&mut self, _: &Props) -> Cmd<Self> {
+        Cmd::batch(|mut handle| {
+            let a = Closure::wrap(Box::new(move |_: web_sys::Event| handle(Msg::NoOp))
+                as Box<dyn FnMut(web_sys::Event)>);
+            let _ = web_sys::window()
+                .unwrap()
+                .add_event_listener_with_callback("popstate", a.as_ref().unchecked_ref());
+            a.forget();
+        })
+    }
+
     fn update(&mut self, _: &Props, msg: Msg) -> Cmd<Self> {
         match msg {
             Msg::NoOp => Cmd::none(),
@@ -80,7 +92,7 @@ impl Update for App {
 impl Render for App {
     fn render(&self, _: &Props, _: Vec<Html<Self>>) -> Html<Self> {
         router! {
-            "/rooms" => {
+            r"/rooms" => {
                 let common_data = unwrap_or!(self.common_data.as_ref(); Self::render_initializer());
                 RoomSelector::empty(
                     room_selector::Props {
@@ -88,18 +100,33 @@ impl Render for App {
                     },
                     Sub::map(move |sub| match sub {
                         room_selector::On::Connect(room_id) => {
-                            router::jump_to(format!("/rooms/d/{}", room_id).as_str());
+                            router::jump_to(format!("/rooms/skyway/{}", room_id).as_str());
                             Msg::NoOp
                         }
                     })
                 )
             },
-            "/rooms/d/([A-Za-z0-9@#]{24})" (room_id) => {
+            r"/rooms/skyway/([A-Za-z0-9@#]{24})" (room_id) => {
                 let common_data = unwrap_or!(self.common_data.as_ref(); Self::render_initializer());
                 let room_id = Rc::new(String::from(room_id.get(1).unwrap().as_str()));
                 let room_data = unwrap_or!(self.room_data.as_ref(); Self::render_room_initializer(&common_data, &room_id));
-                Room::empty(
-                    room:: Props {
+                ConnecterSkyway::empty(
+                    connecter_skyway:: Props {
+                        peer: Rc::clone(&common_data.peer),
+                        peer_id: Rc::clone(&common_data.peer_id),
+                        room: Rc::clone(&room_data.meshroom),
+                        room_id: room_id,
+                        client_id: Rc::clone(&common_data.client_id)
+                    },
+                    Sub::none()
+                )
+            },
+            r"/rooms/drive/([A-Za-z\-_]+)" (room_id) => {
+                let common_data = unwrap_or!(self.common_data.as_ref(); Self::render_initializer());
+                let room_id = Rc::new(String::from(room_id.get(1).unwrap().as_str()));
+                let room_data = unwrap_or!(self.room_data.as_ref(); Self::render_room_initializer(&common_data, &room_id));
+                ConnecterSkyway::empty(
+                    connecter_skyway:: Props {
                         peer: Rc::clone(&common_data.peer),
                         peer_id: Rc::clone(&common_data.peer_id),
                         room: Rc::clone(&room_data.meshroom),

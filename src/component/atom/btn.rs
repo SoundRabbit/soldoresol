@@ -21,6 +21,7 @@ pub enum Variant {
     TransparentDark,
     Menu,
     MenuAsSecondary,
+    Success,
 }
 
 pub struct Btn {}
@@ -51,6 +52,7 @@ impl Btn {
             Variant::MenuAsSecondary => {
                 Self::class("menu-secondary") + " " + &Self::class("like-menu")
             }
+            Variant::Success => Self::class("success"),
         }
     }
 
@@ -117,6 +119,14 @@ impl Btn {
     ) -> Html<C> {
         Self::with_variant(Variant::MenuAsSecondary, attrs, events, children)
     }
+
+    pub fn success<C: Component>(
+        attrs: Attributes,
+        events: Events<C::Msg>,
+        children: Vec<Html<C>>,
+    ) -> Html<C> {
+        Self::with_variant(Variant::Success, attrs, events, children)
+    }
 }
 
 impl Styled for Btn {
@@ -174,6 +184,12 @@ impl Styled for Btn {
 
             ".menu-secondary:hover" {
                 "background-color": color_system::blue(100, 5).to_string();
+            }
+
+            ".success" {
+                "line-height": "1.5";
+                "background-color": color_system::green(100, 5).to_string();
+                "color": color_system::gray(100, 0).to_string();
             }
         }
     }
