@@ -276,7 +276,7 @@ where
                                                 page_y: contents
                                                     .pos_y
                                                     .unwrap_or(200 + (m_idx % 10) as i32 * 20),
-                                                size: [0.3, 0.6],
+                                                size: [0.4, 0.6],
                                                 z_index: z_idx,
                                                 modeless_id: U128Id::clone(&m_id),
                                             },

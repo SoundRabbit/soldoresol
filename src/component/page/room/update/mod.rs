@@ -11,25 +11,6 @@ impl Update for Room {
         let mut chat_channel = block::ChatChannel::new();
 
         chat_channel.name_set(String::from("メイン"));
-        for i in 0..50 {
-            let sender = block::chat_message::Sender::new(
-                Rc::clone(&props.client_id),
-                None,
-                String::from("system"),
-            );
-            let message = block::chat_message::EvalutedMessage::new(
-                &String::from(""),
-                |refer| refer,
-                |cmd, msg| {
-                    block::chat_message::EvalutedMessage::from(vec![
-                        block::chat_message::EvalutedMessageToken::CommandBlock(cmd, msg),
-                    ])
-                },
-            );
-            let chat_message = block::ChatMessage::new(sender, chrono::Utc::now(), message);
-
-            chat_channel.messages_push(self.arena.insert(chat_message));
-        }
 
         let chat_channel = self.arena.insert(chat_channel);
         chat.channels_push(chat_channel.clone());

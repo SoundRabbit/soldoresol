@@ -36,6 +36,7 @@ pub enum Msg {
     NoOp,
     SendInputingChatMessage(bool),
     SetInputingChatMessage(String),
+    SetIsShowingChatPallet(bool),
 }
 
 pub enum On {
@@ -46,6 +47,7 @@ pub enum On {
 }
 
 pub struct RoomModeless {
+    is_showing_chat_pallet: bool,
     inputing_chat_channel_name: String,
     inputing_chat_message: Option<String>,
     selecting_content_id: U128Id,
@@ -65,6 +67,7 @@ impl Component for RoomModeless {
 impl Constructor for RoomModeless {
     fn constructor(_: &Content) -> Self {
         Self {
+            is_showing_chat_pallet: false,
             inputing_chat_channel_name: String::new(),
             inputing_chat_message: Some(String::new()),
             selecting_content_id: U128Id::none(),
@@ -121,6 +124,10 @@ impl Update for RoomModeless {
                 } else {
                     self.inputing_chat_message = Some(String::new());
                 }
+                Cmd::none()
+            }
+            Msg::SetIsShowingChatPallet(is_showing) => {
+                self.is_showing_chat_pallet = is_showing;
                 Cmd::none()
             }
         }

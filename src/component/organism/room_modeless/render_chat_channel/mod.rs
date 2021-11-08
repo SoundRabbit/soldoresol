@@ -1,5 +1,5 @@
 use super::*;
-use super::{super::atom::attr, super::atom::btn::Btn, super::atom::text};
+use super::{super::atom::attr, super::atom::btn::Btn, super::atom::fa, super::atom::text};
 
 mod message_style;
 
@@ -38,11 +38,6 @@ impl RoomModeless {
                     vec![],
                 ),
                 Btn::primary(Attributes::new(), Events::new(), vec![Html::text("更新")]),
-                Btn::secondary(
-                    Attributes::new().class(Self::class("banner")),
-                    Events::new(),
-                    vec![Html::text("全チャットログを表示")],
-                ),
             ],
         )
     }
@@ -51,11 +46,70 @@ impl RoomModeless {
         Html::div(
             Attributes::new().class(Self::class("channel-main")),
             Events::new(),
-            chat_channel
-                .messages()
-                .iter()
-                .filter_map(|cm| cm.map(|cm: &block::ChatMessage| self.render_main_chat(cm)))
-                .collect(),
+            vec![
+                self.render_chat_panel(),
+                Html::div(
+                    Attributes::new().class(Self::class("channel-main-log")),
+                    Events::new(),
+                    vec![
+                        if chat_channel.messages().len() > 50 {
+                            Btn::secondary(
+                                Attributes::new().class(Self::class("banner")),
+                                Events::new(),
+                                vec![Html::text("全チャットログを表示")],
+                            )
+                        } else {
+                            Html::div(Attributes::new(), Events::new(), vec![])
+                        },
+                        Html::div(
+                            Attributes::new().class(Self::class("channel-main-log-list")),
+                            Events::new(),
+                            chat_channel
+                                .messages()
+                                .iter()
+                                .rev()
+                                .take(50)
+                                .rev()
+                                .filter_map(|cm| {
+                                    cm.map(|cm: &block::ChatMessage| self.render_main_chat(cm))
+                                })
+                                .collect(),
+                        ),
+                    ],
+                ),
+            ],
+        )
+    }
+
+    fn render_chat_panel(&self) -> Html<Self> {
+        Html::div(
+            Attributes::new().class(Self::class("channel-chatpallet-container")),
+            Events::new(),
+            vec![
+                Html::div(
+                    Attributes::new()
+                        .string("data-is-showing", self.is_showing_chat_pallet.to_string())
+                        .class(Self::class("channel-chatpallet")),
+                    Events::new(),
+                    vec![],
+                ),
+                Btn::light(
+                    Attributes::new().title(if self.is_showing_chat_pallet {
+                        "チャットパレットをしまう"
+                    } else {
+                        "チャットパレットを表示"
+                    }),
+                    Events::new().on_click({
+                        let is_showing = self.is_showing_chat_pallet;
+                        move |_| Msg::SetIsShowingChatPallet(!is_showing)
+                    }),
+                    vec![fa::i(if self.is_showing_chat_pallet {
+                        "fa-caret-left"
+                    } else {
+                        "fa-caret-right"
+                    })],
+                ),
+            ],
         )
     }
 
@@ -180,49 +234,53 @@ impl RoomModeless {
         Html::div(
             Attributes::new().class(Self::class("channel-footer")),
             Events::new(),
-            vec![Html::div(
-                Attributes::new().class(Self::class("channel-footer-input")),
-                Events::new(),
-                vec![
-                    Html::textarea(
-                        Attributes::new().value(
-                            self.inputing_chat_message
-                                .as_ref()
-                                .map(String::as_str)
-                                .unwrap_or(""),
-                        ),
-                        Events::new()
-                            .on("input", {
-                                let ignore_intput = self.inputing_chat_message.is_none();
-                                move |e| {
-                                    if let Some(target) = e.target().and_then(|t| {
-                                        t.dyn_into::<web_sys::HtmlTextAreaElement>().ok()
-                                    }) {
-                                        if ignore_intput {
-                                            target.set_value("");
-                                        }
-                                        Msg::SetInputingChatMessage(target.value())
-                                    } else {
-                                        Msg::NoOp
+            vec![
+                Html::textarea(
+                    Attributes::new().value(
+                        self.inputing_chat_message
+                            .as_ref()
+                            .map(String::as_str)
+                            .unwrap_or(""),
+                    ),
+                    Events::new()
+                        .on("input", {
+                            let ignore_intput = self.inputing_chat_message.is_none();
+                            move |e| {
+                                if let Some(target) = e
+                                    .target()
+                                    .and_then(|t| t.dyn_into::<web_sys::HtmlTextAreaElement>().ok())
+                                {
+                                    if ignore_intput {
+                                        target.set_value("");
                                     }
-                                }
-                            })
-                            .on_keydown(|e| {
-                                if e.key() == "Enter" && !e.shift_key() {
-                                    Msg::SendInputingChatMessage(true)
+                                    Msg::SetInputingChatMessage(target.value())
                                 } else {
                                     Msg::NoOp
                                 }
-                            }),
-                        vec![],
-                    ),
-                    Btn::primary(
-                        Attributes::new(),
-                        Events::new().on_click(|_| Msg::SendInputingChatMessage(false)),
-                        vec![text::span("送"), text::span("信")],
-                    ),
-                ],
-            )],
+                            }
+                        })
+                        .on_keydown(|e| {
+                            if e.key() == "Enter" && !e.shift_key() {
+                                Msg::SendInputingChatMessage(true)
+                            } else {
+                                Msg::NoOp
+                            }
+                        }),
+                    vec![],
+                ),
+                Html::div(
+                    Attributes::new().class(Self::class("channel-footer-guide")),
+                    Events::new(),
+                    vec![
+                        text::span("Shift＋Enterで改行できます。"),
+                        Btn::primary(
+                            Attributes::new(),
+                            Events::new().on_click(|_| Msg::SendInputingChatMessage(false)),
+                            vec![Html::text("送信")],
+                        ),
+                    ],
+                ),
+            ],
         )
     }
 
@@ -258,9 +316,48 @@ impl RoomModeless {
             }
 
             ".channel-main" {
-                "overflow-y": "scroll";
                 "padding-left": ".65rem";
                 "padding-right": ".65rem";
+                "display": "grid";
+                "grid-template-columns": "max-content 1fr";
+                "grid-template-rows": "1fr";
+                "overflow": "hidden";
+                "column-gap": ".35rem";
+            }
+
+            ".channel-chatpallet-container" {
+                "display": "grid";
+                "grid-template-columns": "max-content max-content";
+                "grid-template-rows": "1fr";
+            }
+
+            ".channel-chatpallet-container > button" {
+                "padding-left": ".35em";
+                "padding-right": ".35em";
+            }
+
+            ".channel-chatpallet" {
+                "overflow": "hidden";
+            }
+
+            ".channel-chatpallet[data-is-showing='false']" {
+                "width": "0";
+            }
+
+            ".channel-chatpallet[data-is-showing='true']" {
+                "min-width": "30ch";
+
+            }
+
+            ".channel-main-log" {
+                "display": "grid";
+                "grid-template-columns": "1fr";
+                "grid-template-rows": "max-content 1fr";
+                "overflow": "hidden";
+            }
+
+            ".channel-main-log-list" {
+                "overflow-y": "scroll";
             }
 
             ".channel-main-message" {
@@ -320,25 +417,25 @@ impl RoomModeless {
             ".channel-footer" {
                 "padding-left": ".65rem";
                 "padding-right": ".65rem";
-                "height": "7rem";
-            }
-
-            ".channel-footer-input" {
+                "height": "10rem";
                 "display": "grid";
-                "grid-template-columns": "1fr min-content";
+                "grid-template-columns": "1fr";
+                "grid-template-rows": "1fr max-content";
                 "column-gap": ".35rem";
                 "row-gap": ".65rem";
-                "height": "100%";
             }
 
-            ".channel-footer-input textarea" {
+            ".channel-footer textarea" {
+                "grid-column": "1 / -1";
                 "resize": "none";
             }
 
-            ".channel-footer-input button" {
-                "display": "flex";
-                "flex-direction": "column";
-                "justify-content": "center";
+            ".channel-footer-guide" {
+                "display": "grid";
+                "grid-template-columns": "1fr max-content";
+                "column-gap": ".35rem";
+                "row-gap": ".65rem";
+                "align-items": "center";
             }
         }
     }

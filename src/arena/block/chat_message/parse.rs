@@ -188,6 +188,11 @@ peg::parser! {
             = tokens:message_token()* { Message(tokens).compress() }
 
         rule message_token() -> MessageToken = precedence! {
+            r"\{" { MessageToken::Text(String::from(r"{")) }
+            r"\}" { MessageToken::Text(String::from(r"}")) }
+            r"\\" { MessageToken::Text(String::from(r"\")) }
+            r"\n" { MessageToken::Text(String::from("\n")) }
+            --
             r"{\" command:command() text:block_text_token()* "}" { MessageToken::CommandBlock(command, Message(text)) }
             --
             "{" text:block_text_token()* "}" { MessageToken::Refer(Message(text))}
