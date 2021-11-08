@@ -27,6 +27,7 @@ kanaria = "^0.2"
 lazy_static = "^1.4"
 ndarray = "^0.15"
 ordered-float = "^1.0"
+peg="^0.7"
 regex = "^1.5"
 sainome="^0.1"
 serde_json = "^1.0"
@@ -36,8 +37,13 @@ wasm-bindgen = "^0.2"
 wasm-bindgen-futures = "^0.4"
 xmltree = "^0.10"
 
+[dependencies.chrono]
+version = "^0.4"
+features = ["wasmbind"]
+
 [dependencies.isaribi]
-version = "^0.2"
+# version = "^0.2"
+path = "../Isaribi"
 
 [dependencies.serde]
 version = "^1.0"

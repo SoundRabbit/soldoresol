@@ -63,7 +63,7 @@ impl Btn {
         children: Vec<Html<C>>,
     ) -> Html<C> {
         Self::styled(Html::button(
-            Attributes::new()
+            attrs
                 .class("pure-button")
                 .class(Self::class_name(&variant))
                 .flag(if variant.is_disable() { "disabled" } else { "" }),

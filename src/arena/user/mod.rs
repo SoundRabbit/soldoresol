@@ -1,0 +1,3 @@
+mods! {
+    pub player::Player;
+}

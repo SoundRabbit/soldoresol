@@ -1,5 +1,5 @@
+use super::connecter::skyway_connecter::{self, SkywayConnecter};
 use super::page::{
-    connecter_skyway::{self, ConnecterSkyway},
     initializer::{self, Initializer},
     room_initializer::{self, RoomInisializer},
     room_selector::{self, RoomSelector},
@@ -110,8 +110,8 @@ impl Render for App {
                 let common_data = unwrap_or!(self.common_data.as_ref(); Self::render_initializer());
                 let room_id = Rc::new(String::from(room_id.get(1).unwrap().as_str()));
                 let room_data = unwrap_or!(self.room_data.as_ref(); Self::render_room_initializer(&common_data, &room_id));
-                ConnecterSkyway::empty(
-                    connecter_skyway:: Props {
+                SkywayConnecter::empty(
+                    skyway_connecter:: Props {
                         peer: Rc::clone(&common_data.peer),
                         peer_id: Rc::clone(&common_data.peer_id),
                         room: Rc::clone(&room_data.meshroom),
@@ -125,8 +125,8 @@ impl Render for App {
                 let common_data = unwrap_or!(self.common_data.as_ref(); Self::render_initializer());
                 let room_id = Rc::new(String::from(room_id.get(1).unwrap().as_str()));
                 let room_data = unwrap_or!(self.room_data.as_ref(); Self::render_room_initializer(&common_data, &room_id));
-                ConnecterSkyway::empty(
-                    connecter_skyway:: Props {
+                SkywayConnecter::empty(
+                    skyway_connecter:: Props {
                         peer: Rc::clone(&common_data.peer),
                         peer_id: Rc::clone(&common_data.peer_id),
                         room: Rc::clone(&room_data.meshroom),

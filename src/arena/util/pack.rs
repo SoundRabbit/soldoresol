@@ -17,6 +17,27 @@ impl Pack for U128Id {
 }
 
 #[async_trait(?Send)]
+impl Pack for String {
+    async fn pack(&self) -> JsValue {
+        JsValue::from(self)
+    }
+}
+
+#[async_trait(?Send)]
+impl Pack for f64 {
+    async fn pack(&self) -> JsValue {
+        JsValue::from(*self)
+    }
+}
+
+#[async_trait(?Send)]
+impl Pack for chrono::DateTime<chrono::Utc> {
+    async fn pack(&self) -> JsValue {
+        JsValue::from(self.to_rfc3339())
+    }
+}
+
+#[async_trait(?Send)]
 impl<T: Pack> Pack for Vec<T> {
     async fn pack(&self) -> JsValue {
         let list = js_sys::Array::new();
@@ -33,5 +54,15 @@ impl<T: Pack> Pack for Vec<T> {
 impl<T: Pack> Pack for Rc<RefCell<T>> {
     async fn pack(&self) -> JsValue {
         self.borrow().pack().await
+    }
+}
+
+#[async_trait(?Send)]
+impl<T: Pack> Pack for Option<T> {
+    async fn pack(&self) -> JsValue {
+        match self {
+            Some(x) => x.pack().await,
+            None => JsValue::null(),
+        }
     }
 }

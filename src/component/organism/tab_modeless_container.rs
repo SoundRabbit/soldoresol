@@ -16,8 +16,9 @@ use wasm_bindgen::JsCast;
 
 pub struct Props {}
 
-pub enum Msg {
+pub enum Msg<Sub> {
     NoOp,
+    Sub(On<Sub>),
     DisconnectTab {
         event_id: U128Id,
         tab_idx: usize,
@@ -35,7 +36,9 @@ pub enum Msg {
     },
 }
 
-pub enum On {}
+pub enum On<Sub> {
+    Sub(Sub),
+}
 
 pub struct TabModelessContainer<Content: Constructor, TabName: Constructor<Props = Content::Props>>
 where
@@ -102,8 +105,8 @@ where
     Content::Props: Clone,
 {
     type Props = Props;
-    type Msg = Msg;
-    type Sub = On;
+    type Msg = Msg<Content::Sub>;
+    type Sub = On<Content::Sub>;
 }
 
 impl<Content: Constructor, TabName: Constructor<Props = Content::Props>>
@@ -136,9 +139,10 @@ where
         Cmd::none()
     }
 
-    fn update(&mut self, props: &Props, msg: Msg) -> Cmd<Self> {
+    fn update(&mut self, props: &Props, msg: Msg<Content::Sub>) -> Cmd<Self> {
         match msg {
             Msg::NoOp => Cmd::none(),
+            Msg::Sub(sub) => Cmd::sub(sub),
             Msg::DisconnectTab {
                 event_id,
                 tab_idx,
@@ -272,7 +276,7 @@ where
                                                 page_y: contents
                                                     .pos_y
                                                     .unwrap_or(200 + (m_idx % 10) as i32 * 20),
-                                                size: [0.3, 0.3],
+                                                size: [0.3, 0.6],
                                                 z_index: z_idx,
                                                 modeless_id: U128Id::clone(&m_id),
                                             },
@@ -295,6 +299,9 @@ where
                                                     header_tab_idx,
                                                     modeless_id,
                                                 },
+                                                tab_modeless::On::Sub(sub) => {
+                                                    Msg::Sub(On::Sub(sub))
+                                                }
                                                 _ => Msg::NoOp,
                                             }),
                                         )

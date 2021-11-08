@@ -22,9 +22,9 @@ pub struct Props<T> {
     pub modeless_id: U128Id,
 }
 
-pub enum Msg {
+pub enum Msg<Sub> {
     NoOp,
-    Sub(On),
+    Sub(On<Sub>),
     DragStart {
         page_x: i32,
         page_y: i32,
@@ -41,7 +41,7 @@ pub enum Msg {
     },
 }
 
-pub enum On {
+pub enum On<Sub> {
     Focus,
     Move(i32, i32),
     Resize([f32; 2]),
@@ -55,6 +55,7 @@ pub enum On {
         header_tab_idx: Option<usize>,
         modeless_id: U128Id,
     },
+    Sub(Sub),
 }
 
 pub struct TabModeless<Content: Constructor, TabName: Constructor<Props = Content::Props>>
@@ -106,8 +107,8 @@ where
     Content::Props: Clone,
 {
     type Props = Props<Content::Props>;
-    type Msg = Msg;
-    type Sub = On;
+    type Msg = Msg<Content::Sub>;
+    type Sub = On<Content::Sub>;
 }
 
 impl<Content: Constructor, TabName: Constructor<Props = Content::Props>> Constructor
@@ -157,7 +158,7 @@ impl<Content: Constructor, TabName: Constructor<Props = Content::Props>> Update
 where
     Content::Props: Clone,
 {
-    fn update(&mut self, props: &Props<Content::Props>, msg: Msg) -> Cmd<Self> {
+    fn update(&mut self, props: &Props<Content::Props>, msg: Msg<Content::Sub>) -> Cmd<Self> {
         match msg {
             Msg::NoOp => Cmd::none(),
             Msg::Sub(sub) => Cmd::sub(sub),
@@ -377,7 +378,7 @@ where
                         .contents
                         .borrow()
                         .selected()
-                        .map(|content| Content::empty(Clone::clone(content), Sub::none()))
+                        .map(|content| Content::empty(Clone::clone(content), Sub::map(|sub| Msg::Sub(On::Sub(sub)))))
                         .unwrap_or(Html::none())],
                 ),
                 self.render_rsz(DragDirection::Top),
@@ -417,7 +418,11 @@ where
         )
     }
 
-    fn on_drop_tab(tab_idx: Option<usize>, e: web_sys::DragEvent, modeless_id: U128Id) -> Msg {
+    fn on_drop_tab(
+        tab_idx: Option<usize>,
+        e: web_sys::DragEvent,
+        modeless_id: U128Id,
+    ) -> Msg<Content::Sub> {
         let e = unwrap_or!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
         let data_transfer = unwrap_or!(e.data_transfer(); Msg::NoOp);
         let data = unwrap_or!(data_transfer.get_data("text/plain").ok(); Msg::NoOp);
@@ -452,6 +457,7 @@ where
                 "grid-template-rows": "max-content 1fr";
                 "border-radius": "2px";
                 "box-shadow": format!("0 0 0.1rem 0.1rem {}", color_system::gray(255, 9));
+                "background-color": format!("{}", crate::libs::color::Pallet::gray(0));
             }
 
             ".content" {

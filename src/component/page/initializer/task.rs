@@ -185,5 +185,6 @@ async fn initialize_gapi(api_key: &str, client_id: &str) {
     let _ = JsFuture::from(Promise::new(&mut move |resolve, reject| {
         thaneble.then(Some(&resolve), Some(&reject));
     }))
-    .await;
+    .await
+    .map_err(|err| crate::debug::log_1(err));
 }

@@ -1,8 +1,7 @@
 use super::atom::craftboard::{self, Craftboard};
 use super::organism::room_modeless::{self, RoomModeless};
 use super::organism::tab_modeless_container::{self, TabModelessContainer};
-use crate::arena::block;
-use crate::arena::resource;
+use crate::arena::{block, Arena, ArenaMut};
 use crate::libs::skyway::{MeshRoom, Peer};
 use kagura::prelude::*;
 use std::rc::Rc;
@@ -11,7 +10,10 @@ mod constructor;
 mod render;
 mod update;
 
-pub struct Props {}
+pub struct Props {
+    pub arena: ArenaMut,
+    pub client_id: Rc<String>,
+}
 
 pub enum Msg {
     NoOp,
@@ -20,8 +22,8 @@ pub enum Msg {
 pub enum On {}
 
 pub struct Room {
-    block_arena: block::Arena,
-    local_block_arena: block::Arena,
+    arena: ArenaMut,
+    local_arena: Arena,
 
     craftboard: PrepackedComponent<Craftboard>,
     modeless_container:
