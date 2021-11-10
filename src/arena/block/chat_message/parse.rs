@@ -1,22 +1,20 @@
 use peg;
+use std::rc::Rc;
 
+#[derive(Clone)]
 pub struct Message(Vec<MessageToken>);
 
 impl Message {
-    fn evalute(
-        self,
-        refer: &mut dyn FnMut(EvalutedMessage) -> EvalutedMessage,
-        command: &mut dyn FnMut(EvalutedCommand, EvalutedMessage) -> EvalutedMessage,
-    ) -> EvalutedMessage {
-        let msg: Vec<_> = self.into();
-        let mut evaluted_msg = vec![];
-
-        for token in msg {
-            let mut evaluted_tokens = token.evalute(refer, command);
-            evaluted_msg.append(&mut evaluted_tokens);
+    pub fn new(msg: &str) -> Self {
+        if let Ok(msg) = message_parser::message(msg) {
+            msg
+        } else {
+            Self(vec![MessageToken::Text(String::from(msg))])
         }
+    }
 
-        EvalutedMessage(evaluted_msg)
+    pub fn map(self, map: impl Fn(MapToken) -> Message + 'static) -> Self {
+        MapMessage::wrap(self, Rc::new(map)).get()
     }
 
     fn compress(self) -> Self {
@@ -62,124 +60,131 @@ impl Into<Vec<MessageToken>> for Message {
     }
 }
 
-enum MessageToken {
-    Text(String),
-    Refer(Message),
-    CommandBlock(Command, Message),
-}
-
-impl MessageToken {
-    fn evalute(
-        self,
-        refer: &mut dyn FnMut(EvalutedMessage) -> EvalutedMessage,
-        command: &mut dyn FnMut(EvalutedCommand, EvalutedMessage) -> EvalutedMessage,
-    ) -> Vec<EvalutedMessageToken> {
-        match self {
-            Self::Text(x) => vec![EvalutedMessageToken::Text(x)],
-            Self::Refer(x) => {
-                let x = x.evalute(refer, command);
-                refer(x).into()
-            }
-            Self::CommandBlock(c, m) => {
-                let c = c.evalute(refer, command);
-                let m = m.evalute(refer, command);
-                command(c, m).into()
-            }
-        }
+impl From<Vec<MessageToken>> for Message {
+    fn from(data: Vec<MessageToken>) -> Self {
+        Self(data)
     }
 }
 
-struct Command {
-    name: Message,
-    args: Vec<Message>,
-}
-
-impl Command {
-    fn evalute(
-        self,
-        refer: &mut dyn FnMut(EvalutedMessage) -> EvalutedMessage,
-        command: &mut dyn FnMut(EvalutedCommand, EvalutedMessage) -> EvalutedMessage,
-    ) -> EvalutedCommand {
-        let name = self.name.evalute(refer, command);
-        let mut args = vec![];
-
-        for arg in self.args {
-            args.push(arg.evalute(refer, command));
-        }
-
-        EvalutedCommand { name, args }
-    }
-}
-
-pub struct EvalutedMessage(Vec<EvalutedMessageToken>);
-
-impl EvalutedMessage {
-    pub fn new(
-        msg: &String,
-        refer: impl FnMut(EvalutedMessage) -> EvalutedMessage,
-        command: impl FnMut(EvalutedCommand, EvalutedMessage) -> EvalutedMessage,
-    ) -> Self {
-        match message_parser::message(&msg) {
-            Ok(msg) => msg.evalute(Box::leak(Box::new(refer)), Box::leak(Box::new(command))),
-            Err(err) => {
-                crate::debug::log_1(err.to_string());
-                Self(vec![EvalutedMessageToken::Text(msg.clone())])
-            }
-        }
-    }
-
-    pub fn to_string(&self) -> String {
-        let mut msg = String::from("");
-
-        for token in &self.0 {
-            match token {
-                EvalutedMessageToken::Text(x) => {
-                    msg += x;
-                }
-                EvalutedMessageToken::CommandBlock(_, x) => {
-                    msg += &x.to_string();
-                }
-            }
-        }
-
-        msg
-    }
-}
-
-impl Into<Vec<EvalutedMessageToken>> for EvalutedMessage {
-    fn into(self) -> Vec<EvalutedMessageToken> {
-        self.0
-    }
-}
-
-impl From<Vec<EvalutedMessageToken>> for EvalutedMessage {
-    fn from(tokens: Vec<EvalutedMessageToken>) -> Self {
-        Self(tokens)
-    }
-}
-
-impl std::ops::Deref for EvalutedMessage {
-    type Target = Vec<EvalutedMessageToken>;
-
+impl std::ops::Deref for Message {
+    type Target = Vec<MessageToken>;
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
-impl std::ops::DerefMut for EvalutedMessage {
+impl std::ops::DerefMut for Message {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
 }
 
-pub enum EvalutedMessageToken {
-    Text(String),
-    CommandBlock(EvalutedCommand, EvalutedMessage),
+impl std::fmt::Display for Message {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            self.iter()
+                .map(MessageToken::to_string)
+                .collect::<Vec<_>>()
+                .join("")
+        )
+    }
 }
 
-pub struct EvalutedCommand {
-    pub name: EvalutedMessage,
-    pub args: Vec<EvalutedMessage>,
+#[derive(Clone)]
+pub enum Token<T: Clone> {
+    Text(String),
+    Refer(T),
+    CommandBlock(Command<T>, T),
+}
+
+pub type MessageToken = Token<Message>;
+pub type MapToken = Token<MapMessage>;
+
+impl MessageToken {
+    fn wrap(self, map: Rc<dyn Fn(MapToken) -> Message>) -> MapToken {
+        match self {
+            Self::Text(x) => Token::Text(x),
+            Self::Refer(x) => Token::Refer(MapMessage::wrap(x, map)),
+            Self::CommandBlock(x, t) => Token::CommandBlock(
+                Command::wrap(x, Rc::clone(&map)),
+                MapMessage::wrap(t, Rc::clone(&map)),
+            ),
+        }
+    }
+}
+
+impl std::fmt::Display for MessageToken {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Text(x) => write!(f, "{}", x),
+            Self::Refer(x) => write!(f, "{}{}{}", "{", x, "}"),
+            Self::CommandBlock(x, t) => write!(f, r"{}\{}{}{}", r"{", x.to_string(), t, "}"),
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct Command<T: Clone> {
+    pub name: T,
+    pub args: Vec<T>,
+}
+
+pub type MessageCommand = Command<Message>;
+pub type MapCommand = Command<MapMessage>;
+
+impl MessageCommand {
+    fn wrap(self, map: Rc<dyn Fn(MapToken) -> Message>) -> Command<MapMessage> {
+        let name = MapMessage::wrap(self.name, Rc::clone(&map));
+        let args = self
+            .args
+            .into_iter()
+            .map(|arg| MapMessage::wrap(arg, Rc::clone(&map)))
+            .collect();
+
+        Command { name, args }
+    }
+}
+
+impl std::fmt::Display for MessageCommand {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            r"{}[{}]",
+            self.name,
+            self.args
+                .iter()
+                .map(Message::to_string)
+                .collect::<Vec<_>>()
+                .join(",")
+        )
+    }
+}
+
+#[derive(Clone)]
+pub struct MapMessage {
+    data: Message,
+    map: Rc<dyn Fn(MapToken) -> Message>,
+}
+
+impl MapMessage {
+    fn wrap(data: Message, map: Rc<dyn Fn(MapToken) -> Message>) -> Self {
+        Self { data, map }
+    }
+    pub fn get(self) -> Message {
+        let mut mapped = vec![];
+
+        for token in self.data.0 {
+            let map = Rc::clone(&self.map);
+            let mapped_tokens = (self.map)(token.wrap(map)).0;
+            for mapped_token in mapped_tokens {
+                mapped.push(mapped_token);
+            }
+        }
+
+        Message::from(mapped)
+    }
 }
 
 peg::parser! {
@@ -188,14 +193,15 @@ peg::parser! {
             = tokens:message_token()* { Message(tokens).compress() }
 
         rule message_token() -> MessageToken = precedence! {
+            r"{\" command:command() text:block_text_token()* "}" { MessageToken::CommandBlock(command, Message(text)) }
+            --
+            "{" text:block_text_token()* "}" { MessageToken::Refer(Message(text))}
+            --
             r"\{" { MessageToken::Text(String::from(r"{")) }
             r"\}" { MessageToken::Text(String::from(r"}")) }
             r"\\" { MessageToken::Text(String::from(r"\")) }
             r"\n" { MessageToken::Text(String::from("\n")) }
-            --
-            r"{\" command:command() text:block_text_token()* "}" { MessageToken::CommandBlock(command, Message(text)) }
-            --
-            "{" text:block_text_token()* "}" { MessageToken::Refer(Message(text))}
+            "\\\n" { MessageToken::Text(String::from("")) }
             --
             t:$([_]) { MessageToken::Text(String::from(t)) }
         }
@@ -203,7 +209,7 @@ peg::parser! {
         rule block_text_token() -> MessageToken
             = !['}'] token:message_token() { token }
 
-        rule command() -> Command = precedence! {
+        rule command() -> Command<Message> = precedence! {
             name:command_name_token_with_args()* "[" args:(command_arg_token()*) ** "," "]" {
                 Command { name: Message(name), args: args.into_iter().map(Message).collect()}
             }

@@ -3,14 +3,17 @@ uses! {
     super::util::Pack;
 }
 
-mod parse;
+pub mod parse;
 
-pub use parse::EvalutedCommand;
-pub use parse::EvalutedMessage;
-pub use parse::EvalutedMessageToken;
+pub use parse::MapCommand;
+pub use parse::MapMessage;
+pub use parse::MapToken;
+pub use parse::Message;
+pub use parse::MessageCommand;
+pub use parse::MessageToken;
 
 #[async_trait(?Send)]
-impl Pack for EvalutedMessage {
+impl Pack for Message {
     async fn pack(&self) -> JsValue {
         let data = array![];
 
@@ -23,10 +26,11 @@ impl Pack for EvalutedMessage {
 }
 
 #[async_trait(?Send)]
-impl Pack for EvalutedMessageToken {
+impl Pack for MessageToken {
     async fn pack(&self) -> JsValue {
         match self {
             Self::Text(x) => (object! {"Text": JsValue::from(x)}).into(),
+            Self::Refer(x) => (object! {"Refer": x.pack().await}).into(),
             Self::CommandBlock(c, m) => {
                 (object! {"CommandBlock": array![c.pack().await, m.pack().await]}).into()
             }
@@ -35,7 +39,7 @@ impl Pack for EvalutedMessageToken {
 }
 
 #[async_trait(?Send)]
-impl Pack for EvalutedCommand {
+impl Pack for MessageCommand {
     async fn pack(&self) -> JsValue {
         let name = self.name.pack().await;
 
@@ -77,7 +81,7 @@ block! {
     [pub ChatMessage]
     (sender): Sender;
     (timestamp): chrono::DateTime<chrono::Utc>;
-    (message): EvalutedMessage;
+    (message): Message;
     reference: Option<BlockRef> = None;
 }
 
@@ -90,7 +94,7 @@ impl ChatMessage {
         &self.timestamp
     }
 
-    pub fn message(&self) -> &EvalutedMessage {
+    pub fn message(&self) -> &Message {
         &self.message
     }
 }

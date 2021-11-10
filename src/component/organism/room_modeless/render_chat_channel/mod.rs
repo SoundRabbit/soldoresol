@@ -1,5 +1,12 @@
 use super::*;
-use super::{super::atom::attr, super::atom::btn::Btn, super::atom::fa, super::atom::text};
+use super::{
+    super::atom::attr,
+    super::atom::btn::{self, Btn},
+    super::atom::dropdown::{self, Dropdown},
+    super::atom::fa,
+    super::atom::text,
+    super::organism::modal_chat_capture::{self, ModalChatCapture},
+};
 
 mod message_style;
 
@@ -11,9 +18,22 @@ impl RoomModeless {
                 .class("pure-form"),
             Events::new(),
             vec![
+                ModalChatCapture::empty(
+                    modal_chat_capture::Props {
+                        is_showing: self.waiting_chat_message.is_some(),
+                        vars: self
+                            .waiting_chat_message
+                            .as_ref()
+                            .map(|x| Rc::clone(&x.1))
+                            .unwrap_or(Rc::new(vec![])),
+                    },
+                    Sub::map(|sub| match sub {
+                        modal_chat_capture::On::Cancel => Msg::SetWaitingChatMessage(None),
+                        modal_chat_capture::On::Send(x) => Msg::SendWaitingChatMessage(x),
+                    }),
+                ),
                 self.render_header(chat_channel),
                 self.render_main(chat_channel),
-                self.render_footer(),
             ],
         )
     }
@@ -49,7 +69,7 @@ impl RoomModeless {
             vec![
                 self.render_chat_panel(),
                 Html::div(
-                    Attributes::new().class(Self::class("channel-main-log")),
+                    Attributes::new().class(Self::class("channel-main-chat")),
                     Events::new(),
                     vec![
                         if chat_channel.messages().len() > 50 {
@@ -62,7 +82,7 @@ impl RoomModeless {
                             Html::div(Attributes::new(), Events::new(), vec![])
                         },
                         Html::div(
-                            Attributes::new().class(Self::class("channel-main-log-list")),
+                            Attributes::new().class(Self::class("channel-main-log")),
                             Events::new(),
                             chat_channel
                                 .messages()
@@ -75,6 +95,7 @@ impl RoomModeless {
                                 })
                                 .collect(),
                         ),
+                        self.render_controller(),
                     ],
                 ),
             ],
@@ -91,7 +112,61 @@ impl RoomModeless {
                         .string("data-is-showing", self.is_showing_chat_pallet.to_string())
                         .class(Self::class("channel-chatpallet")),
                     Events::new(),
-                    vec![],
+                    vec![
+                        Dropdown::with_children(
+                            dropdown::Props {
+                                text: self
+                                    .test_chatpallet
+                                    .index()
+                                    .get(self.test_chatpallet_selected_index)
+                                    .map(|(name, _)| name.clone())
+                                    .unwrap_or(String::from("")),
+                                direction: dropdown::Direction::Bottom,
+                                toggle_type: dropdown::ToggleType::Click,
+                                variant: btn::Variant::DarkLikeMenu,
+                            },
+                            Sub::none(),
+                            self.test_chatpallet
+                                .index()
+                                .iter()
+                                .enumerate()
+                                .map(|(idx, (name, _))| {
+                                    Btn::menu(
+                                        Attributes::new(),
+                                        Events::new().on_click(move |_| {
+                                            Msg::SetTestChatPalletSelectedIndex(idx)
+                                        }),
+                                        vec![Html::text(name)],
+                                    )
+                                })
+                                .collect(),
+                        ),
+                        Html::div(
+                            Attributes::new().class(Self::class("channel-chatpallet-index")),
+                            Events::new(),
+                            self.test_chatpallet
+                                .index()
+                                .get(self.test_chatpallet_selected_index)
+                                .map(|(_, items)| {
+                                    items
+                                        .iter()
+                                        .enumerate()
+                                        .map(|(idx, item)| {
+                                            Btn::with_variant(
+                                                btn::Variant::LightLikeMenu,
+                                                Attributes::new()
+                                                    .class(Self::class("channel-chatpallet-item")),
+                                                Events::new().on_click(move |_| {
+                                                    Msg::SetTestChatPalletSelectedItem(idx)
+                                                }),
+                                                vec![Html::text(item)],
+                                            )
+                                        })
+                                        .collect()
+                                })
+                                .unwrap_or(vec![]),
+                        ),
+                    ],
                 ),
                 Btn::light(
                     Attributes::new().title(if self.is_showing_chat_pallet {
@@ -171,10 +246,7 @@ impl RoomModeless {
         )
     }
 
-    fn render_main_chat_content(
-        &self,
-        message: &block::chat_message::EvalutedMessage,
-    ) -> Vec<Html<Self>> {
+    fn render_main_chat_content(&self, message: &block::chat_message::Message) -> Vec<Html<Self>> {
         message
             .iter()
             .map(|message_token| self.render_main_chat_token(message_token))
@@ -183,11 +255,12 @@ impl RoomModeless {
 
     fn render_main_chat_token(
         &self,
-        message_token: &block::chat_message::EvalutedMessageToken,
+        message_token: &block::chat_message::MessageToken,
     ) -> Html<Self> {
         match message_token {
-            block::chat_message::EvalutedMessageToken::Text(text) => Html::text(text),
-            block::chat_message::EvalutedMessageToken::CommandBlock(cmd, message) => {
+            block::chat_message::MessageToken::Text(text) => Html::text(text),
+            block::chat_message::MessageToken::Refer(text) => Html::text(format!("{{{}}}", text)),
+            block::chat_message::MessageToken::CommandBlock(cmd, message) => {
                 let cmd_name = cmd.name.to_string();
                 if cmd_name == "gr" {
                     let mut cols = vec![];
@@ -210,7 +283,7 @@ impl RoomModeless {
                     let mut cmds: Vec<_> = cmd
                         .args
                         .iter()
-                        .map(block::chat_message::EvalutedMessage::to_string)
+                        .map(block::chat_message::Message::to_string)
                         .collect();
                     cmds.push(String::from("block"));
                     let cmds = cmds.join(" ");
@@ -218,6 +291,36 @@ impl RoomModeless {
                         Attributes::new().string("data-cmd", cmds),
                         Events::new(),
                         self.render_main_chat_content(message),
+                    )
+                } else if cmd_name == "fas" || cmd_name == "far" || cmd_name == "fab" {
+                    let args: Vec<_> = cmd
+                        .args
+                        .iter()
+                        .map(block::chat_message::Message::to_string)
+                        .collect();
+                    let args = args.join(" ");
+                    Html::i(
+                        Attributes::new().class(cmd_name).class(args),
+                        Events::new(),
+                        self.render_main_chat_content(message),
+                    )
+                } else if cmd_name == "rb" {
+                    Html::ruby(
+                        Attributes::new(),
+                        Events::new(),
+                        vec![
+                            Html::fragment(self.render_main_chat_content(message)),
+                            Html::rp(Attributes::new(), Events::new(), vec![Html::text("《")]),
+                            Html::rt(
+                                Attributes::new(),
+                                Events::new(),
+                                cmd.args
+                                    .iter()
+                                    .map(|msg| Html::fragment(self.render_main_chat_content(msg)))
+                                    .collect(),
+                            ),
+                            Html::rp(Attributes::new(), Events::new(), vec![Html::text("》")]),
+                        ],
                     )
                 } else {
                     Html::span(
@@ -230,7 +333,7 @@ impl RoomModeless {
         }
     }
 
-    fn render_footer(&self) -> Html<Self> {
+    fn render_controller(&self) -> Html<Self> {
         Html::div(
             Attributes::new().class(Self::class("channel-footer")),
             Events::new(),
@@ -297,7 +400,7 @@ impl RoomModeless {
             ".channel-base" {
                 "display": "grid";
                 "grid-template-columns": "1fr";
-                "grid-template-rows": "max-content 1fr max-content";
+                "grid-template-rows": "max-content 1fr";
                 "grid-auto-flow": "row";
                 "row-gap": ".65rem";
                 "padding-top": ".65rem";
@@ -338,6 +441,9 @@ impl RoomModeless {
 
             ".channel-chatpallet" {
                 "overflow": "hidden";
+                "display": "grid";
+                "grid-template-rows": "max-content 1fr";
+                "row-gap": ".65rem";
             }
 
             ".channel-chatpallet[data-is-showing='false']" {
@@ -346,17 +452,28 @@ impl RoomModeless {
 
             ".channel-chatpallet[data-is-showing='true']" {
                 "min-width": "30ch";
-
+                "max-width": "30ch";
             }
 
-            ".channel-main-log" {
+            ".channel-chatpallet-index" {
+                "overflow-y": "scroll";
+                "display": "grid";
+                "grid-auto-rows": "max-content";
+                "row-gap": ".65rem";
+            }
+
+            ".channel-chatpallet-item" {
+                "white-space": "pre-wrap";
+            }
+
+            ".channel-main-chat" {
                 "display": "grid";
                 "grid-template-columns": "1fr";
-                "grid-template-rows": "max-content 1fr";
+                "grid-template-rows": "max-content 1fr max-content";
                 "overflow": "hidden";
             }
 
-            ".channel-main-log-list" {
+            ".channel-main-log" {
                 "overflow-y": "scroll";
             }
 
@@ -378,17 +495,11 @@ impl RoomModeless {
                 "line-height": "1.5";
                 "font-size": "3rem";
                 "text-align": "center";
-            }
-
-            ".channel-main-message-heading" {
-                "display": "grid";
-                "grid-template-columns": "1fr max-content";
-                "grid-auto-rows": "max-content";
-                "grid-column": "2";
+                "align-self": "start";
             }
 
             ".channel-main-message-heading-row" {
-                "grid-column": "1";
+                "grid-column": "2";
                 "display": "flex";
                 "justify-content": "space-between";
                 "border-bottom": format!(".1rem solid {}", crate::libs::color::Pallet::gray(6));
@@ -403,15 +514,15 @@ impl RoomModeless {
             }
 
             ".channel-main-message-client" {
-                "grid-column": "1";
                 "text-align": "right";
                 "font-size": "0.9em";
                 "font-color": format!("{}", crate::libs::color::Pallet::gray(7));
             }
 
             ".channel-main-message-content" {
-                "grid-column": "2";
                 "overflow-x": "hidden";
+                "white-space": "pre-wrap";
+                "grid-column": "2";
             }
 
             ".channel-footer" {

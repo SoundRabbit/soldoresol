@@ -23,6 +23,7 @@ pub enum Variant {
     MenuAsSecondary,
     Success,
     Light,
+    LightLikeMenu,
 }
 
 pub struct Btn {}
@@ -55,6 +56,7 @@ impl Btn {
             }
             Variant::Success => Self::class("success"),
             Variant::Light => Self::class("light"),
+            Variant::LightLikeMenu => Self::class("light") + " " + &Self::class("like-menu"),
         }
     }
 

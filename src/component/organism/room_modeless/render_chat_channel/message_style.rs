@@ -5,6 +5,7 @@ impl RoomModeless {
         style! {
             ".channel-main-message-content *[data-cmd~='nb']" {
                 "word-break": "keep-all";
+                "white-space": "nowrap";
             }
 
             ".channel-main-message-content *[data-cmd~='left']" {
@@ -13,6 +14,10 @@ impl RoomModeless {
 
             ".channel-main-message-content *[data-cmd~='right']" {
                 "text-align": "right";
+            }
+
+            ".channel-main-message-content *[data-cmd~='center']" {
+                "text-align": "center";
             }
 
             ".channel-main-message-content *[data-cmd~='gr']" {
@@ -29,6 +34,14 @@ impl RoomModeless {
 
             ".channel-main-message-content *[data-cmd~='block']" {
                 "display": "block";
+            }
+
+            ".channel-main-message-content *[data-cmd~='large']" {
+                "font-size": "1.25em";
+            }
+
+            ".channel-main-message-content *[data-cmd~='huge']" {
+                "font-size": "1.5em";
             }
 
             ".channel-main-message-content *[data-cmd~='red']" {

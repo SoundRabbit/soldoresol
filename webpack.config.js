@@ -76,8 +76,8 @@ module.exports = {
         }),
         new WasmPackPlugin({
             crateDirectory: path.join(__dirname, "./"),
-            // forceMode: "development",
-            forceMode: "production",
+            forceMode: "development",
+            // forceMode: "production",
             target: "web",
             args: "--log-level error",
         }),

@@ -66,3 +66,17 @@ impl<T: Pack> Pack for Option<T> {
         }
     }
 }
+
+#[async_trait(?Send)]
+impl<T: Pack, U: Pack> Pack for (T, U) {
+    async fn pack(&self) -> JsValue {
+        array![self.0.pack().await, self.1.pack().await].into()
+    }
+}
+
+#[async_trait(?Send)]
+impl Pack for regex::Regex {
+    async fn pack(&self) -> JsValue {
+        JsValue::from(self.as_str())
+    }
+}
