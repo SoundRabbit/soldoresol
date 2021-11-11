@@ -1,3 +1,4 @@
+use super::atom::btn::{self, Btn};
 use super::atom::tab_btn::TabBtn;
 use super::molecule::tab_modeless::{self, TabModeless};
 use crate::libs::modeless_list::ModelessList;
@@ -20,6 +21,8 @@ pub enum Msg<Sub> {
     NoOp,
     Sub(On<Sub>),
     Focus(U128Id),
+    Close(U128Id),
+    SetMinimized(U128Id, bool),
     DisconnectTab {
         event_id: U128Id,
         tab_idx: usize,
@@ -60,6 +63,7 @@ struct Modeless<T> {
     data: Rc<RefCell<SelectList<T>>>,
     pos_x: Option<i32>,
     pos_y: Option<i32>,
+    is_minimized: bool,
 }
 
 impl<Content: Constructor, TabName: Constructor<Props = Content::Props>>
@@ -72,6 +76,7 @@ where
             data: Rc::new(RefCell::new(SelectList::new(contents, 0))),
             pos_x: None,
             pos_y: None,
+            is_minimized: false,
         });
     }
 }
@@ -148,6 +153,16 @@ where
                 self.modelesses.focus(&modeless_id);
                 Cmd::none()
             }
+            Msg::Close(modeless_id) => {
+                self.modelesses.remove(&modeless_id);
+                Cmd::none()
+            }
+            Msg::SetMinimized(modeless_id, is_minimized) => {
+                if let Some(modeless) = self.modelesses.get_mut(&modeless_id) {
+                    modeless.is_minimized = is_minimized;
+                }
+                Cmd::none()
+            }
             Msg::DisconnectTab {
                 event_id,
                 tab_idx,
@@ -210,6 +225,7 @@ where
                             data: Rc::new(RefCell::new(SelectList::new(vec![content], 0))),
                             pos_x: Some(page_x - 10),
                             pos_y: Some(page_y - 10),
+                            is_minimized: false,
                         });
                     }
 
@@ -263,14 +279,64 @@ where
                     }),
                 vec![
                     Html::div(Attributes::new(), Events::new(), children),
+                    Html::div(
+                        Attributes::new().class(Self::class("minimized-list")),
+                        Events::new(),
+                        self.modelesses
+                            .iter()
+                            .map(|m| match m {
+                                Some((m_id, _, contents)) if contents.is_minimized => Html::div(
+                                    Attributes::new().class(Self::class("minimized-item")),
+                                    Events::new(),
+                                    vec![
+                                        Html::div(
+                                            Attributes::new()
+                                                .class(Self::class("minimized-item-tabs")),
+                                            Events::new(),
+                                            contents
+                                                .data
+                                                .borrow()
+                                                .iter()
+                                                .map(|content| {
+                                                    Html::span(
+                                                        Attributes::new()
+                                                            .class(Btn::class_name(
+                                                                &btn::Variant::DarkLikeMenu,
+                                                            ))
+                                                            .class(Self::class(
+                                                                "minimized-item-tabs-tab",
+                                                            )),
+                                                        Events::new(),
+                                                        vec![TabName::empty(
+                                                            Clone::clone(&content),
+                                                            Sub::none(),
+                                                        )],
+                                                    )
+                                                })
+                                                .collect(),
+                                        ),
+                                        Btn::secondary(
+                                            Attributes::new()
+                                                .class(Self::class("minimized-item-open")),
+                                            Events::new().on_click({
+                                                let m_id = U128Id::clone(&m_id);
+                                                move |_| Msg::SetMinimized(m_id, false)
+                                            }),
+                                            vec![Html::text("開く")],
+                                        ),
+                                    ],
+                                ),
+                                _ => Html::none(),
+                            })
+                            .collect(),
+                    ),
                     if let Some(element) = self.element.as_ref() {
                         Html::fragment(
                             self.modelesses
                                 .iter()
                                 .enumerate()
                                 .map(|(m_idx, m)| match m {
-                                    None => Html::div(Attributes::new(), Events::new(), vec![]),
-                                    Some((m_id, z_idx, contents)) => {
+                                    Some((m_id, z_idx, contents)) if !contents.is_minimized => {
                                         TabModeless::<Content, TabName>::empty(
                                             tab_modeless::Props {
                                                 container_element: Rc::clone(&element),
@@ -285,35 +351,10 @@ where
                                                 z_index: z_idx,
                                                 modeless_id: U128Id::clone(&m_id),
                                             },
-                                            Sub::map(|sub| match sub {
-                                                tab_modeless::On::DisconnectTab {
-                                                    event_id,
-                                                    tab_idx,
-                                                    modeless_id,
-                                                } => Msg::DisconnectTab {
-                                                    event_id,
-                                                    tab_idx,
-                                                    modeless_id,
-                                                },
-                                                tab_modeless::On::ConnectTab {
-                                                    event_id,
-                                                    header_tab_idx,
-                                                    modeless_id,
-                                                } => Msg::ConnectTab {
-                                                    event_id,
-                                                    header_tab_idx,
-                                                    modeless_id,
-                                                },
-                                                tab_modeless::On::Focus(modeless_id) => {
-                                                    Msg::Focus(modeless_id)
-                                                }
-                                                tab_modeless::On::Sub(sub) => {
-                                                    Msg::Sub(On::Sub(sub))
-                                                }
-                                                _ => Msg::NoOp,
-                                            }),
+                                            Self::modeless_sub(),
                                         )
                                     }
+                                    _ => Html::div(Attributes::new(), Events::new(), vec![]),
                                 })
                                 .collect(),
                         )
@@ -324,6 +365,42 @@ where
             )
             .ref_name("base"),
         )
+    }
+}
+
+impl<Content: Constructor, TabName: Constructor<Props = Content::Props>>
+    TabModelessContainer<Content, TabName>
+where
+    Content::Props: Clone,
+{
+    fn modeless_sub() -> Sub<tab_modeless::On<Content::Sub>, Msg<Content::Sub>> {
+        Sub::map(|sub| match sub {
+            tab_modeless::On::DisconnectTab {
+                event_id,
+                tab_idx,
+                modeless_id,
+            } => Msg::DisconnectTab {
+                event_id,
+                tab_idx,
+                modeless_id,
+            },
+            tab_modeless::On::ConnectTab {
+                event_id,
+                header_tab_idx,
+                modeless_id,
+            } => Msg::ConnectTab {
+                event_id,
+                header_tab_idx,
+                modeless_id,
+            },
+            tab_modeless::On::Focus(modeless_id) => Msg::Focus(modeless_id),
+            tab_modeless::On::Close(modeless_id) => Msg::Close(modeless_id),
+            tab_modeless::On::SetMinimized(modeless_id, is_minimized) => {
+                Msg::SetMinimized(modeless_id, is_minimized)
+            }
+            tab_modeless::On::Sub(sub) => Msg::Sub(On::Sub(sub)),
+            _ => Msg::NoOp,
+        })
     }
 }
 
@@ -339,6 +416,37 @@ where
                 "height": "100%";
                 "overflow": "hidden";
                 "position": "relative";
+            }
+
+            ".minimized-list" {
+                "width": "100%";
+                "bottom": "0";
+                "min-height": "max-content";
+                "display": "flex";
+                "position": "absolute";
+            }
+
+            ".minimized-item" {
+                "border-radius": "2px 2px 0 0";
+                "box-shadow": format!("0 0 0.1rem 0.1rem {}", crate::libs::color::color_system::gray(255, 5));
+                "min-width": "5rem";
+            }
+
+            ".minimized-item-tabs" {
+                "border-radius": "2px 2px 0 0";
+                "display": "flex";
+                "flex-direction": "column";
+                "margin-bottom": ".35rem";
+                "background-color": crate::libs::color::Pallet::gray(0);
+            }
+
+            ".minimized-item-tabs-tab" {
+                "width": "100%";
+                "padding": ".5em 1em";
+            }
+
+            ".minimized-item-open" {
+                "width": "100%";
             }
         }
     }

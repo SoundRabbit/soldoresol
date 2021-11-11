@@ -1,6 +1,7 @@
 use super::atom::btn::{self, Btn};
 use super::atom::dropdown::{self, Dropdown};
 use super::atom::tab_btn::{self, TabBtn};
+use super::atom::text;
 use crate::libs::color::color_system;
 use crate::libs::random_id::U128Id;
 use crate::libs::select_list::SelectList;
@@ -42,10 +43,16 @@ pub enum Msg<Sub> {
         tab_idx: usize,
     },
     SetSelectedTabIdx(usize),
+    CloseSelf,
+    SetMinimizedSelf(bool),
+    CloneTab(usize),
+    CloseTab(usize),
 }
 
 pub enum On<Sub> {
     Focus(U128Id),
+    Close(U128Id),
+    SetMinimized(U128Id, bool),
     Move(i32, i32),
     Resize([f32; 2]),
     DisconnectTab {
@@ -165,6 +172,27 @@ where
         match msg {
             Msg::NoOp => Cmd::none(),
             Msg::Sub(sub) => Cmd::sub(sub),
+            Msg::CloseSelf => Cmd::sub(On::Close(U128Id::clone(&props.modeless_id))),
+            Msg::SetMinimizedSelf(is_minimized) => Cmd::sub(On::SetMinimized(
+                U128Id::clone(&props.modeless_id),
+                is_minimized,
+            )),
+            Msg::CloneTab(tab_idx) => {
+                let mut contents = props.contents.borrow_mut();
+                if let Some(tab) = contents.get(tab_idx) {
+                    let tab = tab.clone();
+                    contents.insert(tab_idx + 1, tab);
+                }
+                Cmd::none()
+            }
+            Msg::CloseTab(tab_idx) => {
+                props.contents.borrow_mut().remove(tab_idx);
+                if props.contents.borrow().len() == 0 {
+                    Cmd::sub(On::Close(U128Id::clone(&props.modeless_id)))
+                } else {
+                    Cmd::none()
+                }
+            }
             Msg::DragStart {
                 page_x,
                 page_y,
@@ -389,10 +417,46 @@ where
                             },
                             Sub::none(),
                             vec![
-                                Btn::menu_as_secondary(Attributes::new(), Events::new(), vec![Html::text("現在のタブを閉じる")]),
-                                Html::span(Attributes::new().class(Dropdown::class("menu-heading")).class(Btn::class_name(&btn::Variant::SecondaryLikeMenu)), Events::new(), vec![]),
-                                Btn::menu_as_secondary(Attributes::new(), Events::new(), vec![Html::text("ウィンドウを最小化")]),
-                                Btn::menu_as_secondary(Attributes::new(), Events::new(), vec![Html::text("ウィンドウを閉じる")]),
+                                Html::span(
+                                    Attributes::new()
+                                        .class(Dropdown::class("menu-heading"))
+                                        .class(Btn::class_name(&btn::Variant::SecondaryLikeMenu)),
+                                    Events::new(),
+                                    vec![text::span("タブ")]
+                                ),
+                                Btn::menu_as_secondary(
+                                    Attributes::new(),
+                                    Events::new().on_click({
+                                        let selected_tab_idx = props.contents.borrow().selected_idx();
+                                        move |_| Msg::CloneTab(selected_tab_idx)
+                                    }),
+                                    vec![Html::text("現在のタブを複製")]
+                                ),
+                                Btn::menu_as_secondary(
+                                    Attributes::new(),
+                                    Events::new().on_click({
+                                        let selected_tab_idx = props.contents.borrow().selected_idx();
+                                        move |_| Msg::CloseTab(selected_tab_idx)
+                                    }),
+                                    vec![Html::text("現在のタブを閉じる")]
+                                ),
+                                Html::span(
+                                    Attributes::new()
+                                        .class(Dropdown::class("menu-heading"))
+                                        .class(Btn::class_name(&btn::Variant::SecondaryLikeMenu)),
+                                    Events::new(),
+                                    vec![text::span("ウィンドウ")]
+                                ),
+                                Btn::menu_as_secondary(
+                                    Attributes::new(),
+                                    Events::new().on_click(|_| Msg::SetMinimizedSelf(true)),
+                                    vec![Html::text("ウィンドウを最小化")]
+                                ),
+                                Btn::menu_as_secondary(
+                                    Attributes::new(),
+                                    Events::new().on_click(|_| Msg::CloseSelf),
+                                    vec![Html::text("ウィンドウを閉じる")]
+                                ),
                             ]
                         )
                     ]
