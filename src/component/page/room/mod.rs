@@ -1,7 +1,8 @@
 use super::atom::craftboard::{self, Craftboard};
 use super::organism::room_modeless::{self, RoomModeless};
 use super::organism::tab_modeless_container::{self, TabModelessContainer};
-use crate::arena::{block, Arena, ArenaMut};
+use crate::arena::{block, Arena, ArenaMut, BlockMut};
+use crate::libs::random_id::U128Id;
 use crate::libs::skyway::{MeshRoom, Peer};
 use kagura::prelude::*;
 use std::rc::Rc;
@@ -17,6 +18,7 @@ pub struct Props {
 
 pub enum Msg {
     NoOp,
+    OpenChatModeless(Option<U128Id>),
 }
 
 pub enum On {}
@@ -24,6 +26,8 @@ pub enum On {}
 pub struct Room {
     arena: ArenaMut,
     local_arena: Arena,
+
+    chat: BlockMut,
 
     craftboard: PrepackedComponent<Craftboard>,
     modeless_container:

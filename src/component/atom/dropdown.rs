@@ -285,6 +285,7 @@ impl Styled for Dropdown {
                 "justify-items": "stretch";
                 "background-color": crate::libs::color::color_system::gray(100, 0).to_string();
                 "border-radius": "2px";
+                "display": "grid";
             }
 
             r#".content[data-toggled="false"]"# {
@@ -305,7 +306,6 @@ impl Styled for Dropdown {
                 "top": "100%";
                 "right": "0";
                 "grid-template-columns": "max-content";
-
             }
 
             ".content-bottom-right" {
@@ -319,6 +319,21 @@ impl Styled for Dropdown {
                 "top": "0";
                 "left": "100%";
                 "grid-template-columns": "max-content";
+            }
+
+            ".menu-heading" {
+                "padding": ".5em .5em";
+                "line-height": "1.5";
+                "align-items": "center";
+                "display": "grid";
+                "grid-template-columns": "1fr max-content 1fr";
+                "column-gap": ".25em";
+            }
+
+            ".menu-heading:before, .menu-heading:after" {
+                "content": "''";
+                "height": ".15rem";
+                "background-color": crate::libs::color::Pallet::gray(1);
             }
         }
     }

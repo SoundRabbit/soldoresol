@@ -39,6 +39,7 @@ pub enum Msg<Sub> {
         event_id: U128Id,
         tab_idx: usize,
     },
+    SetSelectedTabIdx(usize),
 }
 
 pub enum On<Sub> {
@@ -179,6 +180,10 @@ where
                 tab_idx,
                 modeless_id: U128Id::clone(&props.modeless_id),
             }),
+            Msg::SetSelectedTabIdx(tab_idx) => {
+                props.contents.borrow_mut().set_selected_idx(tab_idx);
+                Cmd::none()
+            }
             Msg::Drag { page_x, page_y } => {
                 let cmd;
                 if let Some(dragging) = self.dragging.as_mut() {
@@ -365,7 +370,7 @@ where
                                     move |e| {
                                         Self::on_drop_tab(Some(tab_idx), e,modeless_id)
                                     }
-                                }),
+                                }).on_click(move |_| Msg::SetSelectedTabIdx(tab_idx)),
                                 vec![TabName::empty(Clone::clone(content), Sub::none())],
                             )
                         })
@@ -458,6 +463,10 @@ where
                 "border-radius": "2px";
                 "box-shadow": format!("0 0 0.1rem 0.1rem {}", color_system::gray(255, 9));
                 "background-color": format!("{}", crate::libs::color::Pallet::gray(0));
+            }
+            ".header" {
+                "display": "flex";
+                "felx-wrap": "wrap";
             }
 
             ".content" {

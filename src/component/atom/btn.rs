@@ -176,6 +176,7 @@ impl Styled for Btn {
 
             ".like-menu" {
                 "text-align": "left";
+                "border-radius": "2px";
             }
 
             ".menu" {

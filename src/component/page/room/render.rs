@@ -1,4 +1,5 @@
 use super::super::atom::{
+    attr,
     btn::{self, Btn},
     card::{self, Card},
     dropdown::{self, Dropdown},
@@ -22,7 +23,7 @@ impl Render for Room {
                 Header::with_children(
                     header::Props::new(),
                     Sub::none(),
-                    vec![self.render_header_row_0()],
+                    vec![self.render_header_row_0(), self.render_header_row_1()],
                 ),
                 Html::div(
                     Attributes::new().class(Self::class("body")),
@@ -70,6 +71,75 @@ impl Room {
                 ),
                 Html::input(Attributes::new().flag("readonly"), Events::new(), vec![]),
             ],
+        )
+    }
+
+    fn render_header_row_1(&self) -> Html<Self> {
+        Html::div(
+            Attributes::new()
+                .class(Self::class("header-row"))
+                .class("pure-form"),
+            Events::new(),
+            vec![
+                self.render_header_row_1_left(),
+                Html::div(
+                    Attributes::new().class(Self::class("right")),
+                    Events::new(),
+                    vec![],
+                ),
+            ],
+        )
+    }
+
+    fn render_header_row_1_left(&self) -> Html<Self> {
+        Html::div(
+            Attributes::new().class(Self::class("view-room-id")),
+            Events::new(),
+            vec![Dropdown::with_children(
+                dropdown::Props {
+                    direction: dropdown::Direction::BottomRight,
+                    text: String::from("チャット"),
+                    toggle_type: dropdown::ToggleType::Click,
+                    variant: btn::Variant::Dark,
+                },
+                Sub::none(),
+                vec![
+                    attr::span(
+                        Attributes::new()
+                            .class(Dropdown::class("menu-heading"))
+                            .class(Btn::class_name(&btn::Variant::DarkLikeMenu)),
+                        "表示",
+                    ),
+                    Btn::menu(
+                        Attributes::new(),
+                        Events::new().on_click(|_| Msg::OpenChatModeless(None)),
+                        vec![Html::text("全てのチャンネル")],
+                    ),
+                    Html::fragment(
+                        self.chat
+                            .map(|chat: &block::Chat| {
+                                chat.channels()
+                                    .iter()
+                                    .filter_map(|channel| {
+                                        let channel_id = channel.id();
+                                        channel.map(|channel: &block::ChatChannel| {
+                                            Btn::menu(
+                                                Attributes::new(),
+                                                Events::new().on_click(move |_| {
+                                                    Msg::OpenChatModeless(Some(channel_id))
+                                                }),
+                                                vec![Html::text(
+                                                    String::from("#") + channel.name(),
+                                                )],
+                                            )
+                                        })
+                                    })
+                                    .collect()
+                            })
+                            .unwrap_or(vec![]),
+                    ),
+                ],
+            )],
         )
     }
 }

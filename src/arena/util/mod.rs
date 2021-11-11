@@ -156,7 +156,7 @@ macro_rules! arena {
                     data: Rc::new(RefCell::new(
                         AnnotBlockData {
                             timestamp: js_sys::Date::now(),
-                            block_id: U128Id::new(),
+                            block_id: U128Id::none(),
                             data: BlockData::None
                         }
                     ))
@@ -249,6 +249,10 @@ macro_rules! arena {
         }
 
         impl BlockMut {
+            pub fn none() -> Self {
+                Block::none().as_mut()
+            }
+
             pub fn update<T>(&mut self, f: impl FnOnce(&mut T)) where Self: Access<T> {
                 Access::update(self, f);
             }
