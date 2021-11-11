@@ -98,7 +98,7 @@ impl Room {
             vec![Dropdown::with_children(
                 dropdown::Props {
                     direction: dropdown::Direction::BottomRight,
-                    text: String::from("チャット"),
+                    text: dropdown::Text::Text(String::from("チャット")),
                     toggle_type: dropdown::ToggleType::Click,
                     variant: btn::Variant::Dark,
                 },

@@ -1,3 +1,5 @@
+use super::atom::btn::{self, Btn};
+use super::atom::dropdown::{self, Dropdown};
 use super::atom::tab_btn::{self, TabBtn};
 use crate::libs::color::color_system;
 use crate::libs::random_id::U128Id;
@@ -43,7 +45,7 @@ pub enum Msg<Sub> {
 }
 
 pub enum On<Sub> {
-    Focus,
+    Focus(U128Id),
     Move(i32, i32),
     Resize([f32; 2]),
     DisconnectTab {
@@ -169,11 +171,11 @@ where
                 drag_type,
             } => {
                 self.dragging = Some(([page_x, page_y], drag_type));
-                Cmd::sub(On::Focus)
+                Cmd::sub(On::Focus(U128Id::clone(&props.modeless_id)))
             }
             Msg::DragEnd => {
                 self.dragging = None;
-                Cmd::sub(On::Focus)
+                Cmd::sub(On::Focus(U128Id::clone(&props.modeless_id)))
             }
             Msg::DisconnectTab { event_id, tab_idx } => Cmd::sub(On::DisconnectTab {
                 event_id,
@@ -338,43 +340,62 @@ where
                         .on_drop({let modeless_id = U128Id::clone(&props.modeless_id);move |e| {
                             Self::on_drop_tab(None, e,modeless_id)
                         }}),
-                    props
-                        .contents
-                        .borrow()
-                        .iter()
-                        .enumerate()
-                        .map(|(tab_idx, content)| {
-                            TabBtn::new(
-                                true,
-                                tab_idx == props.contents.borrow().selected_idx(),
-                                Attributes::new(),
-                                Events::new()
-                                .on_mousedown(|e|{ e.stop_propagation(); Msg::NoOp})
-                                .on_dragstart(
-                                    move |e| {
-                                    e.stop_propagation();
-                                    let data_transfer = unwrap_or!(e.data_transfer(); Msg::NoOp);
-                                    let event_id = U128Id::new();
-                                    unwrap_or!(
-                                        data_transfer
-                                            .set_data("text/plain", &TabBtn::id::<Self>(vec![&event_id.to_string()]))
-                                            .ok();
-                                        Msg::NoOp
-                                    );
-                                    Msg::DisconnectTab {
-                                        event_id,
-                                        tab_idx,
-                                    }
-                                }).on_drop({
-                                    let modeless_id = U128Id::clone(&props.modeless_id);
-                                    move |e| {
-                                        Self::on_drop_tab(Some(tab_idx), e,modeless_id)
-                                    }
-                                }).on_click(move |_| Msg::SetSelectedTabIdx(tab_idx)),
-                                vec![TabName::empty(Clone::clone(content), Sub::none())],
-                            )
-                        })
-                        .collect(),
+                    vec![
+                        Html::div(Attributes::new().class(Self::class("header-tabs")),Events::new(),
+                        props
+                            .contents
+                            .borrow()
+                            .iter()
+                            .enumerate()
+                            .map(|(tab_idx, content)| {
+                                TabBtn::new(
+                                    true,
+                                    tab_idx == props.contents.borrow().selected_idx(),
+                                    Attributes::new(),
+                                    Events::new()
+                                    .on_mousedown(|e|{ e.stop_propagation(); Msg::NoOp})
+                                    .on_dragstart(
+                                        move |e| {
+                                        e.stop_propagation();
+                                        let data_transfer = unwrap_or!(e.data_transfer(); Msg::NoOp);
+                                        let event_id = U128Id::new();
+                                        unwrap_or!(
+                                            data_transfer
+                                                .set_data("text/plain", &TabBtn::id::<Self>(vec![&event_id.to_string()]))
+                                                .ok();
+                                            Msg::NoOp
+                                        );
+                                        Msg::DisconnectTab {
+                                            event_id,
+                                            tab_idx,
+                                        }
+                                    }).on_drop({
+                                        let modeless_id = U128Id::clone(&props.modeless_id);
+                                        move |e| {
+                                            Self::on_drop_tab(Some(tab_idx), e,modeless_id)
+                                        }
+                                    }).on_click(move |_| Msg::SetSelectedTabIdx(tab_idx)),
+                                    vec![TabName::empty(Clone::clone(content), Sub::none())],
+                                )
+                            })
+                            .collect()
+                        ),
+                        Dropdown::with_children(
+                            dropdown::Props {
+                                direction: dropdown::Direction::BottomLeft,
+                                text: dropdown::Text::Menu,
+                                toggle_type: dropdown::ToggleType::Click,
+                                variant: btn::Variant::TransparentLight,
+                            },
+                            Sub::none(),
+                            vec![
+                                Btn::menu_as_secondary(Attributes::new(), Events::new(), vec![Html::text("現在のタブを閉じる")]),
+                                Html::span(Attributes::new().class(Dropdown::class("menu-heading")).class(Btn::class_name(&btn::Variant::SecondaryLikeMenu)), Events::new(), vec![]),
+                                Btn::menu_as_secondary(Attributes::new(), Events::new(), vec![Html::text("ウィンドウを最小化")]),
+                                Btn::menu_as_secondary(Attributes::new(), Events::new(), vec![Html::text("ウィンドウを閉じる")]),
+                            ]
+                        )
+                    ]
                 ),
                 Html::div(
                     Attributes::new().class(Self::class("content")),
@@ -465,6 +486,11 @@ where
                 "background-color": format!("{}", crate::libs::color::Pallet::gray(0));
             }
             ".header" {
+                "display": "grid";
+                "grid-template-columns": "1fr max-content";
+            }
+
+            ".header-tabs" {
                 "display": "flex";
                 "felx-wrap": "wrap";
             }

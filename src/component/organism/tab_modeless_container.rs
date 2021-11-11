@@ -19,6 +19,7 @@ pub struct Props {}
 pub enum Msg<Sub> {
     NoOp,
     Sub(On<Sub>),
+    Focus(U128Id),
     DisconnectTab {
         event_id: U128Id,
         tab_idx: usize,
@@ -143,6 +144,10 @@ where
         match msg {
             Msg::NoOp => Cmd::none(),
             Msg::Sub(sub) => Cmd::sub(sub),
+            Msg::Focus(modeless_id) => {
+                self.modelesses.focus(&modeless_id);
+                Cmd::none()
+            }
             Msg::DisconnectTab {
                 event_id,
                 tab_idx,
@@ -299,6 +304,9 @@ where
                                                     header_tab_idx,
                                                     modeless_id,
                                                 },
+                                                tab_modeless::On::Focus(modeless_id) => {
+                                                    Msg::Focus(modeless_id)
+                                                }
                                                 tab_modeless::On::Sub(sub) => {
                                                     Msg::Sub(On::Sub(sub))
                                                 }

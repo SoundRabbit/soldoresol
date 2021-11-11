@@ -55,15 +55,15 @@ macro_rules! block {
 
         #[async_trait(?Send)]
         impl Pack for $b_name {
-            async fn pack(&self) -> JsValue {
+            async fn pack(&self, is_deep: bool) -> JsValue {
                 let object = object! {};
 
                 $(
-                    object.set(stringify!($p_c_name), &self.$p_c_name.pack().await);
+                    object.set(stringify!($p_c_name), &self.$p_c_name.pack(is_deep).await);
                 )*
 
                 $(
-                    object.set(stringify!($p_d_name), &self.$p_d_name.pack().await);
+                    object.set(stringify!($p_d_name), &self.$p_d_name.pack(is_deep).await);
                 )*
 
                 object.into()
@@ -121,12 +121,12 @@ macro_rules! arena {
 
         #[async_trait(?Send)]
         impl util::Pack for BlockData {
-            async fn pack(&self) -> JsValue {
+            async fn pack(&self, is_deep: bool) -> JsValue {
                 match self {
                     Self::None => JsValue::null(),
                     $(
                         Self::$b(data) => {
-                            data.pack().await
+                            data.pack(is_deep).await
                         },
                     )*
                 }
@@ -141,8 +141,12 @@ macro_rules! arena {
 
         #[async_trait(?Send)]
         impl util::Pack for AnnotBlockData {
-            async fn pack(&self) -> JsValue {
-                self.data.pack().await
+            async fn pack(&self, is_deep: bool) -> JsValue {
+                if is_deep {
+                    self.data.pack(is_deep).await
+                } else {
+                    self.block_id.pack(is_deep).await
+                }
             }
         }
 
@@ -197,8 +201,8 @@ macro_rules! arena {
 
         #[async_trait(?Send)]
         impl util::Pack for Block {
-            async fn pack(&self) -> JsValue {
-                self.data.pack().await
+            async fn pack(&self, is_deep: bool) -> JsValue {
+                self.data.pack(is_deep).await
             }
         }
 
@@ -288,9 +292,9 @@ macro_rules! arena {
 
         #[async_trait(?Send)]
         impl util::Pack for BlockMut {
-            async fn pack(&self) -> JsValue {
+            async fn pack(&self, is_deep: bool) -> JsValue {
                 if let Some(data) = self.data.upgrade() {
-                    data.pack().await
+                    data.pack(is_deep).await
                 } else {
                     JsValue::null()
                 }
@@ -335,8 +339,8 @@ macro_rules! arena {
 
         #[async_trait(?Send)]
         impl util::Pack for BlockRef {
-            async fn pack(&self) -> JsValue {
-                self.data.pack().await
+            async fn pack(&self, is_deep: bool) -> JsValue {
+                self.data.pack(is_deep).await
             }
         }
 

@@ -308,7 +308,7 @@ impl RoomSelector {
                     Dropdown::with_children(
                         dropdown::Props {
                             direction: dropdown::Direction::BottomLeft,
-                            text: room.name.clone(),
+                            text: dropdown::Text::Text(room.name.clone()),
                             variant: btn::Variant::Menu,
                             ..Default::default()
                         },

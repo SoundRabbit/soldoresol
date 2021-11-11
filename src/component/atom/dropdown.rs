@@ -9,7 +9,7 @@ use kagura::prelude::*;
 
 pub struct Props {
     pub direction: Direction,
-    pub text: String,
+    pub text: Text,
     pub variant: btn::Variant,
     pub toggle_type: ToggleType,
 }
@@ -18,7 +18,7 @@ impl Default for Props {
     fn default() -> Self {
         Self {
             direction: Direction::BottomLeft,
-            text: String::new(),
+            text: Text::Text(String::new()),
             toggle_type: ToggleType::Click,
             variant: btn::Variant::Primary,
         }
@@ -30,6 +30,11 @@ pub enum Direction {
     BottomLeft,
     BottomRight,
     RightBottom,
+}
+
+pub enum Text {
+    Text(String),
+    Menu,
 }
 
 impl std::fmt::Display for Direction {
@@ -199,7 +204,10 @@ impl Dropdown {
             vec![Html::div(
                 Attributes::new().class(Self::class("btn")),
                 Events::new(),
-                vec![Html::text(&props.text), props.direction.render_caret()],
+                match &props.text {
+                    Text::Text(text) => vec![Html::text(text), props.direction.render_caret()],
+                    Text::Menu => vec![fa::i("fa-ellipsis-v")],
+                },
             )],
         )
     }
@@ -240,6 +248,10 @@ impl Styled for Dropdown {
 
             ".base-default" {
                 "max-width": "max-content";
+            }
+
+            ".root-btn" {
+                "height": "100%";
             }
 
             r#".root-btn[data-toggled="false"]"# {

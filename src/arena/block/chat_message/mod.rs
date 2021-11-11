@@ -14,11 +14,11 @@ pub use parse::MessageToken;
 
 #[async_trait(?Send)]
 impl Pack for Message {
-    async fn pack(&self) -> JsValue {
+    async fn pack(&self, is_deep: bool) -> JsValue {
         let data = array![];
 
         for token in self.iter() {
-            data.push(&token.pack().await);
+            data.push(&token.pack(is_deep).await);
         }
 
         data.into()
@@ -27,12 +27,13 @@ impl Pack for Message {
 
 #[async_trait(?Send)]
 impl Pack for MessageToken {
-    async fn pack(&self) -> JsValue {
+    async fn pack(&self, is_deep: bool) -> JsValue {
         match self {
             Self::Text(x) => (object! {"Text": JsValue::from(x)}).into(),
-            Self::Refer(x) => (object! {"Refer": x.pack().await}).into(),
+            Self::Refer(x) => (object! {"Refer": x.pack(is_deep).await}).into(),
             Self::CommandBlock(c, m) => {
-                (object! {"CommandBlock": array![c.pack().await, m.pack().await]}).into()
+                (object! {"CommandBlock": array![c.pack(is_deep).await, m.pack(is_deep).await]})
+                    .into()
             }
         }
     }
@@ -40,12 +41,12 @@ impl Pack for MessageToken {
 
 #[async_trait(?Send)]
 impl Pack for MessageCommand {
-    async fn pack(&self) -> JsValue {
-        let name = self.name.pack().await;
+    async fn pack(&self, is_deep: bool) -> JsValue {
+        let name = self.name.pack(is_deep).await;
 
         let args = array![];
         for arg in &self.args {
-            args.push(&arg.pack().await);
+            args.push(&arg.pack(is_deep).await);
         }
 
         (object! {

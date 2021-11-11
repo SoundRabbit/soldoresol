@@ -24,6 +24,7 @@ pub enum Variant {
     Success,
     Light,
     LightLikeMenu,
+    TransparentLight,
 }
 
 pub struct Btn {}
@@ -57,6 +58,7 @@ impl Btn {
             Variant::Success => Self::class("success"),
             Variant::Light => Self::class("light"),
             Variant::LightLikeMenu => Self::class("light") + " " + &Self::class("like-menu"),
+            Variant::TransparentLight => Self::class("transparent-light"),
         }
     }
 
@@ -208,6 +210,12 @@ impl Styled for Btn {
             ".light" {
                 "line-height": "1.5";
                 "background-color": color_system::gray(100, 3).to_string();
+                "color": color_system::gray(100, 9).to_string();
+            }
+
+            ".transparent-light" {
+                "line-height": "1.5";
+                "background-color": "transparent";
                 "color": color_system::gray(100, 9).to_string();
             }
         }

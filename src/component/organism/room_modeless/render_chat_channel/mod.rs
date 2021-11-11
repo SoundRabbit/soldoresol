@@ -115,12 +115,13 @@ impl RoomModeless {
                     vec![
                         Dropdown::with_children(
                             dropdown::Props {
-                                text: self
-                                    .test_chatpallet
-                                    .index()
-                                    .get(self.test_chatpallet_selected_index)
-                                    .map(|(name, _)| name.clone())
-                                    .unwrap_or(String::from("")),
+                                text: dropdown::Text::Text(
+                                    self.test_chatpallet
+                                        .index()
+                                        .get(self.test_chatpallet_selected_index)
+                                        .map(|(name, _)| name.clone())
+                                        .unwrap_or(String::from("")),
+                                ),
                                 direction: dropdown::Direction::Bottom,
                                 toggle_type: dropdown::ToggleType::Click,
                                 variant: btn::Variant::DarkLikeMenu,
