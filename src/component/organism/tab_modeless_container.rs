@@ -13,7 +13,7 @@ use kagura::prelude::*;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
-use wasm_bindgen::JsCast;
+use wasm_bindgen::{prelude::*, JsCast};
 
 pub struct Props {}
 
@@ -27,6 +27,7 @@ pub enum Msg<Sub> {
         event_id: U128Id,
         tab_idx: usize,
         modeless_id: U128Id,
+        is_selected: bool,
     },
     ConnectTab {
         event_id: U128Id,
@@ -49,7 +50,7 @@ where
     Content::Props: Clone,
 {
     modelesses: ModelessList<Modeless<Content::Props>>,
-    element: Option<Rc<web_sys::Element>>,
+    element_rect: Option<Rc<tab_modeless::ContainerRect>>,
     floating_tab: HashMap<U128Id, FloatingTab>,
     _phantom_tab_name: std::marker::PhantomData<TabName>,
 }
@@ -57,6 +58,7 @@ where
 struct FloatingTab {
     tab_idx: usize,
     modeless_id: U128Id,
+    is_selected: bool,
 }
 
 struct Modeless<T> {
@@ -123,7 +125,7 @@ where
     pub fn new() -> PrepackedComponent<Self> {
         PrepackedComponent::new(Self {
             modelesses: ModelessList::new(),
-            element: None,
+            element_rect: None,
             floating_tab: HashMap::new(),
             _phantom_tab_name: std::marker::PhantomData,
         })
@@ -135,11 +137,27 @@ impl<Content: Constructor, TabName: Constructor<Props = Content::Props>> Update
 where
     Content::Props: Clone,
 {
-    fn ref_node(&mut self, _: &Props, name: String, node: web_sys::Node) -> Cmd<Self> {
-        if self.element.is_none() && name == "base" {
+    fn ref_node(&mut self, _: &Props, ref_name: String, node: web_sys::Node) -> Cmd<Self> {
+        if ref_name == "base" {
             if let Ok(node) = node.dyn_into::<web_sys::Element>() {
-                self.element = Some(Rc::new(node));
-                return Cmd::chain(Msg::NoOp);
+                let node = node;
+                let rect = node.get_bounding_client_rect();
+                let rect = tab_modeless::ContainerRect {
+                    left: rect.left(),
+                    top: rect.top(),
+                    width: rect.width(),
+                    height: rect.height(),
+                };
+
+                if self
+                    .element_rect
+                    .as_ref()
+                    .map(|el_rect| *(el_rect.as_ref()) != rect)
+                    .unwrap_or(true)
+                {
+                    self.element_rect = Some(Rc::new(rect));
+                    return Cmd::chain(Msg::NoOp);
+                }
             }
         }
         Cmd::none()
@@ -167,12 +185,14 @@ where
                 event_id,
                 tab_idx,
                 modeless_id,
+                is_selected,
             } => {
                 self.floating_tab.insert(
                     event_id,
                     FloatingTab {
                         tab_idx,
                         modeless_id,
+                        is_selected,
                     },
                 );
                 Cmd::none()
@@ -191,10 +211,16 @@ where
                     if let Some((content, modeless)) =
                         join_some!(content, self.modelesses.get_mut(&modeless_id))
                     {
-                        if let Some(tab_idx) = header_tab_idx {
+                        let tab_idx = if let Some(tab_idx) = header_tab_idx {
                             modeless.data.borrow_mut().insert(tab_idx, content);
+                            tab_idx
                         } else {
                             modeless.data.borrow_mut().push(content);
+                            modeless.data.borrow().len() - 1
+                        };
+
+                        if event.is_selected {
+                            modeless.data.borrow_mut().set_selected_idx(tab_idx);
                         }
                     }
 
@@ -330,7 +356,7 @@ where
                             })
                             .collect(),
                     ),
-                    if let Some(element) = self.element.as_ref() {
+                    if let Some(element_rect) = self.element_rect.as_ref() {
                         Html::fragment(
                             self.modelesses
                                 .iter()
@@ -339,7 +365,7 @@ where
                                     Some((m_id, z_idx, contents)) if !contents.is_minimized => {
                                         TabModeless::<Content, TabName>::empty(
                                             tab_modeless::Props {
-                                                container_element: Rc::clone(&element),
+                                                container_rect: Rc::clone(&element_rect),
                                                 contents: Rc::clone(&contents.data),
                                                 page_x: contents
                                                     .pos_x
@@ -347,7 +373,7 @@ where
                                                 page_y: contents
                                                     .pos_y
                                                     .unwrap_or(200 + (m_idx % 10) as i32 * 20),
-                                                size: [0.4, 0.6],
+                                                size: [800.0, 600.0],
                                                 z_index: z_idx,
                                                 modeless_id: U128Id::clone(&m_id),
                                             },
@@ -379,10 +405,12 @@ where
                 event_id,
                 tab_idx,
                 modeless_id,
+                is_selected,
             } => Msg::DisconnectTab {
                 event_id,
                 tab_idx,
                 modeless_id,
+                is_selected,
             },
             tab_modeless::On::ConnectTab {
                 event_id,
@@ -416,6 +444,7 @@ where
                 "height": "100%";
                 "overflow": "hidden";
                 "position": "relative";
+                "z-index": "0";
             }
 
             ".minimized-list" {

@@ -1,6 +1,7 @@
 uses! {
     super::BlockRef;
     super::util::Pack;
+    super::super::resource::ImageData;
 }
 
 pub mod parse;
@@ -57,10 +58,10 @@ impl Pack for MessageCommand {
     }
 }
 
-block! {
+packable! {
     [pub Sender]
     (client_id): Rc<String>;
-    (icon): Option<BlockRef>;
+    (icon): Option<BlockRef<ImageData>>;
     (name): String;
 }
 
@@ -69,7 +70,7 @@ impl Sender {
         &self.client_id
     }
 
-    pub fn icon(&self) -> Option<&BlockRef> {
+    pub fn icon(&self) -> Option<&BlockRef<ImageData>> {
         self.icon.as_ref()
     }
 
@@ -78,12 +79,12 @@ impl Sender {
     }
 }
 
-block! {
+packable! {
     [pub ChatMessage]
     (sender): Sender;
     (timestamp): chrono::DateTime<chrono::Utc>;
     (message): Message;
-    reference: Option<BlockRef> = None;
+    reference: Option<BlockRef<Self>> = None;
 }
 
 impl ChatMessage {

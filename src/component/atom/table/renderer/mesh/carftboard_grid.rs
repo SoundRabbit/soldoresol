@@ -13,17 +13,20 @@ struct Buffer {
     texture_coord: WebGlF32Vbo,
 }
 
-pub struct TableGrid {
+pub struct CraftboardGrid {
     buffer: Buffer,
-    table_size: [u64; 2],
+    craftboard_size: [u64; 2],
 }
 
-impl TableGrid {
+impl CraftboardGrid {
     pub fn new(gl: &WebGlRenderingContext) -> Self {
-        let table_size = [20, 20];
-        let buffer = Self::create_grid_buffers(&gl, &table_size);
+        let craftboard_size = [20, 20];
+        let buffer = Self::create_grid_buffers(&gl, &craftboard_size);
 
-        Self { buffer, table_size }
+        Self {
+            buffer,
+            craftboard_size,
+        }
     }
 
     pub fn render(
@@ -31,18 +34,26 @@ impl TableGrid {
         gl: &mut WebGlRenderingContext,
         vp_matrix: &Array2<f32>,
         camera_position: &[f32; 3],
-        table: &block::table::Table,
+        craftboard: &block::Craftboard,
     ) {
-        let table_size = {
-            let sz = table.size();
+        let craftboard_size = {
+            let sz = craftboard.size();
             [sz[0].floor() as u64, sz[1].floor() as u64]
         };
 
-        if table_size[0] != self.table_size[0] || table_size[1] != self.table_size[1] {
-            let buffer = Self::create_grid_buffers(&gl, &table_size);
+        crate::debug::log_1("craftboard_size os valid");
+
+        let grid_color = craftboard.grid_color().to_color().to_f32array();
+
+        crate::debug::log_1("grid_color os valid");
+
+        if craftboard_size[0] != self.craftboard_size[0]
+            || craftboard_size[1] != self.craftboard_size[1]
+        {
+            let buffer = Self::create_grid_buffers(&gl, &craftboard_size);
 
             self.buffer = buffer;
-            self.table_size = table_size;
+            self.craftboard_size = craftboard_size;
         }
 
         gl.line_width(5.0);
@@ -71,7 +82,7 @@ impl TableGrid {
         gl.set_u_vp_matrix(vp_matrix.clone().reversed_axes());
         gl.set_u_bg_color_1(program::COLOR_SOME);
         gl.set_u_bg_color_2(program::COLOR_NONE);
-        gl.set_u_bg_color_1_value(&table.grid_color().to_color().to_f32array());
+        gl.set_u_bg_color_1_value(&grid_color);
         gl.set_u_id(program::ID_NONE);
         gl.set_u_texture_0(program::TEXTURE_NONE);
         gl.set_u_texture_1(program::TEXTURE_NONE);

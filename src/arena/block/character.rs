@@ -1,9 +1,10 @@
 uses! {
+    super::BlockMut;
     super::util::Pack;
     regex::Regex;
 }
 
-block! {
+packable! {
     [pub ChatPallet]
     data: String = String::from("");
     defs: Vec<(Regex, String)> = vec![];
@@ -59,6 +60,17 @@ impl ChatPallet {
     }
 }
 
-block! {
+packable! {
     [pub Character]
+    name: String = String::from("新規キャラクター");
+    display_name: (String, String) = (String::from("新規キャラクター"), String::from(""));
+}
+
+impl Character {
+    pub fn name(&self) -> &String {
+        &self.name
+    }
+    pub fn display_name(&self) -> &(String, String) {
+        &self.display_name
+    }
 }

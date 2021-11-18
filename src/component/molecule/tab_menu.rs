@@ -91,7 +91,11 @@ impl Render for TabMenu {
                         })
                         .collect(),
                 ),
-                children.remove(self.selected_idx),
+                if children.len() > self.selected_idx {
+                    children.remove(self.selected_idx)
+                } else {
+                    Html::div(Attributes::new(), Events::new(), vec![])
+                },
             ],
         ))
     }

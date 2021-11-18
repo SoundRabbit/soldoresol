@@ -17,6 +17,13 @@ impl Pack for U128Id {
 }
 
 #[async_trait(?Send)]
+impl Pack for bool {
+    async fn pack(&self, _: bool) -> JsValue {
+        JsValue::from(*self)
+    }
+}
+
+#[async_trait(?Send)]
 impl Pack for String {
     async fn pack(&self, _: bool) -> JsValue {
         JsValue::from(self)
@@ -31,9 +38,30 @@ impl Pack for f64 {
 }
 
 #[async_trait(?Send)]
+impl Pack for [f64; 2] {
+    async fn pack(&self, _: bool) -> JsValue {
+        array![self[0], self[1]].into()
+    }
+}
+
+#[async_trait(?Send)]
+impl Pack for [f64; 3] {
+    async fn pack(&self, _: bool) -> JsValue {
+        array![self[0], self[1], self[2]].into()
+    }
+}
+
+#[async_trait(?Send)]
 impl Pack for chrono::DateTime<chrono::Utc> {
     async fn pack(&self, _: bool) -> JsValue {
         JsValue::from(self.to_rfc3339())
+    }
+}
+
+#[async_trait(?Send)]
+impl Pack for crate::libs::color::Pallet {
+    async fn pack(&self, _: bool) -> JsValue {
+        self.to_jsvalue()
     }
 }
 

@@ -1,22 +1,22 @@
-use crate::arena::block::BlockId;
+use crate::libs::random_id::U128Id;
 use std::collections::HashMap;
 
 #[derive(Clone)]
 pub enum ObjectId {
     None,
-    Character(BlockId, Surface),
-    Boxblock(BlockId, Surface),
-    Pointlight(BlockId, Surface),
-    Terran(BlockId, Surface),
-    Craftboard(BlockId, Surface),
+    Character(U128Id, Surface),
+    Boxblock(U128Id, Surface),
+    Pointlight(U128Id, Surface),
+    Terran(U128Id, Surface),
+    Craftboard(U128Id, Surface),
 }
 
 // 点rを含むsベクトルとtベクトルが張る平面
 #[derive(Clone)]
 pub struct Surface {
-    pub r: [f32; 3],
-    pub s: [f32; 3],
-    pub t: [f32; 3],
+    pub r: [f64; 3],
+    pub s: [f64; 3],
+    pub t: [f64; 3],
 }
 
 #[derive(PartialEq, Eq, Clone, Copy, Hash)]
@@ -25,12 +25,12 @@ pub struct IdColor {
 }
 
 pub struct IdTableBuilder {
-    queue: Vec<BlockId>,
-    object: HashMap<BlockId, HashMap<IdColor, ObjectId>>,
+    queue: Vec<U128Id>,
+    object: HashMap<U128Id, HashMap<IdColor, ObjectId>>,
 }
 
 pub struct IdTable {
-    offset: HashMap<BlockId, IdColor>,
+    offset: HashMap<U128Id, IdColor>,
     object: HashMap<IdColor, ObjectId>,
 }
 
@@ -42,7 +42,7 @@ impl ObjectId {
         }
     }
 
-    pub fn as_craftboard_id(&self) -> Option<&BlockId> {
+    pub fn as_craftboard_id(&self) -> Option<&U128Id> {
         match self {
             Self::Craftboard(b_id, _) => Some(b_id),
             _ => None,
@@ -58,24 +58,26 @@ impl std::fmt::Display for ObjectId {
             Self::Boxblock(b_id, _) => write!(f, "[Boxblock: {}]", &b_id),
             Self::Pointlight(b_id, _) => write!(f, "[Pointlight: {}]", &b_id),
             Self::Terran(b_id, _) => write!(f, "[Terran: {}]", &b_id),
+            Self::Craftboard(b_id, _) => write!(f, "[Craftboard: {}]", &b_id),
         }
     }
 }
 
 impl ObjectId {
-    pub fn eq(&self, block_id: &BlockId) -> bool {
+    pub fn is(&self, block_id: &U128Id) -> bool {
         match self {
             Self::None => false,
             Self::Character(b_id, _) => *b_id == *block_id,
             Self::Boxblock(b_id, _) => *b_id == *block_id,
             Self::Pointlight(b_id, _) => *b_id == *block_id,
             Self::Terran(b_id, _) => *b_id == *block_id,
+            Self::Craftboard(b_id, _) => *b_id == *block_id,
         }
     }
 }
 
 impl Surface {
-    pub fn n(&self) -> [f32; 3] {
+    pub fn n(&self) -> [f64; 3] {
         let n = [
             self.s[1] * self.t[2] - self.s[2] * self.t[1],
             self.s[2] * self.t[0] - self.s[0] * self.t[2],
@@ -114,21 +116,21 @@ impl IdTableBuilder {
         }
     }
 
-    pub fn insert(&mut self, block_id: &BlockId, delta_color: IdColor, object: ObjectId) {
+    pub fn insert(&mut self, block_id: &U128Id, delta_color: IdColor, object: ObjectId) {
         if let Some(objects) = self.object.get_mut(block_id) {
             objects.insert(delta_color, object);
         } else {
             let objects = map! {
                 delta_color: object
             };
-            self.queue.push(BlockId::clone(&block_id));
-            self.object.insert(BlockId::clone(&block_id), objects);
+            self.queue.push(U128Id::clone(&block_id));
+            self.object.insert(U128Id::clone(&block_id), objects);
         }
     }
 }
 
 impl IdTable {
-    pub fn offset_color(&self, block_id: &BlockId) -> Option<&IdColor> {
+    pub fn offset_color(&self, block_id: &U128Id) -> Option<&IdColor> {
         self.offset.get(block_id)
     }
 

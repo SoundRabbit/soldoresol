@@ -1,3 +1,5 @@
+use wasm_bindgen::prelude::*;
+
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Pallet {
     pub alpha: u8,
@@ -15,6 +17,21 @@ pub enum Kind {
     Blue,
     Purple,
     Pink,
+}
+
+impl Kind {
+    fn name(&self) -> &'static str {
+        match self {
+            Self::Gray => "gray",
+            Self::Red => "red",
+            Self::Orange => "orange",
+            Self::Yellow => "yellow",
+            Self::Green => "green",
+            Self::Blue => "blue",
+            Self::Purple => "purple",
+            Self::Pink => "pink",
+        }
+    }
 }
 
 macro_rules! pallet_constructor {
@@ -65,6 +82,15 @@ impl Pallet {
             Kind::Purple => color_of!(purple; self),
             Kind::Pink => color_of!(pink; self),
         }
+    }
+
+    #[allow(unused_parens)]
+    pub fn to_jsvalue(&self) -> JsValue {
+        let object = object! {
+            (self.kind.name()): array![self.idx as f64, self.alpha as f64]
+        };
+        let object: js_sys::Object = object.into();
+        object.into()
     }
 }
 

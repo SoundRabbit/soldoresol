@@ -1,9 +1,9 @@
 use super::libs;
 
 pub mod boxblock;
+pub mod carftboard_grid;
 pub mod screen;
-pub mod table_grid;
 
 pub use boxblock::Boxblock;
+pub use carftboard_grid::CraftboardGrid;
 pub use screen::Screen;
-pub use table_grid::TableGrid;

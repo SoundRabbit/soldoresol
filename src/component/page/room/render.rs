@@ -6,8 +6,13 @@ use super::super::atom::{
     header::{self, Header},
     heading::{self, Heading},
 };
-use super::super::template::basic_app::{self, BasicApp};
+use super::super::organism::world_view::{self, WorldView};
+use super::super::template::{
+    basic_app::{self, BasicApp},
+    common::Common,
+};
 use super::*;
+use crate::arena::{block, Arena, ArenaMut, BlockMut};
 use isaribi::{
     style,
     styled::{Style, Styled},
@@ -26,15 +31,47 @@ impl Render for Room {
                     vec![self.render_header_row_0(), self.render_header_row_1()],
                 ),
                 Html::div(
-                    Attributes::new().class(Self::class("body")),
+                    Attributes::new().class(Common::layered()),
                     Events::new(),
-                    vec![self.modeless_container.with_children(
-                        tab_modeless_container::Props {},
-                        Sub::map(|sub| match sub {
-                            tab_modeless_container::On::Sub(..) => Msg::NoOp,
-                        }),
-                        vec![],
-                    )],
+                    vec![
+                        Html::div(
+                            Attributes::new().class(Common::layered_item()),
+                            Events::new(),
+                            vec![self.table.with_children(
+                                table::Props {
+                                    world: BlockMut::clone(&self.world),
+                                },
+                                Sub::none(),
+                                vec![],
+                            )],
+                        ),
+                        Html::div(
+                            Attributes::new()
+                                .class(Common::layered_item())
+                                .class(Self::class("main")),
+                            Events::new(),
+                            vec![
+                                self.modeless_container.with_children(
+                                    tab_modeless_container::Props {},
+                                    Sub::map(|sub| match sub {
+                                        tab_modeless_container::On::Sub(..) => Msg::NoOp,
+                                    }),
+                                    vec![],
+                                ),
+                                Html::div(
+                                    Attributes::new().class(Self::class("wolrdview")),
+                                    Events::new(),
+                                    vec![WorldView::empty(
+                                        world_view::Props {
+                                            arena: ArenaMut::clone(&self.arena),
+                                            world: BlockMut::clone(&self.world),
+                                        },
+                                        Sub::none(),
+                                    )],
+                                ),
+                            ],
+                        ),
+                    ],
                 ),
             ],
         ))
@@ -162,6 +199,11 @@ impl Styled for Room {
                 "display": "grid";
                 "align-items": "center";
                 "line-height": "1";
+            }
+
+            ".main" {
+                "display": "grid";
+                "grid-template-columns": "1fr max-content";
             }
         }
     }

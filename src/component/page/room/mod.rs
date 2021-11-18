@@ -1,4 +1,4 @@
-use super::atom::craftboard::{self, Craftboard};
+use super::atom::table::{self, Table};
 use super::organism::room_modeless::{self, RoomModeless};
 use super::organism::tab_modeless_container::{self, TabModelessContainer};
 use crate::arena::{block, Arena, ArenaMut, BlockMut};
@@ -27,9 +27,10 @@ pub struct Room {
     arena: ArenaMut,
     local_arena: Arena,
 
-    chat: BlockMut,
+    chat: BlockMut<block::Chat>,
+    world: BlockMut<block::World>,
 
-    craftboard: PrepackedComponent<Craftboard>,
+    table: PrepackedComponent<Table>,
     modeless_container:
         PrepackedComponent<TabModelessContainer<RoomModeless, room_modeless::TabName>>,
 }

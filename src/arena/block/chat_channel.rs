@@ -1,20 +1,21 @@
 uses! {
     super::BlockMut;
     super::util::Pack;
+    super::ChatMessage;
 }
 
-block! {
+packable! {
     [pub ChatChannel]
-    messages: Vec<BlockMut> = vec![];
+    messages: Vec<BlockMut<ChatMessage>> = vec![];
     name: String = String::from("タブ");
 }
 
 impl ChatChannel {
-    pub fn messages_push(&mut self, message: BlockMut) {
+    pub fn messages_push(&mut self, message: BlockMut<ChatMessage>) {
         self.messages.push(message);
     }
 
-    pub fn messages(&self) -> &Vec<BlockMut> {
+    pub fn messages(&self) -> &Vec<BlockMut<ChatMessage>> {
         &self.messages
     }
 

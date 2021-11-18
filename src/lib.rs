@@ -39,6 +39,11 @@ use component::{app, App};
 use kagura::{component::Sub, prelude::*};
 use wasm_bindgen::prelude::*;
 
+#[inline]
+fn lazy<T>(x: T) -> T {
+    x
+}
+
 #[wasm_bindgen(start)]
 pub fn main() {
     let entry_point = web_sys::window()

@@ -22,7 +22,7 @@ pub struct Content {
 
 #[derive(Clone)]
 pub enum ContentData {
-    ChatChannel(BlockMut),
+    ChatChannel(BlockMut<block::ChatChannel>),
 }
 
 impl ContentData {
@@ -213,7 +213,7 @@ impl RoomModeless {
     fn send_chat_message(
         &mut self,
         mut arena: ArenaMut,
-        mut channel: BlockMut,
+        mut channel: BlockMut<block::ChatChannel>,
         name: String,
         client_id: &Rc<String>,
         message: &String,
@@ -247,7 +247,7 @@ impl RoomModeless {
     fn send_waitng_chat_message(
         &mut self,
         mut arena: ArenaMut,
-        mut channel: BlockMut,
+        mut channel: BlockMut<block::ChatChannel>,
         captured: Vec<String>,
     ) -> Cmd<Self> {
         if let Some((message, _, sender)) = self.waiting_chat_message.take() {
@@ -450,7 +450,7 @@ impl Render for TabName {
     fn render(&self, content: &Content, _children: Vec<Html<Self>>) -> Html<Self> {
         match &content.data {
             ContentData::ChatChannel(chat_channel) => chat_channel
-                .map(|cc: &block::ChatChannel| Html::text(cc.name()))
+                .map(|cc: &block::ChatChannel| Html::text(String::from("#") + cc.name()))
                 .unwrap_or(Html::none()),
         }
     }

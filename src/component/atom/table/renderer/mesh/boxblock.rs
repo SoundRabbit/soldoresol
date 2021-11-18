@@ -1,8 +1,8 @@
 use super::libs::id_table::{IdColor, IdTable, IdTableBuilder, ObjectId, Surface};
-use super::libs::matrix::{camera::CameraMatrix, model::ModelMatrix};
+use super::libs::matrix::model::ModelMatrix;
 use super::libs::tex_table::TexTable;
 use super::libs::webgl::{program, ProgramType, WebGlF32Vbo, WebGlI16Ibo, WebGlRenderingContext};
-use crate::arena::block::{self, BlockId};
+use crate::arena::{block, BlockRef};
 use crate::libs::random_id::U128Id;
 use ndarray::Array2;
 
@@ -219,38 +219,36 @@ impl Boxblock {
         }
     }
 
-    pub fn update_id<'a>(
+    pub fn update_id(
         &self,
         builder: &mut IdTableBuilder,
-        block_arena: &block::Arena,
-        boxblock_ids: impl Iterator<Item = &'a BlockId>,
+        boxblocks: impl Iterator<Item = BlockRef<block::Boxblock>>,
     ) {
-        for block_id in boxblock_ids {
-            block_arena.map(block_id, |boxblock: &block::Boxblock| {
+        for boxblock in boxblocks {
+            let block_id = boxblock.id();
+            boxblock.map(|boxblock| {
                 for srfs in 0..6 {
-                    builder.insert(
-                        &block_id,
-                        IdColor::from(srfs),
-                        ObjectId::Boxblock(
-                            BlockId::clone(&block_id),
-                            Self::surface_of(boxblock, srfs),
-                        ),
-                    );
+                    if let Some(surface) = Self::surface_of(boxblock, srfs) {
+                        builder.insert(
+                            &block_id,
+                            IdColor::from(srfs),
+                            ObjectId::Boxblock(U128Id::clone(&block_id), surface),
+                        );
+                    }
                 }
             });
         }
     }
 
-    pub fn render<'a>(
+    pub fn render(
         &self,
         gl: &mut WebGlRenderingContext,
         id_table: &IdTable,
         vp_matrix: &Array2<f32>,
         camera_position: &[f32; 3],
-        block_arena: &block::Arena,
-        boxblock_ids: impl Iterator<Item = &'a BlockId>,
+        boxblocks: impl Iterator<Item = BlockRef<block::Boxblock>>,
         rendering_mode: &RenderingMode,
-        tex_table: &'a mut TexTable,
+        tex_table: &mut TexTable,
     ) {
         gl.use_program(match rendering_mode {
             RenderingMode::IdMap { .. } => ProgramType::UnshapedProgram,
@@ -333,43 +331,47 @@ impl Boxblock {
             }
         }
 
-        let _ = block_arena.iter_map_with_ids(
-            boxblock_ids,
-            |boxblock_id, boxblock: &block::boxblock::Boxblock| {
+        for boxblock in boxblocks {
+            let boxblock_id = boxblock.id();
+            boxblock.map(|boxblock| {
                 if let RenderingMode::IdMap { grabbed } = rendering_mode {
-                    if grabbed.eq(&boxblock_id) {
+                    if grabbed.is(&boxblock_id) {
                         return;
                     }
                 }
 
-                let id_offset_color = some_or_return!(id_table.offset_color(boxblock_id));
+                let id_offset_color = unwrap_or!(id_table.offset_color(&boxblock_id);());
 
+                let s = boxblock.size();
                 let s = match rendering_mode {
-                    RenderingMode::IdMap { .. } => boxblock.size().clone(),
-                    RenderingMode::View { .. } => {
-                        let s = boxblock.size();
-                        [
-                            s[0].abs().max(1.0 / 128.0).copysign(s[0]),
-                            s[1].abs().max(1.0 / 128.0).copysign(s[1]),
-                            s[2].abs().max(1.0 / 128.0).copysign(s[2]),
-                        ]
-                    }
+                    RenderingMode::IdMap { .. } => [s[0] as f32, s[1] as f32, s[2] as f32],
+                    RenderingMode::View { .. } => [
+                        s[0].abs().max(1.0 / 128.0).copysign(s[0]) as f32,
+                        s[1].abs().max(1.0 / 128.0).copysign(s[1]) as f32,
+                        s[2].abs().max(1.0 / 128.0).copysign(s[2]) as f32,
+                    ],
                 };
+
                 let p = boxblock.position();
+                let p = [p[0] as f32, p[1] as f32, p[2] as f32];
+
+                let shape = boxblock.shape();
 
                 let model_matrix: Array2<f32> =
-                    ModelMatrix::new().with_scale(&s).with_movement(p).into();
+                    ModelMatrix::new().with_scale(&s).with_movement(&p).into();
+
                 let inv_model_matrix: Array2<f32> = ModelMatrix::new()
                     .with_movement(&[-p[0], -p[1], -p[2]])
                     .with_scale(&[1.0 / s[0], 1.0 / s[1], 1.0 / s[2]])
                     .into();
+
                 let mvp_matrix = vp_matrix.dot(&model_matrix);
+
                 gl.set_u_translate(mvp_matrix.reversed_axes());
                 gl.set_u_id_value(id_offset_color.value() as i32);
                 gl.set_u_model_matrix(model_matrix.reversed_axes());
                 gl.set_u_inv_model_matrix(inv_model_matrix.reversed_axes());
-
-                gl.set_u_shape(match boxblock.shape() {
+                gl.set_u_shape(match shape {
                     block::boxblock::Shape::Cube => program::SHAPE_3D_BOX,
                     block::boxblock::Shape::Cyliner => program::SHAPE_3D_CYLINDER,
                     block::boxblock::Shape::Sphere => program::SHAPE_3D_SPHERE,
@@ -384,15 +386,15 @@ impl Boxblock {
                     web_sys::WebGlRenderingContext::UNSIGNED_SHORT,
                     0,
                 );
-            },
-        );
+            });
+        }
     }
 
-    fn surface_of(boxblock: &block::boxblock::Boxblock, idx: u32) -> Surface {
+    fn surface_of(boxblock: &block::boxblock::Boxblock, idx: u32) -> Option<Surface> {
         let p = boxblock.position();
         let s = boxblock.size();
 
-        match idx % 6 {
+        Some(match idx % 6 {
             0 => Surface {
                 //PZ
                 r: [p[0], p[1], p[2] + s[2] * 0.5],
@@ -430,7 +432,7 @@ impl Boxblock {
                 t: [1.0, 0.0, 0.0],
             },
             _ => unreachable!(),
-        }
+        })
     }
 
     fn n(x: f32, y: f32, z: f32) -> [f32; 3] {

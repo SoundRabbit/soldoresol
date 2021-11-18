@@ -10,6 +10,9 @@ body {
     line-height: 1.5;
     font-family: sans-serif;
     background-color: $gray-000;
+    -moz-user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
     user-select: none;
 }
 

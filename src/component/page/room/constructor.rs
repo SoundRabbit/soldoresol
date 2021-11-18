@@ -6,9 +6,10 @@ impl Constructor for Room {
             arena: ArenaMut::clone(&props.arena),
             local_arena: Arena::new(),
 
-            chat: BlockMut::none(),
+            chat: BlockMut::<block::Chat>::none(),
+            world: BlockMut::<block::World>::none(),
 
-            craftboard: Craftboard::new(),
+            table: Table::new(),
             modeless_container: TabModelessContainer::new(),
         }
     }

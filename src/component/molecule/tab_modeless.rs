@@ -16,13 +16,21 @@ use std::rc::Rc;
 use wasm_bindgen::JsCast;
 
 pub struct Props<T> {
-    pub size: [f32; 2],
+    pub size: [f64; 2],
     pub page_x: i32,
     pub page_y: i32,
     pub z_index: usize,
-    pub container_element: Rc<web_sys::Element>,
+    pub container_rect: Rc<ContainerRect>,
     pub contents: Rc<RefCell<SelectList<T>>>,
     pub modeless_id: U128Id,
+}
+
+#[derive(PartialEq)]
+pub struct ContainerRect {
+    pub left: f64,
+    pub top: f64,
+    pub width: f64,
+    pub height: f64,
 }
 
 pub enum Msg<Sub> {
@@ -41,6 +49,7 @@ pub enum Msg<Sub> {
     DisconnectTab {
         event_id: U128Id,
         tab_idx: usize,
+        is_selected: bool,
     },
     SetSelectedTabIdx(usize),
     CloseSelf,
@@ -54,11 +63,12 @@ pub enum On<Sub> {
     Close(U128Id),
     SetMinimized(U128Id, bool),
     Move(i32, i32),
-    Resize([f32; 2]),
+    Resize([f64; 2]),
     DisconnectTab {
         event_id: U128Id,
         tab_idx: usize,
         modeless_id: U128Id,
+        is_selected: bool,
     },
     ConnectTab {
         event_id: U128Id,
@@ -72,10 +82,10 @@ pub struct TabModeless<Content: Constructor, TabName: Constructor<Props = Conten
 where
     Content::Props: Clone,
 {
-    size: [f32; 2],
-    loc: [f32; 2],
+    size: [f64; 2],
+    loc: [f64; 2],
     dragging: Option<([i32; 2], DragType)>,
-    container_element: Rc<web_sys::Element>,
+    container_rect: Rc<ContainerRect>,
     _phantom_content: std::marker::PhantomData<Content>,
     _phantom_tab_name: std::marker::PhantomData<TabName>,
 }
@@ -127,19 +137,15 @@ where
     Content::Props: Clone,
 {
     fn constructor(props: &Props<Content::Props>) -> Self {
-        let el = &props.container_element;
-        let rect = el.get_bounding_client_rect();
-        let client_x = props.page_x as f64 - rect.left();
-        let client_y = props.page_y as f64 - rect.top();
-        let loc_x = client_x / rect.width();
-        let loc_y = client_y / rect.height();
-        let loc = [(loc_x as f32).max(0.0), (loc_y as f32).max(0.0)];
+        let client_x = props.page_x as f64 - props.container_rect.left;
+        let client_y = props.page_y as f64 - props.container_rect.top;
+        let loc = [client_x.max(0.0), client_y.max(0.0)];
 
         Self {
             loc: loc,
             size: props.size.clone(),
             dragging: None,
-            container_element: Rc::clone(&props.container_element),
+            container_rect: Rc::clone(&props.container_rect),
             _phantom_content: std::marker::PhantomData,
             _phantom_tab_name: std::marker::PhantomData,
         }
@@ -168,6 +174,24 @@ impl<Content: Constructor, TabName: Constructor<Props = Content::Props>> Update
 where
     Content::Props: Clone,
 {
+    fn on_load(&mut self, props: &Props<Content::Props>) -> Cmd<Self> {
+        if props.container_rect.width != self.container_rect.width {
+            let margin_ratio = self.loc[0] / (self.container_rect.width - self.size[0]);
+            let margin = props.container_rect.width - self.size[0];
+            self.loc[0] = margin_ratio * margin;
+        }
+
+        if props.container_rect.height != self.container_rect.height {
+            let margin_ratio = self.loc[1] / (self.container_rect.height - self.size[1]);
+            let margin = props.container_rect.height - self.size[1];
+            self.loc[1] = margin_ratio * margin;
+        }
+
+        self.container_rect = Rc::clone(&props.container_rect);
+
+        Cmd::none()
+    }
+
     fn update(&mut self, props: &Props<Content::Props>, msg: Msg<Content::Sub>) -> Cmd<Self> {
         match msg {
             Msg::NoOp => Cmd::none(),
@@ -205,10 +229,15 @@ where
                 self.dragging = None;
                 Cmd::sub(On::Focus(U128Id::clone(&props.modeless_id)))
             }
-            Msg::DisconnectTab { event_id, tab_idx } => Cmd::sub(On::DisconnectTab {
+            Msg::DisconnectTab {
+                event_id,
+                tab_idx,
+                is_selected,
+            } => Cmd::sub(On::DisconnectTab {
                 event_id,
                 tab_idx,
                 modeless_id: U128Id::clone(&props.modeless_id),
+                is_selected,
             }),
             Msg::SetSelectedTabIdx(tab_idx) => {
                 props.contents.borrow_mut().set_selected_idx(tab_idx);
@@ -217,14 +246,8 @@ where
             Msg::Drag { page_x, page_y } => {
                 let cmd;
                 if let Some(dragging) = self.dragging.as_mut() {
-                    let mov_x = (page_x - dragging.0[0]) as f32;
-                    let mov_y = (page_y - dragging.0[1]) as f32;
-                    let container_element = self.container_element.get_bounding_client_rect();
-                    let container_width = container_element.width() as f32;
-                    let container_height = container_element.height() as f32;
-
-                    let mov_x = mov_x / container_width;
-                    let mov_y = mov_y / container_height;
+                    let mov_x = (page_x - dragging.0[0]) as f64;
+                    let mov_y = (page_y - dragging.0[1]) as f64;
 
                     match &dragging.1 {
                         DragType::Move => {
@@ -273,23 +296,23 @@ where
                     if self.loc[1] < 0.0 {
                         self.loc[1] = 0.0;
                     }
-                    if self.size[0] > 1.0 {
-                        self.size[0] = 1.0;
+                    if self.size[0] > self.container_rect.width {
+                        self.size[0] = self.container_rect.width;
                     }
-                    if self.size[1] > 1.0 {
-                        self.size[1] = 1.0;
+                    if self.size[1] > self.container_rect.height {
+                        self.size[1] = self.container_rect.height;
                     }
-                    if self.size[0] < 0.1 {
-                        self.size[0] = 0.1;
+                    if self.size[0] < self.container_rect.width * 0.1 {
+                        self.size[0] = self.container_rect.width * 0.1;
                     }
-                    if self.size[1] < 0.1 {
-                        self.size[1] = 0.1;
+                    if self.size[1] < self.container_rect.height * 0.1 {
+                        self.size[1] = self.container_rect.height * 0.1;
                     }
-                    if self.loc[0] + self.size[0] > 1.0 {
-                        self.loc[0] = 1.0 - self.size[0];
+                    if self.loc[0] + self.size[0] > self.container_rect.width {
+                        self.loc[0] = self.container_rect.width - self.size[0];
                     }
-                    if self.loc[1] + self.size[1] > 1.0 {
-                        self.loc[1] = 1.0 - self.size[1];
+                    if self.loc[1] + self.size[1] > self.container_rect.height {
+                        self.loc[1] = self.container_rect.height - self.size[1];
                     }
 
                     dragging.0[0] = page_x;
@@ -297,10 +320,8 @@ where
 
                     cmd = match &dragging.1 {
                         DragType::Move => {
-                            let client_x = (self.loc[0] * container_width).round() as i32;
-                            let client_y = (self.loc[1] * container_height).round() as i32;
-                            let page_x = client_x + container_element.left() as i32;
-                            let page_y = client_y + container_element.top() as i32;
+                            let page_x = (self.loc[0] + self.container_rect.left).round() as i32;
+                            let page_y = (self.loc[1] + self.container_rect.top).round() as i32;
                             Cmd::sub(On::Move(page_x, page_y))
                         }
                         _ => Cmd::sub(On::Resize(self.size.clone())),
@@ -309,11 +330,10 @@ where
                     cmd = Cmd::none();
                 }
 
-                let rect = self.container_element.get_bounding_client_rect();
-                if page_x < rect.left() as i32
-                    || page_x > rect.right() as i32
-                    || page_y < rect.top() as i32
-                    || page_y > rect.bottom() as i32
+                if page_x < self.container_rect.left as i32
+                    || page_x > (self.container_rect.left + self.container_rect.width) as i32
+                    || page_y < self.container_rect.top as i32
+                    || page_y > (self.container_rect.top + self.container_rect.height) as i32
                 {
                     self.dragging = None;
                 }
@@ -334,10 +354,10 @@ where
             Attributes::new()
                 .class(Self::class("base"))
                 .style("z-index", format!("{}", props.z_index))
-                .style("left", format!("{}%", self.loc[0] * 100.0))
-                .style("top", format!("{}%", self.loc[1] * 100.0))
-                .style("width", format!("{}%", self.size[0] * 100.0))
-                .style("height", format!("{}%", self.size[1] * 100.0)),
+                .style("left", format!("{}px", self.loc[0].round() as i32))
+                .style("top", format!("{}px", self.loc[1].round() as i32))
+                .style("width", format!("{}px", self.size[0].round() as i32))
+                .style("height", format!("{}px", self.size[1].round() as i32)),
             Events::new()
                 .on_mousedown(|e| {
                     e.stop_propagation();
@@ -376,9 +396,10 @@ where
                             .iter()
                             .enumerate()
                             .map(|(tab_idx, content)| {
+                                let is_selected = tab_idx == props.contents.borrow().selected_idx();
                                 TabBtn::new(
                                     true,
-                                    tab_idx == props.contents.borrow().selected_idx(),
+                                    is_selected,
                                     Attributes::new(),
                                     Events::new()
                                     .on_mousedown(|e|{ e.stop_propagation(); Msg::NoOp})
@@ -396,6 +417,7 @@ where
                                         Msg::DisconnectTab {
                                             event_id,
                                             tab_idx,
+                                            is_selected
                                         }
                                     }).on_drop({
                                         let modeless_id = U128Id::clone(&props.modeless_id);
@@ -413,7 +435,7 @@ where
                                 direction: dropdown::Direction::BottomLeft,
                                 text: dropdown::Text::Menu,
                                 toggle_type: dropdown::ToggleType::Click,
-                                variant: btn::Variant::TransparentLight,
+                                variant: btn::Variant::TransparentDark,
                             },
                             Sub::none(),
                             vec![
@@ -463,7 +485,10 @@ where
                 ),
                 Html::div(
                     Attributes::new().class(Self::class("content")),
-                    Events::new(),
+                    Events::new().on_mousedown(|e| {
+                        e.stop_propagation();
+                        Msg::NoOp
+                    }),
                     vec![props
                         .contents
                         .borrow()
@@ -552,6 +577,7 @@ where
             ".header" {
                 "display": "grid";
                 "grid-template-columns": "1fr max-content";
+                "background-color": crate::libs::color::Pallet::gray(7);
             }
 
             ".header-tabs" {

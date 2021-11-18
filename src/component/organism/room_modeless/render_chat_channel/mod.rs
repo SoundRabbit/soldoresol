@@ -48,7 +48,7 @@ impl RoomModeless {
                         .class(Self::class("channel-label"))
                         .string("for", &self.element_id.input_channel_name),
                     Events::new(),
-                    vec![Html::text("チャンネル名")],
+                    vec![Html::text("#")],
                 ),
                 Html::input(
                     Attributes::new()

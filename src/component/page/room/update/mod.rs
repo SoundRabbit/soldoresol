@@ -4,25 +4,52 @@ use kagura::component::Cmd;
 
 mod task;
 
-impl Update for Room {
-    fn on_assemble(&mut self, props: &Props) -> Cmd<Self> {
-        let mut chat = block::Chat::new();
+macro_rules! new_channel {
+    ($arena:expr,$chat:expr,$name:expr) => {{
+        let arena = &mut ($arena);
+        let chat = &mut ($chat);
 
         let mut chat_channel = block::ChatChannel::new();
 
-        chat_channel.name_set(String::from("メイン"));
+        chat_channel.name_set(String::from($name));
 
-        let chat_channel = self.arena.insert(chat_channel);
-        chat.channels_push(chat_channel.clone());
-        self.chat = self.arena.insert(chat);
+        let chat_channel = arena.insert(chat_channel);
 
-        self.modeless_container.update(|this| {
-            this.open_modeless(vec![room_modeless::Content {
-                arena: ArenaMut::clone(&self.arena),
-                client_id: Rc::clone(&props.client_id),
-                data: room_modeless::ContentData::ChatChannel(chat_channel),
-            }]);
+        chat.update(|chat: &mut block::Chat| {
+            chat.channels_push(chat_channel.clone());
         });
+
+        chat_channel
+    }};
+}
+
+impl Update for Room {
+    fn on_assemble(&mut self, props: &Props) -> Cmd<Self> {
+        self.chat = self.arena.insert(block::Chat::new());
+
+        let chat_channel_main = new_channel!(self.arena, self.chat, "メイン");
+        let chat_channel_sub = new_channel!(self.arena, self.chat, "サブ");
+
+        self.modeless_container.update(|modeless_container| {
+            Self::open_chat_modeless(
+                &props.client_id,
+                &self.arena,
+                modeless_container,
+                &vec![chat_channel_main, chat_channel_sub],
+            );
+        });
+
+        let craftboard = block::Craftboard::new([0.0, 0.0, 0.0]);
+
+        let mut table = block::Table::new();
+        table.craftboards_push(self.arena.insert(craftboard));
+
+        let mut scene = block::Scene::new();
+        scene.tables_push(self.arena.insert(table));
+
+        let mut world = block::World::new();
+        world.scenes_push(self.arena.insert(scene));
+        self.world = self.arena.insert(world);
 
         Cmd::chain(Msg::NoOp)
     }
@@ -33,22 +60,22 @@ impl Update for Room {
             Msg::OpenChatModeless(channel_id) => {
                 if let Some(channel_id) = channel_id {
                     if let Some(channel) = self.arena.get_mut(&channel_id) {
-                        self.modeless_container.update(|this| {
+                        self.modeless_container.update(|modeless_container| {
                             Self::open_chat_modeless(
                                 &props.client_id,
                                 &self.arena,
-                                this,
+                                modeless_container,
                                 &vec![channel],
                             );
                         });
                     }
                 } else {
                     self.chat.map(|chat: &block::Chat| {
-                        self.modeless_container.update(|this| {
+                        self.modeless_container.update(|modeless_container| {
                             Self::open_chat_modeless(
                                 &props.client_id,
                                 &self.arena,
-                                this,
+                                modeless_container,
                                 chat.channels(),
                             );
                         });
@@ -62,11 +89,23 @@ impl Update for Room {
 }
 
 impl Room {
+    // fn modeless_content(
+    //     &self,
+    //     props: &Props,
+    //     data: room_modeless::ContentData,
+    // ) -> room_modeless::Content {
+    //     room_modeless::Content {
+    //         arena: ArenaMut::clone(&self.arena),
+    //         client_id: Rc::clone(&props.client_id),
+    //         data: data,
+    //     }
+    // }
+
     fn open_chat_modeless(
         client_id: &Rc<String>,
         arena: &ArenaMut,
         modeless_container: &mut TabModelessContainer<RoomModeless, room_modeless::TabName>,
-        channels: &Vec<BlockMut>,
+        channels: &Vec<BlockMut<block::ChatChannel>>,
     ) {
         modeless_container.open_modeless(
             channels

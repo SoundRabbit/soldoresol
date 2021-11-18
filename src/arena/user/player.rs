@@ -1,9 +1,10 @@
 uses! {
     super::util::Pack;
     super::BlockRef;
+    super::super::resource::ImageData;
 }
 
-block! {
+packable! {
     [pub Player]
-    icon: Option<BlockRef> = None;
+    icon: Option<BlockRef<ImageData>> = None;
 }
