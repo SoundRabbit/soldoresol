@@ -24,7 +24,9 @@ pub enum Msg {
     SetSelectedTool(TableTool),
 }
 
-pub enum On {}
+pub enum On {
+    SelectTool(TableTool),
+}
 
 pub struct TableMenu {
     tools: SelectList<TableTool>,
@@ -61,19 +63,31 @@ impl Constructor for TableMenu {
     }
 }
 
+impl TableMenu {
+    pub fn initial_selected() -> TableTool {
+        TableTool::Selecter(Rc::new(table_tool::Selecter::Point))
+    }
+}
+
 impl Update for TableMenu {
     fn update(&mut self, _: &Props, msg: Msg) -> Cmd<Self> {
         match msg {
             Msg::NoOp => Cmd::none(),
             Msg::SetSelectedTool(tool) => {
                 if let Some(selected) = self.tools.selected_mut() {
-                    *selected = tool;
+                    *selected = tool.clone();
+                    Cmd::sub(On::SelectTool(tool))
+                } else {
+                    Cmd::none()
                 }
-                Cmd::none()
             }
             Msg::SetSetectedToolIdx(idx) => {
                 self.tools.set_selected_idx(idx);
-                Cmd::none()
+                if let Some(selected) = self.tools.selected() {
+                    Cmd::sub(On::SelectTool(selected.clone()))
+                } else {
+                    Cmd::none()
+                }
             }
         }
     }

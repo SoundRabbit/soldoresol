@@ -3,6 +3,7 @@ use super::super::atom::{
     btn::{self, Btn},
     card::{self, Card},
     dropdown::{self, Dropdown},
+    file_catcher::{self, FileCatcher},
     header::{self, Header},
     heading::{self, Heading},
 };
@@ -33,15 +34,19 @@ impl Render for Room {
                     Sub::none(),
                     vec![self.render_header_row_0(), self.render_header_row_1()],
                 ),
-                Html::div(
-                    Attributes::new().class(Common::layered()),
-                    Events::new(),
+                FileCatcher::with_children(
+                    file_catcher::Props {
+                        attributes: Attributes::new().class(Common::layered()),
+                        ok_to_catch_file: self.ok_to_catch_file,
+                    },
+                    Sub::none(),
                     vec![
                         Html::div(
                             Attributes::new().class(Common::layered_item()),
                             Events::new(),
                             vec![self.table.with_children(
                                 table::Props {
+                                    arena: ArenaMut::clone(&self.arena),
                                     world: BlockMut::clone(&self.world),
                                 },
                                 Sub::none(),
@@ -57,14 +62,33 @@ impl Render for Room {
                                 Html::div(
                                     Attributes::new().class(Self::class("tablemenu")),
                                     Events::new(),
-                                    vec![TableMenu::empty(table_menu::Props {}, Sub::none())],
+                                    vec![TableMenu::empty(
+                                        table_menu::Props {},
+                                        Sub::map(|sub| match sub {
+                                            table_menu::On::SelectTool(tool) => {
+                                                Msg::SetSelectedTableTool(tool)
+                                            }
+                                        }),
+                                    )],
                                 ),
-                                self.modeless_container.with_children(
-                                    tab_modeless_container::Props {},
-                                    Sub::map(|sub| match sub {
-                                        tab_modeless_container::On::Sub(..) => Msg::NoOp,
-                                    }),
-                                    vec![],
+                                Html::div(
+                                    Attributes::new(),
+                                    Events::new().on_click(Msg::OnTableClicked),
+                                    vec![self.modeless_container.with_children(
+                                        tab_modeless_container::Props {},
+                                        Sub::map(|sub| match sub {
+                                            tab_modeless_container::On::StartDragTab => {
+                                                Msg::SetOkToCatchFile(false)
+                                            }
+                                            tab_modeless_container::On::EndDragTab => {
+                                                Msg::SetOkToCatchFile(true)
+                                            }
+                                            tab_modeless_container::On::Sub(sub) => match sub {
+                                                room_modeless::On::UpdateBlocks { .. } => Msg::NoOp,
+                                            },
+                                        }),
+                                        vec![],
+                                    )],
                                 ),
                                 Html::div(
                                     Attributes::new().class(Self::class("wolrdview")),

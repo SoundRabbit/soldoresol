@@ -15,6 +15,9 @@ impl Table {
     pub fn boxblocks(&self) -> &Vec<BlockMut<Boxblock>> {
         &self.boxblocks
     }
+    pub fn push_boxblock(&mut self, boxblock: BlockMut<Boxblock>) {
+        self.boxblocks.push(boxblock);
+    }
     pub fn craftboards(&self) -> &Vec<BlockMut<Craftboard>> {
         &self.craftboards
     }

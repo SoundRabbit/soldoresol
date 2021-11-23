@@ -43,6 +43,8 @@ pub enum Msg<Sub> {
 
 pub enum On<Sub> {
     Sub(Sub),
+    StartDragTab,
+    EndDragTab,
 }
 
 pub struct TabModelessContainer<Content: Constructor, TabName: Constructor<Props = Content::Props>>
@@ -205,7 +207,7 @@ where
                         is_selected,
                     },
                 );
-                Cmd::none()
+                Cmd::sub(On::StartDragTab)
             }
             Msg::ConnectTab {
                 event_id,
@@ -243,7 +245,12 @@ where
                         self.modelesses.remove(&event.modeless_id);
                     }
                 }
-                Cmd::none()
+
+                if self.floating_tab.is_empty() {
+                    Cmd::sub(On::EndDragTab)
+                } else {
+                    Cmd::none()
+                }
             }
             Msg::DropTab {
                 event_id,
@@ -274,7 +281,11 @@ where
                         self.modelesses.remove(&event.modeless_id);
                     }
                 }
-                Cmd::none()
+                if self.floating_tab.is_empty() {
+                    Cmd::sub(On::EndDragTab)
+                } else {
+                    Cmd::none()
+                }
             }
         }
     }
@@ -295,7 +306,6 @@ where
                         Msg::NoOp
                     })
                     .on_drop(move |e| {
-                        let e = unwrap_or!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
                         let data_transfer = unwrap_or!(e.data_transfer(); Msg::NoOp);
                         let data = unwrap_or!(data_transfer.get_data("text/plain").ok(); Msg::NoOp);
                         if TabBtn::validate_prefix::<TabModeless<Content, TabName>>(&data) {

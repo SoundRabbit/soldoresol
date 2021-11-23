@@ -84,6 +84,20 @@ impl Update for Room {
 
                 Cmd::none()
             }
+            Msg::SetOkToCatchFile(ok_to_catch_file) => {
+                self.ok_to_catch_file = ok_to_catch_file;
+                Cmd::none()
+            }
+            Msg::SetSelectedTableTool(tool) => {
+                self.table_tool = tool;
+                Cmd::none()
+            }
+            Msg::OnTableClicked(e) => {
+                self.table.update(|table| {
+                    table.on_click(e, &self.table_tool);
+                });
+                Cmd::none()
+            }
         }
     }
 }

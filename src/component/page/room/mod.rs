@@ -1,4 +1,4 @@
-use super::atom::table::{self, Table};
+use super::atom::table::{self, table_tool::TableTool, Table};
 use super::organism::room_modeless::{self, RoomModeless};
 use super::organism::tab_modeless_container::{self, TabModelessContainer};
 use crate::arena::{block, Arena, ArenaMut, BlockMut};
@@ -19,6 +19,9 @@ pub struct Props {
 pub enum Msg {
     NoOp,
     OpenChatModeless(Option<U128Id>),
+    SetOkToCatchFile(bool),
+    SetSelectedTableTool(TableTool),
+    OnTableClicked(web_sys::MouseEvent),
 }
 
 pub enum On {}
@@ -33,6 +36,9 @@ pub struct Room {
     table: PrepackedComponent<Table>,
     modeless_container:
         PrepackedComponent<TabModelessContainer<RoomModeless, room_modeless::TabName>>,
+
+    table_tool: TableTool,
+    ok_to_catch_file: bool,
 }
 
 impl Component for Room {

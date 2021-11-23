@@ -10,14 +10,9 @@ impl Renderer {
     ) {
         let (scene, table) = world
             .map(|world| {
-                crate::debug::log_1("load world");
-
                 let scene = world.selecting_scene().as_ref();
                 let table = scene
-                    .map(|scene: &block::Scene| {
-                        crate::debug::log_1("load scene");
-                        scene.selecting_table().as_ref()
-                    })
+                    .map(|scene: &block::Scene| scene.selecting_table().as_ref())
                     .unwrap_or(BlockRef::<block::Table>::none());
 
                 (scene, table)
@@ -38,6 +33,8 @@ impl Renderer {
                     .map(BlockMut::<block::Boxblock>::as_ref),
             );
         });
+
+        self.id_table = IdTable::from(id_table_builder);
 
         let cs = as_f32a![self.canvas_size[0], self.canvas_size[1]];
         let vp_matrix = camera_matrix.vp_matrix(&cs);
@@ -63,7 +60,6 @@ impl Renderer {
             let craftboards = table.craftboards();
             for craftboard in craftboards {
                 craftboard.map(|craftboard| {
-                    crate::debug::log_1("render craftboard");
                     self.craftboard_grid_mesh.render(
                         &mut self.gl,
                         &vp_matrix,

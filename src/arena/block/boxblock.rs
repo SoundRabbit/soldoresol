@@ -35,8 +35,16 @@ impl Boxblock {
         &self.size
     }
 
+    pub fn set_size(&mut self, size: [f64; 3]) {
+        self.size = size;
+    }
+
     pub fn position(&self) -> &[f64; 3] {
         &self.position
+    }
+
+    pub fn set_position(&mut self, position: [f64; 3]) {
+        self.position = position;
     }
 
     pub fn shape(&self) -> Shape {
@@ -45,5 +53,9 @@ impl Boxblock {
 
     pub fn color(&self) -> &Pallet {
         &self.color
+    }
+
+    pub fn set_color(&mut self, color: Pallet) {
+        self.color = color;
     }
 }
