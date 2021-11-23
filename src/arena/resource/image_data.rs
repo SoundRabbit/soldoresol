@@ -8,7 +8,7 @@ uses! {
 }
 
 block! {
-    [pub ImageData]
+    [pub ImageData(constructor)]
     (element): Rc<web_sys::HtmlImageElement>;
     (blob): Rc<web_sys::Blob>;
     (url): Url;

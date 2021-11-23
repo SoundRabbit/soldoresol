@@ -38,6 +38,13 @@ impl Pack for f64 {
 }
 
 #[async_trait(?Send)]
+impl Pack for usize {
+    async fn pack(&self, _: bool) -> JsValue {
+        JsValue::from(*self as f64)
+    }
+}
+
+#[async_trait(?Send)]
 impl Pack for [f64; 2] {
     async fn pack(&self, _: bool) -> JsValue {
         array![self[0], self[1]].into()

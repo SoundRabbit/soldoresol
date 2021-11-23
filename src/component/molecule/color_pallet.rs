@@ -5,11 +5,13 @@ use isaribi::{
     style,
     styled::{Style, Styled},
 };
+use kagura::component::{Cmd, Sub};
 use kagura::prelude::*;
 
 pub struct Props {
     pub default_selected: Pallet,
     pub title: Option<String>,
+    pub theme: slider::Theme,
 }
 
 pub enum Msg {
@@ -24,7 +26,6 @@ pub enum On {
 pub struct ColorPallet {
     selected: Pallet,
     default_selected: Pallet,
-    title: Option<String>,
 }
 
 impl Default for Props {
@@ -32,16 +33,7 @@ impl Default for Props {
         Self {
             default_selected: Pallet::gray(9).a(100),
             title: None,
-        }
-    }
-}
-
-impl Constructor for ColorPallet {
-    fn constructor(props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) -> Self {
-        Self {
-            selected: props.default_selected.clone(),
-            default_selected: props.default_selected.clone(),
-            title: props.title,
+            theme: slider::Theme::Dark,
         }
     }
 }
@@ -50,17 +42,27 @@ impl Component for ColorPallet {
     type Props = Props;
     type Msg = Msg;
     type Sub = On;
+}
 
-    fn init(&mut self, props: Self::Props, _: &mut ComponentBuilder<Self::Msg, Self::Sub>) {
+impl Constructor for ColorPallet {
+    fn constructor(props: &Props) -> Self {
+        Self {
+            selected: props.default_selected.clone(),
+            default_selected: props.default_selected.clone(),
+        }
+    }
+}
+
+impl Update for ColorPallet {
+    fn on_load(&mut self, props: &Props) -> Cmd<Self> {
         if self.default_selected != props.default_selected {
             self.default_selected = props.default_selected.clone();
             self.selected = props.default_selected.clone();
         }
-
-        self.title = props.title;
+        Cmd::none()
     }
 
-    fn update(&mut self, msg: Self::Msg) -> Cmd<Self::Msg, Self::Sub> {
+    fn update(&mut self, props: &Props, msg: Msg) -> Cmd<Self> {
         match msg {
             Msg::NoOp => Cmd::none(),
             Msg::SetColor(pallet) => {
@@ -69,13 +71,16 @@ impl Component for ColorPallet {
             }
         }
     }
+}
 
-    fn render(&self, _: Vec<Html>) -> Html {
+impl Render for ColorPallet {
+    fn render(&self, props: &Props, _: Vec<Html<Self>>) -> Html<Self> {
         Self::styled(Html::div(
             Attributes::new().class(Self::class("base")),
             Events::new(),
             vec![
-                self.title
+                props
+                    .title
                     .as_ref()
                     .map(|title| {
                         Heading::h4(
@@ -86,19 +91,11 @@ impl Component for ColorPallet {
                         )
                     })
                     .unwrap_or(Html::none()),
+                Self::render_color_base(&props.theme, &self.selected),
                 Html::div(
-                    Attributes::new().class(Self::class("color-base")),
-                    Events::new(),
-                    vec![Html::div(
-                        Attributes::new()
-                            .class(Self::class("color-sample"))
-                            .style("background-color", self.selected.to_string()),
-                        Events::new(),
-                        vec![],
-                    )],
-                ),
-                Html::div(
-                    Attributes::new().class(Self::class("table")),
+                    Attributes::new()
+                        .class(Self::class("table"))
+                        .class(Self::class(&format!("table--{}", &props.theme))),
                     Events::new(),
                     vec![
                         self.render_column(pallet::Kind::Gray),
@@ -120,8 +117,9 @@ impl Component for ColorPallet {
                             step: 1.0,
                         },
                         range_is_editable: false,
+                        theme: props.theme,
                     },
-                    Subscription::new({
+                    Sub::map({
                         let selected = self.selected.clone();
                         move |sub| match sub {
                             slider::On::Input(alpha) => {
@@ -137,7 +135,23 @@ impl Component for ColorPallet {
 }
 
 impl ColorPallet {
-    fn render_column(&self, kind: pallet::Kind) -> Html {
+    pub fn render_color_base<C: Component>(theme: &slider::Theme, pallet: &Pallet) -> Html<C> {
+        Html::div(
+            Attributes::new()
+                .class(Self::class("color-base"))
+                .class(Self::class(&format!("color-base--{}", theme))),
+            Events::new(),
+            vec![Html::div(
+                Attributes::new()
+                    .class(Self::class("color-sample"))
+                    .style("background-color", pallet.to_string()),
+                Events::new(),
+                vec![],
+            )],
+        )
+    }
+
+    fn render_column(&self, kind: pallet::Kind) -> Html<Self> {
         let mut cells = vec![];
         let mut pallet = Pallet {
             alpha: self.selected.alpha,
@@ -153,7 +167,7 @@ impl ColorPallet {
         Html::fragment(cells)
     }
 
-    fn render_cell(&self, pallet: Pallet, is_dark: bool) -> Html {
+    fn render_cell(&self, pallet: Pallet, is_dark: bool) -> Html<Self> {
         let color = pallet.clone().a(100).to_color();
 
         let attrs = Attributes::new()
@@ -185,8 +199,6 @@ impl Styled for ColorPallet {
                 "display": "grid";
                 "grid-auto-rows": "max-content";
                 "row-gap": "0.35em";
-                "background-color": Pallet::gray(8).a(100).to_string();
-                "padding": "0.35em";
             }
 
             ".table" {
@@ -194,6 +206,14 @@ impl Styled for ColorPallet {
                 "grid-template-rows": "repeat(10, max-content)";
                 "grid-auto-columns": "1fr";
                 "grid-auto-flow": "column";
+            }
+
+            ".table--light" {
+                "border": format!("0.1rem solid {}", Pallet::gray(9).a(100));
+            }
+
+            ".table--dark" {
+                "border": format!("0.1rem solid {}", Pallet::gray(0).a(100));
             }
 
             ".cell" {
@@ -222,6 +242,13 @@ impl Styled for ColorPallet {
                     linear-gradient(-135deg, #fff 25%, #fff 25%, transparent 25%, transparent 75%, #fff 75%, #fff 75%)";
                 "background-size": "1rem 1rem";
                 "background-position": "0 0, 0.5rem 0.5rem";
+            }
+
+            ".color-base--light" {
+                "border": format!("0.1rem solid {}", Pallet::gray(9).a(100));
+            }
+
+            ".color-base--dark" {
                 "border": format!("0.1rem solid {}", Pallet::gray(0).a(100));
             }
 

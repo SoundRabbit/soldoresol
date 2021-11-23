@@ -137,6 +137,16 @@ impl<Content: Constructor, TabName: Constructor<Props = Content::Props>> Update
 where
     Content::Props: Clone,
 {
+    fn on_assemble(&mut self, _: &Props) -> Cmd<Self> {
+        Cmd::batch(move |mut handle| {
+            let a = Closure::wrap(Box::new(move || handle(Msg::NoOp)) as Box<dyn FnMut()>);
+            let _ = web_sys::window()
+                .unwrap()
+                .add_event_listener_with_callback("resize", a.as_ref().unchecked_ref());
+            a.forget();
+        })
+    }
+
     fn ref_node(&mut self, _: &Props, ref_name: String, node: web_sys::Node) -> Cmd<Self> {
         if ref_name == "base" {
             if let Ok(node) = node.dyn_into::<web_sys::Element>() {
@@ -444,7 +454,6 @@ where
                 "height": "100%";
                 "overflow": "hidden";
                 "position": "relative";
-                "z-index": "0";
             }
 
             ".minimized-list" {

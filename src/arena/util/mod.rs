@@ -23,7 +23,7 @@ macro_rules! uses {
 
 macro_rules! block {
     {
-        [pub $b_name:ident]
+        [pub $b_name:ident($($options:ident),*)]
         $(($p_c_name:ident): $p_c_type:ty;)*
         $($p_d_name:ident: $p_d_type:ty = $p_default:expr;)*
     } => {
@@ -32,6 +32,42 @@ macro_rules! block {
             $($p_d_name: $p_d_type,)*
         }
 
+        block! {
+            [impl $b_name($($options),*)]
+            $(($p_c_name): $p_c_type;)*
+            $($p_d_name: $p_d_type = $p_default;)*
+        }
+    };
+
+    {
+        [impl $b_name:ident()]
+        $(($p_c_name:ident): $p_c_type:ty;)*
+        $($p_d_name:ident: $p_d_type:ty = $p_default:expr;)*
+    } => {};
+
+    {
+        [impl $b_name:ident($option:ident$(,$options:ident)+)]
+        $(($p_c_name:ident): $p_c_type:ty;)*
+        $($p_d_name:ident: $p_d_type:ty = $p_default:expr;)*
+    } => {
+        block! {
+            [impl $b_name($option)]
+            $(($p_c_name): $p_c_type;)*
+            $($p_d_name: $p_d_type = $p_default;)*
+        }
+
+        block! {
+            [impl $b_name($($options),+)]
+            $(($p_c_name): $p_c_type;)*
+            $($p_d_name: $p_d_type = $p_default;)*
+        }
+    };
+
+    {
+        [impl $b_name:ident(constructor)]
+        $(($p_c_name:ident): $p_c_type:ty;)*
+        $($p_d_name:ident: $p_d_type:ty = $p_default:expr;)*
+    } => {
         impl $b_name {
             pub fn new($($p_c_name: $p_c_type,)*) -> Self {
                 Self {
@@ -41,20 +77,12 @@ macro_rules! block {
             }
         }
     };
-}
 
-macro_rules! packable {
     {
-        [pub $b_name:ident]
+        [impl $b_name:ident(pack)]
         $(($p_c_name:ident): $p_c_type:ty;)*
         $($p_d_name:ident: $p_d_type:ty = $p_default:expr;)*
     } => {
-        block! {
-            [pub $b_name]
-            $(($p_c_name): $p_c_type;)*
-            $($p_d_name: $p_d_type = $p_default;)*
-        }
-
         #[async_trait(?Send)]
         impl Pack for $b_name {
             #[allow(unused_variables)]

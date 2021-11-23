@@ -4,8 +4,8 @@ uses! {
     crate::libs::color::Pallet;
 }
 
-packable! {
-    [pub Craftboard]
+block! {
+    [pub Craftboard(constructor, pack)]
     (position): [f64; 3];
     name: String = String::new();
     size: [f64; 2] = [10.0, 10.0];

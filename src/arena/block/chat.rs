@@ -4,8 +4,8 @@ uses! {
     super::ChatChannel;
 }
 
-packable! {
-    [pub Chat]
+block! {
+    [pub Chat(constructor, pack)]
     channels: Vec<BlockMut<ChatChannel>> = vec![];
 }
 

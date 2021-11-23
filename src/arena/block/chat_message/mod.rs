@@ -58,8 +58,8 @@ impl Pack for MessageCommand {
     }
 }
 
-packable! {
-    [pub Sender]
+block! {
+    [pub Sender(constructor, pack)]
     (client_id): Rc<String>;
     (icon): Option<BlockRef<ImageData>>;
     (name): String;
@@ -79,8 +79,8 @@ impl Sender {
     }
 }
 
-packable! {
-    [pub ChatMessage]
+block! {
+    [pub ChatMessage(constructor, pack)]
     (sender): Sender;
     (timestamp): chrono::DateTime<chrono::Utc>;
     (message): Message;

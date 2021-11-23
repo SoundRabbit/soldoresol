@@ -7,11 +7,13 @@ pub mod user;
 
 arena! {
     pub block::Boxblock;
+    pub block::CanvasTexture;
+    pub block::Character;
     pub block::Chat;
     pub block::ChatChannel;
     pub block::ChatMessage;
-    pub block::Character;
     pub block::Craftboard;
+    pub block::LayerGroup;
     pub block::Scene;
     pub block::Table;
     pub block::World;

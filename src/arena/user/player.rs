@@ -4,7 +4,7 @@ uses! {
     super::super::resource::ImageData;
 }
 
-packable! {
-    [pub Player]
+block! {
+    [pub Player(constructor, pack)]
     icon: Option<BlockRef<ImageData>> = None;
 }

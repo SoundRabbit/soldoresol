@@ -5,8 +5,8 @@ uses! {
     super::util::Pack;
 }
 
-packable! {
-    [pub Table]
+block! {
+    [pub Table(constructor, pack)]
     boxblocks: Vec<BlockMut<Boxblock>> = vec![];
     craftboards: Vec<BlockMut<Craftboard>> = vec![];
 }

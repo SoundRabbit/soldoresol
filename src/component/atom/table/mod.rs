@@ -9,6 +9,7 @@ use std::rc::Rc;
 use wasm_bindgen::{prelude::*, JsCast};
 
 mod renderer;
+pub mod table_tool;
 
 use renderer::{CameraMatrix, ObjectId, Renderer};
 
@@ -17,8 +18,8 @@ pub struct Props {
 }
 
 pub enum Msg {
-    RenderAwait,
     Render,
+    Resize,
 }
 
 pub enum On {}
@@ -48,6 +49,16 @@ impl Table {
 }
 
 impl Update for Table {
+    fn on_assemble(&mut self, _props: &Props) -> Cmd<Self> {
+        Cmd::batch(move |mut handle| {
+            let a = Closure::wrap(Box::new(move || handle(Msg::Resize)) as Box<dyn FnMut()>);
+            let _ = web_sys::window()
+                .unwrap()
+                .add_event_listener_with_callback("resize", a.as_ref().unchecked_ref());
+            a.forget();
+        })
+    }
+
     fn ref_node(&mut self, _props: &Props, ref_name: String, node: web_sys::Node) -> Cmd<Self> {
         if ref_name == "canvas" {
             if let Some(canvas) = self.canvas.as_ref() {
@@ -65,18 +76,6 @@ impl Update for Table {
 
     fn update(&mut self, props: &Props, msg: Msg) -> Cmd<Self> {
         match msg {
-            Msg::RenderAwait => Cmd::task(|resolve| {
-                let mut resolve = Some(resolve);
-                let a = Closure::wrap(Box::new(move || {
-                    if let Some(resolve) = resolve.take() {
-                        resolve(Msg::Render);
-                    }
-                }) as Box<dyn FnMut()>);
-                let _ = web_sys::window()
-                    .unwrap()
-                    .request_animation_frame(a.as_ref().unchecked_ref());
-                a.forget();
-            }),
             Msg::Render => {
                 if let Some(renderer) = self.renderer.as_mut() {
                     renderer.render(
@@ -87,18 +86,41 @@ impl Update for Table {
                 }
                 Cmd::none()
             }
+            Msg::Resize => {
+                if let Some(renderer) = self.renderer.as_mut() {
+                    renderer.reset_size();
+                    Self::render()
+                } else {
+                    Cmd::none()
+                }
+            }
         }
     }
 }
 
 impl Table {
+    fn render() -> Cmd<Self> {
+        Cmd::task(|resolve| {
+            let mut resolve = Some(resolve);
+            let a = Closure::wrap(Box::new(move || {
+                if let Some(resolve) = resolve.take() {
+                    resolve(Msg::Render);
+                }
+            }) as Box<dyn FnMut()>);
+            let _ = web_sys::window()
+                .unwrap()
+                .request_animation_frame(a.as_ref().unchecked_ref());
+            a.forget();
+        })
+    }
+
     fn set_renderer(&mut self, node: web_sys::Node) -> Cmd<Self> {
         if let Ok(canvas) = node.dyn_into::<web_sys::HtmlCanvasElement>() {
             let canvas = Rc::new(canvas);
             self.canvas = Some(Rc::clone(&canvas));
             let renderer = Renderer::new(canvas);
             self.renderer = Some(renderer);
-            Cmd::chain(Msg::RenderAwait)
+            Self::render()
         } else {
             Cmd::none()
         }

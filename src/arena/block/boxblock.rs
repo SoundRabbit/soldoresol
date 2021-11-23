@@ -22,8 +22,8 @@ impl Pack for Shape {
     }
 }
 
-packable! {
-    [pub Boxblock]
+block! {
+    [pub Boxblock(constructor, pack)]
     size: [f64; 3] = [1.0, 1.0, 1.0];
     position: [f64; 3] = [0.0, 0.0, 0.0];
     shape: Shape = Shape::Cube;

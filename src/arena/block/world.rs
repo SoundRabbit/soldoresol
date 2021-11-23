@@ -5,8 +5,8 @@ uses! {
     super::Scene;
 }
 
-packable! {
-    [pub World]
+block! {
+    [pub World(constructor, pack)]
     characters: Vec<BlockMut<Character>> = vec![];
     scenes: Vec<BlockMut<Scene>> = vec![];
     selecting_scene: BlockMut<Scene> = BlockMut::<Scene>::none();

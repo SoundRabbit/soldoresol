@@ -4,8 +4,8 @@ uses! {
     regex::Regex;
 }
 
-packable! {
-    [pub ChatPallet]
+block! {
+    [pub ChatPallet(constructor, pack)]
     data: String = String::from("");
     defs: Vec<(Regex, String)> = vec![];
     index: Vec<(String, Vec<String>)> = vec![];
@@ -60,8 +60,8 @@ impl ChatPallet {
     }
 }
 
-packable! {
-    [pub Character]
+block! {
+    [pub Character(constructor, pack)]
     name: String = String::from("新規キャラクター");
     display_name: (String, String) = (String::from("新規キャラクター"), String::from(""));
 }

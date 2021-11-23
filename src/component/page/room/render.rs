@@ -6,7 +6,10 @@ use super::super::atom::{
     header::{self, Header},
     heading::{self, Heading},
 };
-use super::super::organism::world_view::{self, WorldView};
+use super::super::organism::{
+    table_menu::{self, TableMenu},
+    world_view::{self, WorldView},
+};
 use super::super::template::{
     basic_app::{self, BasicApp},
     common::Common,
@@ -51,6 +54,11 @@ impl Render for Room {
                                 .class(Self::class("main")),
                             Events::new(),
                             vec![
+                                Html::div(
+                                    Attributes::new().class(Self::class("tablemenu")),
+                                    Events::new(),
+                                    vec![TableMenu::empty(table_menu::Props {}, Sub::none())],
+                                ),
                                 self.modeless_container.with_children(
                                     tab_modeless_container::Props {},
                                     Sub::map(|sub| match sub {
@@ -203,7 +211,7 @@ impl Styled for Room {
 
             ".main" {
                 "display": "grid";
-                "grid-template-columns": "1fr max-content";
+                "grid-template-columns": "max-content 1fr max-content";
             }
         }
     }

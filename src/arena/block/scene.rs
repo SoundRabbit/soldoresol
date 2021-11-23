@@ -4,8 +4,8 @@ uses! {
     super::util::Pack;
 }
 
-packable! {
-    [pub Scene]
+block! {
+    [pub Scene(constructor, pack)]
     selecting_table: BlockMut<Table> = BlockMut::<Table>::none();
     tables: Vec<BlockMut<Table>> = vec![];
     name: String = String::from("新規シーン");

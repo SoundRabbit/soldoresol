@@ -9,6 +9,13 @@ use kagura::prelude::*;
 pub struct Props {
     pub position: Position,
     pub range_is_editable: bool,
+    pub theme: Theme,
+}
+
+#[derive(Clone, Copy)]
+pub enum Theme {
+    Dark,
+    Light,
 }
 
 pub enum Msg {
@@ -50,6 +57,16 @@ impl Default for Props {
                 step: 1.0,
             },
             range_is_editable: true,
+            theme: Theme::Dark,
+        }
+    }
+}
+
+impl std::fmt::Display for Theme {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Self::Light => write!(f, "light"),
+            Self::Dark => write!(f, "dark"),
         }
     }
 }
@@ -121,7 +138,9 @@ impl Render for Slider {
         let pos = ((slider_val - min) / (max - min)).min(1.0).max(0.0);
 
         Self::styled(Html::div(
-            Attributes::new().class("pure-form").class(Self::class("base")),
+            Attributes::new()
+                .class("pure-form")
+                .class(Self::class("base")),
             Events::new(),
             vec![
                 Html::input(
@@ -131,24 +150,23 @@ impl Render for Slider {
                         .string("max", max.to_string())
                         .string("step", slider_step.to_string())
                         .value(format!("{}", slider_val))
-                        .class(Self::class("slider"))
-                        .style(
-                            "background",
-                            format!(
-                                "linear-gradient(to right, {} calc({}% - {}em + 0.5em), {} {}% 100%)",
-                                color_system::blue(255, 5),
-                                pos * 100.0,
-                                pos,
-                                color_system::gray(255, 3),
-                                pos * 100.0
-                            ),
-                        ),
-                    Events::new()
-                        .on_input(|val| {
-                            val.parse()
-                                .map(|val| Msg::InputSliderValue(val))
-                                .unwrap_or(Msg::NoOp)
-                        }),
+                        .class(Self::class("slider")),
+                    // .style(
+                    //     "background",
+                    //     format!(
+                    //         "linear-gradient(to right, {} calc({}% - {}em + 0.5em), {} {}% 100%)",
+                    //         color_system::blue(255, 5),
+                    //         pos * 100.0,
+                    //         pos,
+                    //         color_system::gray(255, 3),
+                    //         pos * 100.0
+                    //     ),
+                    // ),
+                    Events::new().on_input(|val| {
+                        val.parse()
+                            .map(|val| Msg::InputSliderValue(val))
+                            .unwrap_or(Msg::NoOp)
+                    }),
                     vec![],
                 ),
                 Html::input(
@@ -158,18 +176,19 @@ impl Render for Slider {
                         .value(format!("{}", val))
                         .class(Self::class("input"))
                         .class(Self::class("value")),
-                    Events::new()
-                        .on_input(|val| {
-                                val.parse()
-                                .map(|val| Msg::SetValue(val))
-                                .unwrap_or(Msg::NoOp)
-                        }),
+                    Events::new().on_input(|val| {
+                        val.parse()
+                            .map(|val| Msg::SetValue(val))
+                            .unwrap_or(Msg::NoOp)
+                    }),
                     vec![],
                 ),
                 match &props.position {
-                    Position::Linear {min,max, ..} => self.render_range_linear(props,*min, *max, ),
-                    Position::Inf {mid, ..} => self.render_range_inf(props,*mid)
-                }
+                    Position::Linear { min, max, .. } => {
+                        self.render_range_linear(props, *min, *max)
+                    }
+                    Position::Inf { mid, .. } => self.render_range_inf(props, *mid),
+                },
             ],
         ))
     }
@@ -186,7 +205,8 @@ impl Slider {
                 Html::div(
                     Attributes::new()
                         .class(Self::class("allow"))
-                        .class(Self::class("allow--left")),
+                        .class(Self::class("allow--left"))
+                        .class(Self::class(&format!("allow--{}", props.theme))),
                     Events::new(),
                     vec![Html::input(
                         {
@@ -213,7 +233,8 @@ impl Slider {
                 Html::div(
                     Attributes::new()
                         .class(Self::class("allow"))
-                        .class(Self::class("allow--right")),
+                        .class(Self::class("allow--right"))
+                        .class(Self::class(&format!("allow--{}", props.theme))),
                     Events::new(),
                     vec![Html::input(
                         {
@@ -249,7 +270,8 @@ impl Slider {
             vec![Html::div(
                 Attributes::new()
                     .class(Self::class("allow"))
-                    .class(Self::class("allow--center")),
+                    .class(Self::class("allow--center"))
+                    .class(Self::class(&format!("allow--{}", props.theme))),
                 Events::new(),
                 vec![Html::input(
                     {
@@ -286,6 +308,7 @@ impl Styled for Slider {
                 "grid-auto-rows": "max-content";
                 "align-items": "center";
                 "column-gap": "0.35em";
+                "font-size": ".85em";
             }
 
             ".input" {
@@ -293,15 +316,15 @@ impl Styled for Slider {
                 "outline": "none";
             }
 
-            ".slider" {
-                "width": "100%";
-                "height": "1em";
-                "-webkit-appearance": "none";
-                "appearance": "none";
-                "border-radius": "0.5em";
-                "outline": "none";
-                "font-size": "1.3em";
-            }
+            // ".slider" {
+            //     "width": "100%";
+            //     "height": "1em";
+            //     "-webkit-appearance": "none";
+            //     "appearance": "none";
+            //     "border-radius": "0.5em";
+            //     "outline": "none";
+            //     "font-size": "1.3em";
+            // }
 
             ".slider::-webkit-slider-thumb" {
                 "-webkit-appearance": "none";
@@ -333,6 +356,13 @@ impl Styled for Slider {
                 "content":"\"\"";
                 "position": "absolute";
                 "border": "0.5em solid transparent";
+            }
+
+            ".allow--light:before" {
+                "border-bottom": format!("0.5em solid {}", color_system::gray(100, 9));
+            }
+
+            ".allow--dark:before" {
                 "border-bottom": format!("0.5em solid {}", color_system::gray(100, 0));
             }
 
