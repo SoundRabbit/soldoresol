@@ -1,5 +1,5 @@
 use super::webgl::WebGlRenderingContext;
-use crate::arena::{resource, ArenaRef};
+use crate::arena::{resource, BlockRef};
 use crate::libs::random_id::U128Id;
 use std::cell::Cell;
 use std::collections::HashMap;
@@ -113,15 +113,24 @@ impl TexTable {
         }
     }
 
+    pub fn use_blocktexture(
+        &mut self,
+        gl: &WebGlRenderingContext,
+        texture: BlockRef<resource::BlockTexture>,
+    ) -> Option<i32> {
+        let resource_id = texture.id();
+        texture.map(|texture| self.use_resource(gl, &resource_id, texture.data()))
+    }
+
     pub fn use_resource(
         &mut self,
         gl: &WebGlRenderingContext,
-        arena_ref: ArenaRef,
         resource_id: &U128Id,
-    ) -> Option<i32> {
+        data: &resource::ImageData,
+    ) -> i32 {
         let tex_id = TextureId::ResourceId(U128Id::clone(resource_id));
         if let Some(tex_idx) = self.tex_idx.get(&tex_id) {
-            Some(*tex_idx)
+            *tex_idx
         } else if let Some(tex_buf) = self
             .resource_tex_table
             .get(&resource_id)
@@ -132,52 +141,46 @@ impl TexTable {
             gl.bind_texture(web_sys::WebGlRenderingContext::TEXTURE_2D, Some(&tex_buf));
             self.tex_idx.insert(TextureId::clone(&tex_id), tex_idx);
             self.used_tex_idx.push_back((tex_idx, tex_id));
-            Some(tex_idx)
+            tex_idx
         } else {
-            arena_ref
-                .get::<resource::ImageData>(&resource_id)
-                .and_then(|data| {
-                    data.map(|data| {
-                        let tex_idx = self.use_idx();
-                        let tex_buf = gl.create_texture().unwrap();
-                        gl.active_texture(Self::tex_flag(tex_idx));
-                        gl.bind_texture(web_sys::WebGlRenderingContext::TEXTURE_2D, Some(&tex_buf));
-                        gl.pixel_storei(web_sys::WebGlRenderingContext::PACK_ALIGNMENT, 1);
-                        gl.tex_parameteri(
-                            web_sys::WebGlRenderingContext::TEXTURE_2D,
-                            web_sys::WebGlRenderingContext::TEXTURE_MIN_FILTER,
-                            web_sys::WebGlRenderingContext::LINEAR as i32,
-                        );
-                        gl.tex_parameteri(
-                            web_sys::WebGlRenderingContext::TEXTURE_2D,
-                            web_sys::WebGlRenderingContext::TEXTURE_MAG_FILTER,
-                            web_sys::WebGlRenderingContext::LINEAR as i32,
-                        );
-                        gl.tex_parameteri(
-                            web_sys::WebGlRenderingContext::TEXTURE_2D,
-                            web_sys::WebGlRenderingContext::TEXTURE_WRAP_S,
-                            web_sys::WebGlRenderingContext::CLAMP_TO_EDGE as i32,
-                        );
-                        gl.tex_parameteri(
-                            web_sys::WebGlRenderingContext::TEXTURE_2D,
-                            web_sys::WebGlRenderingContext::TEXTURE_WRAP_T,
-                            web_sys::WebGlRenderingContext::CLAMP_TO_EDGE as i32,
-                        );
-                        let _ = gl.tex_image_2d_with_u32_and_u32_and_image(
-                            web_sys::WebGlRenderingContext::TEXTURE_2D,
-                            0,
-                            web_sys::WebGlRenderingContext::RGBA as i32,
-                            web_sys::WebGlRenderingContext::RGBA,
-                            web_sys::WebGlRenderingContext::UNSIGNED_BYTE,
-                            &data.element(),
-                        );
-                        self.resource_tex_table
-                            .insert(U128Id::clone(&resource_id), Rc::new(tex_buf));
-                        self.tex_idx.insert(TextureId::clone(&tex_id), tex_idx);
-                        self.used_tex_idx.push_back((tex_idx, tex_id));
-                        tex_idx
-                    })
-                })
+            let tex_idx = self.use_idx();
+            let tex_buf = gl.create_texture().unwrap();
+            gl.active_texture(Self::tex_flag(tex_idx));
+            gl.bind_texture(web_sys::WebGlRenderingContext::TEXTURE_2D, Some(&tex_buf));
+            gl.pixel_storei(web_sys::WebGlRenderingContext::PACK_ALIGNMENT, 1);
+            gl.tex_parameteri(
+                web_sys::WebGlRenderingContext::TEXTURE_2D,
+                web_sys::WebGlRenderingContext::TEXTURE_MIN_FILTER,
+                web_sys::WebGlRenderingContext::LINEAR as i32,
+            );
+            gl.tex_parameteri(
+                web_sys::WebGlRenderingContext::TEXTURE_2D,
+                web_sys::WebGlRenderingContext::TEXTURE_MAG_FILTER,
+                web_sys::WebGlRenderingContext::LINEAR as i32,
+            );
+            gl.tex_parameteri(
+                web_sys::WebGlRenderingContext::TEXTURE_2D,
+                web_sys::WebGlRenderingContext::TEXTURE_WRAP_S,
+                web_sys::WebGlRenderingContext::CLAMP_TO_EDGE as i32,
+            );
+            gl.tex_parameteri(
+                web_sys::WebGlRenderingContext::TEXTURE_2D,
+                web_sys::WebGlRenderingContext::TEXTURE_WRAP_T,
+                web_sys::WebGlRenderingContext::CLAMP_TO_EDGE as i32,
+            );
+            let _ = gl.tex_image_2d_with_u32_and_u32_and_image(
+                web_sys::WebGlRenderingContext::TEXTURE_2D,
+                0,
+                web_sys::WebGlRenderingContext::RGBA as i32,
+                web_sys::WebGlRenderingContext::RGBA,
+                web_sys::WebGlRenderingContext::UNSIGNED_BYTE,
+                &data.element(),
+            );
+            self.resource_tex_table
+                .insert(U128Id::clone(&resource_id), Rc::new(tex_buf));
+            self.tex_idx.insert(TextureId::clone(&tex_id), tex_idx);
+            self.used_tex_idx.push_back((tex_idx, tex_id));
+            tex_idx
         }
     }
 

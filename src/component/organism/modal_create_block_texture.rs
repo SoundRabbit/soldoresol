@@ -4,6 +4,7 @@ use super::atom::{
 };
 use super::molecule::modal::{self, Modal};
 use super::organism::modal_resource::{self, ModalResource};
+use super::template::common::Common;
 use crate::arena::{
     block,
     resource::{self, LoadFrom},
@@ -287,7 +288,7 @@ impl Render for ModalCreateBlockTexture {
 impl ModalCreateBlockTexture {
     fn render_modal(&self, props: &Props) -> Html<Self> {
         match &self.showing_modal {
-            ShowingModal::None => Html::div(Attributes::new(), Events::new(), vec![]),
+            ShowingModal::None => Common::none(),
             ShowingModal::SelectCustomTextureImage(direction) => ModalResource::empty(
                 modal_resource::Props {
                     arena: ArenaMut::clone(&props.arena),
@@ -380,7 +381,11 @@ impl ModalCreateBlockTexture {
             Events::new().on_click(move |_| Msg::SelectCustomTextureImage(direction)),
             vec![
                 if let Some(src) = img.and_then(|img| img.map(|img| img.url().to_string())) {
-                    Html::img(Attributes::new().src(src), Events::new(), vec![])
+                    Html::img(
+                        Attributes::new().class(Common::bg_transparent()).src(src),
+                        Events::new(),
+                        vec![],
+                    )
                 } else {
                     Html::none()
                 },
@@ -408,7 +413,10 @@ impl ModalCreateBlockTexture {
                 .and_then(|img| img.map(|img| img.url().to_string()))
             {
                 Html::img(
-                    Attributes::new().src(src).class(Self::class("prefab-img")),
+                    Attributes::new()
+                        .src(src)
+                        .class(Self::class("prefab-img"))
+                        .class(Common::bg_transparent()),
                     Events::new(),
                     vec![],
                 )
@@ -496,6 +504,8 @@ impl Styled for ModalCreateBlockTexture {
                 "position": "absolute";
                 "top": "0";
                 "left": "0";
+                "color": crate::libs::color::Pallet::gray(0);
+                "-webkit-text-stroke": format!("1px {}", crate::libs::color::Pallet::gray(9));
             }
 
             ".prefab-img" {

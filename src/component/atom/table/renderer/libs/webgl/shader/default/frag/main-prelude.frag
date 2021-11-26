@@ -107,7 +107,7 @@ vec4 colorWithLightAsNone() {
 
 #define NORMAL_VEC_INTENSITY_DEFUSE(light) (clamp(dot(g_surface.n, light), 0.0, 1.0) * u_shadeIntensity + 1.0 - u_shadeIntensity)
 #define NORMAL_VEC_INTENSITY(light) (NORMAL_VEC_INTENSITY_DEFUSE(light) * u_lightIntensity)
-#define COLOR_WITH_LIGHT_INTENSITY(_i) vec4(colorWithLightAsNone().xyz * u_lightColor.xyz * (_i), 1.0)
+#define COLOR_WITH_LIGHT_INTENSITY(_i) vec4(colorWithLightAsNone() * vec4(u_lightColor.xyz * (_i), 1.0))
 
 
 vec4 colorWithLightAsAmbient() {

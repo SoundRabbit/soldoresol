@@ -1,8 +1,9 @@
-uses! {
-    super::BlockMut;
-    super::util::Pack;
-    crate::libs::color::Pallet;
-}
+uses! {}
+
+use super::super::resource::BlockTexture;
+use super::util::Pack;
+use super::BlockMut;
+use crate::libs::color::Pallet;
 
 #[derive(Clone, Copy)]
 pub enum Shape {
@@ -28,6 +29,7 @@ block! {
     position: [f64; 3] = [0.0, 0.0, 0.0];
     shape: Shape = Shape::Cube;
     color: Pallet = Pallet::blue(5);
+    texture: Option<BlockMut<BlockTexture>> = None;
 }
 
 impl Boxblock {
@@ -57,5 +59,13 @@ impl Boxblock {
 
     pub fn set_color(&mut self, color: Pallet) {
         self.color = color;
+    }
+
+    pub fn texture(&self) -> Option<&BlockMut<BlockTexture>> {
+        self.texture.as_ref()
+    }
+
+    pub fn set_texture(&mut self, texture: Option<BlockMut<BlockTexture>>) {
+        self.texture = texture;
     }
 }

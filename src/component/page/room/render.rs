@@ -66,11 +66,15 @@ impl Render for Room {
                                     Attributes::new().class(Self::class("tablemenu")),
                                     Events::new(),
                                     vec![TableMenu::empty(
-                                        table_menu::Props {},
+                                        table_menu::Props {
+                                            arena: ArenaMut::clone(&self.arena),
+                                            world: BlockMut::clone(&self.world),
+                                        },
                                         Sub::map(|sub| match sub {
                                             table_menu::On::SelectTool(tool) => {
                                                 Msg::SetSelectedTableTool(tool)
                                             }
+                                            _ => Msg::NoOp,
                                         }),
                                     )],
                                 ),
@@ -105,16 +109,6 @@ impl Render for Room {
                                     )],
                                 ),
                             ],
-                        ),
-                        ModalResource::empty(
-                            modal_resource::Props {
-                                arena: ArenaMut::clone(&self.arena),
-                                world: BlockMut::clone(&self.world),
-                                filter: set! {},
-                                title: String::from(modal_resource::title::VIEW_ALL_RESOURCE),
-                                is_selecter: false,
-                            },
-                            Sub::none(),
                         ),
                     ],
                 ),

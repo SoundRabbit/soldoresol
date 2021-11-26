@@ -54,6 +54,18 @@ impl Common {
     pub fn selectable() -> String {
         Self::class("selectable")
     }
+
+    pub fn bg_transparent() -> String {
+        Self::class("bg-transparent")
+    }
+
+    pub fn none<C: Component>() -> Html<C> {
+        Html::div(
+            Attributes::new().class(Self::class("none")),
+            Events::new(),
+            vec![],
+        )
+    }
 }
 
 impl Styled for Common {
@@ -101,6 +113,18 @@ impl Styled for Common {
                 "-webkit-user-select": "all";
                 "-ms-user-select": "all";
                 "user-select": "all";
+            }
+
+            ".none" {
+                "display": "none";
+            }
+
+            ".bg-transparent" {
+                "background-color": format!("{}", crate::libs::color::Pallet::gray(2).a(100));
+                "background-image": "linear-gradient(45deg,  #fff 25%, #fff 25%, transparent 25%, transparent 75%, #fff 75%, #fff 75%),
+                    linear-gradient(-135deg, #fff 25%, #fff 25%, transparent 25%, transparent 75%, #fff 75%, #fff 75%)";
+                "background-size": "1rem 1rem";
+                "background-position": "0 0, 0.5rem 0.5rem";
             }
         }
     }

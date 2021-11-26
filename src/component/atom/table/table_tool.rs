@@ -1,3 +1,4 @@
+use crate::arena::{resource, BlockMut};
 use std::rc::Rc;
 
 #[derive(Clone)]
@@ -35,4 +36,5 @@ pub struct Character {
 pub struct Boxblock {
     pub color: crate::libs::color::Pallet,
     pub size: [f64; 3],
+    pub texture: Option<BlockMut<resource::BlockTexture>>,
 }

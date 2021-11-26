@@ -1,5 +1,6 @@
 use super::atom::heading::{self, Heading};
 use super::atom::slider::{self, Slider};
+use super::template::common::Common;
 use crate::libs::color::{pallet, Pallet};
 use isaribi::{
     style,
@@ -138,6 +139,7 @@ impl ColorPallet {
     pub fn render_color_base<C: Component>(theme: &slider::Theme, pallet: &Pallet) -> Html<C> {
         Html::div(
             Attributes::new()
+                .class(Common::bg_transparent())
                 .class(Self::class("color-base"))
                 .class(Self::class(&format!("color-base--{}", theme))),
             Events::new(),
@@ -237,11 +239,6 @@ impl Styled for ColorPallet {
             ".color-base" {
                 "width": "100%";
                 "height": "2rem";
-                "background-color": format!("{}", Pallet::gray(2).a(100));
-                "background-image": "linear-gradient(45deg,  #fff 25%, #fff 25%, transparent 25%, transparent 75%, #fff 75%, #fff 75%),
-                    linear-gradient(-135deg, #fff 25%, #fff 25%, transparent 25%, transparent 75%, #fff 75%, #fff 75%)";
-                "background-size": "1rem 1rem";
-                "background-position": "0 0, 0.5rem 0.5rem";
             }
 
             ".color-base--light" {

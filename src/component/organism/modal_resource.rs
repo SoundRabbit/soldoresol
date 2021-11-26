@@ -6,6 +6,7 @@ use super::atom::{
 };
 use super::molecule::modal::{self, Modal};
 use super::organism::modal_create_block_texture::{self, ModalCreateBlockTexture};
+use super::template::common::Common;
 use crate::arena::{block, resource, ArenaMut, BlockKind, BlockMut};
 use crate::libs::random_id::U128Id;
 use isaribi::{
@@ -176,7 +177,9 @@ impl Render for ModalResource {
                 header_title: props.title.clone(),
                 footer_message: String::from(""),
             },
-            Sub::none(),
+            Sub::map(|sub| match sub {
+                modal::On::Close => Msg::Sub(On::Close),
+            }),
             vec![
                 Html::div(
                     Attributes::new().class(Self::class("base")),
@@ -343,6 +346,7 @@ impl ModalResource {
                         Html::img(
                             Attributes::new()
                                 .class(Self::class("cell-img"))
+                                .class(Common::bg_transparent())
                                 .src(this.url().to_string()),
                             Events::new(),
                             vec![],
@@ -376,6 +380,7 @@ impl ModalResource {
                         Html::img(
                             Attributes::new()
                                 .class(Self::class("cell-img"))
+                                .class(Common::bg_transparent())
                                 .src(this.data().url().to_string()),
                             Events::new(),
                             vec![],

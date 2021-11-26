@@ -202,6 +202,7 @@ impl Table {
         boxblock.set_size(option.size.clone());
         boxblock.set_position(p);
         boxblock.set_color(option.color);
+        boxblock.set_texture(option.texture.as_ref().map(|block| BlockMut::clone(block)));
 
         Some(boxblock)
     }
