@@ -12,6 +12,7 @@ pub struct Props {
 #[derive(Clone)]
 pub enum Variant {
     Primary,
+    PrimaryLikeMenu,
     Secondary,
     SecondaryLikeMenu,
     Danger,
@@ -42,6 +43,7 @@ impl Btn {
     pub fn class_name(variant: &Variant) -> String {
         match variant {
             Variant::Primary => Self::class("primary"),
+            Variant::PrimaryLikeMenu => Self::class("primary") + " " + &Self::class("like-menu"),
             Variant::Secondary => Self::class("secondary"),
             Variant::SecondaryLikeMenu => {
                 Self::class("secondary") + " " + &Self::class("like-menu")

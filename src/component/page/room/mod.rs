@@ -1,7 +1,7 @@
 use super::atom::table::{self, table_tool::TableTool, Table};
 use super::organism::room_modeless::{self, RoomModeless};
 use super::organism::tab_modeless_container::{self, TabModelessContainer};
-use crate::arena::{block, Arena, ArenaMut, BlockMut};
+use crate::arena::{block, resource, Arena, ArenaMut, BlockMut};
 use crate::libs::random_id::U128Id;
 use crate::libs::skyway::{MeshRoom, Peer};
 use kagura::prelude::*;
@@ -22,6 +22,7 @@ pub enum Msg {
     SetOkToCatchFile(bool),
     SetSelectedTableTool(TableTool),
     OnTableClicked(web_sys::MouseEvent),
+    AddResourceImageData(resource::ImageData),
 }
 
 pub enum On {}

@@ -13,6 +13,7 @@ block! {
     (blob): Rc<web_sys::Blob>;
     (url): Url;
     (size): [f64; 2];
+    (name): String;
 }
 
 impl ImageData {
@@ -26,6 +27,41 @@ impl ImageData {
 
     pub fn size(&self) -> &[f64; 2] {
         &self.size
+    }
+
+    pub fn name(&self) -> &String {
+        &self.name
+    }
+}
+
+impl Clone for ImageData {
+    fn clone(&self) -> Self {
+        Self {
+            element: Rc::clone(&self.element),
+            blob: Rc::clone(&self.blob),
+            url: self.url.clone(),
+            size: self.size.clone(),
+            name: self.name.clone(),
+        }
+    }
+}
+
+#[async_trait(?Send)]
+impl LoadFrom<web_sys::File> for ImageData {
+    async fn load_from(file: web_sys::File) -> Option<Self> {
+        let name = file.name();
+        let blob: web_sys::Blob = file.into();
+        let mut this = unwrap!(Self::load_from(blob).await);
+        this.name = name;
+        Some(this)
+    }
+}
+
+#[async_trait(?Send)]
+impl LoadFrom<Rc<web_sys::File>> for ImageData {
+    async fn load_from(file: Rc<web_sys::File>) -> Option<Self> {
+        let file = file.as_ref().clone();
+        Self::load_from(file).await
     }
 }
 
@@ -67,6 +103,7 @@ impl LoadFrom<Rc<web_sys::Blob>> for ImageData {
                 blob,
                 Url::Local(object_url),
                 [width, height],
+                String::from(""),
             ))
         } else {
             None
@@ -105,7 +142,8 @@ impl Pack for ImageData {
     async fn pack(&self, _: bool) -> JsValue {
         (object! {
             "type": self.blob.type_(),
-            "data": self.blob.as_ref()
+            "data": self.blob.as_ref(),
+            "name": self.name.as_str()
         })
         .into()
     }

@@ -4,6 +4,7 @@ use wasm_bindgen::prelude::*;
 
 mods! {
     pub image_data::ImageData;
+    pub block_texture::BlockTexture;
 }
 
 #[derive(Clone)]

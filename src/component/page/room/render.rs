@@ -8,6 +8,7 @@ use super::super::atom::{
     heading::{self, Heading},
 };
 use super::super::organism::{
+    modal_resource::{self, ModalResource},
     table_menu::{self, TableMenu},
     world_view::{self, WorldView},
 };
@@ -39,7 +40,9 @@ impl Render for Room {
                         attributes: Attributes::new().class(Common::layered()),
                         ok_to_catch_file: self.ok_to_catch_file,
                     },
-                    Sub::none(),
+                    Sub::map(|sub| match sub {
+                        file_catcher::On::LoadImageData(data) => Msg::AddResourceImageData(data),
+                    }),
                     vec![
                         Html::div(
                             Attributes::new().class(Common::layered_item()),
@@ -102,6 +105,16 @@ impl Render for Room {
                                     )],
                                 ),
                             ],
+                        ),
+                        ModalResource::empty(
+                            modal_resource::Props {
+                                arena: ArenaMut::clone(&self.arena),
+                                world: BlockMut::clone(&self.world),
+                                filter: set! {},
+                                title: String::from(modal_resource::title::VIEW_ALL_RESOURCE),
+                                is_selecter: false,
+                            },
+                            Sub::none(),
                         ),
                     ],
                 ),

@@ -98,6 +98,13 @@ impl Update for Room {
                 });
                 Cmd::none()
             }
+            Msg::AddResourceImageData(image_data) => {
+                let image_data = self.arena.insert(image_data);
+                self.world.update(|world| {
+                    world.push_image_data_resource(image_data);
+                });
+                Cmd::none()
+            }
         }
     }
 }

@@ -18,5 +18,6 @@ arena! {
     pub block::Table;
     pub block::World;
     pub resource::ImageData;
+    pub resource::BlockTexture;
     pub user::Player;
 }

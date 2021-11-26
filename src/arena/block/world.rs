@@ -3,6 +3,8 @@ uses! {
     super::BlockMut;
     super::Character;
     super::Scene;
+    super::super::resource::ImageData;
+    super::super::resource::BlockTexture;
 }
 
 block! {
@@ -10,6 +12,8 @@ block! {
     characters: Vec<BlockMut<Character>> = vec![];
     scenes: Vec<BlockMut<Scene>> = vec![];
     selecting_scene: BlockMut<Scene> = BlockMut::<Scene>::none();
+    image_data_resources: Vec<BlockMut<ImageData>> = vec![];
+    block_texture_resources: Vec<BlockMut<BlockTexture>> = vec![];
 }
 
 impl World {
@@ -30,5 +34,21 @@ impl World {
             self.selecting_scene = BlockMut::clone(&scene);
         }
         self.scenes.push(scene);
+    }
+
+    pub fn image_data_resources(&self) -> &Vec<BlockMut<ImageData>> {
+        &self.image_data_resources
+    }
+
+    pub fn push_image_data_resource(&mut self, image_data: BlockMut<ImageData>) {
+        self.image_data_resources.push(image_data);
+    }
+
+    pub fn block_texture_resources(&self) -> &Vec<BlockMut<BlockTexture>> {
+        &self.block_texture_resources
+    }
+
+    pub fn push_block_texture_resource(&mut self, block_texture: BlockMut<BlockTexture>) {
+        self.block_texture_resources.push(block_texture);
     }
 }

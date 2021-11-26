@@ -59,7 +59,7 @@ impl Update for FileCatcher {
                     let splited_file_type: Vec<&str> = file_type.split('/').collect();
                     let file_type_prefix: &str = splited_file_type.get(0).unwrap_or(&"");
 
-                    let file: Rc<web_sys::Blob> = Rc::new(file.into());
+                    let file = Rc::new(file);
 
                     if file_type_prefix == "image" {
                         cmds.push({
@@ -143,6 +143,7 @@ impl Styled for FileCatcher {
                 "width": "100vw";
                 "height": "100vh";
                 "background-color": crate::libs::color::Pallet::gray(9).a(30);
+                "z-index": super::constant::z_index::OVERLAY;
             }
         }
     }

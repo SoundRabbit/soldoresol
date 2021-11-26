@@ -3,12 +3,12 @@ use super::*;
 
 impl Constructor for Room {
     fn constructor(props: &Props) -> Self {
-        let world = BlockMut::<block::World>::none();
+        let world: BlockMut<block::World> = BlockMut::none();
         Self {
             arena: ArenaMut::clone(&props.arena),
             local_arena: Arena::new(),
 
-            chat: BlockMut::<block::Chat>::none(),
+            chat: BlockMut::none(),
             world: BlockMut::clone(&world),
 
             table: Table::new(ArenaMut::clone(&props.arena), BlockMut::clone(&world)),

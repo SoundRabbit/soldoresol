@@ -137,6 +137,7 @@ macro_rules! arena {
             $($b($b),)*
         }
 
+        #[derive(Clone, Copy, PartialEq, Eq, Hash)]
         pub enum BlockKind {
             None,
             $($b,)*
@@ -291,12 +292,14 @@ macro_rules! arena {
             }
         }
 
+        impl<T> BlockMut<T> {
+            pub fn none() -> Self where Block: From<T>{
+                Block::none().as_mut::<T>()
+            }
+        }
+
         $(
             impl BlockMut<$b> {
-                pub fn none() -> Self {
-                    Block::none().as_mut::<$b>()
-                }
-
                 pub fn update(&mut self, f: impl FnOnce(&mut $b)) {
                     if let Some(self_data) = self.data.upgrade() {
                         let mut borrow = self_data.borrow_mut();
@@ -344,9 +347,16 @@ macro_rules! arena {
             }
         )*
 
-        #[derive(Clone)]
         pub struct BlockRef<T> {
             data: BlockMut<T>
+        }
+
+        impl<T> Clone for BlockRef<T> {
+            fn clone(&self) -> Self {
+                Self {
+                    data: BlockMut::clone(&self.data),
+                }
+            }
         }
 
         $(
