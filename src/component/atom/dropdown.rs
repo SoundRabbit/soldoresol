@@ -239,6 +239,7 @@ impl Styled for Dropdown {
         style! {
             ".base" {
                 "position": "relative";
+                "overflow": "visible !important";
             }
 
             ".base-menu" {

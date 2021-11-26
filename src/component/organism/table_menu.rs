@@ -1,5 +1,6 @@
 use super::atom::{
     btn::{self, Btn},
+    dropdown::{self, Dropdown},
     fa,
     slider::{self, Slider},
     table::table_tool::{self, TableTool},
@@ -77,6 +78,7 @@ impl Constructor for TableMenu {
                         color: crate::libs::color::Pallet::blue(5),
                         size: [1.0, 1.0, 1.0],
                         texture: None,
+                        shape: block::boxblock::Shape::Cube,
                     })),
                 ],
                 0,
@@ -294,6 +296,67 @@ impl TableMenu {
                 Attributes::new().class(Common::keyvalue()),
                 Events::new(),
                 vec![
+                    text::span("形状"),
+                    Dropdown::with_children(
+                        dropdown::Props {
+                            text: dropdown::Text::Text(String::from(match &boxblock.shape {
+                                block::boxblock::Shape::Cube => "立方体",
+                                block::boxblock::Shape::Sphere => "球体",
+                                block::boxblock::Shape::Cylinder => "円柱",
+                            })),
+                            direction: dropdown::Direction::Bottom,
+                            toggle_type: dropdown::ToggleType::Click,
+                            variant: btn::Variant::DarkLikeMenu,
+                        },
+                        Sub::none(),
+                        vec![
+                            Btn::menu(
+                                Attributes::new(),
+                                Events::new().on_click({
+                                    let boxblock = Rc::clone(&boxblock);
+                                    move |_| {
+                                        let mut boxblock = boxblock.as_ref().clone();
+                                        boxblock.shape = block::boxblock::Shape::Cube;
+                                        Msg::SetTool(
+                                            tool_idx,
+                                            TableTool::Boxblock(Rc::new(boxblock)),
+                                        )
+                                    }
+                                }),
+                                vec![Html::text("立方体")],
+                            ),
+                            Btn::menu(
+                                Attributes::new(),
+                                Events::new().on_click({
+                                    let boxblock = Rc::clone(&boxblock);
+                                    move |_| {
+                                        let mut boxblock = boxblock.as_ref().clone();
+                                        boxblock.shape = block::boxblock::Shape::Sphere;
+                                        Msg::SetTool(
+                                            tool_idx,
+                                            TableTool::Boxblock(Rc::new(boxblock)),
+                                        )
+                                    }
+                                }),
+                                vec![Html::text("球体")],
+                            ),
+                            Btn::menu(
+                                Attributes::new(),
+                                Events::new().on_click({
+                                    let boxblock = Rc::clone(&boxblock);
+                                    move |_| {
+                                        let mut boxblock = boxblock.as_ref().clone();
+                                        boxblock.shape = block::boxblock::Shape::Cylinder;
+                                        Msg::SetTool(
+                                            tool_idx,
+                                            TableTool::Boxblock(Rc::new(boxblock)),
+                                        )
+                                    }
+                                }),
+                                vec![Html::text("円柱")],
+                            ),
+                        ],
+                    ),
                     text::span("X幅"),
                     Self::render_tool_option_boxblock_size(boxblock.size[0], {
                         let boxblock = Rc::clone(&boxblock);

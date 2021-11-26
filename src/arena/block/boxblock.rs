@@ -8,7 +8,7 @@ use crate::libs::color::Pallet;
 #[derive(Clone, Copy)]
 pub enum Shape {
     Cube,
-    Cyliner,
+    Cylinder,
     Sphere,
 }
 
@@ -17,7 +17,7 @@ impl Pack for Shape {
     async fn pack(&self, _: bool) -> JsValue {
         match self {
             Self::Cube => JsValue::from("Cube"),
-            Self::Cyliner => JsValue::from("Cyliner"),
+            Self::Cylinder => JsValue::from("Cylinder"),
             Self::Sphere => JsValue::from("Sphere"),
         }
     }
@@ -51,6 +51,10 @@ impl Boxblock {
 
     pub fn shape(&self) -> Shape {
         self.shape
+    }
+
+    pub fn set_shape(&mut self, shape: Shape) {
+        self.shape = shape;
     }
 
     pub fn color(&self) -> &Pallet {

@@ -373,7 +373,7 @@ impl Boxblock {
                 gl.set_u_inv_model_matrix(inv_model_matrix.reversed_axes());
                 gl.set_u_shape(match shape {
                     block::boxblock::Shape::Cube => program::SHAPE_3D_BOX,
-                    block::boxblock::Shape::Cyliner => program::SHAPE_3D_CYLINDER,
+                    block::boxblock::Shape::Cylinder => program::SHAPE_3D_CYLINDER,
                     block::boxblock::Shape::Sphere => program::SHAPE_3D_SPHERE,
                 });
 
