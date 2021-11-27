@@ -25,6 +25,12 @@ impl Renderer {
 
         let mut id_table_builder = id_table::IdTableBuilder::new();
 
+        id_table_builder.insert(
+            &crate::libs::random_id::U128Id::none(),
+            IdColor::from(0),
+            ObjectId::None,
+        );
+
         table.map(|table| {
             self.boxblock_mesh.update_id(
                 &mut id_table_builder,

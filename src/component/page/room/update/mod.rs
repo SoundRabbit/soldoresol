@@ -107,6 +107,10 @@ impl Update for Room {
                 });
                 Cmd::none()
             }
+            Msg::SetIs2dMode(is_2d_mode) => {
+                self.is_2d_mode = is_2d_mode;
+                Cmd::none()
+            }
         }
     }
 }

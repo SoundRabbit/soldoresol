@@ -23,6 +23,7 @@ pub enum Msg {
     SetSelectedTableTool(TableTool),
     OnTableClicked(web_sys::MouseEvent),
     AddResourceImageData(resource::ImageData),
+    SetIs2dMode(bool),
 }
 
 pub enum On {}
@@ -40,6 +41,7 @@ pub struct Room {
 
     table_tool: TableTool,
     ok_to_catch_file: bool,
+    is_2d_mode: bool,
 }
 
 impl Component for Room {

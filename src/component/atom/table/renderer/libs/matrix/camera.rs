@@ -7,6 +7,7 @@ pub struct CameraMatrix {
     field_of_view: f32,
     near: f32,
     far: f32,
+    is_2d_mode: bool,
 }
 
 impl CameraMatrix {
@@ -18,6 +19,7 @@ impl CameraMatrix {
             field_of_view: 30.0,
             near: 1.0,
             far: 1000.0,
+            is_2d_mode: false,
         }
     }
 
@@ -135,16 +137,22 @@ impl CameraMatrix {
         self.field_of_view = field_of_view;
     }
 
+    pub fn set_is_2d_mode(&mut self, is_2d_mode: bool) {
+        self.is_2d_mode = is_2d_mode;
+    }
+
     pub fn vp_matrix(&self, canvas_size: &[f32; 2]) -> Array2<f32> {
         self.perspective_matrix(&canvas_size)
             .dot(&self.view_matrix())
     }
 
     pub fn view_matrix(&self) -> Array2<f32> {
-        let view_matrix = Self::e();
-        let view_matrix = Self::rotate_view_matrix_with_z_axis(&view_matrix, self.z_axis_rotation);
-        let view_matrix = Self::rotate_view_matrix_with_x_axis(&view_matrix, self.x_axis_rotation);
-        let view_matrix = Self::move_view_matrix(&view_matrix, &self.movement);
+        let mut view_matrix = Self::e();
+        if !self.is_2d_mode {
+            view_matrix = Self::rotate_view_matrix_with_z_axis(&view_matrix, self.z_axis_rotation);
+            view_matrix = Self::rotate_view_matrix_with_x_axis(&view_matrix, self.x_axis_rotation);
+        }
+        view_matrix = Self::move_view_matrix(&view_matrix, &self.movement);
         view_matrix
     }
 
@@ -162,31 +170,64 @@ impl CameraMatrix {
         let far = self.far;
         let f = (std::f32::consts::PI * 0.5 - field_of_view * 0.5).tan();
         let range_inv = 1.0 / (near - far);
-        arr2(&[
-            [f / aspect, 0.0, 0.0, 0.0],
-            [0.0, f, 0.0, 0.0],
-            [0.0, 0.0, (near + far) * range_inv, -1.0],
-            [0.0, 0.0, near * far * range_inv * 2.0, 0.0],
-        ])
+
+        if !self.is_2d_mode {
+            arr2(&[
+                [f / aspect, 0.0, 0.0, 0.0],
+                [0.0, f, 0.0, 0.0],
+                [0.0, 0.0, (near + far) * range_inv, -1.0],
+                [0.0, 0.0, near * far * range_inv * 2.0, 0.0],
+            ])
+        } else {
+            arr2(&[
+                [f / aspect, 0.0, 0.0, 0.0],
+                [0.0, f, 0.0, 0.0],
+                [0.0, 0.0, (near + far) * range_inv, -1.0],
+                [
+                    0.0,
+                    0.0,
+                    0.0,
+                    -near * far * range_inv * 2.0 * self.movement[2],
+                ],
+            ])
+        }
     }
 
     pub fn inv_view_matrix(&self) -> Array2<f32> {
         let m = &self.movement;
-        let view_matrix = Self::e();
-        let view_matrix = Self::move_view_matrix(&view_matrix, &[-m[0], -m[1], -m[2]]);
-        let view_matrix = Self::rotate_view_matrix_with_x_axis(&view_matrix, -self.x_axis_rotation);
-        let view_matrix = Self::rotate_view_matrix_with_z_axis(&view_matrix, -self.z_axis_rotation);
+        let mut view_matrix = Self::e();
+        view_matrix = Self::move_view_matrix(&view_matrix, &[-m[0], -m[1], -m[2]]);
+
+        if !self.is_2d_mode {
+            view_matrix = Self::rotate_view_matrix_with_x_axis(&view_matrix, -self.x_axis_rotation);
+            view_matrix = Self::rotate_view_matrix_with_z_axis(&view_matrix, -self.z_axis_rotation);
+        }
+
         view_matrix
     }
 
     pub fn inv_perspective_matrix(&self, canvas_size: &[f32; 2]) -> Array2<f32> {
         let p = self.perspective_matrix(canvas_size);
-        arr2(&[
-            [1.0 / p.row(0)[0], 0.0, 0.0, 0.0],
-            [0.0, 1.0 / p.row(1)[1], 0.0, 0.0],
-            [0.0, 0.0, 0.0, 1.0 / p.row(3)[2]],
-            [0.0, 0.0, -1.0, p.row(2)[2] / p.row(3)[2]],
-        ])
+        if !self.is_2d_mode {
+            arr2(&[
+                [1.0 / p.row(0)[0], 0.0, 0.0, 0.0],
+                [0.0, 1.0 / p.row(1)[1], 0.0, 0.0],
+                [0.0, 0.0, 0.0, 1.0 / p.row(3)[2]],
+                [0.0, 0.0, -1.0, p.row(2)[2] / p.row(3)[2]],
+            ])
+        } else {
+            arr2(&[
+                [1.0 / p.row(0)[0], 0.0, 0.0, 0.0],
+                [0.0, 1.0 / p.row(1)[1], 0.0, 0.0],
+                [
+                    0.0,
+                    0.0,
+                    1.0 / p.row(2)[2],
+                    1.0 / (p.row(2)[2] * p.row(3)[3]),
+                ],
+                [0.0, 0.0, 0.0, 1.0 / p.row(3)[3]],
+            ])
+        }
     }
 
     pub fn collision_point_on_xy_plane(
@@ -264,10 +305,10 @@ impl CameraMatrix {
         let ww = iw[0] * p[0] + iw[1] * p[1] + iw[3];
 
         let mut m = [
-            [ix[2], xw, -s[0], -t[0], r[0]],
-            [iy[2], yw, -s[1], -t[1], r[1]],
-            [iz[2], zw, -s[2], -t[2], r[2]],
-            [iw[2], ww, 0.0, 0.0, 1.0],
+            [-s[0], -t[0], ix[2], xw, r[0]],
+            [-s[1], -t[1], iy[2], yw, r[1]],
+            [-s[2], -t[2], iz[2], zw, r[2]],
+            [0.0, 0.0, iw[2], ww, 1.0],
         ];
 
         // 拡大係数行列mを解く
@@ -286,9 +327,8 @@ impl CameraMatrix {
                 }
             }
         }
-
-        let u = m[2][4];
-        let v = m[3][4];
+        let u = m[0][4];
+        let v = m[1][4];
 
         [
             u * s[0] + v * t[0] + r[0],

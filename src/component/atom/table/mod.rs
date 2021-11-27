@@ -20,6 +20,7 @@ pub struct Props {
     pub is_debug_mode: bool,
     pub arena: ArenaMut,
     pub world: BlockMut<block::World>,
+    pub is_2d_mode: bool,
 }
 
 pub enum Msg {
@@ -44,6 +45,8 @@ pub struct Table {
 
     arena: ArenaMut,
     world: BlockMut<block::World>,
+
+    is_2d_mode: bool,
 }
 
 impl Component for Table {
@@ -62,6 +65,7 @@ impl Table {
             grabbed_object: ObjectId::None,
             arena,
             world,
+            is_2d_mode: false,
         })
     }
 }
@@ -82,6 +86,11 @@ impl Update for Table {
     fn on_load(&mut self, props: &Props) -> Cmd<Self> {
         self.arena = ArenaMut::clone(&props.arena);
         self.world = BlockMut::clone(&props.world);
+
+        if self.is_2d_mode != props.is_2d_mode {
+            self.is_2d_mode = props.is_2d_mode;
+            self.cmds.push(Self::render());
+        }
 
         Cmd::list(self.cmds.drain(..).collect())
     }
@@ -106,6 +115,7 @@ impl Update for Table {
             Msg::NoOp => Cmd::none(),
             Msg::Render => {
                 if let Some(renderer) = self.renderer.as_mut() {
+                    self.camera_matrix.set_is_2d_mode(self.is_2d_mode);
                     renderer.render(
                         props.is_debug_mode,
                         props.world.as_ref(),
@@ -210,6 +220,8 @@ impl Table {
         let p = [p[0] + n[0], p[1] + n[1], p[2] + n[2]];
 
         let mut boxblock = block::Boxblock::new();
+
+        crate::debug::log_1(format!("add boxblock to {:?}", &p));
 
         boxblock.set_size(option.size.clone());
         boxblock.set_position(p);
