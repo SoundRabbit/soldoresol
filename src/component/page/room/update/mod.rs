@@ -93,9 +93,11 @@ impl Update for Room {
                 Cmd::none()
             }
             Msg::OnTableClicked(e) => {
-                self.table.update(|table| {
-                    table.on_click(e, &self.table_tool);
-                });
+                if e.target() == e.current_target() {
+                    self.table.update(|table| {
+                        table.on_click(e, &self.table_tool);
+                    });
+                }
                 Cmd::none()
             }
             Msg::AddResourceImageData(image_data) => {

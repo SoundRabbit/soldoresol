@@ -78,7 +78,7 @@ uniform mat4 u_lightVpPz;
 //LIGHT_NONE以外で必須
 uniform float u_shadeIntensity;
 
-varying vec4 v_idColor;
+varying float v_id;
 varying vec3 v_normal;
 varying vec2 v_textureCoord;
 varying vec4 v_vColor;

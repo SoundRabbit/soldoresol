@@ -93,7 +93,7 @@ pub trait Program {
 
     // vertシェーダー
     // attr変数
-    accesser!(a_id_color: WebGlAttributeLocation as None);
+    accesser!(a_id: WebGlAttributeLocation as None);
     accesser!(a_normal: WebGlAttributeLocation as None);
     accesser!(a_texture_coord: WebGlAttributeLocation as None);
     accesser!(a_v_color: WebGlAttributeLocation as None);
@@ -239,7 +239,7 @@ fn unif(
 /*----------ShapedProgram----------*/
 
 pub struct ShapedProgram {
-    a_id_color: Option<WebGlAttributeLocation>,
+    a_id: Option<WebGlAttributeLocation>,
     a_normal: Option<WebGlAttributeLocation>,
     a_texture_coord: Option<WebGlAttributeLocation>,
     a_v_color: Option<WebGlAttributeLocation>,
@@ -293,7 +293,7 @@ impl ShapedProgram {
         let program = create_program(gl, vert, frag);
 
         Self {
-            a_id_color: attr("a_idColor", gl, &program),
+            a_id: attr("a_id", gl, &program),
             a_normal: attr("a_normal", gl, &program),
             a_texture_coord: attr("a_textureCoord", gl, &program),
             a_v_color: attr("a_vColor", gl, &program),
@@ -343,7 +343,7 @@ impl Program for ShapedProgram {
     accesser!(program);
     // vertシェーダー
     // attr変数
-    accesser!(a_id_color: WebGlAttributeLocation);
+    accesser!(a_id: WebGlAttributeLocation);
     accesser!(a_normal: WebGlAttributeLocation);
     accesser!(a_texture_coord: WebGlAttributeLocation);
     accesser!(a_v_color: WebGlAttributeLocation);
@@ -403,7 +403,7 @@ impl Program for ShapedProgram {
 /*----------UnshapedProgram----------*/
 
 pub struct UnshapedProgram {
-    a_id_color: Option<WebGlAttributeLocation>,
+    a_id: Option<WebGlAttributeLocation>,
     a_normal: Option<WebGlAttributeLocation>,
     a_texture_coord: Option<WebGlAttributeLocation>,
     a_v_color: Option<WebGlAttributeLocation>,
@@ -457,7 +457,7 @@ impl UnshapedProgram {
         let program = create_program(gl, vert, frag);
 
         Self {
-            a_id_color: attr("a_idColor", gl, &program),
+            a_id: attr("a_id", gl, &program),
             a_normal: attr("a_normal", gl, &program),
             a_texture_coord: attr("a_textureCoord", gl, &program),
             a_v_color: attr("a_vColor", gl, &program),
@@ -507,7 +507,7 @@ impl Program for UnshapedProgram {
     accesser!(program);
     // vertシェーダー
     // attr変数
-    accesser!(a_id_color: WebGlAttributeLocation);
+    accesser!(a_id: WebGlAttributeLocation);
     accesser!(a_normal: WebGlAttributeLocation);
     accesser!(a_texture_coord: WebGlAttributeLocation);
     accesser!(a_v_color: WebGlAttributeLocation);

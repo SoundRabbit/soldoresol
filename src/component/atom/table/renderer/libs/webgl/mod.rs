@@ -239,7 +239,7 @@ impl WebGlRenderingContext {
         self.using_program = Some(program_type);
     }
 
-    setter!(attr a_id_color: WebGlF32Vbo as set_a_id_color);
+    setter!(attr a_id: WebGlF32Vbo as set_a_id);
     setter!(attr a_normal: WebGlF32Vbo as set_a_normal);
     setter!(attr a_texture_coord: WebGlF32Vbo as set_a_texture_coord);
     setter!(attr a_v_color: WebGlF32Vbo as set_a_v_color);

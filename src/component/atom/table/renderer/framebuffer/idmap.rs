@@ -70,4 +70,15 @@ impl Idmap {
             Some(&self.frame_buffer),
         );
     }
+
+    pub fn begin_to_render(&self, gl: &WebGlRenderingContext, tex_table: &TexTable) {
+        if let Some((_, tex_flag)) = tex_table.try_use_custom(&self.screen_tex.1) {
+            gl.active_texture(tex_flag);
+            gl.bind_texture(web_sys::WebGlRenderingContext::TEXTURE_2D, None);
+        }
+    }
+
+    pub fn screen_tex(&self) -> &(web_sys::WebGlTexture, U128Id) {
+        &self.screen_tex
+    }
 }

@@ -31,7 +31,7 @@ pub enum RenderingMode<'a> {
 pub struct Boxblock {
     vertex_buffer: WebGlF32Vbo,
     v_color_buffer: WebGlF32Vbo,
-    id_color_buffer: WebGlF32Vbo,
+    id_buffer: WebGlF32Vbo,
     normal_buffer: WebGlF32Vbo,
     index_buffer: WebGlI16Ibo,
     texture_coord_buffer: WebGlF32Vbo,
@@ -86,35 +86,10 @@ impl Boxblock {
             ]
             .concat(),
         );
-        let id_color_buffer = gl.create_vbo_with_f32array(
-            &[
-                IdColor::from(0).to_f32array(),
-                IdColor::from(0).to_f32array(),
-                IdColor::from(0).to_f32array(),
-                IdColor::from(0).to_f32array(),
-                IdColor::from(1).to_f32array(),
-                IdColor::from(1).to_f32array(),
-                IdColor::from(1).to_f32array(),
-                IdColor::from(1).to_f32array(),
-                IdColor::from(2).to_f32array(),
-                IdColor::from(2).to_f32array(),
-                IdColor::from(2).to_f32array(),
-                IdColor::from(2).to_f32array(),
-                IdColor::from(3).to_f32array(),
-                IdColor::from(3).to_f32array(),
-                IdColor::from(3).to_f32array(),
-                IdColor::from(3).to_f32array(),
-                IdColor::from(4).to_f32array(),
-                IdColor::from(4).to_f32array(),
-                IdColor::from(4).to_f32array(),
-                IdColor::from(4).to_f32array(),
-                IdColor::from(5).to_f32array(),
-                IdColor::from(5).to_f32array(),
-                IdColor::from(5).to_f32array(),
-                IdColor::from(5).to_f32array(),
-            ]
-            .concat(),
-        );
+        let id_buffer = gl.create_vbo_with_f32array(&[
+            0.0, 0.0, 0.0, 0.0, 2.0, 2.0, 2.0, 2.0, 4.0, 4.0, 4.0, 4.0, 6.0, 6.0, 6.0, 6.0, 8.0,
+            8.0, 8.0, 8.0, 10.0, 10.0, 10.0, 10.0,
+        ]);
         let v_color_buffer = gl.create_vbo_with_f32array(
             &[
                 [0.0, 0.0, 0.0, 0.0],
@@ -212,7 +187,7 @@ impl Boxblock {
         Self {
             vertex_buffer,
             v_color_buffer,
-            id_color_buffer,
+            id_buffer,
             index_buffer,
             texture_coord_buffer,
             normal_buffer,
@@ -231,7 +206,7 @@ impl Boxblock {
                     if let Some(surface) = Self::surface_of(boxblock, srfs) {
                         builder.insert(
                             &block_id,
-                            IdColor::from(srfs),
+                            IdColor::from(srfs * 2),
                             ObjectId::Boxblock(U128Id::clone(&block_id), surface),
                         );
                     }
@@ -257,7 +232,7 @@ impl Boxblock {
         gl.depth_func(web_sys::WebGlRenderingContext::LEQUAL);
         gl.set_a_vertex(&self.vertex_buffer, 3, 0);
         gl.set_a_texture_coord(&self.texture_coord_buffer, 2, 0);
-        gl.set_a_id_color(&self.id_color_buffer, 4, 0);
+        gl.set_a_id(&self.id_buffer, 1, 0);
         gl.set_a_v_color(&self.v_color_buffer, 4, 0);
         gl.set_a_normal(&self.normal_buffer, 3, 0);
         gl.bind_buffer(

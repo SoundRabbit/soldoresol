@@ -49,6 +49,7 @@ impl Render for Room {
                             Events::new(),
                             vec![self.table.with_children(
                                 table::Props {
+                                    is_debug_mode: true,
                                     arena: ArenaMut::clone(&self.arena),
                                     world: BlockMut::clone(&self.world),
                                 },
@@ -62,51 +63,43 @@ impl Render for Room {
                                 .class(Self::class("main")),
                             Events::new(),
                             vec![
-                                Html::div(
-                                    Attributes::new().class(Self::class("tablemenu")),
-                                    Events::new(),
-                                    vec![TableMenu::empty(
-                                        table_menu::Props {
-                                            arena: ArenaMut::clone(&self.arena),
-                                            world: BlockMut::clone(&self.world),
-                                        },
-                                        Sub::map(|sub| match sub {
-                                            table_menu::On::SelectTool(tool) => {
-                                                Msg::SetSelectedTableTool(tool)
-                                            }
-                                            _ => Msg::NoOp,
-                                        }),
-                                    )],
+                                TableMenu::empty(
+                                    table_menu::Props {
+                                        arena: ArenaMut::clone(&self.arena),
+                                        world: BlockMut::clone(&self.world),
+                                    },
+                                    Sub::map(|sub| match sub {
+                                        table_menu::On::SelectTool(tool) => {
+                                            Msg::SetSelectedTableTool(tool)
+                                        }
+                                        _ => Msg::NoOp,
+                                    }),
                                 ),
-                                Html::div(
-                                    Attributes::new(),
-                                    Events::new().on_click(Msg::OnTableClicked),
-                                    vec![self.modeless_container.with_children(
-                                        tab_modeless_container::Props {},
-                                        Sub::map(|sub| match sub {
-                                            tab_modeless_container::On::StartDragTab => {
-                                                Msg::SetOkToCatchFile(false)
-                                            }
-                                            tab_modeless_container::On::EndDragTab => {
-                                                Msg::SetOkToCatchFile(true)
-                                            }
-                                            tab_modeless_container::On::Sub(sub) => match sub {
-                                                room_modeless::On::UpdateBlocks { .. } => Msg::NoOp,
-                                            },
-                                        }),
+                                self.modeless_container.with_children(
+                                    tab_modeless_container::Props {},
+                                    Sub::map(|sub| match sub {
+                                        tab_modeless_container::On::StartDragTab => {
+                                            Msg::SetOkToCatchFile(false)
+                                        }
+                                        tab_modeless_container::On::EndDragTab => {
+                                            Msg::SetOkToCatchFile(true)
+                                        }
+                                        tab_modeless_container::On::Sub(sub) => match sub {
+                                            room_modeless::On::UpdateBlocks { .. } => Msg::NoOp,
+                                        },
+                                    }),
+                                    vec![Html::div(
+                                        Attributes::new().class(Self::class("mouse-capture")),
+                                        Events::new().on_click(Msg::OnTableClicked),
                                         vec![],
                                     )],
                                 ),
-                                Html::div(
-                                    Attributes::new().class(Self::class("wolrdview")),
-                                    Events::new(),
-                                    vec![WorldView::empty(
-                                        world_view::Props {
-                                            arena: ArenaMut::clone(&self.arena),
-                                            world: BlockMut::clone(&self.world),
-                                        },
-                                        Sub::none(),
-                                    )],
+                                WorldView::empty(
+                                    world_view::Props {
+                                        arena: ArenaMut::clone(&self.arena),
+                                        world: BlockMut::clone(&self.world),
+                                    },
+                                    Sub::none(),
                                 ),
                             ],
                         ),
@@ -243,6 +236,14 @@ impl Styled for Room {
             ".main" {
                 "display": "grid";
                 "grid-template-columns": "max-content 1fr max-content";
+            }
+
+            ".mouse-capture" {
+                "position": "absolute";
+                "left": "0";
+                "top": "0";
+                "width": "100%";
+                "height": "100%";
             }
         }
     }

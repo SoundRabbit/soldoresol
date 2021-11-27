@@ -11,6 +11,8 @@ impl Renderer {
             .reset_size(&self.gl, sw, sh, &mut self.tex_table);
         self.idmap_frame
             .reset_size(&self.gl, sw, sh, &mut self.tex_table);
+        self.craftboard_idmap_frame
+            .reset_size(&self.gl, sw, sh, &mut self.tex_table);
         self.canvas_size = canvas_size;
     }
 
@@ -59,7 +61,13 @@ impl Renderer {
         );
 
         if res.is_ok() {
-            let table_id = u32::from_be_bytes([table_id[3], table_id[0], table_id[1], table_id[2]]);
+            let r = table_id[0] as f32 / 255.0;
+            let g = table_id[1] as f32 / 255.0;
+            let b = table_id[2] as f32 / 255.0;
+            let a = table_id[3] as f32 / 255.0;
+            let table_id = (r + g / 255.0 + b / (255.0 * 255.0) + a / (255.0 * 255.0 * 255.0))
+                * (0x1000000 as f32 - 1.0);
+            let table_id = ((table_id / 2.0).round() * 2.0) as u32;
             self.id_table
                 .object_id(&IdColor::from(table_id))
                 .map(|x| ObjectId::clone(x))

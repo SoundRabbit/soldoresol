@@ -4,6 +4,7 @@ use crate::arena::{block, BlockMut, BlockRef};
 impl Renderer {
     pub fn render(
         &mut self,
+        is_debug_mode: bool,
         world: BlockRef<block::World>,
         camera_matrix: &CameraMatrix,
         grabbed_object_id: &ObjectId,
@@ -39,65 +40,70 @@ impl Renderer {
         let cs = as_f32a![self.canvas_size[0], self.canvas_size[1]];
         let vp_matrix = camera_matrix.vp_matrix(&cs);
 
-        self.screen_frame.bind_self(&self.gl);
+        if !is_debug_mode {
+            self.screen_frame.bind_self(&self.gl);
 
-        self.screen_frame
-            .begin_to_render_frontscreen(&self.gl, &self.tex_table);
-        self.clear();
+            self.screen_frame
+                .begin_to_render_frontscreen(&self.gl, &self.tex_table);
+            self.clear();
 
-        self.screen_frame
-            .begin_to_render_backscreen(&self.gl, &self.tex_table);
-        self.clear();
+            self.screen_frame
+                .begin_to_render_backscreen(&self.gl, &self.tex_table);
+            self.clear();
 
-        self.gl.blend_func_separate(
-            web_sys::WebGlRenderingContext::SRC_ALPHA,
-            web_sys::WebGlRenderingContext::ONE_MINUS_SRC_ALPHA,
-            web_sys::WebGlRenderingContext::ONE,
-            web_sys::WebGlRenderingContext::ONE,
-        );
-
-        table.map(|table: &block::Table| {
-            let craftboards = table.craftboards();
-            for craftboard in craftboards {
-                craftboard.map(|craftboard| {
-                    self.craftboard_grid_mesh.render(
-                        &mut self.gl,
-                        &vp_matrix,
-                        &camera_matrix.position(),
-                        craftboard,
-                    );
-                });
-            }
-        });
-
-        table.map(|table: &block::Table| {
-            self.boxblock_mesh.render(
-                &mut self.gl,
-                &self.id_table,
-                &vp_matrix,
-                &camera_matrix.position(),
-                table
-                    .boxblocks()
-                    .iter()
-                    .map(BlockMut::<block::Boxblock>::as_ref),
-                &mesh::boxblock::RenderingMode::View {
-                    lighting: mesh::boxblock::LightingMode::AmbientLight {
-                        direction: &[1.0, -2.0, 3.0],
-                    },
-                    light_color: &crate::libs::color::Pallet::gray(0),
-                    light_intensity: 1.0,
-                },
-                &mut self.tex_table,
+            self.gl.blend_func_separate(
+                web_sys::WebGlRenderingContext::SRC_ALPHA,
+                web_sys::WebGlRenderingContext::ONE_MINUS_SRC_ALPHA,
+                web_sys::WebGlRenderingContext::ONE,
+                web_sys::WebGlRenderingContext::ONE,
             );
-        });
 
-        self.render_frontscreen(&cs);
+            table.map(|table: &block::Table| {
+                let craftboards = table.craftboards();
+                for craftboard in craftboards {
+                    craftboard.map(|craftboard| {
+                        self.craftboard_grid_mesh.render(
+                            &mut self.gl,
+                            &vp_matrix,
+                            &camera_matrix.position(),
+                            craftboard,
+                        );
+                    });
+                }
+            });
+
+            table.map(|table: &block::Table| {
+                self.boxblock_mesh.render(
+                    &mut self.gl,
+                    &self.id_table,
+                    &vp_matrix,
+                    &camera_matrix.position(),
+                    table
+                        .boxblocks()
+                        .iter()
+                        .map(BlockMut::<block::Boxblock>::as_ref),
+                    &mesh::boxblock::RenderingMode::View {
+                        lighting: mesh::boxblock::LightingMode::AmbientLight {
+                            direction: &[1.0, -2.0, 3.0],
+                        },
+                        light_color: &crate::libs::color::Pallet::gray(0),
+                        light_intensity: 1.0,
+                    },
+                    &mut self.tex_table,
+                );
+            });
+
+            self.render_frontscreen(&cs);
+        }
 
         // 当たり判定用のオフスクリーンレンダリング
         self.idmap_frame.bind_self(&self.gl);
+        self.idmap_frame.begin_to_render(&self.gl, &self.tex_table);
         self.clear();
 
-        self.gl.blend_func(
+        self.gl.blend_func_separate(
+            web_sys::WebGlRenderingContext::ONE,
+            web_sys::WebGlRenderingContext::ZERO,
             web_sys::WebGlRenderingContext::ONE,
             web_sys::WebGlRenderingContext::ZERO,
         );
@@ -121,7 +127,7 @@ impl Renderer {
 
         self.view_frame.bind_self(&self.gl);
         self.clear();
-        self.flip(&cs);
+        self.flip(&cs, is_debug_mode);
 
         self.tex_table.update(&self.gl);
     }
@@ -147,13 +153,23 @@ impl Renderer {
         );
     }
 
-    fn flip(&mut self, cs: &[f32; 2]) {
-        self.screen_mesh.render(
-            &mut self.gl,
-            &self.screen_frame.frontscreen_tex().1,
-            &mut self.tex_table,
-            &self.screen_frame.frontscreen_tex().0,
-            cs,
-        );
+    fn flip(&mut self, cs: &[f32; 2], is_debug_mode: bool) {
+        if !is_debug_mode {
+            self.screen_mesh.render(
+                &mut self.gl,
+                &self.screen_frame.frontscreen_tex().1,
+                &mut self.tex_table,
+                &self.screen_frame.frontscreen_tex().0,
+                cs,
+            );
+        } else {
+            self.screen_mesh.render(
+                &mut self.gl,
+                &self.idmap_frame.screen_tex().1,
+                &mut self.tex_table,
+                &self.idmap_frame.screen_tex().0,
+                cs,
+            );
+        }
     }
 }

@@ -17,6 +17,7 @@ use renderer::{CameraMatrix, ObjectId, Renderer};
 use table_tool::TableTool;
 
 pub struct Props {
+    pub is_debug_mode: bool,
     pub arena: ArenaMut,
     pub world: BlockMut<block::World>,
 }
@@ -106,6 +107,7 @@ impl Update for Table {
             Msg::Render => {
                 if let Some(renderer) = self.renderer.as_mut() {
                     renderer.render(
+                        props.is_debug_mode,
                         props.world.as_ref(),
                         &self.camera_matrix,
                         &self.grabbed_object,
@@ -165,25 +167,35 @@ impl Table {
     }
 
     fn n_cube(n: &[f64; 3], cube: &[f64; 3]) -> [f64; 3] {
-        let x_ratio = if n[0] != 0.0 {
-            (cube[0] * 0.5 / n[0]).abs()
-        } else {
-            f64::INFINITY
-        };
-        let y_ratio = if n[1] != 0.0 {
-            (cube[1] * 0.5 / n[1]).abs()
-        } else {
-            f64::INFINITY
-        };
-        let z_ratio = if n[2] != 0.0 {
-            (cube[2] * 0.5 / n[2]).abs()
-        } else {
-            f64::INFINITY
-        };
+        let mut ratio = None;
+        if n[0] != 0.0 {
+            let x_ratio = (cube[0] * 0.5 / n[0]).abs();
+            ratio = Some(x_ratio);
+        }
 
-        let ratio = x_ratio.min(y_ratio).min(z_ratio);
+        if n[1] != 0.0 {
+            let y_ratio = (cube[1] * 0.5 / n[1]).abs();
+            ratio = if let Some(ratio) = ratio {
+                Some(ratio.min(y_ratio))
+            } else {
+                Some(y_ratio)
+            };
+        }
 
-        [n[0] * ratio, n[1] * ratio, n[2] * ratio]
+        if n[2] != 0.0 {
+            let z_ratio = (cube[2] * 0.5 / n[2]).abs();
+            ratio = if let Some(ratio) = ratio {
+                Some(ratio.min(z_ratio))
+            } else {
+                Some(z_ratio)
+            };
+        }
+
+        if let Some(ratio) = ratio {
+            [n[0] * ratio, n[1] * ratio, n[2] * ratio]
+        } else {
+            n.clone()
+        }
     }
 
     pub fn create_boxblock(

@@ -18,10 +18,10 @@ impl Color {
 
     pub fn to_f32array(&self) -> [f32; 4] {
         [
-            self.red as f32 / 255.0,
-            self.green as f32 / 255.0,
-            self.blue as f32 / 255.0,
-            self.alpha as f32 / 100.0,
+            (self.red as f32 / 255.0).min(1.0).max(0.0),
+            (self.green as f32 / 255.0).min(1.0).max(0.0),
+            (self.blue as f32 / 255.0).min(1.0).max(0.0),
+            (self.alpha as f32 / 100.0).min(1.0).max(0.0),
         ]
     }
 

@@ -12,6 +12,23 @@ CameraRay g_cameraRay;
 Surface g_surface;
 int g_idValue;
 
+float rgbToFloat(vec3 rgb){
+    return (rgb.r + rgb.g / 255.0 + rgb.b / (255.0 * 255.0)) * float(0x1000000 - 1);
+}
+
+vec4 floatToRgb(float v) {
+    v = v / float(0x1000000 - 1);
+    float r = v;
+    float g = fract(r * 255.0);
+    float b = fract(g * 255.0);
+    float a = fract(b * 255.0);
+    float coef = 1.0 / 255.0;
+    r -= g * coef;
+    g -= b * coef;
+    b -= a * coef;
+    return vec4(r,g,b,a);
+}
+
 bool implSetGSurfaceAs2dBox() {
     g_surface.p =  (u_modelMatrix * vec4(v_vertex, 1.0)).xyz;
     g_surface.n = v_normal;
@@ -119,17 +136,6 @@ vec4 colorWithLightAsAmbient() {
 #define IS_MAX(x, y, z) (x>=y && x>=z)
 #define LIGHT_INTENSITY(i, a, len) (a > 0.0 ? pow(i / max(1.0, len - a  + 1.0), 2.0) : pow(u_lightIntensity, 2.0))
 
-
-#define ID_FROM_int_COLOR(r, g, b, a) (a * 0x01000000 + r * 0x00010000 + g * 0x00000100 + b)
-#define F_TO_I(x) (int(x * 255.0))
-#define ID_FROM_VEC_COLOR(_v) (ID_FROM_int_COLOR(F_TO_I(_v.x), F_TO_I(_v.y), F_TO_I(_v.z), F_TO_I(_v.w)))
-
-#define LIGHT_MAP(x, y, z, lv) (\
-    IS_MAX(x, y, z) ? (lv.x > 0.0 ? u_lightMapPx : u_lightMapNx)\
-    : IS_MAX(y, z, x) ? (lv.y > 0.0 ? u_lightMapPy : u_lightMapNy)\
-    : (lv.z > 0.0 ? u_lightMapPz : u_lightMapNz)\
-)
-
 vec4 colorWithLightAsPointWithId() {
     vec3 lightVec = g_surface.p - u_lightPosition;
     float absX = abs(lightVec.x);
@@ -145,10 +151,9 @@ vec4 colorWithLightAsPointWithId() {
     vec4 pLightWorld = lightVp * vec4(g_surface.p, 1.0);
     vec2 lightMapCoord = (pLightWorld.xy / pLightWorld.w + vec2(1.0)) * 0.5;
     vec4 idColorLightMap = texture2D(u_lightMapPz, lightMapCoord);
-//LIGHT_MAP(absX, absY, absZ, lightVec)
     vec3 normalizedInvLp = normalize(-lightVec.xyz);
     float lightIntensity =
-        ID_FROM_VEC_COLOR(idColorLightMap) !=  g_idValue ? 0.0
+        int(floor(rgbToFloat(idColorLightMap.xyz) + 0.5)) !=  g_idValue ? 0.0
         : NORMAL_VEC_INTENSITY(normalizedInvLp) * LIGHT_INTENSITY(u_lightIntensity, u_lightAttenation, len);
     return COLOR_WITH_LIGHT_INTENSITY(lightIntensity);
 }

@@ -152,13 +152,10 @@ impl From<IdTableBuilder> for IdTable {
                 let mut delta_max = 0;
                 for (delta_color, object_id) in objects {
                     delta_max = delta_max.max(delta_color.value());
-                    object.insert(
-                        delta_color.clone_with_offset(offset_color | 0xFF000000),
-                        object_id,
-                    );
+                    object.insert(delta_color.clone_with_offset(offset_color), object_id);
                 }
 
-                offset_color += delta_max + 1;
+                offset_color += delta_max + 2;
             }
         }
 

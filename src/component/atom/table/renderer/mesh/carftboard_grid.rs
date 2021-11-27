@@ -8,7 +8,7 @@ struct Buffer {
     index_len: i32,
     vertex: WebGlF32Vbo,
     v_color: WebGlF32Vbo,
-    id_color: WebGlF32Vbo,
+    id: WebGlF32Vbo,
     normal: WebGlF32Vbo,
     texture_coord: WebGlF32Vbo,
 }
@@ -61,7 +61,7 @@ impl CraftboardGrid {
         gl.use_program(ProgramType::UnshapedProgram);
         gl.depth_func(web_sys::WebGlRenderingContext::ALWAYS);
         gl.set_a_vertex(&self.buffer.vertex, 3, 0);
-        gl.set_a_id_color(&self.buffer.id_color, 4, 0);
+        gl.set_a_id(&self.buffer.id, 1, 0);
         gl.set_a_v_color(&self.buffer.v_color, 4, 0);
         gl.set_a_normal(&self.buffer.normal, 3, 0);
         gl.set_a_texture_coord(&self.buffer.texture_coord, 2, 0);
@@ -128,13 +128,13 @@ impl CraftboardGrid {
 
         let mut grid_idx = vec![];
         let mut grid_v_color = vec![];
-        let mut grid_id_color = vec![];
+        let mut grid_id = vec![];
         let mut grid_normal = vec![];
 
         for idx in 0..grid_idx_len {
             grid_idx.push(idx as i16);
             grid_v_color.append(&mut vec![0.0, 0.0, 0.0, 0.0]);
-            grid_id_color.append(&mut vec![0.0, 0.0, 0.0, 0.0]);
+            grid_id.push(0.0);
             grid_normal.append(&mut vec![0.0, 0.0, 1.0]);
         }
 
@@ -144,7 +144,7 @@ impl CraftboardGrid {
             vertex: gl.create_vbo_with_f32array(&grid_vertex),
             texture_coord: gl.create_vbo_with_f32array(&grid_texture_coord),
             v_color: gl.create_vbo_with_f32array(&grid_v_color),
-            id_color: gl.create_vbo_with_f32array(&grid_id_color),
+            id: gl.create_vbo_with_f32array(&grid_id),
             normal: gl.create_vbo_with_f32array(&grid_normal),
         }
     }
