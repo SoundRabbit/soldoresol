@@ -9,6 +9,8 @@ uniform mat4 u_modelMatrix;
 uniform int u_shape;
 //必須
 uniform mat4 u_vpMatrix;
+//必須
+uniform int u_perspective;
 
 // 背景色
 //必須
@@ -83,6 +85,9 @@ varying vec3 v_normal;
 varying vec2 v_textureCoord;
 varying vec4 v_vColor;
 varying vec3 v_vertex;
+
+#define PERSPECTIVE_NORMAL 0x00000000
+#define PERSPECTIVE_PROJECTION 0x00000001
 
 #define COLOR_NONE 0x00000000
 #define COLOR_SOME 0x00000001

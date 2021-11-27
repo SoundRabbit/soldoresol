@@ -252,6 +252,7 @@ impl WebGlRenderingContext {
     setter!(unif u_model_matrix: matrix4fv as set_u_model_matrix);
     setter!(unif u_shape: 1i as set_u_shape);
     setter!(unif u_vp_matrix: matrix4fv as set_u_vp_matrix);
+    setter!(unif u_perspective: 1i as set_u_perspective);
 
     setter!(unif u_bg_color_1: 1i as set_u_bg_color_1);
     setter!(unif u_bg_color_2: 1i as set_u_bg_color_2);

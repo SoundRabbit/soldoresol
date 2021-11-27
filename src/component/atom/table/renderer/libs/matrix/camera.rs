@@ -141,6 +141,10 @@ impl CameraMatrix {
         self.is_2d_mode = is_2d_mode;
     }
 
+    pub fn is_2d_mode(&self) -> bool {
+        self.is_2d_mode
+    }
+
     pub fn vp_matrix(&self, canvas_size: &[f32; 2]) -> Array2<f32> {
         self.perspective_matrix(&canvas_size)
             .dot(&self.view_matrix())

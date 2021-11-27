@@ -223,6 +223,7 @@ impl Boxblock {
         camera_position: &[f32; 3],
         boxblocks: impl Iterator<Item = BlockRef<block::Boxblock>>,
         rendering_mode: &RenderingMode,
+        is_2d_mode: bool,
         tex_table: &mut TexTable,
     ) {
         gl.use_program(match rendering_mode {
@@ -245,6 +246,11 @@ impl Boxblock {
         gl.set_u_texture_0(program::TEXTURE_NONE);
         gl.set_u_texture_1(program::TEXTURE_NONE);
         gl.set_u_texture_2(program::TEXTURE_NONE);
+        gl.set_u_perspective(if is_2d_mode {
+            program::PERSPECTIVE_PROJECTION
+        } else {
+            program::PERSPECTIVE_NORMAL
+        });
 
         match rendering_mode {
             RenderingMode::IdMap { .. } => {

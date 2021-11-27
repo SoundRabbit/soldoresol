@@ -95,6 +95,7 @@ impl Renderer {
                         light_color: &crate::libs::color::Pallet::gray(0),
                         light_intensity: 1.0,
                     },
+                    camera_matrix.is_2d_mode(),
                     &mut self.tex_table,
                 );
             });
@@ -127,6 +128,7 @@ impl Renderer {
                 &mesh::boxblock::RenderingMode::IdMap {
                     grabbed: grabbed_object_id,
                 },
+                camera_matrix.is_2d_mode(),
                 &mut self.tex_table,
             );
         });

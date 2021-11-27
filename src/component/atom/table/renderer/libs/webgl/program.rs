@@ -3,6 +3,9 @@ use super::WebGlRenderingContext;
 use web_sys::WebGlProgram;
 use web_sys::WebGlUniformLocation;
 
+pub const PERSPECTIVE_NORMAL: i32 = 0x00000000;
+pub const PERSPECTIVE_PROJECTION: i32 = 0x00000001;
+
 pub const COLOR_NONE: i32 = 0x00000000;
 pub const COLOR_SOME: i32 = 0x00000001;
 
@@ -110,6 +113,7 @@ pub trait Program {
     accesser!(u_model_matrix: WebGlUniformLocation as None);
     accesser!(u_shape: WebGlUniformLocation as None);
     accesser!(u_vp_matrix: WebGlUniformLocation as None);
+    accesser!(u_perspective: WebGlUniformLocation as None);
 
     // 背景色
     accesser!(u_bg_color_1: WebGlUniformLocation as None);
@@ -252,6 +256,7 @@ pub struct ShapedProgram {
     u_model_matrix: Option<WebGlUniformLocation>,
     u_shape: Option<WebGlUniformLocation>,
     u_vp_matrix: Option<WebGlUniformLocation>,
+    u_perspective: Option<WebGlUniformLocation>,
     u_bg_color_1: Option<WebGlUniformLocation>,
     u_bg_color_2: Option<WebGlUniformLocation>,
     u_bg_color_1_value: Option<WebGlUniformLocation>,
@@ -301,6 +306,7 @@ impl ShapedProgram {
             u_translate: unif("u_translate", gl, &program),
             u_camera_position: unif("u_cameraPosition", gl, &program),
             u_inv_model_matrix: unif("u_invModelMatrix", gl, &program),
+            u_perspective: unif("u_perspective", gl, &program),
             u_model_matrix: unif("u_modelMatrix", gl, &program),
             u_shape: unif("u_shape", gl, &program),
             u_vp_matrix: unif("u_vpMatrix", gl, &program),
@@ -360,6 +366,7 @@ impl Program for ShapedProgram {
     accesser!(u_model_matrix: WebGlUniformLocation);
     accesser!(u_shape: WebGlUniformLocation);
     accesser!(u_vp_matrix: WebGlUniformLocation);
+    accesser!(u_perspective: WebGlUniformLocation);
 
     // 背景色
     accesser!(u_bg_color_1: WebGlUniformLocation);
@@ -416,6 +423,7 @@ pub struct UnshapedProgram {
     u_model_matrix: Option<WebGlUniformLocation>,
     u_shape: Option<WebGlUniformLocation>,
     u_vp_matrix: Option<WebGlUniformLocation>,
+    u_perspective: Option<WebGlUniformLocation>,
     u_bg_color_1: Option<WebGlUniformLocation>,
     u_bg_color_2: Option<WebGlUniformLocation>,
     u_bg_color_1_value: Option<WebGlUniformLocation>,
@@ -465,6 +473,7 @@ impl UnshapedProgram {
             u_translate: unif("u_translate", gl, &program),
             u_camera_position: unif("u_cameraPosition", gl, &program),
             u_inv_model_matrix: unif("u_invModelMatrix", gl, &program),
+            u_perspective: unif("u_perspective", gl, &program),
             u_model_matrix: unif("u_modelMatrix", gl, &program),
             u_shape: unif("u_shape", gl, &program),
             u_vp_matrix: unif("u_vpMatrix", gl, &program),
@@ -524,6 +533,7 @@ impl Program for UnshapedProgram {
     accesser!(u_model_matrix: WebGlUniformLocation);
     accesser!(u_shape: WebGlUniformLocation);
     accesser!(u_vp_matrix: WebGlUniformLocation);
+    accesser!(u_perspective: WebGlUniformLocation);
 
     // 背景色
     accesser!(u_bg_color_1: WebGlUniformLocation);
