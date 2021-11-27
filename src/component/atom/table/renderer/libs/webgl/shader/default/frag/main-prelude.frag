@@ -6,6 +6,7 @@ struct CameraRay {
 struct Surface {
     vec3 p;
     vec3 n;
+    vec2 t;
 };
 
 CameraRay g_cameraRay;
@@ -29,9 +30,37 @@ vec4 floatToRgb(float v) {
     return vec4(r,g,b,a);
 }
 
+#define IS_MAX(x, y, z) ((x)>=(y) && (x)>=(z))
+#define CUBE_TEXTURE_PZ(x, y) vec2((x)*0.25 + 0.00, (y)*0.3)
+#define CUBE_TEXTURE_PX(x, y) vec2((x)*0.25 + 0.00, (y)*0.3 + 0.35)
+#define CUBE_TEXTURE_PY(x, y) vec2((x)*0.25 + 0.25, (y)*0.3 + 0.35)
+#define CUBE_TEXTURE_NX(x, y) vec2((x)*0.25 + 0.50, (y)*0.3 + 0.35)
+#define CUBE_TEXTURE_NY(x, y) vec2((x)*0.25 + 0.75, (y)*0.3 + 0.35)
+#define CUBE_TEXTURE_NZ(x, y) vec2((x)*0.25 + 0.00, (y)*0.3 + 0.7)
+
+vec2 cubeTextureCoord(vec3 d, float offset_z) {
+    float x = abs(d.x) / 0.5;
+    float y = abs(d.y) / 0.5;
+    float z = abs(d.z) / 0.5;
+    return IS_MAX(x, y, z) ? (
+        d.x >= 0.0 ?
+            CUBE_TEXTURE_PX(d.y / x + 0.5, d.z / x + 0.5 + offset_z) :
+            CUBE_TEXTURE_NX(-d.y / x + 0.5, d.z / x + 0.5 + offset_z)
+    ) : IS_MAX(y, z, x) ? (
+        d.y >= 0.0 ?
+            CUBE_TEXTURE_PY(d.x / y + 0.5, d.z / y + 0.5 + offset_z) :
+            CUBE_TEXTURE_NY(-d.x / y + 0.5, d.z / y + 0.5 + offset_z)
+    ) : (
+        d.z >= 0.0 ?
+            CUBE_TEXTURE_PZ(d.x / z + 0.5, d.y / z + 0.5) :
+            CUBE_TEXTURE_NZ(d.x / z + 0.5, d.y / z + 0.5)
+    );
+}
+
 bool implSetGSurfaceAs2dBox() {
     g_surface.p =  (u_modelMatrix * vec4(v_vertex, 1.0)).xyz;
     g_surface.n = v_normal;
+    g_surface.t = v_textureCoord;
 
     return false;
 }
@@ -55,6 +84,7 @@ bool implSetGSurfaceAs3dSphare(float t) {
     vec3 p = g_cameraRay.t * t + g_cameraRay.a;
     g_surface.p = (u_modelMatrix * vec4(p, 1.0)).xyz;
     g_surface.n = normalize(p);
+    g_surface.t = cubeTextureCoord(g_surface.n, 0.0);
 
     return false;
 }
@@ -74,6 +104,7 @@ bool setGSurfaceAs3dSphare() {
 bool implSetGSurfaceAs3dCylinderWhenLight(vec3 p) {
     g_surface.p = (u_modelMatrix * vec4(p, 1.0)).xyz;
     g_surface.n = normalize(vec3(p.xy, 0.0));
+    g_surface.t = cubeTextureCoord(g_surface.n, p.z);
 
     return false;
 }
@@ -110,9 +141,9 @@ bool setGSurfaceAs3dCylinder() {
 vec4 colorWithLightAsNone() {
     vec4 bgColor1 = u_bgColor1 == COLOR_NONE ? vec4(0.0) : u_bgColor1Value;
     vec4 bgColor2 = u_bgColor2 == COLOR_NONE ? vec4(0.0) : u_bgColor2Value;
-    vec4 texColor0 = u_texture0 == TEXTURE_NONE ? vec4(0.0) : texture2D(u_texture0Sampler, v_textureCoord);
-    vec4 texColor1 = u_texture1 == TEXTURE_NONE ? vec4(0.0) : texture2D(u_texture1Sampler, v_textureCoord);
-    vec4 texColor2 = u_texture2 == TEXTURE_NONE ? vec4(0.0) : texture2D(u_texture2Sampler, v_textureCoord);
+    vec4 texColor0 = u_texture0 == TEXTURE_NONE ? vec4(0.0) : texture2D(u_texture0Sampler, g_surface.t);
+    vec4 texColor1 = u_texture1 == TEXTURE_NONE ? vec4(0.0) : texture2D(u_texture1Sampler, g_surface.t);
+    vec4 texColor2 = u_texture2 == TEXTURE_NONE ? vec4(0.0) : texture2D(u_texture2Sampler, g_surface.t);
 
     vec4 color = COLOR_BLEND(v_vColor, COLOR_BLEND(bgColor1, bgColor2));
     color = u_texture0 == TEXTURE_MASK ? COLOR_MASK(color, texColor0) : COLOR_BLEND(color, texColor0);
@@ -133,7 +164,6 @@ vec4 colorWithLightAsAmbient() {
     return COLOR_WITH_LIGHT_INTENSITY(lightIntensity);
 }
 
-#define IS_MAX(x, y, z) (x>=y && x>=z)
 #define LIGHT_INTENSITY(i, a, len) (a > 0.0 ? pow(i / max(1.0, len - a  + 1.0), 2.0) : pow(u_lightIntensity, 2.0))
 
 vec4 colorWithLightAsPointWithId() {
