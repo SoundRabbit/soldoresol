@@ -113,7 +113,7 @@ impl Render for Room {
                 if let Some(contextmenu) = &self.showing_contextmenu {
                     self.render_contextmenu(contextmenu)
                 } else {
-                    Html::none()
+                    Common::none()
                 },
             ],
         ))

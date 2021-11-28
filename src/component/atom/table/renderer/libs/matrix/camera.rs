@@ -315,6 +315,28 @@ impl CameraMatrix {
             [0.0, 0.0, iw[2], ww, 1.0],
         ];
 
+        for r in 0..4 {
+            if m[r][0] != 0.0 {
+                for c in 0..5 {
+                    let swap = m[0][c];
+                    m[0][c] = m[r][c];
+                    m[r][c] = swap;
+                }
+                break;
+            }
+        }
+
+        for r in 1..4 {
+            if m[r][1] != 0.0 {
+                for c in 0..5 {
+                    let swap = m[1][c];
+                    m[1][c] = m[r][c];
+                    m[r][c] = swap;
+                }
+                break;
+            }
+        }
+
         // 拡大係数行列mを解く
         for rc in 0..4 {
             for r in 0..4 {
