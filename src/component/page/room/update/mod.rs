@@ -1,5 +1,5 @@
 use super::*;
-use crate::arena::{block, user};
+use crate::arena::{block, user, BlockKind};
 use kagura::component::Cmd;
 
 mod task;
@@ -57,6 +57,20 @@ impl Update for Room {
     fn update(&mut self, props: &Props, msg: Msg) -> Cmd<Self> {
         match msg {
             Msg::NoOp => Cmd::none(),
+            Msg::OpenBoxblockModeless(boxblock_id) => {
+                if let Some(boxblock) = self.arena.get_mut(&boxblock_id) {
+                    self.modeless_container.update(|modeless_container| {
+                        Self::open_modeless(
+                            &props.client_id,
+                            &self.arena,
+                            modeless_container,
+                            room_modeless::ContentData::Boxblock(boxblock),
+                        );
+                    });
+                }
+
+                Cmd::none()
+            }
             Msg::OpenChatModeless(channel_id) => {
                 if let Some(channel_id) = channel_id {
                     if let Some(channel) = self.arena.get_mut(&channel_id) {
@@ -92,11 +106,37 @@ impl Update for Room {
                 self.table_tool = tool;
                 Cmd::none()
             }
+            Msg::SetShowingContextmenu(contextmenu) => {
+                self.showing_contextmenu = contextmenu;
+                Cmd::none()
+            }
             Msg::OnTableClicked(e) => {
                 if e.target() == e.current_target() {
                     self.table.update(|table| {
                         table.on_click(e, &self.table_tool);
                     });
+                }
+                Cmd::none()
+            }
+            Msg::OnTableContextmenu(e) => {
+                if e.target() == e.current_target() {
+                    e.prevent_default();
+                    let (block_kind, block_id) = self.table.map(|table| {
+                        let [px_x, px_y] = table.table_coord(&e);
+                        table.focused_block(px_x, px_y)
+                    });
+                    match block_kind {
+                        BlockKind::Boxblock => {
+                            if let Some(block) = self.arena.get_mut::<block::Boxblock>(&block_id) {
+                                self.showing_contextmenu = Some(ShowingContextmenu {
+                                    page_x: e.page_x() as f64,
+                                    page_y: e.page_y() as f64,
+                                    data: ShowingContextmenuData::Boxblock(block),
+                                });
+                            }
+                        }
+                        _ => {}
+                    }
                 }
                 Cmd::none()
             }
@@ -144,5 +184,18 @@ impl Room {
                 })
                 .collect(),
         );
+    }
+
+    fn open_modeless(
+        client_id: &Rc<String>,
+        arena: &ArenaMut,
+        modeless_container: &mut TabModelessContainer<RoomModeless, room_modeless::TabName>,
+        content: room_modeless::ContentData,
+    ) {
+        modeless_container.open_modeless(vec![room_modeless::Content {
+            arena: ArenaMut::clone(arena),
+            client_id: Rc::clone(&client_id),
+            data: content,
+        }]);
     }
 }

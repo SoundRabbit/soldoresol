@@ -53,7 +53,7 @@ pub struct ModalCreateBlockTexture {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
-enum TextureKind {
+pub enum TextureKind {
     CustomTexture,
     PrefabTexture,
 }
@@ -68,7 +68,7 @@ struct CustomTexture {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
-enum TextureDirection {
+pub enum TextureDirection {
     PX,
     PY,
     PZ,

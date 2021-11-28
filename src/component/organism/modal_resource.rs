@@ -52,7 +52,7 @@ pub enum On {
     },
 }
 
-enum Resource {
+pub enum Resource {
     None,
     ImageData(BlockMut<resource::ImageData>),
     BlockTexture(BlockMut<resource::BlockTexture>),

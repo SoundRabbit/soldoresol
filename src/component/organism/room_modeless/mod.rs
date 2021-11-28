@@ -11,6 +11,7 @@ use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 use wasm_bindgen::JsCast;
 
+mod render_boxblock;
 mod render_chat_channel;
 
 #[derive(Clone)]
@@ -23,12 +24,14 @@ pub struct Content {
 #[derive(Clone)]
 pub enum ContentData {
     ChatChannel(BlockMut<block::ChatChannel>),
+    Boxblock(BlockMut<block::Boxblock>),
 }
 
 impl ContentData {
     fn id(&self) -> U128Id {
         match self {
             Self::ChatChannel(x) => x.id(),
+            Self::Boxblock(x) => x.id(),
         }
     }
 }
@@ -72,6 +75,9 @@ pub struct RoomModeless {
         block::chat_message::Sender,
     )>,
 
+    //boxblock
+    inputing_boxblock_name: String,
+
     // test
     test_chatpallet: block::character::ChatPallet,
     test_chatpallet_selected_index: usize,
@@ -79,7 +85,8 @@ pub struct RoomModeless {
 }
 
 ElementId! {
-    input_channel_name
+    input_channel_name,
+    input_boxblock_name
 }
 
 impl Component for RoomModeless {
@@ -104,6 +111,9 @@ impl Constructor for RoomModeless {
             inputing_chat_message: Some(String::new()),
             waiting_chat_message: None,
 
+            //boxblock
+            inputing_boxblock_name: String::new(),
+
             // test
             test_chatpallet,
             test_chatpallet_selected_index: 0,
@@ -125,6 +135,11 @@ impl Update for RoomModeless {
                 ContentData::ChatChannel(channel) => {
                     channel.map(|channel: &block::ChatChannel| {
                         self.inputing_chat_channel_name = channel.name().clone();
+                    });
+                }
+                ContentData::Boxblock(boxblock) => {
+                    boxblock.map(|boxblock| {
+                        self.inputing_boxblock_name = boxblock.name().clone();
                     });
                 }
             }
@@ -153,6 +168,7 @@ impl Update for RoomModeless {
                         &message,
                     )
                 }
+                _ => Cmd::none(),
             },
             Msg::SendWaitingChatMessage(captured) => match &content.data {
                 ContentData::ChatChannel(channel) => self.send_waitng_chat_message(
@@ -160,6 +176,7 @@ impl Update for RoomModeless {
                     BlockMut::clone(channel),
                     captured,
                 ),
+                _ => Cmd::none(),
             },
             Msg::SetInputingChatMessage(input) => {
                 if self.inputing_chat_message.is_some() {
@@ -410,8 +427,9 @@ impl Render for RoomModeless {
         Self::styled(
             match &content.data {
                 ContentData::ChatChannel(chat_channel) => {
-                    chat_channel.map(|cc: &block::ChatChannel| self.render_chat_channel(cc))
+                    chat_channel.map(|cc| self.render_chat_channel(cc))
                 }
+                ContentData::Boxblock(boxblock) => boxblock.map(|bb| self.render_boxblock(bb)),
             }
             .unwrap_or(Html::none()),
         )
@@ -422,9 +440,37 @@ impl Styled for RoomModeless {
     fn style() -> Style {
         style! {
             @extends Self::style_chat_channel();
+            @extends Self::style_boxblock();
 
             ".banner" {
                 "grid-column": "1 / -1";
+            }
+
+            ".common-label" {
+                "display": "grid";
+                "align-items": "center";
+                "line-height": "1";
+            }
+
+            ".common-base" {
+                "display": "grid";
+                "grid-template-columns": "1fr";
+                "grid-template-rows": "max-content 1fr";
+                "grid-auto-flow": "row";
+                "row-gap": ".65rem";
+                "padding-top": ".65rem";
+                "padding-bottom": ".65rem";
+                "height": "100%";
+            }
+
+            ".common-header" {
+                "display": "grid";
+                "grid-template-columns": "max-content 1fr max-content";
+                "grid-auto-rows": "max-content";
+                "column-gap": ".35rem";
+                "row-gap": ".65rem";
+                "padding-left": ".65rem";
+                "padding-right": ".65rem";
             }
         }
     }
@@ -448,9 +494,19 @@ impl Update for TabName {}
 
 impl Render for TabName {
     fn render(&self, content: &Content, _children: Vec<Html<Self>>) -> Html<Self> {
+        use super::atom::fa;
         match &content.data {
             ContentData::ChatChannel(chat_channel) => chat_channel
-                .map(|cc: &block::ChatChannel| Html::text(String::from("#") + cc.name()))
+                .map(|cc| Html::text(String::from("#") + cc.name()))
+                .unwrap_or(Html::none()),
+            ContentData::Boxblock(boxblock) => boxblock
+                .map(|bb| {
+                    Html::span(
+                        Attributes::new(),
+                        Events::new(),
+                        vec![fa::i("fa-cube"), Html::text(bb.name())],
+                    )
+                })
                 .unwrap_or(Html::none()),
         }
     }

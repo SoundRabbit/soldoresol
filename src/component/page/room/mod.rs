@@ -19,9 +19,12 @@ pub struct Props {
 pub enum Msg {
     NoOp,
     OpenChatModeless(Option<U128Id>),
+    OpenBoxblockModeless(U128Id),
     SetOkToCatchFile(bool),
     SetSelectedTableTool(TableTool),
+    SetShowingContextmenu(Option<ShowingContextmenu>),
     OnTableClicked(web_sys::MouseEvent),
+    OnTableContextmenu(web_sys::MouseEvent),
     AddResourceImageData(resource::ImageData),
     SetIs2dMode(bool),
 }
@@ -42,6 +45,18 @@ pub struct Room {
     table_tool: TableTool,
     ok_to_catch_file: bool,
     is_2d_mode: bool,
+
+    showing_contextmenu: Option<ShowingContextmenu>,
+}
+
+pub struct ShowingContextmenu {
+    page_x: f64,
+    page_y: f64,
+    data: ShowingContextmenuData,
+}
+
+enum ShowingContextmenuData {
+    Boxblock(BlockMut<block::Boxblock>),
 }
 
 impl Component for Room {

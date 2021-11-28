@@ -49,7 +49,7 @@ pub struct TableMenu {
     showing_modal: ShowingModal,
 }
 
-enum ShowingModal {
+pub enum ShowingModal {
     None,
     SelectBlockTexture(usize, Rc<table_tool::Boxblock>),
 }

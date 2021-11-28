@@ -1,4 +1,4 @@
-use crate::arena::{block, ArenaMut, BlockMut};
+use crate::arena::{block, ArenaMut, BlockKind, BlockMut};
 use crate::libs::random_id::U128Id;
 use isaribi::{
     style,
@@ -208,6 +208,15 @@ impl Table {
         }
     }
 
+    pub fn table_coord(&self, e: &web_sys::MouseEvent) -> [f64; 2] {
+        let page_x = e.page_x() as f64;
+        let page_y = e.page_y() as f64;
+        let rect = unwrap_or!(self.canvas.as_ref().map(|x| x.get_bounding_client_rect()); [page_x, page_y]);
+        let client_x = page_x - rect.left();
+        let client_y = page_y - rect.top();
+        [client_x, client_y]
+    }
+
     pub fn create_boxblock(
         &self,
         px_x: f64,
@@ -258,6 +267,17 @@ impl Table {
                 }
             }
             _ => {}
+        }
+    }
+
+    pub fn focused_block(&self, px_x: f64, px_y: f64) -> (BlockKind, U128Id) {
+        let renderer = unwrap_or!(self.renderer.as_ref(); (BlockKind::None, U128Id::none()));
+
+        match renderer.get_object_id(px_x, px_y) {
+            ObjectId::Boxblock(b_id, ..) => (BlockKind::Boxblock, b_id),
+            ObjectId::Character(b_id, ..) => (BlockKind::Character, b_id),
+            ObjectId::Craftboard(b_id, ..) => (BlockKind::Craftboard, b_id),
+            _ => (BlockKind::None, U128Id::none()),
         }
     }
 }

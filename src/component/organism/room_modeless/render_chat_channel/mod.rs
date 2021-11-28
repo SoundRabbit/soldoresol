@@ -14,7 +14,7 @@ impl RoomModeless {
     pub fn render_chat_channel(&self, chat_channel: &block::ChatChannel) -> Html<Self> {
         Html::div(
             Attributes::new()
-                .class(Self::class("channel-base"))
+                .class(Self::class("common-base"))
                 .class("pure-form"),
             Events::new(),
             vec![
@@ -32,20 +32,20 @@ impl RoomModeless {
                         modal_chat_capture::On::Send(x) => Msg::SendWaitingChatMessage(x),
                     }),
                 ),
-                self.render_header(chat_channel),
-                self.render_main(chat_channel),
+                self.render_channel_header(chat_channel),
+                self.render_channel_main(chat_channel),
             ],
         )
     }
 
-    fn render_header(&self, chat_channel: &block::ChatChannel) -> Html<Self> {
+    fn render_channel_header(&self, chat_channel: &block::ChatChannel) -> Html<Self> {
         Html::div(
-            Attributes::new().class(Self::class("channel-header")),
+            Attributes::new().class(Self::class("common-header")),
             Events::new(),
             vec![
                 Html::label(
                     Attributes::new()
-                        .class(Self::class("channel-label"))
+                        .class(Self::class("common-label"))
                         .string("for", &self.element_id.input_channel_name),
                     Events::new(),
                     vec![Html::text("#")],
@@ -62,7 +62,7 @@ impl RoomModeless {
         )
     }
 
-    fn render_main(&self, chat_channel: &block::ChatChannel) -> Html<Self> {
+    fn render_channel_main(&self, chat_channel: &block::ChatChannel) -> Html<Self> {
         Html::div(
             Attributes::new().class(Self::class("channel-main")),
             Events::new(),
@@ -391,33 +391,6 @@ impl RoomModeless {
     pub fn style_chat_channel() -> Style {
         style! {
             @extends Self::message_style();
-
-            ".channel-label" {
-                "display": "grid";
-                "align-items": "center";
-                "line-height": "1";
-            }
-
-            ".channel-base" {
-                "display": "grid";
-                "grid-template-columns": "1fr";
-                "grid-template-rows": "max-content 1fr";
-                "grid-auto-flow": "row";
-                "row-gap": ".65rem";
-                "padding-top": ".65rem";
-                "padding-bottom": ".65rem";
-                "height": "100%";
-            }
-
-            ".channel-header" {
-                "display": "grid";
-                "grid-template-columns": "max-content 1fr max-content";
-                "grid-auto-rows": "max-content";
-                "column-gap": ".35rem";
-                "row-gap": ".65rem";
-                "padding-left": ".65rem";
-                "padding-right": ".65rem";
-            }
 
             ".channel-main" {
                 "padding-left": ".65rem";

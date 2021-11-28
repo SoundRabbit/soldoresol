@@ -30,6 +30,7 @@ block! {
     shape: Shape = Shape::Cube;
     color: Pallet = Pallet::blue(5);
     texture: Option<BlockMut<BlockTexture>> = None;
+    name: String = String::from("ブロック");
 }
 
 impl Boxblock {
@@ -71,5 +72,9 @@ impl Boxblock {
 
     pub fn set_texture(&mut self, texture: Option<BlockMut<BlockTexture>>) {
         self.texture = texture;
+    }
+
+    pub fn name(&self) -> &String {
+        &self.name
     }
 }

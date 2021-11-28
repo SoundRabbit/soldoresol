@@ -66,6 +66,10 @@ impl Common {
             vec![],
         )
     }
+
+    pub fn banner() -> String {
+        Self::class("banner")
+    }
 }
 
 impl Styled for Common {
@@ -108,6 +112,11 @@ impl Styled for Common {
                 "overflow": "hidden";
             }
 
+            ".keyvalue > img" {
+                "width": "100%";
+                "object-fit": "contain";
+            }
+
             ".selectable" {
                 "-moz-user-select": "all";
                 "-webkit-user-select": "all";
@@ -125,6 +134,10 @@ impl Styled for Common {
                     linear-gradient(-135deg, #fff 25%, #fff 25%, transparent 25%, transparent 75%, #fff 75%, #fff 75%)";
                 "background-size": "1rem 1rem";
                 "background-position": "0 0, 0.5rem 0.5rem";
+            }
+
+            ".banner" {
+                "grid-column": "1 / -1";
             }
         }
     }

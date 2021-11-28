@@ -24,6 +24,8 @@ use isaribi::{
 };
 use kagura::component::Sub;
 
+mod contextmenu;
+
 impl Render for Room {
     fn render(&self, _: &Props, _: Vec<Html<Self>>) -> Html<Self> {
         Self::styled(BasicApp::with_children(
@@ -91,7 +93,9 @@ impl Render for Room {
                                     }),
                                     vec![Html::div(
                                         Attributes::new().class(Self::class("mouse-capture")),
-                                        Events::new().on_click(Msg::OnTableClicked),
+                                        Events::new()
+                                            .on_click(Msg::OnTableClicked)
+                                            .on_contextmenu(Msg::OnTableContextmenu),
                                         vec![],
                                     )],
                                 ),
@@ -106,6 +110,11 @@ impl Render for Room {
                         ),
                     ],
                 ),
+                if let Some(contextmenu) = &self.showing_contextmenu {
+                    self.render_contextmenu(contextmenu)
+                } else {
+                    Html::none()
+                },
             ],
         ))
     }
@@ -273,6 +282,23 @@ impl Styled for Room {
                 "top": "0";
                 "width": "100%";
                 "height": "100%";
+            }
+
+            ".contextmenu-mask" {
+                "position": "fixed";
+                "left": "0";
+                "top": "0";
+                "width": "100%";
+                "height": "100%";
+                "z-index": super::super::constant::z_index::MASK;
+            }
+
+            ".contextmenu" {
+                "position": "absolute";
+                "display": "grid";
+                "grid-template-columns": "max-content";
+                "grid-auto-rows": "max-content";
+                "grid-auto-flow": "row";
             }
         }
     }
