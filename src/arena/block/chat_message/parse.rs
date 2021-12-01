@@ -13,10 +13,6 @@ impl Message {
         }
     }
 
-    pub fn map(self, map: impl Fn(MapToken) -> Message + 'static) -> Self {
-        MapMessage::wrap(self, Rc::new(map)).get()
-    }
-
     fn compress(self) -> Self {
         let mut text = String::new();
         let mut mapped = vec![];
@@ -51,6 +47,19 @@ impl Message {
         }
 
         Message(mapped)
+    }
+
+    pub fn map(self, mut f: impl FnMut(MessageToken) -> Self) -> Self {
+        let mut mapped = vec![];
+
+        for token in self.0 {
+            let mapped_message = f(token);
+            for mapped_token in mapped_message.0 {
+                mapped.push(mapped_token);
+            }
+        }
+
+        Self::from(mapped)
     }
 }
 
@@ -100,20 +109,6 @@ pub enum Token<T: Clone> {
 }
 
 pub type MessageToken = Token<Message>;
-pub type MapToken = Token<MapMessage>;
-
-impl MessageToken {
-    fn wrap(self, map: Rc<dyn Fn(MapToken) -> Message>) -> MapToken {
-        match self {
-            Self::Text(x) => Token::Text(x),
-            Self::Refer(x) => Token::Refer(MapMessage::wrap(x, map)),
-            Self::CommandBlock(x, t) => Token::CommandBlock(
-                Command::wrap(x, Rc::clone(&map)),
-                MapMessage::wrap(t, Rc::clone(&map)),
-            ),
-        }
-    }
-}
 
 impl std::fmt::Display for MessageToken {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -132,20 +127,6 @@ pub struct Command<T: Clone> {
 }
 
 pub type MessageCommand = Command<Message>;
-pub type MapCommand = Command<MapMessage>;
-
-impl MessageCommand {
-    fn wrap(self, map: Rc<dyn Fn(MapToken) -> Message>) -> Command<MapMessage> {
-        let name = MapMessage::wrap(self.name, Rc::clone(&map));
-        let args = self
-            .args
-            .into_iter()
-            .map(|arg| MapMessage::wrap(arg, Rc::clone(&map)))
-            .collect();
-
-        Command { name, args }
-    }
-}
 
 impl std::fmt::Display for MessageCommand {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -159,31 +140,6 @@ impl std::fmt::Display for MessageCommand {
                 .collect::<Vec<_>>()
                 .join(",")
         )
-    }
-}
-
-#[derive(Clone)]
-pub struct MapMessage {
-    data: Message,
-    map: Rc<dyn Fn(MapToken) -> Message>,
-}
-
-impl MapMessage {
-    fn wrap(data: Message, map: Rc<dyn Fn(MapToken) -> Message>) -> Self {
-        Self { data, map }
-    }
-    pub fn get(self) -> Message {
-        let mut mapped = vec![];
-
-        for token in self.data.0 {
-            let map = Rc::clone(&self.map);
-            let mapped_tokens = (self.map)(token.wrap(map)).0;
-            for mapped_token in mapped_tokens {
-                mapped.push(mapped_token);
-            }
-        }
-
-        Message::from(mapped)
     }
 }
 
