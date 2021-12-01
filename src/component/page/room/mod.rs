@@ -5,6 +5,7 @@ use crate::arena::{block, resource, Arena, ArenaMut, BlockMut};
 use crate::libs::random_id::U128Id;
 use crate::libs::skyway::{MeshRoom, Peer};
 use kagura::prelude::*;
+use std::collections::HashSet;
 use std::rc::Rc;
 
 mod constructor;
@@ -18,6 +19,10 @@ pub struct Props {
 
 pub enum Msg {
     NoOp,
+    UpdateBlocks {
+        insert: HashSet<U128Id>,
+        update: HashSet<U128Id>,
+    },
     OpenChatModeless(Option<U128Id>),
     OpenBoxblockModeless(U128Id),
     SetOkToCatchFile(bool),

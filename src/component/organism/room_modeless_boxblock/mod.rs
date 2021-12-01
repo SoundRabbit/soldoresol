@@ -1,36 +1,144 @@
-use super::*;
-use super::{
-    super::atom::btn::{self, Btn},
-    super::atom::dropdown::{self, Dropdown},
-    super::atom::fa,
-    super::atom::slider::{self, Slider},
-    super::atom::text,
-    super::organism::popup_color_pallet::{self, PopupColorPallet},
-    super::template::common::Common,
+use super::atom::btn::{self, Btn};
+use super::atom::dropdown::{self, Dropdown};
+use super::atom::fa;
+use super::atom::slider::{self, Slider};
+use super::atom::text;
+use super::organism::modal_resource::{self, ModalResource};
+use super::organism::popup_color_pallet::{self, PopupColorPallet};
+use super::organism::room_modeless::RoomModeless;
+use super::template::common::Common;
+use crate::arena::{block, ArenaMut, BlockKind, BlockMut};
+use crate::libs::random_id::U128Id;
+use isaribi::{
+    style,
+    styled::{Style, Styled},
 };
+use kagura::component::{Cmd, Sub};
+use kagura::prelude::*;
+use std::collections::HashSet;
 
-impl RoomModeless {
-    pub fn render_boxblock(&self, boxblock: &block::Boxblock) -> Html<Self> {
-        Html::div(
+pub struct Props {
+    pub arena: ArenaMut,
+    pub world: BlockMut<block::World>,
+    pub data: BlockMut<block::Boxblock>,
+}
+
+pub enum Msg {
+    NoOp,
+    Sub(On),
+    SetShowingModal(ShowingModal),
+}
+
+pub enum On {
+    UpdateBlocks {
+        insert: HashSet<U128Id>,
+        update: HashSet<U128Id>,
+    },
+}
+
+pub struct RoomModelessBoxblock {
+    boxblock: BlockMut<block::Boxblock>,
+
+    showing_modal: ShowingModal,
+    inputing_boxblock_name: String,
+    element_id: ElementId,
+}
+
+pub enum ShowingModal {
+    None,
+    SelectBlockTexture,
+}
+
+ElementId! {
+    input_boxblock_name
+}
+
+impl Component for RoomModelessBoxblock {
+    type Props = Props;
+    type Msg = Msg;
+    type Sub = On;
+}
+
+impl Constructor for RoomModelessBoxblock {
+    fn constructor(props: &Props) -> Self {
+        Self {
+            boxblock: BlockMut::clone(&props.data),
+            showing_modal: ShowingModal::None,
+            inputing_boxblock_name: props
+                .data
+                .map(|data| data.name().clone())
+                .unwrap_or(String::new()),
+            element_id: ElementId::new(),
+        }
+    }
+}
+
+impl Update for RoomModelessBoxblock {
+    fn on_load(&mut self, props: &Props) -> Cmd<Self> {
+        self.boxblock = BlockMut::clone(&props.data);
+        Cmd::none()
+    }
+
+    fn update(&mut self, _props: &Props, msg: Msg) -> Cmd<Self> {
+        match msg {
+            Msg::NoOp => Cmd::none(),
+            Msg::Sub(sub) => Cmd::sub(sub),
+            Msg::SetShowingModal(showing_modal) => {
+                self.showing_modal = showing_modal;
+                Cmd::none()
+            }
+        }
+    }
+}
+
+impl Render for RoomModelessBoxblock {
+    fn render(&self, props: &Props, _children: Vec<Html<Self>>) -> Html<Self> {
+        Self::styled(Html::div(
             Attributes::new()
-                .class(Self::class("common-base"))
+                .class(RoomModeless::class("common-base"))
                 .class("pure-form"),
             Events::new(),
             vec![
-                self.render_boxblock_header(boxblock),
-                self.render_boxblock_main(boxblock),
+                self.boxblock
+                    .map(|data| self.render_boxblock_header(data))
+                    .unwrap_or(Common::none()),
+                self.boxblock
+                    .map(|data| self.render_boxblock_main(data))
+                    .unwrap_or(Common::none()),
+                match &self.showing_modal {
+                    ShowingModal::None => Html::none(),
+                    ShowingModal::SelectBlockTexture => ModalResource::empty(
+                        modal_resource::Props {
+                            arena: ArenaMut::clone(&props.arena),
+                            world: BlockMut::clone(&props.world),
+                            title: String::from(modal_resource::title::SELECT_BLOCK_TEXTURE),
+                            filter: set! { BlockKind::BlockTexture },
+                            is_selecter: true,
+                        },
+                        Sub::map(|sub| match sub {
+                            modal_resource::On::Close => Msg::SetShowingModal(ShowingModal::None),
+                            modal_resource::On::UpdateBlocks { insert, update } => {
+                                Msg::Sub(On::UpdateBlocks { insert, update })
+                            }
+                            modal_resource::On::SelectBlockTexture(texture) => Msg::NoOp,
+                            _ => Msg::NoOp,
+                        }),
+                    ),
+                },
             ],
-        )
+        ))
     }
+}
 
-    fn render_boxblock_header(&self, boxblock: &block::Boxblock) -> Html<Self> {
+impl RoomModelessBoxblock {
+    fn render_boxblock_header(&self, _boxblock: &block::Boxblock) -> Html<Self> {
         Html::div(
-            Attributes::new().class(Self::class("common-header")),
+            Attributes::new().class(RoomModeless::class("common-header")),
             Events::new(),
             vec![
                 Html::label(
                     Attributes::new()
-                        .class(Self::class("common-label"))
+                        .class(RoomModeless::class("common-label"))
                         .string("for", &self.element_id.input_boxblock_name),
                     Events::new(),
                     vec![fa::i("fa-cube")],
@@ -49,7 +157,7 @@ impl RoomModeless {
 
     fn render_boxblock_main(&self, boxblock: &block::Boxblock) -> Html<Self> {
         Html::div(
-            Attributes::new().class(Self::class("boxblock-main")),
+            Attributes::new().class(Self::class("main")),
             Events::new(),
             vec![
                 Html::div(
@@ -158,7 +266,9 @@ impl RoomModeless {
                                 texture.map(|texture| {
                                     Html::img(
                                         Attributes::new().src(texture.data().url().to_string()),
-                                        Events::new(),
+                                        Events::new().on_click(|_| {
+                                            Msg::SetShowingModal(ShowingModal::SelectBlockTexture)
+                                        }),
                                         vec![],
                                     )
                                 })
@@ -167,7 +277,9 @@ impl RoomModeless {
                             .unwrap_or_else(|| {
                                 Btn::secondary(
                                     Attributes::new(),
-                                    Events::new(),
+                                    Events::new().on_click(|_| {
+                                        Msg::SetShowingModal(ShowingModal::SelectBlockTexture)
+                                    }),
                                     vec![Html::text("テクスチャを選択")],
                                 )
                             }),
@@ -176,14 +288,16 @@ impl RoomModeless {
             ],
         )
     }
+}
 
-    pub fn style_boxblock() -> Style {
+impl Styled for RoomModelessBoxblock {
+    fn style() -> Style {
         style! {
             ".dropdown" {
                 "overflow": "visible !important";
             }
 
-            ".boxblock-main" {
+            ".main" {
                 "display": "grid";
                 "grid-template-columns": "repeat(auto-fit, minmax(20rem, 1fr))";
                 "align-items": "start";

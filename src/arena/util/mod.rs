@@ -394,6 +394,10 @@ macro_rules! arena {
                 }
             }
 
+            pub fn kind_of(&self, block_id: &U128Id) -> BlockKind {
+                self.data.get(block_id).map(|block| block.kind()).unwrap_or(BlockKind::None)
+            }
+
             fn get_mut<T>(&mut self, block_id: &U128Id) -> Option<BlockMut<T>> where Block: From<T>{
                 if let Some(data) = self.data.get_mut(block_id) {
                     Some(data.as_mut())
@@ -483,6 +487,10 @@ macro_rules! arena {
                         data: Weak::clone(&self.data),
                     }
                 }
+            }
+
+            pub fn kind_of(&self, block_id: &U128Id) -> BlockKind {
+                self.data.upgrade().map(|data| data.borrow_mut().kind_of(&block_id)).unwrap_or(BlockKind::None)
             }
 
             pub fn get_mut<T>(&mut self, block_id: &U128Id) -> Option<BlockMut<T>>  where Block: From<T> {

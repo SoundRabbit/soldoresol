@@ -208,6 +208,10 @@ impl Table {
         }
     }
 
+    pub fn need_rendering(&mut self) {
+        self.cmds.push(Self::render());
+    }
+
     pub fn table_coord(&self, e: &web_sys::MouseEvent) -> [f64; 2] {
         let page_x = e.page_x() as f64;
         let page_y = e.page_y() as f64;

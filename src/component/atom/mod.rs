@@ -2,6 +2,7 @@ pub mod align;
 pub mod attr;
 pub mod btn;
 pub mod card;
+pub mod chat_message;
 pub mod collapse;
 pub mod dropdown;
 pub mod empty;

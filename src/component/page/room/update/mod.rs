@@ -34,6 +34,7 @@ impl Update for Room {
             Self::open_chat_modeless(
                 &props.client_id,
                 &self.arena,
+                &self.world,
                 modeless_container,
                 &vec![chat_channel_main, chat_channel_sub],
             );
@@ -57,12 +58,37 @@ impl Update for Room {
     fn update(&mut self, props: &Props, msg: Msg) -> Cmd<Self> {
         match msg {
             Msg::NoOp => Cmd::none(),
+            Msg::UpdateBlocks { insert, update } => {
+                let need_rendering =
+                    insert
+                        .iter()
+                        .chain(update.iter())
+                        .any(|b_id| match self.arena.kind_of(b_id) {
+                            BlockKind::Boxblock
+                            | BlockKind::CanvasTexture
+                            | BlockKind::Character
+                            | BlockKind::Craftboard
+                            | BlockKind::LayerGroup
+                            | BlockKind::Scene
+                            | BlockKind::Table => true,
+                            _ => false,
+                        });
+
+                if need_rendering {
+                    self.table.update(|table| {
+                        table.need_rendering();
+                    });
+                }
+
+                Cmd::none()
+            }
             Msg::OpenBoxblockModeless(boxblock_id) => {
                 if let Some(boxblock) = self.arena.get_mut(&boxblock_id) {
                     self.modeless_container.update(|modeless_container| {
                         Self::open_modeless(
                             &props.client_id,
                             &self.arena,
+                            &self.world,
                             modeless_container,
                             room_modeless::ContentData::Boxblock(boxblock),
                         );
@@ -78,6 +104,7 @@ impl Update for Room {
                             Self::open_chat_modeless(
                                 &props.client_id,
                                 &self.arena,
+                                &self.world,
                                 modeless_container,
                                 &vec![channel],
                             );
@@ -89,6 +116,7 @@ impl Update for Room {
                             Self::open_chat_modeless(
                                 &props.client_id,
                                 &self.arena,
+                                &self.world,
                                 modeless_container,
                                 chat.channels(),
                             );
@@ -171,6 +199,7 @@ impl Room {
     fn open_chat_modeless(
         client_id: &Rc<String>,
         arena: &ArenaMut,
+        world: &BlockMut<block::World>,
         modeless_container: &mut TabModelessContainer<RoomModeless, room_modeless::TabName>,
         channels: &Vec<BlockMut<block::ChatChannel>>,
     ) {
@@ -179,6 +208,7 @@ impl Room {
                 .iter()
                 .map(|channel| room_modeless::Content {
                     arena: ArenaMut::clone(arena),
+                    world: BlockMut::clone(world),
                     client_id: Rc::clone(&client_id),
                     data: room_modeless::ContentData::ChatChannel(BlockMut::clone(&channel)),
                 })
@@ -189,11 +219,13 @@ impl Room {
     fn open_modeless(
         client_id: &Rc<String>,
         arena: &ArenaMut,
+        world: &BlockMut<block::World>,
         modeless_container: &mut TabModelessContainer<RoomModeless, room_modeless::TabName>,
         content: room_modeless::ContentData,
     ) {
         modeless_container.open_modeless(vec![room_modeless::Content {
             arena: ArenaMut::clone(arena),
+            world: BlockMut::clone(world),
             client_id: Rc::clone(&client_id),
             data: content,
         }]);

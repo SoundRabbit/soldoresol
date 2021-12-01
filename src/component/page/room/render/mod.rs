@@ -1,14 +1,11 @@
 use super::super::atom::{
     attr,
     btn::{self, Btn},
-    card::{self, Card},
     dropdown::{self, Dropdown},
     file_catcher::{self, FileCatcher},
     header::{self, Header},
-    heading::{self, Heading},
 };
 use super::super::organism::{
-    modal_resource::{self, ModalResource},
     table_menu::{self, TableMenu},
     world_view::{self, WorldView},
 };
@@ -17,7 +14,7 @@ use super::super::template::{
     common::Common,
 };
 use super::*;
-use crate::arena::{block, Arena, ArenaMut, BlockMut};
+use crate::arena::{block, ArenaMut, BlockMut};
 use isaribi::{
     style,
     styled::{Style, Styled},
@@ -56,7 +53,11 @@ impl Render for Room {
                                     arena: ArenaMut::clone(&self.arena),
                                     world: BlockMut::clone(&self.world),
                                 },
-                                Sub::none(),
+                                Sub::map(|sub| match sub {
+                                    table::On::UpdateBlocks { insert, update } => {
+                                        Msg::UpdateBlocks { insert, update }
+                                    }
+                                }),
                                 vec![],
                             )],
                         ),
@@ -75,7 +76,9 @@ impl Render for Room {
                                         table_menu::On::SelectTool(tool) => {
                                             Msg::SetSelectedTableTool(tool)
                                         }
-                                        _ => Msg::NoOp,
+                                        table_menu::On::UpdateBlocks { insert, update } => {
+                                            Msg::UpdateBlocks { insert, update }
+                                        }
                                     }),
                                 ),
                                 self.modeless_container.with_children(
@@ -88,7 +91,9 @@ impl Render for Room {
                                             Msg::SetOkToCatchFile(true)
                                         }
                                         tab_modeless_container::On::Sub(sub) => match sub {
-                                            room_modeless::On::UpdateBlocks { .. } => Msg::NoOp,
+                                            room_modeless::On::UpdateBlocks { insert, update } => {
+                                                Msg::UpdateBlocks { insert, update }
+                                            }
                                         },
                                     }),
                                     vec![Html::div(
