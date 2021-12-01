@@ -9,9 +9,9 @@ block! {
     data: String = String::from("");
     defs: Vec<(Regex, String)> = vec![];
     index: Vec<(String, Vec<String>)> = vec![];
-    match_index: Regex = Regex::new(r"\A//---(.*)\n").unwrap();
-    match_def: Regex = Regex::new(r"\A//(.+)=((.*\\\n)*(.*))\n") .unwrap();
-    match_line: Regex = Regex::new(r"\A(.*)\n").unwrap();
+    match_index: Regex = Regex::new(r"\A//---(.*)(\n|\z)").unwrap();
+    match_def: Regex = Regex::new(r"\A//(.+)=((.*\\\n)*(.*))(\n|\z)") .unwrap();
+    match_line: Regex = Regex::new(r"\A(.*)(\n|\z)").unwrap();
     match_nl: Regex = Regex::new(r"([^\\])(\\\\)*\\n").unwrap();
 }
 
@@ -34,7 +34,8 @@ impl ChatPallet {
 
                 data = self.match_index.replace(&data, "").into();
             } else if let Some(captures) = self.match_def.captures(&data) {
-                if let Ok(regex) = Regex::new(captures.get(1).unwrap().as_str()) {
+                let regex = String::from(r"\A") + captures.get(1).unwrap().as_str() + r"\z";
+                if let Ok(regex) = Regex::new(regex.as_str()) {
                     self.defs
                         .push((regex, String::from(captures.get(2).unwrap().as_str())));
                 }
@@ -57,6 +58,10 @@ impl ChatPallet {
 
     pub fn index(&self) -> &Vec<(String, Vec<String>)> {
         &self.index
+    }
+
+    pub fn defs(&self) -> &Vec<(Regex, String)> {
+        &self.defs
     }
 }
 

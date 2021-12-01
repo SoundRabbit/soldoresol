@@ -7,7 +7,7 @@ use super::organism::modal_resource::{self, ModalResource};
 use super::organism::popup_color_pallet::{self, PopupColorPallet};
 use super::organism::room_modeless::RoomModeless;
 use super::template::common::Common;
-use crate::arena::{block, ArenaMut, BlockKind, BlockMut};
+use crate::arena::{block, resource, ArenaMut, BlockKind, BlockMut};
 use crate::libs::random_id::U128Id;
 use isaribi::{
     style,
@@ -27,6 +27,7 @@ pub enum Msg {
     NoOp,
     Sub(On),
     SetShowingModal(ShowingModal),
+    SetTexture(Option<BlockMut<resource::BlockTexture>>),
 }
 
 pub enum On {
@@ -87,6 +88,18 @@ impl Update for RoomModelessBoxblock {
                 self.showing_modal = showing_modal;
                 Cmd::none()
             }
+            Msg::SetTexture(texture) => {
+                self.boxblock.update(|boxblock| {
+                    boxblock.set_texture(texture);
+                });
+
+                self.showing_modal = ShowingModal::None;
+
+                Cmd::sub(On::UpdateBlocks {
+                    insert: set! {},
+                    update: set! { self.boxblock.id() },
+                })
+            }
         }
     }
 }
@@ -120,7 +133,10 @@ impl Render for RoomModelessBoxblock {
                             modal_resource::On::UpdateBlocks { insert, update } => {
                                 Msg::Sub(On::UpdateBlocks { insert, update })
                             }
-                            modal_resource::On::SelectBlockTexture(texture) => Msg::NoOp,
+                            modal_resource::On::SelectBlockTexture(texture) => {
+                                Msg::SetTexture(Some(texture))
+                            }
+                            modal_resource::On::SelectNone => Msg::SetTexture(None),
                             _ => Msg::NoOp,
                         }),
                     ),
@@ -265,7 +281,9 @@ impl RoomModelessBoxblock {
                             .map(|texture| {
                                 texture.map(|texture| {
                                     Html::img(
-                                        Attributes::new().src(texture.data().url().to_string()),
+                                        Attributes::new()
+                                            .src(texture.data().url().to_string())
+                                            .class(Common::bg_transparent()),
                                         Events::new().on_click(|_| {
                                             Msg::SetShowingModal(ShowingModal::SelectBlockTexture)
                                         }),

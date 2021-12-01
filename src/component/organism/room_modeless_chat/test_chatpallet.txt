@@ -4,6 +4,7 @@
 
 //---複雑なテキスト
 {依頼内容}
+{エネルギーボルト}
 
 //冒険者=5
 //スカウト=3
@@ -19,4 +20,14 @@
 {\  期間 }{\ 2日間}\
 }\
  ガグホーゲン駅北口で警備を行う\
+{\gr[k,v,k]{\ ●}{\}{\ ●}}\
+}
+
+//エネルギーボルト={\block[bg-dark]【エネルギーボルト】}\
+{\gr[k,v,k,v,k,v]\
+{\block[bg-blue,center] 対象 }{\ 1体}{\block[bg-blue,center] 射程／\n形状 }{\ 2（30m）／射撃}{\block[bg-blue,center] 時間 }{\ 一瞬}\
+{\block[bg-blue,center] 消費 }{\ MP5}{\block[bg-blue,center] 抵抗 }{\ 2（30m）／射撃}{\block[bg-blue,center] 属性 }{\ 純エネルギー}\
+}\
+{\gr[k,v]\
+{\block[bg-blue,center] 概要 }{\block 威力10ダメージ}\
 }

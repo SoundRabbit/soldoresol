@@ -197,7 +197,7 @@ impl RoomModelessChat {
 
         let mut descriptions = vec![];
         let mut var_nums = HashMap::new();
-        let message = Self::map_message(&mut var_nums, &mut descriptions, message);
+        let message = self.map_message(&mut var_nums, &mut descriptions, message);
 
         if descriptions.len() > 0 {
             self.waiting_chat_message = Some((message, Rc::new(descriptions), sender));
@@ -236,15 +236,27 @@ impl RoomModelessChat {
         }
     }
 
+    fn test_ref_def(&self, refer: &String) -> block::chat_message::Message {
+        for (pat, text) in self.test_chatpallet.defs() {
+            if pat.is_match(refer) {
+                let message = block::chat_message::Message::new(pat.replace(refer, text).as_ref());
+                return message;
+            }
+        }
+        block::chat_message::Message::from(vec![])
+    }
+
     fn map_message(
+        &self,
         var_nums: &mut HashMap<String, Vec<usize>>,
         descriptions: &mut Vec<(String, String)>,
         message: block::chat_message::Message,
     ) -> block::chat_message::Message {
-        message.map(|token| Self::map_message_token(var_nums, descriptions, token))
+        message.map(|token| self.map_message_token(var_nums, descriptions, token))
     }
 
     fn map_message_token(
+        &self,
         var_nums: &mut HashMap<String, Vec<usize>>,
         descriptions: &mut Vec<(String, String)>,
         token: block::chat_message::MessageToken,
@@ -254,16 +266,17 @@ impl RoomModelessChat {
                 vec![block::chat_message::MessageToken::Text(text)],
             ),
             block::chat_message::MessageToken::Refer(refer) => {
-                block::chat_message::Message::from(vec![block::chat_message::MessageToken::Refer(
-                    Self::map_message(var_nums, descriptions, refer),
-                )])
+                let refer = self.map_message(var_nums, descriptions, refer);
+                let refer = self.test_ref_def(&refer.to_string());
+                let message = self.map_message(var_nums, descriptions, refer);
+                message
             }
             block::chat_message::MessageToken::CommandBlock(cmd, text) => {
-                let cmd_name = Self::map_message(var_nums, descriptions, cmd.name);
+                let cmd_name = self.map_message(var_nums, descriptions, cmd.name);
                 let cmd_args: Vec<_> = cmd
                     .args
                     .into_iter()
-                    .map(|x| Self::map_message(var_nums, descriptions, x))
+                    .map(|x| self.map_message(var_nums, descriptions, x))
                     .collect();
 
                 if cmd_name.to_string() == "capture" {
@@ -289,7 +302,7 @@ impl RoomModelessChat {
                         }
                     }
 
-                    let text = Self::map_message(var_nums, descriptions, text);
+                    let text = self.map_message(var_nums, descriptions, text);
 
                     for cap_name in cap_names {
                         if let Some(vars) = var_nums.get_mut(&cap_name) {
@@ -299,7 +312,7 @@ impl RoomModelessChat {
 
                     text
                 } else if cmd_name.to_string() == "ref" {
-                    let cap_name = Self::map_message(var_nums, descriptions, text).to_string();
+                    let cap_name = self.map_message(var_nums, descriptions, text).to_string();
                     let text = if let Some(num) = var_nums.get(&cap_name).and_then(|x| x.last()) {
                         block::chat_message::Message::from(vec![
                             block::chat_message::MessageToken::Text(num.to_string()),
@@ -319,7 +332,7 @@ impl RoomModelessChat {
                         ),
                     ])
                 } else {
-                    let text = Self::map_message(var_nums, descriptions, text);
+                    let text = self.map_message(var_nums, descriptions, text);
                     block::chat_message::Message::from(vec![
                         block::chat_message::MessageToken::CommandBlock(
                             block::chat_message::MessageCommand {
