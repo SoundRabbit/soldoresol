@@ -27,6 +27,9 @@ pub enum Msg {
     NoOp,
     Sub(On),
     SetShowingModal(ShowingModal),
+    SetColor(crate::libs::color::Pallet),
+    SetShape(block::boxblock::Shape),
+    SetSize([f64; 3]),
     SetTexture(Option<BlockMut<resource::BlockTexture>>),
 }
 
@@ -87,6 +90,36 @@ impl Update for RoomModelessBoxblock {
             Msg::SetShowingModal(showing_modal) => {
                 self.showing_modal = showing_modal;
                 Cmd::none()
+            }
+            Msg::SetColor(color) => {
+                self.boxblock.update(|boxblock| {
+                    boxblock.set_color(color);
+                });
+
+                Cmd::sub(On::UpdateBlocks {
+                    insert: set! {},
+                    update: set! { self.boxblock.id() },
+                })
+            }
+            Msg::SetShape(shape) => {
+                self.boxblock.update(|boxblock| {
+                    boxblock.set_shape(shape);
+                });
+
+                Cmd::sub(On::UpdateBlocks {
+                    insert: set! {},
+                    update: set! { self.boxblock.id() },
+                })
+            }
+            Msg::SetSize(size) => {
+                self.boxblock.update(|boxblock| {
+                    boxblock.set_size(size);
+                });
+
+                Cmd::sub(On::UpdateBlocks {
+                    insert: set! {},
+                    update: set! { self.boxblock.id() },
+                })
             }
             Msg::SetTexture(texture) => {
                 self.boxblock.update(|boxblock| {
@@ -202,17 +235,23 @@ impl RoomModelessBoxblock {
                                 vec![
                                     Btn::menu(
                                         Attributes::new(),
-                                        Events::new(),
+                                        Events::new().on_click(|_| {
+                                            Msg::SetShape(block::boxblock::Shape::Cube)
+                                        }),
                                         vec![Html::text("立方体")],
                                     ),
                                     Btn::menu(
                                         Attributes::new(),
-                                        Events::new(),
+                                        Events::new().on_click(|_| {
+                                            Msg::SetShape(block::boxblock::Shape::Sphere)
+                                        }),
                                         vec![Html::text("球体")],
                                     ),
                                     Btn::menu(
                                         Attributes::new(),
-                                        Events::new(),
+                                        Events::new().on_click(|_| {
+                                            Msg::SetShape(block::boxblock::Shape::Cylinder)
+                                        }),
                                         vec![Html::text("円柱")],
                                     ),
                                 ],
@@ -230,7 +269,17 @@ impl RoomModelessBoxblock {
                                 range_is_editable: false,
                                 theme: slider::Theme::Light,
                             },
-                            Sub::none(),
+                            Sub::map({
+                                let size = boxblock.size().clone();
+                                move |sub| match sub {
+                                    slider::On::Input(x) => {
+                                        let mut size = size.clone();
+                                        size[0] = x;
+                                        Msg::SetSize(size)
+                                    }
+                                    _ => Msg::NoOp,
+                                }
+                            }),
                         ),
                         text::span("Y幅"),
                         Slider::empty(
@@ -244,7 +293,17 @@ impl RoomModelessBoxblock {
                                 range_is_editable: false,
                                 theme: slider::Theme::Light,
                             },
-                            Sub::none(),
+                            Sub::map({
+                                let size = boxblock.size().clone();
+                                move |sub| match sub {
+                                    slider::On::Input(y) => {
+                                        let mut size = size.clone();
+                                        size[1] = y;
+                                        Msg::SetSize(size)
+                                    }
+                                    _ => Msg::NoOp,
+                                }
+                            }),
                         ),
                         text::span("Z幅"),
                         Slider::empty(
@@ -258,7 +317,17 @@ impl RoomModelessBoxblock {
                                 range_is_editable: false,
                                 theme: slider::Theme::Light,
                             },
-                            Sub::none(),
+                            Sub::map({
+                                let size = boxblock.size().clone();
+                                move |sub| match sub {
+                                    slider::On::Input(z) => {
+                                        let mut size = size.clone();
+                                        size[2] = z;
+                                        Msg::SetSize(size)
+                                    }
+                                    _ => Msg::NoOp,
+                                }
+                            }),
                         ),
                     ],
                 ),
@@ -272,7 +341,9 @@ impl RoomModelessBoxblock {
                                 direction: popup_color_pallet::Direction::Bottom,
                                 default_selected: boxblock.color().clone(),
                             },
-                            Sub::none(),
+                            Sub::map(|sub| match sub {
+                                popup_color_pallet::On::SelectColor(color) => Msg::SetColor(color),
+                            }),
                         ),
                         text::span("テクスチャ"),
                         boxblock
