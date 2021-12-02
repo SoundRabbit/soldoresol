@@ -31,12 +31,12 @@ vec4 floatToRgb(float v) {
 }
 
 #define IS_MAX(x, y, z) ((x)>=(y) && (x)>=(z))
-#define CUBE_TEXTURE_PZ(x, y) vec2((x)*0.25 + 0.00, (y)*0.3)
-#define CUBE_TEXTURE_PX(x, y) vec2((x)*0.25 + 0.00, (y)*0.3 + 0.35)
-#define CUBE_TEXTURE_PY(x, y) vec2((x)*0.25 + 0.25, (y)*0.3 + 0.35)
-#define CUBE_TEXTURE_NX(x, y) vec2((x)*0.25 + 0.50, (y)*0.3 + 0.35)
-#define CUBE_TEXTURE_NY(x, y) vec2((x)*0.25 + 0.75, (y)*0.3 + 0.35)
-#define CUBE_TEXTURE_NZ(x, y) vec2((x)*0.25 + 0.00, (y)*0.3 + 0.7)
+#define CUBE_TEXTURE_PZ(x, y) vec2((x)*0.25 + 0.125, -(y)*0.3 + 0.15)
+#define CUBE_TEXTURE_PX(x, y) vec2((x)*0.25 + 0.125, -(y)*0.3 + 0.5)
+#define CUBE_TEXTURE_PY(x, y) vec2((x)*0.25 + 0.375, -(y)*0.3 + 0.5)
+#define CUBE_TEXTURE_NX(x, y) vec2((x)*0.25 + 0.625, -(y)*0.3 + 0.5)
+#define CUBE_TEXTURE_NY(x, y) vec2((x)*0.25 + 0.875, -(y)*0.3 + 0.5)
+#define CUBE_TEXTURE_NZ(x, y) vec2((x)*0.25 + 0.125, -(y)*0.3 + 0.85)
 
 vec2 cubeTextureCoord(vec3 d, float offset_z) {
     float x = abs(d.x) / 0.5;
@@ -44,16 +44,16 @@ vec2 cubeTextureCoord(vec3 d, float offset_z) {
     float z = abs(d.z) / 0.5;
     return IS_MAX(x, y, z) ? (
         d.x >= 0.0 ?
-            CUBE_TEXTURE_PX(d.y / x + 0.5, d.z / x + 0.5 + offset_z) :
-            CUBE_TEXTURE_NX(-d.y / x + 0.5, d.z / x + 0.5 + offset_z)
+            CUBE_TEXTURE_PX(d.y / x, d.z / x + offset_z) :
+            CUBE_TEXTURE_NX(-d.y / x, d.z / x + offset_z)
     ) : IS_MAX(y, z, x) ? (
         d.y >= 0.0 ?
-            CUBE_TEXTURE_PY(d.x / y + 0.5, d.z / y + 0.5 + offset_z) :
-            CUBE_TEXTURE_NY(-d.x / y + 0.5, d.z / y + 0.5 + offset_z)
+            CUBE_TEXTURE_PY(-d.x / y, d.z / y + offset_z) :
+            CUBE_TEXTURE_NY(d.x / y, d.z / y + offset_z)
     ) : (
         d.z >= 0.0 ?
-            CUBE_TEXTURE_PZ(d.x / z + 0.5, d.y / z + 0.5) :
-            CUBE_TEXTURE_NZ(d.x / z + 0.5, d.y / z + 0.5)
+            CUBE_TEXTURE_PZ(d.x / z, d.y / z) :
+            CUBE_TEXTURE_NZ(d.x / z, d.y / z)
     );
 }
 

@@ -390,12 +390,12 @@ impl ModalCreateBlockTexture {
                     Html::none()
                 },
                 match direction {
-                    TextureDirection::PX => text::span("PX"),
-                    TextureDirection::PY => text::span("PY"),
-                    TextureDirection::PZ => text::span("PZ"),
-                    TextureDirection::NX => text::span("NX"),
-                    TextureDirection::NY => text::span("NY"),
-                    TextureDirection::NZ => text::span("NZ"),
+                    TextureDirection::PX => text::span("PX（右）"),
+                    TextureDirection::PY => text::span("PY（後）"),
+                    TextureDirection::PZ => text::span("PZ（上）"),
+                    TextureDirection::NX => text::span("NX（左）"),
+                    TextureDirection::NY => text::span("NY（前）"),
+                    TextureDirection::NZ => text::span("NZ（下）"),
                 },
             ],
         )
@@ -514,25 +514,25 @@ impl Styled for ModalCreateBlockTexture {
             }
 
             ".texture-cell--px" {
-                "grid-column": "1 / 2";
+                "grid-column": "2 / 3";
                 "grid-row": "2 / 3";
                 "border-color": "#FF0000";
             }
 
             ".texture-cell--py" {
-                "grid-column": "2 / 3";
+                "grid-column": "3 / 4";
                 "grid-row": "2 / 3";
                 "border-color": "#00FF00";
             }
 
             ".texture-cell--nx" {
-                "grid-column": "3 / 4";
+                "grid-column": "4 / 5";
                 "grid-row": "2 / 3";
                 "border-color": "#00FFFF";
             }
 
             ".texture-cell--ny" {
-                "grid-column": "4 / 5";
+                "grid-column": "1 / 2";
                 "grid-row": "2 / 3";
                 "border-color": "#FF00FF";
             }
