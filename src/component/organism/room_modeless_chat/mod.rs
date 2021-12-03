@@ -749,7 +749,7 @@ impl Styled for RoomModelessChat {
             }
 
             ".main-message" {
-                "border-top": format!(".65rem solid {}", crate::libs::color::Pallet::gray(3));
+                "border-top": format!(".35rem solid {}", crate::libs::color::Pallet::gray(3));
                 "padding-top": ".35rem";
                 "padding-bottom": ".35rem";
 
