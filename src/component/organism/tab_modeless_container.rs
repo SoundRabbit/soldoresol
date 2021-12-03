@@ -297,120 +297,116 @@ where
     Content::Props: Clone,
 {
     fn render(&self, _: &Props, children: Vec<Html<Self>>) -> Html<Self> {
-        Self::styled(
-            Html::div(
-                Attributes::new().class(Self::class("base")),
-                Events::new()
-                    .on_dragover(|e| {
-                        e.prevent_default();
-                        Msg::NoOp
-                    })
-                    .on_drop(move |e| {
-                        let data_transfer = unwrap_or!(e.data_transfer(); Msg::NoOp);
-                        let data = unwrap_or!(data_transfer.get_data("text/plain").ok(); Msg::NoOp);
-                        if TabBtn::validate_prefix::<TabModeless<Content, TabName>>(&data) {
-                            let suffix = TabBtn::get_suffix(&data);
-                            if let Some(event_id) = suffix.get(0).and_then(|x| U128Id::from_hex(x))
-                            {
-                                e.prevent_default();
-                                e.stop_propagation();
-                                return Msg::DropTab {
-                                    event_id,
-                                    page_x: e.page_x(),
-                                    page_y: e.page_y(),
-                                };
-                            }
+        Self::styled(Html::div(
+            Attributes::new()
+                .ref_name("base")
+                .class(Self::class("base")),
+            Events::new()
+                .on_dragover(|e| {
+                    e.prevent_default();
+                    Msg::NoOp
+                })
+                .on_drop(move |e| {
+                    let data_transfer = unwrap_or!(e.data_transfer(); Msg::NoOp);
+                    let data = unwrap_or!(data_transfer.get_data("text/plain").ok(); Msg::NoOp);
+                    if TabBtn::validate_prefix::<TabModeless<Content, TabName>>(&data) {
+                        let suffix = TabBtn::get_suffix(&data);
+                        if let Some(event_id) = suffix.get(0).and_then(|x| U128Id::from_hex(x)) {
+                            e.prevent_default();
+                            e.stop_propagation();
+                            return Msg::DropTab {
+                                event_id,
+                                page_x: e.page_x(),
+                                page_y: e.page_y(),
+                            };
                         }
-                        Msg::NoOp
-                    }),
-                vec![
-                    Html::div(Attributes::new(), Events::new(), children),
-                    Html::div(
-                        Attributes::new().class(Self::class("minimized-list")),
-                        Events::new(),
+                    }
+                    Msg::NoOp
+                }),
+            vec![
+                Html::div(Attributes::new(), Events::new(), children),
+                Html::div(
+                    Attributes::new().class(Self::class("minimized-list")),
+                    Events::new(),
+                    self.modelesses
+                        .iter()
+                        .map(|m| match m {
+                            Some((m_id, _, contents)) if contents.is_minimized => Html::div(
+                                Attributes::new().class(Self::class("minimized-item")),
+                                Events::new(),
+                                vec![
+                                    Html::div(
+                                        Attributes::new().class(Self::class("minimized-item-tabs")),
+                                        Events::new(),
+                                        contents
+                                            .data
+                                            .borrow()
+                                            .iter()
+                                            .map(|content| {
+                                                Html::span(
+                                                    Attributes::new()
+                                                        .class(Btn::class_name(
+                                                            &btn::Variant::DarkLikeMenu,
+                                                        ))
+                                                        .class(Self::class(
+                                                            "minimized-item-tabs-tab",
+                                                        )),
+                                                    Events::new(),
+                                                    vec![TabName::empty(
+                                                        Clone::clone(&content),
+                                                        Sub::none(),
+                                                    )],
+                                                )
+                                            })
+                                            .collect(),
+                                    ),
+                                    Btn::secondary(
+                                        Attributes::new().class(Self::class("minimized-item-open")),
+                                        Events::new().on_click({
+                                            let m_id = U128Id::clone(&m_id);
+                                            move |_| Msg::SetMinimized(m_id, false)
+                                        }),
+                                        vec![Html::text("開く")],
+                                    ),
+                                ],
+                            ),
+                            _ => Html::none(),
+                        })
+                        .collect(),
+                ),
+                if let Some(element_rect) = self.element_rect.as_ref() {
+                    Html::fragment(
                         self.modelesses
                             .iter()
-                            .map(|m| match m {
-                                Some((m_id, _, contents)) if contents.is_minimized => Html::div(
-                                    Attributes::new().class(Self::class("minimized-item")),
-                                    Events::new(),
-                                    vec![
-                                        Html::div(
-                                            Attributes::new()
-                                                .class(Self::class("minimized-item-tabs")),
-                                            Events::new(),
-                                            contents
-                                                .data
-                                                .borrow()
-                                                .iter()
-                                                .map(|content| {
-                                                    Html::span(
-                                                        Attributes::new()
-                                                            .class(Btn::class_name(
-                                                                &btn::Variant::DarkLikeMenu,
-                                                            ))
-                                                            .class(Self::class(
-                                                                "minimized-item-tabs-tab",
-                                                            )),
-                                                        Events::new(),
-                                                        vec![TabName::empty(
-                                                            Clone::clone(&content),
-                                                            Sub::none(),
-                                                        )],
-                                                    )
-                                                })
-                                                .collect(),
-                                        ),
-                                        Btn::secondary(
-                                            Attributes::new()
-                                                .class(Self::class("minimized-item-open")),
-                                            Events::new().on_click({
-                                                let m_id = U128Id::clone(&m_id);
-                                                move |_| Msg::SetMinimized(m_id, false)
-                                            }),
-                                            vec![Html::text("開く")],
-                                        ),
-                                    ],
-                                ),
-                                _ => Html::none(),
+                            .enumerate()
+                            .map(|(m_idx, m)| match m {
+                                Some((m_id, z_idx, contents)) if !contents.is_minimized => {
+                                    TabModeless::<Content, TabName>::empty(
+                                        tab_modeless::Props {
+                                            container_rect: Rc::clone(&element_rect),
+                                            contents: Rc::clone(&contents.data),
+                                            page_x: contents
+                                                .pos_x
+                                                .unwrap_or(200 + (m_idx % 10) as i32 * 20),
+                                            page_y: contents
+                                                .pos_y
+                                                .unwrap_or(200 + (m_idx % 10) as i32 * 20),
+                                            size: [800.0, 600.0],
+                                            z_index: z_idx,
+                                            modeless_id: U128Id::clone(&m_id),
+                                        },
+                                        Self::modeless_sub(),
+                                    )
+                                }
+                                _ => Html::div(Attributes::new(), Events::new(), vec![]),
                             })
                             .collect(),
-                    ),
-                    if let Some(element_rect) = self.element_rect.as_ref() {
-                        Html::fragment(
-                            self.modelesses
-                                .iter()
-                                .enumerate()
-                                .map(|(m_idx, m)| match m {
-                                    Some((m_id, z_idx, contents)) if !contents.is_minimized => {
-                                        TabModeless::<Content, TabName>::empty(
-                                            tab_modeless::Props {
-                                                container_rect: Rc::clone(&element_rect),
-                                                contents: Rc::clone(&contents.data),
-                                                page_x: contents
-                                                    .pos_x
-                                                    .unwrap_or(200 + (m_idx % 10) as i32 * 20),
-                                                page_y: contents
-                                                    .pos_y
-                                                    .unwrap_or(200 + (m_idx % 10) as i32 * 20),
-                                                size: [800.0, 600.0],
-                                                z_index: z_idx,
-                                                modeless_id: U128Id::clone(&m_id),
-                                            },
-                                            Self::modeless_sub(),
-                                        )
-                                    }
-                                    _ => Html::div(Attributes::new(), Events::new(), vec![]),
-                                })
-                                .collect(),
-                        )
-                    } else {
-                        Html::none()
-                    },
-                ],
-            )
-            .ref_name("base"),
-        )
+                    )
+                } else {
+                    Html::none()
+                },
+            ],
+        ))
     }
 }
 

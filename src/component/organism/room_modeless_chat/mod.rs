@@ -56,7 +56,6 @@ pub struct RoomModelessChat {
     channel: BlockMut<block::ChatChannel>,
 
     is_showing_chat_pallet: bool,
-    inputing_chat_channel_name: String,
     inputing_chat_message: Option<String>,
     waiting_chat_message: Option<(
         block::chat_message::Message,
@@ -92,10 +91,6 @@ impl Constructor for RoomModelessChat {
             channel: BlockMut::clone(&props.data),
 
             is_showing_chat_pallet: false,
-            inputing_chat_channel_name: props
-                .data
-                .map(|data| data.name().clone())
-                .unwrap_or(String::new()),
             inputing_chat_message: Some(String::new()),
             waiting_chat_message: None,
 
@@ -111,12 +106,6 @@ impl Constructor for RoomModelessChat {
 
 impl Update for RoomModelessChat {
     fn on_load(&mut self, props: &Props) -> Cmd<Self> {
-        if self.channel.id() != props.data.id() {
-            props.data.map(|channel| {
-                self.inputing_chat_channel_name = channel.name().clone();
-            });
-        }
-
         self.arena = ArenaMut::clone(&props.arena);
         self.channel = BlockMut::clone(&props.data);
 
@@ -437,7 +426,7 @@ impl Render for RoomModelessChat {
 }
 
 impl RoomModelessChat {
-    fn render_header(&self, _chat_channel: &block::ChatChannel) -> Html<Self> {
+    fn render_header(&self, chat_channel: &block::ChatChannel) -> Html<Self> {
         Html::div(
             Attributes::new().class(RoomModeless::class("common-header")),
             Events::new(),
@@ -452,11 +441,10 @@ impl RoomModelessChat {
                 Html::input(
                     Attributes::new()
                         .id(&self.element_id.input_channel_name)
-                        .value(&self.inputing_chat_channel_name),
+                        .value(chat_channel.name()),
                     Events::new(),
                     vec![],
                 ),
-                Btn::primary(Attributes::new(), Events::new(), vec![Html::text("更新")]),
             ],
         )
     }

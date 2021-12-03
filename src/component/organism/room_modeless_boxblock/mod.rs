@@ -28,6 +28,7 @@ pub enum Msg {
     Sub(On),
     SetShowingModal(ShowingModal),
     SetColor(crate::libs::color::Pallet),
+    SetDisplayName(String),
     SetShape(block::boxblock::Shape),
     SetSize([f64; 3]),
     SetTexture(Option<BlockMut<resource::BlockTexture>>),
@@ -44,7 +45,6 @@ pub struct RoomModelessBoxblock {
     boxblock: BlockMut<block::Boxblock>,
 
     showing_modal: ShowingModal,
-    inputing_boxblock_name: String,
     element_id: ElementId,
 }
 
@@ -54,7 +54,8 @@ pub enum ShowingModal {
 }
 
 ElementId! {
-    input_boxblock_name
+    input_boxblock_name,
+    input_boxblock_display_name
 }
 
 impl Component for RoomModelessBoxblock {
@@ -68,10 +69,6 @@ impl Constructor for RoomModelessBoxblock {
         Self {
             boxblock: BlockMut::clone(&props.data),
             showing_modal: ShowingModal::None,
-            inputing_boxblock_name: props
-                .data
-                .map(|data| data.name().clone())
-                .unwrap_or(String::new()),
             element_id: ElementId::new(),
         }
     }
@@ -94,6 +91,16 @@ impl Update for RoomModelessBoxblock {
             Msg::SetColor(color) => {
                 self.boxblock.update(|boxblock| {
                     boxblock.set_color(color);
+                });
+
+                Cmd::sub(On::UpdateBlocks {
+                    insert: set! {},
+                    update: set! { self.boxblock.id() },
+                })
+            }
+            Msg::SetDisplayName(display_name) => {
+                self.boxblock.update(|boxblock| {
+                    boxblock.set_display_name(display_name);
                 });
 
                 Cmd::sub(On::UpdateBlocks {
@@ -180,7 +187,7 @@ impl Render for RoomModelessBoxblock {
 }
 
 impl RoomModelessBoxblock {
-    fn render_boxblock_header(&self, _boxblock: &block::Boxblock) -> Html<Self> {
+    fn render_boxblock_header(&self, boxblock: &block::Boxblock) -> Html<Self> {
         Html::div(
             Attributes::new().class(RoomModeless::class("common-header")),
             Events::new(),
@@ -195,11 +202,24 @@ impl RoomModelessBoxblock {
                 Html::input(
                     Attributes::new()
                         .id(&self.element_id.input_boxblock_name)
-                        .value(&self.inputing_boxblock_name),
+                        .value(boxblock.name()),
                     Events::new(),
                     vec![],
                 ),
-                Btn::primary(Attributes::new(), Events::new(), vec![Html::text("更新")]),
+                Html::label(
+                    Attributes::new()
+                        .class(RoomModeless::class("common-label"))
+                        .string("for", &self.element_id.input_boxblock_display_name),
+                    Events::new(),
+                    vec![Html::text("表示名")],
+                ),
+                Html::input(
+                    Attributes::new()
+                        .id(&self.element_id.input_boxblock_display_name)
+                        .value(boxblock.display_name()),
+                    Events::new().on_input(Msg::SetDisplayName),
+                    vec![],
+                ),
             ],
         )
     }

@@ -31,6 +31,7 @@ block! {
     color: Pallet = Pallet::blue(5);
     texture: Option<BlockMut<BlockTexture>> = None;
     name: String = String::from("ブロック");
+    display_name: String = String::from("");
 }
 
 impl Boxblock {
@@ -76,5 +77,13 @@ impl Boxblock {
 
     pub fn name(&self) -> &String {
         &self.name
+    }
+
+    pub fn display_name(&self) -> &String {
+        &self.display_name
+    }
+
+    pub fn set_display_name(&mut self, display_name: String) {
+        self.display_name = display_name;
     }
 }

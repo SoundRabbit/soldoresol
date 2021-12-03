@@ -288,14 +288,13 @@ impl Table {
 
 impl Render for Table {
     fn render(&self, _props: &Props, _children: Vec<Html<Self>>) -> Html<Self> {
-        Self::styled(
-            Html::canvas(
-                Attributes::new().class(Self::class("base")),
-                Events::new(),
-                vec![],
-            )
-            .ref_name("canvas"),
-        )
+        Self::styled(Html::canvas(
+            Attributes::new()
+                .ref_name("canvas")
+                .class(Self::class("base")),
+            Events::new(),
+            vec![],
+        ))
     }
 }
 

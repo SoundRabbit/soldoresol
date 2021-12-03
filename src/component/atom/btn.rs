@@ -66,7 +66,7 @@ impl Btn {
 
     pub fn with_variant<C: Component>(
         variant: Variant,
-        attrs: Attributes,
+        attrs: Attributes<C>,
         events: Events<C::Msg>,
         children: Vec<Html<C>>,
     ) -> Html<C> {
@@ -81,7 +81,7 @@ impl Btn {
     }
 
     pub fn primary<C: Component>(
-        attrs: Attributes,
+        attrs: Attributes<C>,
         events: Events<C::Msg>,
         children: Vec<Html<C>>,
     ) -> Html<C> {
@@ -89,7 +89,7 @@ impl Btn {
     }
 
     pub fn secondary<C: Component>(
-        attrs: Attributes,
+        attrs: Attributes<C>,
         events: Events<C::Msg>,
         children: Vec<Html<C>>,
     ) -> Html<C> {
@@ -97,7 +97,7 @@ impl Btn {
     }
 
     pub fn danger<C: Component>(
-        attrs: Attributes,
+        attrs: Attributes<C>,
         events: Events<C::Msg>,
         children: Vec<Html<C>>,
     ) -> Html<C> {
@@ -105,7 +105,7 @@ impl Btn {
     }
 
     pub fn dark<C: Component>(
-        attrs: Attributes,
+        attrs: Attributes<C>,
         events: Events<C::Msg>,
         children: Vec<Html<C>>,
     ) -> Html<C> {
@@ -113,7 +113,7 @@ impl Btn {
     }
 
     pub fn menu<C: Component>(
-        attrs: Attributes,
+        attrs: Attributes<C>,
         events: Events<C::Msg>,
         children: Vec<Html<C>>,
     ) -> Html<C> {
@@ -121,7 +121,7 @@ impl Btn {
     }
 
     pub fn menu_as_secondary<C: Component>(
-        attrs: Attributes,
+        attrs: Attributes<C>,
         events: Events<C::Msg>,
         children: Vec<Html<C>>,
     ) -> Html<C> {
@@ -129,7 +129,7 @@ impl Btn {
     }
 
     pub fn success<C: Component>(
-        attrs: Attributes,
+        attrs: Attributes<C>,
         events: Events<C::Msg>,
         children: Vec<Html<C>>,
     ) -> Html<C> {
@@ -137,7 +137,7 @@ impl Btn {
     }
 
     pub fn light<C: Component>(
-        attrs: Attributes,
+        attrs: Attributes<C>,
         events: Events<C::Msg>,
         children: Vec<Html<C>>,
     ) -> Html<C> {

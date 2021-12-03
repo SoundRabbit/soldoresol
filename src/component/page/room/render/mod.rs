@@ -34,7 +34,7 @@ impl Render for Room {
                     Sub::none(),
                     vec![self.render_header_row_0(), self.render_header_row_1()],
                 ),
-                FileCatcher::with_children(
+                FileCatcher::<Self>::with_children(
                     file_catcher::Props {
                         attributes: Attributes::new().class(Common::layered()),
                         ok_to_catch_file: self.ok_to_catch_file,

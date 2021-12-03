@@ -6,7 +6,7 @@ use isaribi::{
 use kagura::prelude::*;
 
 pub fn div<C: Component>(
-    attrs: Attributes,
+    attrs: Attributes<C>,
     events: Events<C::Msg>,
     message: &block::chat_message::Message,
 ) -> Html<C> {

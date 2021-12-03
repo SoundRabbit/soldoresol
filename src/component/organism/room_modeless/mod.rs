@@ -120,7 +120,7 @@ impl Styled for RoomModeless {
 
             ".common-header" {
                 "display": "grid";
-                "grid-template-columns": "max-content 1fr max-content";
+                "grid-template-columns": "max-content 1fr";
                 "grid-auto-rows": "max-content";
                 "column-gap": ".35rem";
                 "row-gap": ".65rem";
@@ -159,7 +159,7 @@ impl Render for TabName {
                     Html::span(
                         Attributes::new(),
                         Events::new(),
-                        vec![fa::i("fa-cube"), Html::text(bb.name())],
+                        vec![fa::i("fa-cube"), Html::text(" "), Html::text(bb.name())],
                     )
                 })
                 .unwrap_or(Html::none()),

@@ -8,7 +8,7 @@ pub struct Align {}
 
 impl Align {
     pub fn key_value<C: Component>(
-        attrs: Attributes,
+        attrs: Attributes<C>,
         events: Events<C::Msg>,
         children: Vec<Html<C>>,
     ) -> Html<C> {

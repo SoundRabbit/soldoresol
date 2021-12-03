@@ -42,16 +42,16 @@ version = "^0.4"
 features = ["wasmbind"]
 
 [dependencies.isaribi]
-# version = "^0.2"
-path = "../Isaribi"
+version = "^0.2"
+# path = "../Isaribi"
 
 [dependencies.serde]
 version = "^1.0"
 features = ["derive"]
 
 [dependencies.kagura]
-# version = "^0.13"
-path="../Kagura"
+version = "^0.13"
+# path="../Kagura"
 
 [dependencies.web-sys]
 version = "^0.3"

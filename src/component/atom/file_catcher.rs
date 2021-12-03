@@ -8,8 +8,8 @@ use kagura::component::{Cmd, Sub};
 use kagura::prelude::*;
 use std::rc::Rc;
 
-pub struct Props {
-    pub attributes: Attributes,
+pub struct Props<C: Component> {
+    pub attributes: Attributes<C>,
     pub ok_to_catch_file: bool,
 }
 
@@ -24,26 +24,28 @@ pub enum On {
     LoadImageData(resource::ImageData),
 }
 
-pub struct FileCatcher {
+pub struct FileCatcher<C: Component> {
     is_showing_overlay: bool,
+    __phantom_parent: std::marker::PhantomData<C>,
 }
 
-impl Component for FileCatcher {
-    type Props = Props;
+impl<C: Component> Component for FileCatcher<C> {
+    type Props = Props<C>;
     type Msg = Msg;
     type Sub = On;
 }
 
-impl Constructor for FileCatcher {
-    fn constructor(_props: &Props) -> Self {
+impl<C: Component> Constructor for FileCatcher<C> {
+    fn constructor(_props: &Props<C>) -> Self {
         Self {
             is_showing_overlay: false,
+            __phantom_parent: std::marker::PhantomData,
         }
     }
 }
 
-impl Update for FileCatcher {
-    fn update(&mut self, _props: &Props, msg: Msg) -> Cmd<Self> {
+impl<C: Component> Update for FileCatcher<C> {
+    fn update(&mut self, _props: &Props<C>, msg: Msg) -> Cmd<Self> {
         match msg {
             Msg::NoOp => Cmd::none(),
             Msg::Sub(sub) => Cmd::sub(sub),
@@ -83,9 +85,9 @@ impl Update for FileCatcher {
     }
 }
 
-impl Render for FileCatcher {
-    fn render(&self, props: &Props, children: Vec<Html<Self>>) -> Html<Self> {
-        let attrs = props.attributes.clone();
+impl<C: Component> Render for FileCatcher<C> {
+    fn render(&self, props: &Props<C>, children: Vec<Html<Self>>) -> Html<Self> {
+        let attrs = props.attributes.restricted();
 
         Self::styled(Html::div(
             attrs,
@@ -133,7 +135,7 @@ impl Render for FileCatcher {
     }
 }
 
-impl Styled for FileCatcher {
+impl<C: Component> Styled for FileCatcher<C> {
     fn style() -> Style {
         style! {
             ".overlay" {

@@ -14,7 +14,7 @@ pub enum Variant {
 impl Heading {
     pub fn h1<C: Component>(
         variant: Variant,
-        attrs: Attributes,
+        attrs: Attributes<C>,
         events: Events<C::Msg>,
         children: Vec<Html<C>>,
     ) -> Html<C> {
@@ -27,7 +27,7 @@ impl Heading {
 
     pub fn h2<C: Component>(
         variant: Variant,
-        attrs: Attributes,
+        attrs: Attributes<C>,
         events: Events<C::Msg>,
         children: Vec<Html<C>>,
     ) -> Html<C> {
@@ -40,7 +40,7 @@ impl Heading {
 
     pub fn h3<C: Component>(
         variant: Variant,
-        attrs: Attributes,
+        attrs: Attributes<C>,
         events: Events<C::Msg>,
         children: Vec<Html<C>>,
     ) -> Html<C> {
@@ -53,7 +53,7 @@ impl Heading {
 
     pub fn h4<C: Component>(
         variant: Variant,
-        attrs: Attributes,
+        attrs: Attributes<C>,
         events: Events<C::Msg>,
         children: Vec<Html<C>>,
     ) -> Html<C> {
@@ -66,7 +66,7 @@ impl Heading {
 
     pub fn h5<C: Component>(
         variant: Variant,
-        attrs: Attributes,
+        attrs: Attributes<C>,
         events: Events<C::Msg>,
         children: Vec<Html<C>>,
     ) -> Html<C> {
@@ -79,7 +79,7 @@ impl Heading {
 
     pub fn h6<C: Component>(
         variant: Variant,
-        attrs: Attributes,
+        attrs: Attributes<C>,
         events: Events<C::Msg>,
         children: Vec<Html<C>>,
     ) -> Html<C> {

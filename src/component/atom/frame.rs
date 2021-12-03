@@ -80,21 +80,20 @@ impl Update for Frame {
 
 impl Render for Frame {
     fn render(&self, _: &Props, _: Vec<Html<Self>>) -> Html<Self> {
-        Self::styled(
-            Html::div(
-                {
-                    let attrs = Attributes::new().class(Self::class("base"));
-                    if let Some(class_name) = &self.class_name {
-                        attrs.class(class_name)
-                    } else {
-                        attrs
-                    }
-                },
-                Events::new(),
-                vec![Html::div(Attributes::new(), Events::new(), vec![])],
-            )
-            .ref_name("frame"),
-        )
+        Self::styled(Html::div(
+            {
+                let attrs = Attributes::new()
+                    .ref_name("frame")
+                    .class(Self::class("base"));
+                if let Some(class_name) = &self.class_name {
+                    attrs.class(class_name)
+                } else {
+                    attrs
+                }
+            },
+            Events::new(),
+            vec![Html::div(Attributes::new(), Events::new(), vec![])],
+        ))
     }
 }
 
