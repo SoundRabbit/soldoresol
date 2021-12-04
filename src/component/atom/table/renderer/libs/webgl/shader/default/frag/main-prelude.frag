@@ -32,10 +32,10 @@ vec4 floatToRgb(float v) {
 
 #define IS_MAX(x, y, z) ((x)>=(y) && (x)>=(z))
 #define CUBE_TEXTURE_PZ(x, y) vec2((x)*0.25 + 0.125, -(y)*0.3 + 0.15)
-#define CUBE_TEXTURE_PX(x, y) vec2((x)*0.25 + 0.125, -(y)*0.3 + 0.5)
-#define CUBE_TEXTURE_PY(x, y) vec2((x)*0.25 + 0.375, -(y)*0.3 + 0.5)
-#define CUBE_TEXTURE_NX(x, y) vec2((x)*0.25 + 0.625, -(y)*0.3 + 0.5)
-#define CUBE_TEXTURE_NY(x, y) vec2((x)*0.25 + 0.875, -(y)*0.3 + 0.5)
+#define CUBE_TEXTURE_NY(x, y) vec2((x)*0.25 + 0.125, -(y)*0.3 + 0.5)
+#define CUBE_TEXTURE_PX(x, y) vec2((x)*0.25 + 0.375, -(y)*0.3 + 0.5)
+#define CUBE_TEXTURE_PY(x, y) vec2((x)*0.25 + 0.625, -(y)*0.3 + 0.5)
+#define CUBE_TEXTURE_NX(x, y) vec2((x)*0.25 + 0.875, -(y)*0.3 + 0.5)
 #define CUBE_TEXTURE_NZ(x, y) vec2((x)*0.25 + 0.125, -(y)*0.3 + 0.85)
 
 vec2 cubeTextureCoord(vec3 d, float offset_z) {
