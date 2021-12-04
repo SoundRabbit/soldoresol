@@ -44,7 +44,7 @@ impl LoadFrom<BlockMut<ImageData>> for BlockTexture {
 #[async_trait(?Send)]
 impl LoadFrom<([u32; 2], [BlockMut<ImageData>; 6])> for BlockTexture {
     async fn load_from(
-        ([width, height], [img_pz, img_px, img_py, img_nx, img_ny, img_nz]): (
+        ([width, height], [img_px, img_py, img_pz, img_nx, img_ny, img_nz]): (
             [u32; 2],
             [BlockMut<ImageData>; 6],
         ),
@@ -63,10 +63,10 @@ impl LoadFrom<([u32; 2], [BlockMut<ImageData>; 6])> for BlockTexture {
         let context = unwrap!(context.dyn_into::<web_sys::CanvasRenderingContext2d>().ok());
 
         draw_texture(&context, width_f, height_f, &img_pz, 0.25 * 0.0, 0.0);
-        draw_texture(&context, width_f, height_f, &img_px, 0.25 * 0.0, 0.35);
-        draw_texture(&context, width_f, height_f, &img_py, 0.25 * 1.0, 0.35);
-        draw_texture(&context, width_f, height_f, &img_nx, 0.25 * 2.0, 0.35);
-        draw_texture(&context, width_f, height_f, &img_ny, 0.25 * 3.0, 0.35);
+        draw_texture(&context, width_f, height_f, &img_ny, 0.25 * 0.0, 0.35);
+        draw_texture(&context, width_f, height_f, &img_px, 0.25 * 1.0, 0.35);
+        draw_texture(&context, width_f, height_f, &img_py, 0.25 * 2.0, 0.35);
+        draw_texture(&context, width_f, height_f, &img_nx, 0.25 * 3.0, 0.35);
         draw_texture(&context, width_f, height_f, &img_nz, 0.25 * 0.0, 0.7);
 
         let blob = JsFuture::from(Promise::new(&mut move |resolve, _| {

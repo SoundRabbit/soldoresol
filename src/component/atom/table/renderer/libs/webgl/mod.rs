@@ -268,6 +268,12 @@ impl WebGlRenderingContext {
     setter!(unif u_texture_0_sampler: 1i as set_u_texture_0_sampler);
     setter!(unif u_texture_1_sampler: 1i as set_u_texture_1_sampler);
     setter!(unif u_texture_2_sampler: 1i as set_u_texture_2_sampler);
+    setter!(unif u_texture_0_text_fill_color: 4fv as set_u_texture_0_text_fill_color);
+    setter!(unif u_texture_1_text_fill_color: 4fv as set_u_texture_1_text_fill_color);
+    setter!(unif u_texture_2_text_fill_color: 4fv as set_u_texture_2_text_fill_color);
+    setter!(unif u_texture_0_text_stroke_color: 4fv as set_u_texture_0_text_stroke_color);
+    setter!(unif u_texture_1_text_stroke_color: 4fv as set_u_texture_1_text_stroke_color);
+    setter!(unif u_texture_2_text_stroke_color: 4fv as set_u_texture_2_text_stroke_color);
 
     setter!(unif u_light: 1i as set_u_light);
     setter!(unif u_light_attenation: 1f as set_u_light_attenation);

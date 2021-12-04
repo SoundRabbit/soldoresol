@@ -41,6 +41,19 @@ uniform sampler2D u_texture0Sampler;
 uniform sampler2D u_texture1Sampler;
 //TEXTURE_NONE以外で必須
 uniform sampler2D u_texture2Sampler;
+//TEXTURE_TEXTで必須
+uniform vec4 u_texture0TextFillColor;
+//TEXTURE_TEXTで必須
+uniform vec4 u_texture1TextFillColor;
+//TEXTURE_TEXTで必須
+uniform vec4 u_texture2TextFillColor;
+//TEXTURE_TEXTで必須
+uniform vec4 u_texture0TextStrokeColor;
+//TEXTURE_TEXTで必須
+uniform vec4 u_texture1TextStrokeColor;
+//TEXTURE_TEXTで必須
+uniform vec4 u_texture2TextStrokeColor;
+
 
 // ライティング／シェ―ディング
 //必須
@@ -101,6 +114,7 @@ varying vec3 v_vertex;
 #define TEXTURE_NONE 0x00000000
 #define TEXTURE_NORMAL 0x00000001
 #define TEXTURE_MASK 0x00000002
+#define TEXTURE_TEXT 0x00000003
 
 #define LIGHT_NONE 0x00000000
 #define LIGHT_AMBIENT 0x00000001

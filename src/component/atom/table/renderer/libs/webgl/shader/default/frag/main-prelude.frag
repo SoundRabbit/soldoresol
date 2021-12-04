@@ -57,16 +57,11 @@ vec2 cubeTextureCoord(vec3 d, float offset_z) {
     );
 }
 
-bool implSetGSurfaceAs2dBox() {
+bool setGSurfaceAs2dBox() {
     g_surface.p =  (u_modelMatrix * vec4(v_vertex, 1.0)).xyz;
     g_surface.n = v_normal;
     g_surface.t = v_textureCoord;
-
     return false;
-}
-
-bool setGSurfaceAs2dBox() {
-    return u_light == LIGHT_NONE ? false : implSetGSurfaceAs2dBox();
 }
 
 bool setGSurfaceAs2dCircle() {
@@ -97,11 +92,10 @@ bool setGSurfaceAs3dSphare() {
 
     return
         dd < 0.0 ? true
-        : u_light == LIGHT_NONE ? false
         : implSetGSurfaceAs3dSphare((-bb - sqrt(dd)) / (2.0 * aa));
 }
 
-bool implSetGSurfaceAs3dCylinderWhenLight(vec3 p) {
+bool implSetGSurfaceAs3dCylinderWithP(vec3 p) {
     g_surface.p = (u_modelMatrix * vec4(p, 1.0)).xyz;
     g_surface.n = normalize(vec3(p.xy, 0.0));
     g_surface.t = cubeTextureCoord(g_surface.n, p.z);
@@ -114,8 +108,7 @@ bool implSetGSurfaceAs3dCylinderWithT(float t) {
 
     return
         p.z < -0.5 || 0.5 < p.z ? true
-        : u_light == LIGHT_NONE ? false
-        : implSetGSurfaceAs3dCylinderWhenLight(p);
+        : implSetGSurfaceAs3dCylinderWithP(p);
 }
 
 bool implSetGSurfaceAs3dCylinder() {
@@ -144,6 +137,18 @@ vec4 colorWithLightAsNone() {
     vec4 texColor0 = u_texture0 == TEXTURE_NONE ? vec4(0.0) : texture2D(u_texture0Sampler, g_surface.t);
     vec4 texColor1 = u_texture1 == TEXTURE_NONE ? vec4(0.0) : texture2D(u_texture1Sampler, g_surface.t);
     vec4 texColor2 = u_texture2 == TEXTURE_NONE ? vec4(0.0) : texture2D(u_texture2Sampler, g_surface.t);
+
+    texColor0 =
+        u_texture0 != TEXTURE_TEXT ? texColor0 :
+        vec4(u_texture0TextStrokeColor.xyz * texColor0.xyz + u_texture0TextFillColor.xyz * (vec3(1.0) - texColor0.xyz), texColor0.w);
+
+    texColor1 =
+        u_texture1 != TEXTURE_TEXT ? texColor1 :
+        vec4(u_texture1TextStrokeColor.xyz * texColor1.xyz + u_texture1TextFillColor.xyz * (vec3(1.0) - texColor1.xyz), texColor1.w);
+
+    texColor2 =
+        u_texture2 != TEXTURE_TEXT ? texColor2 :
+        vec4(u_texture2TextStrokeColor.xyz * texColor2.xyz + u_texture2TextFillColor.xyz * (vec3(1.0) - texColor2.xyz), texColor2.w);
 
     vec4 color = COLOR_BLEND(v_vColor, COLOR_BLEND(bgColor1, bgColor2));
     color = u_texture0 == TEXTURE_MASK ? COLOR_MASK(color, texColor0) : COLOR_BLEND(color, texColor0);

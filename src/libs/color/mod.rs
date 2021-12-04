@@ -41,6 +41,10 @@ impl Color {
     pub fn to_jsvalue(&self) -> JsValue {
         JsValue::from(&self.to_string())
     }
+
+    pub fn v(&self) -> f64 {
+        self.red.max(self.green).max(self.blue) as f64 / 255.0
+    }
 }
 
 impl std::fmt::Display for Color {

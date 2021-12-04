@@ -57,6 +57,7 @@ version = "^0.13"
 version = "^0.3"
 features = [
     "BlobPropertyBag",
+    "CanvasGradient",
     "CanvasRenderingContext2d",
     "Crypto",
     "CssRuleList",

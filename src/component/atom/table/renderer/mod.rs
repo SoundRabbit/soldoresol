@@ -49,4 +49,5 @@ pub struct Renderer {
     screen_mesh: mesh::Screen,
     craftboard_grid_mesh: mesh::CraftboardGrid,
     boxblock_mesh: mesh::Boxblock,
+    nameplate_mesh: mesh::Nameplate,
 }

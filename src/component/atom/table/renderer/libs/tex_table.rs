@@ -214,11 +214,12 @@ impl TexTable {
                 .dyn_into::<web_sys::CanvasRenderingContext2d>()
                 .unwrap();
             let font_height = 64.0;
-            ctx.set_font(&format!("{}px san-serif bold", font_height));
+            ctx.set_font(&format!("bold {}px sans-serif", font_height));
 
             let metrix = ctx.measure_text(&text).unwrap();
-            let width = metrix.width();
-            let height = font_height;
+            let r = font_height / 4.0;
+            let height = font_height + 2.0 * r;
+            let width = metrix.width() + 2.0 * r;
 
             canvas.set_width(width as u32);
             canvas.set_height(height as u32);
@@ -229,14 +230,24 @@ impl TexTable {
                 .dyn_into::<web_sys::CanvasRenderingContext2d>()
                 .unwrap();
 
-            ctx.set_font(&format!("{}px bold san-serif", font_height));
-            ctx.set_stroke_style(&JsValue::from("#FFFFFF"));
-            ctx.set_fill_style(&JsValue::from("#000000"));
-            ctx.set_text_baseline("middle");
-
             ctx.clear_rect(0.0, 0.0, width, height);
 
-            let _ = ctx.fill_text(&text, 0.0, height / 2.0);
+            ctx.set_fill_style(&JsValue::from("#000000"));
+            let x = 0.0;
+            let y = 0.0;
+            ctx.begin_path();
+            ctx.move_to(x + r, y);
+            let _ = ctx.arc_to(x + width, y, x + width, y + height, r);
+            let _ = ctx.arc_to(x + width, y + height, x, y + height, r);
+            let _ = ctx.arc_to(x, y + height, x, y, r);
+            let _ = ctx.arc_to(x, y, x + width, y, r);
+            ctx.close_path();
+            ctx.fill();
+
+            ctx.set_font(&format!("{}px sans-serif", font_height));
+            ctx.set_fill_style(&JsValue::from("#FFFFFF"));
+            ctx.set_text_baseline("middle");
+            let _ = ctx.fill_text(&text, r, height / 2.0);
 
             let tex_idx = self.use_idx();
             let tex_buf = gl.create_texture().unwrap();

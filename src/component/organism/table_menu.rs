@@ -73,6 +73,7 @@ impl Constructor for TableMenu {
                     TableTool::Eraser(Rc::new(table_tool::Eraser { width: 1.0 })),
                     TableTool::Character(Rc::new(table_tool::Character {
                         name: String::from(""),
+                        texture: None,
                     })),
                     TableTool::Boxblock(Rc::new(table_tool::Boxblock {
                         color: crate::libs::color::Pallet::blue(5),
@@ -219,12 +220,17 @@ impl TableMenu {
     fn render_tool_option(&self) -> Html<Self> {
         let tool_idx = self.tools.selected_idx();
         Html::div(
-            Attributes::new().class(Self::class("option")),
+            Attributes::new()
+                .class(Self::class("option"))
+                .class("pure-form"),
             Events::new(),
             vec![match self.tools.get(tool_idx) {
                 Some(TableTool::Pen(tool)) => Self::render_tool_option_pen(tool_idx, tool),
                 Some(TableTool::Boxblock(tool)) => {
                     Self::render_tool_option_boxblock(tool_idx, tool)
+                }
+                Some(TableTool::Character(tool)) => {
+                    Self::render_tool_option_character(tool_idx, tool)
                 }
                 _ => Html::none(),
             }],
@@ -285,6 +291,36 @@ impl TableMenu {
         )
     }
 
+    fn render_tool_option_character(
+        tool_idx: usize,
+        character: &Rc<table_tool::Character>,
+    ) -> Html<Self> {
+        Html::div(
+            Attributes::new().class(Self::class("character")),
+            Events::new(),
+            vec![Html::div(
+                Attributes::new().class(Common::keyvalue()),
+                Events::new(),
+                vec![
+                    text::span("名前"),
+                    Html::input(
+                        Attributes::new().value(&character.name),
+                        Events::new().on_input({
+                            let character = Rc::clone(&character);
+                            move |name| {
+                                let mut character = character.as_ref().clone();
+                                character.name = name;
+                                Msg::SetTool(tool_idx, TableTool::Character(Rc::new(character)))
+                            }
+                        }),
+                        vec![],
+                    ),
+                    text::span(""),
+                ],
+            )],
+        )
+    }
+
     fn render_tool_option_boxblock(
         tool_idx: usize,
         boxblock: &Rc<table_tool::Boxblock>,
@@ -310,80 +346,32 @@ impl TableMenu {
                         },
                         Sub::none(),
                         vec![
-                            Btn::menu(
-                                Attributes::new(),
-                                Events::new().on_click({
-                                    let boxblock = Rc::clone(&boxblock);
-                                    move |_| {
-                                        let mut boxblock = boxblock.as_ref().clone();
-                                        boxblock.shape = block::boxblock::Shape::Cube;
-                                        Msg::SetTool(
-                                            tool_idx,
-                                            TableTool::Boxblock(Rc::new(boxblock)),
-                                        )
-                                    }
-                                }),
-                                vec![Html::text("立方体")],
+                            Self::render_tool_option_boxblock_shape(
+                                tool_idx,
+                                boxblock,
+                                block::boxblock::Shape::Cube,
+                                "立方体",
                             ),
-                            Btn::menu(
-                                Attributes::new(),
-                                Events::new().on_click({
-                                    let boxblock = Rc::clone(&boxblock);
-                                    move |_| {
-                                        let mut boxblock = boxblock.as_ref().clone();
-                                        boxblock.shape = block::boxblock::Shape::Sphere;
-                                        Msg::SetTool(
-                                            tool_idx,
-                                            TableTool::Boxblock(Rc::new(boxblock)),
-                                        )
-                                    }
-                                }),
-                                vec![Html::text("球体")],
+                            Self::render_tool_option_boxblock_shape(
+                                tool_idx,
+                                boxblock,
+                                block::boxblock::Shape::Sphere,
+                                "球体",
                             ),
-                            Btn::menu(
-                                Attributes::new(),
-                                Events::new().on_click({
-                                    let boxblock = Rc::clone(&boxblock);
-                                    move |_| {
-                                        let mut boxblock = boxblock.as_ref().clone();
-                                        boxblock.shape = block::boxblock::Shape::Cylinder;
-                                        Msg::SetTool(
-                                            tool_idx,
-                                            TableTool::Boxblock(Rc::new(boxblock)),
-                                        )
-                                    }
-                                }),
-                                vec![Html::text("円柱")],
+                            Self::render_tool_option_boxblock_shape(
+                                tool_idx,
+                                boxblock,
+                                block::boxblock::Shape::Cylinder,
+                                "円柱",
                             ),
                         ],
                     ),
                     text::span("X幅"),
-                    Self::render_tool_option_boxblock_size(boxblock.size[0], {
-                        let boxblock = Rc::clone(&boxblock);
-                        move |x| {
-                            let mut boxblock = boxblock.as_ref().clone();
-                            boxblock.size[0] = x;
-                            Msg::SetTool(tool_idx, TableTool::Boxblock(Rc::new(boxblock)))
-                        }
-                    }),
+                    Self::render_tool_option_boxblock_size(tool_idx, boxblock, 0),
                     text::span("Y幅"),
-                    Self::render_tool_option_boxblock_size(boxblock.size[1], {
-                        let boxblock = Rc::clone(&boxblock);
-                        move |y| {
-                            let mut boxblock = boxblock.as_ref().clone();
-                            boxblock.size[1] = y;
-                            Msg::SetTool(tool_idx, TableTool::Boxblock(Rc::new(boxblock)))
-                        }
-                    }),
+                    Self::render_tool_option_boxblock_size(tool_idx, boxblock, 1),
                     text::span("Z幅"),
-                    Self::render_tool_option_boxblock_size(boxblock.size[2], {
-                        let boxblock = Rc::clone(&boxblock);
-                        move |z| {
-                            let mut boxblock = boxblock.as_ref().clone();
-                            boxblock.size[2] = z;
-                            Msg::SetTool(tool_idx, TableTool::Boxblock(Rc::new(boxblock)))
-                        }
-                    }),
+                    Self::render_tool_option_boxblock_size(tool_idx, boxblock, 2),
                     text::span("色"),
                     PopupColorPallet::empty(
                         popup_color_pallet::Props {
@@ -435,14 +423,35 @@ impl TableMenu {
         )
     }
 
+    fn render_tool_option_boxblock_shape(
+        tool_idx: usize,
+        boxblock: &Rc<table_tool::Boxblock>,
+        shape: block::boxblock::Shape,
+        text: impl Into<String>,
+    ) -> Html<Self> {
+        Btn::menu(
+            Attributes::new(),
+            Events::new().on_click({
+                let boxblock = Rc::clone(&boxblock);
+                move |_| {
+                    let mut boxblock = boxblock.as_ref().clone();
+                    boxblock.shape = shape;
+                    Msg::SetTool(tool_idx, TableTool::Boxblock(Rc::new(boxblock)))
+                }
+            }),
+            vec![Html::text(text)],
+        )
+    }
+
     fn render_tool_option_boxblock_size(
-        val: f64,
-        mut f: impl FnMut(f64) -> Msg + 'static,
+        tool_idx: usize,
+        boxblock: &Rc<table_tool::Boxblock>,
+        coord_idx: usize,
     ) -> Html<Self> {
         Slider::empty(
             slider::Props {
                 position: slider::Position::Linear {
-                    val: val,
+                    val: boxblock.size[coord_idx],
                     min: 0.1,
                     max: 10.0,
                     step: 0.1,
@@ -450,9 +459,16 @@ impl TableMenu {
                 range_is_editable: false,
                 theme: slider::Theme::Light,
             },
-            Sub::map(move |sub| match sub {
-                slider::On::Input(val) => f(val),
-                _ => Msg::NoOp,
+            Sub::map({
+                let boxblock = Rc::clone(&boxblock);
+                move |sub| match sub {
+                    slider::On::Input(val) => {
+                        let mut boxblock = boxblock.as_ref().clone();
+                        boxblock.size[coord_idx] = val;
+                        Msg::SetTool(tool_idx, TableTool::Boxblock(Rc::new(boxblock)))
+                    }
+                    _ => Msg::NoOp,
+                }
             }),
         )
     }

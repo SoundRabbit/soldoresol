@@ -18,6 +18,7 @@ pub const ID_V_WRITE: i32 = 0x02000002;
 pub const TEXTURE_NONE: i32 = 0x00000000;
 pub const TEXTURE_NORMAL: i32 = 0x00000001;
 pub const TEXTURE_MASK: i32 = 0x00000002;
+pub const TEXTURE_TEXT: i32 = 0x00000003;
 
 pub const LIGHT_NONE: i32 = 0x00000000;
 pub const LIGHT_AMBIENT: i32 = 0x00000001;
@@ -132,6 +133,12 @@ pub trait Program {
     accesser!(u_texture_0_sampler: WebGlUniformLocation as None);
     accesser!(u_texture_1_sampler: WebGlUniformLocation as None);
     accesser!(u_texture_2_sampler: WebGlUniformLocation as None);
+    accesser!(u_texture_0_text_fill_color: WebGlUniformLocation as None);
+    accesser!(u_texture_1_text_fill_color: WebGlUniformLocation as None);
+    accesser!(u_texture_2_text_fill_color: WebGlUniformLocation as None);
+    accesser!(u_texture_0_text_stroke_color: WebGlUniformLocation as None);
+    accesser!(u_texture_1_text_stroke_color: WebGlUniformLocation as None);
+    accesser!(u_texture_2_text_stroke_color: WebGlUniformLocation as None);
 
     // ライティング／シェ―ディング
     accesser!(u_light: WebGlUniformLocation as None);
@@ -269,6 +276,12 @@ pub struct ShapedProgram {
     u_texture_0_sampler: Option<WebGlUniformLocation>,
     u_texture_1_sampler: Option<WebGlUniformLocation>,
     u_texture_2_sampler: Option<WebGlUniformLocation>,
+    u_texture_0_text_fill_color: Option<WebGlUniformLocation>,
+    u_texture_1_text_fill_color: Option<WebGlUniformLocation>,
+    u_texture_2_text_fill_color: Option<WebGlUniformLocation>,
+    u_texture_0_text_stroke_color: Option<WebGlUniformLocation>,
+    u_texture_1_text_stroke_color: Option<WebGlUniformLocation>,
+    u_texture_2_text_stroke_color: Option<WebGlUniformLocation>,
     u_light: Option<WebGlUniformLocation>,
     u_light_attenation: Option<WebGlUniformLocation>,
     u_light_color: Option<WebGlUniformLocation>,
@@ -322,6 +335,12 @@ impl ShapedProgram {
             u_texture_0_sampler: unif("u_texture0Sampler", gl, &program),
             u_texture_1_sampler: unif("u_texture1Sampler", gl, &program),
             u_texture_2_sampler: unif("u_texture2Sampler", gl, &program),
+            u_texture_0_text_fill_color: unif("u_texture0TextFillColor", gl, &program),
+            u_texture_1_text_fill_color: unif("u_texture1TextFillColor", gl, &program),
+            u_texture_2_text_fill_color: unif("u_texture2TextFillColor", gl, &program),
+            u_texture_0_text_stroke_color: unif("u_texture0TextStrokeColor", gl, &program),
+            u_texture_1_text_stroke_color: unif("u_texture1TextStrokeColor", gl, &program),
+            u_texture_2_text_stroke_color: unif("u_texture2TextStrokeColor", gl, &program),
             u_light: unif("u_light", gl, &program),
             u_light_attenation: unif("u_lightAttenation", gl, &program),
             u_light_color: unif("u_lightColor", gl, &program),
@@ -385,6 +404,12 @@ impl Program for ShapedProgram {
     accesser!(u_texture_0_sampler: WebGlUniformLocation);
     accesser!(u_texture_1_sampler: WebGlUniformLocation);
     accesser!(u_texture_2_sampler: WebGlUniformLocation);
+    accesser!(u_texture_0_text_fill_color: WebGlUniformLocation);
+    accesser!(u_texture_1_text_fill_color: WebGlUniformLocation);
+    accesser!(u_texture_2_text_fill_color: WebGlUniformLocation);
+    accesser!(u_texture_0_text_stroke_color: WebGlUniformLocation);
+    accesser!(u_texture_1_text_stroke_color: WebGlUniformLocation);
+    accesser!(u_texture_2_text_stroke_color: WebGlUniformLocation);
 
     // ライティング／シェ―ディング
     accesser!(u_light: WebGlUniformLocation);
@@ -436,6 +461,12 @@ pub struct UnshapedProgram {
     u_texture_0_sampler: Option<WebGlUniformLocation>,
     u_texture_1_sampler: Option<WebGlUniformLocation>,
     u_texture_2_sampler: Option<WebGlUniformLocation>,
+    u_texture_0_text_fill_color: Option<WebGlUniformLocation>,
+    u_texture_1_text_fill_color: Option<WebGlUniformLocation>,
+    u_texture_2_text_fill_color: Option<WebGlUniformLocation>,
+    u_texture_0_text_stroke_color: Option<WebGlUniformLocation>,
+    u_texture_1_text_stroke_color: Option<WebGlUniformLocation>,
+    u_texture_2_text_stroke_color: Option<WebGlUniformLocation>,
     u_light: Option<WebGlUniformLocation>,
     u_light_attenation: Option<WebGlUniformLocation>,
     u_light_color: Option<WebGlUniformLocation>,
@@ -489,6 +520,12 @@ impl UnshapedProgram {
             u_texture_0_sampler: unif("u_texture0Sampler", gl, &program),
             u_texture_1_sampler: unif("u_texture1Sampler", gl, &program),
             u_texture_2_sampler: unif("u_texture2Sampler", gl, &program),
+            u_texture_0_text_fill_color: unif("u_texture0TextFillColor", gl, &program),
+            u_texture_1_text_fill_color: unif("u_texture1TextFillColor", gl, &program),
+            u_texture_2_text_fill_color: unif("u_texture2TextFillColor", gl, &program),
+            u_texture_0_text_stroke_color: unif("u_texture0TextStrokeColor", gl, &program),
+            u_texture_1_text_stroke_color: unif("u_texture1TextStrokeColor", gl, &program),
+            u_texture_2_text_stroke_color: unif("u_texture2TextStrokeColor", gl, &program),
             u_light: unif("u_light", gl, &program),
             u_light_attenation: unif("u_lightAttenation", gl, &program),
             u_light_color: unif("u_lightColor", gl, &program),
@@ -552,6 +589,12 @@ impl Program for UnshapedProgram {
     accesser!(u_texture_0_sampler: WebGlUniformLocation);
     accesser!(u_texture_1_sampler: WebGlUniformLocation);
     accesser!(u_texture_2_sampler: WebGlUniformLocation);
+    accesser!(u_texture_0_text_fill_color: WebGlUniformLocation);
+    accesser!(u_texture_1_text_fill_color: WebGlUniformLocation);
+    accesser!(u_texture_2_text_fill_color: WebGlUniformLocation);
+    accesser!(u_texture_0_text_stroke_color: WebGlUniformLocation);
+    accesser!(u_texture_1_text_stroke_color: WebGlUniformLocation);
+    accesser!(u_texture_2_text_stroke_color: WebGlUniformLocation);
 
     // ライティング／シェ―ディング
     accesser!(u_light: WebGlUniformLocation);

@@ -30,6 +30,7 @@ pub struct Eraser {
 #[derive(Clone)]
 pub struct Character {
     pub name: String,
+    pub texture: Option<BlockMut<resource::ImageData>>,
 }
 
 #[derive(Clone)]

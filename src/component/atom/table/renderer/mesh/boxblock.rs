@@ -249,7 +249,6 @@ impl Boxblock {
         gl.set_u_camera_position(camera_position);
         gl.set_u_vp_matrix(vp_matrix.clone().reversed_axes());
         gl.set_u_bg_color_2(program::COLOR_NONE);
-        gl.set_u_texture_0(program::TEXTURE_NONE);
         gl.set_u_texture_1(program::TEXTURE_NONE);
         gl.set_u_texture_2(program::TEXTURE_NONE);
         gl.set_u_perspective(if is_2d_mode {
@@ -261,6 +260,7 @@ impl Boxblock {
         match rendering_mode {
             RenderingMode::IdMap { .. } => {
                 gl.set_u_bg_color_1(program::COLOR_NONE);
+                gl.set_u_texture_0(program::TEXTURE_NONE);
                 gl.set_u_id(program::ID_V_WRITE);
                 gl.set_u_light(program::LIGHT_NONE);
             }

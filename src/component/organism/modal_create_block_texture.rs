@@ -165,7 +165,7 @@ impl Update for ModalCreateBlockTexture {
                         wasm_bindgen_futures::spawn_local(async move {
                             if let Some(texture) = resource::BlockTexture::load_from((
                                 [1024, 1024],
-                                [pz, px, py, nx, ny, nz],
+                                [px, py, pz, nx, ny, nz],
                             ))
                             .await
                             {

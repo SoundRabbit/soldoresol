@@ -84,7 +84,11 @@ impl CameraMatrix {
     }
 
     pub fn x_axis_rotation(&self) -> f32 {
-        self.x_axis_rotation
+        if self.is_2d_mode {
+            0.0
+        } else {
+            self.x_axis_rotation
+        }
     }
 
     pub fn set_z_axis_rotation(&mut self, z_axis_rotation: f32) {
@@ -92,7 +96,11 @@ impl CameraMatrix {
     }
 
     pub fn z_axis_rotation(&self) -> f32 {
-        self.z_axis_rotation
+        if self.is_2d_mode {
+            0.0
+        } else {
+            self.z_axis_rotation
+        }
     }
 
     pub fn set_movement(&mut self, movement: [f32; 3]) {

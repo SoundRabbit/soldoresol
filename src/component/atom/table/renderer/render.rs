@@ -45,6 +45,7 @@ impl Renderer {
 
         let cs = as_f32a![self.canvas_size[0], self.canvas_size[1]];
         let vp_matrix = camera_matrix.vp_matrix(&cs);
+        let camera_position = camera_matrix.position();
 
         if !is_debug_mode {
             self.screen_frame.bind_self(&self.gl);
@@ -71,7 +72,7 @@ impl Renderer {
                         self.craftboard_grid_mesh.render(
                             &mut self.gl,
                             &vp_matrix,
-                            &camera_matrix.position(),
+                            &camera_position,
                             craftboard,
                         );
                     });
@@ -100,6 +101,21 @@ impl Renderer {
                 );
             });
 
+            table.map(|table: &block::Table| {
+                self.nameplate_mesh.render(
+                    &mut self.gl,
+                    &vp_matrix,
+                    &camera_position,
+                    &camera_matrix,
+                    table
+                        .boxblocks()
+                        .iter()
+                        .map(BlockMut::<block::Boxblock>::as_ref),
+                    camera_matrix.is_2d_mode(),
+                    &mut self.tex_table,
+                );
+            });
+
             self.render_frontscreen(&cs);
         }
 
@@ -120,7 +136,7 @@ impl Renderer {
                 &mut self.gl,
                 &self.id_table,
                 &vp_matrix,
-                &camera_matrix.position(),
+                &camera_position,
                 table
                     .boxblocks()
                     .iter()
