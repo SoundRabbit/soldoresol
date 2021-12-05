@@ -17,6 +17,9 @@ impl Room {
                     ShowingContextmenuData::Boxblock(block) => {
                         self.render_contextmenu_boxblock(block)
                     }
+                    ShowingContextmenuData::Character(block) => {
+                        self.render_contextmenu_character(block)
+                    }
                 },
             )],
         )
@@ -28,6 +31,20 @@ impl Room {
             Events::new().on_click({
                 let block_id = boxblock.id();
                 move |_| Msg::OpenBoxblockModeless(block_id)
+            }),
+            vec![Html::text("詳細を表示")],
+        )]
+    }
+
+    fn render_contextmenu_character(
+        &self,
+        character: &BlockMut<block::Character>,
+    ) -> Vec<Html<Self>> {
+        vec![Btn::menu(
+            Attributes::new(),
+            Events::new().on_click({
+                let block_id = character.id();
+                move |_| Msg::OpenCharacterModeless(block_id)
             }),
             vec![Html::text("詳細を表示")],
         )]

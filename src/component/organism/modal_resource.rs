@@ -21,6 +21,7 @@ use std::rc::Rc;
 pub mod title {
     pub static VIEW_ALL_RESOURCE: &str = "リソース一覧";
     pub static SELECT_BLOCK_TEXTURE: &str = "ブロック用のテクスチャを選択";
+    pub static SELECT_TEXTURE: &str = "画像を選択";
 }
 
 pub struct Props {

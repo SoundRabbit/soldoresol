@@ -25,6 +25,7 @@ pub enum Msg {
     },
     OpenChatModeless(Option<U128Id>),
     OpenBoxblockModeless(U128Id),
+    OpenCharacterModeless(U128Id),
     SetOkToCatchFile(bool),
     SetSelectedTableTool(TableTool),
     SetShowingContextmenu(Option<ShowingContextmenu>),
@@ -62,6 +63,7 @@ pub struct ShowingContextmenu {
 
 enum ShowingContextmenuData {
     Boxblock(BlockMut<block::Boxblock>),
+    Character(BlockMut<block::Character>),
 }
 
 impl Component for Room {

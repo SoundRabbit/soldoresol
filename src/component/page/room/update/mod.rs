@@ -97,6 +97,21 @@ impl Update for Room {
 
                 Cmd::none()
             }
+            Msg::OpenCharacterModeless(character_id) => {
+                if let Some(character) = self.arena.get_mut(&character_id) {
+                    self.modeless_container.update(|modeless_container| {
+                        Self::open_modeless(
+                            &props.client_id,
+                            &self.arena,
+                            &self.world,
+                            modeless_container,
+                            room_modeless::ContentData::Character(character),
+                        );
+                    });
+                }
+
+                Cmd::none()
+            }
             Msg::OpenChatModeless(channel_id) => {
                 if let Some(channel_id) = channel_id {
                     if let Some(channel) = self.arena.get_mut(&channel_id) {
@@ -160,6 +175,15 @@ impl Update for Room {
                                     page_x: e.page_x() as f64,
                                     page_y: e.page_y() as f64,
                                     data: ShowingContextmenuData::Boxblock(block),
+                                });
+                            }
+                        }
+                        BlockKind::Character => {
+                            if let Some(block) = self.arena.get_mut::<block::Character>(&block_id) {
+                                self.showing_contextmenu = Some(ShowingContextmenu {
+                                    page_x: e.page_x() as f64,
+                                    page_y: e.page_y() as f64,
+                                    data: ShowingContextmenuData::Character(block),
                                 });
                             }
                         }

@@ -295,7 +295,7 @@ impl ModalCreateBlockTexture {
                     world: BlockMut::clone(&props.world),
                     filter: set! {BlockKind::ImageData},
                     is_selecter: true,
-                    title: String::from(modal_resource::title::SELECT_BLOCK_TEXTURE),
+                    title: String::from(modal_resource::title::SELECT_TEXTURE),
                 },
                 Sub::map({
                     let direction = *direction;

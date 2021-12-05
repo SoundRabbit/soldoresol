@@ -1,4 +1,5 @@
 use super::organism::room_modeless_boxblock::{self, RoomModelessBoxblock};
+use super::organism::room_modeless_character::{self, RoomModelessCharacter};
 use super::organism::room_modeless_chat::{self, RoomModelessChat};
 use crate::arena::{block, ArenaMut, BlockMut};
 use crate::libs::random_id::U128Id;
@@ -23,6 +24,7 @@ pub struct Content {
 pub enum ContentData {
     ChatChannel(BlockMut<block::ChatChannel>),
     Boxblock(BlockMut<block::Boxblock>),
+    Character(BlockMut<block::Character>),
 }
 
 pub enum Msg {
@@ -86,6 +88,18 @@ impl Render for RoomModeless {
                 },
                 Sub::map(|sub| match sub {
                     room_modeless_boxblock::On::UpdateBlocks { insert, update } => {
+                        Msg::Sub(On::UpdateBlocks { insert, update })
+                    }
+                }),
+            ),
+            ContentData::Character(character) => RoomModelessCharacter::empty(
+                room_modeless_character::Props {
+                    arena: ArenaMut::clone(&content.arena),
+                    world: BlockMut::clone(&content.world),
+                    data: BlockMut::clone(&character),
+                },
+                Sub::map(|sub| match sub {
+                    room_modeless_character::On::UpdateBlocks { insert, update } => {
                         Msg::Sub(On::UpdateBlocks { insert, update })
                     }
                 }),
@@ -160,6 +174,15 @@ impl Render for TabName {
                         Attributes::new(),
                         Events::new(),
                         vec![fa::i("fa-cube"), Html::text(" "), Html::text(bb.name())],
+                    )
+                })
+                .unwrap_or(Html::none()),
+            ContentData::Character(character) => character
+                .map(|c| {
+                    Html::span(
+                        Attributes::new(),
+                        Events::new(),
+                        vec![fa::i("fa-user"), Html::text(" "), Html::text(c.name())],
                     )
                 })
                 .unwrap_or(Html::none()),

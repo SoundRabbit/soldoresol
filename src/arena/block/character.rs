@@ -109,12 +109,13 @@ impl Character {
     }
 
     pub fn size(&self) -> f64 {
-        (self.size[0].powi(2) + self.size[2].powi(2)).sqrt()
+        (self.size[0] + self.size[2]) / 2.0
     }
 
     pub fn set_size(&mut self, size: f64) {
-        self.size[0] = size / std::f64::consts::SQRT_2;
-        self.size[2] = size / std::f64::consts::SQRT_2;
+        self.size[1] *= size / self.size();
+        self.size[0] = size;
+        self.size[2] = size;
     }
 
     pub fn tex_size(&self) -> f64 {
