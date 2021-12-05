@@ -42,6 +42,16 @@ impl Renderer {
         });
 
         world.map(|world| {
+            self.character_base_mesh.update_id(
+                &mut id_table_builder,
+                world
+                    .characters()
+                    .iter()
+                    .map(BlockMut::<block::Character>::as_ref),
+            );
+        });
+
+        world.map(|world| {
             self.character_mesh.update_id(
                 &mut id_table_builder,
                 camera_matrix,
@@ -113,6 +123,21 @@ impl Renderer {
             });
 
             world.map(|world| {
+                self.character_base_mesh.render(
+                    &mut self.gl,
+                    &self.id_table,
+                    &vp_matrix,
+                    &camera_matrix.position(),
+                    world
+                        .characters()
+                        .iter()
+                        .map(BlockMut::<block::Character>::as_ref),
+                    &mesh::character_base::RenderingMode::View,
+                    camera_matrix.is_2d_mode(),
+                );
+            });
+
+            world.map(|world| {
                 self.character_mesh.render(
                     &mut self.gl,
                     &self.id_table,
@@ -174,6 +199,23 @@ impl Renderer {
                 },
                 camera_matrix.is_2d_mode(),
                 &mut self.tex_table,
+            );
+        });
+
+        world.map(|world| {
+            self.character_base_mesh.render(
+                &mut self.gl,
+                &self.id_table,
+                &vp_matrix,
+                &camera_matrix.position(),
+                world
+                    .characters()
+                    .iter()
+                    .map(BlockMut::<block::Character>::as_ref),
+                &mesh::character_base::RenderingMode::IdMap {
+                    grabbed: grabbed_object_id,
+                },
+                camera_matrix.is_2d_mode(),
             );
         });
 

@@ -51,4 +51,5 @@ pub struct Renderer {
     boxblock_mesh: mesh::Boxblock,
     nameplate_mesh: mesh::Nameplate,
     character_mesh: mesh::Character,
+    character_base_mesh: mesh::CharacterBase,
 }

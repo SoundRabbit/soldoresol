@@ -52,6 +52,7 @@ impl Renderer {
         let boxblock_mesh = mesh::Boxblock::new(&gl);
         let nameplate_mesh = mesh::Nameplate::new(&gl);
         let character_mesh = mesh::Character::new(&gl);
+        let character_base_mesh = mesh::CharacterBase::new(&gl);
 
         Self {
             canvas,
@@ -74,6 +75,7 @@ impl Renderer {
             boxblock_mesh,
             nameplate_mesh,
             character_mesh,
+            character_base_mesh,
         }
     }
 }

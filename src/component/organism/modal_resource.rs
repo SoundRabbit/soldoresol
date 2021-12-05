@@ -290,7 +290,7 @@ impl ModalResource {
             .map(|world| {
                 vec![
                     if props.is_selecter {
-                        self.render_cell_none(props, "画像無し")
+                        self.render_cell_none(props, "テクスチャ無し")
                     } else {
                         Html::none()
                     },
@@ -469,6 +469,10 @@ impl Styled for ModalResource {
                 "text-overflow": "ellipsis";
                 "overflow": "hidden";
                 "max-width": "100%";
+            }
+
+            ".text" {
+                "color": crate::libs::color::Pallet::gray(9);
             }
         }
     }

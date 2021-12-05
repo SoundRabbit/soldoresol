@@ -130,7 +130,6 @@ impl Character {
         gl.set_u_vp_matrix(vp_matrix.clone().reversed_axes());
         gl.set_u_bg_color_1(program::COLOR_NONE);
         gl.set_u_bg_color_2(program::COLOR_NONE);
-        gl.set_u_texture_0(program::TEXTURE_NORMAL);
         gl.set_u_texture_1(program::TEXTURE_NONE);
         gl.set_u_texture_2(program::TEXTURE_NONE);
         gl.set_u_perspective(if is_2d_mode {
@@ -174,7 +173,7 @@ impl Character {
                             let width = height * tex_size[0] / tex_size[1];
                             let s = [width as f32, 0.0, height as f32];
                             let p = character.position();
-                            let p = [p[0] as f32, p[1] as f32, p[2] as f32];
+                            let p = [p[0] as f32, p[1] as f32, p[2] as f32 + 1.0 / 128.0];
 
                             let model_matrix: Array2<f32> = ModelMatrix::new()
                                 .with_scale(&s)
@@ -233,14 +232,18 @@ impl Character {
         for (_, y_index) in z_index {
             for (_, characters) in y_index {
                 for (model_matrix, inv_model_matrix, mvp_matrix, character) in characters {
+                    let character_id = character.id();
                     character.map(|character| {
                         if let Some(texture) = character.texture() {
                             if let Some(tex_idx) = texture.map(|image_data| {
                                 tex_table.use_resource(gl, &texture.id(), image_data)
                             }) {
+                                let id_offset_color =
+                                    unwrap_or!(id_table.offset_color(&character_id);());
                                 gl.set_u_translate(mvp_matrix.reversed_axes());
                                 gl.set_u_model_matrix(model_matrix.reversed_axes());
                                 gl.set_u_inv_model_matrix(inv_model_matrix.reversed_axes());
+                                gl.set_u_id_value(id_offset_color.value() as i32);
                                 gl.set_u_texture_0_sampler(tex_idx);
                                 gl.draw_elements_with_i32(
                                     web_sys::WebGlRenderingContext::TRIANGLES,
