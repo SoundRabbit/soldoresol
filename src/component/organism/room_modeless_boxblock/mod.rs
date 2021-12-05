@@ -28,7 +28,8 @@ pub enum Msg {
     Sub(On),
     SetShowingModal(ShowingModal),
     SetColor(crate::libs::color::Pallet),
-    SetDisplayName(String),
+    SetDisplayName0(String),
+    SetDisplayName1(String),
     SetShape(block::boxblock::Shape),
     SetSize([f64; 3]),
     SetTexture(Option<BlockMut<resource::BlockTexture>>),
@@ -98,9 +99,19 @@ impl Update for RoomModelessBoxblock {
                     update: set! { self.boxblock.id() },
                 })
             }
-            Msg::SetDisplayName(display_name) => {
+            Msg::SetDisplayName0(display_name) => {
                 self.boxblock.update(|boxblock| {
                     boxblock.set_display_name((Some(display_name), None));
+                });
+
+                Cmd::sub(On::UpdateBlocks {
+                    insert: set! {},
+                    update: set! { self.boxblock.id() },
+                })
+            }
+            Msg::SetDisplayName1(display_name) => {
+                self.boxblock.update(|boxblock| {
+                    boxblock.set_display_name((None, Some(display_name)));
                 });
 
                 Cmd::sub(On::UpdateBlocks {
@@ -214,10 +225,16 @@ impl RoomModelessBoxblock {
                     vec![Html::text("表示名")],
                 ),
                 Html::input(
+                    Attributes::new().value(&boxblock.display_name().1),
+                    Events::new().on_input(Msg::SetDisplayName1),
+                    vec![],
+                ),
+                text::span(""),
+                Html::input(
                     Attributes::new()
                         .id(&self.element_id.input_boxblock_display_name)
                         .value(&boxblock.display_name().0),
-                    Events::new().on_input(Msg::SetDisplayName),
+                    Events::new().on_input(Msg::SetDisplayName0),
                     vec![],
                 ),
             ],
