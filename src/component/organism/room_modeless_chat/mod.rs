@@ -84,7 +84,7 @@ impl Component for RoomModelessChat {
 impl Constructor for RoomModelessChat {
     fn constructor(props: &Props) -> Self {
         let mut test_chatpallet = block::character::ChatPallet::new();
-        test_chatpallet.data_set(String::from(include_str!("./test_chatpallet.txt")));
+        test_chatpallet.set_data(String::from(include_str!("./test_chatpallet.txt")));
 
         Self {
             arena: ArenaMut::clone(&props.arena),

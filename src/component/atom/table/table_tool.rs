@@ -29,7 +29,9 @@ pub struct Eraser {
 
 #[derive(Clone)]
 pub struct Character {
-    pub name: String,
+    pub size: f64,
+    pub tex_size: f64,
+    pub color: crate::libs::color::Pallet,
     pub texture: Option<BlockMut<resource::ImageData>>,
 }
 

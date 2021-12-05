@@ -49,7 +49,7 @@ impl Update for Room {
         scene.tables_push(self.arena.insert(table));
 
         let mut world = block::World::new();
-        world.scenes_push(self.arena.insert(scene));
+        world.push_scenes(self.arena.insert(scene));
         self.world = self.arena.insert(world);
 
         Cmd::chain(Msg::NoOp)

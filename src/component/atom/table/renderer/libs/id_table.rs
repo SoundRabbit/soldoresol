@@ -11,9 +11,12 @@ pub enum ObjectId {
     Craftboard(U128Id, Surface),
 }
 
-// 点rを含むsベクトルとtベクトルが張る平面
+// 点p+rを起点とするsベクトルとtベクトルが張る平面
+// p:　点
+// r, s, t: ベクトル
 #[derive(Clone)]
 pub struct Surface {
+    pub p: [f64; 3],
     pub r: [f64; 3],
     pub s: [f64; 3],
     pub t: [f64; 3],

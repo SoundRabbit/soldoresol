@@ -125,10 +125,13 @@ impl Renderer {
     }
 
     fn rst(srfs: &Surface) -> ([f32; 3], [f32; 3], [f32; 3]) {
-        let r = as_f32a![srfs.r[0], srfs.r[1], srfs.r[2]];
+        let r = as_f32a![
+            srfs.p[0] + srfs.r[0],
+            srfs.p[1] + srfs.r[1],
+            srfs.p[2] + srfs.r[2]
+        ];
         let s = as_f32a![srfs.s[0], srfs.s[1], srfs.s[2]];
         let t = as_f32a![srfs.t[0], srfs.t[1], srfs.t[2]];
-        let n = srfs;
         (r, s, t)
     }
 }

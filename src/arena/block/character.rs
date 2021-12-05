@@ -1,8 +1,10 @@
-uses! {
-    super::BlockMut;
-    super::util::Pack;
-    regex::Regex;
-}
+uses! {}
+
+use super::super::resource::ImageData;
+use super::util::Pack;
+use super::BlockMut;
+use crate::libs::color::Pallet;
+use regex::Regex;
 
 block! {
     [pub ChatPallet(constructor, pack)]
@@ -16,7 +18,7 @@ block! {
 }
 
 impl ChatPallet {
-    pub fn data_set(&mut self, mut data: String) {
+    pub fn set_data(&mut self, mut data: String) {
         self.data = data.clone();
         self.index.clear();
 
@@ -69,13 +71,64 @@ block! {
     [pub Character(constructor, pack)]
     name: String = String::from("新規キャラクター");
     display_name: (String, String) = (String::from("新規キャラクター"), String::from(""));
+    chat_pallet: ChatPallet = ChatPallet::new();
+    position: [f64; 3] = [0.0, 0.0, 0.0];
+    size: [f64; 3] = [1.0, 1.5, 1.0];
+    color: Pallet = Pallet::gray(5);
+    texture: Option<BlockMut<ImageData>> = None;
 }
 
 impl Character {
     pub fn name(&self) -> &String {
         &self.name
     }
+
+    pub fn set_name(&mut self, name: String) {
+        self.name = name;
+    }
+
     pub fn display_name(&self) -> &(String, String) {
         &self.display_name
+    }
+
+    pub fn set_display_name(&mut self, display_name: (String, String)) {
+        self.display_name = display_name;
+    }
+
+    pub fn position(&self) -> &[f64; 3] {
+        &self.position
+    }
+
+    pub fn set_position(&mut self, position: [f64; 3]) {
+        self.position = position;
+    }
+
+    pub fn size(&self) -> f64 {
+        (self.size[0].powi(2) + self.size[2].powi(2)).sqrt()
+    }
+
+    pub fn set_size(&mut self, size: f64) {
+        self.size[0] = size / std::f64::consts::SQRT_2;
+        self.size[2] = size / std::f64::consts::SQRT_2;
+    }
+
+    pub fn tex_size(&self) -> f64 {
+        self.size[1] / self.size()
+    }
+
+    pub fn set_tex_size(&mut self, tex_size: f64) {
+        self.size[1] = self.size() * tex_size;
+    }
+
+    pub fn set_color(&mut self, color: Pallet) {
+        self.color = color;
+    }
+
+    pub fn texture(&self) -> Option<&BlockMut<ImageData>> {
+        self.texture.as_ref()
+    }
+
+    pub fn set_texture(&mut self, texture: Option<BlockMut<ImageData>>) {
+        self.texture = texture;
     }
 }

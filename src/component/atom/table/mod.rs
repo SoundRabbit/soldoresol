@@ -245,6 +245,26 @@ impl Table {
         Some(boxblock)
     }
 
+    pub fn create_character(
+        &self,
+        px_x: f64,
+        px_y: f64,
+        option: &table_tool::Character,
+    ) -> Option<block::Character> {
+        let renderer = unwrap!(self.renderer.as_ref());
+        let (p, _) = renderer.get_focused_position(&self.camera_matrix, px_x, px_y);
+
+        let mut character = block::Character::new();
+
+        character.set_size(option.size);
+        character.set_position(p);
+        character.set_tex_size(option.tex_size);
+        character.set_color(option.color);
+        character.set_texture(option.texture.as_ref().map(|block| BlockMut::clone(block)));
+
+        Some(character)
+    }
+
     pub fn on_click(&mut self, e: web_sys::MouseEvent, tool: &TableTool) {
         let page_x = e.page_x() as f64;
         let page_y = e.page_y() as f64;
@@ -267,6 +287,20 @@ impl Table {
                     self.cmds.push(Cmd::sub(On::UpdateBlocks {
                         update: set! { table.id() },
                         insert: set! { boxblock_id },
+                    }));
+                }
+            }
+            TableTool::Character(tool) => {
+                if let Some(character) = self.create_character(client_x, client_y, tool) {
+                    let character = self.arena.insert(character);
+                    let character_id = character.id();
+                    self.world.update(|world| {
+                        world.push_character(character);
+                    });
+                    self.cmds.push(Self::render());
+                    self.cmds.push(Cmd::sub(On::UpdateBlocks {
+                        update: set! { self.world.id() },
+                        insert: set! { character_id },
                     }));
                 }
             }

@@ -52,6 +52,7 @@ pub struct TableMenu {
 pub enum ShowingModal {
     None,
     SelectBlockTexture(usize, Rc<table_tool::Boxblock>),
+    SelectCharacterTexture(usize, Rc<table_tool::Character>),
 }
 
 impl Component for TableMenu {
@@ -72,7 +73,9 @@ impl Constructor for TableMenu {
                     })),
                     TableTool::Eraser(Rc::new(table_tool::Eraser { width: 1.0 })),
                     TableTool::Character(Rc::new(table_tool::Character {
-                        name: String::from(""),
+                        size: 1.0,
+                        tex_size: 1.5,
+                        color: crate::libs::color::Pallet::gray(5),
                         texture: None,
                     })),
                     TableTool::Boxblock(Rc::new(table_tool::Boxblock {
@@ -169,6 +172,36 @@ impl TableMenu {
                             let mut tool = tool.as_ref().clone();
                             tool.texture = None;
                             Msg::SetTool(tool_idx, TableTool::Boxblock(Rc::new(tool)))
+                        }
+                        _ => Msg::NoOp,
+                    }
+                }),
+            ),
+            ShowingModal::SelectCharacterTexture(tool_idx, tool) => ModalResource::empty(
+                modal_resource::Props {
+                    arena: ArenaMut::clone(&props.arena),
+                    world: BlockMut::clone(&props.world),
+                    filter: set! { BlockKind::ImageData },
+                    title: String::from(modal_resource::title::VIEW_ALL_RESOURCE),
+                    is_selecter: true,
+                },
+                Sub::map({
+                    let tool_idx = *tool_idx;
+                    let tool = Rc::clone(&tool);
+                    move |sub| match sub {
+                        modal_resource::On::UpdateBlocks { insert, update } => {
+                            Msg::Sub(On::UpdateBlocks { insert, update })
+                        }
+                        modal_resource::On::Close => Msg::SetShowingModal(ShowingModal::None),
+                        modal_resource::On::SelectImageData(texture) => {
+                            let mut tool = tool.as_ref().clone();
+                            tool.texture = Some(texture);
+                            Msg::SetTool(tool_idx, TableTool::Character(Rc::new(tool)))
+                        }
+                        modal_resource::On::SelectNone => {
+                            let mut tool = tool.as_ref().clone();
+                            tool.texture = None;
+                            Msg::SetTool(tool_idx, TableTool::Character(Rc::new(tool)))
                         }
                         _ => Msg::NoOp,
                     }
@@ -302,20 +335,54 @@ impl TableMenu {
                 Attributes::new().class(Common::keyvalue()),
                 Events::new(),
                 vec![
-                    text::span("名前"),
-                    Html::input(
-                        Attributes::new().value(&character.name),
-                        Events::new().on_input({
+                    text::span("色"),
+                    PopupColorPallet::empty(
+                        popup_color_pallet::Props {
+                            default_selected: character.color,
+                            direction: popup_color_pallet::Direction::Bottom,
+                        },
+                        Sub::map({
                             let character = Rc::clone(&character);
-                            move |name| {
-                                let mut character = character.as_ref().clone();
-                                character.name = name;
-                                Msg::SetTool(tool_idx, TableTool::Character(Rc::new(character)))
+                            move |sub| match sub {
+                                popup_color_pallet::On::SelectColor(color) => {
+                                    let mut character = character.as_ref().clone();
+                                    character.color = color;
+                                    Msg::SetTool(tool_idx, TableTool::Character(Rc::new(character)))
+                                }
                             }
                         }),
-                        vec![],
                     ),
-                    text::span(""),
+                    text::span("テクスチャ"),
+                    {
+                        let events = Events::new().on_click({
+                            let character = Rc::clone(&character);
+                            move |_| {
+                                Msg::SetShowingModal(ShowingModal::SelectCharacterTexture(
+                                    tool_idx, character,
+                                ))
+                            }
+                        });
+                        if let Some(src) = character
+                            .texture
+                            .as_ref()
+                            .and_then(|texture| texture.map(|texture| texture.url().to_string()))
+                        {
+                            Html::img(
+                                Attributes::new()
+                                    .class(Common::bg_transparent())
+                                    .class(Self::class("block-texture"))
+                                    .src(src),
+                                events,
+                                vec![],
+                            )
+                        } else {
+                            Btn::secondary(
+                                Attributes::new(),
+                                events,
+                                vec![Html::text("テクスチャを選択")],
+                            )
+                        }
+                    },
                 ],
             )],
         )

@@ -21,6 +21,10 @@ impl World {
         &self.characters
     }
 
+    pub fn push_character(&mut self, character: BlockMut<Character>) {
+        self.characters.push(character);
+    }
+
     pub fn scenes(&self) -> &Vec<BlockMut<Scene>> {
         &self.scenes
     }
@@ -29,7 +33,7 @@ impl World {
         &self.selecting_scene
     }
 
-    pub fn scenes_push(&mut self, scene: BlockMut<Scene>) {
+    pub fn push_scenes(&mut self, scene: BlockMut<Scene>) {
         if self.scenes.len() == 0 {
             self.selecting_scene = BlockMut::clone(&scene);
         }

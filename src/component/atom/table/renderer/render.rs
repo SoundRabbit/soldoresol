@@ -41,6 +41,17 @@ impl Renderer {
             );
         });
 
+        world.map(|world| {
+            self.character_mesh.update_id(
+                &mut id_table_builder,
+                camera_matrix,
+                world
+                    .characters()
+                    .iter()
+                    .map(BlockMut::<block::Character>::as_ref),
+            );
+        });
+
         self.id_table = IdTable::from(id_table_builder);
 
         let cs = as_f32a![self.canvas_size[0], self.canvas_size[1]];
@@ -101,6 +112,23 @@ impl Renderer {
                 );
             });
 
+            world.map(|world| {
+                self.character_mesh.render(
+                    &mut self.gl,
+                    &self.id_table,
+                    &vp_matrix,
+                    &camera_matrix.position(),
+                    camera_matrix,
+                    world
+                        .characters()
+                        .iter()
+                        .map(BlockMut::<block::Character>::as_ref),
+                    &mesh::character::RenderingMode::View,
+                    camera_matrix.is_2d_mode(),
+                    &mut self.tex_table,
+                );
+            });
+
             table.map(|table: &block::Table| {
                 self.nameplate_mesh.render(
                     &mut self.gl,
@@ -142,6 +170,25 @@ impl Renderer {
                     .iter()
                     .map(BlockMut::<block::Boxblock>::as_ref),
                 &mesh::boxblock::RenderingMode::IdMap {
+                    grabbed: grabbed_object_id,
+                },
+                camera_matrix.is_2d_mode(),
+                &mut self.tex_table,
+            );
+        });
+
+        world.map(|world| {
+            self.character_mesh.render(
+                &mut self.gl,
+                &self.id_table,
+                &vp_matrix,
+                &camera_matrix.position(),
+                camera_matrix,
+                world
+                    .characters()
+                    .iter()
+                    .map(BlockMut::<block::Character>::as_ref),
+                &mesh::character::RenderingMode::IdMap {
                     grabbed: grabbed_object_id,
                 },
                 camera_matrix.is_2d_mode(),

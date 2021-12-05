@@ -51,6 +51,7 @@ impl Renderer {
         let craftboard_grid_mesh = mesh::CraftboardGrid::new(&gl);
         let boxblock_mesh = mesh::Boxblock::new(&gl);
         let nameplate_mesh = mesh::Nameplate::new(&gl);
+        let character_mesh = mesh::Character::new(&gl);
 
         Self {
             canvas,
@@ -72,6 +73,7 @@ impl Renderer {
             craftboard_grid_mesh,
             boxblock_mesh,
             nameplate_mesh,
+            character_mesh,
         }
     }
 }
