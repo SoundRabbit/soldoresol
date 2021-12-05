@@ -10,7 +10,7 @@
 //スカウト=3
 
 //知力=19
-//知力B={\calc[d] {知力}/6}
+//知力B={\calc[d]{知力}/6}
 
 //依頼内容={\block[huge,green]依頼内容}\
 {\block[bg-orange]\

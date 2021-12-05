@@ -430,6 +430,7 @@ impl Styled for RoomModelessBoxblock {
                 "padding-left": ".65rem";
                 "padding-right": ".65rem";
                 "column-gap": ".65rem";
+                "overflow-y": "scroll";
             }
         }
     }
