@@ -159,7 +159,7 @@ impl Nameplate {
                 );
             }
 
-            let s = [(s[0] / s[1] * 0.4) as f32, 0.0, 0.4];
+            let s = [(s[0] / 64.0 * 0.3) as f32, 0.0, (s[1] / 64.0 * 0.3) as f32];
             let p = [
                 position[0] as f32,
                 position[1] as f32,

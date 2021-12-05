@@ -69,8 +69,8 @@ impl ChatPallet {
 
 block! {
     [pub Character(constructor, pack)]
-    name: String = String::from("新規キャラクター");
-    display_name: (String, String) = (String::from("新規キャラクター"), String::from(""));
+    name: String = String::from("名前未設定");
+    display_name: (String, String) = (String::from("名前未設定"), String::from("新規キャラクター"));
     chat_pallet: ChatPallet = ChatPallet::new();
     position: [f64; 3] = [0.0, 0.0, 0.0];
     size: [f64; 3] = [1.0, 1.5, 1.0];
@@ -91,8 +91,13 @@ impl Character {
         &self.display_name
     }
 
-    pub fn set_display_name(&mut self, display_name: (String, String)) {
-        self.display_name = display_name;
+    pub fn set_display_name(&mut self, display_name: (Option<String>, Option<String>)) {
+        if let Some(main) = display_name.0 {
+            self.display_name.0 = main;
+        }
+        if let Some(sub) = display_name.1 {
+            self.display_name.1 = sub;
+        }
     }
 
     pub fn position(&self) -> &[f64; 3] {
