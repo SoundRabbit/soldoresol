@@ -335,6 +335,54 @@ impl TableMenu {
                 Attributes::new().class(Common::keyvalue()),
                 Events::new(),
                 vec![
+                    text::span("サイズ"),
+                    Slider::empty(
+                        slider::Props {
+                            position: slider::Position::Linear {
+                                val: character.size,
+                                min: 0.1,
+                                max: 10.0,
+                                step: 0.1,
+                            },
+                            range_is_editable: false,
+                            theme: slider::Theme::Light,
+                        },
+                        Sub::map({
+                            let character = Rc::clone(&character);
+                            move |sub| match sub {
+                                slider::On::Input(val) => {
+                                    let mut character = character.as_ref().clone();
+                                    character.size = val.max(0.1);
+                                    Msg::SetTool(tool_idx, TableTool::Character(Rc::new(character)))
+                                }
+                                _ => Msg::NoOp,
+                            }
+                        }),
+                    ),
+                    text::span("立ち絵サイズ"),
+                    Slider::empty(
+                        slider::Props {
+                            position: slider::Position::Linear {
+                                val: character.tex_size,
+                                min: 0.1,
+                                max: 10.0,
+                                step: 0.1,
+                            },
+                            range_is_editable: false,
+                            theme: slider::Theme::Light,
+                        },
+                        Sub::map({
+                            let character = Rc::clone(&character);
+                            move |sub| match sub {
+                                slider::On::Input(val) => {
+                                    let mut character = character.as_ref().clone();
+                                    character.tex_size = val.max(0.0);
+                                    Msg::SetTool(tool_idx, TableTool::Character(Rc::new(character)))
+                                }
+                                _ => Msg::NoOp,
+                            }
+                        }),
+                    ),
                     text::span("色"),
                     PopupColorPallet::empty(
                         popup_color_pallet::Props {
@@ -352,7 +400,7 @@ impl TableMenu {
                             }
                         }),
                     ),
-                    text::span("テクスチャ"),
+                    text::span("立ち絵"),
                     {
                         let events = Events::new().on_click({
                             let character = Rc::clone(&character);
