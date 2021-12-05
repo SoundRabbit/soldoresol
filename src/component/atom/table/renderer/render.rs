@@ -154,19 +154,25 @@ impl Renderer {
                 );
             });
 
-            table.map(|table: &block::Table| {
-                self.nameplate_mesh.render(
-                    &mut self.gl,
-                    &vp_matrix,
-                    &camera_position,
-                    &camera_matrix,
-                    table
-                        .boxblocks()
-                        .iter()
-                        .map(BlockMut::<block::Boxblock>::as_ref),
-                    camera_matrix.is_2d_mode(),
-                    &mut self.tex_table,
-                );
+            world.map(|world| {
+                table.map(|table: &block::Table| {
+                    self.nameplate_mesh.render(
+                        &mut self.gl,
+                        &vp_matrix,
+                        &camera_position,
+                        &camera_matrix,
+                        table
+                            .boxblocks()
+                            .iter()
+                            .map(BlockMut::<block::Boxblock>::as_ref),
+                        world
+                            .characters()
+                            .iter()
+                            .map(BlockMut::<block::Character>::as_ref),
+                        camera_matrix.is_2d_mode(),
+                        &mut self.tex_table,
+                    );
+                });
             });
 
             self.render_frontscreen(&cs);

@@ -100,7 +100,7 @@ impl Update for RoomModelessBoxblock {
             }
             Msg::SetDisplayName(display_name) => {
                 self.boxblock.update(|boxblock| {
-                    boxblock.set_display_name(display_name);
+                    boxblock.set_display_name((Some(display_name), None));
                 });
 
                 Cmd::sub(On::UpdateBlocks {
@@ -216,7 +216,7 @@ impl RoomModelessBoxblock {
                 Html::input(
                     Attributes::new()
                         .id(&self.element_id.input_boxblock_display_name)
-                        .value(boxblock.display_name()),
+                        .value(&boxblock.display_name().0),
                     Events::new().on_input(Msg::SetDisplayName),
                     vec![],
                 ),

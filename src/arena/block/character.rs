@@ -120,6 +120,10 @@ impl Character {
         self.size[1] = self.size() * tex_size;
     }
 
+    pub fn color(&self) -> &crate::libs::color::Pallet {
+        &self.color
+    }
+
     pub fn set_color(&mut self, color: Pallet) {
         self.color = color;
     }

@@ -70,6 +70,7 @@ impl Nameplate {
         camera_position: &[f32; 3],
         camera_matrix: &CameraMatrix,
         boxblocks: impl Iterator<Item = BlockRef<block::Boxblock>>,
+        characters: impl Iterator<Item = BlockRef<block::Character>>,
         is_2d_mode: bool,
         tex_table: &mut TexTable,
     ) {
@@ -102,7 +103,7 @@ impl Nameplate {
 
         for boxblock in boxblocks {
             boxblock.map(|boxblock| {
-                if !boxblock.display_name().is_empty() {
+                if !boxblock.display_name().0.is_empty() || !boxblock.display_name().1.is_empty() {
                     Self::render_plate(
                         gl,
                         vp_matrix,
@@ -116,6 +117,24 @@ impl Nameplate {
                 }
             });
         }
+
+        for character in characters {
+            character.map(|character| {
+                if !character.display_name().0.is_empty() || !character.display_name().1.is_empty()
+                {
+                    Self::render_plate(
+                        gl,
+                        vp_matrix,
+                        camera_matrix,
+                        tex_table,
+                        character.display_name(),
+                        &character.color().to_color(),
+                        character.position(),
+                        (character.size() * character.tex_size()) as f32,
+                    );
+                }
+            });
+        }
     }
 
     fn render_plate(
@@ -123,7 +142,7 @@ impl Nameplate {
         vp_matrix: &Array2<f32>,
         camera_matrix: &CameraMatrix,
         tex_table: &mut TexTable,
-        name: &String,
+        name: &(String, String),
         color: &crate::libs::color::Color,
         position: &[f64; 3],
         offset: f32,

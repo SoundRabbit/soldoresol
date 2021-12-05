@@ -13,7 +13,7 @@ use wasm_bindgen::JsCast;
 enum TextureId {
     ResourceId(U128Id),
     Custom(U128Id),
-    String(String),
+    String(String, String),
 }
 
 struct Lifespan<V> {
@@ -64,8 +64,8 @@ pub struct TexTable {
     max_tex_num: i32,
     unused_tex_idx: VecDeque<i32>,
     used_tex_idx: VecDeque<(i32, TextureId)>,
-    string_tex_usage: VecDeque<String>,
-    string_tex_table: HashMap<String, Lifespan<(Rc<web_sys::WebGlTexture>, [f64; 2])>>,
+    string_tex_usage: VecDeque<(String, String)>,
+    string_tex_table: HashMap<(String, String), Lifespan<(Rc<web_sys::WebGlTexture>, [f64; 2])>>,
     resource_tex_table: HashMap<U128Id, Rc<web_sys::WebGlTexture>>,
     tex_idx: HashMap<TextureId, i32>,
     string_canvas: web_sys::HtmlCanvasElement,
@@ -187,9 +187,9 @@ impl TexTable {
     pub fn use_string(
         &mut self,
         gl: &WebGlRenderingContext,
-        text: &String,
+        text: &(String, String),
     ) -> Option<(i32, [f64; 2])> {
-        let tex_id = TextureId::String(text.clone());
+        let tex_id = TextureId::String(text.0.clone(), text.1.clone());
         if let Some((tex_buf, size)) = self
             .string_tex_table
             .get(text)
@@ -214,12 +214,29 @@ impl TexTable {
                 .dyn_into::<web_sys::CanvasRenderingContext2d>()
                 .unwrap();
             let font_height = 64.0;
-            ctx.set_font(&format!("bold {}px sans-serif", font_height));
+            ctx.set_font(&format!("{}px sans-serif", font_height));
 
-            let metrix = ctx.measure_text(&text).unwrap();
+            let metrix = ctx.measure_text(&text.0).unwrap();
             let r = font_height / 4.0;
-            let height = font_height + 2.0 * r;
-            let width = metrix.width() + 2.0 * r;
+            let mut height = font_height + 2.0 * r;
+            let mut width = metrix.width() + 2.0 * r;
+            let mut sub_font_height = 0.0;
+            let mut sub_line_margin = 0.0;
+
+            if !text.1.is_empty() {
+                sub_font_height = font_height * 5.0 / 8.0;
+                sub_line_margin = sub_font_height / 2.0;
+                ctx.set_font(&format!("{}px sans-serif", sub_font_height));
+
+                let metrix = ctx.measure_text(&text.1).unwrap();
+                height += sub_font_height + sub_line_margin;
+                width = width.max(metrix.width() + 2.0 * r);
+            }
+
+            let height = height;
+            let width = width;
+            let sub_font_height = sub_font_height;
+            let sub_line_margin = sub_line_margin;
 
             canvas.set_width(width as u32);
             canvas.set_height(height as u32);
@@ -247,7 +264,19 @@ impl TexTable {
             ctx.set_font(&format!("{}px sans-serif", font_height));
             ctx.set_fill_style(&JsValue::from("#FFFFFF"));
             ctx.set_text_baseline("middle");
-            let _ = ctx.fill_text(&text, r, height / 2.0);
+            let _ = ctx.fill_text(
+                &text.0,
+                r,
+                sub_font_height
+                    + sub_line_margin
+                    + r
+                    + (height - r * 2.0 - sub_font_height - sub_line_margin) / 2.0,
+            );
+
+            if !text.1.is_empty() {
+                ctx.set_font(&format!("{}px sans-serif", sub_font_height));
+                let _ = ctx.fill_text(&text.1, r, r + sub_font_height / 2.0);
+            }
 
             let tex_idx = self.use_idx();
             let tex_buf = gl.create_texture().unwrap();

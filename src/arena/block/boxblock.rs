@@ -31,7 +31,7 @@ block! {
     color: Pallet = Pallet::blue(5);
     texture: Option<BlockMut<BlockTexture>> = None;
     name: String = String::from("ブロック");
-    display_name: String = String::from("");
+    display_name: (String, String) = (String::from(""), String::from(""));
 }
 
 impl Boxblock {
@@ -79,11 +79,16 @@ impl Boxblock {
         &self.name
     }
 
-    pub fn display_name(&self) -> &String {
+    pub fn display_name(&self) -> &(String, String) {
         &self.display_name
     }
 
-    pub fn set_display_name(&mut self, display_name: String) {
-        self.display_name = display_name;
+    pub fn set_display_name(&mut self, display_name: (Option<String>, Option<String>)) {
+        if let Some(main) = display_name.0 {
+            self.display_name.0 = main;
+        }
+        if let Some(sub) = display_name.1 {
+            self.display_name.1 = sub;
+        }
     }
 }
