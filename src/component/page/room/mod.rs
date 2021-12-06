@@ -32,7 +32,7 @@ pub enum Msg {
     OnTableClicked(web_sys::MouseEvent),
     OnTableContextmenu(web_sys::MouseEvent),
     AddResourceImageData(resource::ImageData),
-    SetIs2dMode(bool),
+    SetIs2dMode(bool, bool),
 }
 
 pub enum On {}
@@ -51,6 +51,7 @@ pub struct Room {
     table_tool: TableTool,
     ok_to_catch_file: bool,
     is_2d_mode: bool,
+    is_debug_mode: bool,
 
     showing_contextmenu: Option<ShowingContextmenu>,
 }

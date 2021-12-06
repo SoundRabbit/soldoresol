@@ -10,6 +10,7 @@ float defaultMain() {
 
     bool is_disable =
         u_shape == SHAPE_2D_BOX ? setGSurfaceAs2dBox()
+        : u_shape == SHAPE_2D_GRID ? setGSurfaceAs2dGrid()
         : u_shape == SHAPE_2D_CIRCLE ? setGSurfaceAs2dCircle()
         : u_shape == SHAPE_3D_BOX ? setGSurfaceAs3dBox()
         : u_shape == SHAPE_3D_SPHERE ? setGSurfaceAs3dSphare()

@@ -47,6 +47,7 @@ pub struct Table {
     world: BlockMut<block::World>,
 
     is_2d_mode: bool,
+    is_debug_mode: bool,
 }
 
 impl Component for Table {
@@ -66,6 +67,7 @@ impl Table {
             arena,
             world,
             is_2d_mode: false,
+            is_debug_mode: false,
         })
     }
 }
@@ -87,8 +89,9 @@ impl Update for Table {
         self.arena = ArenaMut::clone(&props.arena);
         self.world = BlockMut::clone(&props.world);
 
-        if self.is_2d_mode != props.is_2d_mode {
+        if self.is_2d_mode != props.is_2d_mode || self.is_debug_mode != props.is_debug_mode {
             self.is_2d_mode = props.is_2d_mode;
+            self.is_debug_mode = props.is_debug_mode;
             self.cmds.push(Self::render());
         }
 
@@ -117,7 +120,7 @@ impl Update for Table {
                 if let Some(renderer) = self.renderer.as_mut() {
                     self.camera_matrix.set_is_2d_mode(self.is_2d_mode);
                     renderer.render(
-                        props.is_debug_mode,
+                        self.is_debug_mode,
                         props.world.as_ref(),
                         &self.camera_matrix,
                         &self.grabbed_object,

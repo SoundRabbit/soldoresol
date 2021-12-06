@@ -149,8 +149,8 @@ impl CraftboardGrid {
 
         for x in 0..(width + 1) {
             let x = x as f32 - x_offset;
-            grid_vertex.append(&mut vec![x, -y_offset, 0.0]);
-            grid_vertex.append(&mut vec![x, y_offset, 0.0]);
+            grid_vertex.append(&mut vec![x, -y_offset, 0.5 / 128.0]);
+            grid_vertex.append(&mut vec![x, y_offset, 0.5 / 128.0]);
             grid_texture_coord.append(&mut vec![x, -y_offset]);
             grid_texture_coord.append(&mut vec![x, y_offset]);
             grid_idx_len += 2;
@@ -158,8 +158,8 @@ impl CraftboardGrid {
 
         for y in 0..(height + 1) {
             let y = y as f32 - y_offset;
-            grid_vertex.append(&mut vec![-x_offset, y, 0.0]);
-            grid_vertex.append(&mut vec![x_offset, y, 0.0]);
+            grid_vertex.append(&mut vec![-x_offset, y, 0.5 / 128.0]);
+            grid_vertex.append(&mut vec![x_offset, y, 0.5 / 128.0]);
             grid_texture_coord.append(&mut vec![-x_offset, y]);
             grid_texture_coord.append(&mut vec![x_offset, y]);
             grid_idx_len += 2;

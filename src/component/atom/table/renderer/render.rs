@@ -32,7 +32,7 @@ impl Renderer {
         );
 
         table.map(|table| {
-            self.craftboard_id_map_mesh.update_id(
+            self.craftboard_cover_mesh.update_id(
                 &mut id_table_builder,
                 table
                     .craftboards()
@@ -193,7 +193,7 @@ impl Renderer {
         );
 
         table.map(|table: &block::Table| {
-            self.craftboard_id_map_mesh.render(
+            self.craftboard_cover_mesh.render(
                 &mut self.gl,
                 &self.id_table,
                 &vp_matrix,
@@ -202,6 +202,7 @@ impl Renderer {
                     .craftboards()
                     .iter()
                     .map(BlockMut::<block::Craftboard>::as_ref),
+                &mesh::craftboard_cover::RenderingMode::IdMap,
                 camera_matrix.is_2d_mode(),
             );
         });

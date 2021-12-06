@@ -49,7 +49,7 @@ impl Render for Room {
                             vec![self.table.with_children(
                                 table::Props {
                                     is_2d_mode: self.is_2d_mode,
-                                    is_debug_mode: false,
+                                    is_debug_mode: self.is_debug_mode,
                                     arena: ArenaMut::clone(&self.arena),
                                     world: BlockMut::clone(&self.world),
                                 },
@@ -229,10 +229,14 @@ impl Room {
             Events::new(),
             vec![Dropdown::with_children(
                 dropdown::Props {
-                    text: dropdown::Text::Text(if self.is_2d_mode {
-                        String::from("2Dモード（正射影）")
+                    text: dropdown::Text::Text(if self.is_debug_mode {
+                        String::from("3Dモード（デバッグ用）")
                     } else {
-                        String::from("3Dモード（透視法）")
+                        if self.is_2d_mode {
+                            String::from("2Dモード（正射影）")
+                        } else {
+                            String::from("3Dモード（透視法）")
+                        }
                     }),
                     direction: dropdown::Direction::Bottom,
                     toggle_type: dropdown::ToggleType::Click,
@@ -242,13 +246,18 @@ impl Room {
                 vec![
                     Btn::menu(
                         Attributes::new(),
-                        Events::new().on_click(|_| Msg::SetIs2dMode(true)),
+                        Events::new().on_click(|_| Msg::SetIs2dMode(true, false)),
                         vec![Html::text("2Dモード（正射影）")],
                     ),
                     Btn::menu(
                         Attributes::new(),
-                        Events::new().on_click(|_| Msg::SetIs2dMode(false)),
+                        Events::new().on_click(|_| Msg::SetIs2dMode(false, false)),
                         vec![Html::text("3Dモード（透視法）")],
+                    ),
+                    Btn::menu(
+                        Attributes::new(),
+                        Events::new().on_click(|_| Msg::SetIs2dMode(false, true)),
+                        vec![Html::text("3Dモード（デバッグ用）")],
                     ),
                 ],
             )],

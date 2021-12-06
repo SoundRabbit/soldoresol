@@ -4,8 +4,13 @@ struct CameraRay {
 };
 
 struct Surface {
+    // ワールド座標
     vec3 p;
+
+    // 法線ベクトル
     vec3 n;
+
+    // テクスチャ座標
     vec2 t;
 };
 
@@ -58,7 +63,7 @@ vec2 cubeTextureCoord(vec3 d, float offset_z) {
 }
 
 bool setGSurfaceAs2dBox() {
-    g_surface.p =  (u_modelMatrix * vec4(v_vertex, 1.0)).xyz;
+    g_surface.p = (u_modelMatrix * vec4(v_vertex, 1.0)).xyz;
     g_surface.n = v_normal;
     g_surface.t = v_textureCoord;
     return false;
@@ -69,6 +74,15 @@ bool setGSurfaceAs2dCircle() {
     float y = (v_textureCoord.y - 0.5) * 2.0;
 
     return x * x + y * y > 1.0 ? true : setGSurfaceAs2dBox();
+}
+
+bool setGSurfaceAs2dGrid() {
+    vec2 p = (u_shapeScale * v_vertex).xy;
+
+    return
+        mod(abs(p.x), 1.0) <= u_shapeLineWidth ? setGSurfaceAs2dBox() :
+        mod(abs(p.y), 1.0) <= u_shapeLineWidth ? setGSurfaceAs2dBox() :
+        true;
 }
 
 bool setGSurfaceAs3dBox() {

@@ -5,7 +5,12 @@ use crate::arena::{block, BlockRef};
 use crate::libs::random_id::U128Id;
 use ndarray::Array2;
 
-pub struct CraftboardIdMap {
+pub enum RenderingMode {
+    IdMap,
+    View,
+}
+
+pub struct CraftboardCover {
     vertex_buffer: WebGlF32Vbo,
     v_color_buffer: WebGlF32Vbo,
     id_buffer: WebGlF32Vbo,
@@ -14,19 +19,68 @@ pub struct CraftboardIdMap {
     texture_coord_buffer: WebGlF32Vbo,
 }
 
-impl CraftboardIdMap {
+impl CraftboardCover {
     pub fn new(gl: &WebGlRenderingContext) -> Self {
+        let t = 0.5 / 128.0;
+
         let vertex_buffer = gl.create_vbo_with_f32array(
             &[
-                [0.5, 0.5, 0.0],
-                [-0.5, 0.5, 0.0],
-                [0.5, -0.5, 0.0],
-                [-0.5, -0.5, 0.0],
+                [
+                    //PZ
+                    [0.5, 0.5, t],
+                    [-0.5, 0.5, t],
+                    [0.5, -0.5, t],
+                    [-0.5, -0.5, t],
+                ]
+                .concat(),
+                [
+                    // PY
+                    [0.5, 0.5, t],
+                    [0.5, 0.5, -t],
+                    [-0.5, 0.5, t],
+                    [-0.5, 0.5, -t],
+                ]
+                .concat(),
+                [
+                    // PX
+                    [0.5, 0.5, t],
+                    [0.5, -0.5, t],
+                    [0.5, 0.5, -t],
+                    [0.5, -0.5, -t],
+                ]
+                .concat(),
+                [
+                    // NX
+                    [-0.5, -0.5, t],
+                    [-0.5, 0.5, t],
+                    [-0.5, -0.5, -t],
+                    [-0.5, 0.5, -t],
+                ]
+                .concat(),
+                [
+                    // NY
+                    [0.5, -0.5, t],
+                    [-0.5, -0.5, t],
+                    [0.5, -0.5, -t],
+                    [-0.5, -0.5, -t],
+                ]
+                .concat(),
+                [
+                    // NZ
+                    [0.5, 0.5, -t],
+                    [0.5, -0.5, -t],
+                    [-0.5, 0.5, -t],
+                    [-0.5, -0.5, -t],
+                ]
+                .concat(),
             ]
             .concat(),
         );
 
-        let id_buffer = gl.create_vbo_with_f32array(&[0.0, 0.0, 0.0, 0.0]);
+        let id_buffer = gl.create_vbo_with_f32array(&[
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        ]);
 
         let v_color_buffer = gl.create_vbo_with_f32array(
             &[
@@ -34,12 +88,45 @@ impl CraftboardIdMap {
                 [0.0, 0.0, 0.0, 0.0],
                 [0.0, 0.0, 0.0, 0.0],
                 [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
             ]
             .concat(),
         );
 
-        let texture_coord_buffer =
-            gl.create_vbo_with_f32array(&[[1.0, 0.0], [0.0, 0.0], [1.0, 1.0], [0.0, 1.0]].concat());
+        let texture_coord_buffer = gl.create_vbo_with_f32array(
+            &[
+                [[1.0, 0.0], [0.0, 0.0], [1.0, 1.0], [0.0, 1.0]].concat(),
+                [[1.0, 0.0], [0.0, 0.0], [1.0, 1.0], [0.0, 1.0]].concat(),
+                [[1.0, 0.0], [0.0, 0.0], [1.0, 1.0], [0.0, 1.0]].concat(),
+                [[1.0, 0.0], [0.0, 0.0], [1.0, 1.0], [0.0, 1.0]].concat(),
+                [[1.0, 0.0], [0.0, 0.0], [1.0, 1.0], [0.0, 1.0]].concat(),
+                [[1.0, 0.0], [0.0, 0.0], [1.0, 1.0], [0.0, 1.0]].concat(),
+            ]
+            .concat(),
+        );
 
         let normal_buffer = gl.create_vbo_with_f32array(
             &[
@@ -47,11 +134,41 @@ impl CraftboardIdMap {
                 [0.0, 0.0, 1.0],
                 [0.0, 0.0, 1.0],
                 [0.0, 0.0, 1.0],
+                [0.0, 1.0, 0.0],
+                [0.0, 1.0, 0.0],
+                [0.0, 1.0, 0.0],
+                [0.0, 1.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [1.0, 0.0, 0.0],
+                [-1.0, 0.0, 0.0],
+                [-1.0, 0.0, 0.0],
+                [-1.0, 0.0, 0.0],
+                [-1.0, 0.0, 0.0],
+                [0.0, -1.0, 0.0],
+                [0.0, -1.0, 0.0],
+                [0.0, -1.0, 0.0],
+                [0.0, -1.0, 0.0],
+                [0.0, 0.0, -1.0],
+                [0.0, 0.0, -1.0],
+                [0.0, 0.0, -1.0],
+                [0.0, 0.0, -1.0],
             ]
             .concat(),
         );
 
-        let index_buffer = gl.create_ibo_with_i16array(&[0, 1, 2, 3, 2, 1]);
+        let index_buffer = gl.create_ibo_with_i16array(
+            &[
+                [0, 1, 2, 3, 2, 1],       //PZ
+                [4, 5, 6, 7, 6, 5],       //PY
+                [8, 9, 10, 11, 10, 9],    //PX
+                [12, 13, 14, 15, 14, 13], //NX
+                [16, 17, 18, 19, 18, 17], //NY
+                [20, 21, 22, 23, 22, 21], //NZ
+            ]
+            .concat(),
+        );
 
         Self {
             vertex_buffer,
@@ -93,6 +210,7 @@ impl CraftboardIdMap {
         vp_matrix: &Array2<f32>,
         camera_position: &[f32; 3],
         craftboards: impl Iterator<Item = BlockRef<block::Craftboard>>,
+        rendering_mode: &RenderingMode,
         is_2d_mode: bool,
     ) {
         gl.use_program(ProgramType::UnshapedProgram);
@@ -108,13 +226,7 @@ impl CraftboardIdMap {
         );
         gl.set_u_camera_position(camera_position);
         gl.set_u_vp_matrix(vp_matrix.clone().reversed_axes());
-        gl.set_u_bg_color_1(program::COLOR_SOME);
-        gl.set_u_bg_color_1_value(
-            &crate::libs::color::Pallet::gray(9)
-                .a(75)
-                .to_color()
-                .to_f32array(),
-        );
+        gl.set_u_bg_color_1(program::COLOR_NONE);
         gl.set_u_bg_color_2(program::COLOR_NONE);
         gl.set_u_texture_0(program::TEXTURE_NONE);
         gl.set_u_texture_1(program::TEXTURE_NONE);
@@ -125,16 +237,17 @@ impl CraftboardIdMap {
             program::PERSPECTIVE_NORMAL
         });
         gl.set_u_light(program::LIGHT_NONE);
-        gl.set_u_shape(program::SHAPE_2D_CIRCLE);
 
         gl.set_u_id(program::ID_V_WRITE);
+        gl.set_u_shape(program::SHAPE_2D_BOX);
 
         for craftboard in craftboards {
             let craftboard_id = craftboard.id();
             craftboard.map(|craftboard| {
                 let id_offset_color = unwrap_or!(id_table.offset_color(&craftboard_id);());
+
                 let s = craftboard.size();
-                let s = [s[0].floor() as f32, 0.0, s[1].floor() as f32];
+                let s = [s[0].floor() as f32, s[1].floor() as f32, 1.0];
                 let p = craftboard.position();
                 let p = [p[0] as f32, p[1] as f32, p[2] as f32];
 
@@ -152,9 +265,10 @@ impl CraftboardIdMap {
                 gl.set_u_model_matrix(model_matrix.reversed_axes());
                 gl.set_u_inv_model_matrix(inv_model_matrix.reversed_axes());
                 gl.set_u_id_value(id_offset_color.value() as i32);
+
                 gl.draw_elements_with_i32(
                     web_sys::WebGlRenderingContext::TRIANGLES,
-                    6,
+                    36,
                     web_sys::WebGlRenderingContext::UNSIGNED_SHORT,
                     0,
                 );

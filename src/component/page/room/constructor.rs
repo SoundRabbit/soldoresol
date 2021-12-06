@@ -17,6 +17,7 @@ impl Constructor for Room {
             table_tool: TableMenu::initial_selected(),
             ok_to_catch_file: true,
             is_2d_mode: false,
+            is_debug_mode: false,
 
             showing_contextmenu: None,
         }

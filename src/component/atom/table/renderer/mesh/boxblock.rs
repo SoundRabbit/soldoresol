@@ -110,7 +110,7 @@ impl Boxblock {
         );
         let id_buffer = gl.create_vbo_with_f32array(&[
             0.0, 0.0, 0.0, 0.0, 2.0, 2.0, 2.0, 2.0, 4.0, 4.0, 4.0, 4.0, 6.0, 6.0, 6.0, 6.0, 8.0,
-            8.0, 8.0, 8.0, 10.0, 10.0, 10.0, 10.0, 12.0, 12.0, 12.0, 12.0, 14.0, 14.0, 14.0, 14.0,
+            8.0, 8.0, 8.0, 10.0, 10.0, 10.0, 10.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0, 12.0,
         ]);
         let v_color_buffer = gl.create_vbo_with_f32array(
             &[
@@ -247,7 +247,7 @@ impl Boxblock {
         for boxblock in boxblocks {
             let block_id = boxblock.id();
             boxblock.map(|boxblock| {
-                for srfs in 0..8 {
+                for srfs in 0..7 {
                     if let Some(surface) = Self::surface_of(boxblock, srfs) {
                         builder.insert(
                             &block_id,
