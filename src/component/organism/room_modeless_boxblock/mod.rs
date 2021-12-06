@@ -260,6 +260,7 @@ impl RoomModelessBoxblock {
                                     text: dropdown::Text::Text(String::from(
                                         match boxblock.shape() {
                                             block::boxblock::Shape::Cube => "立方体",
+                                            block::boxblock::Shape::Slope => "斜面",
                                             block::boxblock::Shape::Sphere => "球体",
                                             block::boxblock::Shape::Cylinder => "円柱",
                                         },
@@ -276,6 +277,13 @@ impl RoomModelessBoxblock {
                                             Msg::SetShape(block::boxblock::Shape::Cube)
                                         }),
                                         vec![Html::text("立方体")],
+                                    ),
+                                    Btn::menu(
+                                        Attributes::new(),
+                                        Events::new().on_click(|_| {
+                                            Msg::SetShape(block::boxblock::Shape::Slope)
+                                        }),
+                                        vec![Html::text("斜面")],
                                     ),
                                     Btn::menu(
                                         Attributes::new(),

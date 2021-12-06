@@ -89,15 +89,39 @@ impl Boxblock {
                     [-0.5, -0.5, -0.5],
                 ]
                 .concat(),
+                [
+                    // 斜面（上半分）
+                    [-0.5, 0.5, 0.5],
+                    [-0.5, -0.5, 0.5],
+                    [0.0, 0.5, 0.0],
+                    [0.0, -0.5, 0.0],
+                ]
+                .concat(),
+                [
+                    // 斜面（下半分）
+                    [0.0, 0.5, 0.0],
+                    [0.0, -0.5, 0.0],
+                    [0.5, 0.5, -0.5],
+                    [0.5, -0.5, -0.5],
+                ]
+                .concat(),
             ]
             .concat(),
         );
         let id_buffer = gl.create_vbo_with_f32array(&[
             0.0, 0.0, 0.0, 0.0, 2.0, 2.0, 2.0, 2.0, 4.0, 4.0, 4.0, 4.0, 6.0, 6.0, 6.0, 6.0, 8.0,
-            8.0, 8.0, 8.0, 10.0, 10.0, 10.0, 10.0,
+            8.0, 8.0, 8.0, 10.0, 10.0, 10.0, 10.0, 12.0, 12.0, 12.0, 12.0, 14.0, 14.0, 14.0, 14.0,
         ]);
         let v_color_buffer = gl.create_vbo_with_f32array(
             &[
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
                 [0.0, 0.0, 0.0, 0.0],
                 [0.0, 0.0, 0.0, 0.0],
                 [0.0, 0.0, 0.0, 0.0],
@@ -146,6 +170,8 @@ impl Boxblock {
                 [[1.00, 0.35], [0.75, 0.35], [1.00, 0.65], [0.75, 0.65]].concat(), // NX
                 [[0.25, 0.35], [0.00, 0.35], [0.25, 0.65], [0.00, 0.65]].concat(), // NY
                 [[0.25, 0.70], [0.00, 0.70], [0.25, 1.00], [0.00, 1.00]].concat(), // NZ
+                [[0.00, 0.00], [0.00, 0.30], [0.25, 0.00], [0.25, 0.30]].concat(), // 斜面（上半分）
+                [[0.50, 0.35], [0.25, 0.35], [0.50, 0.65], [0.25, 0.65]].concat(), // 斜面（下半分）
             ]
             .concat(),
         );
@@ -175,6 +201,14 @@ impl Boxblock {
                 [0.0, 0.0, -1.0],
                 [0.0, 0.0, -1.0],
                 [0.0, 0.0, -1.0],
+                Self::n(&[1.0, 0.0, 1.0]),
+                Self::n(&[1.0, 0.0, 1.0]),
+                Self::n(&[1.0, 0.0, 1.0]),
+                Self::n(&[1.0, 0.0, 1.0]),
+                Self::n(&[1.0, 0.0, 1.0]),
+                Self::n(&[1.0, 0.0, 1.0]),
+                Self::n(&[1.0, 0.0, 1.0]),
+                Self::n(&[1.0, 0.0, 1.0]),
             ]
             .concat(),
         );
@@ -186,6 +220,11 @@ impl Boxblock {
                 [12, 13, 14, 15, 14, 13], //NX
                 [16, 17, 18, 19, 18, 17], //NY
                 [20, 21, 22, 23, 22, 21], //NZ
+                [4, 7, 6, 19, 18, 17],    //斜面PY&NY
+                [12, 13, 14, 15, 14, 13], //NX
+                [20, 21, 22, 23, 22, 21], //NZ
+                [24, 25, 26, 27, 26, 25], //斜面（上半分）
+                [28, 29, 30, 31, 30, 29], //斜面（下半分）
             ]
             .concat(),
         );
@@ -208,7 +247,7 @@ impl Boxblock {
         for boxblock in boxblocks {
             let block_id = boxblock.id();
             boxblock.map(|boxblock| {
-                for srfs in 0..6 {
+                for srfs in 0..8 {
                     if let Some(surface) = Self::surface_of(boxblock, srfs) {
                         builder.insert(
                             &block_id,
@@ -360,6 +399,7 @@ impl Boxblock {
                 gl.set_u_inv_model_matrix(inv_model_matrix.reversed_axes());
                 gl.set_u_shape(match shape {
                     block::boxblock::Shape::Cube => program::SHAPE_3D_BOX,
+                    block::boxblock::Shape::Slope => program::SHAPE_3D_BOX,
                     block::boxblock::Shape::Cylinder => program::SHAPE_3D_CYLINDER,
                     block::boxblock::Shape::Sphere => program::SHAPE_3D_SPHERE,
                 });
@@ -377,12 +417,24 @@ impl Boxblock {
                         gl.set_u_texture_0(program::TEXTURE_NONE);
                     }
                 }
-                gl.draw_elements_with_i32(
-                    web_sys::WebGlRenderingContext::TRIANGLES,
-                    36,
-                    web_sys::WebGlRenderingContext::UNSIGNED_SHORT,
-                    0,
-                );
+                match shape {
+                    block::boxblock::Shape::Slope => {
+                        gl.draw_elements_with_i32(
+                            web_sys::WebGlRenderingContext::TRIANGLES,
+                            30,
+                            web_sys::WebGlRenderingContext::UNSIGNED_SHORT,
+                            36 * 2,
+                        );
+                    }
+                    _ => {
+                        gl.draw_elements_with_i32(
+                            web_sys::WebGlRenderingContext::TRIANGLES,
+                            36,
+                            web_sys::WebGlRenderingContext::UNSIGNED_SHORT,
+                            0,
+                        );
+                    }
+                }
             });
         }
     }
@@ -434,7 +486,26 @@ impl Boxblock {
                 s: [0.0, 1.0, 0.0],
                 t: [1.0, 0.0, 0.0],
             },
+            6 => Surface {
+                //斜面（上半分）
+                p: p.clone(),
+                r: [0.0, 0.0, 0.0],
+                s: [0.0, 1.0, 0.0],
+                t: [-1.0, 0.0, 1.0],
+            },
+            7 => Surface {
+                //斜面（下半分）
+                p: p.clone(),
+                r: [0.0, 0.0, 0.0],
+                s: [0.0, 1.0, 0.0],
+                t: [-1.0, 0.0, 1.0],
+            },
             _ => unreachable!(),
         })
+    }
+
+    fn n(v: &[f32; 3]) -> [f32; 3] {
+        let len = (v[0].powi(2) + v[1].powi(2) + v[2].powi(2)).sqrt();
+        [v[0] / len, v[1] / len, v[2] / len]
     }
 }

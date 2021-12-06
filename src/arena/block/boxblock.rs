@@ -10,6 +10,7 @@ pub enum Shape {
     Cube,
     Cylinder,
     Sphere,
+    Slope,
 }
 
 #[async_trait(?Send)]
@@ -19,6 +20,7 @@ impl Pack for Shape {
             Self::Cube => JsValue::from("Cube"),
             Self::Cylinder => JsValue::from("Cylinder"),
             Self::Sphere => JsValue::from("Sphere"),
+            Self::Slope => JsValue::from("Slope"),
         }
     }
 }

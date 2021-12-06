@@ -527,6 +527,7 @@ impl TableMenu {
                         dropdown::Props {
                             text: dropdown::Text::Text(String::from(match &boxblock.shape {
                                 block::boxblock::Shape::Cube => "立方体",
+                                block::boxblock::Shape::Slope => "斜面",
                                 block::boxblock::Shape::Sphere => "球体",
                                 block::boxblock::Shape::Cylinder => "円柱",
                             })),
@@ -541,6 +542,12 @@ impl TableMenu {
                                 boxblock,
                                 block::boxblock::Shape::Cube,
                                 "立方体",
+                            ),
+                            Self::render_tool_option_boxblock_shape(
+                                tool_idx,
+                                boxblock,
+                                block::boxblock::Shape::Slope,
+                                "斜面",
                             ),
                             Self::render_tool_option_boxblock_shape(
                                 tool_idx,
