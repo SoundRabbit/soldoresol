@@ -4,6 +4,7 @@ use std::rc::Rc;
 #[derive(Clone)]
 pub enum TableTool {
     Selecter(Rc<Selecter>),
+    Craftboard(Rc<Craftboard>),
     Pen(Rc<Pen>),
     Eraser(Rc<Eraser>),
     Character(Rc<Character>),
@@ -14,6 +15,11 @@ pub enum TableTool {
 pub enum Selecter {
     Point,
     Range,
+}
+
+#[derive(Clone)]
+pub struct Craftboard {
+    pub size: [f64; 2],
 }
 
 #[derive(Clone)]

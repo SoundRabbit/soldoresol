@@ -265,6 +265,22 @@ impl Table {
         Some(character)
     }
 
+    pub fn create_craftboard(
+        &self,
+        px_x: f64,
+        px_y: f64,
+        option: &table_tool::Craftboard,
+    ) -> Option<block::Craftboard> {
+        let renderer = unwrap!(self.renderer.as_ref());
+        let (p, _) = renderer.get_focused_position(&self.camera_matrix, px_x, px_y);
+
+        let mut craftboard = block::Craftboard::new(p);
+
+        craftboard.set_size(option.size.clone());
+
+        Some(craftboard)
+    }
+
     pub fn on_click(&mut self, e: web_sys::MouseEvent, tool: &TableTool) {
         let page_x = e.page_x() as f64;
         let page_y = e.page_y() as f64;
@@ -301,6 +317,23 @@ impl Table {
                     self.cmds.push(Cmd::sub(On::UpdateBlocks {
                         update: set! { self.world.id() },
                         insert: set! { character_id },
+                    }));
+                }
+            }
+            TableTool::Craftboard(tool) => {
+                if let Some((craftboard, mut table)) = join_some!(
+                    self.create_craftboard(client_x, client_y, tool),
+                    self.selecting_table()
+                ) {
+                    let craftboard = self.arena.insert(craftboard);
+                    let craftboard_id = craftboard.id();
+                    table.update(|table| {
+                        table.push_craftboard(craftboard);
+                    });
+                    self.cmds.push(Self::render());
+                    self.cmds.push(Cmd::sub(On::UpdateBlocks {
+                        update: set! { table.id() },
+                        insert: set! { craftboard_id },
                     }));
                 }
             }

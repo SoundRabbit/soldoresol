@@ -21,7 +21,7 @@ impl Table {
     pub fn craftboards(&self) -> &Vec<BlockMut<Craftboard>> {
         &self.craftboards
     }
-    pub fn craftboards_push(&mut self, craftboard: BlockMut<Craftboard>) {
+    pub fn push_craftboard(&mut self, craftboard: BlockMut<Craftboard>) {
         self.craftboards.push(craftboard);
     }
 }

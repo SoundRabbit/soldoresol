@@ -1,7 +1,9 @@
 use super::libs::matrix::model::ModelMatrix;
 use super::libs::webgl::{program, ProgramType, WebGlF32Vbo, WebGlI16Ibo, WebGlRenderingContext};
-use crate::arena::block;
+use crate::arena::{block, BlockRef};
+use crate::libs::random_id::U128Id;
 use ndarray::Array2;
+use std::collections::{HashMap, HashSet};
 
 struct Buffer {
     index: WebGlI16Ibo,
@@ -13,19 +15,19 @@ struct Buffer {
     texture_coord: WebGlF32Vbo,
 }
 
-pub struct CraftboardGrid {
+struct Craftboard {
     buffer: Buffer,
-    craftboard_size: [u64; 2],
+    size: [u64; 2],
+}
+
+pub struct CraftboardGrid {
+    boards: HashMap<U128Id, Craftboard>,
 }
 
 impl CraftboardGrid {
     pub fn new(gl: &WebGlRenderingContext) -> Self {
-        let craftboard_size = [20, 20];
-        let buffer = Self::create_grid_buffers(&gl, &craftboard_size);
-
         Self {
-            buffer,
-            craftboard_size,
+            boards: HashMap::new(),
         }
     }
 
@@ -34,64 +36,101 @@ impl CraftboardGrid {
         gl: &mut WebGlRenderingContext,
         vp_matrix: &Array2<f32>,
         camera_position: &[f32; 3],
+        craftboards: impl Iterator<Item = BlockRef<block::Craftboard>>,
+    ) {
+        gl.use_program(ProgramType::UnshapedProgram);
+        gl.depth_func(web_sys::WebGlRenderingContext::ALWAYS);
+        gl.set_u_id(program::ID_NONE);
+        gl.set_u_texture_0(program::TEXTURE_NONE);
+        gl.set_u_texture_1(program::TEXTURE_NONE);
+        gl.set_u_texture_2(program::TEXTURE_NONE);
+        gl.set_u_light(program::LIGHT_NONE);
+        gl.set_u_bg_color_1(program::COLOR_SOME);
+        gl.set_u_bg_color_2(program::COLOR_NONE);
+        gl.set_u_vp_matrix(vp_matrix.clone().reversed_axes());
+        gl.set_u_shape(program::SHAPE_2D_BOX);
+        gl.set_u_camera_position(camera_position);
+        let mut unrendered: HashSet<U128Id> =
+            HashSet::from_iter(self.boards.keys().map(U128Id::clone));
+
+        for craftboard in craftboards {
+            let craftboard_id = craftboard.id();
+            craftboard.map(|craftboard| {
+                unrendered.remove(&craftboard_id);
+
+                let this = if let Some(this) = self.boards.get_mut(&craftboard_id) {
+                    this
+                } else {
+                    let craftboard_size = {
+                        let sz = craftboard.size();
+                        [sz[0].floor() as u64, sz[1].floor() as u64]
+                    };
+                    let buffer = Self::create_grid_buffers(&gl, &craftboard_size);
+
+                    let board = Craftboard {
+                        buffer,
+                        size: craftboard_size,
+                    };
+
+                    self.boards.insert(craftboard_id.clone(), board);
+                    self.boards.get_mut(&craftboard_id).unwrap()
+                };
+
+                Self::render_craftboard(this, gl, vp_matrix, craftboard);
+            });
+        }
+
+        for craftboard_id in unrendered {
+            self.boards.remove(&craftboard_id);
+        }
+    }
+
+    fn render_craftboard(
+        this: &mut Craftboard,
+        gl: &mut WebGlRenderingContext,
+        vp_matrix: &Array2<f32>,
         craftboard: &block::Craftboard,
     ) {
         let craftboard_size = {
             let sz = craftboard.size();
             [sz[0].floor() as u64, sz[1].floor() as u64]
         };
-
-        crate::debug::log_1("craftboard_size os valid");
-
         let grid_color = craftboard.grid_color().to_color().to_f32array();
 
-        crate::debug::log_1("grid_color os valid");
-
-        if craftboard_size[0] != self.craftboard_size[0]
-            || craftboard_size[1] != self.craftboard_size[1]
-        {
+        if craftboard_size[0] != this.size[0] || craftboard_size[1] != this.size[1] {
             let buffer = Self::create_grid_buffers(&gl, &craftboard_size);
 
-            self.buffer = buffer;
-            self.craftboard_size = craftboard_size;
+            this.buffer = buffer;
+            this.size = craftboard_size;
         }
 
-        gl.line_width(5.0);
-
-        gl.use_program(ProgramType::UnshapedProgram);
-        gl.depth_func(web_sys::WebGlRenderingContext::ALWAYS);
-        gl.set_a_vertex(&self.buffer.vertex, 3, 0);
-        gl.set_a_id(&self.buffer.id, 1, 0);
-        gl.set_a_v_color(&self.buffer.v_color, 4, 0);
-        gl.set_a_normal(&self.buffer.normal, 3, 0);
-        gl.set_a_texture_coord(&self.buffer.texture_coord, 2, 0);
+        gl.line_width(2.0);
+        gl.set_a_vertex(&this.buffer.vertex, 3, 0);
+        gl.set_a_id(&this.buffer.id, 1, 0);
+        gl.set_a_v_color(&this.buffer.v_color, 4, 0);
+        gl.set_a_normal(&this.buffer.normal, 3, 0);
+        gl.set_a_texture_coord(&this.buffer.texture_coord, 2, 0);
         gl.bind_buffer(
             web_sys::WebGlRenderingContext::ELEMENT_ARRAY_BUFFER,
-            Some(&self.buffer.index),
+            Some(&this.buffer.index),
         );
 
-        let model_matrix: Array2<f32> = ModelMatrix::new().into();
-        let inv_model_matrix: Array2<f32> = ModelMatrix::new().into();
+        let p = craftboard.position();
+        let p = [p[0] as f32, p[1] as f32, p[2] as f32];
+        let model_matrix: Array2<f32> = ModelMatrix::new().with_movement(&p).into();
+        let inv_model_matrix: Array2<f32> = ModelMatrix::new()
+            .with_movement(&[-p[0], -p[1], -p[2]])
+            .into();
         let mvp_matrix = vp_matrix.dot(&model_matrix);
         gl.set_u_translate(mvp_matrix.reversed_axes());
 
-        gl.set_u_camera_position(camera_position);
         gl.set_u_inv_model_matrix(inv_model_matrix.reversed_axes());
         gl.set_u_model_matrix(model_matrix.reversed_axes());
-        gl.set_u_shape(program::SHAPE_2D_BOX);
-        gl.set_u_vp_matrix(vp_matrix.clone().reversed_axes());
-        gl.set_u_bg_color_1(program::COLOR_SOME);
-        gl.set_u_bg_color_2(program::COLOR_NONE);
         gl.set_u_bg_color_1_value(&grid_color);
-        gl.set_u_id(program::ID_NONE);
-        gl.set_u_texture_0(program::TEXTURE_NONE);
-        gl.set_u_texture_1(program::TEXTURE_NONE);
-        gl.set_u_texture_2(program::TEXTURE_NONE);
-        gl.set_u_light(program::LIGHT_NONE);
 
         gl.draw_elements_with_i32(
             web_sys::WebGlRenderingContext::LINES,
-            self.buffer.index_len,
+            this.buffer.index_len,
             web_sys::WebGlRenderingContext::UNSIGNED_SHORT,
             0,
         );

@@ -43,7 +43,7 @@ impl Update for Room {
         let craftboard = block::Craftboard::new([0.0, 0.0, 0.0]);
 
         let mut table = block::Table::new();
-        table.craftboards_push(self.arena.insert(craftboard));
+        table.push_craftboard(self.arena.insert(craftboard));
 
         let mut scene = block::Scene::new();
         scene.tables_push(self.arena.insert(table));

@@ -23,6 +23,9 @@ impl Craftboard {
     pub fn name(&self) -> &String {
         &self.name
     }
+    pub fn set_size(&mut self, size: [f64; 2]) {
+        self.size = size;
+    }
     pub fn size(&self) -> &[f64; 2] {
         &self.size
     }

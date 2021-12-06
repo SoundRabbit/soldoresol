@@ -32,6 +32,16 @@ impl Renderer {
         );
 
         table.map(|table| {
+            self.craftboard_id_map_mesh.update_id(
+                &mut id_table_builder,
+                table
+                    .craftboards()
+                    .iter()
+                    .map(BlockMut::<block::Craftboard>::as_ref),
+            );
+        });
+
+        table.map(|table| {
             self.boxblock_mesh.update_id(
                 &mut id_table_builder,
                 table
@@ -87,17 +97,15 @@ impl Renderer {
             );
 
             table.map(|table: &block::Table| {
-                let craftboards = table.craftboards();
-                for craftboard in craftboards {
-                    craftboard.map(|craftboard| {
-                        self.craftboard_grid_mesh.render(
-                            &mut self.gl,
-                            &vp_matrix,
-                            &camera_position,
-                            craftboard,
-                        );
-                    });
-                }
+                self.craftboard_grid_mesh.render(
+                    &mut self.gl,
+                    &vp_matrix,
+                    &camera_position,
+                    table
+                        .craftboards()
+                        .iter()
+                        .map(BlockMut::<block::Craftboard>::as_ref),
+                );
             });
 
             table.map(|table: &block::Table| {
@@ -189,6 +197,20 @@ impl Renderer {
             web_sys::WebGlRenderingContext::ONE,
             web_sys::WebGlRenderingContext::ZERO,
         );
+
+        table.map(|table: &block::Table| {
+            self.craftboard_id_map_mesh.render(
+                &mut self.gl,
+                &self.id_table,
+                &vp_matrix,
+                &camera_position,
+                table
+                    .craftboards()
+                    .iter()
+                    .map(BlockMut::<block::Craftboard>::as_ref),
+                camera_matrix.is_2d_mode(),
+            );
+        });
 
         table.map(|table: &block::Table| {
             self.boxblock_mesh.render(
