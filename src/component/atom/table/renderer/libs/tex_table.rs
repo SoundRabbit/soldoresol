@@ -13,7 +13,7 @@ use wasm_bindgen::JsCast;
 enum TextureId {
     ResourceId(U128Id),
     Custom(U128Id),
-    String(String, String),
+    Nameplate(String, String),
 }
 
 struct Lifespan<V> {
@@ -64,8 +64,7 @@ pub struct TexTable {
     max_tex_num: i32,
     unused_tex_idx: VecDeque<i32>,
     used_tex_idx: VecDeque<(i32, TextureId)>,
-    string_tex_usage: VecDeque<(String, String)>,
-    string_tex_table: HashMap<(String, String), Lifespan<(Rc<web_sys::WebGlTexture>, [f64; 2])>>,
+    nameplate_tex_table: HashMap<(String, String), Lifespan<(Rc<web_sys::WebGlTexture>, [f64; 2])>>,
     resource_tex_table: HashMap<U128Id, Rc<web_sys::WebGlTexture>>,
     tex_idx: HashMap<TextureId, i32>,
     string_canvas: web_sys::HtmlCanvasElement,
@@ -90,8 +89,7 @@ impl TexTable {
             max_tex_num,
             unused_tex_idx,
             used_tex_idx: VecDeque::new(),
-            string_tex_usage: VecDeque::new(),
-            string_tex_table: HashMap::new(),
+            nameplate_tex_table: HashMap::new(),
             resource_tex_table: HashMap::new(),
             tex_idx: HashMap::new(),
             string_canvas,
@@ -100,14 +98,14 @@ impl TexTable {
 
     pub fn update(&mut self, gl: &WebGlRenderingContext) {
         let mut deleted = vec![];
-        for (key_text, tex) in &mut self.string_tex_table {
+        for (key_text, tex) in &mut self.nameplate_tex_table {
             if tex.aging() {
                 deleted.push(key_text.clone());
             }
         }
 
         for key_text in &deleted {
-            if let Some(tex) = self.string_tex_table.remove(key_text) {
+            if let Some(tex) = self.nameplate_tex_table.remove(key_text) {
                 gl.delete_texture(Some(&tex.0));
             }
         }
@@ -184,14 +182,14 @@ impl TexTable {
         }
     }
 
-    pub fn use_string(
+    pub fn use_nameplate(
         &mut self,
         gl: &WebGlRenderingContext,
         text: &(String, String),
     ) -> Option<(i32, [f64; 2])> {
-        let tex_id = TextureId::String(text.0.clone(), text.1.clone());
+        let tex_id = TextureId::Nameplate(text.0.clone(), text.1.clone());
         if let Some((tex_buf, size)) = self
-            .string_tex_table
+            .nameplate_tex_table
             .get(text)
             .map(|tex| (Rc::clone(&tex.0), tex.1.clone()))
         {
@@ -250,6 +248,8 @@ impl TexTable {
             ctx.clear_rect(0.0, 0.0, width, height);
 
             ctx.set_fill_style(&JsValue::from("#000000"));
+            ctx.set_stroke_style(&JsValue::from("#FFFFFF"));
+            ctx.set_line_width(r * 0.5);
             let x = 0.0;
             let y = 0.0;
             ctx.begin_path();
@@ -260,6 +260,7 @@ impl TexTable {
             let _ = ctx.arc_to(x, y, x + width, y, r);
             ctx.close_path();
             ctx.fill();
+            ctx.stroke();
 
             ctx.set_font(&format!("{}px sans-serif", font_height));
             ctx.set_fill_style(&JsValue::from("#FFFFFF"));
@@ -311,17 +312,12 @@ impl TexTable {
                 web_sys::WebGlRenderingContext::UNSIGNED_BYTE,
                 &self.string_canvas,
             );
-            self.string_tex_table.insert(
+            self.nameplate_tex_table.insert(
                 text.clone(),
                 Lifespan::new((Rc::new(tex_buf), [width, height])),
             );
             self.tex_idx.insert(TextureId::clone(&tex_id), tex_idx);
             self.used_tex_idx.push_back((tex_idx, tex_id));
-            self.string_tex_usage.push_back(text.clone());
-            if self.string_tex_usage.len() >= 128 {
-                let old_text = self.string_tex_usage.pop_front().unwrap();
-                self.string_tex_table.remove(&old_text);
-            }
 
             Some((tex_idx, [width, height]))
         }

@@ -169,14 +169,8 @@ impl Renderer {
                         &vp_matrix,
                         &camera_position,
                         &camera_matrix,
-                        table
-                            .boxblocks()
-                            .iter()
-                            .map(BlockMut::<block::Boxblock>::as_ref),
-                        world
-                            .characters()
-                            .iter()
-                            .map(BlockMut::<block::Character>::as_ref),
+                        table.boxblocks(),
+                        world.characters(),
                         camera_matrix.is_2d_mode(),
                         &mut self.tex_table,
                     );
