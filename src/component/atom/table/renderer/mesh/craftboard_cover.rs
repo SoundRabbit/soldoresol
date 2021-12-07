@@ -240,7 +240,7 @@ impl CraftboardCover {
         for craftboard in craftboards {
             let craftboard_id = craftboard.id();
             craftboard.map(|craftboard| {
-                let id_offset_color = unwrap_or!(id_table.offset_color(&craftboard_id);());
+                let id_offset_color = unwrap!(id_table.offset_color(&craftboard_id));
 
                 let s = craftboard.size();
                 let s = [s[0].floor() as f32, s[1].floor() as f32, 1.0];

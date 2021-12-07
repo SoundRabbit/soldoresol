@@ -250,8 +250,7 @@ impl Character {
                             if let Some(tex_idx) = texture.map(|image_data| {
                                 tex_table.use_resource(gl, &texture.id(), image_data)
                             }) {
-                                let id_offset_color =
-                                    unwrap_or!(id_table.offset_color(&character_id);());
+                                let id_offset_color = unwrap!(id_table.offset_color(&character_id));
                                 gl.set_u_translate(mvp_matrix.reversed_axes());
                                 gl.set_u_model_matrix(model_matrix.reversed_axes());
                                 gl.set_u_inv_model_matrix(inv_model_matrix.reversed_axes());

@@ -218,7 +218,8 @@ impl Table {
     pub fn table_coord(&self, e: &web_sys::MouseEvent) -> [f64; 2] {
         let page_x = e.page_x() as f64;
         let page_y = e.page_y() as f64;
-        let rect = unwrap_or!(self.canvas.as_ref().map(|x| x.get_bounding_client_rect()); [page_x, page_y]);
+        let rect =
+            unwrap!(self.canvas.as_ref().map(|x| x.get_bounding_client_rect()); [page_x, page_y]);
         let client_x = page_x - rect.left();
         let client_y = page_y - rect.top();
         [client_x, client_y]
@@ -230,7 +231,7 @@ impl Table {
         px_y: f64,
         option: &table_tool::Boxblock,
     ) -> Option<block::Boxblock> {
-        let renderer = unwrap!(self.renderer.as_ref());
+        let renderer = unwrap!(self.renderer.as_ref(); None);
         let (p, n) = renderer.get_focused_position(&self.camera_matrix, px_x, px_y);
         let n = Self::n_cube(&n, &option.size);
         let p = [p[0] + n[0], p[1] + n[1], p[2] + n[2]];
@@ -254,7 +255,7 @@ impl Table {
         px_y: f64,
         option: &table_tool::Character,
     ) -> Option<block::Character> {
-        let renderer = unwrap!(self.renderer.as_ref());
+        let renderer = unwrap!(self.renderer.as_ref(); None);
         let (p, _) = renderer.get_focused_position(&self.camera_matrix, px_x, px_y);
         let n = self
             .camera_matrix
@@ -282,7 +283,7 @@ impl Table {
         px_y: f64,
         option: &table_tool::Craftboard,
     ) -> Option<block::Craftboard> {
-        let renderer = unwrap!(self.renderer.as_ref());
+        let renderer = unwrap!(self.renderer.as_ref(); None);
         let (p, _) = renderer.get_focused_position(&self.camera_matrix, px_x, px_y);
 
         let mut craftboard = block::Craftboard::new(p);
@@ -295,7 +296,7 @@ impl Table {
     pub fn on_click(&mut self, e: web_sys::MouseEvent, tool: &TableTool) {
         let page_x = e.page_x() as f64;
         let page_y = e.page_y() as f64;
-        let rect = unwrap_or!(self.canvas.as_ref().map(|x| x.get_bounding_client_rect()); ());
+        let rect = unwrap!(self.canvas.as_ref().map(|x| x.get_bounding_client_rect()));
         let client_x = page_x - rect.left();
         let client_y = page_y - rect.top();
 
@@ -353,7 +354,7 @@ impl Table {
     }
 
     pub fn focused_block(&self, px_x: f64, px_y: f64) -> (BlockKind, U128Id) {
-        let renderer = unwrap_or!(self.renderer.as_ref(); (BlockKind::None, U128Id::none()));
+        let renderer = unwrap!(self.renderer.as_ref(); (BlockKind::None, U128Id::none()));
 
         match renderer.get_object_id(px_x, px_y) {
             ObjectId::Boxblock(b_id, ..) => (BlockKind::Boxblock, b_id),

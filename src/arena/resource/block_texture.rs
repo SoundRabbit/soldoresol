@@ -52,15 +52,15 @@ impl LoadFrom<([u32; 2], [BlockMut<ImageData>; 6])> for BlockTexture {
         let width_f = width as f64;
         let height_f = height as f64;
 
-        let window = unwrap!(web_sys::window());
-        let document = unwrap!(window.document());
-        let element = unwrap!(document.create_element("canvas").ok());
-        let element = unwrap!(element.dyn_into::<web_sys::HtmlCanvasElement>().ok());
+        let window = unwrap!(web_sys::window(); None);
+        let document = unwrap!(window.document(); None);
+        let element = unwrap!(document.create_element("canvas").ok(); None);
+        let element = unwrap!(element.dyn_into::<web_sys::HtmlCanvasElement>().ok(); None);
         element.set_width(width);
         element.set_height(height);
 
-        let context = unwrap!(element.get_context("2d").ok().unwrap_or(None));
-        let context = unwrap!(context.dyn_into::<web_sys::CanvasRenderingContext2d>().ok());
+        let context = unwrap!(element.get_context("2d").ok().unwrap_or(None); None);
+        let context = unwrap!(context.dyn_into::<web_sys::CanvasRenderingContext2d>().ok(); None);
 
         draw_texture(&context, width_f, height_f, &img_pz, 0.25 * 0.0, 0.0);
         draw_texture(&context, width_f, height_f, &img_ny, 0.25 * 0.0, 0.35);
@@ -80,10 +80,10 @@ impl LoadFrom<([u32; 2], [BlockMut<ImageData>; 6])> for BlockTexture {
         .ok()
         .and_then(|x| x.dyn_into::<web_sys::Blob>().ok());
 
-        let blob = unwrap!(blob);
+        let blob = unwrap!(blob; None);
 
         let data = ImageData::load_from(blob).await;
-        let data = unwrap!(data);
+        let data = unwrap!(data; None);
 
         Some(Self { data })
     }

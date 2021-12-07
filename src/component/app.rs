@@ -93,7 +93,7 @@ impl Render for App {
             Sub::none(),
             router! {
                 r"/rooms" => {
-                    let common_data = unwrap_or!(self.common_data.as_ref(); Self::render_initializer());
+                    let common_data = unwrap!(self.common_data.as_ref(); Self::render_initializer());
                     RoomSelector::empty(
                         room_selector::Props {
                             common_db: Rc::clone(&common_data.common_db),
@@ -107,9 +107,9 @@ impl Render for App {
                     )
                 },
                 r"/rooms/skyway/([A-Za-z0-9@#]{24})" (room_id) => {
-                    let common_data = unwrap_or!(self.common_data.as_ref(); Self::render_initializer());
+                    let common_data = unwrap!(self.common_data.as_ref(); Self::render_initializer());
                     let room_id = Rc::new(String::from(room_id.get(1).unwrap().as_str()));
-                    let room_data = unwrap_or!(self.room_data.as_ref(); Self::render_room_initializer(&common_data, &room_id));
+                    let room_data = unwrap!(self.room_data.as_ref(); Self::render_room_initializer(&common_data, &room_id));
                     SkywayConnecter::empty(
                         skyway_connecter:: Props {
                             peer: Rc::clone(&common_data.peer),
@@ -122,9 +122,9 @@ impl Render for App {
                     )
                 },
                 r"/rooms/drive/([A-Za-z\-_]+)" (room_id) => {
-                    let common_data = unwrap_or!(self.common_data.as_ref(); Self::render_initializer());
+                    let common_data = unwrap!(self.common_data.as_ref(); Self::render_initializer());
                     let room_id = Rc::new(String::from(room_id.get(1).unwrap().as_str()));
-                    let room_data = unwrap_or!(self.room_data.as_ref(); Self::render_room_initializer(&common_data, &room_id));
+                    let room_data = unwrap!(self.room_data.as_ref(); Self::render_room_initializer(&common_data, &room_id));
                     SkywayConnecter::empty(
                         skyway_connecter:: Props {
                             peer: Rc::clone(&common_data.peer),

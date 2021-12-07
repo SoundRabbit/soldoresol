@@ -51,7 +51,7 @@ impl LoadFrom<web_sys::File> for ImageData {
     async fn load_from(file: web_sys::File) -> Option<Self> {
         let name = file.name();
         let blob: web_sys::Blob = file.into();
-        let mut this = unwrap!(Self::load_from(blob).await);
+        let mut this = unwrap!(Self::load_from(blob).await; None);
         this.name = name;
         Some(this)
     }
@@ -118,19 +118,19 @@ impl LoadFrom<Url> for ImageData {
         opts.method("GET");
         opts.mode(web_sys::RequestMode::Cors);
 
-        let request = unwrap!(web_sys::Request::new_with_str_and_init(&url, &opts).ok());
+        let request = unwrap!(web_sys::Request::new_with_str_and_init(&url, &opts).ok(); None);
 
         let response = unwrap!(JsFuture::from(
             web_sys::window().unwrap().fetch_with_request(&request)
         )
         .await
-        .ok());
-        let response = unwrap!(response.dyn_into::<web_sys::Response>().ok());
-        let blob = unwrap!(response.blob().ok());
-        let blob = unwrap!(JsFuture::from(blob).await.ok());
-        let blob = unwrap!(blob.dyn_into::<web_sys::Blob>().ok());
+        .ok(); None);
+        let response = unwrap!(response.dyn_into::<web_sys::Response>().ok(); None);
+        let blob = unwrap!(response.blob().ok(); None);
+        let blob = unwrap!(JsFuture::from(blob).await.ok(); None);
+        let blob = unwrap!(blob.dyn_into::<web_sys::Blob>().ok(); None);
 
-        let mut this = unwrap!(Self::load_from(blob).await);
+        let mut this = unwrap!(Self::load_from(blob).await; None);
         this.url = url;
 
         Some(this)

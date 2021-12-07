@@ -307,8 +307,8 @@ where
                     Msg::NoOp
                 })
                 .on_drop(move |e| {
-                    let data_transfer = unwrap_or!(e.data_transfer(); Msg::NoOp);
-                    let data = unwrap_or!(data_transfer.get_data("text/plain").ok(); Msg::NoOp);
+                    let data_transfer = unwrap!(e.data_transfer(); Msg::NoOp);
+                    let data = unwrap!(data_transfer.get_data("text/plain").ok(); Msg::NoOp);
                     if TabBtn::validate_prefix::<TabModeless<Content, TabName>>(&data) {
                         let suffix = TabBtn::get_suffix(&data);
                         if let Some(event_id) = suffix.get(0).and_then(|x| U128Id::from_hex(x)) {

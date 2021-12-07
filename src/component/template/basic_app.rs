@@ -48,15 +48,15 @@ impl Render for BasicApp {
             Attributes::new().class(Self::class("base")),
             Events::new()
                 .on("dragleave", |e| {
-                    let e = unwrap_or!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
+                    let e = unwrap!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
                     Msg::Sub(On::DragLeave(e))
                 })
                 .on("dragover", |e| {
-                    let e = unwrap_or!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
+                    let e = unwrap!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
                     Msg::Sub(On::DragOver(e))
                 })
                 .on("drop", |e| {
-                    let e = unwrap_or!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
+                    let e = unwrap!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
                     Msg::Sub(On::Drop(e))
                 }),
             children,

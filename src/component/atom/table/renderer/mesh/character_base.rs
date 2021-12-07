@@ -147,7 +147,7 @@ impl CharacterBase {
         for character in characters {
             let character_id = character.id();
             character.map(|character| {
-                let id_offset_color = unwrap_or!(id_table.offset_color(&character_id);());
+                let id_offset_color = unwrap!(id_table.offset_color(&character_id));
                 let s = character.size();
                 let s = [s as f32, s as f32, 0.0];
                 let p = character.position();

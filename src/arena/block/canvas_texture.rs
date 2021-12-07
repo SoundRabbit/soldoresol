@@ -107,7 +107,7 @@ impl Pack for CanvasTexture {
         .await
         .ok()
         .and_then(|x| x.dyn_into::<web_sys::Blob>().ok());
-        let element = unwrap_or!(element; JsValue::NULL);
+        let element = unwrap!(element; JsValue::NULL);
 
         (object! {
             "element": element,

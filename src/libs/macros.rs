@@ -57,12 +57,10 @@ macro_rules! unwrap {
         if let Some(x) = $x {
             x
         } else {
-            return None;
+            return;
         }
     };
-}
 
-macro_rules! unwrap_or {
     ($x:expr ; $y:expr) => {
         if let Some(x) = $x {
             x

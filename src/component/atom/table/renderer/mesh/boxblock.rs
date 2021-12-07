@@ -365,7 +365,7 @@ impl Boxblock {
                     }
                 }
 
-                let id_offset_color = unwrap_or!(id_table.offset_color(&boxblock_id);());
+                let id_offset_color = unwrap!(id_table.offset_color(&boxblock_id));
 
                 let s = boxblock.size();
                 let s = match rendering_mode {

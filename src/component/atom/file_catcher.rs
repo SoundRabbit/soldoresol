@@ -106,8 +106,8 @@ impl<C: Component> Render for FileCatcher<C> {
                     }
                 })
                 .on_drop(|e| {
-                    let data_transfer = unwrap_or!(e.data_transfer(); Msg::NoOp);
-                    let file_list = unwrap_or!(data_transfer.files(); Msg::NoOp);
+                    let data_transfer = unwrap!(e.data_transfer(); Msg::NoOp);
+                    let file_list = unwrap!(data_transfer.files(); Msg::NoOp);
 
                     e.prevent_default();
 

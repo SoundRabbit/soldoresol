@@ -406,9 +406,9 @@ where
                                     .on_dragstart(
                                         move |e| {
                                         e.stop_propagation();
-                                        let data_transfer = unwrap_or!(e.data_transfer(); Msg::NoOp);
+                                        let data_transfer = unwrap!(e.data_transfer(); Msg::NoOp);
                                         let event_id = U128Id::new();
-                                        unwrap_or!(
+                                        unwrap!(
                                             data_transfer
                                                 .set_data("text/plain", &TabBtn::id::<Self>(vec![&event_id.to_string()]))
                                                 .ok();
@@ -538,9 +538,9 @@ where
         e: web_sys::DragEvent,
         modeless_id: U128Id,
     ) -> Msg<Content::Sub> {
-        let e = unwrap_or!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
-        let data_transfer = unwrap_or!(e.data_transfer(); Msg::NoOp);
-        let data = unwrap_or!(data_transfer.get_data("text/plain").ok(); Msg::NoOp);
+        let e = unwrap!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
+        let data_transfer = unwrap!(e.data_transfer(); Msg::NoOp);
+        let data = unwrap!(data_transfer.get_data("text/plain").ok(); Msg::NoOp);
         if TabBtn::validate_prefix::<Self>(&data) {
             let suffix = TabBtn::get_suffix(&data);
             if let Some(event_id) = suffix.get(0).and_then(|x| U128Id::from_hex(x)) {

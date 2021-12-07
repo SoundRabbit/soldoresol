@@ -108,19 +108,19 @@ async fn initialize_object_store(
         }
     }
     if !has_client {
-        database = unwrap_or!(idb::create_object_strage(&database, "client").await; None);
+        database = unwrap!(idb::create_object_strage(&database, "client").await; None);
     }
     if !has_rooms {
-        database = unwrap_or!(idb::create_object_strage(&database, "rooms").await; None);
+        database = unwrap!(idb::create_object_strage(&database, "rooms").await; None);
     }
     if !has_resources {
-        database = unwrap_or!(idb::create_object_strage(&database, "resources").await; None);
+        database = unwrap!(idb::create_object_strage(&database, "resources").await; None);
     }
     if !has_tables {
-        database = unwrap_or!(idb::create_object_strage(&database, "tables").await; None);
+        database = unwrap!(idb::create_object_strage(&database, "tables").await; None);
     }
     if !has_characters {
-        database = unwrap_or!(idb::create_object_strage(&database, "characters").await; None);
+        database = unwrap!(idb::create_object_strage(&database, "characters").await; None);
     }
     let client_id = idb::query(
         &database,
