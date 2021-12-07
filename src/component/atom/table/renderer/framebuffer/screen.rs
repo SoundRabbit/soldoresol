@@ -4,6 +4,7 @@ use crate::libs::random_id::U128Id;
 
 pub struct Screen {
     depth_buffer: web_sys::WebGlRenderbuffer,
+    stencil_biffer: web_sys::WebGlRenderbuffer,
     backscreen_tex: (web_sys::WebGlTexture, U128Id),
     frontscreen_tex: (web_sys::WebGlTexture, U128Id),
     frame_buffer: web_sys::WebGlFramebuffer,
@@ -16,11 +17,7 @@ impl Screen {
         height: i32,
         tex_table: &mut TexTable,
     ) -> Self {
-        let depth_buffer = gl.create_renderbuffer().unwrap();
-        super::resize_depthbuffer(&gl, &depth_buffer, width, height);
-
         let backscreen_tex = super::create_screen_texture(&gl, tex_table, width, height, None);
-
         let frontscreen_tex = super::create_screen_texture(&gl, tex_table, width, height, None);
 
         let frame_buffer = gl.create_framebuffer().unwrap();
@@ -29,6 +26,8 @@ impl Screen {
             Some(&frame_buffer),
         );
 
+        let depth_buffer = gl.create_renderbuffer().unwrap();
+        super::resize_depthbuffer(&gl, &depth_buffer, width, height);
         gl.framebuffer_renderbuffer(
             web_sys::WebGlRenderingContext::FRAMEBUFFER,
             web_sys::WebGlRenderingContext::DEPTH_ATTACHMENT,
@@ -36,8 +35,18 @@ impl Screen {
             Some(&depth_buffer),
         );
 
+        let stencil_biffer = gl.create_renderbuffer().unwrap();
+        super::resize_stencilbuffer(&gl, &depth_buffer, width, height);
+        gl.framebuffer_renderbuffer(
+            web_sys::WebGlRenderingContext::FRAMEBUFFER,
+            web_sys::WebGlRenderingContext::STENCIL_ATTACHMENT,
+            web_sys::WebGlRenderingContext::RENDERBUFFER,
+            Some(&stencil_biffer),
+        );
+
         Self {
             depth_buffer,
+            stencil_biffer,
             frontscreen_tex,
             backscreen_tex,
             frame_buffer,

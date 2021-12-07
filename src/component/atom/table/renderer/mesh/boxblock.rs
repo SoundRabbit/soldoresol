@@ -282,6 +282,7 @@ impl Boxblock {
             web_sys::WebGlRenderingContext::ELEMENT_ARRAY_BUFFER,
             Some(&self.index_buffer),
         );
+        gl.set_u_expand(0.0);
         gl.set_u_camera_position(camera_position);
         gl.set_u_vp_matrix(vp_matrix.clone().reversed_axes());
         gl.set_u_bg_color_2(program::COLOR_NONE);

@@ -28,6 +28,21 @@ fn resize_depthbuffer(
     );
 }
 
+fn resize_stencilbuffer(
+    gl: &WebGlRenderingContext,
+    buf: &web_sys::WebGlRenderbuffer,
+    width: i32,
+    height: i32,
+) {
+    gl.bind_renderbuffer(web_sys::WebGlRenderingContext::RENDERBUFFER, Some(&buf));
+    gl.renderbuffer_storage(
+        web_sys::WebGlRenderingContext::RENDERBUFFER,
+        web_sys::WebGlRenderingContext::STENCIL_INDEX8,
+        width,
+        height,
+    );
+}
+
 fn resize_texturebuffer(
     gl: &WebGlRenderingContext,
     buf: &web_sys::WebGlTexture,

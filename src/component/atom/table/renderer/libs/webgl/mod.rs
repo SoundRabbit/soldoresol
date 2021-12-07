@@ -246,6 +246,7 @@ impl WebGlRenderingContext {
     setter!(attr a_vertex: WebGlF32Vbo as set_a_vertex);
 
     setter!(unif u_translate: matrix4fv as set_u_translate);
+    setter!(unif u_expand: 1f as set_u_expand);
 
     setter!(unif u_camera_position: 3fv as set_u_camera_position);
     setter!(unif u_inv_model_matrix: matrix4fv as set_u_inv_model_matrix);

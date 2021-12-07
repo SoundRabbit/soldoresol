@@ -40,6 +40,7 @@ impl CraftboardGrid {
     ) {
         gl.use_program(ProgramType::UnshapedProgram);
         gl.depth_func(web_sys::WebGlRenderingContext::ALWAYS);
+        gl.set_u_expand(0.0);
         gl.set_u_id(program::ID_NONE);
         gl.set_u_texture_0(program::TEXTURE_NONE);
         gl.set_u_texture_1(program::TEXTURE_NONE);

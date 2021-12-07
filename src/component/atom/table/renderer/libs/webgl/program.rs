@@ -106,6 +106,7 @@ pub trait Program {
 
     // unif変数
     accesser!(u_translate: WebGlUniformLocation as None);
+    accesser!(u_expand: WebGlUniformLocation as None);
 
     // fragシェーダー
     // unif変数
@@ -262,6 +263,7 @@ pub struct ShapedProgram {
     a_vertex: Option<WebGlAttributeLocation>,
 
     u_translate: Option<WebGlUniformLocation>,
+    u_expand: Option<WebGlUniformLocation>,
 
     u_camera_position: Option<WebGlUniformLocation>,
     u_inv_model_matrix: Option<WebGlUniformLocation>,
@@ -324,6 +326,7 @@ impl ShapedProgram {
             a_v_color: attr("a_vColor", gl, &program),
             a_vertex: attr("a_vertex", gl, &program),
             u_translate: unif("u_translate", gl, &program),
+            u_expand: unif("u_expand", gl, &program),
             u_camera_position: unif("u_cameraPosition", gl, &program),
             u_inv_model_matrix: unif("u_invModelMatrix", gl, &program),
             u_model_matrix: unif("u_modelMatrix", gl, &program),
@@ -385,6 +388,7 @@ impl Program for ShapedProgram {
 
     // unif変数
     accesser!(u_translate: WebGlUniformLocation);
+    accesser!(u_expand: WebGlUniformLocation);
 
     // fragシェーダー
     // unif変数
@@ -455,6 +459,7 @@ pub struct UnshapedProgram {
     a_vertex: Option<WebGlAttributeLocation>,
 
     u_translate: Option<WebGlUniformLocation>,
+    u_expand: Option<WebGlUniformLocation>,
 
     u_camera_position: Option<WebGlUniformLocation>,
     u_inv_model_matrix: Option<WebGlUniformLocation>,
@@ -517,6 +522,7 @@ impl UnshapedProgram {
             a_v_color: attr("a_vColor", gl, &program),
             a_vertex: attr("a_vertex", gl, &program),
             u_translate: unif("u_translate", gl, &program),
+            u_expand: unif("u_expand", gl, &program),
             u_camera_position: unif("u_cameraPosition", gl, &program),
             u_inv_model_matrix: unif("u_invModelMatrix", gl, &program),
             u_perspective: unif("u_perspective", gl, &program),
@@ -578,6 +584,7 @@ impl Program for UnshapedProgram {
 
     // unif変数
     accesser!(u_translate: WebGlUniformLocation);
+    accesser!(u_expand: WebGlUniformLocation);
 
     // fragシェーダー
     // unif変数

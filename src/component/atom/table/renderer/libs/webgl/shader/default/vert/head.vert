@@ -5,6 +5,7 @@ attribute vec4 a_vColor;
 attribute vec4 a_vertex;
 
 uniform mat4 u_translate;
+uniform float u_expand;
 
 varying float v_id;
 varying vec3 v_normal;

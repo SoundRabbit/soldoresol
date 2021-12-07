@@ -143,6 +143,7 @@ impl Nameplate {
     ) {
         gl.use_program(ProgramType::UnshapedProgram);
         gl.depth_func(web_sys::WebGlRenderingContext::LEQUAL);
+        gl.set_u_expand(0.0);
         gl.set_u_camera_position(camera_position);
         gl.set_u_vp_matrix(vp_matrix.clone().reversed_axes());
         gl.set_u_bg_color_2(program::COLOR_NONE);
