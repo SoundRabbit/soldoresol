@@ -80,30 +80,78 @@ impl Plate {
 }
 
 impl Arrow {
-    fn new(gl: &WebGlRenderingContext, w: f32, h: f32) -> Self {
+    fn new(gl: &WebGlRenderingContext, w: f32, h: f32, l: f32) -> Self {
         let vertex_buffer = gl.create_vbo_with_f32array(
-            &[[0.5 * w, 0.0, h], [-0.5 * w, 0.0, h], [0.0, 0.0, 0.0]].concat(),
-        );
-
-        let id_buffer = gl.create_vbo_with_f32array(&[0.0, 0.0, 0.0]);
-
-        let v_color_buffer = gl.create_vbo_with_f32array(
             &[
-                [0.0, 0.0, 0.0, 0.0],
-                [0.0, 0.0, 0.0, 0.0],
-                [0.0, 0.0, 0.0, 0.0],
+                [[0.5 * w, 0.0, h + l], [-0.5 * w, 0.0, h + l], [0.0, 0.0, l]].concat(),
+                [
+                    [0.5 * w + l, 0.0, h + l],
+                    [0.5 * w, 0.0, h + l],
+                    [0.0, 0.0, 0.0],
+                    [0.0, 0.0, l],
+                    [-(0.5 * w + l), 0.0, h + l],
+                    [-0.5 * w, 0.0, h + l],
+                ]
+                .concat(),
             ]
             .concat(),
         );
 
-        let texture_coord_buffer =
-            gl.create_vbo_with_f32array(&[[1.0, 0.0], [0.0, 0.0], [0.5, 1.0]].concat());
+        let id_buffer = gl.create_vbo_with_f32array(&[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]);
 
-        let normal_buffer = gl.create_vbo_with_f32array(
-            &[[0.0, -1.0, 0.0], [0.0, -1.0, 0.0], [0.0, -1.0, 0.0]].concat(),
+        let v_color_buffer = gl.create_vbo_with_f32array(
+            &[
+                [0.0, 0.0, 0.0, 1.0],
+                [0.0, 0.0, 0.0, 1.0],
+                [0.0, 0.0, 0.0, 1.0],
+                [1.0, 1.0, 1.0, 1.0],
+                [1.0, 1.0, 1.0, 1.0],
+                [1.0, 1.0, 1.0, 1.0],
+                [1.0, 1.0, 1.0, 1.0],
+                [1.0, 1.0, 1.0, 1.0],
+                [1.0, 1.0, 1.0, 1.0],
+            ]
+            .concat(),
         );
 
-        let index_buffer = gl.create_ibo_with_i16array(&[0, 1, 2]);
+        let texture_coord_buffer = gl.create_vbo_with_f32array(
+            &[
+                [[1.0, 0.0], [0.0, 0.0], [0.5, 1.0]].concat(),
+                [
+                    [1.0, 0.0],
+                    [1.0, 0.0],
+                    [0.5, 1.0],
+                    [0.5, 1.0],
+                    [0.0, 0.0],
+                    [0.0, 0.0],
+                ]
+                .concat(),
+            ]
+            .concat(),
+        );
+
+        let normal_buffer = gl.create_vbo_with_f32array(
+            &[
+                [0.0, -1.0, 0.0],
+                [0.0, -1.0, 0.0],
+                [0.0, -1.0, 0.0],
+                [0.0, -1.0, 0.0],
+                [0.0, -1.0, 0.0],
+                [0.0, -1.0, 0.0],
+                [0.0, -1.0, 0.0],
+                [0.0, -1.0, 0.0],
+                [0.0, -1.0, 0.0],
+            ]
+            .concat(),
+        );
+
+        let index_buffer = gl.create_ibo_with_i16array(
+            &[
+                [[0, 1, 2]].concat(),
+                [[3, 4, 5, 6, 5, 4], [5, 6, 7, 8, 7, 6]].concat(),
+            ]
+            .concat(),
+        );
 
         Self {
             vertex_buffer,
@@ -118,15 +166,16 @@ impl Arrow {
 
 impl Nameplate {
     pub fn new(gl: &WebGlRenderingContext) -> Self {
-        let arrow_w = 0.5;
-        let arrow_h = 0.25;
+        let arrow_w = 0.2;
+        let arrow_h = 0.1;
+        let arrow_l = 0.03;
         let plate = Plate::new(gl);
-        let arrow = Arrow::new(gl, arrow_w, arrow_h);
+        let arrow = Arrow::new(gl, arrow_w, arrow_h, arrow_l);
 
         Self {
             plate,
             arrow,
-            arrow_h,
+            arrow_h: arrow_h + arrow_l,
         }
     }
 
@@ -146,6 +195,7 @@ impl Nameplate {
         gl.set_u_expand(0.0);
         gl.set_u_camera_position(camera_position);
         gl.set_u_vp_matrix(vp_matrix.clone().reversed_axes());
+        gl.set_u_bg_color_1(program::COLOR_NONE);
         gl.set_u_bg_color_2(program::COLOR_NONE);
         gl.set_u_texture_1(program::TEXTURE_NONE);
         gl.set_u_texture_2(program::TEXTURE_NONE);
@@ -167,8 +217,8 @@ impl Nameplate {
             web_sys::WebGlRenderingContext::ELEMENT_ARRAY_BUFFER,
             Some(&self.plate.index_buffer),
         );
-        gl.set_u_bg_color_1(program::COLOR_NONE);
         gl.set_u_texture_0(program::TEXTURE_TEXT);
+        gl.set_u_v_color_mask(program::V_COLOR_MASK_NONE);
         self.render_by_loop(
             gl,
             vp_matrix,
@@ -188,10 +238,8 @@ impl Nameplate {
             web_sys::WebGlRenderingContext::ELEMENT_ARRAY_BUFFER,
             Some(&self.arrow.index_buffer),
         );
-        gl.set_u_bg_color_1(program::COLOR_NONE);
-        gl.set_u_texture_0(program::TEXTURE_TEXT);
-        gl.set_u_bg_color_1(program::COLOR_SOME);
         gl.set_u_texture_0(program::TEXTURE_NONE);
+        gl.set_u_v_color_mask(program::V_COLOR_MASK_SOME);
         self.render_by_loop(
             gl,
             vp_matrix,
@@ -304,7 +352,8 @@ impl Nameplate {
                 camera_matrix,
                 &size,
                 position,
-                offset + self.arrow_h,
+                offset,
+                self.arrow_h,
                 6,
             );
         }
@@ -318,19 +367,29 @@ impl Nameplate {
         position: &[f64; 3],
         offset: f32,
     ) {
+        gl.set_u_v_color_mask_fill_color(&color.to_f32array());
         if color.v() > 0.95 {
-            gl.set_u_bg_color_1_value(
+            gl.set_u_v_color_mask_stroke_color(
                 &crate::libs::color::Pallet::gray(9).to_color().to_f32array(),
             );
         } else {
-            gl.set_u_bg_color_1_value(
+            gl.set_u_v_color_mask_stroke_color(
                 &crate::libs::color::Pallet::gray(0).to_color().to_f32array(),
             );
         }
 
         let size = [1.0, 0.0, 1.0];
 
-        Self::render_arrow_plate(gl, vp_matrix, camera_matrix, &size, position, offset, 3);
+        Self::render_arrow_plate(
+            gl,
+            vp_matrix,
+            camera_matrix,
+            &size,
+            position,
+            offset,
+            0.0,
+            15,
+        );
     }
 
     fn render_arrow_plate(
@@ -339,18 +398,20 @@ impl Nameplate {
         camera_matrix: &CameraMatrix,
         size: &[f32; 3],
         position: &[f64; 3],
-        offset: f32,
+        offset_z: f32,
+        offset_a: f32,
         v_count: i32,
     ) {
         let s = size;
         let p = [
             position[0] as f32,
             position[1] as f32,
-            position[2] as f32 + offset,
+            position[2] as f32 + offset_z,
         ];
 
         let model_matrix: Array2<f32> = ModelMatrix::new()
             .with_scale(&s)
+            .with_movement(&[0.0, 0.0, offset_a])
             .with_x_axis_rotation(camera_matrix.x_axis_rotation() - std::f32::consts::FRAC_PI_2)
             .with_z_axis_rotation(camera_matrix.z_axis_rotation())
             .with_movement(&p)
@@ -360,6 +421,7 @@ impl Nameplate {
             .with_movement(&[-p[0], -p[1], -p[2]])
             .with_z_axis_rotation(-camera_matrix.z_axis_rotation())
             .with_x_axis_rotation(-(camera_matrix.x_axis_rotation() - std::f32::consts::FRAC_PI_2))
+            .with_movement(&[0.0, 0.0, -offset_a])
             .with_scale(&[1.0 / s[0], 1.0 / s[1], 1.0 / s[2]])
             .into();
 

@@ -28,7 +28,7 @@ fn resize_depthbuffer(
     );
 }
 
-fn resize_stencilbuffer(
+fn resize_depth_stencilbuffer(
     gl: &WebGlRenderingContext,
     buf: &web_sys::WebGlRenderbuffer,
     width: i32,
@@ -37,7 +37,7 @@ fn resize_stencilbuffer(
     gl.bind_renderbuffer(web_sys::WebGlRenderingContext::RENDERBUFFER, Some(&buf));
     gl.renderbuffer_storage(
         web_sys::WebGlRenderingContext::RENDERBUFFER,
-        web_sys::WebGlRenderingContext::STENCIL_INDEX8,
+        web_sys::WebGlRenderingContext::DEPTH_STENCIL,
         width,
         height,
     );

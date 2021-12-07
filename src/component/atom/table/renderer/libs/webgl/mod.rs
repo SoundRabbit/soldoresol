@@ -247,6 +247,9 @@ impl WebGlRenderingContext {
 
     setter!(unif u_translate: matrix4fv as set_u_translate);
     setter!(unif u_expand: 1f as set_u_expand);
+    setter!(unif u_v_color_mask: 1i as set_u_v_color_mask);
+    setter!(unif u_v_color_mask_fill_color: 4fv as set_u_v_color_mask_fill_color);
+    setter!(unif u_v_color_mask_stroke_color: 4fv as set_u_v_color_mask_stroke_color);
 
     setter!(unif u_camera_position: 3fv as set_u_camera_position);
     setter!(unif u_inv_model_matrix: matrix4fv as set_u_inv_model_matrix);

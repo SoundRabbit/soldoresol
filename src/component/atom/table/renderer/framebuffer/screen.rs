@@ -3,8 +3,7 @@ use super::libs::webgl::WebGlRenderingContext;
 use crate::libs::random_id::U128Id;
 
 pub struct Screen {
-    depth_buffer: web_sys::WebGlRenderbuffer,
-    stencil_biffer: web_sys::WebGlRenderbuffer,
+    depth_stencil_biffer: web_sys::WebGlRenderbuffer,
     backscreen_tex: (web_sys::WebGlTexture, U128Id),
     frontscreen_tex: (web_sys::WebGlTexture, U128Id),
     frame_buffer: web_sys::WebGlFramebuffer,
@@ -26,27 +25,17 @@ impl Screen {
             Some(&frame_buffer),
         );
 
-        let depth_buffer = gl.create_renderbuffer().unwrap();
-        super::resize_depthbuffer(&gl, &depth_buffer, width, height);
+        let depth_stencil_biffer = gl.create_renderbuffer().unwrap();
+        super::resize_depth_stencilbuffer(&gl, &depth_stencil_biffer, width, height);
         gl.framebuffer_renderbuffer(
             web_sys::WebGlRenderingContext::FRAMEBUFFER,
-            web_sys::WebGlRenderingContext::DEPTH_ATTACHMENT,
+            web_sys::WebGlRenderingContext::DEPTH_STENCIL_ATTACHMENT,
             web_sys::WebGlRenderingContext::RENDERBUFFER,
-            Some(&depth_buffer),
-        );
-
-        let stencil_biffer = gl.create_renderbuffer().unwrap();
-        super::resize_stencilbuffer(&gl, &depth_buffer, width, height);
-        gl.framebuffer_renderbuffer(
-            web_sys::WebGlRenderingContext::FRAMEBUFFER,
-            web_sys::WebGlRenderingContext::STENCIL_ATTACHMENT,
-            web_sys::WebGlRenderingContext::RENDERBUFFER,
-            Some(&stencil_biffer),
+            Some(&depth_stencil_biffer),
         );
 
         Self {
-            depth_buffer,
-            stencil_biffer,
+            depth_stencil_biffer,
             frontscreen_tex,
             backscreen_tex,
             frame_buffer,
@@ -60,7 +49,7 @@ impl Screen {
         height: i32,
         tex_table: &mut TexTable,
     ) {
-        super::resize_depthbuffer(&gl, &self.depth_buffer, width, height);
+        super::resize_depth_stencilbuffer(&gl, &self.depth_stencil_biffer, width, height);
         super::resize_texturebuffer(
             &gl,
             &self.backscreen_tex.0,

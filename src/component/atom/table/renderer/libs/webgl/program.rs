@@ -6,6 +6,9 @@ use web_sys::WebGlUniformLocation;
 pub const PERSPECTIVE_NORMAL: i32 = 0x00000000;
 pub const PERSPECTIVE_PROJECTION: i32 = 0x00000001;
 
+pub const V_COLOR_MASK_NONE: i32 = 0x00000000;
+pub const V_COLOR_MASK_SOME: i32 = 0x00000001;
+
 pub const COLOR_NONE: i32 = 0x00000000;
 pub const COLOR_SOME: i32 = 0x00000001;
 
@@ -107,6 +110,11 @@ pub trait Program {
     // unif変数
     accesser!(u_translate: WebGlUniformLocation as None);
     accesser!(u_expand: WebGlUniformLocation as None);
+
+    // 頂点色の編集
+    accesser!(u_v_color_mask: WebGlUniformLocation as None);
+    accesser!(u_v_color_mask_fill_color: WebGlUniformLocation as None);
+    accesser!(u_v_color_mask_stroke_color: WebGlUniformLocation as None);
 
     // fragシェーダー
     // unif変数
@@ -264,6 +272,9 @@ pub struct ShapedProgram {
 
     u_translate: Option<WebGlUniformLocation>,
     u_expand: Option<WebGlUniformLocation>,
+    u_v_color_mask: Option<WebGlUniformLocation>,
+    u_v_color_mask_fill_color: Option<WebGlUniformLocation>,
+    u_v_color_mask_stroke_color: Option<WebGlUniformLocation>,
 
     u_camera_position: Option<WebGlUniformLocation>,
     u_inv_model_matrix: Option<WebGlUniformLocation>,
@@ -327,6 +338,9 @@ impl ShapedProgram {
             a_vertex: attr("a_vertex", gl, &program),
             u_translate: unif("u_translate", gl, &program),
             u_expand: unif("u_expand", gl, &program),
+            u_v_color_mask: unif("u_vColorMask", gl, &program),
+            u_v_color_mask_fill_color: unif("u_vColorMaskFillColor", gl, &program),
+            u_v_color_mask_stroke_color: unif("u_vColorMaskStrokeColor", gl, &program),
             u_camera_position: unif("u_cameraPosition", gl, &program),
             u_inv_model_matrix: unif("u_invModelMatrix", gl, &program),
             u_model_matrix: unif("u_modelMatrix", gl, &program),
@@ -389,6 +403,11 @@ impl Program for ShapedProgram {
     // unif変数
     accesser!(u_translate: WebGlUniformLocation);
     accesser!(u_expand: WebGlUniformLocation);
+
+    // 頂点色の編集
+    accesser!(u_v_color_mask: WebGlUniformLocation);
+    accesser!(u_v_color_mask_fill_color: WebGlUniformLocation);
+    accesser!(u_v_color_mask_stroke_color: WebGlUniformLocation);
 
     // fragシェーダー
     // unif変数
@@ -460,6 +479,9 @@ pub struct UnshapedProgram {
 
     u_translate: Option<WebGlUniformLocation>,
     u_expand: Option<WebGlUniformLocation>,
+    u_v_color_mask: Option<WebGlUniformLocation>,
+    u_v_color_mask_fill_color: Option<WebGlUniformLocation>,
+    u_v_color_mask_stroke_color: Option<WebGlUniformLocation>,
 
     u_camera_position: Option<WebGlUniformLocation>,
     u_inv_model_matrix: Option<WebGlUniformLocation>,
@@ -523,6 +545,9 @@ impl UnshapedProgram {
             a_vertex: attr("a_vertex", gl, &program),
             u_translate: unif("u_translate", gl, &program),
             u_expand: unif("u_expand", gl, &program),
+            u_v_color_mask: unif("u_vColorMask", gl, &program),
+            u_v_color_mask_fill_color: unif("u_vColorMaskFillColor", gl, &program),
+            u_v_color_mask_stroke_color: unif("u_vColorMaskStrokeColor", gl, &program),
             u_camera_position: unif("u_cameraPosition", gl, &program),
             u_inv_model_matrix: unif("u_invModelMatrix", gl, &program),
             u_perspective: unif("u_perspective", gl, &program),
@@ -585,6 +610,11 @@ impl Program for UnshapedProgram {
     // unif変数
     accesser!(u_translate: WebGlUniformLocation);
     accesser!(u_expand: WebGlUniformLocation);
+
+    // 頂点色の編集
+    accesser!(u_v_color_mask: WebGlUniformLocation);
+    accesser!(u_v_color_mask_fill_color: WebGlUniformLocation);
+    accesser!(u_v_color_mask_stroke_color: WebGlUniformLocation);
 
     // fragシェーダー
     // unif変数
