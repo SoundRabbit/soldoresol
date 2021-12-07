@@ -164,10 +164,10 @@ impl Render for RoomModelessBoxblock {
             Events::new(),
             vec![
                 self.boxblock
-                    .map(|data| self.render_boxblock_header(data))
+                    .map(|data| self.render_header(data))
                     .unwrap_or(Common::none()),
                 self.boxblock
-                    .map(|data| self.render_boxblock_main(data))
+                    .map(|data| self.render_main(data))
                     .unwrap_or(Common::none()),
                 match &self.showing_modal {
                     ShowingModal::None => Html::none(),
@@ -198,7 +198,7 @@ impl Render for RoomModelessBoxblock {
 }
 
 impl RoomModelessBoxblock {
-    fn render_boxblock_header(&self, boxblock: &block::Boxblock) -> Html<Self> {
+    fn render_header(&self, boxblock: &block::Boxblock) -> Html<Self> {
         Html::div(
             Attributes::new().class(RoomModeless::class("common-header")),
             Events::new(),
@@ -241,7 +241,7 @@ impl RoomModelessBoxblock {
         )
     }
 
-    fn render_boxblock_main(&self, boxblock: &block::Boxblock) -> Html<Self> {
+    fn render_main(&self, boxblock: &block::Boxblock) -> Html<Self> {
         Html::div(
             Attributes::new().class(Self::class("main")),
             Events::new(),

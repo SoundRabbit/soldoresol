@@ -20,6 +20,9 @@ impl Room {
                     ShowingContextmenuData::Character(block) => {
                         self.render_contextmenu_character(block)
                     }
+                    ShowingContextmenuData::Craftboard(block) => {
+                        self.render_contextmenu_craftboard(block)
+                    }
                 },
             )],
         )
@@ -45,6 +48,20 @@ impl Room {
             Events::new().on_click({
                 let block_id = character.id();
                 move |_| Msg::OpenCharacterModeless(block_id)
+            }),
+            vec![Html::text("詳細を表示")],
+        )]
+    }
+
+    fn render_contextmenu_craftboard(
+        &self,
+        craftboard: &BlockMut<block::Craftboard>,
+    ) -> Vec<Html<Self>> {
+        vec![Btn::menu(
+            Attributes::new(),
+            Events::new().on_click({
+                let block_id = craftboard.id();
+                move |_| Msg::OpenCraftboardModeless(block_id)
             }),
             vec![Html::text("詳細を表示")],
         )]

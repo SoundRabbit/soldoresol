@@ -1,5 +1,4 @@
-use super::atom::btn::{self, Btn};
-use super::atom::dropdown::{self, Dropdown};
+use super::atom::btn::Btn;
 use super::atom::fa;
 use super::atom::slider::{self, Slider};
 use super::atom::text;
@@ -164,10 +163,10 @@ impl Render for RoomModelessCharacter {
             Events::new(),
             vec![
                 self.character
-                    .map(|data| self.render_boxblock_header(data))
+                    .map(|data| self.render_header(data))
                     .unwrap_or(Common::none()),
                 self.character
-                    .map(|data| self.render_boxblock_main(data))
+                    .map(|data| self.render_main(data))
                     .unwrap_or(Common::none()),
                 match &self.showing_modal {
                     ShowingModal::None => Html::none(),
@@ -198,7 +197,7 @@ impl Render for RoomModelessCharacter {
 }
 
 impl RoomModelessCharacter {
-    fn render_boxblock_header(&self, character: &block::Character) -> Html<Self> {
+    fn render_header(&self, character: &block::Character) -> Html<Self> {
         Html::div(
             Attributes::new().class(RoomModeless::class("common-header")),
             Events::new(),
@@ -241,7 +240,7 @@ impl RoomModelessCharacter {
         )
     }
 
-    fn render_boxblock_main(&self, character: &block::Character) -> Html<Self> {
+    fn render_main(&self, character: &block::Character) -> Html<Self> {
         Html::div(
             Attributes::new().class(Self::class("main")),
             Events::new(),

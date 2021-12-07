@@ -1,6 +1,7 @@
 use super::organism::room_modeless_boxblock::{self, RoomModelessBoxblock};
 use super::organism::room_modeless_character::{self, RoomModelessCharacter};
 use super::organism::room_modeless_chat::{self, RoomModelessChat};
+use super::organism::room_modeless_craftboard::{self, RoomModelessCraftboard};
 use crate::arena::{block, ArenaMut, BlockMut};
 use crate::libs::random_id::U128Id;
 use isaribi::{
@@ -25,6 +26,7 @@ pub enum ContentData {
     ChatChannel(BlockMut<block::ChatChannel>),
     Boxblock(BlockMut<block::Boxblock>),
     Character(BlockMut<block::Character>),
+    Craftboard(BlockMut<block::Craftboard>),
 }
 
 pub enum Msg {
@@ -100,6 +102,18 @@ impl Render for RoomModeless {
                 },
                 Sub::map(|sub| match sub {
                     room_modeless_character::On::UpdateBlocks { insert, update } => {
+                        Msg::Sub(On::UpdateBlocks { insert, update })
+                    }
+                }),
+            ),
+            ContentData::Craftboard(craftboard) => RoomModelessCraftboard::empty(
+                room_modeless_craftboard::Props {
+                    arena: ArenaMut::clone(&content.arena),
+                    world: BlockMut::clone(&content.world),
+                    data: BlockMut::clone(&craftboard),
+                },
+                Sub::map(|sub| match sub {
+                    room_modeless_craftboard::On::UpdateBlocks { insert, update } => {
                         Msg::Sub(On::UpdateBlocks { insert, update })
                     }
                 }),
@@ -183,6 +197,19 @@ impl Render for TabName {
                         Attributes::new(),
                         Events::new(),
                         vec![fa::i("fa-user"), Html::text(" "), Html::text(c.name())],
+                    )
+                })
+                .unwrap_or(Html::none()),
+            ContentData::Craftboard(craftboard) => craftboard
+                .map(|cb| {
+                    Html::span(
+                        Attributes::new(),
+                        Events::new(),
+                        vec![
+                            fa::i("fa-border-all"),
+                            Html::text(" "),
+                            Html::text(cb.name()),
+                        ],
                     )
                 })
                 .unwrap_or(Html::none()),

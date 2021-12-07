@@ -8,6 +8,7 @@ block! {
     [pub Craftboard(constructor, pack)]
     (position): [f64; 3];
     name: String = String::new();
+    display_name: (String, String) = (String::from(""), String::from(""));
     size: [f64; 2] = [10.0, 10.0];
     is_bind_to_grid: bool = true;
     is_showing_grid: bool = true;
@@ -20,8 +21,22 @@ impl Craftboard {
     pub fn position(&self) -> &[f64; 3] {
         &self.position
     }
+    pub fn set_name(&mut self, name: String) {
+        self.name = name;
+    }
     pub fn name(&self) -> &String {
         &self.name
+    }
+    pub fn set_display_name(&mut self, display_name: (Option<String>, Option<String>)) {
+        if let Some(main) = display_name.0 {
+            self.display_name.0 = main;
+        }
+        if let Some(sub) = display_name.1 {
+            self.display_name.1 = sub;
+        }
+    }
+    pub fn display_name(&self) -> &(String, String) {
+        &self.display_name
     }
     pub fn set_size(&mut self, size: [f64; 2]) {
         self.size = size;
@@ -34,6 +49,9 @@ impl Craftboard {
     }
     pub fn is_showing_grid(&self) -> bool {
         self.is_showing_grid
+    }
+    pub fn set_grid_color(&mut self, grid_color: Pallet) {
+        self.grid_color = grid_color;
     }
     pub fn grid_color(&self) -> &Pallet {
         &self.grid_color
