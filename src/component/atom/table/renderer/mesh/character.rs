@@ -179,12 +179,22 @@ impl Character {
 
                             let model_matrix: Array2<f32> = ModelMatrix::new()
                                 .with_scale(&s)
+                                .with_x_axis_rotation(if is_2d_mode {
+                                    camera_matrix.x_axis_rotation() - std::f32::consts::FRAC_PI_2
+                                } else {
+                                    0.0
+                                })
                                 .with_z_axis_rotation(camera_matrix.z_axis_rotation())
                                 .with_movement(&p)
                                 .into();
                             let inv_model_matrix: Array2<f32> = ModelMatrix::new()
                                 .with_movement(&[-p[0], -p[1], -p[2]])
                                 .with_z_axis_rotation(-camera_matrix.z_axis_rotation())
+                                .with_x_axis_rotation(if is_2d_mode {
+                                    -(camera_matrix.x_axis_rotation() - std::f32::consts::FRAC_PI_2)
+                                } else {
+                                    0.0
+                                })
                                 .with_scale(&[1.0 / s[0], 1.0 / s[1], 1.0 / s[2]])
                                 .into();
                             let mvp_matrix = vp_matrix.dot(&model_matrix);

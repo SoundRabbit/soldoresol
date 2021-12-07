@@ -226,6 +226,7 @@ impl Nameplate {
             tex_table,
             boxblocks,
             characters,
+            is_2d_mode,
             true,
         );
 
@@ -247,6 +248,7 @@ impl Nameplate {
             tex_table,
             boxblocks,
             characters,
+            is_2d_mode,
             false,
         );
     }
@@ -259,6 +261,7 @@ impl Nameplate {
         tex_table: &mut TexTable,
         boxblocks: &Vec<BlockMut<block::Boxblock>>,
         characters: &Vec<BlockMut<block::Character>>,
+        is_2d_mode: bool,
         is_plate: bool,
     ) {
         for boxblock in boxblocks {
@@ -274,6 +277,7 @@ impl Nameplate {
                             &boxblock.color().to_color(),
                             boxblock.position(),
                             boxblock.size()[2] as f32 * 0.5,
+                            false,
                         );
                     } else {
                         Self::render_arrow(
@@ -283,6 +287,7 @@ impl Nameplate {
                             &boxblock.color().to_color(),
                             boxblock.position(),
                             boxblock.size()[2] as f32 * 0.5,
+                            false,
                         );
                     }
                 }
@@ -303,6 +308,7 @@ impl Nameplate {
                             &character.color().to_color(),
                             character.position(),
                             (character.size() * character.tex_size()) as f32,
+                            is_2d_mode,
                         );
                     } else {
                         Self::render_arrow(
@@ -312,6 +318,7 @@ impl Nameplate {
                             &character.color().to_color(),
                             character.position(),
                             (character.size() * character.tex_size()) as f32,
+                            is_2d_mode,
                         );
                     }
                 }
@@ -329,6 +336,7 @@ impl Nameplate {
         color: &crate::libs::color::Color,
         position: &[f64; 3],
         offset: f32,
+        is_2d_mode: bool,
     ) {
         if let Some((tex_idx, s)) = tex_table.use_nameplate(gl, name) {
             gl.set_u_texture_0_text_fill_color(&color.to_f32array());
@@ -352,8 +360,12 @@ impl Nameplate {
                 camera_matrix,
                 &size,
                 position,
-                offset,
-                self.arrow_h,
+                if is_2d_mode {
+                    self.arrow_h + offset
+                } else {
+                    self.arrow_h
+                },
+                if is_2d_mode { 0.0 } else { offset },
                 6,
             );
         }
@@ -366,6 +378,7 @@ impl Nameplate {
         color: &crate::libs::color::Color,
         position: &[f64; 3],
         offset: f32,
+        is_2d_mode: bool,
     ) {
         gl.set_u_v_color_mask_fill_color(&color.to_f32array());
         if color.v() > 0.95 {
@@ -386,8 +399,8 @@ impl Nameplate {
             camera_matrix,
             &size,
             position,
-            offset,
-            0.0,
+            if is_2d_mode { offset } else { 0.0 },
+            if is_2d_mode { 0.0 } else { offset },
             15,
         );
     }
@@ -398,8 +411,8 @@ impl Nameplate {
         camera_matrix: &CameraMatrix,
         size: &[f32; 3],
         position: &[f64; 3],
-        offset_z: f32,
         offset_a: f32,
+        offset_z: f32,
         v_count: i32,
     ) {
         let s = size;
