@@ -17,7 +17,7 @@ impl Screen {
         tex_table: &mut TexTable,
     ) -> Self {
         let depth_buffer = gl.create_renderbuffer().unwrap();
-        super::resize_renderbuffer(&gl, &depth_buffer, width, height);
+        super::resize_depthbuffer(&gl, &depth_buffer, width, height);
 
         let backscreen_tex = super::create_screen_texture(&gl, tex_table, width, height, None);
 
@@ -51,7 +51,7 @@ impl Screen {
         height: i32,
         tex_table: &mut TexTable,
     ) {
-        super::resize_renderbuffer(&gl, &self.depth_buffer, width, height);
+        super::resize_depthbuffer(&gl, &self.depth_buffer, width, height);
         super::resize_texturebuffer(
             &gl,
             &self.backscreen_tex.0,

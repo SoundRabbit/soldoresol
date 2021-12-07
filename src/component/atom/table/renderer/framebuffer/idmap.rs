@@ -16,7 +16,7 @@ impl Idmap {
         tex_table: &mut TexTable,
     ) -> Self {
         let depth_buffer = gl.create_renderbuffer().unwrap();
-        super::resize_renderbuffer(&gl, &depth_buffer, width, height);
+        super::resize_depthbuffer(&gl, &depth_buffer, width, height);
 
         let screen_tex = super::create_screen_texture(&gl, tex_table, width, height, None);
         let frame_buffer = gl.create_framebuffer().unwrap();
@@ -53,7 +53,7 @@ impl Idmap {
         height: i32,
         tex_table: &mut TexTable,
     ) {
-        super::resize_renderbuffer(&gl, &self.depth_buffer, width, height);
+        super::resize_depthbuffer(&gl, &self.depth_buffer, width, height);
         super::resize_texturebuffer(
             &gl,
             &self.screen_tex.0,

@@ -13,7 +13,7 @@ pub use screen::Screen;
 pub use shadowmap::Shadowmap;
 pub use view::View;
 
-fn resize_renderbuffer(
+fn resize_depthbuffer(
     gl: &WebGlRenderingContext,
     buf: &web_sys::WebGlRenderbuffer,
     width: i32,

@@ -18,7 +18,7 @@ impl Shadowmap {
         let [sw, sh] = Self::size();
         let sw = sw as i32;
         let sh = sh as i32;
-        super::resize_renderbuffer(&gl, &depth_buffer, sw, sh);
+        super::resize_depthbuffer(&gl, &depth_buffer, sw, sh);
 
         let filter = web_sys::WebGlRenderingContext::NEAREST;
         let screen_tex = [
