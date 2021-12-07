@@ -119,7 +119,7 @@ impl Character {
     }
 
     pub fn tex_size(&self) -> f64 {
-        self.size[1] / self.size()
+        (self.size[1] / self.size() * 1000.0).round() / 1000.0
     }
 
     pub fn set_tex_size(&mut self, tex_size: f64) {
