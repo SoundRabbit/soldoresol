@@ -173,6 +173,17 @@ impl CameraMatrix {
         [p[0], p[1], p[2]]
     }
 
+    pub fn position_vec(&self, p: &[f32; 3]) -> [f32; 3] {
+        let r = self.position();
+        [r[0] - p[0], r[1] - p[1], r[2] - p[2]]
+    }
+
+    pub fn position_vec_n(&self, p: &[f32; 3]) -> [f32; 3] {
+        let n = self.position_vec(p);
+        let len = (n[0].powi(2) + n[1].powi(2) + n[2].powi(2)).sqrt();
+        [n[0] / len, n[1] / len, n[2] / len]
+    }
+
     pub fn perspective_matrix(&self, canvas_size: &[f32; 2]) -> Array2<f32> {
         let w = canvas_size[0];
         let h = canvas_size[1];

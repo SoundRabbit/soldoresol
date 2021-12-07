@@ -5,11 +5,6 @@ use crate::arena::{block, BlockRef};
 use crate::libs::random_id::U128Id;
 use ndarray::Array2;
 
-pub enum RenderingMode {
-    IdMap,
-    View,
-}
-
 pub struct CraftboardCover {
     vertex_buffer: WebGlF32Vbo,
     v_color_buffer: WebGlF32Vbo,
@@ -210,7 +205,6 @@ impl CraftboardCover {
         vp_matrix: &Array2<f32>,
         camera_position: &[f32; 3],
         craftboards: impl Iterator<Item = BlockRef<block::Craftboard>>,
-        rendering_mode: &RenderingMode,
         is_2d_mode: bool,
     ) {
         gl.use_program(ProgramType::UnshapedProgram);

@@ -256,6 +256,14 @@ impl Table {
     ) -> Option<block::Character> {
         let renderer = unwrap!(self.renderer.as_ref());
         let (p, _) = renderer.get_focused_position(&self.camera_matrix, px_x, px_y);
+        let n = self
+            .camera_matrix
+            .position_vec_n(&[p[0] as f32, p[1] as f32, p[2] as f32]);
+        let p = [
+            p[0] + n[0] as f64 / 128.0,
+            p[1] + n[1] as f64 / 128.0,
+            p[2] + n[2] as f64 / 128.0,
+        ];
 
         let mut character = block::Character::new();
 

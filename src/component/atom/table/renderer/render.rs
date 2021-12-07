@@ -146,6 +146,21 @@ impl Renderer {
             });
 
             world.map(|world| {
+                table.map(|table: &block::Table| {
+                    self.nameplate_mesh.render(
+                        &mut self.gl,
+                        &vp_matrix,
+                        &camera_position,
+                        &camera_matrix,
+                        table.boxblocks(),
+                        world.characters(),
+                        camera_matrix.is_2d_mode(),
+                        &mut self.tex_table,
+                    );
+                });
+            });
+
+            world.map(|world| {
                 self.character_mesh.render(
                     &mut self.gl,
                     &self.id_table,
@@ -160,21 +175,6 @@ impl Renderer {
                     camera_matrix.is_2d_mode(),
                     &mut self.tex_table,
                 );
-            });
-
-            world.map(|world| {
-                table.map(|table: &block::Table| {
-                    self.nameplate_mesh.render(
-                        &mut self.gl,
-                        &vp_matrix,
-                        &camera_position,
-                        &camera_matrix,
-                        table.boxblocks(),
-                        world.characters(),
-                        camera_matrix.is_2d_mode(),
-                        &mut self.tex_table,
-                    );
-                });
             });
 
             self.render_frontscreen(&cs);
@@ -202,7 +202,6 @@ impl Renderer {
                     .craftboards()
                     .iter()
                     .map(BlockMut::<block::Craftboard>::as_ref),
-                &mesh::craftboard_cover::RenderingMode::IdMap,
                 camera_matrix.is_2d_mode(),
             );
         });
