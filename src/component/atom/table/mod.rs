@@ -48,6 +48,18 @@ pub struct Table {
 
     is_2d_mode: bool,
     is_debug_mode: bool,
+
+    mouse_state: MouseState,
+}
+
+struct MouseState {
+    left_btn: MouseLeftBtnState,
+    last_cursor_position: [f64; 2],
+}
+
+struct MouseLeftBtnState {
+    is_dragging: bool,
+    alt_key: bool,
 }
 
 impl Component for Table {
@@ -68,6 +80,14 @@ impl Table {
             world,
             is_2d_mode: false,
             is_debug_mode: false,
+
+            mouse_state: MouseState {
+                left_btn: MouseLeftBtnState {
+                    is_dragging: false,
+                    alt_key: false,
+                },
+                last_cursor_position: [0.0, 0.0],
+            },
         })
     }
 }
@@ -215,24 +235,18 @@ impl Table {
         self.cmds.push(Self::render());
     }
 
-    pub fn table_coord(&self, e: &web_sys::MouseEvent) -> [f64; 2] {
-        let page_x = e.page_x() as f64;
-        let page_y = e.page_y() as f64;
-        let rect =
-            unwrap!(self.canvas.as_ref().map(|x| x.get_bounding_client_rect()); [page_x, page_y]);
+    pub fn mouse_coord(&self, page_x: f64, page_y: f64) -> Option<[f64; 2]> {
+        let rect = unwrap!(self.canvas.as_ref().map(|x| x.get_bounding_client_rect()); None);
         let client_x = page_x - rect.left();
         let client_y = page_y - rect.top();
-        [client_x, client_y]
+        Some([client_x, client_y])
     }
 
-    pub fn create_boxblock(
-        &self,
-        px_x: f64,
-        px_y: f64,
-        option: &table_tool::Boxblock,
-    ) -> Option<block::Boxblock> {
-        let renderer = unwrap!(self.renderer.as_ref(); None);
-        let (p, n) = renderer.get_focused_position(&self.camera_matrix, px_x, px_y);
+    pub fn create_boxblock(&mut self, mouse_coord: &[f64; 2], option: &table_tool::Boxblock) {
+        let mut table = unwrap!(self.selecting_table());
+        let renderer = unwrap!(self.renderer.as_ref());
+        let (p, n) =
+            renderer.get_focused_position(&self.camera_matrix, mouse_coord[0], mouse_coord[1]);
         let n = Self::n_cube(&n, &option.size);
         let p = [p[0] + n[0], p[1] + n[1], p[2] + n[2]];
 
@@ -246,17 +260,22 @@ impl Table {
         boxblock.set_texture(option.texture.as_ref().map(|block| BlockMut::clone(block)));
         boxblock.set_shape(option.shape.clone());
 
-        Some(boxblock)
+        let boxblock = self.arena.insert(boxblock);
+        let boxblock_id = boxblock.id();
+        table.update(|table| {
+            table.push_boxblock(boxblock);
+        });
+        self.cmds.push(Self::render());
+        self.cmds.push(Cmd::sub(On::UpdateBlocks {
+            update: set! { table.id() },
+            insert: set! { boxblock_id },
+        }));
     }
 
-    pub fn create_character(
-        &self,
-        px_x: f64,
-        px_y: f64,
-        option: &table_tool::Character,
-    ) -> Option<block::Character> {
-        let renderer = unwrap!(self.renderer.as_ref(); None);
-        let (p, _) = renderer.get_focused_position(&self.camera_matrix, px_x, px_y);
+    pub fn create_character(&mut self, mouse_coord: &[f64; 2], option: &table_tool::Character) {
+        let renderer = unwrap!(self.renderer.as_ref());
+        let (p, _) =
+            renderer.get_focused_position(&self.camera_matrix, mouse_coord[0], mouse_coord[1]);
         let n = self
             .camera_matrix
             .position_vec_n(&[p[0] as f32, p[1] as f32, p[2] as f32]);
@@ -274,86 +293,107 @@ impl Table {
         character.set_color(option.color);
         character.set_texture(option.texture.as_ref().map(|block| BlockMut::clone(block)));
 
-        Some(character)
+        let character = self.arena.insert(character);
+        let character_id = character.id();
+        self.world.update(|world| {
+            world.push_character(character);
+        });
+        self.cmds.push(Self::render());
+        self.cmds.push(Cmd::sub(On::UpdateBlocks {
+            update: set! { self.world.id() },
+            insert: set! { character_id },
+        }));
     }
 
-    pub fn create_craftboard(
-        &self,
-        px_x: f64,
-        px_y: f64,
-        option: &table_tool::Craftboard,
-    ) -> Option<block::Craftboard> {
-        let renderer = unwrap!(self.renderer.as_ref(); None);
-        let (p, _) = renderer.get_focused_position(&self.camera_matrix, px_x, px_y);
+    pub fn create_craftboard(&mut self, mouse_coord: &[f64; 2], option: &table_tool::Craftboard) {
+        let mut table = unwrap!(self.selecting_table());
+        let renderer = unwrap!(self.renderer.as_ref());
+        let (p, _) =
+            renderer.get_focused_position(&self.camera_matrix, mouse_coord[0], mouse_coord[1]);
 
         let mut craftboard = block::Craftboard::new(p);
 
         craftboard.set_size(option.size.clone());
 
-        Some(craftboard)
+        let craftboard = self.arena.insert(craftboard);
+        let craftboard_id = craftboard.id();
+        table.update(|table| {
+            table.push_craftboard(craftboard);
+        });
+        self.cmds.push(Self::render());
+        self.cmds.push(Cmd::sub(On::UpdateBlocks {
+            update: set! { table.id() },
+            insert: set! { craftboard_id },
+        }));
+    }
+
+    pub fn rotate_camera(&mut self, movement: &[f64; 2]) {
+        let h_rot = -movement[0] / 500.0;
+        let v_rot = -movement[1] / 500.0;
+
+        self.camera_matrix
+            .set_z_axis_rotation(self.camera_matrix.z_axis_rotation() + h_rot as f32);
+        self.camera_matrix
+            .set_x_axis_rotation(self.camera_matrix.x_axis_rotation() + v_rot as f32, false);
+
+        self.cmds.push(Self::render());
     }
 
     pub fn on_click(&mut self, e: web_sys::MouseEvent, tool: &TableTool) {
-        let page_x = e.page_x() as f64;
-        let page_y = e.page_y() as f64;
-        let rect = unwrap!(self.canvas.as_ref().map(|x| x.get_bounding_client_rect()));
-        let client_x = page_x - rect.left();
-        let client_y = page_y - rect.top();
+        let mouse_coord = unwrap!(self.mouse_coord(e.page_x() as f64, e.page_y() as f64));
 
         match &tool {
             TableTool::Boxblock(tool) => {
-                if let Some((boxblock, mut table)) = join_some!(
-                    self.create_boxblock(client_x, client_y, &tool),
-                    self.selecting_table()
-                ) {
-                    let boxblock = self.arena.insert(boxblock);
-                    let boxblock_id = boxblock.id();
-                    table.update(|table| {
-                        table.push_boxblock(boxblock);
-                    });
-                    self.cmds.push(Self::render());
-                    self.cmds.push(Cmd::sub(On::UpdateBlocks {
-                        update: set! { table.id() },
-                        insert: set! { boxblock_id },
-                    }));
-                }
+                self.create_boxblock(&mouse_coord, tool);
             }
             TableTool::Character(tool) => {
-                if let Some(character) = self.create_character(client_x, client_y, tool) {
-                    let character = self.arena.insert(character);
-                    let character_id = character.id();
-                    self.world.update(|world| {
-                        world.push_character(character);
-                    });
-                    self.cmds.push(Self::render());
-                    self.cmds.push(Cmd::sub(On::UpdateBlocks {
-                        update: set! { self.world.id() },
-                        insert: set! { character_id },
-                    }));
-                }
+                self.create_character(&mouse_coord, tool);
             }
             TableTool::Craftboard(tool) => {
-                if let Some((craftboard, mut table)) = join_some!(
-                    self.create_craftboard(client_x, client_y, tool),
-                    self.selecting_table()
-                ) {
-                    let craftboard = self.arena.insert(craftboard);
-                    let craftboard_id = craftboard.id();
-                    table.update(|table| {
-                        table.push_craftboard(craftboard);
-                    });
-                    self.cmds.push(Self::render());
-                    self.cmds.push(Cmd::sub(On::UpdateBlocks {
-                        update: set! { table.id() },
-                        insert: set! { craftboard_id },
-                    }));
-                }
+                self.create_craftboard(&mouse_coord, tool);
             }
             _ => {}
         }
     }
 
-    pub fn focused_block(&self, px_x: f64, px_y: f64) -> (BlockKind, U128Id) {
+    pub fn on_mousedown(&mut self, e: web_sys::MouseEvent, tool: &TableTool) {
+        let mouse_coord = unwrap!(self.mouse_coord(e.page_x() as f64, e.page_y() as f64));
+        if e.button() == 0 {
+            self.mouse_state.left_btn.is_dragging = true;
+            if e.alt_key() {
+                self.mouse_state.left_btn.alt_key = true;
+            }
+        }
+
+        self.mouse_state.last_cursor_position = mouse_coord;
+    }
+
+    pub fn on_mouseup(&mut self, e: web_sys::MouseEvent, tool: &TableTool) {
+        let mouse_coord = unwrap!(self.mouse_coord(e.page_x() as f64, e.page_y() as f64));
+
+        if e.button() == 0 {
+            self.mouse_state.left_btn.alt_key = false;
+            self.mouse_state.left_btn.is_dragging = false;
+        }
+
+        self.mouse_state.last_cursor_position = mouse_coord;
+    }
+
+    pub fn on_mousemove(&mut self, e: web_sys::MouseEvent, tool: &TableTool) {
+        let mouse_coord = unwrap!(self.mouse_coord(e.page_x() as f64, e.page_y() as f64));
+
+        if self.mouse_state.left_btn.is_dragging && self.mouse_state.left_btn.alt_key {
+            let x_mov = mouse_coord[0] - self.mouse_state.last_cursor_position[0];
+            let y_mov = mouse_coord[1] - self.mouse_state.last_cursor_position[1];
+            self.rotate_camera(&[x_mov, y_mov]);
+        }
+
+        self.mouse_state.last_cursor_position = mouse_coord;
+    }
+
+    pub fn focused_block(&self, page_x: f64, page_y: f64) -> (BlockKind, U128Id) {
+        let [px_x, px_y] =
+            unwrap!(self.mouse_coord(page_x, page_y); (BlockKind::None, U128Id::none()));
         let renderer = unwrap!(self.renderer.as_ref(); (BlockKind::None, U128Id::none()));
 
         match renderer.get_object_id(px_x, px_y) {

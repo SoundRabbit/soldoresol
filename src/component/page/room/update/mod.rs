@@ -168,7 +168,7 @@ impl Update for Room {
                 self.showing_contextmenu = contextmenu;
                 Cmd::none()
             }
-            Msg::OnTableClicked(e) => {
+            Msg::OnTableClick(e) => {
                 if e.target() == e.current_target() {
                     self.table.update(|table| {
                         table.on_click(e, &self.table_tool);
@@ -176,13 +176,36 @@ impl Update for Room {
                 }
                 Cmd::none()
             }
+            Msg::OnTableMousedown(e) => {
+                if e.target() == e.current_target() {
+                    self.table.update(|table| {
+                        table.on_mousedown(e, &self.table_tool);
+                    });
+                }
+                Cmd::none()
+            }
+            Msg::OnTableMouseup(e) => {
+                if e.target() == e.current_target() {
+                    self.table.update(|table| {
+                        table.on_mouseup(e, &self.table_tool);
+                    });
+                }
+                Cmd::none()
+            }
+            Msg::OnTableMousemove(e) => {
+                if e.target() == e.current_target() {
+                    self.table.update(|table| {
+                        table.on_mousemove(e, &self.table_tool);
+                    });
+                }
+                Cmd::none()
+            }
             Msg::OnTableContextmenu(e) => {
                 if e.target() == e.current_target() {
                     e.prevent_default();
-                    let (block_kind, block_id) = self.table.map(|table| {
-                        let [px_x, px_y] = table.table_coord(&e);
-                        table.focused_block(px_x, px_y)
-                    });
+                    let (block_kind, block_id) = self
+                        .table
+                        .map(|table| table.focused_block(e.page_x() as f64, e.page_y() as f64));
                     match block_kind {
                         BlockKind::Boxblock => {
                             if let Some(block) = self.arena.get_mut::<block::Boxblock>(&block_id) {

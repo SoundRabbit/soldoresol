@@ -99,7 +99,10 @@ impl Render for Room {
                                     vec![Html::div(
                                         Attributes::new().class(Self::class("mouse-capture")),
                                         Events::new()
-                                            .on_click(Msg::OnTableClicked)
+                                            .on_click(Msg::OnTableClick)
+                                            .on_mousedown(Msg::OnTableMousedown)
+                                            .on_mouseup(Msg::OnTableMouseup)
+                                            .on_mousemove(Msg::OnTableMousemove)
                                             .on_contextmenu(Msg::OnTableContextmenu),
                                         vec![],
                                     )],
