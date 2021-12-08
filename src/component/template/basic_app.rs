@@ -76,6 +76,7 @@ impl Styled for BasicApp {
                 "top": "0px";
                 "left": "0px";
                 "z-index": "0";
+                "overflow": "hidden";
             }
         }
     }

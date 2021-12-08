@@ -12,9 +12,11 @@ use wasm_bindgen::{prelude::*, JsCast};
 
 mod renderer;
 pub mod table_tool;
+mod table_tool_state;
 
 use renderer::{CameraMatrix, ObjectId, Renderer};
 use table_tool::TableTool;
+use table_tool_state::TableToolState;
 
 pub struct Props {
     pub is_debug_mode: bool,
@@ -41,7 +43,6 @@ pub struct Table {
     canvas: Option<Rc<web_sys::HtmlCanvasElement>>,
     renderer: Option<Renderer>,
     camera_matrix: CameraMatrix,
-    grabbed_object: ObjectId,
 
     arena: ArenaMut,
     world: BlockMut<block::World>,
@@ -49,23 +50,14 @@ pub struct Table {
     is_2d_mode: bool,
     is_debug_mode: bool,
 
-    mouse_state: MouseState,
-}
-
-struct MouseState {
-    left_btn: MouseLeftBtnState,
-    center_btn: MouseCenterBtnState,
+    camera_state: CameraState,
+    tool_state: TableToolState,
     last_cursor_position: [f64; 2],
 }
 
-struct MouseLeftBtnState {
-    is_dragging: bool,
-    alt_key: bool,
-}
-
-struct MouseCenterBtnState {
-    is_dragging: bool,
-    alt_key: bool,
+struct CameraState {
+    is_rotating: bool,
+    is_moving: bool,
 }
 
 impl Component for Table {
@@ -81,23 +73,17 @@ impl Table {
             canvas: None,
             renderer: None,
             camera_matrix: CameraMatrix::new(),
-            grabbed_object: ObjectId::None,
             arena,
             world,
             is_2d_mode: false,
             is_debug_mode: false,
 
-            mouse_state: MouseState {
-                left_btn: MouseLeftBtnState {
-                    is_dragging: false,
-                    alt_key: false,
-                },
-                center_btn: MouseCenterBtnState {
-                    is_dragging: false,
-                    alt_key: false,
-                },
-                last_cursor_position: [0.0, 0.0],
+            camera_state: CameraState {
+                is_rotating: false,
+                is_moving: false,
             },
+            tool_state: TableToolState::None,
+            last_cursor_position: [0.0, 0.0],
         })
     }
 }
@@ -149,11 +135,23 @@ impl Update for Table {
             Msg::Render => {
                 if let Some(renderer) = self.renderer.as_mut() {
                     self.camera_matrix.set_is_2d_mode(self.is_2d_mode);
+
+                    let grabbed_object_id =
+                        if let TableToolState::Selecter(state) = &self.tool_state {
+                            state
+                                .grabbed_object
+                                .as_ref()
+                                .map(|(_, block_id)| U128Id::clone(block_id))
+                                .unwrap_or(U128Id::none())
+                        } else {
+                            U128Id::none()
+                        };
+
                     renderer.render(
                         self.is_debug_mode,
                         props.world.as_ref(),
                         &self.camera_matrix,
-                        &self.grabbed_object,
+                        &grabbed_object_id,
                     );
                 }
                 Cmd::none()
@@ -369,6 +367,34 @@ impl Table {
         self.cmds.push(Self::render());
     }
 
+    pub fn drag_block(&mut self, mouse_coord: &[f64; 2]) {
+        let (block_kind, block_id) =
+            unwrap!(self.tool_state.selecter_mut().grabbed_object.as_ref());
+        let renderer = unwrap!(self.renderer.as_ref());
+        let (p, n) =
+            renderer.get_focused_position(&self.camera_matrix, mouse_coord[0], mouse_coord[1]);
+
+        match block_kind {
+            BlockKind::Boxblock => {
+                if let Some(mut block) = self.arena.get_mut::<block::Boxblock>(block_id) {
+                    let block_id = block.id();
+                    block.update(|block| {
+                        let n = Self::n_cube(&n, block.size());
+                        let p = [p[0] + n[0], p[1] + n[1], p[2] + n[2]];
+                        block.set_position(p);
+
+                        self.cmds.push(Self::render());
+                        self.cmds.push(Cmd::sub(On::UpdateBlocks {
+                            insert: set! {},
+                            update: set! { block_id },
+                        }));
+                    });
+                }
+            }
+            _ => {}
+        }
+    }
+
     pub fn on_click(&mut self, e: web_sys::MouseEvent, tool: &TableTool) {
         let mouse_coord = unwrap!(self.mouse_coord(e.page_x() as f64, e.page_y() as f64));
 
@@ -397,22 +423,34 @@ impl Table {
     }
 
     pub fn on_mousedown(&mut self, e: web_sys::MouseEvent, tool: &TableTool) {
-        let mouse_coord = unwrap!(self.mouse_coord(e.page_x() as f64, e.page_y() as f64));
+        let page_x = e.page_x() as f64;
+        let page_y = e.page_y() as f64;
+        let mouse_coord = unwrap!(self.mouse_coord(page_x, page_y));
         let button = e.button();
 
         if button == 0 {
-            self.mouse_state.left_btn.is_dragging = true;
             if e.alt_key() {
-                self.mouse_state.left_btn.alt_key = true;
+                self.camera_state.is_rotating = true;
+            } else {
+                match tool {
+                    TableTool::Selecter(..) => {
+                        let (block_kind, block_id) = self.focused_block(page_x, page_y);
+
+                        if block_kind != BlockKind::None {
+                            self.tool_state.selecter_mut().grabbed_object =
+                                Some((block_kind, block_id));
+                        } else {
+                            self.camera_state.is_rotating = true;
+                        }
+                    }
+                    _ => {}
+                }
             }
         } else if button == 1 {
-            self.mouse_state.center_btn.is_dragging = true;
-            if e.alt_key() {
-                self.mouse_state.center_btn.alt_key = true;
-            }
+            self.camera_state.is_moving = true;
         }
 
-        self.mouse_state.last_cursor_position = mouse_coord;
+        self.last_cursor_position = mouse_coord;
     }
 
     pub fn on_mouseup(&mut self, e: web_sys::MouseEvent, tool: &TableTool) {
@@ -420,32 +458,45 @@ impl Table {
         let button = e.button();
 
         if button == 0 {
-            self.mouse_state.left_btn.alt_key = false;
-            self.mouse_state.left_btn.is_dragging = false;
+            self.camera_state.is_rotating = false;
+
+            match tool {
+                TableTool::Selecter(..) => {
+                    self.tool_state.selecter_mut().grabbed_object = None;
+                    self.cmds.push(Self::render());
+                }
+                _ => {}
+            }
         } else if button == 1 {
-            self.mouse_state.center_btn.is_dragging = false;
-            self.mouse_state.center_btn.alt_key = false;
+            self.camera_state.is_moving = false;
         }
 
-        self.mouse_state.last_cursor_position = mouse_coord;
+        self.last_cursor_position = mouse_coord;
     }
 
     pub fn on_mousemove(&mut self, e: web_sys::MouseEvent, tool: &TableTool) {
         let mouse_coord = unwrap!(self.mouse_coord(e.page_x() as f64, e.page_y() as f64));
 
-        if self.mouse_state.left_btn.is_dragging && self.mouse_state.left_btn.alt_key {
-            let x_mov = mouse_coord[0] - self.mouse_state.last_cursor_position[0];
-            let y_mov = mouse_coord[1] - self.mouse_state.last_cursor_position[1];
+        if self.camera_state.is_rotating {
+            let x_mov = mouse_coord[0] - self.last_cursor_position[0];
+            let y_mov = mouse_coord[1] - self.last_cursor_position[1];
             self.rotate_camera(&[x_mov, y_mov]);
         }
 
-        if self.mouse_state.center_btn.is_dragging && self.mouse_state.center_btn.alt_key {
-            let x_mov = mouse_coord[0] - self.mouse_state.last_cursor_position[0];
-            let y_mov = mouse_coord[1] - self.mouse_state.last_cursor_position[1];
+        if self.camera_state.is_moving {
+            let x_mov = mouse_coord[0] - self.last_cursor_position[0];
+            let y_mov = mouse_coord[1] - self.last_cursor_position[1];
             self.move_camera(&[x_mov, y_mov]);
         }
 
-        self.mouse_state.last_cursor_position = mouse_coord;
+        match tool {
+            TableTool::Selecter(..) => {
+                self.drag_block(&mouse_coord);
+            }
+            _ => {}
+        }
+
+        self.last_cursor_position = mouse_coord;
     }
 
     pub fn focused_block(&self, page_x: f64, page_y: f64) -> (BlockKind, U128Id) {

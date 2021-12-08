@@ -6,7 +6,7 @@ use crate::libs::random_id::U128Id;
 use ndarray::Array2;
 
 pub enum RenderingMode<'a> {
-    IdMap { grabbed: &'a ObjectId },
+    IdMap { grabbed: &'a U128Id },
     View,
 }
 

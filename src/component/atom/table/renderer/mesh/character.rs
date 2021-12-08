@@ -10,7 +10,7 @@ use ordered_float::OrderedFloat;
 use std::collections::BTreeMap;
 
 pub enum RenderingMode<'a> {
-    IdMap { grabbed: &'a ObjectId },
+    IdMap { grabbed: &'a U128Id },
     View,
 }
 

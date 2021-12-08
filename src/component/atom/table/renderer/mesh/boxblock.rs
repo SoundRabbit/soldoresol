@@ -19,7 +19,7 @@ pub enum LightingMode<'a> {
 
 pub enum RenderingMode<'a> {
     IdMap {
-        grabbed: &'a ObjectId,
+        grabbed: &'a U128Id,
     },
     View {
         lighting: LightingMode<'a>,
@@ -360,7 +360,7 @@ impl Boxblock {
             let boxblock_id = boxblock.id();
             boxblock.map(|boxblock| {
                 if let RenderingMode::IdMap { grabbed } = rendering_mode {
-                    if grabbed.is(&boxblock_id) {
+                    if boxblock_id == **grabbed {
                         return;
                     }
                 }

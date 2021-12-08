@@ -1,5 +1,6 @@
 use super::*;
 use crate::arena::{block, BlockMut, BlockRef};
+use crate::libs::random_id::U128Id;
 
 impl Renderer {
     pub fn render(
@@ -7,7 +8,7 @@ impl Renderer {
         is_debug_mode: bool,
         world: BlockRef<block::World>,
         camera_matrix: &CameraMatrix,
-        grabbed_object_id: &ObjectId,
+        grabbed_object_id: &U128Id,
     ) {
         let (scene, table) = world
             .map(|world| {
