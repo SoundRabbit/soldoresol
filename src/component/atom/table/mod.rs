@@ -54,10 +54,16 @@ pub struct Table {
 
 struct MouseState {
     left_btn: MouseLeftBtnState,
+    center_btn: MouseCenterBtnState,
     last_cursor_position: [f64; 2],
 }
 
 struct MouseLeftBtnState {
+    is_dragging: bool,
+    alt_key: bool,
+}
+
+struct MouseCenterBtnState {
     is_dragging: bool,
     alt_key: bool,
 }
@@ -83,6 +89,10 @@ impl Table {
 
             mouse_state: MouseState {
                 left_btn: MouseLeftBtnState {
+                    is_dragging: false,
+                    alt_key: false,
+                },
+                center_btn: MouseCenterBtnState {
                     is_dragging: false,
                     alt_key: false,
                 },
@@ -339,6 +349,26 @@ impl Table {
         self.cmds.push(Self::render());
     }
 
+    pub fn move_camera(&mut self, movement: &[f64; 2]) {
+        let h_mov = -movement[0] / 50.0;
+        let v_mov = movement[1] / 50.0;
+        let p = self.camera_matrix.movement();
+        let p = [p[0] + h_mov as f32, p[1] + v_mov as f32, p[2]];
+
+        self.camera_matrix.set_movement(p);
+
+        self.cmds.push(Self::render());
+    }
+
+    pub fn zoom_camera(&mut self, movement: f64) {
+        let p = self.camera_matrix.movement();
+        let p = [p[0], p[1], p[2] + movement as f32 / 16.0];
+
+        self.camera_matrix.set_movement(p);
+
+        self.cmds.push(Self::render());
+    }
+
     pub fn on_click(&mut self, e: web_sys::MouseEvent, tool: &TableTool) {
         let mouse_coord = unwrap!(self.mouse_coord(e.page_x() as f64, e.page_y() as f64));
 
@@ -356,12 +386,29 @@ impl Table {
         }
     }
 
+    pub fn on_wheel(&mut self, e: web_sys::WheelEvent, tool: &TableTool) {
+        let delta_y = if e.delta_mode() == web_sys::WheelEvent::DOM_DELTA_PIXEL {
+            e.delta_y()
+        } else {
+            e.delta_y() * 16.0
+        };
+
+        self.zoom_camera(delta_y);
+    }
+
     pub fn on_mousedown(&mut self, e: web_sys::MouseEvent, tool: &TableTool) {
         let mouse_coord = unwrap!(self.mouse_coord(e.page_x() as f64, e.page_y() as f64));
-        if e.button() == 0 {
+        let button = e.button();
+
+        if button == 0 {
             self.mouse_state.left_btn.is_dragging = true;
             if e.alt_key() {
                 self.mouse_state.left_btn.alt_key = true;
+            }
+        } else if button == 1 {
+            self.mouse_state.center_btn.is_dragging = true;
+            if e.alt_key() {
+                self.mouse_state.center_btn.alt_key = true;
             }
         }
 
@@ -370,10 +417,14 @@ impl Table {
 
     pub fn on_mouseup(&mut self, e: web_sys::MouseEvent, tool: &TableTool) {
         let mouse_coord = unwrap!(self.mouse_coord(e.page_x() as f64, e.page_y() as f64));
+        let button = e.button();
 
-        if e.button() == 0 {
+        if button == 0 {
             self.mouse_state.left_btn.alt_key = false;
             self.mouse_state.left_btn.is_dragging = false;
+        } else if button == 1 {
+            self.mouse_state.center_btn.is_dragging = false;
+            self.mouse_state.center_btn.alt_key = false;
         }
 
         self.mouse_state.last_cursor_position = mouse_coord;
@@ -386,6 +437,12 @@ impl Table {
             let x_mov = mouse_coord[0] - self.mouse_state.last_cursor_position[0];
             let y_mov = mouse_coord[1] - self.mouse_state.last_cursor_position[1];
             self.rotate_camera(&[x_mov, y_mov]);
+        }
+
+        if self.mouse_state.center_btn.is_dragging && self.mouse_state.center_btn.alt_key {
+            let x_mov = mouse_coord[0] - self.mouse_state.last_cursor_position[0];
+            let y_mov = mouse_coord[1] - self.mouse_state.last_cursor_position[1];
+            self.move_camera(&[x_mov, y_mov]);
         }
 
         self.mouse_state.last_cursor_position = mouse_coord;

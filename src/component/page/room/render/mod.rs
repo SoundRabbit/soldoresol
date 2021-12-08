@@ -20,6 +20,7 @@ use isaribi::{
     styled::{Style, Styled},
 };
 use kagura::component::Sub;
+use wasm_bindgen::JsCast;
 
 mod contextmenu;
 
@@ -99,6 +100,13 @@ impl Render for Room {
                                     vec![Html::div(
                                         Attributes::new().class(Self::class("mouse-capture")),
                                         Events::new()
+                                            .on("wheel", |e| {
+                                                if let Ok(e) = e.dyn_into::<web_sys::WheelEvent>() {
+                                                    Msg::OnTableWheel(e)
+                                                } else {
+                                                    Msg::NoOp
+                                                }
+                                            })
                                             .on_click(Msg::OnTableClick)
                                             .on_mousedown(Msg::OnTableMousedown)
                                             .on_mouseup(Msg::OnTableMouseup)

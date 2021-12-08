@@ -30,6 +30,7 @@ pub enum Msg {
     SetOkToCatchFile(bool),
     SetSelectedTableTool(TableTool),
     SetShowingContextmenu(Option<ShowingContextmenu>),
+    OnTableWheel(web_sys::WheelEvent),
     OnTableClick(web_sys::MouseEvent),
     OnTableMousedown(web_sys::MouseEvent),
     OnTableMouseup(web_sys::MouseEvent),

@@ -168,6 +168,14 @@ impl Update for Room {
                 self.showing_contextmenu = contextmenu;
                 Cmd::none()
             }
+            Msg::OnTableWheel(e) => {
+                if e.target() == e.current_target() {
+                    self.table.update(|table| {
+                        table.on_wheel(e, &self.table_tool);
+                    });
+                }
+                Cmd::none()
+            }
             Msg::OnTableClick(e) => {
                 if e.target() == e.current_target() {
                     self.table.update(|table| {
