@@ -184,6 +184,17 @@ impl CameraMatrix {
         [n[0] / len, n[1] / len, n[2] / len]
     }
 
+    pub fn relative_position(&self) -> [f32; 3] {
+        if !self.is_2d_mode {
+            self.position()
+        } else {
+            let p = self
+                .relative_inv_view_matrix()
+                .dot(&arr1(&[0.0, 0.0, 0.0, 1.0]));
+            [p[0], p[1], p[2]]
+        }
+    }
+
     pub fn perspective_matrix(&self, canvas_size: &[f32; 2]) -> Array2<f32> {
         let w = canvas_size[0];
         let h = canvas_size[1];
@@ -227,6 +238,17 @@ impl CameraMatrix {
         }
 
         view_matrix
+    }
+
+    pub fn relative_inv_view_matrix(&self) -> Array2<f32> {
+        if !self.is_2d_mode {
+            self.inv_view_matrix()
+        } else {
+            let m = &self.movement;
+            let mut view_matrix = Self::e();
+            view_matrix = Self::move_view_matrix(&view_matrix, &[0.0, 0.0, -m[2]]);
+            view_matrix
+        }
     }
 
     pub fn inv_perspective_matrix(&self, canvas_size: &[f32; 2]) -> Array2<f32> {
@@ -358,14 +380,13 @@ impl CameraMatrix {
 
         // 拡大係数行列mを解く
         for rc in 0..4 {
+            let f = m[rc][rc];
+            for c in 0..5 {
+                m[rc][c] /= f;
+            }
             for r in 0..4 {
-                if r == rc {
-                    let f = m[rc][rc];
-                    for c in 0..5 {
-                        m[r][c] /= f;
-                    }
-                } else {
-                    let b = m[r][rc] / m[rc][rc];
+                if r != rc {
+                    let b = m[r][rc];
                     for c in 0..5 {
                         m[r][c] -= m[rc][c] * b;
                     }

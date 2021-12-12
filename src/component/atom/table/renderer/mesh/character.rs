@@ -166,8 +166,14 @@ impl Character {
             >,
         > = BTreeMap::new();
         for character in characters {
+            let character_id = character.id();
             let character_block = BlockRef::clone(&character);
             character.map(|character| {
+                if let RenderingMode::IdMap { grabbed } = rendering_mode {
+                    if character_id == **grabbed {
+                        return;
+                    }
+                }
                 if character.size() > 0.0 {
                     if let Some(texture) = character.texture() {
                         if let Some(tex_size) = texture.map(|texture| texture.size().clone()) {

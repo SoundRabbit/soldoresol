@@ -34,6 +34,7 @@ block! {
     texture: Option<BlockMut<BlockTexture>> = None;
     name: String = String::from("ブロック");
     display_name: (String, String) = (String::from(""), String::from(""));
+    is_fixed_position: bool = false;
 }
 
 impl Boxblock {

@@ -205,6 +205,7 @@ impl CraftboardCover {
         vp_matrix: &Array2<f32>,
         camera_position: &[f32; 3],
         craftboards: impl Iterator<Item = BlockRef<block::Craftboard>>,
+        grabbed: &U128Id,
         is_2d_mode: bool,
     ) {
         gl.use_program(ProgramType::UnshapedProgram);
@@ -240,6 +241,10 @@ impl CraftboardCover {
         for craftboard in craftboards {
             let craftboard_id = craftboard.id();
             craftboard.map(|craftboard| {
+                if craftboard_id == *grabbed {
+                    return;
+                }
+
                 let id_offset_color = unwrap!(id_table.offset_color(&craftboard_id));
 
                 let s = craftboard.size();

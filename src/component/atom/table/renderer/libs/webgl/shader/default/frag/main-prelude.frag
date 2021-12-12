@@ -18,8 +18,8 @@ CameraRay g_cameraRay;
 Surface g_surface;
 int g_idValue;
 
-float rgbToFloat(vec3 rgb){
-    return (rgb.r + rgb.g / 255.0 + rgb.b / (255.0 * 255.0)) * float(0x1000000 - 1);
+float rgbToFloat(vec4 rgba){
+    return (rgba.r + rgba.g / 255.0 + rgba.b / (255.0 * 255.0) + rgba.a / (255.0 * 255.0 * 255.0)) * float(0x1000000 - 1);
 }
 
 vec4 floatToRgb(float v) {
@@ -131,7 +131,7 @@ bool implSetGSurfaceAs3dCylinder() {
     float cc = dot(g_cameraRay.a.xy, g_cameraRay.a.xy) - 0.5 * 0.5;
     float dd = bb * bb - 4.0 * aa * cc;
 
-    return dd < 0.0 ? true : implSetGSurfaceAs3dCylinderWithT((-bb - sqrt(dd)) / (2.0 * aa));
+    return dd < 0.0 || aa == 0.0 ? true : implSetGSurfaceAs3dCylinderWithT((-bb - sqrt(dd)) / (2.0 * aa));
 }
 
 bool setGSurfaceAs3dCylinder() {
@@ -202,7 +202,7 @@ vec4 colorWithLightAsPointWithId() {
     vec4 idColorLightMap = texture2D(u_lightMapPz, lightMapCoord);
     vec3 normalizedInvLp = normalize(-lightVec.xyz);
     float lightIntensity =
-        int(floor(rgbToFloat(idColorLightMap.xyz) + 0.5)) !=  g_idValue ? 0.0
+        int(floor(rgbToFloat(idColorLightMap) + 0.5)) !=  g_idValue ? 0.0
         : NORMAL_VEC_INTENSITY(normalizedInvLp) * LIGHT_INTENSITY(u_lightIntensity, u_lightAttenation, len);
     return COLOR_WITH_LIGHT_INTENSITY(lightIntensity);
 }

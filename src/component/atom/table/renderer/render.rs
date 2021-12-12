@@ -77,7 +77,7 @@ impl Renderer {
 
         let cs = as_f32a![self.canvas_size[0], self.canvas_size[1]];
         let vp_matrix = camera_matrix.vp_matrix(&cs);
-        let camera_position = camera_matrix.position();
+        let camera_position = camera_matrix.relative_position();
 
         if !is_debug_mode {
             self.screen_frame.bind_self(&self.gl);
@@ -114,7 +114,7 @@ impl Renderer {
                     &mut self.gl,
                     &self.id_table,
                     &vp_matrix,
-                    &camera_matrix.position(),
+                    &camera_position,
                     table
                         .boxblocks()
                         .iter()
@@ -136,7 +136,7 @@ impl Renderer {
                     &mut self.gl,
                     &self.id_table,
                     &vp_matrix,
-                    &camera_matrix.position(),
+                    &camera_position,
                     world
                         .characters()
                         .iter()
@@ -166,7 +166,7 @@ impl Renderer {
                     &mut self.gl,
                     &self.id_table,
                     &vp_matrix,
-                    &camera_matrix.position(),
+                    &camera_position,
                     camera_matrix,
                     world
                         .characters()
@@ -203,6 +203,7 @@ impl Renderer {
                     .craftboards()
                     .iter()
                     .map(BlockMut::<block::Craftboard>::as_ref),
+                &grabbed_object_id,
                 camera_matrix.is_2d_mode(),
             );
         });
@@ -230,7 +231,7 @@ impl Renderer {
                 &mut self.gl,
                 &self.id_table,
                 &vp_matrix,
-                &camera_matrix.position(),
+                &camera_position,
                 world
                     .characters()
                     .iter()
@@ -247,7 +248,7 @@ impl Renderer {
                 &mut self.gl,
                 &self.id_table,
                 &vp_matrix,
-                &camera_matrix.position(),
+                &camera_position,
                 camera_matrix,
                 world
                     .characters()

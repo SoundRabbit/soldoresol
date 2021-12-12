@@ -147,6 +147,12 @@ impl CharacterBase {
         for character in characters {
             let character_id = character.id();
             character.map(|character| {
+                if let RenderingMode::IdMap { grabbed } = rendering_mode {
+                    if character_id == **grabbed {
+                        return;
+                    }
+                }
+
                 let id_offset_color = unwrap!(id_table.offset_color(&character_id));
                 let s = character.size();
                 let s = [s as f32, s as f32, 0.0];

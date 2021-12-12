@@ -15,9 +15,13 @@ block! {
     terran_height: f64 = 1.0;
     grid_color: Pallet = Pallet::gray(9).a(100);
     env_light_intensity: f64 = 1.0;
+    is_fixed_position: bool = true;
 }
 
 impl Craftboard {
+    pub fn set_position(&mut self, position: [f64; 3]) {
+        self.position = position;
+    }
     pub fn position(&self) -> &[f64; 3] {
         &self.position
     }
@@ -58,5 +62,11 @@ impl Craftboard {
     }
     pub fn env_light_intensity(&self) -> f64 {
         self.env_light_intensity
+    }
+    pub fn set_is_fixed_position(&mut self, is_fixed_position: bool) {
+        self.is_fixed_position = is_fixed_position;
+    }
+    pub fn is_fixed_position(&self) -> bool {
+        self.is_fixed_position
     }
 }

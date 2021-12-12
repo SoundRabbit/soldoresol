@@ -391,6 +391,34 @@ impl Table {
                     });
                 }
             }
+            BlockKind::Character => {
+                if let Some(mut block) = self.arena.get_mut::<block::Character>(block_id) {
+                    let block_id = block.id();
+                    block.update(|block| {
+                        block.set_position(p);
+
+                        self.cmds.push(Self::render());
+                        self.cmds.push(Cmd::sub(On::UpdateBlocks {
+                            insert: set! {},
+                            update: set! { block_id },
+                        }));
+                    });
+                }
+            }
+            BlockKind::Craftboard => {
+                if let Some(mut block) = self.arena.get_mut::<block::Craftboard>(block_id) {
+                    let block_id = block.id();
+                    block.update(|block| {
+                        block.set_position(p);
+
+                        self.cmds.push(Self::render());
+                        self.cmds.push(Cmd::sub(On::UpdateBlocks {
+                            insert: set! {},
+                            update: set! { block_id },
+                        }));
+                    });
+                }
+            }
             _ => {}
         }
     }
@@ -435,13 +463,38 @@ impl Table {
                 match tool {
                     TableTool::Selecter(..) => {
                         let (block_kind, block_id) = self.focused_block(page_x, page_y);
+                        let mut camera_is_moving = self.camera_state.is_moving;
 
-                        if block_kind != BlockKind::None {
-                            self.tool_state.selecter_mut().grabbed_object =
-                                Some((block_kind, block_id));
-                        } else {
-                            self.camera_state.is_rotating = true;
+                        match block_kind {
+                            BlockKind::Boxblock => {
+                                self.tool_state.selecter_mut().grabbed_object =
+                                    Some((block_kind, block_id));
+                                self.cmds.push(Self::render());
+                            }
+                            BlockKind::Character => {
+                                self.tool_state.selecter_mut().grabbed_object =
+                                    Some((block_kind, block_id));
+                                self.cmds.push(Self::render());
+                            }
+                            BlockKind::Craftboard
+                                if !self
+                                    .arena
+                                    .get::<block::Craftboard>(&block_id)
+                                    .and_then(|x| {
+                                        x.map(|craftboard| craftboard.is_fixed_position())
+                                    })
+                                    .unwrap_or(true) =>
+                            {
+                                self.tool_state.selecter_mut().grabbed_object =
+                                    Some((block_kind, block_id));
+                                self.cmds.push(Self::render());
+                            }
+                            _ => {
+                                camera_is_moving = true;
+                            }
                         }
+
+                        self.camera_state.is_moving = camera_is_moving;
                     }
                     _ => {}
                 }
@@ -459,6 +512,7 @@ impl Table {
 
         if button == 0 {
             self.camera_state.is_rotating = false;
+            self.camera_state.is_moving = false;
 
             match tool {
                 TableTool::Selecter(..) => {

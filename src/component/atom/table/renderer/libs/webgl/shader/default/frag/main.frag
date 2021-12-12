@@ -4,8 +4,10 @@ float defaultMain() {
         : u_id == ID_V_READ || u_id == ID_V_WRITE ? int(floor(v_id / 2.0 + 0.5) * 2.0) + u_idValue
         : 0;
 
-    vec3 c = u_perspective == PERSPECTIVE_PROJECTION ? u_cameraPosition : (u_invModelMatrix * vec4(u_cameraPosition, 1.0)).xyz;
-    g_cameraRay.a =c;
+    vec3 c = u_perspective == PERSPECTIVE_PROJECTION ? 
+        u_cameraPosition + v_vertex :
+        (u_invModelMatrix * vec4(u_cameraPosition, 1.0)).xyz;
+    g_cameraRay.a = c;
     g_cameraRay.t = v_vertex - c;
 
     bool is_disable =
