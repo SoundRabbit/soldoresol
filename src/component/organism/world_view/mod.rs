@@ -6,6 +6,7 @@ use super::atom::{
     heading::{self, Heading},
     text,
 };
+use super::molecule::scene_list::{self, SceneList};
 use super::molecule::tab_menu::{self, TabMenu};
 use super::template::common::Common;
 use crate::arena::{block, ArenaMut, BlockMut};
@@ -102,7 +103,7 @@ impl Render for WorldView {
                             tab_menu::Props {
                                 controlled: true,
                                 selected: self.selected_tab_idx,
-                                tabs: vec![String::from("プレハブ")],
+                                tabs: vec![String::from("シーン")],
                             },
                             Sub::map(|sub| match sub {
                                 tab_menu::On::ChangeSelectedTab(tab_idx) => {
@@ -114,6 +115,13 @@ impl Render for WorldView {
                             Attributes::new().class(Self::class("scroll")),
                             Events::new(),
                             match self.selected_tab_idx {
+                                0 => vec![SceneList::empty(
+                                    scene_list::Props {
+                                        arena: ArenaMut::clone(&self.arena),
+                                        world: BlockMut::clone(&self.world),
+                                    },
+                                    Sub::none(),
+                                )],
                                 _ => vec![],
                             },
                         ),
@@ -163,17 +171,6 @@ impl Styled for WorldView {
                 "overflow-y": "scroll";
                 "height": "100%";
                 "padding": ".35rem";
-            }
-
-            ".item" {
-                "width": "100%";
-            }
-
-            ".item-content" {
-                "margin-left": "1rem";
-                "border-left": format!(".35rem solid {}", crate::libs::color::Pallet::gray(0));
-                "padding-left": ".65rem";
-                "padding-top": ".65rem";
             }
         }
     }

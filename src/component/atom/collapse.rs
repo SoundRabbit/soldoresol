@@ -7,7 +7,8 @@ use kagura::component::{Cmd, Sub};
 use kagura::prelude::*;
 
 pub struct Props {
-    pub is_collapsed: bool,
+    pub is_default_collapsed: bool,
+    pub is_indented: bool,
 }
 
 pub enum Msg {
@@ -29,7 +30,7 @@ impl Component for Collapse {
 impl Constructor for Collapse {
     fn constructor(props: &Props) -> Self {
         Self {
-            is_collapsed: props.is_collapsed,
+            is_collapsed: props.is_default_collapsed,
         }
     }
 }
@@ -46,7 +47,7 @@ impl Update for Collapse {
 }
 
 impl Render for Collapse {
-    fn render(&self, _props: &Props, children: Vec<Html<Self>>) -> Html<Self> {
+    fn render(&self, props: &Props, children: Vec<Html<Self>>) -> Html<Self> {
         let mut children = std::collections::VecDeque::from(children);
         let head = children.pop_front().unwrap_or(Html::none());
         Self::styled(Html::div(
@@ -73,10 +74,13 @@ impl Render for Collapse {
                     vec![head],
                 ),
                 Html::div(
-                    Attributes::new().class(Self::class("content")).string(
-                        "data-collapsed",
-                        (!children.is_empty() && self.is_collapsed).to_string(),
-                    ),
+                    Attributes::new()
+                        .class(Self::class("content"))
+                        .string(
+                            "data-collapsed",
+                            (!children.is_empty() && self.is_collapsed).to_string(),
+                        )
+                        .string("data-indented", props.is_indented.to_string()),
                     Events::new(),
                     children.into(),
                 ),
@@ -115,9 +119,16 @@ impl Styled for Collapse {
             }
 
             ".content" {
-                "grid-column": "2 / 4";
                 "grid-row": "2 / 3";
                 "overflow": "hidden";
+            }
+
+            ".content[data-indented='false']" {
+                "grid-column": "1 / 4";
+            }
+
+            ".content[data-indented='true']" {
+                "grid-column": "2 / 4";
             }
 
             ".content[data-collapsed='false']" {
