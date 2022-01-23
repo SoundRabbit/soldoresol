@@ -6,6 +6,7 @@ use isaribi::{
 };
 use kagura::component::Cmd;
 use kagura::prelude::*;
+use std::cell::RefCell;
 use std::collections::HashSet;
 use std::rc::Rc;
 use wasm_bindgen::{prelude::*, JsCast};
@@ -27,7 +28,6 @@ pub struct Props {
 
 pub enum Msg {
     NoOp,
-    Render,
     Resize,
 }
 
@@ -41,8 +41,8 @@ pub enum On {
 pub struct Table {
     cmds: Vec<Cmd<Self>>,
     canvas: Option<Rc<web_sys::HtmlCanvasElement>>,
-    renderer: Option<Renderer>,
-    camera_matrix: CameraMatrix,
+    renderer: Option<Rc<RefCell<Renderer>>>,
+    camera_matrix: Rc<RefCell<CameraMatrix>>,
 
     arena: ArenaMut,
     world: BlockMut<block::World>,
@@ -72,7 +72,7 @@ impl Table {
             cmds: vec![],
             canvas: None,
             renderer: None,
-            camera_matrix: CameraMatrix::new(),
+            camera_matrix: Rc::new(RefCell::new(CameraMatrix::new())),
             arena,
             world,
             is_2d_mode: false,
@@ -108,7 +108,10 @@ impl Update for Table {
         if self.is_2d_mode != props.is_2d_mode || self.is_debug_mode != props.is_debug_mode {
             self.is_2d_mode = props.is_2d_mode;
             self.is_debug_mode = props.is_debug_mode;
-            self.cmds.push(Self::render());
+            self.camera_matrix
+                .borrow_mut()
+                .set_is_2d_mode(props.is_2d_mode);
+            self.cmds.push(self.render());
         }
 
         Cmd::list(self.cmds.drain(..).collect())
@@ -132,34 +135,10 @@ impl Update for Table {
     fn update(&mut self, props: &Props, msg: Msg) -> Cmd<Self> {
         match msg {
             Msg::NoOp => Cmd::none(),
-            Msg::Render => {
-                if let Some(renderer) = self.renderer.as_mut() {
-                    self.camera_matrix.set_is_2d_mode(self.is_2d_mode);
-
-                    let grabbed_object_id =
-                        if let TableToolState::Selecter(state) = &self.tool_state {
-                            state
-                                .grabbed_object
-                                .as_ref()
-                                .map(|(_, block_id)| U128Id::clone(block_id))
-                                .unwrap_or(U128Id::none())
-                        } else {
-                            U128Id::none()
-                        };
-
-                    renderer.render(
-                        self.is_debug_mode,
-                        props.world.as_ref(),
-                        &self.camera_matrix,
-                        &grabbed_object_id,
-                    );
-                }
-                Cmd::none()
-            }
             Msg::Resize => {
                 if let Some(renderer) = self.renderer.as_mut() {
-                    renderer.reset_size();
-                    Self::render()
+                    renderer.borrow_mut().reset_size();
+                    self.render()
                 } else {
                     Cmd::none()
                 }
@@ -169,19 +148,45 @@ impl Update for Table {
 }
 
 impl Table {
-    fn render() -> Cmd<Self> {
-        Cmd::task(|resolve| {
-            let mut resolve = Some(resolve);
-            let a = Closure::wrap(Box::new(move || {
-                if let Some(resolve) = resolve.take() {
-                    resolve(Msg::Render);
-                }
-            }) as Box<dyn FnMut()>);
-            let _ = web_sys::window()
-                .unwrap()
-                .request_animation_frame(a.as_ref().unchecked_ref());
-            a.forget();
-        })
+    fn render(&self) -> Cmd<Self> {
+        if let Some(renderer) = &self.renderer {
+            let renderer = Rc::clone(&renderer);
+            let camera_matrix = Rc::clone(&self.camera_matrix);
+            let grabbed_object_id = if let TableToolState::Selecter(state) = &self.tool_state {
+                state
+                    .grabbed_object
+                    .as_ref()
+                    .map(|(_, block_id)| U128Id::clone(block_id))
+                    .unwrap_or(U128Id::none())
+            } else {
+                U128Id::none()
+            };
+            let world = self.world.as_ref();
+            let is_debug_mode = self.is_debug_mode;
+
+            let mut render = Some(Box::new(move || {
+                renderer.borrow_mut().render(
+                    is_debug_mode,
+                    world,
+                    &camera_matrix.borrow(),
+                    &grabbed_object_id,
+                );
+            }) as Box<dyn FnOnce()>);
+
+            Cmd::task(move |_| {
+                let a = Closure::wrap(Box::new(move || {
+                    if let Some(render) = render.take() {
+                        render();
+                    };
+                }) as Box<dyn FnMut()>);
+                let _ = web_sys::window()
+                    .unwrap()
+                    .request_animation_frame(a.as_ref().unchecked_ref());
+                a.forget();
+            })
+        } else {
+            Cmd::none()
+        }
     }
 
     fn set_renderer(&mut self, node: web_sys::Node) -> Cmd<Self> {
@@ -189,9 +194,9 @@ impl Table {
             let canvas = Rc::new(canvas);
             self.canvas = Some(Rc::clone(&canvas));
             let renderer = Renderer::new(Rc::clone(&canvas));
-            self.renderer = Some(renderer);
+            self.renderer = Some(Rc::new(RefCell::new(renderer)));
 
-            Cmd::list(vec![Self::render()])
+            Cmd::list(vec![self.render()])
         } else {
             Cmd::none()
         }
@@ -240,7 +245,7 @@ impl Table {
     }
 
     pub fn need_rendering(&mut self) {
-        self.cmds.push(Self::render());
+        self.cmds.push(self.render());
     }
 
     pub fn mouse_coord(&self, page_x: f64, page_y: f64) -> Option<[f64; 2]> {
@@ -253,8 +258,11 @@ impl Table {
     pub fn create_boxblock(&mut self, mouse_coord: &[f64; 2], option: &table_tool::Boxblock) {
         let mut table = unwrap!(self.selecting_table());
         let renderer = unwrap!(self.renderer.as_ref());
-        let (p, n) =
-            renderer.get_focused_position(&self.camera_matrix, mouse_coord[0], mouse_coord[1]);
+        let (p, n) = renderer.borrow().get_focused_position(
+            &self.camera_matrix.borrow(),
+            mouse_coord[0],
+            mouse_coord[1],
+        );
         let n = Self::n_cube(&n, &option.size);
         let p = [p[0] + n[0], p[1] + n[1], p[2] + n[2]];
 
@@ -273,7 +281,7 @@ impl Table {
         table.update(|table| {
             table.push_boxblock(boxblock);
         });
-        self.cmds.push(Self::render());
+        self.cmds.push(self.render());
         self.cmds.push(Cmd::sub(On::UpdateBlocks {
             update: set! { table.id() },
             insert: set! { boxblock_id },
@@ -282,11 +290,15 @@ impl Table {
 
     pub fn create_character(&mut self, mouse_coord: &[f64; 2], option: &table_tool::Character) {
         let renderer = unwrap!(self.renderer.as_ref());
-        let (p, _) =
-            renderer.get_focused_position(&self.camera_matrix, mouse_coord[0], mouse_coord[1]);
-        let n = self
-            .camera_matrix
-            .position_vec_n(&[p[0] as f32, p[1] as f32, p[2] as f32]);
+        let (p, _) = renderer.borrow().get_focused_position(
+            &self.camera_matrix.borrow(),
+            mouse_coord[0],
+            mouse_coord[1],
+        );
+        let n =
+            self.camera_matrix
+                .borrow()
+                .position_vec_n(&[p[0] as f32, p[1] as f32, p[2] as f32]);
         let p = [
             p[0] + n[0] as f64 / 128.0,
             p[1] + n[1] as f64 / 128.0,
@@ -306,7 +318,7 @@ impl Table {
         self.world.update(|world| {
             world.push_character(character);
         });
-        self.cmds.push(Self::render());
+        self.cmds.push(self.render());
         self.cmds.push(Cmd::sub(On::UpdateBlocks {
             update: set! { self.world.id() },
             insert: set! { character_id },
@@ -316,8 +328,11 @@ impl Table {
     pub fn create_craftboard(&mut self, mouse_coord: &[f64; 2], option: &table_tool::Craftboard) {
         let mut table = unwrap!(self.selecting_table());
         let renderer = unwrap!(self.renderer.as_ref());
-        let (p, _) =
-            renderer.get_focused_position(&self.camera_matrix, mouse_coord[0], mouse_coord[1]);
+        let (p, _) = renderer.borrow().get_focused_position(
+            &self.camera_matrix.borrow(),
+            mouse_coord[0],
+            mouse_coord[1],
+        );
 
         let mut craftboard = block::Craftboard::new(p);
 
@@ -328,7 +343,7 @@ impl Table {
         table.update(|table| {
             table.push_craftboard(craftboard);
         });
-        self.cmds.push(Self::render());
+        self.cmds.push(self.render());
         self.cmds.push(Cmd::sub(On::UpdateBlocks {
             update: set! { table.id() },
             insert: set! { craftboard_id },
@@ -339,40 +354,53 @@ impl Table {
         let h_rot = -movement[0] / 500.0;
         let v_rot = -movement[1] / 500.0;
 
-        self.camera_matrix
-            .set_z_axis_rotation(self.camera_matrix.z_axis_rotation() + h_rot as f32);
-        self.camera_matrix
-            .set_x_axis_rotation(self.camera_matrix.x_axis_rotation() + v_rot as f32, false);
+        let z_rot = self.camera_matrix.borrow().z_axis_rotation() + h_rot as f32;
+        let x_rot = self.camera_matrix.borrow().x_axis_rotation() + v_rot as f32;
 
-        self.cmds.push(Self::render());
+        self.camera_matrix.borrow_mut().set_z_axis_rotation(z_rot);
+        self.camera_matrix
+            .borrow_mut()
+            .set_x_axis_rotation(x_rot, false);
+
+        self.cmds.push(self.render());
     }
 
     pub fn move_camera(&mut self, movement: &[f64; 2]) {
         let h_mov = -movement[0] / 50.0;
         let v_mov = movement[1] / 50.0;
-        let p = self.camera_matrix.movement();
-        let p = [p[0] + h_mov as f32, p[1] + v_mov as f32, p[2]];
 
-        self.camera_matrix.set_movement(p);
+        let p = {
+            let camera_matrix = self.camera_matrix.borrow();
+            let p = camera_matrix.movement();
+            [p[0] + h_mov as f32, p[1] + v_mov as f32, p[2]]
+        };
 
-        self.cmds.push(Self::render());
+        self.camera_matrix.borrow_mut().set_movement(p);
+
+        self.cmds.push(self.render());
     }
 
     pub fn zoom_camera(&mut self, movement: f64) {
-        let p = self.camera_matrix.movement();
-        let p = [p[0], p[1], p[2] + movement as f32 / 16.0];
+        let p = {
+            let camera_matrix = self.camera_matrix.borrow();
+            let p = camera_matrix.movement();
+            [p[0], p[1], p[2] + movement as f32 / 16.0]
+        };
 
-        self.camera_matrix.set_movement(p);
+        self.camera_matrix.borrow_mut().set_movement(p);
 
-        self.cmds.push(Self::render());
+        self.cmds.push(self.render());
     }
 
     pub fn drag_block(&mut self, mouse_coord: &[f64; 2]) {
         let (block_kind, block_id) =
             unwrap!(self.tool_state.selecter_mut().grabbed_object.as_ref());
         let renderer = unwrap!(self.renderer.as_ref());
-        let (p, n) =
-            renderer.get_focused_position(&self.camera_matrix, mouse_coord[0], mouse_coord[1]);
+        let (p, n) = renderer.borrow().get_focused_position(
+            &self.camera_matrix.borrow(),
+            mouse_coord[0],
+            mouse_coord[1],
+        );
 
         match block_kind {
             BlockKind::Boxblock => {
@@ -383,7 +411,7 @@ impl Table {
                         let p = [p[0] + n[0], p[1] + n[1], p[2] + n[2]];
                         block.set_position(p);
 
-                        self.cmds.push(Self::render());
+                        self.cmds.push(self.render());
                         self.cmds.push(Cmd::sub(On::UpdateBlocks {
                             insert: set! {},
                             update: set! { block_id },
@@ -397,7 +425,7 @@ impl Table {
                     block.update(|block| {
                         block.set_position(p);
 
-                        self.cmds.push(Self::render());
+                        self.cmds.push(self.render());
                         self.cmds.push(Cmd::sub(On::UpdateBlocks {
                             insert: set! {},
                             update: set! { block_id },
@@ -411,7 +439,7 @@ impl Table {
                     block.update(|block| {
                         block.set_position(p);
 
-                        self.cmds.push(Self::render());
+                        self.cmds.push(self.render());
                         self.cmds.push(Cmd::sub(On::UpdateBlocks {
                             insert: set! {},
                             update: set! { block_id },
@@ -469,12 +497,12 @@ impl Table {
                             BlockKind::Boxblock => {
                                 self.tool_state.selecter_mut().grabbed_object =
                                     Some((block_kind, block_id));
-                                self.cmds.push(Self::render());
+                                self.cmds.push(self.render());
                             }
                             BlockKind::Character => {
                                 self.tool_state.selecter_mut().grabbed_object =
                                     Some((block_kind, block_id));
-                                self.cmds.push(Self::render());
+                                self.cmds.push(self.render());
                             }
                             BlockKind::Craftboard
                                 if !self
@@ -487,7 +515,7 @@ impl Table {
                             {
                                 self.tool_state.selecter_mut().grabbed_object =
                                     Some((block_kind, block_id));
-                                self.cmds.push(Self::render());
+                                self.cmds.push(self.render());
                             }
                             _ => {
                                 camera_is_moving = true;
@@ -517,7 +545,7 @@ impl Table {
             match tool {
                 TableTool::Selecter(..) => {
                     self.tool_state.selecter_mut().grabbed_object = None;
-                    self.cmds.push(Self::render());
+                    self.cmds.push(self.render());
                 }
                 _ => {}
             }
@@ -558,7 +586,7 @@ impl Table {
             unwrap!(self.mouse_coord(page_x, page_y); (BlockKind::None, U128Id::none()));
         let renderer = unwrap!(self.renderer.as_ref(); (BlockKind::None, U128Id::none()));
 
-        match renderer.get_object_id(px_x, px_y) {
+        match renderer.borrow().get_object_id(px_x, px_y) {
             ObjectId::Boxblock(b_id, ..) => (BlockKind::Boxblock, b_id),
             ObjectId::Character(b_id, ..) => (BlockKind::Character, b_id),
             ObjectId::Craftboard(b_id, ..) => (BlockKind::Craftboard, b_id),
