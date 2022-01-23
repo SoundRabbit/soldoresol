@@ -358,25 +358,35 @@ where
                 .style("top", format!("{}px", self.loc[1].round() as i32))
                 .style("width", format!("{}px", self.size[0].round() as i32))
                 .style("height", format!("{}px", self.size[1].round() as i32)),
-            Events::new()
-                .on_mousedown(|e| {
+            {
+                let mut events = Events::new();
+
+                events = events.on_mousedown(|e| {
                     e.stop_propagation();
                     Msg::DragStart {
                         page_x: e.page_x(),
                         page_y: e.page_y(),
                         drag_type: DragType::Move,
                     }
-                })
-                .on_mouseup(|e| {
+                });
+
+                events = events.on_mouseup(|e| {
                     e.stop_propagation();
                     Msg::DragEnd
-                })
-                .on_mousemove(on_drag!(self.dragging.is_some()))
-                .on_mouseleave(on_drag!(self.dragging.is_some()))
-                .on("wheel", |e| {
+                });
+
+                if self.dragging.is_some() {
+                    events = events.on_mousemove(on_drag!(self.dragging.is_some()));
+                    events = events.on_mouseleave(on_drag!(self.dragging.is_some()));
+                }
+
+                events = events.on("wheel", |e| {
                     e.stop_propagation();
                     Msg::NoOp
-                }),
+                });
+
+                events
+            },
             vec![
                 Html::div(
                     Attributes::new().class(Self::class("header")),
@@ -526,9 +536,7 @@ where
                         drag_type: DragType::Resize(drag_direction),
                     }
                 })
-                .on_mouseup(|_| Msg::DragEnd)
-                .on_mousemove(on_drag!(self.dragging.is_some()))
-                .on_mouseleave(on_drag!(self.dragging.is_some())),
+                .on_mouseup(|_| Msg::DragEnd),
             vec![],
         )
     }
