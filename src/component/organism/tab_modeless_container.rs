@@ -398,7 +398,7 @@ where
                                         Self::modeless_sub(),
                                     )
                                 }
-                                _ => Html::div(Attributes::new(), Events::new(), vec![]),
+                                _ => Html::none(),
                             })
                             .collect(),
                     )

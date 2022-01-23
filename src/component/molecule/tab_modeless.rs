@@ -352,6 +352,7 @@ where
     fn render(&self, props: &Props<Content::Props>, _: Vec<Html<Self>>) -> Html<Self> {
         Self::styled(Html::div(
             Attributes::new()
+                .key_name(props.modeless_id.to_string())
                 .class(Self::class("base"))
                 .style("z-index", format!("{}", props.z_index))
                 .style("left", format!("{}px", self.loc[0].round() as i32))
