@@ -133,13 +133,15 @@ impl CharacterBase {
             program::PERSPECTIVE_NORMAL
         });
         gl.set_u_light(program::LIGHT_NONE);
-        gl.set_u_shape(program::SHAPE_2D_CIRCLE);
 
         match rendering_mode {
             RenderingMode::IdMap { .. } => {
+                gl.set_u_shape(program::SHAPE_2D_CIRCLE);
                 gl.set_u_id(program::ID_V_WRITE);
             }
             RenderingMode::View => {
+                gl.set_u_shape(program::SHAPE_2D_RING);
+                gl.set_u_shape_line_width(0.05);
                 gl.set_u_id(program::ID_V_READ);
             }
         }
@@ -169,6 +171,9 @@ impl CharacterBase {
 
                 let mvp_matrix = vp_matrix.dot(&model_matrix);
 
+                if let RenderingMode::View = rendering_mode {
+                    gl.set_u_shape_scale(&[s[0], s[1], 0.0]);
+                }
                 gl.set_u_translate(mvp_matrix.reversed_axes());
                 gl.set_u_model_matrix(model_matrix.reversed_axes());
                 gl.set_u_inv_model_matrix(inv_model_matrix.reversed_axes());

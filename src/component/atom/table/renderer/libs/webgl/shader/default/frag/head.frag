@@ -14,8 +14,10 @@ uniform int u_perspective;
 //必須
 uniform int u_shape;
 //SHAPE_2D_GRIDで必須
+//SHAPE_2D_RINGで必須
 uniform float u_shapeLineWidth;
 //SHAPE_2D_GRIDで必須
+//SHAPE_2D_RINGで必須
 uniform vec3 u_shapeScale;
 
 // 背景色
@@ -129,6 +131,7 @@ varying vec3 v_vertex;
 #define SHAPE_2D_BOX 0x02000000
 #define SHAPE_2D_CIRCLE 0x02000001
 #define SHAPE_2D_GRID 0x02000002
+#define SHAPE_2D_RING 0x02000003
 #define SHAPE_3D_BOX 0x03000000
 #define SHAPE_3D_SPHERE 0x03000001
 #define SHAPE_3D_CYLINDER 0x03000002

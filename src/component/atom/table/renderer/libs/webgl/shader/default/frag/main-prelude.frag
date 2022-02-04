@@ -85,6 +85,15 @@ bool setGSurfaceAs2dGrid() {
         true;
 }
 
+bool setGSurfaceAs2dRing() {
+    float ox = (v_textureCoord.x - 0.5) * 2.0;
+    float oy = (v_textureCoord.y - 0.5) * 2.0;
+    float ix = ox * u_shapeScale.x / (u_shapeScale.x - 2.0 * u_shapeLineWidth);
+    float iy = oy * u_shapeScale.y / (u_shapeScale.y - 2.0 * u_shapeLineWidth);
+
+    return 1.0 < ox * ox + oy * oy || ix * ix + iy * iy < 1.0 ? true : setGSurfaceAs2dBox();
+}
+
 bool setGSurfaceAs3dBox() {
     return setGSurfaceAs2dBox();
 }
