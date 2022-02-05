@@ -1,8 +1,12 @@
-uses! {
-    super::BlockMut;
-    super::util::Pack;
-    crate::libs::color::Pallet;
-}
+uses! {}
+
+use super::super::resource::ImageData;
+use super::util::Cubebox;
+use super::util::Pack;
+use super::BlockMut;
+use crate::libs::color::Pallet;
+
+type Textures = Cubebox<Option<BlockMut<ImageData>>>;
 
 block! {
     [pub Craftboard(constructor, pack)]
@@ -10,12 +14,11 @@ block! {
     name: String = String::new();
     display_name: (String, String) = (String::from(""), String::from(""));
     size: [f64; 3] = [10.0, 10.0, 10.0];
-    is_bind_to_grid: bool = true;
-    is_showing_grid: bool = true;
     terran_height: f64 = 1.0;
     grid_color: Pallet = Pallet::gray(9).a(100);
     env_light_intensity: f64 = 1.0;
     is_fixed_position: bool = true;
+    textures: Textures = Textures::with(|_| None);
 }
 
 impl Craftboard {
@@ -48,12 +51,6 @@ impl Craftboard {
     pub fn size(&self) -> &[f64; 3] {
         &self.size
     }
-    pub fn is_bind_to_grid(&self) -> bool {
-        self.is_bind_to_grid
-    }
-    pub fn is_showing_grid(&self) -> bool {
-        self.is_showing_grid
-    }
     pub fn set_grid_color(&mut self, grid_color: Pallet) {
         self.grid_color = grid_color;
     }
@@ -68,5 +65,11 @@ impl Craftboard {
     }
     pub fn is_fixed_position(&self) -> bool {
         self.is_fixed_position
+    }
+    pub fn textures(&self) -> &Textures {
+        &self.textures
+    }
+    pub fn set_textures(&mut self, textures: Textures) {
+        self.textures = textures;
     }
 }

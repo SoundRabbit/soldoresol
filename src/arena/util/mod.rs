@@ -1,5 +1,7 @@
+pub mod cubebox;
 pub mod pack;
 
+pub use cubebox::Cubebox;
 pub use pack::Pack;
 
 macro_rules! uses {

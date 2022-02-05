@@ -110,7 +110,7 @@ impl CraftboardBox {
         is_2d_mode: bool,
     ) {
         gl.use_program(ProgramType::UnshapedProgram);
-        gl.depth_func(web_sys::WebGlRenderingContext::LEQUAL);
+        gl.depth_func(web_sys::WebGlRenderingContext::ALWAYS);
         gl.set_a_vertex(&self.vertex_buffer, 3, 0);
         gl.set_a_texture_coord(&self.texture_coord_buffer, 2, 0);
         gl.set_a_id(&self.id_buffer, 1, 0);
@@ -142,11 +142,7 @@ impl CraftboardBox {
         for craftboard in craftboards {
             craftboard.map(|craftboard| {
                 let s = craftboard.size();
-                let s = [
-                    s[0].floor() as f32,
-                    s[1].floor() as f32,
-                    s[2].floor() as f32,
-                ];
+                let s = [s[0].floor() as f32, s[1].floor() as f32, s[2] as f32];
 
                 let p = craftboard.position();
                 let p = [p[0] as f32, p[1] as f32, p[2] as f32];

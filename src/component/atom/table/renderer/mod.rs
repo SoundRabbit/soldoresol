@@ -50,6 +50,7 @@ pub struct Renderer {
     craftboard_grid_mesh: mesh::CraftboardGrid,
     craftboard_cover_mesh: mesh::CraftboardCover,
     craftboard_box_mesh: mesh::CraftboardBox,
+    craftboard_texture_mesh: mesh::CraftboardTexture,
     craftboard_nameplate_mesh: mesh::CraftboardNameplate,
     boxblock_mesh: mesh::Boxblock,
     nameplate_mesh: mesh::Nameplate,

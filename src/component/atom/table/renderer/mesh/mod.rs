@@ -7,6 +7,7 @@ pub mod craftboard_box;
 pub mod craftboard_cover;
 pub mod craftboard_grid;
 pub mod craftboard_nameplate;
+pub mod craftboard_texture;
 pub mod nameplate;
 pub mod screen;
 
@@ -17,5 +18,6 @@ pub use craftboard_box::CraftboardBox;
 pub use craftboard_cover::CraftboardCover;
 pub use craftboard_grid::CraftboardGrid;
 pub use craftboard_nameplate::CraftboardNameplate;
+pub use craftboard_texture::CraftboardTexture;
 pub use nameplate::Nameplate;
 pub use screen::Screen;
