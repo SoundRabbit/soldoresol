@@ -9,7 +9,7 @@ block! {
     (position): [f64; 3];
     name: String = String::new();
     display_name: (String, String) = (String::from(""), String::from(""));
-    size: [f64; 2] = [10.0, 10.0];
+    size: [f64; 3] = [10.0, 10.0, 10.0];
     is_bind_to_grid: bool = true;
     is_showing_grid: bool = true;
     terran_height: f64 = 1.0;
@@ -42,10 +42,10 @@ impl Craftboard {
     pub fn display_name(&self) -> &(String, String) {
         &self.display_name
     }
-    pub fn set_size(&mut self, size: [f64; 2]) {
+    pub fn set_size(&mut self, size: [f64; 3]) {
         self.size = size;
     }
-    pub fn size(&self) -> &[f64; 2] {
+    pub fn size(&self) -> &[f64; 3] {
         &self.size
     }
     pub fn is_bind_to_grid(&self) -> bool {

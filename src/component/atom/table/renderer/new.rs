@@ -50,6 +50,7 @@ impl Renderer {
         let screen_mesh = mesh::Screen::new(&gl);
         let craftboard_grid_mesh = mesh::CraftboardGrid::new(&gl);
         let craftboard_cover_mesh = mesh::CraftboardCover::new(&gl);
+        let craftboard_box_mesh = mesh::CraftboardBox::new(&gl);
         let craftboard_nameplate_mesh = mesh::CraftboardNameplate::new(&gl);
         let boxblock_mesh = mesh::Boxblock::new(&gl);
         let nameplate_mesh = mesh::Nameplate::new(&gl);
@@ -75,6 +76,7 @@ impl Renderer {
             screen_mesh,
             craftboard_grid_mesh,
             craftboard_cover_mesh,
+            craftboard_box_mesh,
             craftboard_nameplate_mesh,
             boxblock_mesh,
             nameplate_mesh,

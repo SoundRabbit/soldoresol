@@ -27,6 +27,7 @@ pub enum Msg {
     SetDisplayName1(String),
     SetXSize(f64),
     SetYSize(f64),
+    SetZSize(f64),
     SetGridColor(crate::libs::color::Pallet),
 }
 
@@ -95,7 +96,7 @@ impl Update for RoomModelessCraftboard {
             Msg::SetXSize(x_size) => {
                 self.craftboard.update(|craftboard| {
                     let s = craftboard.size();
-                    craftboard.set_size([x_size, s[1]])
+                    craftboard.set_size([x_size, s[1], s[2]])
                 });
 
                 Cmd::sub(On::UpdateBlocks {
@@ -106,7 +107,18 @@ impl Update for RoomModelessCraftboard {
             Msg::SetYSize(y_size) => {
                 self.craftboard.update(|craftboard| {
                     let s = craftboard.size();
-                    craftboard.set_size([s[0], y_size])
+                    craftboard.set_size([s[0], y_size, s[2]])
+                });
+
+                Cmd::sub(On::UpdateBlocks {
+                    insert: set! {},
+                    update: set! { self.craftboard.id() },
+                })
+            }
+            Msg::SetZSize(z_size) => {
+                self.craftboard.update(|craftboard| {
+                    let s = craftboard.size();
+                    craftboard.set_size([s[0], s[1], z_size])
                 });
 
                 Cmd::sub(On::UpdateBlocks {
@@ -231,6 +243,23 @@ impl RoomModelessCraftboard {
                             },
                             Sub::map(move |sub| match sub {
                                 slider::On::Input(y) => Msg::SetYSize(y),
+                                _ => Msg::NoOp,
+                            }),
+                        ),
+                        text::span("Z幅（高さ）"),
+                        Slider::empty(
+                            slider::Props {
+                                position: slider::Position::Linear {
+                                    min: 1.0,
+                                    max: 100.0,
+                                    val: craftboard.size()[2],
+                                    step: 1.0,
+                                },
+                                range_is_editable: false,
+                                theme: slider::Theme::Light,
+                            },
+                            Sub::map(move |sub| match sub {
+                                slider::On::Input(z) => Msg::SetZSize(z),
                                 _ => Msg::NoOp,
                             }),
                         ),

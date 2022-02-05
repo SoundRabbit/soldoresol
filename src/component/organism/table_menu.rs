@@ -71,7 +71,9 @@ impl Constructor for TableMenu {
                         color: crate::libs::color::Pallet::gray(9),
                         width: 0.5,
                     })),
-                    TableTool::Craftboard(Rc::new(table_tool::Craftboard { size: [10.0, 10.0] })),
+                    TableTool::Craftboard(Rc::new(table_tool::Craftboard {
+                        size: [10.0, 10.0, 10.0],
+                    })),
                     TableTool::Eraser(Rc::new(table_tool::Eraser { width: 1.0 })),
                     TableTool::Character(Rc::new(table_tool::Character {
                         size: 1.0,
@@ -341,61 +343,43 @@ impl TableMenu {
                 Events::new(),
                 vec![
                     text::span("X幅"),
-                    Slider::empty(
-                        slider::Props {
-                            position: slider::Position::Linear {
-                                val: craftboard.size[0],
-                                min: 1.0,
-                                max: 100.0,
-                                step: 1.0,
-                            },
-                            range_is_editable: false,
-                            theme: slider::Theme::Light,
-                        },
-                        Sub::map({
-                            let craftboard = Rc::clone(&craftboard);
-                            move |sub| match sub {
-                                slider::On::Input(x) => {
-                                    let mut craftboard = craftboard.as_ref().clone();
-                                    craftboard.size[0] = x;
-                                    Msg::SetTool(
-                                        tool_idx,
-                                        TableTool::Craftboard(Rc::new(craftboard)),
-                                    )
-                                }
-                                _ => Msg::NoOp,
-                            }
-                        }),
-                    ),
+                    Self::render_tool_option_craftboard_size(tool_idx, craftboard, 0),
                     text::span("Y幅"),
-                    Slider::empty(
-                        slider::Props {
-                            position: slider::Position::Linear {
-                                val: craftboard.size[1],
-                                min: 1.0,
-                                max: 100.0,
-                                step: 1.0,
-                            },
-                            range_is_editable: false,
-                            theme: slider::Theme::Light,
-                        },
-                        Sub::map({
-                            let craftboard = Rc::clone(&craftboard);
-                            move |sub| match sub {
-                                slider::On::Input(y) => {
-                                    let mut craftboard = craftboard.as_ref().clone();
-                                    craftboard.size[1] = y;
-                                    Msg::SetTool(
-                                        tool_idx,
-                                        TableTool::Craftboard(Rc::new(craftboard)),
-                                    )
-                                }
-                                _ => Msg::NoOp,
-                            }
-                        }),
-                    ),
+                    Self::render_tool_option_craftboard_size(tool_idx, craftboard, 1),
+                    text::span("Z幅"),
+                    Self::render_tool_option_craftboard_size(tool_idx, craftboard, 2),
                 ],
             )],
+        )
+    }
+
+    fn render_tool_option_craftboard_size(
+        tool_idx: usize,
+        craftboard: &Rc<table_tool::Craftboard>,
+        coord_idx: usize,
+    ) -> Html<Self> {
+        Slider::empty(
+            slider::Props {
+                position: slider::Position::Linear {
+                    val: craftboard.size[coord_idx],
+                    min: 0.1,
+                    max: 100.0,
+                    step: 0.1,
+                },
+                range_is_editable: false,
+                theme: slider::Theme::Light,
+            },
+            Sub::map({
+                let craftboard = Rc::clone(&craftboard);
+                move |sub| match sub {
+                    slider::On::Input(val) => {
+                        let mut craftboard = craftboard.as_ref().clone();
+                        craftboard.size[coord_idx] = val;
+                        Msg::SetTool(tool_idx, TableTool::Craftboard(Rc::new(craftboard)))
+                    }
+                    _ => Msg::NoOp,
+                }
+            }),
         )
     }
 

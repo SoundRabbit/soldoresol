@@ -19,7 +19,7 @@ pub enum Selecter {
 
 #[derive(Clone)]
 pub struct Craftboard {
-    pub size: [f64; 2],
+    pub size: [f64; 3],
 }
 
 #[derive(Clone)]
