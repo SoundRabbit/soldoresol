@@ -12,7 +12,6 @@ use kagura::prelude::*;
 use std::collections::HashSet;
 
 mod tab_0;
-mod tab_1;
 
 pub struct Props {
     pub arena: ArenaMut,
@@ -216,24 +215,17 @@ impl RoomModelessCraftboard {
             vec![TabMenu::with_children(
                 tab_menu::Props {
                     selected: self.selected_tab_idx,
-                    tabs: vec![String::from("Common"), String::from("テクスチャ")],
+                    tabs: vec![String::from("Common")],
                     controlled: true,
                 },
                 Sub::map(|sub| match sub {
                     tab_menu::On::ChangeSelectedTab(tab_idx) => Msg::SetSelectedTabIdx(tab_idx),
                 }),
-                vec![
-                    if self.selected_tab_idx == 0 {
-                        self.render_tab0()
-                    } else {
-                        Common::none()
-                    },
-                    if self.selected_tab_idx == 1 {
-                        self.render_tab1()
-                    } else {
-                        Common::none()
-                    },
-                ],
+                vec![if self.selected_tab_idx == 0 {
+                    self.render_tab0()
+                } else {
+                    Common::none()
+                }],
             )],
         )
     }
@@ -248,19 +240,25 @@ impl Styled for RoomModelessCraftboard {
                 "padding-top": ".65rem";
             }
 
-            ".tab0-main, .tab1-main" {
+            ".tab0-main" {
+                "display": "grid";
+                "grid-template-columns": "1fr";
+                "grid-auto-rows": "max-content";
+                "overflow-y": "scroll";
+            }
+
+            ".tab0-content" {
                 "display": "grid";
                 "column-gap": ".65rem";
                 "row-gap": ".65rem";
                 "align-items": "start";
                 "padding-left": ".65rem";
                 "padding-right": ".65rem";
-                "overflow-y": "scroll";
                 "grid-template-columns": "repeat(auto-fit, minmax(20rem, 1fr))";
                 "grid-auto-rows": "max-content";
             }
 
-            ".tab0-main img, .tab1-main img" {
+            ".tab0-content img" {
                 "width": "100%";
                 "max-height": "20rem";
                 "object-fit": "contain";
