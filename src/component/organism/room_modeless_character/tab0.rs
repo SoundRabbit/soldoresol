@@ -1,5 +1,7 @@
-use super::super::atom::btn::Btn;
+use super::super::atom::btn::{self, Btn};
+use super::super::atom::dropdown::{self, Dropdown};
 use super::super::atom::fa;
+use super::super::atom::heading::{self, Heading};
 use super::super::atom::slider::{self, Slider};
 use super::super::atom::text;
 use super::super::organism::popup_color_pallet::{self, PopupColorPallet};
@@ -71,6 +73,23 @@ impl RoomModelessCharacter {
             Attributes::new().class(Self::class("tab0-main")),
             Events::new(),
             vec![
+                self.render_tab0_props(character),
+                Heading::h3(
+                    heading::Variant::Light,
+                    Attributes::new(),
+                    Events::new(),
+                    vec![Html::text("立ち絵")],
+                ),
+                self.render_tab0_textures(character),
+            ],
+        )
+    }
+
+    fn render_tab0_props(&self, character: &block::Character) -> Html<Self> {
+        Html::div(
+            Attributes::new().class(Self::class("tab0-content")),
+            Events::new(),
+            vec![
                 Html::div(
                     Attributes::new().class(Common::keyvalue()),
                     Events::new(),
@@ -125,46 +144,115 @@ impl RoomModelessCharacter {
                                 popup_color_pallet::On::SelectColor(color) => Msg::SetColor(color),
                             }),
                         ),
-                        text::span("立ち絵"),
-                        character
-                            .selected_texture()
-                            .and_then(|texture| texture.image())
-                            .map(|image| {
-                                image.map(|image| {
-                                    Html::img(
-                                        Attributes::new()
-                                            .src(image.url().to_string())
-                                            .class(Common::bg_transparent()),
-                                        Events::new().on_click({
-                                            let tex_idx = character.selected_texture_idx();
-                                            move |_| {
-                                                Msg::SetShowingModal(
-                                                    ShowingModal::SelectCharacterTexture(tex_idx),
-                                                )
-                                            }
-                                        }),
-                                        vec![],
+                        text::label("立ち絵", ""),
+                        Dropdown::with_children(
+                            dropdown::Props {
+                                direction: dropdown::Direction::Bottom,
+                                text: dropdown::Text::Text(
+                                    character
+                                        .selected_texture()
+                                        .map(|texture| texture.name().clone())
+                                        .unwrap_or(String::from("")),
+                                ),
+                                variant: btn::Variant::DarkLikeMenu,
+                                toggle_type: dropdown::ToggleType::Click,
+                            },
+                            Sub::none(),
+                            character
+                                .textures()
+                                .iter()
+                                .enumerate()
+                                .map(|(tex_idx, texture)| {
+                                    Btn::menu(
+                                        Attributes::new(),
+                                        Events::new()
+                                            .on_click(move |_| Msg::SetSelectedTextureIdx(tex_idx)),
+                                        vec![Html::text(texture.name())],
                                     )
                                 })
-                            })
-                            .unwrap_or(None)
-                            .unwrap_or_else(|| {
-                                Btn::secondary(
-                                    Attributes::new(),
-                                    Events::new().on_click({
-                                        let tex_idx = character.selected_texture_idx();
-                                        move |_| {
-                                            Msg::SetShowingModal(
-                                                ShowingModal::SelectCharacterTexture(tex_idx),
-                                            )
-                                        }
-                                    }),
-                                    vec![Html::text("立ち絵を選択")],
-                                )
-                            }),
+                                .collect(),
+                        ),
                     ],
                 ),
             ],
+        )
+    }
+
+    fn render_tab0_textures(&self, character: &block::Character) -> Html<Self> {
+        Html::div(
+            Attributes::new().class(Self::class("tab0-content")),
+            Events::new(),
+            vec![
+                Html::fragment(
+                    character
+                        .textures()
+                        .iter()
+                        .enumerate()
+                        .map(|(tex_idx, texture)| self.render_tab0_texture(texture, tex_idx))
+                        .collect(),
+                ),
+                self.render_tab0_new_texture(),
+            ],
+        )
+    }
+    fn render_tab0_texture(
+        &self,
+        texture: &block::character::StandingTexture,
+        tex_idx: usize,
+    ) -> Html<Self> {
+        Html::div(
+            Attributes::new().class(Self::class("tab0-texture")),
+            Events::new(),
+            vec![
+                Html::input(
+                    Attributes::new().value(texture.name()),
+                    Events::new().on_input(move |name| Msg::SetTextureName(tex_idx, name)),
+                    vec![],
+                ),
+                self.render_tab0_texture_image(texture.image(), tex_idx),
+            ],
+        )
+    }
+
+    fn render_tab0_texture_image(
+        &self,
+        image: Option<&BlockMut<resource::ImageData>>,
+        tex_idx: usize,
+    ) -> Html<Self> {
+        image
+            .and_then(|image| {
+                image.map(|image| {
+                    Html::img(
+                        Attributes::new()
+                            .src(image.url().to_string())
+                            .class(Common::bg_transparent()),
+                        Events::new().on_click(move |_| {
+                            Msg::SetShowingModal(ShowingModal::SelectCharacterTexture(tex_idx))
+                        }),
+                        vec![],
+                    )
+                })
+            })
+            .unwrap_or_else(|| {
+                Btn::secondary(
+                    Attributes::new(),
+                    Events::new().on_click(move |_| {
+                        Msg::SetShowingModal(ShowingModal::SelectCharacterTexture(tex_idx))
+                    }),
+                    vec![Html::text("立ち絵を選択")],
+                )
+            })
+    }
+
+    fn render_tab0_new_texture(&self) -> Html<Self> {
+        Html::div(
+            Attributes::new().class(Self::class("tab0-texture")),
+            Events::new(),
+            vec![Btn::secondary(
+                Attributes::new(),
+                Events::new().on_click(|_| Msg::PushTexture),
+                vec![Html::text("立ち絵を追加")],
+            )],
         )
     }
 }
