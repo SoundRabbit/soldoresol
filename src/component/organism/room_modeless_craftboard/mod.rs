@@ -1,7 +1,7 @@
 use super::molecule::tab_menu::{self, TabMenu};
 use super::organism::modal_resource::{self, ModalResource};
 use super::template::common::Common;
-use crate::arena::{block, resource, ArenaMut, BlockKind, BlockMut};
+use crate::arena::{block, resource, ArenaMut, BlockKind, BlockMut, BlockRef};
 use crate::libs::random_id::U128Id;
 use isaribi::{
     style,
@@ -30,7 +30,7 @@ pub enum Msg {
     SetYSize(f64),
     SetZSize(f64),
     SetGridColor(crate::libs::color::Pallet),
-    SetTexture(usize, Option<BlockMut<resource::ImageData>>),
+    SetTexture(usize, Option<BlockRef<resource::ImageData>>),
 }
 
 pub enum ShowingModal {

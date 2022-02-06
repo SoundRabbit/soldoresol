@@ -361,17 +361,19 @@ macro_rules! arena {
             }
         }
 
-        $(
-            impl BlockRef<$b> {
-                pub fn none() -> Self {
-                    Self {
-                        data: BlockMut::<$b>::none()
-                    }
+        impl<T> BlockRef<T> {
+            pub fn none() -> Self where Block: From<T>{
+                Self {
+                    data: BlockMut::none()
                 }
             }
+        }
 
+        $(
             impl std::ops::Deref for BlockRef<$b> {
+
                 type Target = BlockMut<$b>;
+
                 fn deref(&self) -> &Self::Target {
                     &self.data
                 }

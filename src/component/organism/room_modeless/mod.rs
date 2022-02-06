@@ -2,7 +2,7 @@ use super::organism::room_modeless_boxblock::{self, RoomModelessBoxblock};
 use super::organism::room_modeless_character::{self, RoomModelessCharacter};
 use super::organism::room_modeless_chat::{self, RoomModelessChat};
 use super::organism::room_modeless_craftboard::{self, RoomModelessCraftboard};
-use crate::arena::{block, ArenaMut, BlockMut};
+use crate::arena::{block, user, ArenaMut, BlockMut};
 use crate::libs::random_id::U128Id;
 use isaribi::{
     style,
@@ -10,6 +10,7 @@ use isaribi::{
 };
 use kagura::component::{Cmd, Sub};
 use kagura::prelude::*;
+use room_modeless_chat::ChatUser;
 use std::collections::HashSet;
 use std::rc::Rc;
 
@@ -23,7 +24,10 @@ pub struct Content {
 
 #[derive(Clone)]
 pub enum ContentData {
-    ChatChannel(BlockMut<block::ChatChannel>),
+    Chat {
+        user: ChatUser,
+        data: BlockMut<block::Chat>,
+    },
     Boxblock(BlockMut<block::Boxblock>),
     Character(BlockMut<block::Character>),
     Craftboard(BlockMut<block::Craftboard>),
@@ -70,10 +74,11 @@ impl Update for RoomModeless {
 impl Render for RoomModeless {
     fn render(&self, content: &Content, _children: Vec<Html<Self>>) -> Html<Self> {
         Self::styled(Html::fragment(vec![match &content.data {
-            ContentData::ChatChannel(chat_channel) => RoomModelessChat::empty(
+            ContentData::Chat { user, data } => RoomModelessChat::empty(
                 room_modeless_chat::Props {
                     arena: ArenaMut::clone(&content.arena),
-                    data: BlockMut::clone(&chat_channel),
+                    data: BlockMut::clone(&data),
+                    user: ChatUser::clone(&user),
                     client_id: Rc::clone(&content.client_id),
                 },
                 Sub::map(|sub| match sub {
@@ -180,9 +185,31 @@ impl Render for TabName {
     fn render(&self, content: &Content, _children: Vec<Html<Self>>) -> Html<Self> {
         use super::atom::fa;
         match &content.data {
-            ContentData::ChatChannel(chat_channel) => chat_channel
-                .map(|cc| Html::text(String::from("#") + cc.name()))
-                .unwrap_or(Html::none()),
+            ContentData::Chat { user, .. } => match user {
+                ChatUser::Player(player) => player.map(|player| {
+                    Html::span(
+                        Attributes::new(),
+                        Events::new(),
+                        vec![
+                            fa::i("fa-comment"),
+                            Html::text(" "),
+                            Html::text(player.name()),
+                        ],
+                    )
+                }),
+                ChatUser::Character(character) => character.map(|character| {
+                    Html::span(
+                        Attributes::new(),
+                        Events::new(),
+                        vec![
+                            fa::i("fa-comment"),
+                            Html::text(" "),
+                            Html::text(character.name()),
+                        ],
+                    )
+                }),
+            }
+            .unwrap_or(Html::none()),
             ContentData::Boxblock(boxblock) => boxblock
                 .map(|bb| {
                     Html::span(

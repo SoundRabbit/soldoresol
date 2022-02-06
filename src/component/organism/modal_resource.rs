@@ -7,7 +7,7 @@ use super::atom::{
 use super::molecule::modal::{self, Modal};
 use super::organism::modal_create_block_texture::{self, ModalCreateBlockTexture};
 use super::template::common::Common;
-use crate::arena::{block, resource, ArenaMut, BlockKind, BlockMut};
+use crate::arena::{block, resource, ArenaMut, BlockKind, BlockMut, BlockRef};
 use crate::libs::random_id::U128Id;
 use isaribi::{
     style,
@@ -45,8 +45,8 @@ pub enum Msg {
 pub enum On {
     Close,
     SelectNone,
-    SelectImageData(BlockMut<resource::ImageData>),
-    SelectBlockTexture(BlockMut<resource::BlockTexture>),
+    SelectImageData(BlockRef<resource::ImageData>),
+    SelectBlockTexture(BlockRef<resource::BlockTexture>),
     UpdateBlocks {
         insert: HashSet<U128Id>,
         update: HashSet<U128Id>,
@@ -55,8 +55,8 @@ pub enum On {
 
 pub enum Resource {
     None,
-    ImageData(BlockMut<resource::ImageData>),
-    BlockTexture(BlockMut<resource::BlockTexture>),
+    ImageData(BlockRef<resource::ImageData>),
+    BlockTexture(BlockRef<resource::BlockTexture>),
 }
 
 impl Resource {
@@ -137,7 +137,7 @@ impl Update for ModalResource {
                 _ => Cmd::none(),
             },
             Msg::LoadBlockTexture(texture) => {
-                let texture = self.arena.insert(texture);
+                let texture = self.arena.insert(texture).as_ref();
                 let texture_id = texture.id();
 
                 self.world.update(|world| {
@@ -277,7 +277,7 @@ impl ModalResource {
                         world
                             .image_data_resources()
                             .iter()
-                            .map(|data| self.render_cell_image_data(props, BlockMut::clone(&data)))
+                            .map(|data| self.render_cell_image_data(props, BlockRef::clone(&data)))
                             .collect(),
                     ),
                     Self::render_btn_to_add_cell(BlockKind::ImageData),
@@ -300,7 +300,7 @@ impl ModalResource {
                             .block_texture_resources()
                             .iter()
                             .map(|data| {
-                                self.render_cell_block_texture(props, BlockMut::clone(&data))
+                                self.render_cell_block_texture(props, BlockRef::clone(&data))
                             })
                             .collect(),
                     ),
@@ -333,14 +333,14 @@ impl ModalResource {
     fn render_cell_image_data(
         &self,
         props: &Props,
-        data: BlockMut<resource::ImageData>,
+        data: BlockRef<resource::ImageData>,
     ) -> Html<Self> {
-        BlockMut::clone(&data)
+        BlockRef::clone(&data)
             .map(|this| {
                 Html::div(
                     Attributes::new().class(Self::class("cell")),
                     Events::new().on_click({
-                        let data = BlockMut::clone(&data);
+                        let data = BlockRef::clone(&data);
                         move |_| Msg::SetSelectedResource(Resource::ImageData(data))
                     }),
                     vec![
@@ -367,14 +367,14 @@ impl ModalResource {
     fn render_cell_block_texture(
         &self,
         props: &Props,
-        data: BlockMut<resource::BlockTexture>,
+        data: BlockRef<resource::BlockTexture>,
     ) -> Html<Self> {
-        BlockMut::clone(&data)
+        BlockRef::clone(&data)
             .map(|this| {
                 Html::div(
                     Attributes::new().class(Self::class("cell")),
                     Events::new().on_click({
-                        let data = BlockMut::clone(&data);
+                        let data = BlockRef::clone(&data);
                         move |_| Msg::SetSelectedResource(Resource::BlockTexture(data))
                     }),
                     vec![

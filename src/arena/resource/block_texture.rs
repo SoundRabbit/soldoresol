@@ -2,6 +2,7 @@ uses! {}
 
 use super::util::Pack;
 use super::BlockMut;
+use super::BlockRef;
 use super::ImageData;
 use super::LoadFrom;
 use js_sys::Promise;
@@ -20,20 +21,20 @@ impl BlockTexture {
 }
 
 #[async_trait(?Send)]
-impl LoadFrom<BlockMut<ImageData>> for BlockTexture {
-    async fn load_from(img: BlockMut<ImageData>) -> Option<Self> {
+impl LoadFrom<BlockRef<ImageData>> for BlockTexture {
+    async fn load_from(img: BlockRef<ImageData>) -> Option<Self> {
         if let Some(this) = img.map(|data| Self { data: data.clone() }) {
             Some(this)
         } else {
             Self::load_from((
                 [1024, 1024],
                 [
-                    BlockMut::none(),
-                    BlockMut::none(),
-                    BlockMut::none(),
-                    BlockMut::none(),
-                    BlockMut::none(),
-                    BlockMut::none(),
+                    BlockRef::none(),
+                    BlockRef::none(),
+                    BlockRef::none(),
+                    BlockRef::none(),
+                    BlockRef::none(),
+                    BlockRef::none(),
                 ],
             ))
             .await
@@ -42,11 +43,11 @@ impl LoadFrom<BlockMut<ImageData>> for BlockTexture {
 }
 
 #[async_trait(?Send)]
-impl LoadFrom<([u32; 2], [BlockMut<ImageData>; 6])> for BlockTexture {
+impl LoadFrom<([u32; 2], [BlockRef<ImageData>; 6])> for BlockTexture {
     async fn load_from(
         ([width, height], [img_px, img_py, img_pz, img_nx, img_ny, img_nz]): (
             [u32; 2],
-            [BlockMut<ImageData>; 6],
+            [BlockRef<ImageData>; 6],
         ),
     ) -> Option<Self> {
         let width_f = width as f64;
@@ -93,7 +94,7 @@ fn draw_texture(
     context: &web_sys::CanvasRenderingContext2d,
     canvas_width: f64,
     canvas_height: f64,
-    img: &BlockMut<ImageData>,
+    img: &BlockRef<ImageData>,
     x_offset: f64,
     y_offset: f64,
 ) {

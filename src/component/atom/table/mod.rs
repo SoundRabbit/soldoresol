@@ -1,4 +1,4 @@
-use crate::arena::{block, ArenaMut, BlockKind, BlockMut};
+use crate::arena::{block, ArenaMut, BlockKind, BlockMut, BlockRef};
 use crate::libs::random_id::U128Id;
 use isaribi::{
     style,
@@ -273,7 +273,7 @@ impl Table {
         boxblock.set_size(option.size.clone());
         boxblock.set_position(p);
         boxblock.set_color(option.color);
-        boxblock.set_texture(option.texture.as_ref().map(|block| BlockMut::clone(block)));
+        boxblock.set_texture(option.texture.as_ref().map(|block| BlockRef::clone(block)));
         boxblock.set_shape(option.shape.clone());
 
         let boxblock = self.arena.insert(boxblock);
@@ -313,7 +313,7 @@ impl Table {
         character.set_color(option.color);
         character.set_texture_image(
             0,
-            option.texture.as_ref().map(|block| BlockMut::clone(block)),
+            option.texture.as_ref().map(|block| BlockRef::clone(block)),
         );
 
         let character = self.arena.insert(character);

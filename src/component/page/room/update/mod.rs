@@ -1,5 +1,6 @@
+use super::super::organism::room_modeless_chat::ChatUser;
 use super::*;
-use crate::arena::{block, user, BlockKind};
+use crate::arena::{block, BlockKind};
 use kagura::component::Cmd;
 
 mod task;
@@ -30,16 +31,6 @@ impl Update for Room {
         let chat_channel_main = new_channel!(self.arena, self.chat, "メイン");
         let chat_channel_sub = new_channel!(self.arena, self.chat, "サブ");
 
-        self.modeless_container.update(|modeless_container| {
-            Self::open_chat_modeless(
-                &props.client_id,
-                &self.arena,
-                &self.world,
-                modeless_container,
-                &vec![chat_channel_main, chat_channel_sub],
-            );
-        });
-
         let craftboard = block::Craftboard::new([0.0, 0.0, 0.0]);
 
         let mut table = block::Table::new();
@@ -51,6 +42,22 @@ impl Update for Room {
         let mut world = block::World::new();
         world.push_scenes(self.arena.insert(scene));
         self.world = self.arena.insert(world);
+
+        let me = user::Player::new();
+        self.me = self.arena.insert(me);
+
+        self.modeless_container.update(|modeless_container| {
+            Self::open_modeless(
+                &props.client_id,
+                &self.arena,
+                &self.world,
+                modeless_container,
+                room_modeless::ContentData::Chat {
+                    data: BlockMut::clone(&self.chat),
+                    user: ChatUser::Player(BlockMut::clone(&self.me)),
+                },
+            );
+        });
 
         Cmd::chain(Msg::NoOp)
     }
@@ -128,31 +135,18 @@ impl Update for Room {
                 Cmd::none()
             }
             Msg::OpenChatModeless(channel_id) => {
-                if let Some(channel_id) = channel_id {
-                    if let Some(channel) = self.arena.get_mut(&channel_id) {
-                        self.modeless_container.update(|modeless_container| {
-                            Self::open_chat_modeless(
-                                &props.client_id,
-                                &self.arena,
-                                &self.world,
-                                modeless_container,
-                                &vec![channel],
-                            );
-                        });
-                    }
-                } else {
-                    self.chat.map(|chat: &block::Chat| {
-                        self.modeless_container.update(|modeless_container| {
-                            Self::open_chat_modeless(
-                                &props.client_id,
-                                &self.arena,
-                                &self.world,
-                                modeless_container,
-                                chat.channels(),
-                            );
-                        });
-                    });
-                }
+                self.modeless_container.update(|modeless_container| {
+                    Self::open_modeless(
+                        &props.client_id,
+                        &self.arena,
+                        &self.world,
+                        modeless_container,
+                        room_modeless::ContentData::Chat {
+                            data: BlockMut::clone(&self.chat),
+                            user: ChatUser::Player(BlockMut::clone(&self.me)),
+                        },
+                    );
+                });
 
                 Cmd::none()
             }
@@ -249,7 +243,7 @@ impl Update for Room {
                 Cmd::none()
             }
             Msg::AddResourceImageData(image_data) => {
-                let image_data = self.arena.insert(image_data);
+                let image_data = self.arena.insert(image_data).as_ref();
                 self.world.update(|world| {
                     world.push_image_data_resource(image_data);
                 });
@@ -265,38 +259,6 @@ impl Update for Room {
 }
 
 impl Room {
-    // fn modeless_content(
-    //     &self,
-    //     props: &Props,
-    //     data: room_modeless::ContentData,
-    // ) -> room_modeless::Content {
-    //     room_modeless::Content {
-    //         arena: ArenaMut::clone(&self.arena),
-    //         client_id: Rc::clone(&props.client_id),
-    //         data: data,
-    //     }
-    // }
-
-    fn open_chat_modeless(
-        client_id: &Rc<String>,
-        arena: &ArenaMut,
-        world: &BlockMut<block::World>,
-        modeless_container: &mut TabModelessContainer<RoomModeless, room_modeless::TabName>,
-        channels: &Vec<BlockMut<block::ChatChannel>>,
-    ) {
-        modeless_container.open_modeless(
-            channels
-                .iter()
-                .map(|channel| room_modeless::Content {
-                    arena: ArenaMut::clone(arena),
-                    world: BlockMut::clone(world),
-                    client_id: Rc::clone(&client_id),
-                    data: room_modeless::ContentData::ChatChannel(BlockMut::clone(&channel)),
-                })
-                .collect(),
-        );
-    }
-
     fn open_modeless(
         client_id: &Rc<String>,
         arena: &ArenaMut,

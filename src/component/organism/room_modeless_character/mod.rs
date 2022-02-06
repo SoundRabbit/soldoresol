@@ -2,7 +2,7 @@ use super::molecule::tab_menu::{self, TabMenu};
 use super::organism::modal_resource::{self, ModalResource};
 use super::organism::room_modeless::RoomModeless;
 use super::template::common::Common;
-use crate::arena::{block, resource, ArenaMut, BlockKind, BlockMut};
+use crate::arena::{block, resource, ArenaMut, BlockKind, BlockMut, BlockRef};
 use crate::libs::random_id::U128Id;
 use isaribi::{
     style,
@@ -31,7 +31,7 @@ pub enum Msg {
     SetSize(f64),
     SetTexSize(f64),
     SetSelectedTextureIdx(usize),
-    SetTextureImage(usize, Option<BlockMut<resource::ImageData>>),
+    SetTextureImage(usize, Option<BlockRef<resource::ImageData>>),
     SetTextureName(usize, String),
     PushTexture,
 }

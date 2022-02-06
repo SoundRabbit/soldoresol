@@ -7,7 +7,7 @@ use super::atom::text;
 use super::organism::modal_chat_capture::{self, ModalChatCapture};
 use super::organism::room_modeless::RoomModeless;
 use super::template::common::Common;
-use crate::arena::{block, ArenaMut, BlockMut};
+use crate::arena::{block, user, ArenaMut, BlockMut, BlockRef};
 use crate::libs::random_id::U128Id;
 use isaribi::{
     style,
@@ -20,23 +20,36 @@ use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 use wasm_bindgen::JsCast;
 
+mod channel;
+mod chat_panel;
+mod controller;
+mod send;
+
+#[derive(Clone)]
+pub enum ChatUser {
+    Player(BlockMut<user::Player>),
+    Character(BlockMut<block::Character>),
+}
+
 pub struct Props {
     pub arena: ArenaMut,
     pub client_id: Rc<String>,
-    pub data: BlockMut<block::ChatChannel>,
+    pub data: BlockMut<block::Chat>,
+    pub user: ChatUser,
+}
+
+pub struct WaitingChatMessage {
+    channel: BlockMut<block::ChatChannel>,
+    message: block::chat_message::Message,
+    descriptions: Rc<Vec<(String, String)>>,
+    sender: block::chat_message::Sender,
 }
 
 pub enum Msg {
     NoOp,
     SendInputingChatMessage(bool),
     SendWaitingChatMessage(Vec<String>),
-    SetWaitingChatMessage(
-        Option<(
-            block::chat_message::Message,
-            Rc<Vec<(String, String)>>,
-            block::chat_message::Sender,
-        )>,
-    ),
+    SetWaitingChatMessage(Option<WaitingChatMessage>),
     SetInputingChatMessage(String),
     SetIsShowingChatPallet(bool),
 
@@ -53,15 +66,12 @@ pub enum On {
 
 pub struct RoomModelessChat {
     arena: ArenaMut,
-    channel: BlockMut<block::ChatChannel>,
+    chat: BlockMut<block::Chat>,
 
     is_showing_chat_pallet: bool,
     inputing_chat_message: Option<String>,
-    waiting_chat_message: Option<(
-        block::chat_message::Message,
-        Rc<Vec<(String, String)>>,
-        block::chat_message::Sender,
-    )>,
+    waiting_chat_message: Option<WaitingChatMessage>,
+    selected_channel_idx: usize,
 
     element_id: ElementId,
 
@@ -88,11 +98,13 @@ impl Constructor for RoomModelessChat {
 
         Self {
             arena: ArenaMut::clone(&props.arena),
-            channel: BlockMut::clone(&props.data),
+            chat: BlockMut::clone(&props.data),
 
             is_showing_chat_pallet: false,
             inputing_chat_message: Some(String::new()),
             waiting_chat_message: None,
+
+            selected_channel_idx: 0,
 
             element_id: ElementId::new(),
 
@@ -107,7 +119,7 @@ impl Constructor for RoomModelessChat {
 impl Update for RoomModelessChat {
     fn on_load(&mut self, props: &Props) -> Cmd<Self> {
         self.arena = ArenaMut::clone(&props.arena);
-        self.channel = BlockMut::clone(&props.data);
+        self.chat = BlockMut::clone(&props.data);
 
         Cmd::none()
     }
@@ -122,7 +134,39 @@ impl Update for RoomModelessChat {
                     self.inputing_chat_message = Some(String::new());
                 }
 
-                self.send_chat_message(String::from("プレイヤー"), &props.client_id, &message)
+                let sender = match &props.user {
+                    ChatUser::Player(player) => player.map(|player| {
+                        block::chat_message::Sender::new(
+                            Rc::clone(&props.client_id),
+                            player.icon().map(|icon| BlockRef::clone(icon)),
+                            player.name().clone(),
+                        )
+                    }),
+                    ChatUser::Character(character) => character.map(|character| {
+                        block::chat_message::Sender::new(
+                            Rc::clone(&props.client_id),
+                            character.selected_texture().and_then(|texture| {
+                                texture.image().map(|image| BlockRef::clone(&image))
+                            }),
+                            character.display_name().0.clone(),
+                        )
+                    }),
+                };
+
+                let channel = self
+                    .chat
+                    .map(|chat| {
+                        chat.channels()
+                            .get(self.selected_channel_idx)
+                            .map(BlockMut::clone)
+                    })
+                    .unwrap_or(None);
+
+                if let Some((sender, channel)) = join_some!(sender, channel) {
+                    self.send_chat_message(sender, channel, &message)
+                } else {
+                    Cmd::none()
+                }
             }
             Msg::SendWaitingChatMessage(captured) => self.send_waitng_chat_message(&captured),
             Msg::SetInputingChatMessage(input) => {
@@ -173,240 +217,22 @@ impl Update for RoomModelessChat {
     }
 }
 
-impl RoomModelessChat {
-    fn send_chat_message(
-        &mut self,
-        name: String,
-        client_id: &Rc<String>,
-        message: &String,
-    ) -> Cmd<Self> {
-        let sender = block::chat_message::Sender::new(Rc::clone(&client_id), None, name);
-
-        let message = block::chat_message::Message::new(message);
-
-        let mut descriptions = vec![];
-        let mut var_nums = HashMap::new();
-        let message = self.map_message(&mut var_nums, &mut descriptions, message);
-
-        if descriptions.len() > 0 {
-            self.waiting_chat_message = Some((message, Rc::new(descriptions), sender));
-            return Cmd::none();
-        }
-
-        let chat_message = block::ChatMessage::new(sender, chrono::Utc::now(), message);
-        let chat_message = self.arena.insert(chat_message);
-        let chat_message_id = chat_message.id();
-        self.channel.update(|channel: &mut block::ChatChannel| {
-            channel.messages_push(chat_message);
-        });
-        let channel_id = self.channel.id();
-        Cmd::sub(On::UpdateBlocks {
-            insert: set! { chat_message_id },
-            update: set! { channel_id },
-        })
-    }
-
-    fn send_waitng_chat_message(&mut self, captured: &Vec<String>) -> Cmd<Self> {
-        if let Some((message, _, sender)) = self.waiting_chat_message.take() {
-            let message = Self::capture_message(&captured, message);
-            let chat_message = block::ChatMessage::new(sender, chrono::Utc::now(), message);
-            let chat_message = self.arena.insert(chat_message);
-            let chat_message_id = chat_message.id();
-            self.channel.update(|channel: &mut block::ChatChannel| {
-                channel.messages_push(chat_message);
-            });
-            let channel_id = self.channel.id();
-            Cmd::sub(On::UpdateBlocks {
-                insert: set! { chat_message_id },
-                update: set! { channel_id },
-            })
-        } else {
-            Cmd::none()
-        }
-    }
-
-    fn test_ref_def(&self, refer: &String) -> block::chat_message::Message {
-        for (pat, text) in self.test_chatpallet.defs() {
-            if pat.is_match(refer) {
-                let message = block::chat_message::Message::new(pat.replace(refer, text).as_ref());
-                return message;
-            }
-        }
-        block::chat_message::Message::from(vec![])
-    }
-
-    fn map_message(
-        &self,
-        var_nums: &mut HashMap<String, Vec<usize>>,
-        descriptions: &mut Vec<(String, String)>,
-        message: block::chat_message::Message,
-    ) -> block::chat_message::Message {
-        message.map(|token| self.map_message_token(var_nums, descriptions, token))
-    }
-
-    fn map_message_token(
-        &self,
-        var_nums: &mut HashMap<String, Vec<usize>>,
-        descriptions: &mut Vec<(String, String)>,
-        token: block::chat_message::MessageToken,
-    ) -> block::chat_message::Message {
-        match token {
-            block::chat_message::MessageToken::Text(text) => block::chat_message::Message::from(
-                vec![block::chat_message::MessageToken::Text(text)],
-            ),
-            block::chat_message::MessageToken::Refer(refer) => {
-                let refer = self.map_message(var_nums, descriptions, refer);
-                let refer = self.test_ref_def(&refer.to_string());
-                let message = self.map_message(var_nums, descriptions, refer);
-                message
-            }
-            block::chat_message::MessageToken::CommandBlock(cmd, text) => {
-                let cmd_name = self.map_message(var_nums, descriptions, cmd.name);
-                let cmd_args: Vec<_> = cmd
-                    .args
-                    .into_iter()
-                    .map(|x| self.map_message(var_nums, descriptions, x))
-                    .collect();
-
-                if cmd_name.to_string() == "capture" {
-                    let mut cap_names = vec![];
-
-                    for args in cmd_args {
-                        let args: Vec<_> = args.into();
-                        for arg in args {
-                            if let block::chat_message::MessageToken::CommandBlock(cap, desc) = arg
-                            {
-                                for cap_name in cap.args {
-                                    let cap_name = cap_name.to_string();
-                                    descriptions.push((cap.name.to_string(), desc.to_string()));
-                                    let num = descriptions.len();
-                                    if let Some(vars) = var_nums.get_mut(&cap_name) {
-                                        vars.push(num);
-                                    } else {
-                                        var_nums.insert(cap_name.clone(), vec![num]);
-                                    }
-                                    cap_names.push(cap_name);
-                                }
-                            }
-                        }
-                    }
-
-                    let text = self.map_message(var_nums, descriptions, text);
-
-                    for cap_name in cap_names {
-                        if let Some(vars) = var_nums.get_mut(&cap_name) {
-                            vars.pop();
-                        }
-                    }
-
-                    text
-                } else if cmd_name.to_string() == "ref" {
-                    let cap_name = self.map_message(var_nums, descriptions, text).to_string();
-                    let text = if let Some(num) = var_nums.get(&cap_name).and_then(|x| x.last()) {
-                        block::chat_message::Message::from(vec![
-                            block::chat_message::MessageToken::Text(num.to_string()),
-                        ])
-                    } else {
-                        block::chat_message::Message::from(vec![
-                            block::chat_message::MessageToken::Text(cap_name),
-                        ])
-                    };
-                    block::chat_message::Message::from(vec![
-                        block::chat_message::MessageToken::CommandBlock(
-                            block::chat_message::MessageCommand {
-                                name: cmd_name,
-                                args: cmd_args,
-                            },
-                            text,
-                        ),
-                    ])
-                } else {
-                    let text = self.map_message(var_nums, descriptions, text);
-                    block::chat_message::Message::from(vec![
-                        block::chat_message::MessageToken::CommandBlock(
-                            block::chat_message::MessageCommand {
-                                name: cmd_name,
-                                args: cmd_args,
-                            },
-                            text,
-                        ),
-                    ])
-                }
-            }
-        }
-    }
-
-    fn capture_message(
-        captured: &Vec<String>,
-        message: block::chat_message::Message,
-    ) -> block::chat_message::Message {
-        message.map(|token| Self::capture_message_token(captured, token))
-    }
-
-    fn capture_message_token(
-        captured: &Vec<String>,
-        token: block::chat_message::MessageToken,
-    ) -> block::chat_message::Message {
-        match token {
-            block::chat_message::MessageToken::Text(text) => block::chat_message::Message::from(
-                vec![block::chat_message::MessageToken::Text(text)],
-            ),
-            block::chat_message::MessageToken::Refer(refer) => {
-                block::chat_message::Message::from(vec![block::chat_message::MessageToken::Refer(
-                    Self::capture_message(captured, refer),
-                )])
-            }
-            block::chat_message::MessageToken::CommandBlock(cmd, text) => {
-                let cmd_name = Self::capture_message(captured, cmd.name);
-                let cmd_args: Vec<_> = cmd
-                    .args
-                    .into_iter()
-                    .map(|x| Self::capture_message(captured, x))
-                    .collect();
-
-                if cmd_name.to_string() == "ref" {
-                    let cap_name = Self::capture_message(captured, text).to_string();
-                    let text = cap_name
-                        .parse()
-                        .ok()
-                        .and_then(|x: usize| captured.get(x - 1).map(|x: &String| x.clone()))
-                        .unwrap_or(String::from(""));
-
-                    block::chat_message::Message::from(vec![
-                        block::chat_message::MessageToken::Text(text),
-                    ])
-                } else {
-                    let text = Self::capture_message(captured, text);
-                    block::chat_message::Message::from(vec![
-                        block::chat_message::MessageToken::CommandBlock(
-                            block::chat_message::MessageCommand {
-                                name: cmd_name,
-                                args: cmd_args,
-                            },
-                            text,
-                        ),
-                    ])
-                }
-            }
-        }
-    }
-}
-
 impl Render for RoomModelessChat {
     fn render(&self, _props: &Props, _children: Vec<Html<Self>>) -> Html<Self> {
         Self::styled(Html::div(
             Attributes::new()
-                .class(RoomModeless::class("common-base"))
+                .class(Self::class("base"))
                 .class("pure-form"),
             Events::new(),
             vec![
+                self.render_controller(),
                 ModalChatCapture::empty(
                     modal_chat_capture::Props {
                         is_showing: self.waiting_chat_message.is_some(),
                         vars: self
                             .waiting_chat_message
                             .as_ref()
-                            .map(|x| Rc::clone(&x.1))
+                            .map(|x| Rc::clone(&x.descriptions))
                             .unwrap_or(Rc::new(vec![])),
                     },
                     Sub::map(|sub| match sub {
@@ -414,281 +240,54 @@ impl Render for RoomModelessChat {
                         modal_chat_capture::On::Send(x) => Msg::SendWaitingChatMessage(x),
                     }),
                 ),
-                self.channel
-                    .map(|data| self.render_header(data))
-                    .unwrap_or(Common::none()),
-                self.channel
-                    .map(|data| self.render_main(data))
-                    .unwrap_or(Common::none()),
             ],
         ))
     }
 }
 
-impl RoomModelessChat {
-    fn render_header(&self, chat_channel: &block::ChatChannel) -> Html<Self> {
-        Html::div(
-            Attributes::new().class(RoomModeless::class("common-header")),
-            Events::new(),
-            vec![
-                Html::label(
-                    Attributes::new()
-                        .class(RoomModeless::class("common-label"))
-                        .string("for", &self.element_id.input_channel_name),
-                    Events::new(),
-                    vec![Html::text("#")],
-                ),
-                Html::input(
-                    Attributes::new()
-                        .id(&self.element_id.input_channel_name)
-                        .value(chat_channel.name()),
-                    Events::new(),
-                    vec![],
-                ),
-            ],
-        )
-    }
-
-    fn render_main(&self, chat_channel: &block::ChatChannel) -> Html<Self> {
-        Html::div(
-            Attributes::new().class(Self::class("main")),
-            Events::new(),
-            vec![
-                self.render_chat_panel(),
-                Html::div(
-                    Attributes::new().class(Self::class("main-chat")),
-                    Events::new(),
-                    vec![
-                        if chat_channel.messages().len() > 50 {
-                            Btn::secondary(
-                                Attributes::new().class(Self::class("banner")),
-                                Events::new(),
-                                vec![Html::text("全チャットログを表示")],
-                            )
-                        } else {
-                            Html::div(Attributes::new(), Events::new(), vec![])
-                        },
-                        Html::div(
-                            Attributes::new().class(Self::class("main-log")),
-                            Events::new(),
-                            chat_channel
-                                .messages()
-                                .iter()
-                                .rev()
-                                .take(50)
-                                .rev()
-                                .filter_map(|cm| {
-                                    cm.map(|cm: &block::ChatMessage| self.render_main_chat(cm))
-                                })
-                                .collect(),
-                        ),
-                        self.render_controller(),
-                    ],
-                ),
-            ],
-        )
-    }
-
-    fn render_chat_panel(&self) -> Html<Self> {
-        Html::div(
-            Attributes::new().class(Self::class("chatpallet-container")),
-            Events::new(),
-            vec![
-                Html::div(
-                    Attributes::new()
-                        .string("data-is-showing", self.is_showing_chat_pallet.to_string())
-                        .class(Self::class("chatpallet")),
-                    Events::new(),
-                    vec![
-                        Dropdown::with_children(
-                            dropdown::Props {
-                                text: dropdown::Text::Text(
-                                    self.test_chatpallet
-                                        .index()
-                                        .get(self.test_chatpallet_selected_index)
-                                        .map(|(name, _)| name.clone())
-                                        .unwrap_or(String::from("")),
-                                ),
-                                direction: dropdown::Direction::Bottom,
-                                toggle_type: dropdown::ToggleType::Click,
-                                variant: btn::Variant::DarkLikeMenu,
-                            },
-                            Sub::none(),
-                            self.test_chatpallet
-                                .index()
-                                .iter()
-                                .enumerate()
-                                .map(|(idx, (name, _))| {
-                                    Btn::menu(
-                                        Attributes::new(),
-                                        Events::new().on_click(move |_| {
-                                            Msg::SetTestChatPalletSelectedIndex(idx)
-                                        }),
-                                        vec![Html::text(name)],
-                                    )
-                                })
-                                .collect(),
-                        ),
-                        Html::div(
-                            Attributes::new().class(Self::class("chatpallet-index")),
-                            Events::new(),
-                            self.test_chatpallet
-                                .index()
-                                .get(self.test_chatpallet_selected_index)
-                                .map(|(_, items)| {
-                                    items
-                                        .iter()
-                                        .enumerate()
-                                        .map(|(idx, item)| {
-                                            Btn::with_variant(
-                                                btn::Variant::LightLikeMenu,
-                                                Attributes::new()
-                                                    .class(Self::class("chatpallet-item")),
-                                                Events::new().on_click(move |_| {
-                                                    Msg::SetTestChatPalletSelectedItem(idx)
-                                                }),
-                                                vec![Html::text(item)],
-                                            )
-                                        })
-                                        .collect()
-                                })
-                                .unwrap_or(vec![]),
-                        ),
-                    ],
-                ),
-                Btn::light(
-                    Attributes::new().title(if self.is_showing_chat_pallet {
-                        "チャットパレットをしまう"
-                    } else {
-                        "チャットパレットを表示"
-                    }),
-                    Events::new().on_click({
-                        let is_showing = self.is_showing_chat_pallet;
-                        move |_| Msg::SetIsShowingChatPallet(!is_showing)
-                    }),
-                    vec![fa::i(if self.is_showing_chat_pallet {
-                        "fa-caret-left"
-                    } else {
-                        "fa-caret-right"
-                    })],
-                ),
-            ],
-        )
-    }
-
-    fn render_main_chat(&self, chat_message: &block::ChatMessage) -> Html<Self> {
-        Html::div(
-            Attributes::new().class(Self::class("main-message")),
-            Events::new(),
-            vec![
-                Html::div(
-                    Attributes::new().class(Self::class("main-message-icon")),
-                    Events::new(),
-                    vec![Html::text(
-                        chat_message
-                            .sender()
-                            .name()
-                            .chars()
-                            .nth(0)
-                            .map(|x| String::from(x))
-                            .unwrap_or(String::from("")),
-                    )],
-                ),
-                Html::div(
-                    Attributes::new().class(Self::class("main-message-heading")),
-                    Events::new(),
-                    vec![
-                        Html::div(
-                            Attributes::new().class(Self::class("main-message-heading-row")),
-                            Events::new(),
-                            vec![
-                                attr::span(
-                                    Attributes::new().class(Self::class("main-message-sender")),
-                                    chat_message.sender().name(),
-                                ),
-                                attr::span(
-                                    Attributes::new().class(Self::class("main-message-timestamp")),
-                                    chat_message
-                                        .timestamp()
-                                        .with_timezone(&chrono::Local)
-                                        .format("%Y/%m/%d %H:%M:%S")
-                                        .to_string(),
-                                ),
-                            ],
-                        ),
-                        attr::span(
-                            Attributes::new().class(Self::class("main-message-client")),
-                            chat_message.sender().client_id().as_ref(),
-                        ),
-                    ],
-                ),
-                chat_message::div(
-                    Attributes::new().class(Self::class("main-message-content")),
-                    Events::new(),
-                    chat_message.message(),
-                ),
-            ],
-        )
-    }
-
-    fn render_controller(&self) -> Html<Self> {
-        Html::div(
-            Attributes::new().class(Self::class("footer")),
-            Events::new(),
-            vec![
-                Html::textarea(
-                    Attributes::new().value(
-                        self.inputing_chat_message
-                            .as_ref()
-                            .map(String::as_str)
-                            .unwrap_or(""),
-                    ),
-                    Events::new()
-                        .on("input", {
-                            let ignore_intput = self.inputing_chat_message.is_none();
-                            move |e| {
-                                if let Some(target) = e
-                                    .target()
-                                    .and_then(|t| t.dyn_into::<web_sys::HtmlTextAreaElement>().ok())
-                                {
-                                    if ignore_intput {
-                                        target.set_value("");
-                                    }
-                                    Msg::SetInputingChatMessage(target.value())
-                                } else {
-                                    Msg::NoOp
-                                }
-                            }
-                        })
-                        .on_keydown(|e| {
-                            if e.key() == "Enter" && !e.shift_key() {
-                                Msg::SendInputingChatMessage(true)
-                            } else {
-                                Msg::NoOp
-                            }
-                        }),
-                    vec![],
-                ),
-                Html::div(
-                    Attributes::new().class(Self::class("footer-guide")),
-                    Events::new(),
-                    vec![
-                        text::span("Shift＋Enterで改行できます。"),
-                        Btn::primary(
-                            Attributes::new(),
-                            Events::new().on_click(|_| Msg::SendInputingChatMessage(false)),
-                            vec![Html::text("送信")],
-                        ),
-                    ],
-                ),
-            ],
-        )
-    }
-}
+impl RoomModelessChat {}
 
 impl Styled for RoomModelessChat {
     fn style() -> Style {
         style! {
+            ".base" {
+                "width": "100%";
+                "height": "100%";
+                "padding-top": ".65rem";
+                "padding-bottom": ".65rem";
+                "overflow": "hidden";
+                "grid-template-columns": "max-content 1fr";
+                "grid-template-rows": "1fr max-content";
+            }
+
+            ".controller" {
+                "grid-column": "2 / 3";
+                "grid-row": "2 / 3";
+                "padding-left": ".65rem";
+                "padding-right": ".65rem";
+                "height": "10rem";
+                "display": "grid";
+                "grid-template-columns": "1fr";
+                "grid-template-rows": "1fr max-content";
+                "column-gap": ".35rem";
+                "row-gap": ".65rem";
+            }
+
+            ".controller textarea" {
+                "grid-column": "1 / -1";
+                "resize": "none";
+            }
+
+            ".controller-guide" {
+                "display": "grid";
+                "grid-template-columns": "1fr max-content";
+                "column-gap": ".35rem";
+                "row-gap": ".65rem";
+                "align-items": "center";
+            }
+
+            // ----------
+
             ".main" {
                 "padding-left": ".65rem";
                 "padding-right": ".65rem";

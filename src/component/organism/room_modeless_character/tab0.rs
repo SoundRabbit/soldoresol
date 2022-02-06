@@ -216,7 +216,7 @@ impl RoomModelessCharacter {
 
     fn render_tab0_texture_image(
         &self,
-        image: Option<&BlockMut<resource::ImageData>>,
+        image: Option<&BlockRef<resource::ImageData>>,
         tex_idx: usize,
     ) -> Html<Self> {
         image

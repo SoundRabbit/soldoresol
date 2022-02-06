@@ -1,4 +1,4 @@
-use crate::arena::{block, resource, BlockMut};
+use crate::arena::{block, resource, BlockRef};
 use std::rc::Rc;
 
 #[derive(Clone)]
@@ -38,13 +38,13 @@ pub struct Character {
     pub size: f64,
     pub tex_size: f64,
     pub color: crate::libs::color::Pallet,
-    pub texture: Option<BlockMut<resource::ImageData>>,
+    pub texture: Option<BlockRef<resource::ImageData>>,
 }
 
 #[derive(Clone)]
 pub struct Boxblock {
     pub color: crate::libs::color::Pallet,
     pub size: [f64; 3],
-    pub texture: Option<BlockMut<resource::BlockTexture>>,
+    pub texture: Option<BlockRef<resource::BlockTexture>>,
     pub shape: block::boxblock::Shape,
 }

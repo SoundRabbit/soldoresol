@@ -2,7 +2,7 @@ uses! {}
 
 use super::super::resource::ImageData;
 use super::util::Pack;
-use super::BlockMut;
+use super::BlockRef;
 use crate::libs::color::Pallet;
 use crate::libs::select_list::SelectList;
 use regex::Regex;
@@ -71,7 +71,7 @@ impl ChatPallet {
 block! {
     [pub StandingTexture(constructor, pack)]
     (name) :String;
-    image: Option<BlockMut<ImageData>> = None;
+    image: Option<BlockRef<ImageData>> = None;
 }
 
 impl StandingTexture {
@@ -79,7 +79,7 @@ impl StandingTexture {
         &self.name
     }
 
-    pub fn image(&self) -> Option<&BlockMut<ImageData>> {
+    pub fn image(&self) -> Option<&BlockRef<ImageData>> {
         self.image.as_ref()
     }
 }
@@ -167,7 +167,7 @@ impl Character {
         self.textures.set_selected_idx(tex_idx);
     }
 
-    pub fn set_texture_image(&mut self, tex_idx: usize, image: Option<BlockMut<ImageData>>) {
+    pub fn set_texture_image(&mut self, tex_idx: usize, image: Option<BlockRef<ImageData>>) {
         if let Some(texture) = self.textures.get_mut(tex_idx) {
             texture.image = image;
         }

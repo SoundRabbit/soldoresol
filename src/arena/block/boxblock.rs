@@ -3,6 +3,7 @@ uses! {}
 use super::super::resource::BlockTexture;
 use super::util::Pack;
 use super::BlockMut;
+use super::BlockRef;
 use crate::libs::color::Pallet;
 
 #[derive(Clone, Copy)]
@@ -31,7 +32,7 @@ block! {
     position: [f64; 3] = [0.0, 0.0, 0.0];
     shape: Shape = Shape::Cube;
     color: Pallet = Pallet::blue(5);
-    texture: Option<BlockMut<BlockTexture>> = None;
+    texture: Option<BlockRef<BlockTexture>> = None;
     name: String = String::from("ブロック");
     display_name: (String, String) = (String::from(""), String::from(""));
     is_fixed_position: bool = false;
@@ -70,11 +71,11 @@ impl Boxblock {
         self.color = color;
     }
 
-    pub fn texture(&self) -> Option<&BlockMut<BlockTexture>> {
+    pub fn texture(&self) -> Option<&BlockRef<BlockTexture>> {
         self.texture.as_ref()
     }
 
-    pub fn set_texture(&mut self, texture: Option<BlockMut<BlockTexture>>) {
+    pub fn set_texture(&mut self, texture: Option<BlockRef<BlockTexture>>) {
         self.texture = texture;
     }
 

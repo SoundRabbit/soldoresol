@@ -7,7 +7,7 @@ use super::organism::modal_resource::{self, ModalResource};
 use super::organism::popup_color_pallet::{self, PopupColorPallet};
 use super::organism::room_modeless::RoomModeless;
 use super::template::common::Common;
-use crate::arena::{block, resource, ArenaMut, BlockKind, BlockMut};
+use crate::arena::{block, resource, ArenaMut, BlockKind, BlockMut, BlockRef};
 use crate::libs::random_id::U128Id;
 use isaribi::{
     style,
@@ -32,7 +32,7 @@ pub enum Msg {
     SetDisplayName1(String),
     SetShape(block::boxblock::Shape),
     SetSize([f64; 3]),
-    SetTexture(Option<BlockMut<resource::BlockTexture>>),
+    SetTexture(Option<BlockRef<resource::BlockTexture>>),
 }
 
 pub enum On {

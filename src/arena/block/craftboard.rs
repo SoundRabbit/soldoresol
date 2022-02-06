@@ -4,9 +4,10 @@ use super::super::resource::ImageData;
 use super::util::Cubebox;
 use super::util::Pack;
 use super::BlockMut;
+use super::BlockRef;
 use crate::libs::color::Pallet;
 
-type Textures = Cubebox<Option<BlockMut<ImageData>>>;
+type Textures = Cubebox<Option<BlockRef<ImageData>>>;
 
 block! {
     [pub Craftboard(constructor, pack)]

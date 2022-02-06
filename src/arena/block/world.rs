@@ -1,19 +1,20 @@
-uses! {
-    super::util::Pack;
-    super::BlockMut;
-    super::Character;
-    super::Scene;
-    super::super::resource::ImageData;
-    super::super::resource::BlockTexture;
-}
+uses! {}
+
+use super::super::resource::BlockTexture;
+use super::super::resource::ImageData;
+use super::util::Pack;
+use super::BlockMut;
+use super::BlockRef;
+use super::Character;
+use super::Scene;
 
 block! {
     [pub World(constructor, pack)]
     characters: Vec<BlockMut<Character>> = vec![];
     scenes: Vec<BlockMut<Scene>> = vec![];
     selecting_scene: BlockMut<Scene> = BlockMut::<Scene>::none();
-    image_data_resources: Vec<BlockMut<ImageData>> = vec![];
-    block_texture_resources: Vec<BlockMut<BlockTexture>> = vec![];
+    image_data_resources: Vec<BlockRef<ImageData>> = vec![];
+    block_texture_resources: Vec<BlockRef<BlockTexture>> = vec![];
 }
 
 impl World {
@@ -40,19 +41,19 @@ impl World {
         self.scenes.push(scene);
     }
 
-    pub fn image_data_resources(&self) -> &Vec<BlockMut<ImageData>> {
+    pub fn image_data_resources(&self) -> &Vec<BlockRef<ImageData>> {
         &self.image_data_resources
     }
 
-    pub fn push_image_data_resource(&mut self, image_data: BlockMut<ImageData>) {
+    pub fn push_image_data_resource(&mut self, image_data: BlockRef<ImageData>) {
         self.image_data_resources.push(image_data);
     }
 
-    pub fn block_texture_resources(&self) -> &Vec<BlockMut<BlockTexture>> {
+    pub fn block_texture_resources(&self) -> &Vec<BlockRef<BlockTexture>> {
         &self.block_texture_resources
     }
 
-    pub fn push_block_texture_resource(&mut self, block_texture: BlockMut<BlockTexture>) {
+    pub fn push_block_texture_resource(&mut self, block_texture: BlockRef<BlockTexture>) {
         self.block_texture_resources.push(block_texture);
     }
 }

@@ -10,6 +10,7 @@ impl Constructor for Room {
 
             chat: BlockMut::none(),
             world: BlockMut::clone(&world),
+            me: BlockMut::none(),
 
             table: Table::new(ArenaMut::clone(&props.arena), BlockMut::clone(&world)),
             modeless_container: TabModelessContainer::new(),

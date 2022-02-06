@@ -8,7 +8,7 @@ use super::template::common::Common;
 use crate::arena::{
     block,
     resource::{self, LoadFrom},
-    ArenaMut, BlockKind, BlockMut,
+    ArenaMut, BlockKind, BlockMut, BlockRef,
 };
 use crate::libs::random_id::U128Id;
 use isaribi::{
@@ -31,8 +31,8 @@ pub enum Msg {
     CreateTexure,
     SelectCustomTextureImage(TextureDirection),
     SelectPrefabTextureImage,
-    SetCustomTextureImage(TextureDirection, Option<BlockMut<resource::ImageData>>),
-    SetPrefabTextureImage(Option<BlockMut<resource::ImageData>>),
+    SetCustomTextureImage(TextureDirection, Option<BlockRef<resource::ImageData>>),
+    SetPrefabTextureImage(Option<BlockRef<resource::ImageData>>),
     SetSelectingKind(TextureKind),
 }
 
@@ -47,7 +47,7 @@ pub enum On {
 
 pub struct ModalCreateBlockTexture {
     custom_texture: CustomTexture,
-    prefab_texture: Option<BlockMut<resource::ImageData>>,
+    prefab_texture: Option<BlockRef<resource::ImageData>>,
     selecting_kind: TextureKind,
     showing_modal: ShowingModal,
 }
@@ -59,12 +59,12 @@ pub enum TextureKind {
 }
 
 struct CustomTexture {
-    texture_px: Option<BlockMut<resource::ImageData>>,
-    texture_py: Option<BlockMut<resource::ImageData>>,
-    texture_pz: Option<BlockMut<resource::ImageData>>,
-    texture_nx: Option<BlockMut<resource::ImageData>>,
-    texture_ny: Option<BlockMut<resource::ImageData>>,
-    texture_nz: Option<BlockMut<resource::ImageData>>,
+    texture_px: Option<BlockRef<resource::ImageData>>,
+    texture_py: Option<BlockRef<resource::ImageData>>,
+    texture_pz: Option<BlockRef<resource::ImageData>>,
+    texture_nx: Option<BlockRef<resource::ImageData>>,
+    texture_ny: Option<BlockRef<resource::ImageData>>,
+    texture_nz: Option<BlockRef<resource::ImageData>>,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
@@ -135,32 +135,32 @@ impl Update for ModalCreateBlockTexture {
                         .custom_texture
                         .texture_px
                         .clone()
-                        .unwrap_or(BlockMut::none());
+                        .unwrap_or(BlockRef::none());
                     let py = self
                         .custom_texture
                         .texture_py
                         .clone()
-                        .unwrap_or(BlockMut::none());
+                        .unwrap_or(BlockRef::none());
                     let pz = self
                         .custom_texture
                         .texture_pz
                         .clone()
-                        .unwrap_or(BlockMut::none());
+                        .unwrap_or(BlockRef::none());
                     let nx = self
                         .custom_texture
                         .texture_nx
                         .clone()
-                        .unwrap_or(BlockMut::none());
+                        .unwrap_or(BlockRef::none());
                     let ny = self
                         .custom_texture
                         .texture_ny
                         .clone()
-                        .unwrap_or(BlockMut::none());
+                        .unwrap_or(BlockRef::none());
                     let nz = self
                         .custom_texture
                         .texture_nz
                         .clone()
-                        .unwrap_or(BlockMut::none());
+                        .unwrap_or(BlockRef::none());
                     Cmd::task(|resolve| {
                         wasm_bindgen_futures::spawn_local(async move {
                             if let Some(texture) = resource::BlockTexture::load_from((
@@ -177,7 +177,7 @@ impl Update for ModalCreateBlockTexture {
                     })
                 }
                 TextureKind::PrefabTexture => {
-                    let texture = self.prefab_texture.clone().unwrap_or(BlockMut::none());
+                    let texture = self.prefab_texture.clone().unwrap_or(BlockRef::none());
                     Cmd::task(|resolve| {
                         wasm_bindgen_futures::spawn_local(async move {
                             if let Some(texture) = resource::BlockTexture::load_from(texture).await
