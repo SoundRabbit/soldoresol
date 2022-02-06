@@ -210,27 +210,31 @@ impl Render for RoomModelessCraftboard {
 
 impl RoomModelessCraftboard {
     fn render_tabs(&self) -> Html<Self> {
-        TabMenu::with_children(
-            tab_menu::Props {
-                selected: self.selected_tab_idx,
-                tabs: vec![String::from("Common"), String::from("テクスチャ")],
-                controlled: true,
-            },
-            Sub::map(|sub| match sub {
-                tab_menu::On::ChangeSelectedTab(tab_idx) => Msg::SetSelectedTabIdx(tab_idx),
-            }),
-            vec![
-                if self.selected_tab_idx == 0 {
-                    self.render_tab0()
-                } else {
-                    Common::none()
+        Html::div(
+            Attributes::new().class(Self::class("base")),
+            Events::new(),
+            vec![TabMenu::with_children(
+                tab_menu::Props {
+                    selected: self.selected_tab_idx,
+                    tabs: vec![String::from("Common"), String::from("テクスチャ")],
+                    controlled: true,
                 },
-                if self.selected_tab_idx == 1 {
-                    self.render_tab1()
-                } else {
-                    Common::none()
-                },
-            ],
+                Sub::map(|sub| match sub {
+                    tab_menu::On::ChangeSelectedTab(tab_idx) => Msg::SetSelectedTabIdx(tab_idx),
+                }),
+                vec![
+                    if self.selected_tab_idx == 0 {
+                        self.render_tab0()
+                    } else {
+                        Common::none()
+                    },
+                    if self.selected_tab_idx == 1 {
+                        self.render_tab1()
+                    } else {
+                        Common::none()
+                    },
+                ],
+            )],
         )
     }
 }
@@ -238,9 +242,16 @@ impl RoomModelessCraftboard {
 impl Styled for RoomModelessCraftboard {
     fn style() -> Style {
         style! {
+            ".base" {
+                "width": "100%";
+                "height": "100%";
+                "padding-top": ".65rem";
+            }
+
             ".tab0-main, .tab1-main" {
                 "display": "grid";
                 "column-gap": ".65rem";
+                "row-gap": ".65rem";
                 "align-items": "start";
                 "padding-left": ".65rem";
                 "padding-right": ".65rem";

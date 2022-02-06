@@ -343,11 +343,11 @@ impl TableMenu {
                 Events::new(),
                 vec![
                     text::span("X幅"),
-                    Self::render_tool_option_craftboard_size(tool_idx, craftboard, 0),
+                    Self::render_tool_option_craftboard_size(tool_idx, craftboard, 0, 1.0),
                     text::span("Y幅"),
-                    Self::render_tool_option_craftboard_size(tool_idx, craftboard, 1),
+                    Self::render_tool_option_craftboard_size(tool_idx, craftboard, 1, 1.0),
                     text::span("Z幅"),
-                    Self::render_tool_option_craftboard_size(tool_idx, craftboard, 2),
+                    Self::render_tool_option_craftboard_size(tool_idx, craftboard, 2, 0.0),
                 ],
             )],
         )
@@ -357,14 +357,15 @@ impl TableMenu {
         tool_idx: usize,
         craftboard: &Rc<table_tool::Craftboard>,
         coord_idx: usize,
+        min: f64,
     ) -> Html<Self> {
         Slider::empty(
             slider::Props {
                 position: slider::Position::Linear {
                     val: craftboard.size[coord_idx],
-                    min: 0.1,
+                    min: min,
                     max: 100.0,
-                    step: 0.1,
+                    step: 1.0,
                 },
                 range_is_editable: false,
                 theme: slider::Theme::Light,

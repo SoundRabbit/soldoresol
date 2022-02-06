@@ -113,7 +113,7 @@ impl RoomModelessCraftboard {
                         Slider::empty(
                             slider::Props {
                                 position: slider::Position::Linear {
-                                    min: 1.0,
+                                    min: 0.0,
                                     max: 100.0,
                                     val: craftboard.size()[2],
                                     step: 1.0,
