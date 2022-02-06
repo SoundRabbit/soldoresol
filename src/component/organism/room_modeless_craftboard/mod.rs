@@ -238,16 +238,21 @@ impl RoomModelessCraftboard {
 impl Styled for RoomModelessCraftboard {
     fn style() -> Style {
         style! {
-            ".tab0-main" {
-                "display": "grid";
-                "grid-template-columns": "repeat(auto-fit, minmax(20rem, 1fr))";
-                "column-gap": ".65rem";
-            }
-
             ".tab0-main, .tab1-main" {
+                "display": "grid";
+                "column-gap": ".65rem";
+                "align-items": "start";
                 "padding-left": ".65rem";
                 "padding-right": ".65rem";
                 "overflow-y": "scroll";
+                "grid-template-columns": "repeat(auto-fit, minmax(20rem, 1fr))";
+                "grid-auto-rows": "max-content";
+            }
+
+            ".tab0-main img, .tab1-main img" {
+                "width": "100%";
+                "max-height": "20rem";
+                "object-fit": "contain";
             }
         }
     }

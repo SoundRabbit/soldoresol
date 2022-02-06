@@ -1,4 +1,5 @@
 use super::super::atom::btn::{self, Btn};
+use super::super::atom::heading::{self, Heading};
 use super::super::atom::text;
 use super::super::organism::room_modeless::RoomModeless;
 use super::*;
@@ -10,38 +11,44 @@ impl RoomModelessCraftboard {
                 .class(RoomModeless::class("common-base"))
                 .class("pure-form"),
             Events::new(),
-            vec![Html::div(
-                Attributes::new()
-                    .class(Common::keyvalue())
-                    .class(Self::class("tab1-main")),
-                Events::new(),
-                vec![
-                    text::span("PZ（上）"),
-                    self.craftboard
-                        .map(|data| self.render_tab1_texture(data, 2))
-                        .unwrap_or(Common::none()),
-                    text::span("NZ（下）"),
-                    self.craftboard
-                        .map(|data| self.render_tab1_texture(data, 5))
-                        .unwrap_or(Common::none()),
-                    text::span("PY（奥）"),
-                    self.craftboard
-                        .map(|data| self.render_tab1_texture(data, 1))
-                        .unwrap_or(Common::none()),
-                    text::span("NY（前）"),
-                    self.craftboard
-                        .map(|data| self.render_tab1_texture(data, 4))
-                        .unwrap_or(Common::none()),
-                    text::span("PX（右）"),
-                    self.craftboard
-                        .map(|data| self.render_tab1_texture(data, 0))
-                        .unwrap_or(Common::none()),
-                    text::span("NX（左）"),
-                    self.craftboard
-                        .map(|data| self.render_tab1_texture(data, 3))
-                        .unwrap_or(Common::none()),
-                ],
-            )],
+            vec![self.render_tab1_header(), self.render_tab1_main()],
+        )
+    }
+
+    fn render_tab1_header(&self) -> Html<Self> {
+        Html::div(Attributes::new(), Events::new(), vec![])
+    }
+
+    fn render_tab1_main(&self) -> Html<Self> {
+        Html::div(
+            Attributes::new().class(Self::class("tab1-main")),
+            Events::new(),
+            vec![
+                self.render_tab1_texture_block("PZ（上）", 2),
+                self.render_tab1_texture_block("NZ（下）", 5),
+                self.render_tab1_texture_block("PY（奥）", 1),
+                self.render_tab1_texture_block("NY（前）", 4),
+                self.render_tab1_texture_block("PX（右）", 0),
+                self.render_tab1_texture_block("NX（左）", 3),
+            ],
+        )
+    }
+
+    fn render_tab1_texture_block(&self, name: impl Into<String>, tex_idx: usize) -> Html<Self> {
+        Html::div(
+            Attributes::new(),
+            Events::new(),
+            vec![
+                Heading::h5(
+                    heading::Variant::Light,
+                    Attributes::new(),
+                    Events::new(),
+                    vec![Html::text(name)],
+                ),
+                self.craftboard
+                    .map(|data| self.render_tab1_texture(data, tex_idx))
+                    .unwrap_or(Common::none()),
+            ],
         )
     }
 
@@ -68,7 +75,7 @@ impl RoomModelessCraftboard {
                     Events::new().on_click(move |_| {
                         Msg::SetShowingModal(ShowingModal::SelectTexture(tex_idx))
                     }),
-                    vec![Html::text("立ち絵を選択")],
+                    vec![Html::text("画像を選択")],
                 )
             })
     }

@@ -144,6 +144,7 @@ impl Styled for RoomModeless {
                 "padding-top": ".65rem";
                 "padding-bottom": ".65rem";
                 "height": "100%";
+                "overflow": "hidden";
             }
 
             ".common-header" {
