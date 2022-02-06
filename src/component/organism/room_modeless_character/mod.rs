@@ -1,9 +1,5 @@
-use super::atom::btn::Btn;
-use super::atom::fa;
-use super::atom::slider::{self, Slider};
-use super::atom::text;
+use super::molecule::tab_menu::{self, TabMenu};
 use super::organism::modal_resource::{self, ModalResource};
-use super::organism::popup_color_pallet::{self, PopupColorPallet};
 use super::organism::room_modeless::RoomModeless;
 use super::template::common::Common;
 use crate::arena::{block, resource, ArenaMut, BlockKind, BlockMut};
@@ -16,6 +12,9 @@ use kagura::component::{Cmd, Sub};
 use kagura::prelude::*;
 use std::collections::HashSet;
 
+mod tab0;
+mod tab1;
+
 pub struct Props {
     pub arena: ArenaMut,
     pub world: BlockMut<block::World>,
@@ -25,6 +24,7 @@ pub struct Props {
 pub enum Msg {
     NoOp,
     Sub(On),
+    SetSelectedTabIdx(usize),
     SetShowingModal(ShowingModal),
     SetColor(crate::libs::color::Pallet),
     SetDisplayName0(String),
@@ -44,6 +44,7 @@ pub enum On {
 pub struct RoomModelessCharacter {
     character: BlockMut<block::Character>,
 
+    selected_tab_idx: usize,
     showing_modal: ShowingModal,
     element_id: ElementId,
 }
@@ -68,6 +69,7 @@ impl Constructor for RoomModelessCharacter {
     fn constructor(props: &Props) -> Self {
         Self {
             character: BlockMut::clone(&props.data),
+            selected_tab_idx: 0,
             showing_modal: ShowingModal::None,
             element_id: ElementId::new(),
         }
@@ -84,6 +86,10 @@ impl Update for RoomModelessCharacter {
         match msg {
             Msg::NoOp => Cmd::none(),
             Msg::Sub(sub) => Cmd::sub(sub),
+            Msg::SetSelectedTabIdx(tab_idx) => {
+                self.selected_tab_idx = tab_idx;
+                Cmd::none()
+            }
             Msg::SetShowingModal(showing_modal) => {
                 self.showing_modal = showing_modal;
                 Cmd::none()
@@ -156,181 +162,62 @@ impl Update for RoomModelessCharacter {
 
 impl Render for RoomModelessCharacter {
     fn render(&self, props: &Props, _children: Vec<Html<Self>>) -> Html<Self> {
-        Self::styled(Html::div(
-            Attributes::new()
-                .class(RoomModeless::class("common-base"))
-                .class("pure-form"),
-            Events::new(),
-            vec![
-                self.character
-                    .map(|data| self.render_header(data))
-                    .unwrap_or(Common::none()),
-                self.character
-                    .map(|data| self.render_main(data))
-                    .unwrap_or(Common::none()),
-                match &self.showing_modal {
-                    ShowingModal::None => Html::none(),
-                    ShowingModal::SelectCharacterTexture => ModalResource::empty(
-                        modal_resource::Props {
-                            arena: ArenaMut::clone(&props.arena),
-                            world: BlockMut::clone(&props.world),
-                            title: String::from(modal_resource::title::SELECT_TEXTURE),
-                            filter: set! { BlockKind::ImageData },
-                            is_selecter: true,
-                        },
-                        Sub::map(|sub| match sub {
-                            modal_resource::On::Close => Msg::SetShowingModal(ShowingModal::None),
-                            modal_resource::On::UpdateBlocks { insert, update } => {
-                                Msg::Sub(On::UpdateBlocks { insert, update })
-                            }
-                            modal_resource::On::SelectImageData(texture) => {
-                                Msg::SetTexture(Some(texture))
-                            }
-                            modal_resource::On::SelectNone => Msg::SetTexture(None),
-                            _ => Msg::NoOp,
-                        }),
-                    ),
-                },
-            ],
-        ))
+        Self::styled(Html::fragment(vec![
+            self.render_tabs(),
+            match &self.showing_modal {
+                ShowingModal::None => Html::none(),
+                ShowingModal::SelectCharacterTexture => ModalResource::empty(
+                    modal_resource::Props {
+                        arena: ArenaMut::clone(&props.arena),
+                        world: BlockMut::clone(&props.world),
+                        title: String::from(modal_resource::title::SELECT_TEXTURE),
+                        filter: set! { BlockKind::ImageData },
+                        is_selecter: true,
+                    },
+                    Sub::map(|sub| match sub {
+                        modal_resource::On::Close => Msg::SetShowingModal(ShowingModal::None),
+                        modal_resource::On::UpdateBlocks { insert, update } => {
+                            Msg::Sub(On::UpdateBlocks { insert, update })
+                        }
+                        modal_resource::On::SelectImageData(texture) => {
+                            Msg::SetTexture(Some(texture))
+                        }
+                        modal_resource::On::SelectNone => Msg::SetTexture(None),
+                        _ => Msg::NoOp,
+                    }),
+                ),
+            },
+        ]))
     }
 }
 
 impl RoomModelessCharacter {
-    fn render_header(&self, character: &block::Character) -> Html<Self> {
+    fn render_tabs(&self) -> Html<Self> {
         Html::div(
-            Attributes::new().class(RoomModeless::class("common-header")),
+            Attributes::new().class(Self::class("base")),
             Events::new(),
-            vec![
-                Html::label(
-                    Attributes::new()
-                        .class(RoomModeless::class("common-label"))
-                        .string("for", &self.element_id.input_character_name),
-                    Events::new(),
-                    vec![fa::i("fa-user")],
-                ),
-                Html::input(
-                    Attributes::new()
-                        .id(&self.element_id.input_character_name)
-                        .value(character.name()),
-                    Events::new(),
-                    vec![],
-                ),
-                Html::label(
-                    Attributes::new()
-                        .class(RoomModeless::class("common-label"))
-                        .string("for", &self.element_id.input_character_display_name),
-                    Events::new(),
-                    vec![Html::text("表示名")],
-                ),
-                Html::input(
-                    Attributes::new().value(&character.display_name().1),
-                    Events::new().on_input(Msg::SetDisplayName1),
-                    vec![],
-                ),
-                text::span(""),
-                Html::input(
-                    Attributes::new()
-                        .id(&self.element_id.input_character_display_name)
-                        .value(&character.display_name().0),
-                    Events::new().on_input(Msg::SetDisplayName0),
-                    vec![],
-                ),
-            ],
-        )
-    }
-
-    fn render_main(&self, character: &block::Character) -> Html<Self> {
-        Html::div(
-            Attributes::new().class(Self::class("main")),
-            Events::new(),
-            vec![
-                Html::div(
-                    Attributes::new().class(Common::keyvalue()),
-                    Events::new(),
-                    vec![
-                        text::span("サイズ"),
-                        Slider::empty(
-                            slider::Props {
-                                position: slider::Position::Linear {
-                                    min: 0.1,
-                                    max: 10.0,
-                                    val: character.size(),
-                                    step: 0.1,
-                                },
-                                range_is_editable: false,
-                                theme: slider::Theme::Light,
-                            },
-                            Sub::map(move |sub| match sub {
-                                slider::On::Input(x) => Msg::SetSize(x),
-                                _ => Msg::NoOp,
-                            }),
-                        ),
-                        text::span("立ち絵サイズ"),
-                        Slider::empty(
-                            slider::Props {
-                                position: slider::Position::Linear {
-                                    min: 0.1,
-                                    max: 10.0,
-                                    val: character.tex_size(),
-                                    step: 0.1,
-                                },
-                                range_is_editable: false,
-                                theme: slider::Theme::Light,
-                            },
-                            Sub::map(move |sub| match sub {
-                                slider::On::Input(x) => Msg::SetTexSize(x),
-                                _ => Msg::NoOp,
-                            }),
-                        ),
-                    ],
-                ),
-                Html::div(
-                    Attributes::new().class(Common::keyvalue()),
-                    Events::new(),
-                    vec![
-                        text::span("色"),
-                        PopupColorPallet::empty(
-                            popup_color_pallet::Props {
-                                direction: popup_color_pallet::Direction::Bottom,
-                                default_selected: character.color().clone(),
-                            },
-                            Sub::map(|sub| match sub {
-                                popup_color_pallet::On::SelectColor(color) => Msg::SetColor(color),
-                            }),
-                        ),
-                        text::span("立ち絵"),
-                        character
-                            .texture()
-                            .as_ref()
-                            .map(|texture| {
-                                texture.map(|texture| {
-                                    Html::img(
-                                        Attributes::new()
-                                            .src(texture.url().to_string())
-                                            .class(Common::bg_transparent()),
-                                        Events::new().on_click(|_| {
-                                            Msg::SetShowingModal(
-                                                ShowingModal::SelectCharacterTexture,
-                                            )
-                                        }),
-                                        vec![],
-                                    )
-                                })
-                            })
-                            .unwrap_or(None)
-                            .unwrap_or_else(|| {
-                                Btn::secondary(
-                                    Attributes::new(),
-                                    Events::new().on_click(|_| {
-                                        Msg::SetShowingModal(ShowingModal::SelectCharacterTexture)
-                                    }),
-                                    vec![Html::text("立ち絵を選択")],
-                                )
-                            }),
-                    ],
-                ),
-            ],
+            vec![TabMenu::with_children(
+                tab_menu::Props {
+                    selected: self.selected_tab_idx,
+                    tabs: vec![String::from("Common"), String::from("立ち絵")],
+                    controlled: true,
+                },
+                Sub::map(|sub| match sub {
+                    tab_menu::On::ChangeSelectedTab(tab_idx) => Msg::SetSelectedTabIdx(tab_idx),
+                }),
+                vec![
+                    if self.selected_tab_idx == 0 {
+                        self.render_tab0()
+                    } else {
+                        Common::none()
+                    },
+                    if self.selected_tab_idx == 1 {
+                        self.render_tab1()
+                    } else {
+                        Common::none()
+                    },
+                ],
+            )],
         )
     }
 }
@@ -341,8 +228,13 @@ impl Styled for RoomModelessCharacter {
             ".dropdown" {
                 "overflow": "visible !important";
             }
+            ".base" {
+                "width": "100%";
+                "height": "100%";
+                "padding-top": ".65rem";
+            }
 
-            ".main" {
+            ".tab0-main" {
                 "display": "grid";
                 "grid-template-columns": "repeat(auto-fit, minmax(20rem, 1fr))";
                 "align-items": "start";

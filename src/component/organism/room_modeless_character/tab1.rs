@@ -1,35 +1,50 @@
-use super::super::atom::btn::Btn;
+use super::super::atom::btn::{self, Btn};
+use super::super::atom::dropdown::{self, Dropdown};
 use super::super::atom::heading::{self, Heading};
-use super::super::organism::room_modeless::RoomModeless;
+use super::super::atom::text;
 use super::*;
 
-impl RoomModelessCraftboard {
+impl RoomModelessCharacter {
     pub fn render_tab1(&self) -> Html<Self> {
         Html::div(
             Attributes::new()
                 .class(RoomModeless::class("common-base"))
                 .class("pure-form"),
             Events::new(),
-            vec![self.render_tab1_header(), self.render_tab1_main()],
+            vec![
+                self.character
+                    .map(|data| self.render_tab1_header(data))
+                    .unwrap_or(Common::none()),
+                self.render_tab1_main(),
+            ],
         )
     }
 
-    fn render_tab1_header(&self) -> Html<Self> {
-        Html::div(Attributes::new(), Events::new(), vec![])
+    fn render_tab1_header(&self, character: &block::Character) -> Html<Self> {
+        Html::div(
+            Attributes::new().class(RoomModeless::class("common-header")),
+            Events::new(),
+            vec![
+                text::span("使用"),
+                Dropdown::with_children(
+                    dropdown::Props {
+                        direction: dropdown::Direction::Bottom,
+                        text: dropdown::Text::Text(String::from("[default]]")),
+                        variant: btn::Variant::DarkLikeMenu,
+                        toggle_type: dropdown::ToggleType::Click,
+                    },
+                    Sub::none(),
+                    vec![],
+                ),
+            ],
+        )
     }
 
     fn render_tab1_main(&self) -> Html<Self> {
         Html::div(
             Attributes::new().class(Self::class("tab1-main")),
             Events::new(),
-            vec![
-                self.render_tab1_texture_block("PZ（上）", 2),
-                self.render_tab1_texture_block("NZ（下）", 5),
-                self.render_tab1_texture_block("PY（奥）", 1),
-                self.render_tab1_texture_block("NY（前）", 4),
-                self.render_tab1_texture_block("PX（右）", 0),
-                self.render_tab1_texture_block("NX（左）", 3),
-            ],
+            vec![self.render_tab1_texture_block("PZ（上）", 2)],
         )
     }
 
@@ -44,16 +59,16 @@ impl RoomModelessCraftboard {
                     Events::new(),
                     vec![Html::text(name)],
                 ),
-                self.craftboard
+                self.character
                     .map(|data| self.render_tab1_texture(data, tex_idx))
                     .unwrap_or(Common::none()),
             ],
         )
     }
 
-    fn render_tab1_texture(&self, craftboard: &block::Craftboard, tex_idx: usize) -> Html<Self> {
-        craftboard.textures()[tex_idx]
-            .as_ref()
+    fn render_tab1_texture(&self, character: &block::Character, tex_idx: usize) -> Html<Self> {
+        character
+            .texture()
             .map(|texture| {
                 texture.map(|texture| {
                     Html::img(
@@ -61,7 +76,7 @@ impl RoomModelessCraftboard {
                             .src(texture.url().to_string())
                             .class(Common::bg_transparent()),
                         Events::new().on_click(move |_| {
-                            Msg::SetShowingModal(ShowingModal::SelectTexture(tex_idx))
+                            Msg::SetShowingModal(ShowingModal::SelectCharacterTexture)
                         }),
                         vec![],
                     )
@@ -72,9 +87,9 @@ impl RoomModelessCraftboard {
                 Btn::secondary(
                     Attributes::new(),
                     Events::new().on_click(move |_| {
-                        Msg::SetShowingModal(ShowingModal::SelectTexture(tex_idx))
+                        Msg::SetShowingModal(ShowingModal::SelectCharacterTexture)
                     }),
-                    vec![Html::text("画像を選択")],
+                    vec![Html::text("立ち絵を選択")],
                 )
             })
     }
