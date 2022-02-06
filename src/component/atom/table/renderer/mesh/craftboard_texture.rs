@@ -175,7 +175,7 @@ impl CraftboardTexture {
         is_2d_mode: bool,
         tex_table: &mut TexTable,
     ) {
-        gl.use_program(ProgramType::ShapedProgram);
+        gl.use_program(ProgramType::UnshapedProgram);
         gl.depth_func(web_sys::WebGlRenderingContext::LEQUAL);
         gl.set_a_vertex(&self.vertex_buffer, 3, 0);
         gl.set_a_texture_coord(&self.texture_coord_buffer, 2, 0);
