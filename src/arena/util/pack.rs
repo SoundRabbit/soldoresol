@@ -115,3 +115,20 @@ impl Pack for regex::Regex {
         JsValue::from(self.as_str())
     }
 }
+
+#[async_trait(?Send)]
+impl<T: Pack> Pack for crate::libs::select_list::SelectList<T> {
+    async fn pack(&self, is_deep: bool) -> JsValue {
+        let data = js_sys::Array::new();
+
+        for item in self.iter() {
+            data.push(&item.pack(is_deep).await);
+        }
+
+        (object! {
+            "selected": self.selected_idx(),
+            "data": data
+        })
+        .into()
+    }
+}

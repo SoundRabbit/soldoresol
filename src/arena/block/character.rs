@@ -4,6 +4,7 @@ use super::super::resource::ImageData;
 use super::util::Pack;
 use super::BlockMut;
 use crate::libs::color::Pallet;
+use crate::libs::select_list::SelectList;
 use regex::Regex;
 
 block! {
@@ -68,6 +69,22 @@ impl ChatPallet {
 }
 
 block! {
+    [pub StandingTexture(constructor, pack)]
+    (name) :String;
+    image: Option<BlockMut<ImageData>> = None;
+}
+
+impl StandingTexture {
+    pub fn name(&self) -> &String {
+        &self.name
+    }
+
+    pub fn image(&self) -> Option<&BlockMut<ImageData>> {
+        self.image.as_ref()
+    }
+}
+
+block! {
     [pub Character(constructor, pack)]
     name: String = String::from("名前未設定");
     display_name: (String, String) = (String::from("名前未設定"), String::from("新規キャラクター"));
@@ -75,7 +92,8 @@ block! {
     position: [f64; 3] = [0.0, 0.0, 0.0];
     size: [f64; 3] = [1.0, 1.5, 1.0];
     color: Pallet = Pallet::gray(5);
-    texture: Option<BlockMut<ImageData>> = None;
+    textures: SelectList<StandingTexture> =
+        SelectList::new(vec![StandingTexture::new(String::from("[default]"))], 0);
 }
 
 impl Character {
@@ -133,12 +151,35 @@ impl Character {
     pub fn set_color(&mut self, color: Pallet) {
         self.color = color;
     }
-
-    pub fn texture(&self) -> Option<&BlockMut<ImageData>> {
-        self.texture.as_ref()
+    pub fn textures(&self) -> &SelectList<StandingTexture> {
+        &self.textures
     }
 
-    pub fn set_texture(&mut self, texture: Option<BlockMut<ImageData>>) {
-        self.texture = texture;
+    pub fn selected_texture(&self) -> Option<&StandingTexture> {
+        self.textures.selected()
+    }
+
+    pub fn selected_texture_idx(&self) -> usize {
+        self.textures.selected_idx()
+    }
+
+    pub fn set_selected_texture_idx(&mut self, tex_idx: usize) {
+        self.textures.set_selected_idx(tex_idx);
+    }
+
+    pub fn set_texture_image(&mut self, tex_idx: usize, image: Option<BlockMut<ImageData>>) {
+        if let Some(texture) = self.textures.get_mut(tex_idx) {
+            texture.image = image;
+        }
+    }
+
+    pub fn set_texture_name(&mut self, tex_idx: usize, name: String) {
+        if let Some(texture) = self.textures.get_mut(tex_idx) {
+            texture.name = name;
+        }
+    }
+
+    pub fn push_texture(&mut self, texture: StandingTexture) {
+        self.textures.push(texture);
     }
 }

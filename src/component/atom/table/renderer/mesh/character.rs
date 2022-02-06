@@ -175,7 +175,10 @@ impl Character {
                     }
                 }
                 if character.size() > 0.0 {
-                    if let Some(texture) = character.texture() {
+                    if let Some(texture) = character
+                        .selected_texture()
+                        .and_then(|texture| texture.image())
+                    {
                         if let Some(tex_size) = texture.map(|texture| texture.size().clone()) {
                             let height = character.size() * character.tex_size();
                             let width = height * tex_size[0] / tex_size[1];
@@ -252,7 +255,10 @@ impl Character {
                 for (model_matrix, inv_model_matrix, mvp_matrix, character) in characters {
                     let character_id = character.id();
                     character.map(|character| {
-                        if let Some(texture) = character.texture() {
+                        if let Some(texture) = character
+                            .selected_texture()
+                            .and_then(|texture| texture.image())
+                        {
                             if let Some(tex_idx) = texture.map(|image_data| {
                                 tex_table.use_resource(gl, &texture.id(), image_data)
                             }) {

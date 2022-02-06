@@ -127,18 +127,21 @@ impl RoomModelessCharacter {
                         ),
                         text::span("立ち絵"),
                         character
-                            .texture()
-                            .as_ref()
-                            .map(|texture| {
-                                texture.map(|texture| {
+                            .selected_texture()
+                            .and_then(|texture| texture.image())
+                            .map(|image| {
+                                image.map(|image| {
                                     Html::img(
                                         Attributes::new()
-                                            .src(texture.url().to_string())
+                                            .src(image.url().to_string())
                                             .class(Common::bg_transparent()),
-                                        Events::new().on_click(|_| {
-                                            Msg::SetShowingModal(
-                                                ShowingModal::SelectCharacterTexture,
-                                            )
+                                        Events::new().on_click({
+                                            let tex_idx = character.selected_texture_idx();
+                                            move |_| {
+                                                Msg::SetShowingModal(
+                                                    ShowingModal::SelectCharacterTexture(tex_idx),
+                                                )
+                                            }
                                         }),
                                         vec![],
                                     )
@@ -148,8 +151,13 @@ impl RoomModelessCharacter {
                             .unwrap_or_else(|| {
                                 Btn::secondary(
                                     Attributes::new(),
-                                    Events::new().on_click(|_| {
-                                        Msg::SetShowingModal(ShowingModal::SelectCharacterTexture)
+                                    Events::new().on_click({
+                                        let tex_idx = character.selected_texture_idx();
+                                        move |_| {
+                                            Msg::SetShowingModal(
+                                                ShowingModal::SelectCharacterTexture(tex_idx),
+                                            )
+                                        }
                                     }),
                                     vec![Html::text("立ち絵を選択")],
                                 )

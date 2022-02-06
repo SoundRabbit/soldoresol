@@ -31,7 +31,10 @@ pub enum Msg {
     SetDisplayName1(String),
     SetSize(f64),
     SetTexSize(f64),
-    SetTexture(Option<BlockMut<resource::ImageData>>),
+    SetSelectedTextureIdx(usize),
+    SetTextureImage(usize, Option<BlockMut<resource::ImageData>>),
+    SetTextureName(usize, String),
+    PushTexture,
 }
 
 pub enum On {
@@ -51,7 +54,7 @@ pub struct RoomModelessCharacter {
 
 pub enum ShowingModal {
     None,
-    SelectCharacterTexture,
+    SelectCharacterTexture(usize),
 }
 
 ElementId! {
@@ -144,12 +147,48 @@ impl Update for RoomModelessCharacter {
                     update: set! { self.character.id() },
                 })
             }
-            Msg::SetTexture(texture) => {
+            Msg::SetSelectedTextureIdx(tex_idx) => {
                 self.character.update(|character| {
-                    character.set_texture(texture);
+                    character.set_selected_texture_idx(tex_idx);
+                });
+
+                Cmd::sub(On::UpdateBlocks {
+                    insert: set! {},
+                    update: set! { self.character.id() },
+                })
+            }
+            Msg::SetTextureImage(tex_idx, image) => {
+                self.character.update(|character| {
+                    character.set_texture_image(tex_idx, image);
                 });
 
                 self.showing_modal = ShowingModal::None;
+
+                Cmd::sub(On::UpdateBlocks {
+                    insert: set! {},
+                    update: set! { self.character.id() },
+                })
+            }
+
+            Msg::SetTextureName(tex_idx, name) => {
+                self.character.update(|character| {
+                    character.set_texture_name(tex_idx, name);
+                });
+
+                Cmd::sub(On::UpdateBlocks {
+                    insert: set! {},
+                    update: set! { self.character.id() },
+                })
+            }
+
+            Msg::PushTexture => {
+                self.character.update(|character| {
+                    let n = character.textures().len();
+                    character.push_texture(block::character::StandingTexture::new(format!(
+                        "立ち絵[{}]",
+                        n
+                    )));
+                });
 
                 Cmd::sub(On::UpdateBlocks {
                     insert: set! {},
@@ -166,7 +205,7 @@ impl Render for RoomModelessCharacter {
             self.render_tabs(),
             match &self.showing_modal {
                 ShowingModal::None => Html::none(),
-                ShowingModal::SelectCharacterTexture => ModalResource::empty(
+                ShowingModal::SelectCharacterTexture(tex_idx) => ModalResource::empty(
                     modal_resource::Props {
                         arena: ArenaMut::clone(&props.arena),
                         world: BlockMut::clone(&props.world),
@@ -174,16 +213,19 @@ impl Render for RoomModelessCharacter {
                         filter: set! { BlockKind::ImageData },
                         is_selecter: true,
                     },
-                    Sub::map(|sub| match sub {
-                        modal_resource::On::Close => Msg::SetShowingModal(ShowingModal::None),
-                        modal_resource::On::UpdateBlocks { insert, update } => {
-                            Msg::Sub(On::UpdateBlocks { insert, update })
+                    Sub::map({
+                        let tex_idx = *tex_idx;
+                        move |sub| match sub {
+                            modal_resource::On::Close => Msg::SetShowingModal(ShowingModal::None),
+                            modal_resource::On::UpdateBlocks { insert, update } => {
+                                Msg::Sub(On::UpdateBlocks { insert, update })
+                            }
+                            modal_resource::On::SelectImageData(image) => {
+                                Msg::SetTextureImage(tex_idx, Some(image))
+                            }
+                            modal_resource::On::SelectNone => Msg::SetTextureImage(tex_idx, None),
+                            _ => Msg::NoOp,
                         }
-                        modal_resource::On::SelectImageData(texture) => {
-                            Msg::SetTexture(Some(texture))
-                        }
-                        modal_resource::On::SelectNone => Msg::SetTexture(None),
-                        _ => Msg::NoOp,
                     }),
                 ),
             },
@@ -228,20 +270,37 @@ impl Styled for RoomModelessCharacter {
             ".dropdown" {
                 "overflow": "visible !important";
             }
+
             ".base" {
                 "width": "100%";
                 "height": "100%";
                 "padding-top": ".65rem";
             }
 
-            ".tab0-main" {
+            ".tab0-main, .tab1-main" {
                 "display": "grid";
-                "grid-template-columns": "repeat(auto-fit, minmax(20rem, 1fr))";
+                "column-gap": ".65rem";
+                "row-gap": ".65rem";
                 "align-items": "start";
                 "padding-left": ".65rem";
                 "padding-right": ".65rem";
-                "column-gap": ".65rem";
                 "overflow-y": "scroll";
+                "grid-template-columns": "repeat(auto-fit, minmax(20rem, 1fr))";
+                "grid-auto-rows": "max-content";
+            }
+
+            ".tab0-main img, .tab1-main img" {
+                "width": "100%";
+                "max-height": "20rem";
+                "object-fit": "contain";
+            }
+
+            ".tab1-texture" {
+                "display": "grid";
+                "align-items": "start";
+                "justify-items": "stretch";
+                "grid-template-columns": "1fr";
+                "grid-template-rows": "max-content max-content";
             }
         }
     }

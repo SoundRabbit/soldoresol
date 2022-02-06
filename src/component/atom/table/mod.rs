@@ -311,7 +311,10 @@ impl Table {
         character.set_position(p);
         character.set_tex_size(option.tex_size);
         character.set_color(option.color);
-        character.set_texture(option.texture.as_ref().map(|block| BlockMut::clone(block)));
+        character.set_texture_image(
+            0,
+            option.texture.as_ref().map(|block| BlockMut::clone(block)),
+        );
 
         let character = self.arena.insert(character);
         let character_id = character.id();
