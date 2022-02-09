@@ -1,7 +1,7 @@
 use super::*;
 
 impl RoomModelessChat {
-    pub fn render_chat_panel(&self) -> Html<Self> {
+    pub fn render_chat_pallet(&self) -> Html<Self> {
         Html::div(
             Attributes::new().class(Self::class("chatpallet-container")),
             Events::new(),

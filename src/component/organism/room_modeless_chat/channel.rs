@@ -1,76 +1,97 @@
+use super::super::molecule::tab_menu::{self, TabMenu};
 use super::*;
 
 impl RoomModelessChat {
-    pub fn render_channel(&self, channel: &block::ChatChannel) -> Html<Self> {
+    pub fn render_channel_container(&self, chat: &block::Chat) -> Html<Self> {
         Html::div(
-            Attributes::new().class(RoomModeless::class("common-base")),
+            Attributes::new().class(Self::class("channel-container")),
+            Events::new(),
+            vec![TabMenu::with_children(
+                tab_menu::Props {
+                    selected: self.selected_channel_idx,
+                    tabs: chat
+                        .channels()
+                        .iter()
+                        .map(|channel| {
+                            channel
+                                .map(|channel| format!("# {}", channel.name()))
+                                .unwrap_or(String::from("# ???"))
+                        })
+                        .collect(),
+                    controlled: true,
+                },
+                Sub::map(|sub| match sub {
+                    tab_menu::On::ChangeSelectedTab(tab_idx) => Msg::SetSelectedChannelIdx(tab_idx),
+                }),
+                chat.channels()
+                    .iter()
+                    .enumerate()
+                    .map(|(channel_idx, channel)| {
+                        if channel_idx == self.selected_channel_idx {
+                            channel
+                                .map(|channel| self.render_channel(channel))
+                                .unwrap_or(Html::none())
+                        } else {
+                            Html::none()
+                        }
+                    })
+                    .collect(),
+            )],
+        )
+    }
+
+    fn render_channel(&self, chat_channel: &block::ChatChannel) -> Html<Self> {
+        Html::div(
+            Attributes::new().class(Self::class("channel")),
             Events::new(),
             vec![
-                self.render_channel_header(channel),
-                self.render_channel_main(channel),
+                self.render_channel_header(chat_channel),
+                self.render_channel_main(chat_channel),
             ],
         )
     }
 
     fn render_channel_header(&self, chat_channel: &block::ChatChannel) -> Html<Self> {
         Html::div(
-            Attributes::new().class(RoomModeless::class("common-header")),
+            Attributes::new(),
             Events::new(),
-            vec![
-                Html::label(
-                    Attributes::new()
-                        .class(RoomModeless::class("common-label"))
-                        .string("for", &self.element_id.input_channel_name),
-                    Events::new(),
-                    vec![Html::text("#")],
-                ),
-                Html::input(
-                    Attributes::new()
-                        .id(&self.element_id.input_channel_name)
-                        .value(chat_channel.name()),
-                    Events::new(),
-                    vec![],
-                ),
-            ],
+            vec![Html::input(
+                Attributes::new()
+                    .id(&self.element_id.input_channel_name)
+                    .value(chat_channel.name()),
+                Events::new(),
+                vec![],
+            )],
         )
     }
 
     fn render_channel_main(&self, chat_channel: &block::ChatChannel) -> Html<Self> {
         Html::div(
-            Attributes::new().class(Self::class("main")),
+            Attributes::new().class(Self::class("channel-main")),
             Events::new(),
             vec![
-                self.render_chat_panel(),
+                if chat_channel.messages().len() > 50 {
+                    Btn::secondary(
+                        Attributes::new().class(Self::class("banner")),
+                        Events::new(),
+                        vec![Html::text("全チャットログを表示")],
+                    )
+                } else {
+                    Html::div(Attributes::new(), Events::new(), vec![])
+                },
                 Html::div(
-                    Attributes::new().class(Self::class("main-chat")),
+                    Attributes::new().class(Self::class("channel-log")),
                     Events::new(),
-                    vec![
-                        if chat_channel.messages().len() > 50 {
-                            Btn::secondary(
-                                Attributes::new().class(Self::class("banner")),
-                                Events::new(),
-                                vec![Html::text("全チャットログを表示")],
-                            )
-                        } else {
-                            Html::div(Attributes::new(), Events::new(), vec![])
-                        },
-                        Html::div(
-                            Attributes::new().class(Self::class("main-log")),
-                            Events::new(),
-                            chat_channel
-                                .messages()
-                                .iter()
-                                .rev()
-                                .take(50)
-                                .rev()
-                                .filter_map(|cm| {
-                                    cm.map(|cm: &block::ChatMessage| {
-                                        self.render_channel_message(cm)
-                                    })
-                                })
-                                .collect(),
-                        ),
-                    ],
+                    chat_channel
+                        .messages()
+                        .iter()
+                        .rev()
+                        .take(50)
+                        .rev()
+                        .filter_map(|cm| {
+                            cm.map(|cm: &block::ChatMessage| self.render_channel_message(cm))
+                        })
+                        .collect(),
                 ),
             ],
         )
@@ -78,11 +99,11 @@ impl RoomModelessChat {
 
     fn render_channel_message(&self, chat_message: &block::ChatMessage) -> Html<Self> {
         Html::div(
-            Attributes::new().class(Self::class("main-message")),
+            Attributes::new().class(Self::class("channel-message")),
             Events::new(),
             vec![
                 Html::div(
-                    Attributes::new().class(Self::class("main-message-icon")),
+                    Attributes::new().class(Self::class("channel-message-icon")),
                     Events::new(),
                     vec![Html::text(
                         chat_message
@@ -95,19 +116,20 @@ impl RoomModelessChat {
                     )],
                 ),
                 Html::div(
-                    Attributes::new().class(Self::class("main-message-heading")),
+                    Attributes::new().class(Self::class("channel-message-heading")),
                     Events::new(),
                     vec![
                         Html::div(
-                            Attributes::new().class(Self::class("main-message-heading-row")),
+                            Attributes::new().class(Self::class("channel-message-heading-row")),
                             Events::new(),
                             vec![
                                 attr::span(
-                                    Attributes::new().class(Self::class("main-message-sender")),
+                                    Attributes::new().class(Self::class("channel-message-sender")),
                                     chat_message.sender().name(),
                                 ),
                                 attr::span(
-                                    Attributes::new().class(Self::class("main-message-timestamp")),
+                                    Attributes::new()
+                                        .class(Self::class("channel-message-timestamp")),
                                     chat_message
                                         .timestamp()
                                         .with_timezone(&chrono::Local)
@@ -117,13 +139,13 @@ impl RoomModelessChat {
                             ],
                         ),
                         attr::span(
-                            Attributes::new().class(Self::class("main-message-client")),
+                            Attributes::new().class(Self::class("channel-message-client")),
                             chat_message.sender().client_id().as_ref(),
                         ),
                     ],
                 ),
                 chat_message::div(
-                    Attributes::new().class(Self::class("main-message-content")),
+                    Attributes::new().class(Self::class("channel-message-content")),
                     Events::new(),
                     chat_message.message(),
                 ),

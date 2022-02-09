@@ -21,7 +21,7 @@ use std::rc::Rc;
 use wasm_bindgen::JsCast;
 
 mod channel;
-mod chat_panel;
+mod chat_pallet;
 mod controller;
 mod send;
 
@@ -52,6 +52,7 @@ pub enum Msg {
     SetWaitingChatMessage(Option<WaitingChatMessage>),
     SetInputingChatMessage(String),
     SetIsShowingChatPallet(bool),
+    SetSelectedChannelIdx(usize),
 
     SetTestChatPalletSelectedIndex(usize),
     SetTestChatPalletSelectedItem(usize),
@@ -190,6 +191,10 @@ impl Update for RoomModelessChat {
                 }
                 Cmd::none()
             }
+            Msg::SetSelectedChannelIdx(idx) => {
+                self.selected_channel_idx = idx;
+                Cmd::none()
+            }
 
             Msg::SetTestChatPalletSelectedItem(item) => {
                 if self
@@ -225,6 +230,10 @@ impl Render for RoomModelessChat {
                 .class("pure-form"),
             Events::new(),
             vec![
+                self.render_chat_pallet(),
+                self.chat
+                    .map(|chat| self.render_channel_container(chat))
+                    .unwrap_or(Html::none()),
                 self.render_controller(),
                 ModalChatCapture::empty(
                     modal_chat_capture::Props {
@@ -256,49 +265,16 @@ impl Styled for RoomModelessChat {
                 "padding-top": ".65rem";
                 "padding-bottom": ".65rem";
                 "overflow": "hidden";
+                "display": "grid";
                 "grid-template-columns": "max-content 1fr";
                 "grid-template-rows": "1fr max-content";
             }
 
-            ".controller" {
-                "grid-column": "2 / 3";
-                "grid-row": "2 / 3";
-                "padding-left": ".65rem";
-                "padding-right": ".65rem";
-                "height": "10rem";
-                "display": "grid";
-                "grid-template-columns": "1fr";
-                "grid-template-rows": "1fr max-content";
-                "column-gap": ".35rem";
-                "row-gap": ".65rem";
-            }
-
-            ".controller textarea" {
-                "grid-column": "1 / -1";
-                "resize": "none";
-            }
-
-            ".controller-guide" {
-                "display": "grid";
-                "grid-template-columns": "1fr max-content";
-                "column-gap": ".35rem";
-                "row-gap": ".65rem";
-                "align-items": "center";
-            }
-
-            // ----------
-
-            ".main" {
-                "padding-left": ".65rem";
-                "padding-right": ".65rem";
-                "display": "grid";
-                "grid-template-columns": "max-content 1fr";
-                "grid-template-rows": "1fr";
-                "overflow": "hidden";
-                "column-gap": ".35rem";
-            }
+            // チャパレ
 
             ".chatpallet-container" {
+                "grid-column": "1 / 2";
+                "grid-row": "1 / 3";
                 "display": "grid";
                 "grid-template-columns": "max-content max-content";
                 "grid-template-rows": "1fr";
@@ -323,6 +299,7 @@ impl Styled for RoomModelessChat {
             ".chatpallet[data-is-showing='true']" {
                 "min-width": "30ch";
                 "max-width": "30ch";
+                "padding-left": ".65rem";
             }
 
             ".chatpallet-index" {
@@ -336,18 +313,36 @@ impl Styled for RoomModelessChat {
                 "white-space": "pre-wrap";
             }
 
-            ".main-chat" {
-                "display": "grid";
-                "grid-template-columns": "1fr";
-                "grid-template-rows": "max-content 1fr max-content";
+            // チャンネル
+
+            ".channel-container" {
+                "padding-left": ".65rem";
+                "padding-right": ".65rem";
+                "grid-column": "2 / 3";
+                "grid-row": "1 / 2";
                 "overflow": "hidden";
             }
 
-            ".main-log" {
+            ".channel" {
+                "display": "grid";
+                "grid-template-columns": "1fr";
+                "grid-template-rows": "max-content 1fr";
+                "overflow": "hidden";
+            }
+
+            ".channel-main" {
+                "display": "grid";
+                "grid-template-columns": "1fr";
+                "grid-template-rows": "max-content 1fr";
+                "overflow": "hidden";
+            }
+
+            ".channel-log" {
+                "height": "100%";
                 "overflow-y": "scroll";
             }
 
-            ".main-message" {
+            ".channel-message" {
                 "border-top": format!(".35rem solid {}", crate::libs::color::Pallet::gray(3));
                 "padding-top": ".35rem";
                 "padding-bottom": ".35rem";
@@ -357,7 +352,7 @@ impl Styled for RoomModelessChat {
                 "grid-template-rows": "max-content max-content";
             }
 
-            ".main-message-icon" {
+            ".channel-message-icon" {
                 "grid-row": "span 2";
                 "width": "4.5rem";
                 "height": "4.5rem";
@@ -368,34 +363,38 @@ impl Styled for RoomModelessChat {
                 "align-self": "start";
             }
 
-            ".main-message-heading-row" {
+            ".channel-message-heading-row" {
                 "grid-column": "2";
                 "display": "flex";
                 "justify-content": "space-between";
                 "border-bottom": format!(".1rem solid {}", crate::libs::color::Pallet::gray(6));
             }
 
-            ".main-message-sender" {
+            ".channel-message-sender" {
                 "font-size": "1.1em";
             }
 
-            ".main-message-timestamp" {
+            ".channel-message-timestamp" {
                 "font-color": format!("{}", crate::libs::color::Pallet::gray(7));
             }
 
-            ".main-message-client" {
+            ".channel-message-client" {
                 "text-align": "right";
                 "font-size": "0.9em";
                 "font-color": format!("{}", crate::libs::color::Pallet::gray(7));
             }
 
-            ".main-message-content" {
+            ".channel-message-content" {
                 "overflow-x": "hidden";
                 "white-space": "pre-wrap";
                 "grid-column": "2";
             }
 
-            ".footer" {
+            // コントローラ
+
+            ".controller" {
+                "grid-column": "2 / 3";
+                "grid-row": "2 / 3";
                 "padding-left": ".65rem";
                 "padding-right": ".65rem";
                 "height": "10rem";
@@ -406,12 +405,12 @@ impl Styled for RoomModelessChat {
                 "row-gap": ".65rem";
             }
 
-            ".footer textarea" {
+            ".controller textarea" {
                 "grid-column": "1 / -1";
                 "resize": "none";
             }
 
-            ".footer-guide" {
+            ".controller-guide" {
                 "display": "grid";
                 "grid-template-columns": "1fr max-content";
                 "column-gap": ".35rem";
