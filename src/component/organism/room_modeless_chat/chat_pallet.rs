@@ -15,10 +15,13 @@ impl RoomModelessChat {
                         Dropdown::with_children(
                             dropdown::Props {
                                 text: dropdown::Text::Text(
-                                    self.test_chatpallet
-                                        .index()
-                                        .get(self.test_chatpallet_selected_index)
-                                        .map(|(name, _)| name.clone())
+                                    self.test_chatpallet_selected_section
+                                        .and_then(|section_idx| {
+                                            self.test_chatpallet
+                                                .sections()
+                                                .get(section_idx)
+                                                .map(|sec| sec.name().clone())
+                                        })
                                         .unwrap_or(String::from("")),
                                 ),
                                 direction: dropdown::Direction::Bottom,
@@ -26,46 +29,50 @@ impl RoomModelessChat {
                                 variant: btn::Variant::DarkLikeMenu,
                             },
                             Sub::none(),
-                            self.test_chatpallet
-                                .index()
-                                .iter()
-                                .enumerate()
-                                .map(|(idx, (name, _))| {
-                                    Btn::menu(
+                            {
+                                let mut a = if self.test_chatpallet.children().is_empty()
+                                    && self.test_chatpallet.sub_sections().is_empty()
+                                {
+                                    vec![]
+                                } else {
+                                    vec![Btn::menu(
                                         Attributes::new(),
                                         Events::new().on_click(move |_| {
-                                            Msg::SetTestChatPalletSelectedIndex(idx)
+                                            Msg::SetTestChatPalletSelectedSection(None)
                                         }),
-                                        vec![Html::text(name)],
+                                        vec![Html::text("")],
+                                    )]
+                                };
+                                for (idx, sec) in self.test_chatpallet.sections().iter().enumerate()
+                                {
+                                    a.push(Btn::menu(
+                                        Attributes::new(),
+                                        Events::new().on_click(move |_| {
+                                            Msg::SetTestChatPalletSelectedSection(Some(idx))
+                                        }),
+                                        vec![Html::text(sec.name())],
+                                    ));
+                                }
+                                a
+                            },
+                        ),
+                        self.test_chatpallet_selected_section
+                            .and_then(|sec_idx| {
+                                self.test_chatpallet.sections().get(sec_idx).map(|sec| {
+                                    self.render_chat_pallet_section(
+                                        sec.children(),
+                                        sec.sub_sections(),
+                                        Some(sec_idx),
                                     )
                                 })
-                                .collect(),
-                        ),
-                        Html::div(
-                            Attributes::new().class(Self::class("chatpallet-index")),
-                            Events::new(),
-                            self.test_chatpallet
-                                .index()
-                                .get(self.test_chatpallet_selected_index)
-                                .map(|(_, items)| {
-                                    items
-                                        .iter()
-                                        .enumerate()
-                                        .map(|(idx, item)| {
-                                            Btn::with_variant(
-                                                btn::Variant::LightLikeMenu,
-                                                Attributes::new()
-                                                    .class(Self::class("chatpallet-item")),
-                                                Events::new().on_click(move |_| {
-                                                    Msg::SetTestChatPalletSelectedItem(idx)
-                                                }),
-                                                vec![Html::text(item)],
-                                            )
-                                        })
-                                        .collect()
-                                })
-                                .unwrap_or(vec![]),
-                        ),
+                            })
+                            .unwrap_or_else(|| {
+                                self.render_chat_pallet_section(
+                                    self.test_chatpallet.children(),
+                                    self.test_chatpallet.sub_sections(),
+                                    None,
+                                )
+                            }),
                     ],
                 ),
                 Btn::light(
@@ -86,5 +93,64 @@ impl RoomModelessChat {
                 ),
             ],
         )
+    }
+
+    fn render_chat_pallet_section(
+        &self,
+        children: &Vec<String>,
+        sub_sections: &Vec<block::character::ChatPalletSubSection>,
+        sec_idx: Option<usize>,
+    ) -> Html<Self> {
+        let mut items = vec![];
+
+        Self::render_chat_pallet_children(&mut items, children, sec_idx, None);
+
+        let mut ssec_idx = 0;
+        for ssec in sub_sections {
+            items.push(text::div(ssec.name()));
+            Self::render_chat_pallet_children(&mut items, ssec.children(), sec_idx, Some(ssec_idx));
+            ssec_idx += 1;
+        }
+
+        Html::div(
+            Attributes::new().class(Self::class("chatpallet-section")),
+            Events::new(),
+            items,
+        )
+    }
+
+    fn render_chat_pallet_children(
+        items: &mut Vec<Html<Self>>,
+        children: &Vec<String>,
+        sec_idx: Option<usize>,
+        ssec_idx: Option<usize>,
+    ) {
+        let mut item_idx = 0;
+        for child in children {
+            let item = match sec_idx {
+                Some(sec_idx) => match ssec_idx {
+                    Some(ssec_idx) => ChatPalletItem::Section(
+                        sec_idx,
+                        ChatPalletSectionItem::SubSection(ssec_idx, item_idx),
+                    ),
+                    None => {
+                        ChatPalletItem::Section(sec_idx, ChatPalletSectionItem::Children(item_idx))
+                    }
+                },
+                None => match ssec_idx {
+                    Some(ssec_idx) => ChatPalletItem::SubSection(ssec_idx, item_idx),
+                    None => ChatPalletItem::Children(item_idx),
+                },
+            };
+
+            items.push(Btn::with_variant(
+                btn::Variant::LightLikeMenu,
+                Attributes::new().class(Self::class("chatpallet-item")),
+                Events::new().on_click(move |_| Msg::SetTestChatPalletSelectedItem(item)),
+                vec![Html::text(child)],
+            ));
+
+            item_idx += 1;
+        }
     }
 }

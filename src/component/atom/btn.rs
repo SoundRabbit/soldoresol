@@ -73,6 +73,7 @@ impl Btn {
         Self::styled(Html::button(
             attrs
                 .class("pure-button")
+                .class(Self::class("base"))
                 .class(Self::class_name(&variant))
                 .flag(if variant.is_disable() { "disabled" } else { "" }),
             events,

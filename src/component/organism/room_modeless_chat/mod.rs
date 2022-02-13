@@ -45,6 +45,19 @@ pub struct WaitingChatMessage {
     sender: block::chat_message::Sender,
 }
 
+#[derive(PartialEq, Eq, Clone, Copy, Hash)]
+pub enum ChatPalletItem {
+    Children(usize),
+    SubSection(usize, usize),
+    Section(usize, ChatPalletSectionItem),
+}
+
+#[derive(PartialEq, Eq, Clone, Copy, Hash)]
+pub enum ChatPalletSectionItem {
+    Children(usize),
+    SubSection(usize, usize),
+}
+
 pub enum Msg {
     NoOp,
     SendInputingChatMessage(bool),
@@ -54,8 +67,8 @@ pub enum Msg {
     SetIsShowingChatPallet(bool),
     SetSelectedChannelIdx(usize),
 
-    SetTestChatPalletSelectedIndex(usize),
-    SetTestChatPalletSelectedItem(usize),
+    SetTestChatPalletSelectedSection(Option<usize>),
+    SetTestChatPalletSelectedItem(ChatPalletItem),
 }
 
 pub enum On {
@@ -78,8 +91,8 @@ pub struct RoomModelessChat {
 
     // test
     test_chatpallet: block::character::ChatPallet,
-    test_chatpallet_selected_index: usize,
-    test_chatpallet_selected_item: Option<usize>,
+    test_chatpallet_selected_section: Option<usize>,
+    test_chatpallet_selected_item: Option<ChatPalletItem>,
 }
 
 ElementId! {
@@ -111,7 +124,7 @@ impl Constructor for RoomModelessChat {
 
             // test
             test_chatpallet,
-            test_chatpallet_selected_index: 0,
+            test_chatpallet_selected_section: None,
             test_chatpallet_selected_item: None,
         }
     }
@@ -183,16 +196,16 @@ impl Update for RoomModelessChat {
                 self.is_showing_chat_pallet = is_showing;
                 Cmd::none()
             }
-
-            Msg::SetTestChatPalletSelectedIndex(idx) => {
-                if self.test_chatpallet_selected_index != idx {
-                    self.test_chatpallet_selected_index = idx;
-                    self.test_chatpallet_selected_item = None;
-                }
-                Cmd::none()
-            }
             Msg::SetSelectedChannelIdx(idx) => {
                 self.selected_channel_idx = idx;
+                Cmd::none()
+            }
+
+            Msg::SetTestChatPalletSelectedSection(idx) => {
+                if self.test_chatpallet_selected_section != idx {
+                    self.test_chatpallet_selected_section = idx;
+                    self.test_chatpallet_selected_item = None;
+                }
                 Cmd::none()
             }
 
@@ -203,15 +216,13 @@ impl Update for RoomModelessChat {
                     .unwrap_or(false)
                 {
                     self.test_chatpallet_selected_item = None;
-                    self.update(props, Msg::SendInputingChatMessage(false))
-                } else {
-                    self.test_chatpallet_selected_item = Some(item);
-                    self.inputing_chat_message = Some(
-                        self.test_chatpallet.index()[self.test_chatpallet_selected_index].1[item]
-                            .clone(),
-                    );
-                    Cmd::none()
+                    return self.update(props, Msg::SendInputingChatMessage(false));
                 }
+                if let Some(message) = Self::get_chatpallet_item(&self.test_chatpallet, &item) {
+                    self.test_chatpallet_selected_item = Some(item);
+                    self.inputing_chat_message = Some(message);
+                }
+                Cmd::none()
             }
 
             Msg::SetWaitingChatMessage(waiting_chat_message) => {
@@ -254,7 +265,41 @@ impl Render for RoomModelessChat {
     }
 }
 
-impl RoomModelessChat {}
+impl RoomModelessChat {
+    fn get_chatpallet_item(
+        chatpallet: &block::character::ChatPallet,
+        item: &ChatPalletItem,
+    ) -> Option<String> {
+        match item {
+            ChatPalletItem::Children(idx) => chatpallet.children().get(*idx).map(Clone::clone),
+            ChatPalletItem::SubSection(s_idx, i_idx) => chatpallet
+                .sub_sections()
+                .get(*s_idx)
+                .and_then(|ss| ss.children().get(*i_idx))
+                .map(Clone::clone),
+            ChatPalletItem::Section(idx, item) => chatpallet
+                .sections()
+                .get(*idx)
+                .and_then(|s| Self::get_chatpallet_section_item(s, item)),
+        }
+    }
+
+    fn get_chatpallet_section_item(
+        chatpallet: &block::character::ChatPalletSection,
+        item: &ChatPalletSectionItem,
+    ) -> Option<String> {
+        match item {
+            ChatPalletSectionItem::Children(idx) => {
+                chatpallet.children().get(*idx).map(Clone::clone)
+            }
+            ChatPalletSectionItem::SubSection(s_idx, i_idx) => chatpallet
+                .sub_sections()
+                .get(*s_idx)
+                .and_then(|ss| ss.children().get(*i_idx))
+                .map(Clone::clone),
+        }
+    }
+}
 
 impl Styled for RoomModelessChat {
     fn style() -> Style {
@@ -302,7 +347,7 @@ impl Styled for RoomModelessChat {
                 "padding-left": ".65rem";
             }
 
-            ".chatpallet-index" {
+            ".chatpallet-section" {
                 "overflow-y": "scroll";
                 "display": "grid";
                 "grid-auto-rows": "max-content";
@@ -311,6 +356,7 @@ impl Styled for RoomModelessChat {
 
             ".chatpallet-item" {
                 "white-space": "pre-wrap";
+                "font-size": "0.8rem";
             }
 
             // チャンネル
@@ -346,7 +392,7 @@ impl Styled for RoomModelessChat {
                 "border-top": format!(".35rem solid {}", crate::libs::color::Pallet::gray(3));
                 "padding-top": ".35rem";
                 "padding-bottom": ".35rem";
-
+                "font-size": "0.8rem";
                 "display": "grid";
                 "grid-template-columns": "max-content 1fr";
                 "grid-template-rows": "max-content max-content";
@@ -385,7 +431,7 @@ impl Styled for RoomModelessChat {
             }
 
             ".channel-message-content" {
-                "overflow-x": "hidden";
+                "overflow": "hidden";
                 "white-space": "pre-wrap";
                 "grid-column": "2";
             }

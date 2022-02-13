@@ -5,62 +5,133 @@ use super::util::Pack;
 use super::BlockRef;
 use crate::libs::color::Pallet;
 use crate::libs::select_list::SelectList;
+use lazy_static::lazy_static;
 use regex::Regex;
+
+lazy_static! {
+    static ref SECTION: Regex = Regex::new(r"\A//---\s*(.*)(\n|\z)").unwrap();
+    static ref SUB_SECTION: Regex = Regex::new(r"\A//----+\s*(.*)(\n|\z)").unwrap();
+    static ref DEFINITION: Regex = Regex::new(r"\A//(.+)=((.*\\\n)*(.*))(\n|\z)").unwrap();
+    static ref LINE: Regex = Regex::new(r"\A(.*)(\n|\z)").unwrap();
+    static ref NL: Regex = Regex::new(r"([^\\])(\\\\)*\\n").unwrap();
+}
+
+block! {
+    [pub ChatPalletSubSection(constructor, pack)]
+    (name): String;
+    children: Vec<String> = vec![];
+}
+
+impl ChatPalletSubSection {
+    pub fn name(&self) -> &String {
+        &self.name
+    }
+
+    pub fn children(&self) -> &Vec<String> {
+        &self.children
+    }
+}
+
+block! {
+    [pub ChatPalletSection(constructor, pack)]
+    (name): String;
+    children: Vec<String> = vec![];
+    sub_sections: Vec<ChatPalletSubSection> = vec![];
+}
+
+impl ChatPalletSection {
+    pub fn name(&self) -> &String {
+        &self.name
+    }
+
+    pub fn children(&self) -> &Vec<String> {
+        &self.children
+    }
+
+    pub fn sub_sections(&self) -> &Vec<ChatPalletSubSection> {
+        &self.sub_sections
+    }
+}
 
 block! {
     [pub ChatPallet(constructor, pack)]
     data: String = String::from("");
     defs: Vec<(Regex, String)> = vec![];
-    index: Vec<(String, Vec<String>)> = vec![];
-    match_index: Regex = Regex::new(r"\A//---(.*)(\n|\z)").unwrap();
-    match_def: Regex = Regex::new(r"\A//(.+)=((.*\\\n)*(.*))(\n|\z)") .unwrap();
-    match_line: Regex = Regex::new(r"\A(.*)(\n|\z)").unwrap();
-    match_nl: Regex = Regex::new(r"([^\\])(\\\\)*\\n").unwrap();
+    children: Vec<String> = vec![];
+    sub_sections: Vec<ChatPalletSubSection> = vec![];
+    sections: Vec<ChatPalletSection> = vec![];
 }
 
 impl ChatPallet {
     pub fn set_data(&mut self, mut data: String) {
         self.data = data.clone();
-        self.index.clear();
-
-        let mut index_name = String::from("");
-        let mut index_items = vec![];
+        self.children.clear();
+        self.sub_sections.clear();
+        self.sections.clear();
 
         while !data.is_empty() {
-            if let Some(captures) = self.match_index.captures(&data) {
-                if !index_items.is_empty() || !index_name.is_empty() {
-                    self.index.push((index_name, index_items));
+            let tail_idx = self.sections.len() - 1;
+            if let Some(captures) = SUB_SECTION.captures(&data) {
+                let name = String::from(captures.get(1).unwrap().as_str());
+                let sub_section = ChatPalletSubSection::new(name);
+
+                if let Some(section) = self.sections.get_mut(tail_idx) {
+                    section.sub_sections.push(sub_section);
+                } else {
+                    self.sub_sections.push(sub_section);
                 }
 
-                index_name = String::from(captures.get(1).unwrap().as_str());
-                index_items = vec![];
+                data = SUB_SECTION.replace(&data, "").into();
+            } else if let Some(captures) = SECTION.captures(&data) {
+                let name = String::from(captures.get(1).unwrap().as_str());
+                let section = ChatPalletSection::new(name);
 
-                data = self.match_index.replace(&data, "").into();
-            } else if let Some(captures) = self.match_def.captures(&data) {
+                self.sections.push(section);
+
+                data = SECTION.replace(&data, "").into();
+            } else if let Some(captures) = DEFINITION.captures(&data) {
                 let regex = String::from(r"\A") + captures.get(1).unwrap().as_str() + r"\z";
+
                 if let Ok(regex) = Regex::new(regex.as_str()) {
                     self.defs
                         .push((regex, String::from(captures.get(2).unwrap().as_str())));
                 }
 
-                data = self.match_def.replace(&data, "").into();
-            } else if let Some(captures) = self.match_line.captures(&data) {
-                let item = self
-                    .match_nl
-                    .replace_all(captures.get(1).unwrap().as_str(), "$1\n");
-                index_items.push(item.into());
+                data = DEFINITION.replace(&data, "").into();
+            } else if let Some(captures) = LINE.captures(&data) {
+                let item = NL.replace_all(captures.get(1).unwrap().as_str(), "$1\n");
 
-                data = self.match_line.replace(&data, "").into();
+                let sub_tail_idx = self.sub_sections.len() - 1;
+                if let Some(section) = self.sections.get_mut(tail_idx) {
+                    let sub_tail_idx = section.sub_sections.len() - 1;
+                    if let Some(sub_section) = section.sub_sections.get_mut(sub_tail_idx) {
+                        sub_section.children.push(item.into());
+                    } else {
+                        section.children.push(item.into());
+                    }
+                } else if let Some(sub_section) = self.sub_sections.get_mut(sub_tail_idx) {
+                    sub_section.children.push(item.into());
+                } else {
+                    self.children.push(item.into());
+                }
+
+                data = LINE.replace(&data, "").into();
             } else {
                 break;
             }
         }
-
-        self.index.push((index_name, index_items));
     }
 
-    pub fn index(&self) -> &Vec<(String, Vec<String>)> {
-        &self.index
+    pub fn children(&self) -> &Vec<String> {
+        &self.children
+    }
+
+    pub fn sub_sections(&self) -> &Vec<ChatPalletSubSection> {
+        &self.sub_sections
+    }
+
+    pub fn sections(&self) -> &Vec<ChatPalletSection> {
+        &self.sections
     }
 
     pub fn defs(&self) -> &Vec<(Regex, String)> {
