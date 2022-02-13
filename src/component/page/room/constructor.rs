@@ -20,6 +20,8 @@ impl Constructor for Room {
             is_2d_mode: false,
             is_debug_mode: false,
 
+            chat_users: vec![],
+
             showing_contextmenu: None,
         }
     }

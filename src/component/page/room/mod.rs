@@ -1,5 +1,6 @@
 use super::atom::table::{self, table_tool::TableTool, Table};
 use super::organism::room_modeless::{self, RoomModeless};
+use super::organism::room_modeless_chat::ChatUser;
 use super::organism::tab_modeless_container::{self, TabModelessContainer};
 use crate::arena::{block, resource, user, Arena, ArenaMut, BlockMut};
 use crate::libs::random_id::U128Id;
@@ -23,7 +24,7 @@ pub enum Msg {
         insert: HashSet<U128Id>,
         update: HashSet<U128Id>,
     },
-    OpenChatModeless(Option<U128Id>),
+    OpenChatModeless(ChatUser),
     OpenBoxblockModeless(U128Id),
     OpenCharacterModeless(U128Id),
     OpenCraftboardModeless(U128Id),
@@ -58,6 +59,7 @@ pub struct Room {
     ok_to_catch_file: bool,
     is_2d_mode: bool,
     is_debug_mode: bool,
+    chat_users: Vec<ChatUser>,
 
     showing_contextmenu: Option<ShowingContextmenu>,
 }

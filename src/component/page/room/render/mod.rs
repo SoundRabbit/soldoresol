@@ -194,43 +194,35 @@ impl Room {
                     variant: btn::Variant::Dark,
                 },
                 Sub::none(),
-                vec![
-                    attr::span(
-                        Attributes::new()
-                            .class(Dropdown::class("menu-heading"))
-                            .class(Btn::class_name(&btn::Variant::DarkLikeMenu)),
-                        "表示",
-                    ),
-                    Btn::menu(
-                        Attributes::new(),
-                        Events::new().on_click(|_| Msg::OpenChatModeless(None)),
-                        vec![Html::text("全てのチャンネル")],
-                    ),
-                    Html::fragment(
-                        self.chat
-                            .map(|chat: &block::Chat| {
-                                chat.channels()
-                                    .iter()
-                                    .filter_map(|channel| {
-                                        let channel_id = channel.id();
-                                        channel.map(|channel: &block::ChatChannel| {
-                                            Btn::menu(
-                                                Attributes::new(),
-                                                Events::new().on_click(move |_| {
-                                                    Msg::OpenChatModeless(Some(channel_id))
-                                                }),
-                                                vec![Html::text(
-                                                    String::from("#") + channel.name(),
-                                                )],
-                                            )
-                                        })
-                                    })
-                                    .collect()
-                            })
-                            .unwrap_or(vec![]),
-                    ),
-                ],
+                vec![Html::fragment(
+                    self.chat_users
+                        .iter()
+                        .map(|user| self.render_header_row_1_left_userbtn(user))
+                        .collect(),
+                )],
             )],
+        )
+    }
+
+    fn render_header_row_1_left_userbtn(&self, user: &ChatUser) -> Html<Self> {
+        Btn::menu(
+            Attributes::new().class(if let ChatUser::Player(..) = user {
+                Self::class("chatuser-player")
+            } else {
+                Self::class("chatuser-character")
+            }),
+            Events::new().on_click({
+                let user = ChatUser::clone(&user);
+                move |_| Msg::OpenChatModeless(user)
+            }),
+            vec![Html::text(match user {
+                ChatUser::Character(user) => user
+                    .map(|user| user.name().clone())
+                    .unwrap_or(String::from("")),
+                ChatUser::Player(user) => user
+                    .map(|user| user.name().clone())
+                    .unwrap_or(String::from("")),
+            })],
         )
     }
 
@@ -294,6 +286,10 @@ impl Styled for Room {
                 "display": "grid";
                 "align-items": "center";
                 "line-height": "1";
+            }
+
+            ".chatuser-player" {
+                "color": crate::libs::color::Pallet::yellow(5);
             }
 
             ".main" {

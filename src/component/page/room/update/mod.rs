@@ -1,4 +1,3 @@
-use super::super::organism::room_modeless_chat::ChatUser;
 use super::*;
 use crate::arena::{block, BlockKind};
 use kagura::component::Cmd;
@@ -45,6 +44,9 @@ impl Update for Room {
 
         let me = user::Player::new();
         self.me = self.arena.insert(me);
+
+        self.chat_users
+            .push(ChatUser::Player(BlockMut::clone(&self.me)));
 
         self.modeless_container.update(|modeless_container| {
             Self::open_modeless(
@@ -134,7 +136,7 @@ impl Update for Room {
 
                 Cmd::none()
             }
-            Msg::OpenChatModeless(channel_id) => {
+            Msg::OpenChatModeless(chat_user) => {
                 self.modeless_container.update(|modeless_container| {
                     Self::open_modeless(
                         &props.client_id,
@@ -143,7 +145,7 @@ impl Update for Room {
                         modeless_container,
                         room_modeless::ContentData::Chat {
                             data: BlockMut::clone(&self.chat),
-                            user: ChatUser::Player(BlockMut::clone(&self.me)),
+                            user: chat_user,
                         },
                     );
                 });
