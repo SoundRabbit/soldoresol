@@ -13,7 +13,7 @@ impl Message {
         }
     }
 
-    fn compress(self) -> Self {
+    pub fn compress(self) -> Self {
         let mut text = String::new();
         let mut mapped = vec![];
         let msg: Vec<_> = self.into();

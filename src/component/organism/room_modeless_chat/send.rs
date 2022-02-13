@@ -77,7 +77,9 @@ impl RoomModelessChat {
         descriptions: &mut Vec<(String, String)>,
         message: block::chat_message::Message,
     ) -> block::chat_message::Message {
-        message.map(|token| self.map_message_token(var_nums, descriptions, token))
+        message
+            .map(|token| self.map_message_token(var_nums, descriptions, token))
+            .compress()
     }
 
     fn map_message_token(
