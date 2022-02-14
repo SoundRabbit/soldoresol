@@ -71,7 +71,7 @@ impl ChatPallet {
 
         while !data.is_empty() {
             let tail_idx = self.sections.len() - 1;
-            if let Some(captures) = SUB_SECTION.captures(&data) {
+            data = if let Some(captures) = SUB_SECTION.captures(&data) {
                 let name = String::from(captures.get(1).unwrap().as_str());
                 let sub_section = ChatPalletSubSection::new(name);
 
@@ -81,14 +81,14 @@ impl ChatPallet {
                     self.sub_sections.push(sub_section);
                 }
 
-                data = SUB_SECTION.replace(&data, "").into();
+                SUB_SECTION.replace(&data, "").to_string()
             } else if let Some(captures) = SECTION.captures(&data) {
                 let name = String::from(captures.get(1).unwrap().as_str());
                 let section = ChatPalletSection::new(name);
 
                 self.sections.push(section);
 
-                data = SECTION.replace(&data, "").into();
+                SECTION.replace(&data, "").to_string()
             } else if let Some(captures) = DEFINITION.captures(&data) {
                 let regex = String::from(r"\A") + captures.get(1).unwrap().as_str() + r"\z";
 
@@ -97,7 +97,7 @@ impl ChatPallet {
                         .push((regex, String::from(captures.get(2).unwrap().as_str())));
                 }
 
-                data = DEFINITION.replace(&data, "").into();
+                DEFINITION.replace(&data, "").to_string()
             } else if let Some(captures) = LINE.captures(&data) {
                 let item = NL.replace_all(captures.get(1).unwrap().as_str(), "$1\n");
 
@@ -115,10 +115,10 @@ impl ChatPallet {
                     self.children.push(item.into());
                 }
 
-                data = LINE.replace(&data, "").into();
+                LINE.replace(&data, "").to_string()
             } else {
                 break;
-            }
+            };
         }
     }
 
@@ -159,7 +159,11 @@ block! {
     [pub Character(constructor, pack)]
     name: String = String::from("名前未設定");
     display_name: (String, String) = (String::from("名前未設定"), String::from("新規キャラクター"));
-    chat_pallet: ChatPallet = ChatPallet::new();
+    chatpallet: ChatPallet = {
+        let mut chatpallet = ChatPallet::new();
+        chatpallet.set_data(include_str!("./default_chatpallet.txt").to_string());
+        chatpallet
+    };
     position: [f64; 3] = [0.0, 0.0, 0.0];
     size: [f64; 3] = [1.0, 1.5, 1.0];
     color: Pallet = Pallet::gray(5);
@@ -222,6 +226,11 @@ impl Character {
     pub fn set_color(&mut self, color: Pallet) {
         self.color = color;
     }
+
+    pub fn chatpallet(&self) -> &ChatPallet {
+        &self.chatpallet
+    }
+
     pub fn textures(&self) -> &SelectList<StandingTexture> {
         &self.textures
     }

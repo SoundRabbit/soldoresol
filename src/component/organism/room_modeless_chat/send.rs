@@ -3,6 +3,7 @@ use super::*;
 impl RoomModelessChat {
     pub fn send_chat_message(
         &mut self,
+        props: &Props,
         sender: block::chat_message::Sender,
         mut channel: BlockMut<block::ChatChannel>,
         message: &String,
@@ -11,7 +12,7 @@ impl RoomModelessChat {
 
         let mut descriptions = vec![];
         let mut var_nums = HashMap::new();
-        let message = self.map_message(&mut var_nums, &mut descriptions, message);
+        let message = self.map_message(props, &mut var_nums, &mut descriptions, message);
 
         if descriptions.len() > 0 {
             self.waiting_chat_message = Some(WaitingChatMessage {
@@ -61,10 +62,22 @@ impl RoomModelessChat {
         }
     }
 
-    fn test_ref_def(&self, refer: &String) -> block::chat_message::Message {
-        for (pat, text) in self.test_chatpallet.defs() {
-            if pat.is_match(refer) {
-                let message = block::chat_message::Message::new(pat.replace(refer, text).as_ref());
+    fn ref_def(&self, refer: &String, props: &Props) -> block::chat_message::Message {
+        if let ChatUser::Character(character) = &props.user {
+            if let Some(message) = character
+                .map(|character| {
+                    for (pat, text) in character.chatpallet().defs() {
+                        if pat.is_match(refer) {
+                            let message = block::chat_message::Message::new(
+                                pat.replace(refer, text).as_ref(),
+                            );
+                            return Some(message);
+                        }
+                    }
+                    None
+                })
+                .unwrap_or(None)
+            {
                 return message;
             }
         }
@@ -73,17 +86,19 @@ impl RoomModelessChat {
 
     fn map_message(
         &self,
+        props: &Props,
         var_nums: &mut HashMap<String, Vec<usize>>,
         descriptions: &mut Vec<(String, String)>,
         message: block::chat_message::Message,
     ) -> block::chat_message::Message {
         message
-            .map(|token| self.map_message_token(var_nums, descriptions, token))
+            .map(|token| self.map_message_token(props, var_nums, descriptions, token))
             .compress()
     }
 
     fn map_message_token(
         &self,
+        props: &Props,
         var_nums: &mut HashMap<String, Vec<usize>>,
         descriptions: &mut Vec<(String, String)>,
         token: block::chat_message::MessageToken,
@@ -93,17 +108,17 @@ impl RoomModelessChat {
                 vec![block::chat_message::MessageToken::Text(text)],
             ),
             block::chat_message::MessageToken::Refer(refer) => {
-                let refer = self.map_message(var_nums, descriptions, refer);
-                let refer = self.test_ref_def(&refer.to_string());
-                let message = self.map_message(var_nums, descriptions, refer);
+                let refer = self.map_message(props, var_nums, descriptions, refer);
+                let refer = self.ref_def(&refer.to_string(), props);
+                let message = self.map_message(props, var_nums, descriptions, refer);
                 message
             }
             block::chat_message::MessageToken::CommandBlock(cmd, text) => {
-                let cmd_name = self.map_message(var_nums, descriptions, cmd.name);
+                let cmd_name = self.map_message(props, var_nums, descriptions, cmd.name);
                 let cmd_args: Vec<_> = cmd
                     .args
                     .into_iter()
-                    .map(|x| self.map_message(var_nums, descriptions, x))
+                    .map(|x| self.map_message(props, var_nums, descriptions, x))
                     .collect();
 
                 if cmd_name.to_string() == "capture" {
@@ -129,7 +144,7 @@ impl RoomModelessChat {
                         }
                     }
 
-                    let text = self.map_message(var_nums, descriptions, text);
+                    let text = self.map_message(props, var_nums, descriptions, text);
 
                     for cap_name in cap_names {
                         if let Some(vars) = var_nums.get_mut(&cap_name) {
@@ -139,7 +154,9 @@ impl RoomModelessChat {
 
                     text
                 } else if cmd_name.to_string() == "ref" {
-                    let cap_name = self.map_message(var_nums, descriptions, text).to_string();
+                    let cap_name = self
+                        .map_message(props, var_nums, descriptions, text)
+                        .to_string();
                     let text = if let Some(num) = var_nums.get(&cap_name).and_then(|x| x.last()) {
                         block::chat_message::Message::from(vec![
                             block::chat_message::MessageToken::Text(num.to_string()),
@@ -159,7 +176,7 @@ impl RoomModelessChat {
                         ),
                     ])
                 } else {
-                    let text = self.map_message(var_nums, descriptions, text);
+                    let text = self.map_message(props, var_nums, descriptions, text);
                     block::chat_message::Message::from(vec![
                         block::chat_message::MessageToken::CommandBlock(
                             block::chat_message::MessageCommand {

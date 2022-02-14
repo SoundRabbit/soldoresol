@@ -66,9 +66,8 @@ pub enum Msg {
     SetInputingChatMessage(String),
     SetIsShowingChatPallet(bool),
     SetSelectedChannelIdx(usize),
-
-    SetTestChatPalletSelectedSection(Option<usize>),
-    SetTestChatPalletSelectedItem(ChatPalletItem),
+    SetChatPalletSelectedSection(Option<usize>),
+    SetChatPalletSelectedItem(ChatPalletItem),
 }
 
 pub enum On {
@@ -89,10 +88,8 @@ pub struct RoomModelessChat {
 
     element_id: ElementId,
 
-    // test
-    test_chatpallet: block::character::ChatPallet,
-    test_chatpallet_selected_section: Option<usize>,
-    test_chatpallet_selected_item: Option<ChatPalletItem>,
+    chatpallet_selected_section: Option<usize>,
+    chatpallet_selected_item: Option<ChatPalletItem>,
 }
 
 ElementId! {
@@ -107,9 +104,6 @@ impl Component for RoomModelessChat {
 
 impl Constructor for RoomModelessChat {
     fn constructor(props: &Props) -> Self {
-        let mut test_chatpallet = block::character::ChatPallet::new();
-        test_chatpallet.set_data(String::from(include_str!("./test_chatpallet.txt")));
-
         Self {
             arena: ArenaMut::clone(&props.arena),
             chat: BlockMut::clone(&props.data),
@@ -122,10 +116,8 @@ impl Constructor for RoomModelessChat {
 
             element_id: ElementId::new(),
 
-            // test
-            test_chatpallet,
-            test_chatpallet_selected_section: None,
-            test_chatpallet_selected_item: None,
+            chatpallet_selected_section: None,
+            chatpallet_selected_item: None,
         }
     }
 }
@@ -177,7 +169,7 @@ impl Update for RoomModelessChat {
                     .unwrap_or(None);
 
                 if let Some((sender, channel)) = join_some!(sender, channel) {
-                    self.send_chat_message(sender, channel, &message)
+                    self.send_chat_message(props, sender, channel, &message)
                 } else {
                     Cmd::none()
                 }
@@ -186,7 +178,7 @@ impl Update for RoomModelessChat {
             Msg::SetInputingChatMessage(input) => {
                 if self.inputing_chat_message.is_some() {
                     self.inputing_chat_message = Some(input);
-                    self.test_chatpallet_selected_item = None;
+                    self.chatpallet_selected_item = None;
                 } else {
                     self.inputing_chat_message = Some(String::new());
                 }
@@ -201,26 +193,32 @@ impl Update for RoomModelessChat {
                 Cmd::none()
             }
 
-            Msg::SetTestChatPalletSelectedSection(idx) => {
-                if self.test_chatpallet_selected_section != idx {
-                    self.test_chatpallet_selected_section = idx;
-                    self.test_chatpallet_selected_item = None;
+            Msg::SetChatPalletSelectedSection(idx) => {
+                if self.chatpallet_selected_section != idx {
+                    self.chatpallet_selected_section = idx;
+                    self.chatpallet_selected_item = None;
                 }
                 Cmd::none()
             }
 
-            Msg::SetTestChatPalletSelectedItem(item) => {
+            Msg::SetChatPalletSelectedItem(item) => {
                 if self
-                    .test_chatpallet_selected_item
+                    .chatpallet_selected_item
                     .map(|x| x == item)
                     .unwrap_or(false)
                 {
-                    self.test_chatpallet_selected_item = None;
+                    self.chatpallet_selected_item = None;
                     return self.update(props, Msg::SendInputingChatMessage(false));
                 }
-                if let Some(message) = Self::get_chatpallet_item(&self.test_chatpallet, &item) {
-                    self.test_chatpallet_selected_item = Some(item);
-                    self.inputing_chat_message = Some(message);
+                if let ChatUser::Character(character) = &props.user {
+                    character.map(|character| {
+                        if let Some(message) =
+                            Self::get_chatpallet_item(character.chatpallet(), &item)
+                        {
+                            self.chatpallet_selected_item = Some(item);
+                            self.inputing_chat_message = Some(message);
+                        }
+                    });
                 }
                 Cmd::none()
             }
@@ -234,14 +232,14 @@ impl Update for RoomModelessChat {
 }
 
 impl Render for RoomModelessChat {
-    fn render(&self, _props: &Props, _children: Vec<Html<Self>>) -> Html<Self> {
+    fn render(&self, props: &Props, _children: Vec<Html<Self>>) -> Html<Self> {
         Self::styled(Html::div(
             Attributes::new()
                 .class(Self::class("base"))
                 .class("pure-form"),
             Events::new(),
             vec![
-                self.render_chat_pallet(),
+                self.render_chat_pallet(props),
                 self.chat
                     .map(|chat| self.render_channel_container(chat))
                     .unwrap_or(Html::none()),
