@@ -102,19 +102,35 @@ impl RoomModelessChat {
             Attributes::new().class(Self::class("channel-message")),
             Events::new(),
             vec![
-                Html::div(
-                    Attributes::new().class(Self::class("channel-message-icon")),
-                    Events::new(),
-                    vec![Html::text(
-                        chat_message
-                            .sender()
-                            .name()
-                            .chars()
-                            .nth(0)
-                            .map(|x| String::from(x))
-                            .unwrap_or(String::from("")),
-                    )],
-                ),
+                chat_message
+                    .sender()
+                    .icon()
+                    .and_then(|icon| {
+                        icon.map(|icon| {
+                            Html::img(
+                                Attributes::new()
+                                    .class(Self::class("channel-message-icon"))
+                                    .src(icon.url().to_string()),
+                                Events::new(),
+                                vec![],
+                            )
+                        })
+                    })
+                    .unwrap_or_else(|| {
+                        Html::div(
+                            Attributes::new().class(Self::class("channel-message-icon")),
+                            Events::new(),
+                            vec![Html::text(
+                                chat_message
+                                    .sender()
+                                    .name()
+                                    .chars()
+                                    .nth(0)
+                                    .map(|x| String::from(x))
+                                    .unwrap_or(String::from("")),
+                            )],
+                        )
+                    }),
                 Html::div(
                     Attributes::new().class(Self::class("channel-message-heading")),
                     Events::new(),

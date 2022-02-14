@@ -407,6 +407,8 @@ impl Styled for RoomModelessChat {
                 "font-size": "3rem";
                 "text-align": "center";
                 "align-self": "start";
+                "object-fit": "cover";
+                "object-position": "top";
             }
 
             ".channel-message-heading-row" {
