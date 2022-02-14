@@ -23,6 +23,7 @@ impl Constructor for Room {
             chat_users: vec![],
 
             showing_contextmenu: None,
+            showing_modal: ShowingModal::None,
         }
     }
 }

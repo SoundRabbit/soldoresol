@@ -164,6 +164,21 @@ impl Update for Room {
                 self.showing_contextmenu = contextmenu;
                 Cmd::none()
             }
+            Msg::SetShowingModal(modal) => {
+                self.showing_modal = modal;
+                Cmd::none()
+            }
+            Msg::CloseModalChatUser(selected) => {
+                self.chat_users = self.chat_users.drain(0..1).collect();
+
+                for character in selected {
+                    self.chat_users.push(ChatUser::Character(character));
+                }
+
+                self.showing_modal = ShowingModal::None;
+
+                Cmd::none()
+            }
             Msg::OnTableWheel(e) => {
                 if e.target() == e.current_target() {
                     self.table.update(|table| {

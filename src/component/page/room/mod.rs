@@ -31,6 +31,8 @@ pub enum Msg {
     SetOkToCatchFile(bool),
     SetSelectedTableTool(TableTool),
     SetShowingContextmenu(Option<ShowingContextmenu>),
+    SetShowingModal(ShowingModal),
+    CloseModalChatUser(Vec<BlockMut<block::Character>>),
     OnTableWheel(web_sys::WheelEvent),
     OnTableClick(web_sys::MouseEvent),
     OnTableMousedown(web_sys::MouseEvent),
@@ -62,6 +64,7 @@ pub struct Room {
     chat_users: Vec<ChatUser>,
 
     showing_contextmenu: Option<ShowingContextmenu>,
+    showing_modal: ShowingModal,
 }
 
 pub struct ShowingContextmenu {
@@ -74,6 +77,11 @@ enum ShowingContextmenuData {
     Boxblock(BlockMut<block::Boxblock>),
     Character(BlockMut<block::Character>),
     Craftboard(BlockMut<block::Craftboard>),
+}
+
+pub enum ShowingModal {
+    None,
+    ChatUser,
 }
 
 impl Component for Room {

@@ -5,6 +5,7 @@ use super::super::atom::{
     file_catcher::{self, FileCatcher},
     header::{self, Header},
 };
+use super::super::organism::modal_chat_user::{self, ModalChatUser};
 use super::super::organism::{
     table_menu::{self, TableMenu},
     world_view::{self, WorldView},
@@ -131,12 +132,36 @@ impl Render for Room {
                 } else {
                     Common::none()
                 },
+                self.render_moadl(),
             ],
         ))
     }
 }
 
 impl Room {
+    fn render_moadl(&self) -> Html<Self> {
+        match &self.showing_modal {
+            ShowingModal::None => Html::none(),
+            ShowingModal::ChatUser => ModalChatUser::empty(
+                modal_chat_user::Props {
+                    world: self.world.as_ref(),
+                    selected: self
+                        .chat_users
+                        .iter()
+                        .filter_map(|user| match user {
+                            ChatUser::Character(character) => Some(BlockMut::clone(&character)),
+                            _ => None,
+                        })
+                        .collect(),
+                },
+                Sub::map(|sub| match sub {
+                    modal_chat_user::On::Cancel => Msg::SetShowingModal(ShowingModal::None),
+                    modal_chat_user::On::Select(selected) => Msg::CloseModalChatUser(selected),
+                }),
+            ),
+        }
+    }
+
     fn render_header_row_0(&self) -> Html<Self> {
         Html::div(
             Attributes::new()
@@ -194,12 +219,19 @@ impl Room {
                     variant: btn::Variant::Dark,
                 },
                 Sub::none(),
-                vec![Html::fragment(
-                    self.chat_users
-                        .iter()
-                        .map(|user| self.render_header_row_1_left_userbtn(user))
-                        .collect(),
-                )],
+                vec![
+                    Html::fragment(
+                        self.chat_users
+                            .iter()
+                            .map(|user| self.render_header_row_1_left_userbtn(user))
+                            .collect(),
+                    ),
+                    Btn::menu(
+                        Attributes::new(),
+                        Events::new().on_click(|_| Msg::SetShowingModal(ShowingModal::ChatUser)),
+                        vec![Html::text("チャットで使用するキャラクターを設定")],
+                    ),
+                ],
             )],
         )
     }

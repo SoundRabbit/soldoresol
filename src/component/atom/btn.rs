@@ -22,6 +22,7 @@ pub enum Variant {
     TransparentDark,
     Menu,
     MenuAsSecondary,
+    MenuAsPrimary,
     Success,
     Light,
     LightLikeMenu,
@@ -57,6 +58,7 @@ impl Btn {
             Variant::MenuAsSecondary => {
                 Self::class("menu-secondary") + " " + &Self::class("like-menu")
             }
+            Variant::MenuAsPrimary => Self::class("menu-primary") + " " + &Self::class("like-menu"),
             Variant::Success => Self::class("success"),
             Variant::Light => Self::class("light"),
             Variant::LightLikeMenu => Self::class("light") + " " + &Self::class("like-menu"),
@@ -129,6 +131,14 @@ impl Btn {
         Self::with_variant(Variant::MenuAsSecondary, attrs, events, children)
     }
 
+    pub fn menu_as_primary<C: Component>(
+        attrs: Attributes<C>,
+        events: Events<C::Msg>,
+        children: Vec<Html<C>>,
+    ) -> Html<C> {
+        Self::with_variant(Variant::MenuAsPrimary, attrs, events, children)
+    }
+
     pub fn success<C: Component>(
         attrs: Attributes<C>,
         events: Events<C::Msg>,
@@ -197,6 +207,12 @@ impl Styled for Btn {
             ".menu-secondary" {
                 "line-height": "1.5";
                 "background-color": color_system::gray(100, 5).to_string();
+                "color": color_system::gray(100, 0).to_string();
+            }
+
+            ".menu-primary" {
+                "line-height": "1.5";
+                "background-color": color_system::blue(100, 5).to_string();
                 "color": color_system::gray(100, 0).to_string();
             }
 
