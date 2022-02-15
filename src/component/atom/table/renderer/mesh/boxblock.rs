@@ -310,12 +310,12 @@ impl Boxblock {
                 gl.set_u_id(program::ID_V_READ);
                 gl.set_u_light_color(&light_color.to_color().to_f32array());
                 gl.set_u_light_intensity(*light_intensity);
-                gl.set_u_shade_intensity(1.0);
                 gl.set_u_bg_color_1(program::COLOR_SOME);
                 match lighting {
                     LightingMode::AmbientLight { direction } => {
                         gl.set_u_light(program::LIGHT_AMBIENT);
                         gl.set_u_light_position(*direction);
+                        gl.set_u_shade_intensity((*light_intensity) / 2.0);
                         gl.set_u_light_attenation(0.0);
                     }
                     LightingMode::PointLight {
@@ -332,6 +332,7 @@ impl Boxblock {
                         gl.set_u_light(program::LIGHT_POINT_WITH_ID);
                         gl.set_u_light_position(*position);
                         gl.set_u_light_attenation(*light_attenation);
+                        gl.set_u_shade_intensity(1.0);
 
                         let set_tex = [
                             WebGlRenderingContext::set_u_light_map_px,
