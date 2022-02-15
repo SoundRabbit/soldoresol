@@ -346,6 +346,7 @@ impl ModalResource {
                     vec![
                         Html::img(
                             Attributes::new()
+                                .draggable(false)
                                 .class(Self::class("cell-img"))
                                 .class(Common::bg_transparent())
                                 .src(this.url().to_string()),
@@ -380,6 +381,7 @@ impl ModalResource {
                     vec![
                         Html::img(
                             Attributes::new()
+                                .draggable(false)
                                 .class(Self::class("cell-img"))
                                 .class(Common::bg_transparent())
                                 .src(this.data().url().to_string()),

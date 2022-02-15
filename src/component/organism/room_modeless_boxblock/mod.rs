@@ -398,6 +398,7 @@ impl RoomModelessBoxblock {
                                 texture.map(|texture| {
                                     Html::img(
                                         Attributes::new()
+                                            .draggable(false)
                                             .src(texture.data().url().to_string())
                                             .class(Common::bg_transparent()),
                                         Events::new().on_click(|_| {

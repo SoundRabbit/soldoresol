@@ -63,7 +63,9 @@ impl Component for ModalImportedFiles {
                     .all_of::<resource::ImageData>()
                     .map(|(r_id, img)| {
                         Html::img(
-                            Attributes::new().src(&img.url() as &String),
+                            Attributes::new()
+                                .draggable(false)
+                                .src(&img.url() as &String),
                             Events::new().on_click({
                                 let r_id = ResourceId::clone(&r_id);
                                 move |_| Msg::Sub(On::SelectFile(r_id))

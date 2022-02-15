@@ -485,7 +485,9 @@ impl SideMenu {
                             })
                             .map(|bg_image| {
                                 Html::img(
-                                    Attributes::new().src(bg_image.url().as_ref()),
+                                    Attributes::new()
+                                        .draggable(false)
+                                        .src(bg_image.url().as_ref()),
                                     Events::new(),
                                     vec![],
                                 )
@@ -882,7 +884,9 @@ impl SideMenu {
                     .and_then(|r_id| self.resource_arena.get_as::<resource::ImageData>(r_id))
                     .map(|bg_image| {
                         Html::img(
-                            Attributes::new().src(bg_image.url().as_ref()),
+                            Attributes::new()
+                                .draggable(false)
+                                .src(bg_image.url().as_ref()),
                             Events::new(),
                             vec![],
                         )

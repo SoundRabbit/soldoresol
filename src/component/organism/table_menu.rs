@@ -477,6 +477,7 @@ impl TableMenu {
                         {
                             Html::img(
                                 Attributes::new()
+                                    .draggable(false)
                                     .class(Common::bg_transparent())
                                     .class(Self::class("block-texture"))
                                     .src(src),
@@ -586,6 +587,7 @@ impl TableMenu {
                         }) {
                             Html::img(
                                 Attributes::new()
+                                    .draggable(false)
                                     .class(Common::bg_transparent())
                                     .class(Self::class("block-texture"))
                                     .src(src),

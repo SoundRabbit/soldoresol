@@ -109,6 +109,7 @@ impl RoomModelessChat {
                         icon.map(|icon| {
                             Html::img(
                                 Attributes::new()
+                                    .draggable(false)
                                     .class(Self::class("channel-message-icon"))
                                     .src(icon.url().to_string()),
                                 Events::new(),

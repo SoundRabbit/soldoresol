@@ -281,6 +281,7 @@ impl RoomModelessCharacter {
                 image.map(|image| {
                     Html::img(
                         Attributes::new()
+                            .draggable(false)
                             .src(image.url().to_string())
                             .class(Common::bg_transparent()),
                         Events::new().on_click(move |_| {

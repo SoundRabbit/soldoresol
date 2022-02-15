@@ -382,7 +382,10 @@ impl ModalCreateBlockTexture {
             vec![
                 if let Some(src) = img.and_then(|img| img.map(|img| img.url().to_string())) {
                     Html::img(
-                        Attributes::new().class(Common::bg_transparent()).src(src),
+                        Attributes::new()
+                            .draggable(false)
+                            .class(Common::bg_transparent())
+                            .src(src),
                         Events::new(),
                         vec![],
                     )
@@ -414,6 +417,7 @@ impl ModalCreateBlockTexture {
             {
                 Html::img(
                     Attributes::new()
+                        .draggable(false)
                         .src(src)
                         .class(Self::class("prefab-img"))
                         .class(Common::bg_transparent()),
