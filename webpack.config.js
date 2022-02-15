@@ -18,7 +18,7 @@ history({
 module.exports = {
     entry: "./assets",
     output: {
-        path: path.join(__dirname, "./docs/dev"),
+        path: path.join(__dirname, "./bin"),
     },
     resolve: {
         extensions: [".js"]
@@ -76,7 +76,6 @@ module.exports = {
         }),
         new WasmPackPlugin({
             crateDirectory: path.join(__dirname, "./"),
-            // forceMode: "development",
             forceMode: "production",
             target: "web",
             args: "--log-level error",
