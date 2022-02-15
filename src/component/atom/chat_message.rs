@@ -35,30 +35,18 @@ impl ChatMessage {
             block::chat_message::MessageToken::Refer(text) => Html::text(format!("{{{}}}", text)),
             block::chat_message::MessageToken::CommandBlock(cmd, message) => {
                 let cmd_name = cmd.name.to_string();
-                if cmd_name == "gr" {
-                    let mut cols = vec![];
-                    for col in &cmd.args {
-                        let col = col.to_string();
-                        if col == "k" {
-                            cols.push(String::from("max-content"));
-                        } else {
-                            cols.push(String::from("1fr"));
-                        }
-                    }
-                    Html::span(
-                        Attributes::new()
-                            .string("data-cmd", cmd_name)
-                            .style("grid-template-columns", cols.join(" ")),
-                        Events::new(),
-                        Self::render(message),
-                    )
-                } else if cmd_name == "block" {
+                if cmd_name == "div"
+                    || cmd_name == "grid"
+                    || cmd_name == "span"
+                    || cmd_name == "box"
+                    || cmd_name == ""
+                {
                     let mut cmds: Vec<_> = cmd
                         .args
                         .iter()
                         .map(block::chat_message::Message::to_string)
                         .collect();
-                    cmds.push(String::from("block"));
+                    cmds.push(cmd_name.clone());
                     let cmds = cmds.join(" ");
                     Html::span(
                         Attributes::new().string("data-cmd", cmds),
@@ -116,6 +104,98 @@ impl Styled for ChatMessage {
                 "font-family": "sans-serif";
             }
 
+            ".base [data-cmd~='box']" {
+                "display": "block";
+                "overflow-y": "scroll";
+                "max-height": "15em";
+                "padding-left": ".35rem";
+                "border-left": format!(".35rem solid {}", crate::libs::color::Pallet::gray(3));
+            }
+
+            ".base [data-cmd~='div']" {
+                "display": "block";
+            }
+
+            ".base [data-cmd~='span']" {
+                "display": "inline-block";
+            }
+
+            ".base [data-cmd~='grid']" {
+                "display": "grid";
+                "grid-template-columns": "repeat(12, 1fr)";
+                "grid-auto-rows": "max-content";
+                "column-gap": "0.25ch";
+                "row-gap": "0.375em";
+            }
+
+            ".base [data-cmd~='1fr']" {
+                "grid-area": "auto / span 1";
+            }
+
+            ".base [data-cmd~='2fr']" {
+                "grid-area": "auto / span 2";
+            }
+
+            ".base [data-cmd~='3fr']" {
+                "grid-area": "auto / span 3";
+            }
+
+            ".base [data-cmd~='4fr']" {
+                "grid-area": "auto / span 4";
+            }
+
+            ".base [data-cmd~='5fr']" {
+                "grid-area": "auto / span 5";
+            }
+
+            ".base [data-cmd~='6fr']" {
+                "grid-area": "auto / span 6";
+            }
+
+            ".base [data-cmd~='7fr']" {
+                "grid-area": "auto / span 7";
+            }
+
+            ".base [data-cmd~='8fr']" {
+                "grid-area": "auto / span 8";
+            }
+
+            ".base [data-cmd~='9fr']" {
+                "grid-area": "auto / span 9";
+            }
+
+            ".base [data-cmd~='10fr']" {
+                "grid-area": "auto / span 10";
+            }
+
+            ".base [data-cmd~='11fr']" {
+                "grid-area": "auto / span 11";
+            }
+
+            ".base [data-cmd~='12fr']" {
+                "grid-area": "auto / span 12";
+            }
+
+            ".base [data-cmd~='1vfr']" {
+                "grid-area": "span 1";
+            }
+
+            ".base [data-cmd~='2vfr']" {
+                "grid-area": "span 2";
+            }
+
+            ".base [data-cmd~='3vfr']" {
+                "grid-area": "span 3";
+            }
+
+            ".base [data-cmd~='4vfr']" {
+                "grid-area": "span 4";
+            }
+
+            ".base [data-cmd~='sans-serif']" {
+                "font-family": "sans-serif";
+            }
+
             ".base [data-cmd~='serif']" {
                 "font-family": "serif";
             }
@@ -145,22 +225,6 @@ impl Styled for ChatMessage {
                 "text-align": "center";
             }
 
-            ".base [data-cmd~='gr']" {
-                "display": "grid";
-            }
-
-            ".base [data-cmd~='box']" {
-                "display": "block";
-                "overflow-y": "scroll";
-                "max-height": "10rem";
-                "padding-left": ".35rem";
-                "border-left": format!(".35rem solid {}", crate::libs::color::Pallet::gray(3));
-            }
-
-            ".base [data-cmd~='block']" {
-                "display": "block";
-            }
-
             ".base [data-cmd~='large']" {
                 "font-size": "1.25em";
             }
@@ -169,68 +233,84 @@ impl Styled for ChatMessage {
                 "font-size": "1.5em";
             }
 
+            ".base [data-cmd~='light']" {
+                "color": format!("{} !important",crate::libs::color::Pallet::gray(0));
+                "background-color": crate::libs::color::Pallet::gray(9);
+            }
+
+            ".base [data-cmd~='dark']" {
+                "color": format!("{} !important",crate::libs::color::Pallet::gray(9));
+                "background-color": crate::libs::color::Pallet::gray(0);
+            }
+
             ".base [data-cmd~='red']" {
-                "color": crate::libs::color::Pallet::red(7);
+                "color": format!("{} !important",crate::libs::color::Pallet::red(7));
                 "background-color": crate::libs::color::Pallet::gray(0);
             }
 
             ".base [data-cmd~='orange']" {
-                "color": crate::libs::color::Pallet::orange(5);
+                "color":format!("{} !important", crate::libs::color::Pallet::orange(5));
                 "background-color": crate::libs::color::Pallet::gray(0);
             }
 
             ".base [data-cmd~='yellow']" {
-                "color": crate::libs::color::Pallet::yellow(8);
+                "color":format!("{} !important", crate::libs::color::Pallet::yellow(8));
+                "background-color": crate::libs::color::Pallet::gray(0);
             }
 
             ".base [data-cmd~='green']" {
-                "color": crate::libs::color::Pallet::green(7);
+                "color": format!("{} !important",crate::libs::color::Pallet::green(7));
                 "background-color": crate::libs::color::Pallet::gray(0);
             }
 
             ".base [data-cmd~='blue']" {
-                "color": crate::libs::color::Pallet::blue(5);
+                "color":format!("{} !important", crate::libs::color::Pallet::blue(5));
                 "background-color": crate::libs::color::Pallet::gray(0);
             }
 
             ".base [data-cmd~='purple']" {
-                "color": crate::libs::color::Pallet::purple(5);
+                "color": format!("{} !important",crate::libs::color::Pallet::purple(5));
                 "background-color": crate::libs::color::Pallet::gray(0);
             }
 
             ".base [data-cmd~='pink']" {
-                "color": crate::libs::color::Pallet::pink(7);
+                "color": format!("{} !important",crate::libs::color::Pallet::pink(7));
                 "background-color": crate::libs::color::Pallet::gray(0);
+            }
+
+            ".base [data-cmd~='bg-light']" {
+                "color": crate::libs::color::Pallet::gray(9);
+                "background-color": format!("{} !important", crate::libs::color::Pallet::gray(0));
             }
 
             ".base [data-cmd~='bg-dark']" {
                 "color": crate::libs::color::Pallet::gray(0);
-                "background-color": crate::libs::color::Pallet::gray(9);
+                "background-color": format!("{} !important",crate::libs::color::Pallet::gray(9));
             }
 
             ".base [data-cmd~='bg-red']" {
                 "color": crate::libs::color::Pallet::gray(0);
-                "background-color": crate::libs::color::Pallet::red(7);
+                "background-color": format!("{} !important",crate::libs::color::Pallet::red(7));
             }
 
             ".base [data-cmd~='bg-orange']" {
                 "color": crate::libs::color::Pallet::gray(0);
-                "background-color": crate::libs::color::Pallet::orange(5);
+                "background-color": format!("{} !important",crate::libs::color::Pallet::orange(5));
             }
 
             ".base [data-cmd~='bg-yellow']" {
                 "color": crate::libs::color::Pallet::gray(0);
-                "background-color": crate::libs::color::Pallet::yellow(8);
+                "background-color": format!("{} !important",crate::libs::color::Pallet::yellow(8));
             }
 
             ".base [data-cmd~='bg-green']" {
                 "color": crate::libs::color::Pallet::gray(0);
-                "background-color": crate::libs::color::Pallet::green(7);
+                "background-color": format!("{} !important",crate::libs::color::Pallet::green(7));
             }
 
             ".base [data-cmd~='bg-blue']" {
                 "color": crate::libs::color::Pallet::gray(0);
-                "background-color": crate::libs::color::Pallet::blue(5);
+                "background-color": format!("{} !important",crate::libs::color::Pallet::blue(5));
             }
 
             ".base [data-cmd~='bg-purple']" {

@@ -70,7 +70,7 @@ impl RoomModelessChat {
             Attributes::new().class(Self::class("channel-main")),
             Events::new(),
             vec![
-                if chat_channel.messages().len() > 50 {
+                if chat_channel.messages().len() > 25 {
                     Btn::secondary(
                         Attributes::new().class(Self::class("banner")),
                         Events::new(),
