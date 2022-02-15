@@ -220,6 +220,10 @@ impl Styled for ModalChatUser {
             }
             ".list" {
                 "overflow-y": "scroll";
+                "display": "grid";
+                "grid-template-columns": "1fr";
+                "grid-auto-rows": "max-content";
+                "row-gap": "0.25rem";
             }
         }
     }
