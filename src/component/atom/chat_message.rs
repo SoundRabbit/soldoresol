@@ -102,6 +102,7 @@ impl Styled for ChatMessage {
                 "width": "100%";
                 "height": "100%";
                 "font-family": "sans-serif";
+                "user-select": "text";
             }
 
             ".base [data-cmd~='box']" {
@@ -174,22 +175,6 @@ impl Styled for ChatMessage {
 
             ".base [data-cmd~='12fr']" {
                 "grid-area": "auto / span 12";
-            }
-
-            ".base [data-cmd~='1vfr']" {
-                "grid-area": "span 1";
-            }
-
-            ".base [data-cmd~='2vfr']" {
-                "grid-area": "span 2";
-            }
-
-            ".base [data-cmd~='3vfr']" {
-                "grid-area": "span 3";
-            }
-
-            ".base [data-cmd~='4vfr']" {
-                "grid-area": "span 4";
             }
 
             ".base [data-cmd~='sans-serif']" {
