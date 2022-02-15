@@ -29,41 +29,123 @@ impl Room {
     }
 
     fn render_contextmenu_boxblock(&self, boxblock: &BlockMut<block::Boxblock>) -> Vec<Html<Self>> {
-        vec![Btn::menu(
-            Attributes::new(),
-            Events::new().on_click({
-                let block_id = boxblock.id();
-                move |_| Msg::OpenBoxblockModeless(block_id)
-            }),
-            vec![Html::text("詳細を表示")],
-        )]
+        vec![
+            text::div(
+                boxblock
+                    .map(|boxblock| boxblock.name().clone())
+                    .unwrap_or(String::from("")),
+            ),
+            Btn::menu(
+                Attributes::new(),
+                Events::new().on_click({
+                    let block_id = boxblock.id();
+                    move |_| Msg::OpenBoxblockModeless(block_id)
+                }),
+                vec![Html::text("詳細を表示")],
+            ),
+            Self::render_is_fixed_position(
+                boxblock
+                    .map(|boxblock| boxblock.is_fixed_position())
+                    .unwrap_or(false),
+                BlockMut::clone(&boxblock).untyped(),
+            ),
+            Self::render_is_bind_to_grid(
+                boxblock
+                    .map(|boxblock| boxblock.is_bind_to_grid())
+                    .unwrap_or(false),
+                BlockMut::clone(&boxblock).untyped(),
+            ),
+        ]
     }
 
     fn render_contextmenu_character(
         &self,
         character: &BlockMut<block::Character>,
     ) -> Vec<Html<Self>> {
-        vec![Btn::menu(
-            Attributes::new(),
-            Events::new().on_click({
-                let block_id = character.id();
-                move |_| Msg::OpenCharacterModeless(block_id)
-            }),
-            vec![Html::text("詳細を表示")],
-        )]
+        vec![
+            text::div(
+                character
+                    .map(|character| character.name().clone())
+                    .unwrap_or(String::from("")),
+            ),
+            Btn::menu(
+                Attributes::new(),
+                Events::new().on_click({
+                    let block_id = character.id();
+                    move |_| Msg::OpenCharacterModeless(block_id)
+                }),
+                vec![Html::text("詳細を表示")],
+            ),
+            Self::render_is_fixed_position(
+                character
+                    .map(|character| character.is_fixed_position())
+                    .unwrap_or(false),
+                BlockMut::clone(&character).untyped(),
+            ),
+            Self::render_is_bind_to_grid(
+                character
+                    .map(|character| character.is_bind_to_grid())
+                    .unwrap_or(false),
+                BlockMut::clone(&character).untyped(),
+            ),
+        ]
     }
 
     fn render_contextmenu_craftboard(
         &self,
         craftboard: &BlockMut<block::Craftboard>,
     ) -> Vec<Html<Self>> {
-        vec![Btn::menu(
+        vec![
+            text::div(
+                craftboard
+                    .map(|craftboard| craftboard.name().clone())
+                    .unwrap_or(String::from("")),
+            ),
+            Btn::menu(
+                Attributes::new(),
+                Events::new().on_click({
+                    let block_id = craftboard.id();
+                    move |_| Msg::OpenCraftboardModeless(block_id)
+                }),
+                vec![Html::text("詳細を表示")],
+            ),
+            Self::render_is_fixed_position(
+                craftboard
+                    .map(|craftboard| craftboard.is_fixed_position())
+                    .unwrap_or(false),
+                BlockMut::clone(&craftboard).untyped(),
+            ),
+            Self::render_is_bind_to_grid(
+                craftboard
+                    .map(|craftboard| craftboard.is_bind_to_grid())
+                    .unwrap_or(false),
+                BlockMut::clone(&craftboard).untyped(),
+            ),
+        ]
+    }
+
+    fn render_is_fixed_position(is_fixed_position: bool, block: BlockMut<Untyped>) -> Html<Self> {
+        Btn::menu(
             Attributes::new(),
-            Events::new().on_click({
-                let block_id = craftboard.id();
-                move |_| Msg::OpenCraftboardModeless(block_id)
-            }),
-            vec![Html::text("詳細を表示")],
-        )]
+            Events::new()
+                .on_click(move |_| Msg::SetBlockIsFixedPosition(block, !is_fixed_position)),
+            vec![if is_fixed_position {
+                Html::text("固定解除")
+            } else {
+                Html::text("場所を固定")
+            }],
+        )
+    }
+
+    fn render_is_bind_to_grid(is_bind_to_grid: bool, block: BlockMut<Untyped>) -> Html<Self> {
+        Btn::menu(
+            Attributes::new(),
+            Events::new().on_click(move |_| Msg::SetBlockIsBindToGrid(block, !is_bind_to_grid)),
+            vec![if is_bind_to_grid {
+                Html::text("グリッドにスナップしない")
+            } else {
+                Html::text("グリッドにスナップする")
+            }],
+        )
     }
 }

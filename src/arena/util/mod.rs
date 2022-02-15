@@ -203,8 +203,8 @@ macro_rules! arena {
             }
 
             #[allow(unused)]
-            pub fn update<T>(&mut self, f: impl FnOnce(&mut T)) where Self: Access<T> {
-                Access::update(self, f);
+            pub fn update<T>(&mut self, f: impl FnOnce(&mut T)) -> bool where Self: Access<T> {
+                Access::update(self, f)
             }
 
             #[allow(unused)]
@@ -263,18 +263,21 @@ macro_rules! arena {
         )*
 
         pub trait Access<T> {
-            fn update(&mut self, f: impl FnOnce(&mut T));
+            fn update(&mut self, f: impl FnOnce(&mut T)) -> bool;
             fn map<U>(&self, f: impl FnOnce(&T) -> U) -> Option<U>;
         }
 
         $(
             impl Access<$b> for Block {
-                fn update(&mut self, f: impl FnOnce(&mut $b)) {
+                fn update(&mut self, f: impl FnOnce(&mut $b)) -> bool {
                     let mut borrow = self.data.borrow_mut();
                     if let BlockData::$b(data) = &mut borrow.data {
                         f(data);
-                        let timesamp = borrow.timestamp.max(js_sys::Date::now());
-                        borrow.timestamp = timesamp;
+                        let timestamp = borrow.timestamp.max(js_sys::Date::now());
+                        borrow.timestamp = timestamp;
+                        true
+                    } else {
+                        false
                     }
                 }
 
@@ -286,6 +289,8 @@ macro_rules! arena {
                 }
             }
         )*
+
+        pub struct Untyped();
 
         pub struct BlockMut<T> {
             data: Weak<RefCell<AnnotBlockData>>,
@@ -321,21 +326,52 @@ macro_rules! arena {
                     U128Id::none()
                 }
             }
+
+            pub fn untyped(self) -> BlockMut<Untyped> {
+                BlockMut {
+                    data: self.data,
+                    phantom_data: PhantomData
+                }
+            }
+        }
+
+        #[async_trait(?Send)]
+        impl<T> util::Pack for BlockMut<T> {
+            async fn pack(&self, is_deep: bool) -> JsValue {
+                if let Some(data) = self.data.upgrade() {
+                    data.pack(is_deep).await
+                } else {
+                    JsValue::null()
+                }
+            }
+        }
+
+        impl BlockMut<Untyped> {
+            pub fn type_as<T>(&self) -> BlockMut<T> {
+                BlockMut {
+                    data: Weak::clone(&self.data),
+                    phantom_data: PhantomData
+                }
+            }
         }
 
         $(
             impl BlockMut<$b> {
-                pub fn update(&mut self, f: impl FnOnce(&mut $b)) {
+                #[allow(unused)]
+                pub fn update(&mut self, f: impl FnOnce(&mut $b)) -> bool {
                     if let Some(self_data) = self.data.upgrade() {
                         let mut borrow = self_data.borrow_mut();
                         if let BlockData::$b(data) = &mut borrow.data {
                             f(data);
                             let timesamp = borrow.timestamp.max(js_sys::Date::now());
                             borrow.timestamp = timesamp;
+                            return true;
                         }
                     }
+                    false
                 }
 
+                #[allow(unused)]
                 pub fn map<T>(&self, f: impl FnOnce(& $b) -> T) -> Option<T> {
                     if let Some(self_data) = self.data.upgrade() {
                         if let BlockData::$b(data) = &self_data.borrow().data {
@@ -345,20 +381,10 @@ macro_rules! arena {
                     None
                 }
 
+                #[allow(unused)]
                 pub fn as_ref(&self) -> BlockRef<$b> {
                     BlockRef {
                         data: BlockMut::clone(self)
-                    }
-                }
-            }
-
-            #[async_trait(?Send)]
-            impl util::Pack for BlockMut<$b> {
-                async fn pack(&self, is_deep: bool) -> JsValue {
-                    if let Some(data) = self.data.upgrade() {
-                        data.pack(is_deep).await
-                    } else {
-                        JsValue::null()
                     }
                 }
             }

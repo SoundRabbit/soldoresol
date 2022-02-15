@@ -4,6 +4,7 @@ use super::super::atom::{
     dropdown::{self, Dropdown},
     file_catcher::{self, FileCatcher},
     header::{self, Header},
+    text,
 };
 use super::super::organism::modal_chat_user::{self, ModalChatUser};
 use super::super::organism::{

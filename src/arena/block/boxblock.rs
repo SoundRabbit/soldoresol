@@ -28,6 +28,7 @@ impl Pack for Shape {
 
 block! {
     [pub Boxblock(constructor, pack)]
+    (is_bind_to_grid): bool;
     size: [f64; 3] = [1.0, 1.0, 1.0];
     position: [f64; 3] = [0.0, 0.0, 0.0];
     shape: Shape = Shape::Cube;
@@ -94,5 +95,17 @@ impl Boxblock {
         if let Some(sub) = display_name.1 {
             self.display_name.1 = sub;
         }
+    }
+    pub fn set_is_fixed_position(&mut self, is_fixed_position: bool) {
+        self.is_fixed_position = is_fixed_position;
+    }
+    pub fn is_fixed_position(&self) -> bool {
+        self.is_fixed_position
+    }
+    pub fn set_is_bind_to_grid(&mut self, is_bind_to_grid: bool) {
+        self.is_bind_to_grid = is_bind_to_grid;
+    }
+    pub fn is_bind_to_grid(&self) -> bool {
+        self.is_bind_to_grid
     }
 }

@@ -2,7 +2,7 @@ use super::atom::table::{self, table_tool::TableTool, Table};
 use super::organism::room_modeless::{self, RoomModeless};
 use super::organism::room_modeless_chat::ChatUser;
 use super::organism::tab_modeless_container::{self, TabModelessContainer};
-use crate::arena::{block, resource, user, Arena, ArenaMut, BlockMut};
+use crate::arena::{block, resource, user, Arena, ArenaMut, BlockMut, Untyped};
 use crate::libs::random_id::U128Id;
 use crate::libs::skyway::{MeshRoom, Peer};
 use kagura::prelude::*;
@@ -41,6 +41,8 @@ pub enum Msg {
     OnTableContextmenu(web_sys::MouseEvent),
     AddResourceImageData(resource::ImageData),
     SetIs2dMode(bool, bool),
+    SetBlockIsFixedPosition(BlockMut<Untyped>, bool),
+    SetBlockIsBindToGrid(BlockMut<Untyped>, bool),
 }
 
 pub enum On {}

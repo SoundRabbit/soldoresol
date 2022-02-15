@@ -179,6 +179,7 @@ impl Description {
 
 block! {
     [pub Character(constructor, pack)]
+    (is_bind_to_grid): bool;
     name: String = String::from("名前未設定");
     display_name: (String, String) = (String::from("名前未設定"), String::from("新規キャラクター"));
     chatpallet: ChatPallet = {
@@ -192,6 +193,7 @@ block! {
     textures: SelectList<StandingTexture> =
         SelectList::new(vec![StandingTexture::new(String::from("[default]"))], 0);
     description: Description = Description::new();
+    is_fixed_position: bool = false;
 }
 
 impl Character {
@@ -292,6 +294,19 @@ impl Character {
 
     pub fn push_texture(&mut self, texture: StandingTexture) {
         self.textures.push(texture);
+    }
+
+    pub fn set_is_fixed_position(&mut self, is_fixed_position: bool) {
+        self.is_fixed_position = is_fixed_position;
+    }
+    pub fn is_fixed_position(&self) -> bool {
+        self.is_fixed_position
+    }
+    pub fn set_is_bind_to_grid(&mut self, is_bind_to_grid: bool) {
+        self.is_bind_to_grid = is_bind_to_grid;
+    }
+    pub fn is_bind_to_grid(&self) -> bool {
+        self.is_bind_to_grid
     }
 }
 

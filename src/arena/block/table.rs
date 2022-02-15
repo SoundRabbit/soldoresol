@@ -9,6 +9,7 @@ block! {
     [pub Table(constructor, pack)]
     boxblocks: Vec<BlockMut<Boxblock>> = vec![];
     craftboards: Vec<BlockMut<Craftboard>> = vec![];
+    default_is_bind_to_grid: bool = true;
 }
 
 impl Table {
@@ -23,5 +24,8 @@ impl Table {
     }
     pub fn push_craftboard(&mut self, craftboard: BlockMut<Craftboard>) {
         self.craftboards.push(craftboard);
+    }
+    pub fn default_is_bind_to_grid(&self) -> bool {
+        self.default_is_bind_to_grid
     }
 }

@@ -266,7 +266,11 @@ impl Table {
         let n = Self::n_cube(&n, &option.size);
         let p = [p[0] + n[0], p[1] + n[1], p[2] + n[2]];
 
-        let mut boxblock = block::Boxblock::new();
+        let is_bind_to_grid = table
+            .map(|table| table.default_is_bind_to_grid())
+            .unwrap_or(true);
+
+        let mut boxblock = block::Boxblock::new(is_bind_to_grid);
 
         crate::debug::log_1(format!("add boxblock to {:?}", &p));
 
@@ -289,6 +293,7 @@ impl Table {
     }
 
     pub fn create_character(&mut self, mouse_coord: &[f64; 2], option: &table_tool::Character) {
+        let table = unwrap!(self.selecting_table());
         let renderer = unwrap!(self.renderer.as_ref());
         let (p, _) = renderer.borrow().get_focused_position(
             &self.camera_matrix.borrow(),
@@ -305,7 +310,11 @@ impl Table {
             p[2] + n[2] as f64 / 128.0,
         ];
 
-        let mut character = block::Character::new();
+        let is_bind_to_grid = table
+            .map(|table| table.default_is_bind_to_grid())
+            .unwrap_or(true);
+
+        let mut character = block::Character::new(is_bind_to_grid);
 
         character.set_size(option.size);
         character.set_position(p);
@@ -337,7 +346,10 @@ impl Table {
             mouse_coord[1],
         );
 
-        let mut craftboard = block::Craftboard::new(p);
+        let is_bind_to_grid = table
+            .map(|table| table.default_is_bind_to_grid())
+            .unwrap_or(true);
+        let mut craftboard = block::Craftboard::new(is_bind_to_grid, p);
 
         craftboard.set_size(option.size.clone());
 
@@ -411,6 +423,15 @@ impl Table {
                     let block_id = block.id();
                     block.update(|block| {
                         let n = Self::n_cube(&n, block.size());
+                        let p = if block.is_bind_to_grid() {
+                            [
+                                (p[0] * 2.0).round() / 2.0,
+                                (p[1] * 2.0).round() / 2.0,
+                                (p[2] * 2.0).round() / 2.0,
+                            ]
+                        } else {
+                            p
+                        };
                         let p = [p[0] + n[0], p[1] + n[1], p[2] + n[2]];
                         block.set_position(p);
 
@@ -426,6 +447,15 @@ impl Table {
                 if let Some(mut block) = self.arena.get_mut::<block::Character>(block_id) {
                     let block_id = block.id();
                     block.update(|block| {
+                        let p = if block.is_bind_to_grid() {
+                            [
+                                (p[0] * 2.0).round() / 2.0,
+                                (p[1] * 2.0).round() / 2.0,
+                                (p[2] * 2.0).round() / 2.0,
+                            ]
+                        } else {
+                            p
+                        };
                         block.set_position(p);
 
                         self.cmds.push(self.render());
@@ -440,6 +470,15 @@ impl Table {
                 if let Some(mut block) = self.arena.get_mut::<block::Craftboard>(block_id) {
                     let block_id = block.id();
                     block.update(|block| {
+                        let p = if block.is_bind_to_grid() {
+                            [
+                                (p[0] * 2.0).round() / 2.0,
+                                (p[1] * 2.0).round() / 2.0,
+                                (p[2] * 2.0).round() / 2.0,
+                            ]
+                        } else {
+                            p
+                        };
                         block.set_position(p);
 
                         self.cmds.push(self.render());
@@ -497,12 +536,24 @@ impl Table {
                         let mut camera_is_moving = self.camera_state.is_moving;
 
                         match block_kind {
-                            BlockKind::Boxblock => {
+                            BlockKind::Boxblock
+                                if !self
+                                    .arena
+                                    .get::<block::Boxblock>(&block_id)
+                                    .and_then(|x| x.map(|boxblock| boxblock.is_fixed_position()))
+                                    .unwrap_or(true) =>
+                            {
                                 self.tool_state.selecter_mut().grabbed_object =
                                     Some((block_kind, block_id));
                                 self.cmds.push(self.render());
                             }
-                            BlockKind::Character => {
+                            BlockKind::Character
+                                if !self
+                                    .arena
+                                    .get::<block::Character>(&block_id)
+                                    .and_then(|x| x.map(|character| character.is_fixed_position()))
+                                    .unwrap_or(true) =>
+                            {
                                 self.tool_state.selecter_mut().grabbed_object =
                                     Some((block_kind, block_id));
                                 self.cmds.push(self.render());

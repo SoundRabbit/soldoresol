@@ -70,20 +70,14 @@ macro_rules! unwrap {
     };
 }
 
-macro_rules! first_of {
-    ($x:expr) => {
-        if let Some(x) = $x {
-            Some(x)
-        } else {
-            None
-        }
-    };
+macro_rules! trys {
+    {$x:expr;} => {{
+        $x;
+    }};
 
-    ($x:expr,$($xs:expr),*) => {
-        if let Some(x) = $x {
-            Some(x)
-        } else {
-            first_of!($($xs:expr),*)
+    {$x:expr;$($xs:expr;)+} => {
+        if !$x {
+            trys!($($xs;)+)
         }
     };
 }

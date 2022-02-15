@@ -11,6 +11,7 @@ type Textures = Cubebox<Option<BlockRef<ImageData>>>;
 
 block! {
     [pub Craftboard(constructor, pack)]
+    (is_bind_to_grid): bool;
     (position): [f64; 3];
     name: String = String::new();
     display_name: (String, String) = (String::from(""), String::from(""));
@@ -66,6 +67,12 @@ impl Craftboard {
     }
     pub fn is_fixed_position(&self) -> bool {
         self.is_fixed_position
+    }
+    pub fn set_is_bind_to_grid(&mut self, is_bind_to_grid: bool) {
+        self.is_bind_to_grid = is_bind_to_grid;
+    }
+    pub fn is_bind_to_grid(&self) -> bool {
+        self.is_bind_to_grid
     }
     pub fn textures(&self) -> &Textures {
         &self.textures

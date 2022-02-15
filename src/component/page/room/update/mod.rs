@@ -27,12 +27,11 @@ impl Update for Room {
     fn on_assemble(&mut self, props: &Props) -> Cmd<Self> {
         self.chat = self.arena.insert(block::Chat::new());
 
-        let chat_channel_main = new_channel!(self.arena, self.chat, "メイン");
-        let chat_channel_sub = new_channel!(self.arena, self.chat, "サブ");
-
-        let craftboard = block::Craftboard::new([0.0, 0.0, 0.0]);
+        new_channel!(self.arena, self.chat, "メイン");
+        new_channel!(self.arena, self.chat, "サブ");
 
         let mut table = block::Table::new();
+        let craftboard = block::Craftboard::new(table.default_is_bind_to_grid(), [0.0, 0.0, 0.0]);
         table.push_craftboard(self.arena.insert(craftboard));
 
         let mut scene = block::Scene::new();
@@ -269,6 +268,34 @@ impl Update for Room {
             Msg::SetIs2dMode(is_2d_mode, is_debug_mode) => {
                 self.is_2d_mode = is_2d_mode;
                 self.is_debug_mode = is_debug_mode;
+                Cmd::none()
+            }
+            Msg::SetBlockIsFixedPosition(block, is_fixed_position) => {
+                trys! {
+                    block.type_as::<block::Boxblock>().update(|boxblock| {
+                        boxblock.set_is_fixed_position(is_fixed_position);
+                    });
+                    block.type_as::<block::Character>().update(|character| {
+                        character.set_is_fixed_position(is_fixed_position);
+                    });
+                    block.type_as::<block::Craftboard>().update(|craftboard| {
+                        craftboard.set_is_fixed_position(is_fixed_position);
+                    });
+                }
+                Cmd::none()
+            }
+            Msg::SetBlockIsBindToGrid(block, is_bind_to_grid) => {
+                trys! {
+                    block.type_as::<block::Boxblock>().update(|boxblock| {
+                        boxblock.set_is_bind_to_grid(is_bind_to_grid);
+                    });
+                    block.type_as::<block::Character>().update(|character| {
+                        character.set_is_bind_to_grid(is_bind_to_grid);
+                    });
+                    block.type_as::<block::Craftboard>().update(|craftboard| {
+                        craftboard.set_is_bind_to_grid(is_bind_to_grid);
+                    });
+                }
                 Cmd::none()
             }
         }
