@@ -164,7 +164,7 @@ impl Update for RoomModelessChat {
                             character.selected_texture().and_then(|texture| {
                                 texture.image().map(|image| BlockRef::clone(&image))
                             }),
-                            character.display_name().0.clone(),
+                            character.name().clone(),
                         )
                     }),
                 };

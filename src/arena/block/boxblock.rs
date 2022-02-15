@@ -84,6 +84,10 @@ impl Boxblock {
         &self.name
     }
 
+    pub fn set_name(&mut self, name: String) {
+        self.name = name;
+    }
+
     pub fn display_name(&self) -> &(String, String) {
         &self.display_name
     }

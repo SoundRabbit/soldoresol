@@ -42,7 +42,7 @@ impl RoomModelessCharacter {
                     Attributes::new()
                         .id(&self.element_id.input_character_name)
                         .value(character.name()),
-                    Events::new(),
+                    Events::new().on_input(Msg::SetName),
                     vec![],
                 ),
                 Html::label(

@@ -41,7 +41,7 @@ impl RoomModelessCraftboard {
                     Attributes::new()
                         .id(&self.element_id.input_craftboard_name)
                         .value(craftboard.name()),
-                    Events::new(),
+                    Events::new().on_input(Msg::SetName),
                     vec![],
                 ),
                 Html::label(

@@ -24,6 +24,7 @@ pub enum Msg {
     Sub(On),
     SetShowingModal(ShowingModal),
     SetSelectedTabIdx(usize),
+    SetName(String),
     SetDisplayName0(String),
     SetDisplayName1(String),
     SetXSize(f64),
@@ -91,6 +92,16 @@ impl Update for RoomModelessCraftboard {
             Msg::SetSelectedTabIdx(tab_idx) => {
                 self.selected_tab_idx = tab_idx;
                 Cmd::none()
+            }
+            Msg::SetName(name) => {
+                self.craftboard.update(|craftboard| {
+                    craftboard.set_name(name);
+                });
+
+                Cmd::sub(On::UpdateBlocks {
+                    insert: set! {},
+                    update: set! { self.craftboard.id() },
+                })
             }
             Msg::SetDisplayName0(display_name) => {
                 self.craftboard.update(|craftboard| {

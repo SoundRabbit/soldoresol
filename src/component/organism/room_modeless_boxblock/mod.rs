@@ -28,6 +28,7 @@ pub enum Msg {
     Sub(On),
     SetShowingModal(ShowingModal),
     SetColor(crate::libs::color::Pallet),
+    SetName(String),
     SetDisplayName0(String),
     SetDisplayName1(String),
     SetShape(block::boxblock::Shape),
@@ -92,6 +93,16 @@ impl Update for RoomModelessBoxblock {
             Msg::SetColor(color) => {
                 self.boxblock.update(|boxblock| {
                     boxblock.set_color(color);
+                });
+
+                Cmd::sub(On::UpdateBlocks {
+                    insert: set! {},
+                    update: set! { self.boxblock.id() },
+                })
+            }
+            Msg::SetName(name) => {
+                self.boxblock.update(|boxblock| {
+                    boxblock.set_name(name);
                 });
 
                 Cmd::sub(On::UpdateBlocks {
@@ -214,7 +225,7 @@ impl RoomModelessBoxblock {
                     Attributes::new()
                         .id(&self.element_id.input_boxblock_name)
                         .value(boxblock.name()),
-                    Events::new(),
+                    Events::new().on_input(Msg::SetName),
                     vec![],
                 ),
                 Html::label(

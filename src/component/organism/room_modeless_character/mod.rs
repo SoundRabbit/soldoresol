@@ -26,6 +26,7 @@ pub enum Msg {
     SetSelectedTabIdx(usize),
     SetShowingModal(ShowingModal),
     SetColor(crate::libs::color::Pallet),
+    SetName(String),
     SetDisplayName0(String),
     SetDisplayName1(String),
     SetSize(f64),
@@ -155,6 +156,16 @@ impl Update for RoomModelessCharacter {
             Msg::SetColor(color) => {
                 self.character.update(|character| {
                     character.set_color(color);
+                });
+
+                Cmd::sub(On::UpdateBlocks {
+                    insert: set! {},
+                    update: set! { self.character.id() },
+                })
+            }
+            Msg::SetName(name) => {
+                self.character.update(|character| {
+                    character.set_name(name);
                 });
 
                 Cmd::sub(On::UpdateBlocks {
