@@ -136,6 +136,10 @@ impl Update for Room {
                 Cmd::none()
             }
             Msg::OpenChatModeless(chat_user) => {
+                if !self.chat_users.iter().any(|user| *user == chat_user) {
+                    self.chat_users.push(ChatUser::clone(&chat_user));
+                }
+
                 self.modeless_container.update(|modeless_container| {
                     Self::open_modeless(
                         &props.client_id,

@@ -1,10 +1,9 @@
 use super::super::atom::{
-    attr,
     btn::{self, Btn},
     dropdown::{self, Dropdown},
     file_catcher::{self, FileCatcher},
     header::{self, Header},
-    text,
+    marker::Marker,
 };
 use super::super::organism::modal_chat_user::{self, ModalChatUser};
 use super::super::organism::{

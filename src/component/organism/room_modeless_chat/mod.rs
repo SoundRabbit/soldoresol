@@ -31,6 +31,16 @@ pub enum ChatUser {
     Character(BlockMut<block::Character>),
 }
 
+impl PartialEq for ChatUser {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (ChatUser::Character(this), ChatUser::Character(other)) => this.id() == other.id(),
+            (ChatUser::Player(this), ChatUser::Player(other)) => this.id() == other.id(),
+            _ => false,
+        }
+    }
+}
+
 pub struct Props {
     pub arena: ArenaMut,
     pub client_id: Rc<String>,

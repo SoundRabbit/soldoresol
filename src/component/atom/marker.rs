@@ -28,6 +28,14 @@ impl Marker {
     ) -> Html<C> {
         Self::render("purple", attrs, events, children)
     }
+
+    pub fn light<C: Component>(
+        attrs: Attributes<C>,
+        events: Events<C::Msg>,
+        children: Vec<Html<C>>,
+    ) -> Html<C> {
+        Self::render("light", attrs, events, children)
+    }
 }
 
 impl Styled for Marker {
@@ -43,6 +51,11 @@ impl Styled for Marker {
             ".purple" {
                 "color": color_system::purple(255, 5);
                 "border": format!("0.1em solid {}", color_system::purple(255, 5));
+            }
+
+            ".light" {
+                "color": color_system::gray(255, 9);
+                "border": format!("0.1em solid {}", color_system::gray(255, 9));
             }
         }
     }

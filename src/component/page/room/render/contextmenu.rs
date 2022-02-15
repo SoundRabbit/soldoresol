@@ -30,10 +30,14 @@ impl Room {
 
     fn render_contextmenu_boxblock(&self, boxblock: &BlockMut<block::Boxblock>) -> Vec<Html<Self>> {
         vec![
-            text::div(
-                boxblock
-                    .map(|boxblock| boxblock.name().clone())
-                    .unwrap_or(String::from("")),
+            Marker::light(
+                Attributes::new(),
+                Events::new(),
+                vec![Html::text(
+                    boxblock
+                        .map(|boxblock| boxblock.name().clone())
+                        .unwrap_or(String::from("")),
+                )],
             ),
             Btn::menu(
                 Attributes::new(),
@@ -63,10 +67,14 @@ impl Room {
         character: &BlockMut<block::Character>,
     ) -> Vec<Html<Self>> {
         vec![
-            text::div(
-                character
-                    .map(|character| character.name().clone())
-                    .unwrap_or(String::from("")),
+            Marker::light(
+                Attributes::new(),
+                Events::new(),
+                vec![Html::text(
+                    character
+                        .map(|character| character.name().clone())
+                        .unwrap_or(String::from("")),
+                )],
             ),
             Btn::menu(
                 Attributes::new(),
@@ -75,6 +83,14 @@ impl Room {
                     move |_| Msg::OpenCharacterModeless(block_id)
                 }),
                 vec![Html::text("詳細を表示")],
+            ),
+            Btn::menu(
+                Attributes::new(),
+                Events::new().on_click({
+                    let user = ChatUser::Character(BlockMut::clone(&character));
+                    move |_| Msg::OpenChatModeless(user)
+                }),
+                vec![Html::text("チャットを表示")],
             ),
             Self::render_is_fixed_position(
                 character
@@ -96,10 +112,14 @@ impl Room {
         craftboard: &BlockMut<block::Craftboard>,
     ) -> Vec<Html<Self>> {
         vec![
-            text::div(
-                craftboard
-                    .map(|craftboard| craftboard.name().clone())
-                    .unwrap_or(String::from("")),
+            Marker::light(
+                Attributes::new(),
+                Events::new(),
+                vec![Html::text(
+                    craftboard
+                        .map(|craftboard| craftboard.name().clone())
+                        .unwrap_or(String::from("")),
+                )],
             ),
             Btn::menu(
                 Attributes::new(),
