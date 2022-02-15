@@ -16,7 +16,7 @@ impl RoomModelessChat {
         };
 
         if descriptions.len() > 0 {
-            self.waiting_chat_message = Some(WaitingChatMessage {
+            self.showing_modal = ShowingModal::ChatCapture(WaitingChatMessage {
                 channel: channel,
                 message: message,
                 descriptions: Rc::new(descriptions),
@@ -39,12 +39,14 @@ impl RoomModelessChat {
     }
 
     pub fn send_waitng_chat_message(&mut self, captured: &Vec<String>) -> Cmd<Self> {
-        if let Some(WaitingChatMessage {
+        let mut showing_modal = ShowingModal::None;
+        std::mem::swap(&mut self.showing_modal, &mut showing_modal);
+        if let ShowingModal::ChatCapture(WaitingChatMessage {
             mut channel,
             message,
             sender,
             ..
-        }) = self.waiting_chat_message.take()
+        }) = showing_modal
         {
             let message = Self::capture_message(&captured, message);
             let chat_message = block::ChatMessage::new(sender, chrono::Utc::now(), message);

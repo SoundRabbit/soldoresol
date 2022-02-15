@@ -138,6 +138,10 @@ impl ChatPallet {
     pub fn defs(&self) -> &Vec<(Regex, String)> {
         &self.defs
     }
+
+    pub fn data(&self) -> &String {
+        &self.data
+    }
 }
 
 block! {
@@ -262,6 +266,10 @@ impl Character {
 
     pub fn chatpallet(&self) -> &ChatPallet {
         &self.chatpallet
+    }
+
+    pub fn set_chatpallet(&mut self, chatpallet: String) {
+        self.chatpallet.set_data(chatpallet);
     }
 
     pub fn textures(&self) -> &SelectList<StandingTexture> {

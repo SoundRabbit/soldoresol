@@ -14,7 +14,6 @@ use std::rc::Rc;
 
 pub struct Props {
     pub vars: Rc<Vec<(String, String)>>,
-    pub is_showing: bool,
 }
 
 pub enum Msg {
@@ -74,58 +73,54 @@ impl Update for ModalChatCapture {
 
 impl Render for ModalChatCapture {
     fn render(&self, props: &Props, _: Vec<Html<Self>>) -> Html<Self> {
-        if props.is_showing {
-            Self::styled(Modal::with_children(
-                modal::Props {
-                    header_title: String::from("チャットの送信"),
-                    footer_message: String::from(""),
-                },
-                Sub::map(|sub| match sub {
-                    modal::On::Close => Msg::Cancel,
-                }),
-                vec![Html::div(
-                    Attributes::new().class(Self::class("base")),
-                    Events::new(),
-                    vec![
-                        Html::div(
-                            Attributes::new().class(Self::class("content")),
+        Self::styled(Modal::with_children(
+            modal::Props {
+                header_title: String::from("チャットの送信"),
+                footer_message: String::from(""),
+            },
+            Sub::map(|sub| match sub {
+                modal::On::Close => Msg::Cancel,
+            }),
+            vec![Html::div(
+                Attributes::new().class(Self::class("base")),
+                Events::new(),
+                vec![
+                    Html::div(
+                        Attributes::new().class(Self::class("content")),
+                        Events::new(),
+                        vec![Html::div(
+                            Attributes::new()
+                                .class(Self::class("container"))
+                                .class(Self::class("key-key")),
                             Events::new(),
-                            vec![Html::div(
-                                Attributes::new()
-                                    .class(Self::class("container"))
-                                    .class(Self::class("key-key")),
-                                Events::new(),
-                                self.input
-                                    .iter()
-                                    .enumerate()
-                                    .map(|(idx, v)| {
-                                        Html::fragment(vec![
-                                            text::span(&props.vars[idx].1),
-                                            Html::input(
-                                                Attributes::new().value(v),
-                                                Events::new().on_input(move |v| Msg::Input(idx, v)),
-                                                vec![],
-                                            ),
-                                        ])
-                                    })
-                                    .collect(),
-                            )],
-                        ),
-                        Html::div(
-                            Attributes::new().class(Self::class("container")),
-                            Events::new(),
-                            vec![Btn::primary(
-                                Attributes::new(),
-                                Events::new().on_click(|_| Msg::Send),
-                                vec![Html::text("送信")],
-                            )],
-                        ),
-                    ],
-                )],
-            ))
-        } else {
-            Html::none()
-        }
+                            self.input
+                                .iter()
+                                .enumerate()
+                                .map(|(idx, v)| {
+                                    Html::fragment(vec![
+                                        text::span(&props.vars[idx].1),
+                                        Html::input(
+                                            Attributes::new().value(v),
+                                            Events::new().on_input(move |v| Msg::Input(idx, v)),
+                                            vec![],
+                                        ),
+                                    ])
+                                })
+                                .collect(),
+                        )],
+                    ),
+                    Html::div(
+                        Attributes::new().class(Self::class("container")),
+                        Events::new(),
+                        vec![Btn::primary(
+                            Attributes::new(),
+                            Events::new().on_click(|_| Msg::Send),
+                            vec![Html::text("送信")],
+                        )],
+                    ),
+                ],
+            )],
+        ))
     }
 }
 

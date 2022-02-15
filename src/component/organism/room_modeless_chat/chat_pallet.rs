@@ -103,6 +103,11 @@ impl RoomModelessChat {
                             None,
                         )
                     }),
+                Btn::dark(
+                    Attributes::new(),
+                    Events::new().on_click(|_| Msg::SetShowingModal(ShowingModal::Chatpallet)),
+                    vec![Html::text("編集")],
+                ),
             ],
         )
     }

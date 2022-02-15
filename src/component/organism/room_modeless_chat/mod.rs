@@ -5,6 +5,7 @@ use super::atom::dropdown::{self, Dropdown};
 use super::atom::fa;
 use super::atom::text;
 use super::organism::modal_chat_capture::{self, ModalChatCapture};
+use super::organism::modal_chatpallet::{self, ModalChatpallet};
 use super::organism::room_modeless::RoomModeless;
 use super::template::common::Common;
 use crate::arena::{block, user, ArenaMut, BlockMut, BlockRef};
@@ -68,14 +69,21 @@ pub enum ChatPalletSectionItem {
     SubSection(usize, usize),
 }
 
+pub enum ShowingModal {
+    None,
+    ChatCapture(WaitingChatMessage),
+    Chatpallet,
+}
+
 pub enum Msg {
     NoOp,
     SendInputingChatMessage(bool),
     SendWaitingChatMessage(Vec<String>),
-    SetWaitingChatMessage(Option<WaitingChatMessage>),
+    SetShowingModal(ShowingModal),
     SetInputingChatMessage(String),
     SetIsShowingChatPallet(bool),
     SetSelectedChannelIdx(usize),
+    SetChatPallet(String),
     SetChatPalletSelectedSection(Option<usize>),
     SetChatPalletSelectedItem(ChatPalletItem),
 }
@@ -90,11 +98,12 @@ pub enum On {
 pub struct RoomModelessChat {
     arena: ArenaMut,
     chat: BlockMut<block::Chat>,
+    chat_user: ChatUser,
 
     is_showing_chat_pallet: bool,
     inputing_chat_message: Option<String>,
-    waiting_chat_message: Option<WaitingChatMessage>,
     selected_channel_idx: usize,
+    showing_modal: ShowingModal,
 
     element_id: ElementId,
 
@@ -117,12 +126,12 @@ impl Constructor for RoomModelessChat {
         Self {
             arena: ArenaMut::clone(&props.arena),
             chat: BlockMut::clone(&props.data),
+            chat_user: ChatUser::clone(&props.user),
 
             is_showing_chat_pallet: false,
             inputing_chat_message: Some(String::new()),
-            waiting_chat_message: None,
-
             selected_channel_idx: 0,
+            showing_modal: ShowingModal::None,
 
             element_id: ElementId::new(),
 
@@ -136,6 +145,7 @@ impl Update for RoomModelessChat {
     fn on_load(&mut self, props: &Props) -> Cmd<Self> {
         self.arena = ArenaMut::clone(&props.arena);
         self.chat = BlockMut::clone(&props.data);
+        self.chat_user = ChatUser::clone(&props.user);
 
         Cmd::none()
     }
@@ -203,6 +213,23 @@ impl Update for RoomModelessChat {
                 Cmd::none()
             }
 
+            Msg::SetChatPallet(data) => {
+                self.showing_modal = ShowingModal::None;
+
+                if let ChatUser::Character(character) = &mut self.chat_user {
+                    character.update(|character| {
+                        character.set_chatpallet(data);
+                    });
+
+                    Cmd::sub(On::UpdateBlocks {
+                        insert: set![],
+                        update: set![character.id()],
+                    })
+                } else {
+                    Cmd::none()
+                }
+            }
+
             Msg::SetChatPalletSelectedSection(idx) => {
                 if self.chatpallet_selected_section != idx {
                     self.chatpallet_selected_section = idx;
@@ -233,8 +260,8 @@ impl Update for RoomModelessChat {
                 Cmd::none()
             }
 
-            Msg::SetWaitingChatMessage(waiting_chat_message) => {
-                self.waiting_chat_message = waiting_chat_message;
+            Msg::SetShowingModal(showing_modal) => {
+                self.showing_modal = showing_modal;
                 Cmd::none()
             }
         }
@@ -254,20 +281,43 @@ impl Render for RoomModelessChat {
                     .map(|chat| self.render_channel_container(chat))
                     .unwrap_or(Html::none()),
                 self.render_controller(),
-                ModalChatCapture::empty(
-                    modal_chat_capture::Props {
-                        is_showing: self.waiting_chat_message.is_some(),
-                        vars: self
-                            .waiting_chat_message
-                            .as_ref()
-                            .map(|x| Rc::clone(&x.descriptions))
-                            .unwrap_or(Rc::new(vec![])),
-                    },
-                    Sub::map(|sub| match sub {
-                        modal_chat_capture::On::Cancel => Msg::SetWaitingChatMessage(None),
-                        modal_chat_capture::On::Send(x) => Msg::SendWaitingChatMessage(x),
-                    }),
-                ),
+                match &self.showing_modal {
+                    ShowingModal::None => Html::none(),
+                    ShowingModal::ChatCapture(waiting_chat_message) => ModalChatCapture::empty(
+                        modal_chat_capture::Props {
+                            vars: Rc::clone(&waiting_chat_message.descriptions),
+                        },
+                        Sub::map(|sub| match sub {
+                            modal_chat_capture::On::Cancel => {
+                                Msg::SetShowingModal(ShowingModal::None)
+                            }
+                            modal_chat_capture::On::Send(x) => Msg::SendWaitingChatMessage(x),
+                        }),
+                    ),
+                    ShowingModal::Chatpallet => {
+                        if let ChatUser::Character(character) = &self.chat_user {
+                            character
+                                .map(|character| {
+                                    ModalChatpallet::empty(
+                                        modal_chatpallet::Props {
+                                            data: character.chatpallet().data().clone(),
+                                        },
+                                        Sub::map(|sub| match sub {
+                                            modal_chatpallet::On::Close => {
+                                                Msg::SetShowingModal(ShowingModal::None)
+                                            }
+                                            modal_chatpallet::On::Ok(data) => {
+                                                Msg::SetChatPallet(data)
+                                            }
+                                        }),
+                                    )
+                                })
+                                .unwrap_or_else(|| Html::none())
+                        } else {
+                            Html::none()
+                        }
+                    }
+                },
             ],
         ))
     }
@@ -341,7 +391,7 @@ impl Styled for RoomModelessChat {
             ".chatpallet" {
                 "overflow": "hidden";
                 "display": "grid";
-                "grid-template-rows": "max-content 1fr";
+                "grid-template-rows": "max-content 1fr max-content";
                 "row-gap": ".65rem";
             }
 
