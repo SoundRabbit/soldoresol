@@ -1,14 +1,26 @@
-uses! {
-    super::BlockRef;
-    super::util::Pack;
-    super::super::resource::ImageData;
-}
+uses! {}
 
+use super::super::resource::ImageData;
+use super::util::Pack;
+use super::BlockRef;
+use std::collections::HashMap;
+
+pub mod map;
 pub mod parse;
 
 pub use parse::Message;
 pub use parse::MessageCommand;
 pub use parse::MessageToken;
+
+pub fn map(
+    mut refs: impl FnMut(&String) -> Message,
+    message: Message,
+) -> (Message, Vec<(String, String)>) {
+    let mut descriptions = vec![];
+    let mut var_nums = HashMap::new();
+    let message = map::map_message(&mut refs, &mut var_nums, &mut descriptions, message);
+    (message, descriptions)
+}
 
 #[async_trait(?Send)]
 impl Pack for Message {

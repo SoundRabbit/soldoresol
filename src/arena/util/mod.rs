@@ -202,12 +202,19 @@ macro_rules! arena {
                 }
             }
 
+            #[allow(unused)]
             pub fn update<T>(&mut self, f: impl FnOnce(&mut T)) where Self: Access<T> {
                 Access::update(self, f);
             }
 
+            #[allow(unused)]
             pub fn map<T, U>(&self, f: impl FnOnce(&T) -> U) -> Option<U> where Self: Access<T> {
                 Access::map(self, f)
+            }
+
+            #[allow(unused)]
+            pub fn timestamp(&self) -> f64 {
+                self.data.borrow().timestamp
             }
 
             pub fn id(&self) -> U128Id {
@@ -298,6 +305,22 @@ macro_rules! arena {
             pub fn none() -> Self where Block: From<T>{
                 Block::none().as_mut::<T>()
             }
+
+            pub fn timestamp(&self) -> f64 {
+                if let Some(data) = self.data.upgrade() {
+                    data.borrow().timestamp
+                } else {
+                    0.0
+                }
+            }
+
+            pub fn id(&self) -> U128Id {
+                if let Some(data) = self.data.upgrade() {
+                    U128Id::clone(&data.borrow().block_id)
+                } else {
+                    U128Id::none()
+                }
+            }
         }
 
         $(
@@ -320,14 +343,6 @@ macro_rules! arena {
                         }
                     }
                     None
-                }
-
-                pub fn id(&self) -> U128Id {
-                    if let Some(data) = self.data.upgrade() {
-                        U128Id::clone(&data.borrow().block_id)
-                    } else {
-                        U128Id::none()
-                    }
                 }
 
                 pub fn as_ref(&self) -> BlockRef<$b> {

@@ -115,7 +115,7 @@ impl std::fmt::Display for MessageToken {
         match self {
             Self::Text(x) => write!(f, "{}", x),
             Self::Refer(x) => write!(f, "{}{}{}", "{", x, "}"),
-            Self::CommandBlock(x, t) => write!(f, r"{}\{}{}{}", r"{", x.to_string(), t, "}"),
+            Self::CommandBlock(x, t) => write!(f, r"\{}{}{}{}", x.to_string(), "{", t, "}"),
         }
     }
 }
@@ -157,7 +157,7 @@ peg::parser! {
             r"\}" { MessageToken::Text(String::from(r"}")) }
             r"\\" { MessageToken::Text(String::from(r"\")) }
             r"\n" { MessageToken::Text(String::from("\n")) }
-            "\\\n" { MessageToken::Text(String::from("")) }
+            r"\" "\n" { MessageToken::Text(String::from("")) }
             --
             t:$([_]) { MessageToken::Text(String::from(t)) }
         }

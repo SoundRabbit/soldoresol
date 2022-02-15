@@ -1,8 +1,9 @@
 uses! {}
 
 use super::super::resource::ImageData;
+use super::chat_message::Message;
 use super::util::Pack;
-use super::BlockRef;
+use super::{BlockMut, BlockRef};
 use crate::libs::color::Pallet;
 use crate::libs::select_list::SelectList;
 use lazy_static::lazy_static;
@@ -156,6 +157,27 @@ impl StandingTexture {
 }
 
 block! {
+    [pub Description(constructor, pack)]
+    raw: String = String::new();
+    data: Message = Message::new("");
+}
+
+impl Description {
+    pub fn raw(&self) -> &String {
+        &self.raw
+    }
+
+    pub fn set_raw(&mut self, description: String) {
+        self.data = Message::new(&description);
+        self.raw = description;
+    }
+
+    pub fn data(&self) -> &Message {
+        &self.data
+    }
+}
+
+block! {
     [pub Character(constructor, pack)]
     name: String = String::from("名前未設定");
     display_name: (String, String) = (String::from("名前未設定"), String::from("新規キャラクター"));
@@ -169,6 +191,7 @@ block! {
     color: Pallet = Pallet::gray(5);
     textures: SelectList<StandingTexture> =
         SelectList::new(vec![StandingTexture::new(String::from("[default]"))], 0);
+    description: Description = Description::new();
 }
 
 impl Character {
@@ -227,6 +250,14 @@ impl Character {
         self.color = color;
     }
 
+    pub fn description(&self) -> &Description {
+        &self.description
+    }
+
+    pub fn set_description(&mut self, description: String) {
+        self.description.set_raw(description);
+    }
+
     pub fn chatpallet(&self) -> &ChatPallet {
         &self.chatpallet
     }
@@ -261,5 +292,22 @@ impl Character {
 
     pub fn push_texture(&mut self, texture: StandingTexture) {
         self.textures.push(texture);
+    }
+}
+
+impl BlockMut<Character> {
+    pub fn chat_ref<'a>(&'a self) -> impl FnMut(&String) -> Message + 'a {
+        |ref_name: &String| {
+            self.map(|this| {
+                for (pat, text) in this.chatpallet().defs() {
+                    if pat.is_match(ref_name) {
+                        let message = Message::new(pat.replace(ref_name, text).as_ref());
+                        return message;
+                    }
+                }
+                Message::from(vec![])
+            })
+            .unwrap_or_else(|| Message::from(vec![]))
+        }
     }
 }

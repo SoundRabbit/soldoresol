@@ -1,4 +1,5 @@
 use super::super::atom::btn::{self, Btn};
+use super::super::atom::chat_message;
 use super::super::atom::dropdown::{self, Dropdown};
 use super::super::atom::fa;
 use super::super::atom::heading::{self, Heading};
@@ -74,6 +75,13 @@ impl RoomModelessCharacter {
             Events::new(),
             vec![
                 self.render_tab0_props(character),
+                Heading::h3(
+                    heading::Variant::Light,
+                    Attributes::new(),
+                    Events::new(),
+                    vec![Html::text("概要")],
+                ),
+                self.render_tab0_description(),
                 Heading::h3(
                     heading::Variant::Light,
                     Attributes::new(),
@@ -176,6 +184,55 @@ impl RoomModelessCharacter {
                 ),
             ],
         )
+    }
+
+    fn render_tab0_description(&self) -> Html<Self> {
+        TabMenu::with_children(
+            tab_menu::Props {
+                selected: match &self.description_view {
+                    DescriptionView::Edit(..) => 0,
+                    DescriptionView::View(..) => 1,
+                },
+                tabs: vec![String::from("編集"), String::from("表示")],
+                controlled: true,
+            },
+            Sub::map(|sub| match sub {
+                tab_menu::On::ChangeSelectedTab(0) => Msg::SetDescriptionViewAsEdit(None),
+                tab_menu::On::ChangeSelectedTab(1) => Msg::SetDescriptionViewAsView,
+                tab_menu::On::ChangeSelectedTab(_) => Msg::NoOp,
+            }),
+            vec![
+                match &self.description_view {
+                    DescriptionView::Edit(description) => {
+                        self.render_tab0_description_edit(description)
+                    }
+                    _ => Html::none(),
+                },
+                match &self.description_view {
+                    DescriptionView::View(description) => {
+                        self.render_tab0_description_view(description)
+                    }
+                    _ => Html::none(),
+                },
+            ],
+        )
+    }
+
+    fn render_tab0_description_edit(&self, description: &String) -> Html<Self> {
+        Html::textarea(
+            Attributes::new()
+                .value(description)
+                .class(Self::class("tab0-textarea")),
+            Events::new().on_input(|desc| Msg::SetDescriptionViewAsEdit(Some(desc))),
+            vec![],
+        )
+    }
+
+    fn render_tab0_description_view(
+        &self,
+        description: &block::chat_message::Message,
+    ) -> Html<Self> {
+        chat_message::div(Attributes::new(), Events::new(), description)
     }
 
     fn render_tab0_textures(&self, character: &block::Character) -> Html<Self> {

@@ -31,6 +31,8 @@ pub enum Msg {
     SetSize(f64),
     SetTexSize(f64),
     SetSelectedTextureIdx(usize),
+    SetDescriptionViewAsEdit(Option<String>),
+    SetDescriptionViewAsView,
     SetTextureImage(usize, Option<BlockRef<resource::ImageData>>),
     SetTextureName(usize, String),
     PushTexture,
@@ -46,9 +48,35 @@ pub enum On {
 pub struct RoomModelessCharacter {
     character: BlockMut<block::Character>,
 
+    timestamp: f64,
+    is_updated: bool,
+
+    description_view: DescriptionView,
+
     selected_tab_idx: usize,
     showing_modal: ShowingModal,
     element_id: ElementId,
+}
+
+pub enum DescriptionView {
+    Edit(String),
+    View(block::chat_message::Message),
+}
+
+impl DescriptionView {
+    fn is_edit(&self) -> bool {
+        match self {
+            Self::Edit(..) => true,
+            _ => false,
+        }
+    }
+
+    fn is_view(&self) -> bool {
+        match self {
+            Self::View(..) => true,
+            _ => false,
+        }
+    }
 }
 
 pub enum ShowingModal {
@@ -71,6 +99,12 @@ impl Constructor for RoomModelessCharacter {
     fn constructor(props: &Props) -> Self {
         Self {
             character: BlockMut::clone(&props.data),
+
+            timestamp: props.data.timestamp(),
+            is_updated: true,
+
+            description_view: DescriptionView::View(Self::get_description(&props.data)),
+
             selected_tab_idx: 0,
             showing_modal: ShowingModal::None,
             element_id: ElementId::new(),
@@ -80,7 +114,29 @@ impl Constructor for RoomModelessCharacter {
 
 impl Update for RoomModelessCharacter {
     fn on_load(&mut self, props: &Props) -> Cmd<Self> {
-        self.character = BlockMut::clone(&props.data);
+        if self.character.id() != props.data.id() {
+            self.character = BlockMut::clone(&props.data);
+
+            self.timestamp = props.data.timestamp();
+            self.is_updated = true;
+
+            self.description_view = DescriptionView::View(
+                props
+                    .data
+                    .map(|character| character.description().data().clone())
+                    .unwrap_or_else(|| block::chat_message::Message::from(vec![])),
+            );
+        } else if self.timestamp < props.data.timestamp() {
+            self.timestamp = props.data.timestamp();
+            self.is_updated = true;
+
+            if self.description_view.is_view() {
+                self.description_view = DescriptionView::View(Self::get_description(&props.data));
+            }
+        } else {
+            self.is_updated = false;
+        }
+
         Cmd::none()
     }
 
@@ -156,6 +212,38 @@ impl Update for RoomModelessCharacter {
                     update: set! { self.character.id() },
                 })
             }
+            Msg::SetDescriptionViewAsEdit(description) => {
+                if let Some(description) = description.or_else(|| {
+                    self.character
+                        .map(|character| character.description().raw().clone())
+                }) {
+                    self.description_view = DescriptionView::Edit(description);
+                }
+
+                Cmd::none()
+            }
+            Msg::SetDescriptionViewAsView => {
+                if self.description_view.is_view() && !self.is_updated {
+                    return Cmd::none();
+                }
+
+                let mut description_view =
+                    DescriptionView::View(Self::get_description(&self.character));
+                std::mem::swap(&mut self.description_view, &mut description_view);
+
+                if let DescriptionView::Edit(description) = description_view {
+                    self.character.update(|character| {
+                        character.set_description(description);
+                    });
+
+                    Cmd::sub(On::UpdateBlocks {
+                        insert: set! {},
+                        update: set! { self.character.id() },
+                    })
+                } else {
+                    Cmd::none()
+                }
+            }
             Msg::SetTextureImage(tex_idx, image) => {
                 self.character.update(|character| {
                     character.set_texture_image(tex_idx, image);
@@ -195,6 +283,16 @@ impl Update for RoomModelessCharacter {
                 })
             }
         }
+    }
+}
+
+impl RoomModelessCharacter {
+    fn get_description(character: &BlockMut<block::Character>) -> block::chat_message::Message {
+        let description = character
+            .map(|character| character.description().data().clone())
+            .unwrap_or_else(|| block::chat_message::Message::from(vec![]));
+        let (description, _) = block::chat_message::map(character.chat_ref(), description);
+        description
     }
 }
 
@@ -299,6 +397,11 @@ impl Styled for RoomModelessCharacter {
                 "justify-items": "stretch";
                 "grid-template-columns": "1fr";
                 "grid-template-rows": "max-content max-content";
+            }
+
+            ".tab0-textarea" {
+                "resize": "none";
+                "height": "15em";
             }
         }
     }
