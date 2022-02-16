@@ -100,6 +100,18 @@ impl Data {
             values: vec![],
         }
     }
+
+    pub fn view(&self) -> &DataView {
+        &self.view
+    }
+
+    pub fn values(&self) -> &Vec<Vec<Value>> {
+        &self.values
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.values.is_empty() || self.values.iter().all(Vec::is_empty)
+    }
 }
 
 pub enum PropertyView {
@@ -121,5 +133,24 @@ block! {
     [pub Property(constructor, pack)]
     name: String = String::from("");
     data: Data = Data::new();
+    view: PropertyView = PropertyView::List;
     children: Vec<BlockMut<Self>> = vec![];
+}
+
+impl Property {
+    pub fn name(&self) -> &String {
+        &self.name
+    }
+
+    pub fn data(&self) -> &Data {
+        &self.data
+    }
+
+    pub fn view(&self) -> &PropertyView {
+        &self.view
+    }
+
+    pub fn children(&self) -> &Vec<BlockMut<Self>> {
+        &self.children
+    }
 }

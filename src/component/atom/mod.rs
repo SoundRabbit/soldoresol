@@ -14,6 +14,7 @@ pub mod heading;
 pub mod icon;
 pub mod loading_circle;
 pub mod marker;
+pub mod select;
 pub mod slider;
 pub mod tab_btn;
 pub mod table;

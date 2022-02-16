@@ -17,6 +17,7 @@ arena! {
     pub block::ChatMessage;
     pub block::Craftboard;
     pub block::LayerGroup;
+    pub block::Property;
     pub block::Scene;
     pub block::Table;
     pub block::World;

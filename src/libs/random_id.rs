@@ -107,3 +107,9 @@ impl std::fmt::Display for U128Id {
         write!(f, "{}", hex::encode(self.0.to_be_bytes()))
     }
 }
+
+impl Into<String> for &U128Id {
+    fn into(self) -> String {
+        hex::encode(self.0.to_be_bytes())
+    }
+}
