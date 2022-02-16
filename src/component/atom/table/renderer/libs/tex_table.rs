@@ -215,9 +215,10 @@ impl TexTable {
             ctx.set_font(&format!("{}px sans-serif", font_height));
 
             let metrix = ctx.measure_text(&text.0).unwrap();
-            let r = font_height / 4.0;
-            let mut height = font_height + 2.0 * r;
-            let mut width = metrix.width() + 2.0 * r;
+            let radius = 0.0;
+            let padding = font_height / 4.0;
+            let mut height = font_height + 2.0 * padding;
+            let mut width = metrix.width() + 2.0 * padding;
             let mut sub_font_height = 0.0;
             let mut sub_line_margin = 0.0;
 
@@ -228,7 +229,7 @@ impl TexTable {
 
                 let metrix = ctx.measure_text(&text.1).unwrap();
                 height += sub_font_height + sub_line_margin;
-                width = width.max(metrix.width() + 2.0 * r);
+                width = width.max(metrix.width() + 2.0 * padding);
             }
 
             let height = height;
@@ -249,15 +250,15 @@ impl TexTable {
 
             ctx.set_fill_style(&JsValue::from("#000000"));
             ctx.set_stroke_style(&JsValue::from("#FFFFFF"));
-            ctx.set_line_width(r * 0.5);
+            ctx.set_line_width(padding * 0.5);
             let x = 0.0;
             let y = 0.0;
             ctx.begin_path();
-            ctx.move_to(x + r, y);
-            let _ = ctx.arc_to(x + width, y, x + width, y + height, r);
-            let _ = ctx.arc_to(x + width, y + height, x, y + height, r);
-            let _ = ctx.arc_to(x, y + height, x, y, r);
-            let _ = ctx.arc_to(x, y, x + width, y, r);
+            ctx.move_to(x + radius, y);
+            let _ = ctx.arc_to(x + width, y, x + width, y + height, radius);
+            let _ = ctx.arc_to(x + width, y + height, x, y + height, radius);
+            let _ = ctx.arc_to(x, y + height, x, y, radius);
+            let _ = ctx.arc_to(x, y, x + width, y, radius);
             ctx.close_path();
             ctx.fill();
             ctx.stroke();
@@ -267,16 +268,16 @@ impl TexTable {
             ctx.set_text_baseline("middle");
             let _ = ctx.fill_text(
                 &text.0,
-                r,
+                padding,
                 sub_font_height
                     + sub_line_margin
-                    + r
-                    + (height - r * 2.0 - sub_font_height - sub_line_margin) / 2.0,
+                    + padding
+                    + (height - padding * 2.0 - sub_font_height - sub_line_margin) / 2.0,
             );
 
             if !text.1.is_empty() {
                 ctx.set_font(&format!("{}px sans-serif", sub_font_height));
-                let _ = ctx.fill_text(&text.1, r, r + sub_font_height / 2.0);
+                let _ = ctx.fill_text(&text.1, padding, padding + sub_font_height / 2.0);
             }
 
             let tex_idx = self.use_idx();

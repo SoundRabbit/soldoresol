@@ -260,6 +260,7 @@ impl WebGlRenderingContext {
     setter!(unif u_shape: 1i as set_u_shape);
     setter!(unif u_shape_line_width: 1f as set_u_shape_line_width);
     setter!(unif u_shape_scale: 3fv as set_u_shape_scale);
+    setter!(unif u_shape_radius: 1f as set_u_shape_radius);
 
     setter!(unif u_bg_color_1: 1i as set_u_bg_color_1);
     setter!(unif u_bg_color_2: 1i as set_u_bg_color_2);

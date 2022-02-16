@@ -94,6 +94,13 @@ bool setGSurfaceAs2dRing() {
     return 1.0 < ox * ox + oy * oy || ix * ix + iy * iy < 1.0 ? true : setGSurfaceAs2dBox();
 }
 
+bool setGSurfaceAs2dRbox() {
+    float x = max(0.0, abs(v_textureCoord.x - 0.5) + u_shapeRadius / u_shapeScale.x - 1.0);
+    float y = max(0.0, abs(v_textureCoord.y - 0.5) + u_shapeRadius / u_shapeScale.y - 1.0);
+
+    return 1.0 < x * x + y * y ? true : setGSurfaceAs2dBox();
+}
+
 bool setGSurfaceAs3dBox() {
     return setGSurfaceAs2dBox();
 }

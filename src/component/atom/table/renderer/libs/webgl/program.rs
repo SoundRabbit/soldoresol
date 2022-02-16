@@ -31,6 +31,7 @@ pub const SHAPE_2D_BOX: i32 = 0x02000000;
 pub const SHAPE_2D_CIRCLE: i32 = 0x02000001;
 pub const SHAPE_2D_GRID: i32 = 0x02000002;
 pub const SHAPE_2D_RING: i32 = 0x02000003;
+pub const SHAPE_2D_RBOX: i32 = 0x02000004;
 pub const SHAPE_3D_BOX: i32 = 0x03000000;
 pub const SHAPE_3D_SPHERE: i32 = 0x03000001;
 pub const SHAPE_3D_CYLINDER: i32 = 0x03000002;
@@ -130,6 +131,7 @@ pub trait Program {
     accesser!(u_shape: WebGlUniformLocation as None);
     accesser!(u_shape_line_width: WebGlUniformLocation as None);
     accesser!(u_shape_scale: WebGlUniformLocation as None);
+    accesser!(u_shape_radius: WebGlUniformLocation as None);
 
     // 背景色
     accesser!(u_bg_color_1: WebGlUniformLocation as None);
@@ -285,6 +287,7 @@ pub struct ShapedProgram {
     u_shape: Option<WebGlUniformLocation>,
     u_shape_line_width: Option<WebGlUniformLocation>,
     u_shape_scale: Option<WebGlUniformLocation>,
+    u_shape_radius: Option<WebGlUniformLocation>,
     u_bg_color_1: Option<WebGlUniformLocation>,
     u_bg_color_2: Option<WebGlUniformLocation>,
     u_bg_color_1_value: Option<WebGlUniformLocation>,
@@ -350,6 +353,7 @@ impl ShapedProgram {
             u_shape: unif("u_shape", gl, &program),
             u_shape_line_width: unif("u_shapeLineWidth", gl, &program),
             u_shape_scale: unif("u_shapeScale", gl, &program),
+            u_shape_radius: unif("u_shapeRadius", gl, &program),
             u_bg_color_1: unif("u_bgColor1", gl, &program),
             u_bg_color_2: unif("u_bgColor2", gl, &program),
             u_bg_color_1_value: unif("u_bgColor1Value", gl, &program),
@@ -423,6 +427,7 @@ impl Program for ShapedProgram {
     accesser!(u_shape: WebGlUniformLocation);
     accesser!(u_shape_line_width: WebGlUniformLocation);
     accesser!(u_shape_scale: WebGlUniformLocation);
+    accesser!(u_shape_radius: WebGlUniformLocation);
 
     // 背景色
     accesser!(u_bg_color_1: WebGlUniformLocation);
@@ -492,6 +497,7 @@ pub struct UnshapedProgram {
     u_shape: Option<WebGlUniformLocation>,
     u_shape_line_width: Option<WebGlUniformLocation>,
     u_shape_scale: Option<WebGlUniformLocation>,
+    u_shape_radius: Option<WebGlUniformLocation>,
     u_bg_color_1: Option<WebGlUniformLocation>,
     u_bg_color_2: Option<WebGlUniformLocation>,
     u_bg_color_1_value: Option<WebGlUniformLocation>,
@@ -556,6 +562,7 @@ impl UnshapedProgram {
             u_shape: unif("u_shape", gl, &program),
             u_shape_line_width: unif("u_shapeLineWidth", gl, &program),
             u_shape_scale: unif("u_shapeScale", gl, &program),
+            u_shape_radius: unif("u_shapeRadius", gl, &program),
             u_vp_matrix: unif("u_vpMatrix", gl, &program),
             u_bg_color_1: unif("u_bgColor1", gl, &program),
             u_bg_color_2: unif("u_bgColor2", gl, &program),
@@ -630,6 +637,7 @@ impl Program for UnshapedProgram {
     accesser!(u_shape: WebGlUniformLocation);
     accesser!(u_shape_line_width: WebGlUniformLocation);
     accesser!(u_shape_scale: WebGlUniformLocation);
+    accesser!(u_shape_radius: WebGlUniformLocation);
 
     // 背景色
     accesser!(u_bg_color_1: WebGlUniformLocation);
