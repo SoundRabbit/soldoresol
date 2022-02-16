@@ -1,11 +1,11 @@
-uses! {
-    super::LoadFrom;
-    super::Url;
-    super::util::Pack;
-    js_sys::Promise;
-    wasm_bindgen::JsCast;
-    wasm_bindgen_futures::JsFuture;
-}
+#[allow(unused_imports)]
+use super::util::prelude::*;
+use super::util::Pack;
+use super::LoadFrom;
+use super::Url;
+use js_sys::Promise;
+use wasm_bindgen::JsCast;
+use wasm_bindgen_futures::JsFuture;
 
 block! {
     [pub ImageData(constructor)]

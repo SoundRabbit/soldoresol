@@ -1,4 +1,5 @@
-uses! {}
+#[allow(unused_imports)]
+use super::util::prelude::*;
 
 use super::super::resource::ImageData;
 use super::util::Pack;
@@ -39,12 +40,21 @@ impl Pack for Message {
 impl Pack for MessageToken {
     async fn pack(&self, is_deep: bool) -> JsValue {
         match self {
-            Self::Text(x) => (object! {"Text": JsValue::from(x)}).into(),
-            Self::Refer(x) => (object! {"Refer": x.pack(is_deep).await}).into(),
-            Self::CommandBlock(c, m) => {
-                (object! {"CommandBlock": array![c.pack(is_deep).await, m.pack(is_deep).await]})
-                    .into()
-            }
+            Self::Text(x) => (object! {
+                "_tag": "Text",
+                "_val": JsValue::from(x)
+            })
+            .into(),
+            Self::Refer(x) => (object! {
+                "_tag": "Refer",
+                "_val": x.pack(is_deep).await
+            })
+            .into(),
+            Self::CommandBlock(c, m) => (object! {
+                "_tag": "CommandBlock",
+                "_val": array![c.pack(is_deep).await, m.pack(is_deep).await]
+            })
+            .into(),
         }
     }
 }

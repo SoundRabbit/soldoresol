@@ -5,6 +5,9 @@ pub mod block;
 pub mod resource;
 pub mod user;
 
+#[allow(unused_imports)]
+use util::prelude::*;
+
 arena! {
     pub block::Boxblock;
     pub block::CanvasTexture;

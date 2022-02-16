@@ -1,5 +1,5 @@
-uses! {}
-
+#[allow(unused_imports)]
+use super::util::prelude::*;
 use super::util::Pack;
 use super::BlockMut;
 use js_sys::Promise;

@@ -1,8 +1,8 @@
-uses! {
-    super::BlockMut;
-    super::Table;
-    super::util::Pack;
-}
+#[allow(unused_imports)]
+use super::util::prelude::*;
+use super::util::Pack;
+use super::BlockMut;
+use super::Table;
 
 block! {
     [pub Scene(constructor, pack)]

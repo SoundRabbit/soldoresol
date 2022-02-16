@@ -1,4 +1,5 @@
-uses! {}
+#[allow(unused_imports)]
+use super::util::prelude::*;
 
 use super::super::ImageData;
 use super::util::Pack;

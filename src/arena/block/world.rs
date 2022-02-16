@@ -1,7 +1,7 @@
-uses! {}
-
 use super::super::resource::BlockTexture;
 use super::super::resource::ImageData;
+#[allow(unused_imports)]
+use super::util::prelude::*;
 use super::util::Pack;
 use super::BlockMut;
 use super::BlockRef;

@@ -1,8 +1,9 @@
-uses! {
-    super::util::Pack;
-    super::BlockRef;
-    super::super::resource::ImageData;
-}
+#[allow(unused_imports)]
+use super::util::prelude::*;
+
+use super::super::resource::ImageData;
+use super::util::Pack;
+use super::BlockRef;
 
 block! {
     [pub Player(constructor, pack)]

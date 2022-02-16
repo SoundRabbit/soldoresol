@@ -1,8 +1,8 @@
-uses! {
-    super::BlockMut;
-    super::util::Pack;
-    super::ChatChannel;
-}
+#[allow(unused_imports)]
+use super::util::prelude::*;
+use super::util::Pack;
+use super::BlockMut;
+use super::ChatChannel;
 
 block! {
     [pub Chat(constructor, pack)]

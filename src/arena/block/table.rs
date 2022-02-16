@@ -1,9 +1,9 @@
-uses! {
-    super::BlockMut;
-    super::Craftboard;
-    super::Boxblock;
-    super::util::Pack;
-}
+#[allow(unused_imports)]
+use super::util::prelude::*;
+use super::util::Pack;
+use super::BlockMut;
+use super::Boxblock;
+use super::Craftboard;
 
 block! {
     [pub Table(constructor, pack)]

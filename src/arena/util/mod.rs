@@ -4,23 +4,17 @@ pub mod pack;
 pub use cubebox::Cubebox;
 pub use pack::Pack;
 
-macro_rules! uses {
-    {$($path:path;)*} => {
-        #[allow(unused_imports)]
-        use crate::libs::random_id::U128Id;
-        #[allow(unused_imports)]
-        use async_trait::async_trait;
-        #[allow(unused_imports)]
-        use std::cell::RefCell;
-        #[allow(unused_imports)]
-        use std::rc::Rc;
-        #[allow(unused_imports)]
-        use wasm_bindgen::prelude::*;
-
-        $(
-            use $path;
-        )*
-    };
+pub mod prelude {
+    #[allow(unused_imports)]
+    pub use crate::libs::random_id::U128Id;
+    #[allow(unused_imports)]
+    pub use async_trait::async_trait;
+    #[allow(unused_imports)]
+    pub use std::cell::RefCell;
+    #[allow(unused_imports)]
+    pub use std::rc::Rc;
+    #[allow(unused_imports)]
+    pub use wasm_bindgen::prelude::*;
 }
 
 macro_rules! block {
@@ -125,12 +119,10 @@ macro_rules! arena {
     {
         $(pub $m:ident::$b:ident;)*
     } => {
-        uses! {
-            std::collections::HashMap;
-            std::cell::Cell;
-            std::rc::Weak;
-            std::marker::PhantomData;
-        }
+        use std::collections::HashMap;
+        use std::cell::Cell;
+        use std::rc::Weak;
+        use std::marker::PhantomData;
 
         $(use $m::$b;)*
 
@@ -158,11 +150,15 @@ macro_rules! arena {
         impl util::Pack for BlockData {
             async fn pack(&self, is_deep: bool) -> JsValue {
                 match self {
-                    Self::None => JsValue::null(),
+                    Self::None => (object! {
+                        "_tag": "None",
+                        "_val": JsValue::null()
+                    }).into(),
                     $(
-                        Self::$b(data) => {
-                            data.pack(is_deep).await
-                        },
+                        Self::$b(data) => (object!{
+                            "_tag": stringify!($b),
+                            "_val": data.pack(is_deep).await
+                        }).into(),
                     )*
                 }
             }
@@ -178,7 +174,11 @@ macro_rules! arena {
         impl util::Pack for AnnotBlockData {
             async fn pack(&self, is_deep: bool) -> JsValue {
                 if is_deep {
-                    self.data.pack(is_deep).await
+                    (object!{
+                        "timestamp": self.timestamp,
+                        "block_id": self.block_id.pack(is_deep).await,
+                        "data": self.data.pack(is_deep).await
+                    }).into()
                 } else {
                     self.block_id.pack(is_deep).await
                 }
