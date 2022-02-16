@@ -4,6 +4,7 @@ use super::util::prelude::*;
 use super::super::resource::ImageData;
 use super::chat_message::Message;
 use super::util::Pack;
+use super::Property;
 use super::{BlockMut, BlockRef};
 use crate::libs::color::Pallet;
 use crate::libs::select_list::SelectList;
@@ -199,6 +200,7 @@ block! {
         SelectList::new(vec![StandingTexture::new(String::from("[default]"))], 0);
     description: Description = Description::new();
     is_fixed_position: bool = false;
+    properties: Vec<BlockMut<Property>> = vec![];
 }
 
 impl Character {
@@ -316,6 +318,14 @@ impl Character {
     }
     pub fn is_bind_to_grid(&self) -> bool {
         self.is_bind_to_grid
+    }
+
+    pub fn properties(&self) -> &Vec<BlockMut<Property>> {
+        &self.properties
+    }
+
+    pub fn push_property(&mut self, property: BlockMut<Property>) {
+        self.properties.push(property);
     }
 }
 

@@ -7,6 +7,7 @@ mods! {
     pub chat::Chat;
     pub craftboard::Craftboard;
     pub layer_group::LayerGroup;
+    pub property::Property;
     pub scene::Scene;
     pub table::Table;
     pub world::World;
