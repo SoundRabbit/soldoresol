@@ -1,5 +1,6 @@
 use super::atom::btn::{self, Btn};
 use super::atom::fa;
+use super::util::window;
 use isaribi::{
     style,
     styled::{Style, Styled},
@@ -57,6 +58,7 @@ impl Direction {
     }
 }
 
+#[derive(PartialEq)]
 pub enum ToggleType {
     Click,
     Hover,
@@ -65,7 +67,6 @@ pub enum ToggleType {
 
 pub enum Msg {
     NoOp,
-    Toggle,
     ToggleTo(bool),
 }
 
@@ -100,19 +101,25 @@ impl Update for Dropdown {
         if let ToggleType::Manual(is_dropdowned) = &props.toggle_type {
             self.is_dropdowned = *is_dropdowned;
         }
+
         Cmd::none()
     }
 
     fn update(&mut self, props: &Props, msg: Msg) -> Cmd<Self> {
         match msg {
             Msg::NoOp => Cmd::none(),
-            Msg::Toggle => {
-                self.is_dropdowned = !self.is_dropdowned;
-                Cmd::none()
-            }
             Msg::ToggleTo(is_dropdowned) => {
                 self.is_dropdowned = is_dropdowned;
-                Cmd::none()
+
+                if self.is_dropdowned && props.toggle_type == ToggleType::Click {
+                    Cmd::task(|resolve| {
+                        window::add_event_listener("click", true, move |_| {
+                            resolve(Msg::ToggleTo(false))
+                        });
+                    })
+                } else {
+                    Cmd::none()
+                }
             }
         }
     }
@@ -129,10 +136,6 @@ impl Render for Dropdown {
 }
 
 impl Dropdown {
-    fn toggle(_: web_sys::Event) -> Msg {
-        Msg::Toggle
-    }
-
     fn toggle_to_up(_: web_sys::Event) -> Msg {
         Msg::ToggleTo(false)
     }
@@ -156,10 +159,12 @@ impl Dropdown {
             Attributes::new()
                 .class(Self::class("base"))
                 .class(Self::class(self.base_class_option(props))),
-            Events::new().on("click", Self::toggle),
+            Events::new().on("click", {
+                let is_dropdowned = self.is_dropdowned;
+                move |_| Msg::ToggleTo(!is_dropdowned)
+            }),
             vec![
                 self.render_toggle_btn(props),
-                self.render_toggle_mask(),
                 self.render_toggled(props, children),
             ],
         )
@@ -212,16 +217,6 @@ impl Dropdown {
         )
     }
 
-    fn render_toggle_mask(&self) -> Html<Self> {
-        Html::div(
-            Attributes::new()
-                .class(Self::class("mask"))
-                .string("data-toggled", self.is_dropdowned.to_string()),
-            Events::new(),
-            vec![],
-        )
-    }
-
     fn render_toggled(&self, props: &Props, children: Vec<Html<Self>>) -> Html<Self> {
         Html::div(
             Attributes::new()
@@ -268,23 +263,6 @@ impl Styled for Dropdown {
                 "grid-template-columns": "1fr max-content";
                 "align-items": "center";
                 "column-gap": "1ch";
-            }
-
-            ".mask" {
-                "position": "fixed";
-                "top": "0";
-                "left": "0";
-                "width": "100vw";
-                "height": "100vh";
-                "z-index": format!("{}", super::constant::z_index::MASK);
-            }
-
-            r#".mask[data-toggled="false"]"# {
-                "display": "none";
-            }
-
-            r#".mask[data-toggled="true"]"# {
-                "display": "block";
             }
 
             ".content" {
