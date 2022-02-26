@@ -7,6 +7,8 @@ use isaribi::{
 };
 use kagura::component::Cmd;
 use kagura::prelude::*;
+use std::rc::Rc;
+use wasm_bindgen::JsCast;
 
 pub struct Props {
     pub direction: Direction,
@@ -74,6 +76,7 @@ pub enum On {}
 
 pub struct Dropdown {
     is_dropdowned: bool,
+    root: Option<Rc<web_sys::Element>>,
 }
 
 impl Component for Dropdown {
@@ -92,11 +95,29 @@ impl Constructor for Dropdown {
 
         Self {
             is_dropdowned: is_dropdowned,
+            root: None,
         }
     }
 }
 
 impl Update for Dropdown {
+    fn ref_node(&mut self, props: &Props, name: String, node: web_sys::Node) -> Cmd<Self> {
+        if name == "root" {
+            if let Ok(root) = node.dyn_into::<web_sys::Element>() {
+                if let Some(self_root) = &self.root {
+                    if root == *(self_root.as_ref()) {
+                        return Cmd::none();
+                    }
+                }
+                self.root = Some(Rc::new(root));
+                if props.toggle_type == ToggleType::Click {
+                    return self.toggle_cmd();
+                }
+            }
+        }
+        Cmd::none()
+    }
+
     fn on_load(&mut self, props: &Props) -> Cmd<Self> {
         if let ToggleType::Manual(is_dropdowned) = &props.toggle_type {
             self.is_dropdowned = *is_dropdowned;
@@ -111,12 +132,8 @@ impl Update for Dropdown {
             Msg::ToggleTo(is_dropdowned) => {
                 self.is_dropdowned = is_dropdowned;
 
-                if self.is_dropdowned && props.toggle_type == ToggleType::Click {
-                    Cmd::task(|resolve| {
-                        window::add_event_listener("click", true, move |_| {
-                            resolve(Msg::ToggleTo(false))
-                        });
-                    })
+                if props.toggle_type == ToggleType::Click {
+                    self.toggle_cmd()
                 } else {
                     Cmd::none()
                 }
@@ -136,6 +153,26 @@ impl Render for Dropdown {
 }
 
 impl Dropdown {
+    fn toggle_cmd(&self) -> Cmd<Self> {
+        let root = unwrap!(self.root.as_ref().map(Rc::clone); Cmd::none());
+        let is_dropdowned = self.is_dropdowned;
+        Cmd::task(move |resolve| {
+            window::add_event_listener("click", true, move |e| {
+                if is_dropdowned {
+                    resolve(Msg::ToggleTo(false));
+                } else {
+                    let target = unwrap!(e.target(); resolve(Msg::ToggleTo(is_dropdowned)));
+                    let target = unwrap!(target.dyn_into::<web_sys::Node>().ok(); resolve(Msg::ToggleTo(is_dropdowned)));
+                    if root.contains(Some(&target)) {
+                        resolve(Msg::ToggleTo(true));
+                    } else {
+                        resolve(Msg::ToggleTo(is_dropdowned));
+                    }
+                }
+            });
+        })
+    }
+
     fn toggle_to_up(_: web_sys::Event) -> Msg {
         Msg::ToggleTo(false)
     }
@@ -158,11 +195,9 @@ impl Dropdown {
         Html::div(
             Attributes::new()
                 .class(Self::class("base"))
-                .class(Self::class(self.base_class_option(props))),
-            Events::new().on("click", {
-                let is_dropdowned = self.is_dropdowned;
-                move |_| Msg::ToggleTo(!is_dropdowned)
-            }),
+                .class(Self::class(self.base_class_option(props)))
+                .ref_name("root"),
+            Events::new(),
             vec![
                 self.render_toggle_btn(props),
                 self.render_toggled(props, children),
