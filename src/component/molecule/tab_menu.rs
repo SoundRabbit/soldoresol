@@ -3,12 +3,11 @@ use isaribi::{
     style,
     styled::{Style, Styled},
 };
-use kagura::component::Cmd;
 use kagura::prelude::*;
+use nusa::prelude::*;
 
 pub struct Props {
     pub selected: usize,
-    pub tabs: Vec<String>,
     pub controlled: bool,
 }
 
@@ -23,21 +22,21 @@ pub enum On {
 
 pub struct TabMenu {
     selected_idx: usize,
-    tabs: Vec<String>,
     is_controlled: bool,
 }
 
 impl Component for TabMenu {
     type Props = Props;
     type Msg = Msg;
-    type Sub = On;
+    type Event = On;
 }
 
+impl HtmlComponent for TabMenu {}
+
 impl Constructor for TabMenu {
-    fn constructor(props: &Props) -> Self {
+    fn constructor(props: Props) -> Self {
         Self {
             selected_idx: props.selected,
-            tabs: props.tabs.clone(),
             is_controlled: props.controlled,
         }
     }
@@ -47,7 +46,6 @@ impl Update for TabMenu {
     fn on_load(&mut self, props: &Props) -> Cmd<Self> {
         if self.is_controlled {
             self.selected_idx = props.selected;
-            self.tabs = props.tabs.clone();
         }
 
         Cmd::none()
@@ -57,19 +55,25 @@ impl Update for TabMenu {
         match msg {
             Msg::NoOp => Cmd::none(),
             Msg::SetSelectedIdx(idx) => {
-                if self.is_controlled {
-                    Cmd::sub(On::ChangeSelectedTab(idx))
-                } else {
+                if !self.is_controlled {
                     self.selected_idx = idx;
-                    Cmd::none()
                 }
+                Cmd::submit(On::ChangeSelectedTab(idx))
             }
         }
     }
 }
 
-impl Render for TabMenu {
-    fn render(&self, props: &Props, mut children: Vec<Html<Self>>) -> Html<Self> {
+impl Render<Html> for TabMenu {
+    type Children = Vec<(Html, Html)>;
+    fn render(&self, children: Self::Children) -> Html {
+        let mut tabs = vec![];
+        let mut contents = vec![];
+        for (tab, content) in children {
+            tabs.push(tab);
+            contents.push(content);
+        }
+
         Self::styled(Html::div(
             Attributes::new().class(Self::class("base")),
             Events::new(),
@@ -77,22 +81,21 @@ impl Render for TabMenu {
                 Html::div(
                     Attributes::new().class(Self::class("tabs")),
                     Events::new(),
-                    self.tabs
-                        .iter()
+                    tabs.into_iter()
                         .enumerate()
-                        .map(|(tab_idx, tab_name)| {
+                        .map(|(tab_idx, tab)| {
                             TabBtn::new(
                                 false,
                                 tab_idx == self.selected_idx,
                                 Attributes::new(),
-                                Events::new().on_click(move |_| Msg::SetSelectedIdx(tab_idx)),
-                                vec![Html::text(tab_name)],
+                                Events::new().on_click(self, move |_| Msg::SetSelectedIdx(tab_idx)),
+                                vec![tab],
                             )
                         })
                         .collect(),
                 ),
-                if children.len() > self.selected_idx {
-                    children.remove(self.selected_idx)
+                if contents.len() > self.selected_idx {
+                    contents.remove(self.selected_idx)
                 } else {
                     Html::div(Attributes::new(), Events::new(), vec![])
                 },

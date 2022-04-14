@@ -1,31 +1,98 @@
-use super::super::atom::btn::Btn;
-use super::super::atom::fa;
-use super::super::atom::heading::{self, Heading};
-use super::super::atom::slider::{self, Slider};
-use super::super::atom::text;
-use super::super::organism::popup_color_pallet::{self, PopupColorPallet};
-use super::super::organism::room_modeless::RoomModeless;
-use super::*;
+use super::super::atom::{
+    btn::Btn,
+    common::Common,
+    fa,
+    heading::{self, Heading},
+    slider::{self, Slider},
+    text,
+};
+use super::super::organism::{
+    popup_color_pallet::{self, PopupColorPallet},
+    room_modeless::RoomModeless,
+};
+use super::super::NoProps;
+use super::ShowingModal;
+use crate::arena::{block, BlockMut};
+use crate::libs::color::Pallet;
+use isaribi::{
+    style,
+    styled::{Style, Styled},
+};
+use kagura::prelude::*;
+use nusa::prelude::*;
 
-impl RoomModelessCraftboard {
-    pub fn render_tab0(&self) -> Html<Self> {
+pub enum Msg {
+    NoOp,
+    Sub(On),
+}
+
+pub enum On {
+    OpenModal(ShowingModal),
+    SetName(String),
+    SetDisplayName0(String),
+    SetDisplayName1(String),
+    SetXSize(f64),
+    SetYSize(f64),
+    SetZSize(f64),
+    SetGridColor(Pallet),
+}
+
+pub struct Tab0 {
+    element_id: ElementId,
+}
+
+ElementId! {
+    input_craftboard_name,
+    input_craftboard_display_name
+}
+
+impl Component for Tab0 {
+    type Props = NoProps;
+    type Msg = Msg;
+    type Event = On;
+}
+
+impl HtmlComponent for Tab0 {}
+
+impl Constructor for Tab0 {
+    fn constructor(_: Self::Props) -> Self {
+        Self {
+            element_id: ElementId::new(),
+        }
+    }
+}
+
+impl Update for Tab0 {
+    fn update(self: Pin<&mut Self>, msg: Self::Msg) -> Cmd<Self> {
+        match msg {
+            Msg::NoOp => Cmd::none(),
+            Msg::Sub(event) => Cmd::submit(event),
+        }
+    }
+}
+
+impl Render<Html> for Tab0 {
+    type Children = BlockMut<block::Craftboard>;
+    fn render(&self, craftboard: Self::Children) -> Html {
         Html::div(
             Attributes::new()
                 .class(RoomModeless::class("common-base"))
                 .class("pure-form"),
             Events::new(),
             vec![
-                self.craftboard
-                    .map(|data| self.render_tab0_header(data))
+                craftboard
+                    .map(|data| self.render_header(data))
                     .unwrap_or(Common::none()),
-                self.craftboard
-                    .map(|data| self.render_tab0_main(data))
+                craftboard
+                    .map(|data| self.render_main(data))
                     .unwrap_or(Common::none()),
             ],
         )
     }
+}
 
-    fn render_tab0_header(&self, craftboard: &block::Craftboard) -> Html<Self> {
+impl Tab0 {
+    fn render_header(&self, craftboard: &block::Craftboard) -> Html {
         Html::div(
             Attributes::new().class(RoomModeless::class("common-header")),
             Events::new(),
@@ -35,13 +102,13 @@ impl RoomModelessCraftboard {
                         .class(RoomModeless::class("common-label"))
                         .string("for", &self.element_id.input_craftboard_name),
                     Events::new(),
-                    vec![fa::i("fa-user")],
+                    vec![fa::fas_i("fa-user")],
                 ),
                 Html::input(
                     Attributes::new()
                         .id(&self.element_id.input_craftboard_name)
                         .value(craftboard.name()),
-                    Events::new().on_input(Msg::SetName),
+                    Events::new().on_input(self, |name| Msg::Sub(On::SetName(name))),
                     vec![],
                 ),
                 Html::label(
@@ -53,7 +120,7 @@ impl RoomModelessCraftboard {
                 ),
                 Html::input(
                     Attributes::new().value(&craftboard.display_name().1),
-                    Events::new().on_input(Msg::SetDisplayName1),
+                    Events::new().on_input(self, |name| Msg::Sub(On::SetDisplayName1(name))),
                     vec![],
                 ),
                 text::span(""),
@@ -61,33 +128,33 @@ impl RoomModelessCraftboard {
                     Attributes::new()
                         .id(&self.element_id.input_craftboard_display_name)
                         .value(&craftboard.display_name().0),
-                    Events::new().on_input(Msg::SetDisplayName0),
+                    Events::new().on_input(self, |name| Msg::Sub(On::SetDisplayName0(name))),
                     vec![],
                 ),
             ],
         )
     }
 
-    fn render_tab0_main(&self, craftboard: &block::Craftboard) -> Html<Self> {
+    fn render_main(&self, craftboard: &block::Craftboard) -> Html {
         Html::div(
-            Attributes::new().class(Self::class("tab0-main")),
+            Attributes::new().class(Self::class("main")),
             Events::new(),
             vec![
-                self.render_tab0_props(craftboard),
+                self.render_props(craftboard),
                 Heading::h3(
                     heading::Variant::Light,
                     Attributes::new(),
                     Events::new(),
                     vec![Html::text("テクスチャ")],
                 ),
-                self.render_tab0_textures(craftboard),
+                self.render_textures(craftboard),
             ],
         )
     }
 
-    fn render_tab0_props(&self, craftboard: &block::Craftboard) -> Html<Self> {
+    fn render_props(&self, craftboard: &block::Craftboard) -> Html {
         Html::div(
-            Attributes::new().class(Self::class("tab0-content")),
+            Attributes::new().class(Self::class("content")),
             Events::new(),
             vec![
                 Html::div(
@@ -95,55 +162,61 @@ impl RoomModelessCraftboard {
                     Events::new(),
                     vec![
                         text::span("X幅（横幅）"),
-                        Slider::empty(
+                        Slider::new(
+                            self,
+                            None,
+                            slider::Position::Linear {
+                                min: 1.0,
+                                max: 100.0,
+                                val: craftboard.size()[0],
+                                step: 1.0,
+                            },
+                            Sub::map(move |sub| match sub {
+                                slider::On::Input(x) => Msg::Sub(On::SetXSize(x)),
+                                _ => Msg::NoOp,
+                            }),
                             slider::Props {
-                                position: slider::Position::Linear {
-                                    min: 1.0,
-                                    max: 100.0,
-                                    val: craftboard.size()[0],
-                                    step: 1.0,
-                                },
                                 range_is_editable: false,
                                 theme: slider::Theme::Light,
                             },
-                            Sub::map(move |sub| match sub {
-                                slider::On::Input(x) => Msg::SetXSize(x),
-                                _ => Msg::NoOp,
-                            }),
                         ),
                         text::span("Y幅（奥行き）"),
-                        Slider::empty(
+                        Slider::new(
+                            self,
+                            None,
+                            slider::Position::Linear {
+                                min: 1.0,
+                                max: 100.0,
+                                val: craftboard.size()[1],
+                                step: 1.0,
+                            },
+                            Sub::map(move |sub| match sub {
+                                slider::On::Input(y) => Msg::Sub(On::SetYSize(y)),
+                                _ => Msg::NoOp,
+                            }),
                             slider::Props {
-                                position: slider::Position::Linear {
-                                    min: 1.0,
-                                    max: 100.0,
-                                    val: craftboard.size()[1],
-                                    step: 1.0,
-                                },
                                 range_is_editable: false,
                                 theme: slider::Theme::Light,
                             },
-                            Sub::map(move |sub| match sub {
-                                slider::On::Input(y) => Msg::SetYSize(y),
-                                _ => Msg::NoOp,
-                            }),
                         ),
                         text::span("Z幅（高さ）"),
-                        Slider::empty(
+                        Slider::new(
+                            self,
+                            None,
+                            slider::Position::Linear {
+                                min: 0.0,
+                                max: 100.0,
+                                val: craftboard.size()[2],
+                                step: 1.0,
+                            },
+                            Sub::map(move |sub| match sub {
+                                slider::On::Input(z) => Msg::Sub(On::SetZSize(z)),
+                                _ => Msg::NoOp,
+                            }),
                             slider::Props {
-                                position: slider::Position::Linear {
-                                    min: 0.0,
-                                    max: 100.0,
-                                    val: craftboard.size()[2],
-                                    step: 1.0,
-                                },
                                 range_is_editable: false,
                                 theme: slider::Theme::Light,
                             },
-                            Sub::map(move |sub| match sub {
-                                slider::On::Input(z) => Msg::SetZSize(z),
-                                _ => Msg::NoOp,
-                            }),
                         ),
                     ],
                 ),
@@ -153,13 +226,15 @@ impl RoomModelessCraftboard {
                     vec![
                         text::span("色"),
                         PopupColorPallet::empty(
+                            self,
+                            None,
                             popup_color_pallet::Props {
                                 direction: popup_color_pallet::Direction::Bottom,
                                 default_selected: craftboard.grid_color().clone(),
                             },
                             Sub::map(|sub| match sub {
                                 popup_color_pallet::On::SelectColor(color) => {
-                                    Msg::SetGridColor(color)
+                                    Msg::Sub(On::SetGridColor(color))
                                 }
                             }),
                         ),
@@ -169,27 +244,27 @@ impl RoomModelessCraftboard {
         )
     }
 
-    fn render_tab0_textures(&self, craftboard: &block::Craftboard) -> Html<Self> {
+    fn render_textures(&self, craftboard: &block::Craftboard) -> Html {
         Html::div(
-            Attributes::new().class(Self::class("tab0-content")),
+            Attributes::new().class(Self::class("content")),
             Events::new(),
             vec![
-                self.render_tab0_texture_block(craftboard, "PZ（上）", 2),
-                self.render_tab0_texture_block(craftboard, "NZ（下）", 5),
-                self.render_tab0_texture_block(craftboard, "PY（奥）", 1),
-                self.render_tab0_texture_block(craftboard, "NY（前）", 4),
-                self.render_tab0_texture_block(craftboard, "PX（右）", 0),
-                self.render_tab0_texture_block(craftboard, "NX（左）", 3),
+                self.render_texture_block(craftboard, "PZ（上）", 2),
+                self.render_texture_block(craftboard, "NZ（下）", 5),
+                self.render_texture_block(craftboard, "PY（奥）", 1),
+                self.render_texture_block(craftboard, "NY（前）", 4),
+                self.render_texture_block(craftboard, "PX（右）", 0),
+                self.render_texture_block(craftboard, "NX（左）", 3),
             ],
         )
     }
 
-    fn render_tab0_texture_block(
+    fn render_texture_block(
         &self,
         craftboard: &block::Craftboard,
         name: impl Into<String>,
         tex_idx: usize,
-    ) -> Html<Self> {
+    ) -> Html {
         Html::div(
             Attributes::new(),
             Events::new(),
@@ -200,23 +275,23 @@ impl RoomModelessCraftboard {
                     Events::new(),
                     vec![Html::text(name)],
                 ),
-                self.render_tab0_texture(craftboard, tex_idx),
+                self.render_texture(craftboard, tex_idx),
             ],
         )
     }
 
-    fn render_tab0_texture(&self, craftboard: &block::Craftboard, tex_idx: usize) -> Html<Self> {
+    fn render_texture(&self, craftboard: &block::Craftboard, tex_idx: usize) -> Html {
         craftboard.textures()[tex_idx]
             .as_ref()
             .map(|texture| {
                 texture.map(|texture| {
                     Html::img(
                         Attributes::new()
-                            .draggable(false)
+                            .draggable("false")
                             .src(texture.url().to_string())
                             .class(Common::bg_transparent()),
-                        Events::new().on_click(move |_| {
-                            Msg::SetShowingModal(ShowingModal::SelectTexture(tex_idx))
+                        Events::new().on_click(self, move |_| {
+                            Msg::Sub(On::OpenModal(ShowingModal::SelectTexture(tex_idx)))
                         }),
                         vec![],
                     )
@@ -226,11 +301,41 @@ impl RoomModelessCraftboard {
             .unwrap_or_else(|| {
                 Btn::secondary(
                     Attributes::new(),
-                    Events::new().on_click(move |_| {
-                        Msg::SetShowingModal(ShowingModal::SelectTexture(tex_idx))
+                    Events::new().on_click(self, move |_| {
+                        Msg::Sub(On::OpenModal(ShowingModal::SelectTexture(tex_idx)))
                     }),
                     vec![Html::text("画像を選択")],
                 )
             })
+    }
+}
+
+impl Styled for Tab0 {
+    fn style() -> Style {
+        style! {
+            ".main" {
+                "display": "grid";
+                "grid-template-columns": "1fr";
+                "grid-auto-rows": "max-content";
+                "overflow-y": "scroll";
+            }
+
+            ".content" {
+                "display": "grid";
+                "column-gap": ".65rem";
+                "row-gap": ".65rem";
+                "align-items": "start";
+                "padding-left": ".65rem";
+                "padding-right": ".65rem";
+                "grid-template-columns": "repeat(auto-fit, minmax(20rem, 1fr))";
+                "grid-auto-rows": "max-content";
+            }
+
+            ".content img" {
+                "width": "100%";
+                "max-height": "20rem";
+                "object-fit": "contain";
+            }
+        }
     }
 }

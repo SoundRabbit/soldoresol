@@ -2,16 +2,12 @@ use isaribi::{
     style,
     styled::{Style, Styled},
 };
-use kagura::prelude::*;
+use nusa::prelude::*;
 
 pub struct Align {}
 
 impl Align {
-    pub fn key_value<C: Component>(
-        attrs: Attributes<C>,
-        events: Events<C::Msg>,
-        children: Vec<Html<C>>,
-    ) -> Html<C> {
+    pub fn key_value(attrs: Attributes, events: Events, children: Vec<Html>) -> Html {
         Html::div(attrs.class(Self::class("key-value")), events, children)
     }
 }

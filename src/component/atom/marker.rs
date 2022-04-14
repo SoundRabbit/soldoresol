@@ -4,16 +4,12 @@ use isaribi::{
     styled::{Style, Styled},
 };
 use kagura::prelude::*;
+use nusa::prelude::*;
 
 pub struct Marker {}
 
 impl Marker {
-    fn render<C: Component>(
-        color: &str,
-        attrs: Attributes<C>,
-        events: Events<C::Msg>,
-        children: Vec<Html<C>>,
-    ) -> Html<C> {
+    fn render(color: &str, attrs: Attributes, events: Events, children: Vec<Html>) -> Html {
         Self::styled(Html::span(
             attrs.class(Self::class("base")).class(Self::class(color)),
             events,
@@ -21,19 +17,11 @@ impl Marker {
         ))
     }
 
-    pub fn purple<C: Component>(
-        attrs: Attributes<C>,
-        events: Events<C::Msg>,
-        children: Vec<Html<C>>,
-    ) -> Html<C> {
+    pub fn purple(attrs: Attributes, events: Events, children: Vec<Html>) -> Html {
         Self::render("purple", attrs, events, children)
     }
 
-    pub fn light<C: Component>(
-        attrs: Attributes<C>,
-        events: Events<C::Msg>,
-        children: Vec<Html<C>>,
-    ) -> Html<C> {
+    pub fn light(attrs: Attributes, events: Events, children: Vec<Html>) -> Html {
         Self::render("light", attrs, events, children)
     }
 }

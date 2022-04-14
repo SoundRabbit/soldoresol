@@ -1,12 +1,12 @@
-use super::atom::slider::{self, Slider};
+use super::atom::slider;
 use super::molecule::color_pallet::{self, ColorPallet};
 use crate::libs::color::Pallet;
 use isaribi::{
     style,
     styled::{Style, Styled},
 };
-use kagura::component::{Cmd, Sub};
 use kagura::prelude::*;
+use nusa::prelude::*;
 
 pub struct Props {
     pub default_selected: Pallet,
@@ -40,36 +40,48 @@ pub enum On {
 }
 
 pub struct PopupColorPallet {
+    default_selected: Pallet,
     selected: Pallet,
     is_toggled: bool,
+    direction: Direction,
 }
 
 impl Component for PopupColorPallet {
     type Props = Props;
     type Msg = Msg;
-    type Sub = On;
+    type Event = On;
 }
 
+impl HtmlComponent for PopupColorPallet {}
+
 impl Constructor for PopupColorPallet {
-    fn constructor(props: &Props) -> Self {
+    fn constructor(props: Props) -> Self {
         Self {
+            default_selected: props.default_selected,
             selected: props.default_selected,
             is_toggled: false,
+            direction: props.direction,
         }
     }
 }
 
 impl Update for PopupColorPallet {
-    fn update(&mut self, props: &Props, msg: Msg) -> Cmd<Self> {
+    fn on_load(self: Pin<&mut Self>, props: Self::Props) -> Cmd<Self> {
+        self.default_selected = props.default_selected;
+        self.direction = props.direction;
+        Cmd::none()
+    }
+
+    fn update(self: Pin<&mut Self>, msg: Msg) -> Cmd<Self> {
         match msg {
             Msg::SetIsToggled(is_toggled) => {
                 self.is_toggled = is_toggled;
 
                 if self.is_toggled {
-                    self.selected = props.default_selected;
+                    self.selected = self.default_selected;
                     Cmd::none()
                 } else {
-                    Cmd::sub(On::SelectColor(self.selected))
+                    Cmd::submit(On::SelectColor(self.selected))
                 }
             }
             Msg::SetSelected(pallet) => {
@@ -80,60 +92,63 @@ impl Update for PopupColorPallet {
     }
 }
 
-impl Render for PopupColorPallet {
-    fn render(&self, props: &Props, _children: Vec<Html<Self>>) -> Html<Self> {
+impl Render<Html> for PopupColorPallet {
+    type Children = ();
+    fn render(&self, _: Self::Children) -> Html {
         ColorPallet::styled(());
         Self::styled(Html::div(
             Attributes::new().class(Self::class("base")),
             Events::new(),
             vec![
-                Self::render_selected_color(props),
+                self.render_selected_color(),
                 self.render_mask(),
-                self.render_color_pallet(props),
+                self.render_color_pallet(),
             ],
         ))
     }
 }
 
 impl PopupColorPallet {
-    fn render_selected_color(props: &Props) -> Html<Self> {
+    fn render_selected_color(&self) -> Html {
         Html::div(
             Attributes::new(),
-            Events::new().on_click(|_| Msg::SetIsToggled(true)),
+            Events::new().on_click(self, |_| Msg::SetIsToggled(true)),
             vec![ColorPallet::render_color_base(
                 &slider::Theme::Light,
-                &props.default_selected,
+                &self.default_selected,
             )],
         )
     }
 
-    fn render_mask(&self) -> Html<Self> {
+    fn render_mask(&self) -> Html {
         Html::div(
             Attributes::new()
                 .class(Self::class("mask"))
                 .string("data-toggled", self.is_toggled.to_string()),
-            Events::new().on_click(|_| Msg::SetIsToggled(false)),
+            Events::new().on_click(self, |_| Msg::SetIsToggled(false)),
             vec![],
         )
     }
 
-    fn render_color_pallet(&self, props: &Props) -> Html<Self> {
+    fn render_color_pallet(&self) -> Html {
         Html::div(
             Attributes::new()
                 .class(Self::class("pallet"))
-                .class(Self::class(&format!("pallet--{}", &props.direction)))
+                .class(Self::class(&format!("pallet--{}", &self.direction)))
                 .string("data-toggled", self.is_toggled.to_string()),
             Events::new(),
             vec![if self.is_toggled {
-                ColorPallet::empty(
-                    color_pallet::Props {
-                        title: None,
-                        default_selected: props.default_selected,
-                        theme: slider::Theme::Light,
-                    },
+                ColorPallet::new(
+                    self,
+                    None,
+                    self.default_selected,
                     Sub::map(|sub| match sub {
                         color_pallet::On::SelectColor(pallet) => Msg::SetSelected(pallet),
                     }),
+                    color_pallet::Props {
+                        title: None,
+                        theme: slider::Theme::Light,
+                    },
                 )
             } else {
                 Html::none()

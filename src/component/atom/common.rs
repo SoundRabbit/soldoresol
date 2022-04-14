@@ -2,9 +2,7 @@ use isaribi::{
     style,
     styled::{Style, Styled},
 };
-use kagura::component::Cmd;
-use kagura::prelude::*;
-use wasm_bindgen::JsCast;
+use nusa::prelude::*;
 
 pub struct Props {}
 
@@ -14,57 +12,37 @@ pub enum On {}
 
 pub struct Common;
 
-impl Component for Common {
-    type Props = Props;
-    type Msg = Msg;
-    type Sub = On;
-}
-
-impl Constructor for Common {
-    fn constructor(_: &Props) -> Self {
-        Self {}
-    }
-}
-
-impl Update for Common {}
-
-impl Render for Common {
-    fn render(&self, _: &Props, children: Vec<Html<Self>>) -> Html<Self> {
-        Self::styled(Html::fragment(children))
-    }
-}
-
 impl Common {
     pub fn layered() -> String {
-        Self::class("layered")
+        Self::styled(Self::class("layered"))
     }
 
     pub fn layered_item() -> String {
-        Self::class("layered-item")
+        Self::styled(Self::class("layered-item"))
     }
 
     pub fn keyvalue() -> String {
-        Self::class("keyvalue")
+        Self::styled(Self::class("keyvalue"))
     }
 
     pub fn valuekey() -> String {
-        Self::class("valuekey")
+        Self::styled(Self::class("valuekey"))
     }
 
     pub fn selectable() -> String {
-        Self::class("selectable")
+        Self::styled(Self::class("selectable"))
     }
 
     pub fn bg_transparent() -> String {
-        Self::class("bg-transparent")
+        Self::styled(Self::class("bg-transparent"))
     }
 
-    pub fn none<C: Component>() -> Html<C> {
-        Html::div(
+    pub fn none() -> Html {
+        Self::styled(Html::div(
             Attributes::new().class(Self::class("none")),
             Events::new(),
             vec![],
-        )
+        ))
     }
 
     pub fn banner() -> String {

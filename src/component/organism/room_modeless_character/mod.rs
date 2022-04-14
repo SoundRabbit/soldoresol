@@ -343,13 +343,33 @@ impl Render for RoomModelessCharacter {
 
 impl RoomModelessCharacter {
     fn render_tabs(&self) -> Html<Self> {
+        let tabs = vec![
+            vec![String::from("Common")],
+            self.character
+                .map(|character| {
+                    character
+                        .properties()
+                        .iter()
+                        .map(|prop| {
+                            prop.map(|prop| prop.name().clone())
+                                .unwrap_or_else(|| String::from(""))
+                        })
+                        .collect::<Vec<_>>()
+                })
+                .unwrap_or_else(|| vec![]),
+            vec![String::from("追加")],
+        ]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<_>>();
+        let tabs_len: usize = tabs.len();
         Html::div(
             Attributes::new().class(Self::class("base")),
             Events::new(),
             vec![TabMenu::with_children(
                 tab_menu::Props {
                     selected: self.selected_tab_idx,
-                    tabs: vec![String::from("Common")],
+                    tabs: tabs,
                     controlled: true,
                 },
                 Sub::map(|sub| match sub {

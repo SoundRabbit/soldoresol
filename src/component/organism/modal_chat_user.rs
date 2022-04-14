@@ -1,20 +1,20 @@
 use super::atom::{
     btn::Btn,
+    common::Common,
     heading::{self, Heading},
     text,
 };
 use super::molecule::modal::{self, Modal};
-use super::template::common::Common;
-use crate::arena::{block, ArenaMut, BlockKind, BlockMut, BlockRef};
+use super::NoProps;
+use crate::arena::{block, BlockMut, BlockRef};
 use crate::libs::random_id::U128Id;
 use isaribi::{
     style,
     styled::{Style, Styled},
 };
-use kagura::component::{Cmd, Sub};
 use kagura::prelude::*;
+use nusa::prelude::*;
 use std::collections::HashSet;
-use std::rc::Rc;
 
 pub struct Props {
     pub world: BlockRef<block::World>,
@@ -35,40 +35,54 @@ pub enum On {
 
 pub struct ModalChatUser {
     selected_index: Vec<BlockMut<block::Character>>,
-    selected: HashSet<U128Id>,
+    selected_ids: HashSet<U128Id>,
+    world: BlockRef<block::World>,
 }
 
 impl Component for ModalChatUser {
     type Props = Props;
     type Msg = Msg;
-    type Sub = On;
+    type Event = On;
 }
 
+impl HtmlComponent for ModalChatUser {}
+
 impl Constructor for ModalChatUser {
-    fn constructor(props: &Props) -> Self {
+    fn constructor(props: Props) -> Self {
+        let selected_ids = props
+            .selected
+            .iter()
+            .map(|b| b.id())
+            .collect::<HashSet<_>>();
         Self {
-            selected_index: props.selected.iter().map(BlockMut::clone).collect(),
-            selected: props.selected.iter().map(|b| b.id()).collect(),
+            selected_index: props.selected,
+            selected_ids,
+            world: props.world,
         }
     }
 }
 
 impl Update for ModalChatUser {
-    fn update(&mut self, _: &Props, msg: Self::Msg) -> Cmd<Self> {
+    fn on_load(self: Pin<&mut Self>, props: Props) -> Cmd<Self> {
+        self.world = props.world;
+        Cmd::none()
+    }
+
+    fn update(self: Pin<&mut Self>, msg: Self::Msg) -> Cmd<Self> {
         match msg {
-            Msg::Cancel => Cmd::sub(On::Cancel),
-            Msg::Select => Cmd::sub(On::Select(
+            Msg::Cancel => Cmd::submit(On::Cancel),
+            Msg::Select => Cmd::submit(On::Select(
                 self.selected_index.iter().map(BlockMut::clone).collect(),
             )),
             Msg::PushSelected(item) => {
-                self.selected.insert(item.id());
+                self.selected_ids.insert(item.id());
                 self.selected_index.push(item);
                 Cmd::none()
             }
             Msg::RemoveSelected(idx) => {
                 if idx < self.selected_index.len() {
                     let character = self.selected_index.remove(idx);
-                    self.selected.remove(&character.id());
+                    self.selected_ids.remove(&character.id());
                 }
                 Cmd::none()
             }
@@ -76,44 +90,48 @@ impl Update for ModalChatUser {
     }
 }
 
-impl Render for ModalChatUser {
-    fn render(&self, props: &Props, _: Vec<Html<Self>>) -> Html<Self> {
-        Self::styled(Modal::with_children(
-            modal::Props {
-                header_title: String::from("チャットで使用するキャラクター"),
-                footer_message: String::from(""),
-            },
+impl Render<Html> for ModalChatUser {
+    type Children = ();
+    fn render(&self, props: &Props, _: Self::Children) -> Html {
+        Self::styled(Modal::new(
+            self,
+            None,
+            NoProps(),
             Sub::map(|sub| match sub {
                 modal::On::Close => Msg::Cancel,
             }),
-            vec![Html::div(
-                Attributes::new().class(Self::class("base")),
-                Events::new(),
-                vec![
-                    Html::div(
-                        Attributes::new()
-                            .class(Self::class("content"))
-                            .class(Self::class("container")),
-                        Events::new(),
-                        vec![self.render_unselected(props), self.render_selected()],
-                    ),
-                    Html::div(
-                        Attributes::new().class(Self::class("container")),
-                        Events::new(),
-                        vec![Btn::primary(
-                            Attributes::new(),
-                            Events::new().on_click(|_| Msg::Select),
-                            vec![Html::text("決定")],
-                        )],
-                    ),
-                ],
-            )],
+            (
+                String::from("チャットで使用するキャラクター"),
+                String::from(""),
+                vec![Html::div(
+                    Attributes::new().class(Self::class("base")),
+                    Events::new(),
+                    vec![
+                        Html::div(
+                            Attributes::new()
+                                .class(Self::class("content"))
+                                .class(Self::class("container")),
+                            Events::new(),
+                            vec![self.render_unselected(props), self.render_selected()],
+                        ),
+                        Html::div(
+                            Attributes::new().class(Self::class("container")),
+                            Events::new(),
+                            vec![Btn::primary(
+                                Attributes::new(),
+                                Events::new().on_click(self, |_| Msg::Select),
+                                vec![Html::text("決定")],
+                            )],
+                        ),
+                    ],
+                )],
+            ),
         ))
     }
 }
 
 impl ModalChatUser {
-    fn render_unselected(&self, props: &Props) -> Html<Self> {
+    fn render_unselected(&self, props: &Props) -> Html {
         Html::div(
             Attributes::new(),
             Events::new(),
@@ -136,7 +154,7 @@ impl ModalChatUser {
                                 .filter_map(|character| {
                                     let character_block = BlockMut::clone(&character);
                                     character.map(|character| {
-                                        if self.selected.contains(&character_block.id()) {
+                                        if self.selected_ids.contains(&character_block.id()) {
                                             Btn::menu_as_primary(
                                                 Attributes::new(),
                                                 Events::new(),
@@ -145,7 +163,7 @@ impl ModalChatUser {
                                         } else {
                                             Btn::menu(
                                                 Attributes::new(),
-                                                Events::new().on_click({
+                                                Events::new().on_click(self, {
                                                     move |_| Msg::PushSelected(character_block)
                                                 }),
                                                 vec![Html::text(character.name())],
@@ -161,7 +179,7 @@ impl ModalChatUser {
         )
     }
 
-    fn render_selected(&self) -> Html<Self> {
+    fn render_selected(&self) -> Html {
         Html::div(
             Attributes::new(),
             Events::new(),
@@ -188,7 +206,7 @@ impl ModalChatUser {
                                         Btn::danger(
                                             Attributes::new(),
                                             Events::new()
-                                                .on_click(move |_| Msg::RemoveSelected(idx)),
+                                                .on_click(self, move |_| Msg::RemoveSelected(idx)),
                                             vec![Html::text("削除")],
                                         ),
                                     ],

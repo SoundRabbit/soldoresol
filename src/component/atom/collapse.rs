@@ -3,8 +3,8 @@ use isaribi::{
     style,
     styled::{Style, Styled},
 };
-use kagura::component::{Cmd, Sub};
 use kagura::prelude::*;
+use nusa::prelude::*;
 
 pub struct Props {
     pub is_default_collapsed: bool,
@@ -19,24 +19,33 @@ pub enum On {}
 
 pub struct Collapse {
     is_collapsed: bool,
+    is_indented: bool,
 }
 
 impl Component for Collapse {
     type Props = Props;
     type Msg = Msg;
-    type Sub = On;
+    type Event = On;
 }
+
+impl HtmlComponent for Collapse {}
 
 impl Constructor for Collapse {
     fn constructor(props: &Props) -> Self {
         Self {
             is_collapsed: props.is_default_collapsed,
+            is_indented: props.is_indented,
         }
     }
 }
 
 impl Update for Collapse {
-    fn update(&mut self, _props: &Props, msg: Msg) -> Cmd<Self> {
+    fn on_load(self: Pin<&mut Self>, props: Self::Props) -> Cmd<Self> {
+        self.is_indented = props.is_indented;
+        Cmd::none()
+    }
+
+    fn update(self: Pin<&mut Self>, _props: &Props, msg: Msg) -> Cmd<Self> {
         match msg {
             Msg::SetIsCollapsed(is_collapsed) => {
                 self.is_collapsed = is_collapsed;
@@ -46,17 +55,17 @@ impl Update for Collapse {
     }
 }
 
-impl Render for Collapse {
-    fn render(&self, props: &Props, children: Vec<Html<Self>>) -> Html<Self> {
-        let mut children = std::collections::VecDeque::from(children);
-        let head = children.pop_front().unwrap_or(Html::none());
+impl Render<Html> for Collapse {
+    type Children = (Html, Vec<Html>);
+
+    fn render(&self, (head, children): Self::Children) -> Html {
         Self::styled(Html::div(
             Attributes::new().class(Self::class("base")),
             Events::new(),
             vec![
                 Html::div(
                     Attributes::new().class(Self::class("toggle")),
-                    Events::new().on_click({
+                    Events::new().on_click(self, {
                         let is_collapsed = self.is_collapsed;
                         move |_| Msg::SetIsCollapsed(!is_collapsed)
                     }),
@@ -80,9 +89,9 @@ impl Render for Collapse {
                             "data-collapsed",
                             (!children.is_empty() && self.is_collapsed).to_string(),
                         )
-                        .string("data-indented", props.is_indented.to_string()),
+                        .string("data-indented", self.is_indented.to_string()),
                     Events::new(),
-                    children.into(),
+                    children,
                 ),
             ],
         ))

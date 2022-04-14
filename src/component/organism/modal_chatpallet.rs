@@ -1,14 +1,12 @@
-use super::atom::{
-    btn::Btn,
-    heading::{self, Heading},
-};
+use super::atom::btn::Btn;
 use super::molecule::modal::{self, Modal};
+use super::NoProps;
 use isaribi::{
     style,
     styled::{Style, Styled},
 };
-use kagura::component::{Cmd, Sub};
 use kagura::prelude::*;
+use nusa::prelude::*;
 
 pub struct Props {
     pub data: String,
@@ -32,22 +30,22 @@ pub struct ModalChatpallet {
 impl Component for ModalChatpallet {
     type Props = Props;
     type Msg = Msg;
-    type Sub = On;
+    type Event = On;
 }
 
+impl HtmlComponent for ModalChatpallet {}
+
 impl Constructor for ModalChatpallet {
-    fn constructor(props: &Props) -> Self {
-        Self {
-            data: props.data.clone(),
-        }
+    fn constructor(props: Props) -> Self {
+        Self { data: props.data }
     }
 }
 
 impl Update for ModalChatpallet {
-    fn update(&mut self, _: &Props, msg: Self::Msg) -> Cmd<Self> {
+    fn update(self: Pin<&mut Self>, msg: Msg) -> Cmd<Self> {
         match msg {
-            Msg::Close => Cmd::sub(On::Close),
-            Msg::Ok => Cmd::sub(On::Ok(self.data.clone())),
+            Msg::Close => Cmd::submit(On::Close),
+            Msg::Ok => Cmd::submit(On::Ok(self.data.clone())),
             Msg::Input(data) => {
                 self.data = data;
                 Cmd::none()
@@ -56,39 +54,43 @@ impl Update for ModalChatpallet {
     }
 }
 
-impl Render for ModalChatpallet {
-    fn render(&self, props: &Props, _: Vec<Html<Self>>) -> Html<Self> {
-        Self::styled(Modal::with_children(
-            modal::Props {
-                header_title: String::from("チャットパレットを編集"),
-                footer_message: String::from(""),
-            },
+impl Render<Html> for ModalChatpallet {
+    type Children = ();
+    fn render(&self, _: Self::Children) -> Html {
+        Self::styled(Modal::new(
+            self,
+            None,
+            NoProps(),
             Sub::map(|sub| match sub {
                 modal::On::Close => Msg::Close,
             }),
-            vec![Html::div(
-                Attributes::new().class(Self::class("base")),
-                Events::new(),
-                vec![
-                    Html::textarea(
-                        Attributes::new()
-                            .class(Self::class("content"))
-                            .class(Self::class("container"))
-                            .value(&self.data),
-                        Events::new().on_input(Msg::Input),
-                        vec![],
-                    ),
-                    Html::div(
-                        Attributes::new().class(Self::class("container")),
-                        Events::new(),
-                        vec![Btn::primary(
-                            Attributes::new(),
-                            Events::new().on_click(|_| Msg::Ok),
-                            vec![Html::text("決定")],
-                        )],
-                    ),
-                ],
-            )],
+            (
+                String::from("チャットパレットを編集"),
+                String::from(""),
+                vec![Html::div(
+                    Attributes::new().class(Self::class("base")),
+                    Events::new(),
+                    vec![
+                        Html::textarea(
+                            Attributes::new()
+                                .class(Self::class("content"))
+                                .class(Self::class("container"))
+                                .value(&self.data),
+                            Events::new().on_input(self, Msg::Input),
+                            vec![],
+                        ),
+                        Html::div(
+                            Attributes::new().class(Self::class("container")),
+                            Events::new(),
+                            vec![Btn::primary(
+                                Attributes::new(),
+                                Events::new().on_click(self, |_| Msg::Ok),
+                                vec![Html::text("決定")],
+                            )],
+                        ),
+                    ],
+                )],
+            ),
         ))
     }
 }

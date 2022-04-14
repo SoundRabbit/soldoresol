@@ -1,6 +1,10 @@
 use super::*;
 
 impl Renderer {
+    pub fn canvas(&self) -> Rc<web_sys::HtmlCanvasElement> {
+        Rc::clone(&self.canvas)
+    }
+
     pub fn reset_size(&mut self) {
         let canvas_size = Self::reset_canvas_size(&self.canvas, self.device_pixel_ratio);
         let sw = canvas_size[0] as i32;

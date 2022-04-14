@@ -4,6 +4,9 @@ use isaribi::{
     styled::{Style, Styled},
 };
 use kagura::prelude::*;
+use nusa::prelude::*;
+
+pub struct Props {}
 
 pub enum Variant {
     Dark,
@@ -26,10 +29,12 @@ pub enum On {}
 pub struct LoadingCircle {}
 
 impl Component for LoadingCircle {
-    type Props = Variant;
+    type Props = Props;
     type Msg = Msg;
-    type Sub = On;
+    type Event = On;
 }
+
+impl HtmlComponent for LoadingCircle {}
 
 impl Constructor for LoadingCircle {
     fn constructor(variant: &Variant) -> Self {
@@ -39,8 +44,9 @@ impl Constructor for LoadingCircle {
 
 impl Update for LoadingCircle {}
 
-impl Render for LoadingCircle {
-    fn render(&self, variant: &Variant, _: Vec<Html<Self>>) -> Html<Self> {
+impl Render<Html> for LoadingCircle {
+    type Children = Variant;
+    fn render(&self, variant: Self::Children) -> Html {
         Self::styled(Html::span(
             Attributes::new()
                 .class(Self::class("base"))

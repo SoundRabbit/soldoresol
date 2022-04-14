@@ -8,8 +8,8 @@ use isaribi::{
     style,
     styled::{Style, Styled},
 };
-use kagura::component::{Cmd, Sub};
 use kagura::prelude::*;
+use nusa::prelude::*;
 use room_modeless_chat::ChatUser;
 use std::collections::HashSet;
 use std::rc::Rc;
@@ -44,7 +44,9 @@ pub enum On {
     },
 }
 
-pub struct RoomModeless {}
+pub struct RoomModeless {
+    content: Content,
+}
 
 ElementId! {
     input_channel_name,
@@ -54,32 +56,40 @@ ElementId! {
 impl Component for RoomModeless {
     type Props = Content;
     type Msg = Msg;
-    type Sub = On;
+    type Event = On;
 }
 
+impl HtmlComponent for RoomModeless {}
+
 impl Constructor for RoomModeless {
-    fn constructor(_: &Content) -> Self {
-        Self {}
+    fn constructor(content: Content) -> Self {
+        Self { content }
     }
 }
 
 impl Update for RoomModeless {
+    fn on_load(self: Pin<&mut Self>, content: Content) -> Cmd<Self> {
+        self.content = content;
+        Cmd::none()
+    }
+
     fn update(&mut self, _content: &Content, msg: Msg) -> Cmd<Self> {
         match msg {
-            Msg::Sub(sub) => Cmd::sub(sub),
+            Msg::Sub(sub) => Cmd::submit(sub),
         }
     }
 }
 
-impl Render for RoomModeless {
-    fn render(&self, content: &Content, _children: Vec<Html<Self>>) -> Html<Self> {
-        Self::styled(Html::fragment(vec![match &content.data {
-            ContentData::Chat { user, data } => RoomModelessChat::empty(
+impl Render<Html> for RoomModeless {
+    type Children = ();
+    fn render(&self, _: ()) -> Html {
+        Self::styled(Html::fragment(vec![match &self.content.data {
+            ContentData::Chat { user, data } => RoomModelessChat::empty(self,None
                 room_modeless_chat::Props {
-                    arena: ArenaMut::clone(&content.arena),
+                    arena: ArenaMut::clone(&self.content.arena),
                     data: BlockMut::clone(&data),
                     user: ChatUser::clone(&user),
-                    client_id: Rc::clone(&content.client_id),
+                    client_id: Rc::clone(&self.content.client_id),
                 },
                 Sub::map(|sub| match sub {
                     room_modeless_chat::On::UpdateBlocks { insert, update } => {
@@ -182,7 +192,7 @@ impl Constructor for TabName {
 impl Update for TabName {}
 
 impl Render for TabName {
-    fn render(&self, content: &Content, _children: Vec<Html<Self>>) -> Html<Self> {
+    fn render(&self, content: &Content, _children: Vec<Html>) -> Html {
         use super::atom::fa;
         match &content.data {
             ContentData::Chat { user, .. } => match user {

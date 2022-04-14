@@ -43,15 +43,19 @@ features = ["wasmbind"]
 
 [dependencies.isaribi]
 version = "^0.2"
-# path = "../Isaribi"
+path = "../Isaribi"
 
 [dependencies.serde]
 version = "^1.0"
 features = ["derive"]
 
 [dependencies.kagura]
-version = "^0.13"
-# path="../Kagura"
+version = "^0.14"
+path="../Kagura/kagura"
+
+[dependencies.nusa]
+version = "^0.1"
+path="../Kagura/nusa"
 
 [dependencies.web-sys]
 version = "^0.3"
@@ -90,6 +94,7 @@ features = [
     "IdbTransaction",
     "IdbTransactionMode",
     "ImageData",
+    "KeyboardEvent",
     "Location",
     "MediaSource",
     "MouseEvent",

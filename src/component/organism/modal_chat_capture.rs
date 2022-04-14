@@ -1,15 +1,12 @@
-use super::atom::{
-    btn::Btn,
-    heading::{self, Heading},
-    text,
-};
+use super::atom::{btn::Btn, text};
 use super::molecule::modal::{self, Modal};
+use super::NoProps;
 use isaribi::{
     style,
     styled::{Style, Styled},
 };
-use kagura::component::{Cmd, Sub};
 use kagura::prelude::*;
+use nusa::prelude::*;
 use std::rc::Rc;
 
 pub struct Props {
@@ -28,98 +25,110 @@ pub enum On {
 }
 
 pub struct ModalChatCapture {
+    vars: Rc<Vec<(String, String)>>,
     input: Vec<String>,
 }
 
 impl Component for ModalChatCapture {
     type Props = Props;
     type Msg = Msg;
-    type Sub = On;
+    type Event = On;
 }
 
+impl HtmlComponent for ModalChatCapture {}
+
 impl Constructor for ModalChatCapture {
-    fn constructor(props: &Props) -> Self {
+    fn constructor(props: Props) -> Self {
         let mut input = vec![];
         for _ in 0..props.vars.len() {
             input.push(String::from(""));
         }
 
-        Self { input }
+        Self {
+            input,
+            vars: props.vars,
+        }
     }
 }
 
 impl Update for ModalChatCapture {
-    fn on_load(&mut self, props: &Props) -> Cmd<Self> {
+    fn on_load(self: Pin<&mut Self>, props: Props) -> Cmd<Self> {
         while self.input.len() > props.vars.len() {
             self.input.pop();
         }
         while self.input.len() < props.vars.len() {
             self.input.push(String::from(""));
         }
+        self.vars = props.vars;
         Cmd::none()
     }
 
-    fn update(&mut self, _: &Props, msg: Self::Msg) -> Cmd<Self> {
+    fn update(self: Pin<&mut Self>, msg: Self::Msg) -> Cmd<Self> {
         match msg {
-            Msg::Cancel => Cmd::sub(On::Cancel),
+            Msg::Cancel => Cmd::submit(On::Cancel),
             Msg::Input(idx, data) => {
                 self.input[idx] = data;
                 Cmd::none()
             }
-            Msg::Send => Cmd::sub(On::Send(self.input.drain(..).collect())),
+            Msg::Send => Cmd::submit(On::Send(self.input.drain(..).collect())),
         }
     }
 }
 
-impl Render for ModalChatCapture {
-    fn render(&self, props: &Props, _: Vec<Html<Self>>) -> Html<Self> {
-        Self::styled(Modal::with_children(
-            modal::Props {
-                header_title: String::from("チャットの送信"),
-                footer_message: String::from(""),
-            },
+impl Render<Html> for ModalChatCapture {
+    type Children = ();
+    fn render(&self, _: Self::Children) -> Html {
+        Self::styled(Modal::new(
+            self,
+            None,
+            NoProps(),
             Sub::map(|sub| match sub {
                 modal::On::Close => Msg::Cancel,
             }),
-            vec![Html::div(
-                Attributes::new().class(Self::class("base")),
-                Events::new(),
-                vec![
-                    Html::div(
-                        Attributes::new().class(Self::class("content")),
-                        Events::new(),
-                        vec![Html::div(
-                            Attributes::new()
-                                .class(Self::class("container"))
-                                .class(Self::class("key-key")),
+            (
+                String::from("チャットの送信"),
+                String::from(""),
+                vec![Html::div(
+                    Attributes::new().class(Self::class("base")),
+                    Events::new(),
+                    vec![
+                        Html::div(
+                            Attributes::new().class(Self::class("content")),
                             Events::new(),
-                            self.input
-                                .iter()
-                                .enumerate()
-                                .map(|(idx, v)| {
-                                    Html::fragment(vec![
-                                        text::span(&props.vars[idx].1),
-                                        Html::input(
-                                            Attributes::new().value(v),
-                                            Events::new().on_input(move |v| Msg::Input(idx, v)),
-                                            vec![],
-                                        ),
-                                    ])
-                                })
-                                .collect(),
-                        )],
-                    ),
-                    Html::div(
-                        Attributes::new().class(Self::class("container")),
-                        Events::new(),
-                        vec![Btn::primary(
-                            Attributes::new(),
-                            Events::new().on_click(|_| Msg::Send),
-                            vec![Html::text("送信")],
-                        )],
-                    ),
-                ],
-            )],
+                            vec![Html::div(
+                                Attributes::new()
+                                    .class(Self::class("container"))
+                                    .class(Self::class("key-key")),
+                                Events::new(),
+                                self.input
+                                    .iter()
+                                    .enumerate()
+                                    .map(|(idx, v)| {
+                                        Html::fragment(vec![
+                                            text::span(&self.vars[idx].1),
+                                            Html::input(
+                                                Attributes::new().value(v),
+                                                Events::new()
+                                                    .on_input(self, move |v| Msg::Input(idx, v)),
+                                                vec![],
+                                            ),
+                                        ])
+                                    })
+                                    .collect(),
+                            )],
+                        ),
+                        Html::div(
+                            Attributes::new().class(Self::class("container")),
+                            Events::new(),
+                            vec![Btn::primary(
+                                Attributes::new(),
+                                Events::new().on_click(self, |_| Msg::Send),
+                                vec![Html::text("送信")],
+                            )],
+                        ),
+                    ],
+                )],
+            ),
         ))
     }
 }

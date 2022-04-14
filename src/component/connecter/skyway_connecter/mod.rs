@@ -1,8 +1,8 @@
 use super::page::room::{self, Room};
 use crate::arena::{block, Arena};
 use crate::libs::skyway::{MeshRoom, Peer};
-use kagura::component::{Cmd, Sub};
 use kagura::prelude::*;
+use nusa::prelude::*;
 use std::rc::Rc;
 
 pub struct Props {

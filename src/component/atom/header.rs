@@ -4,10 +4,9 @@ use isaribi::{
     styled::{Style, Styled},
 };
 use kagura::prelude::*;
+use nusa::prelude::*;
 
-pub struct Props {
-    class: Option<String>,
-}
+pub struct Props {}
 
 pub enum Msg {}
 
@@ -15,22 +14,13 @@ pub enum On {}
 
 pub struct Header {}
 
-impl Props {
-    pub fn new() -> Self {
-        Self { class: None }
-    }
-
-    fn class(mut self, class_name: impl Into<String>) -> Self {
-        self.class = Some(class_name.into());
-        self
-    }
-}
-
 impl Component for Header {
     type Props = Props;
     type Msg = Msg;
-    type Sub = On;
+    type Event = On;
 }
+
+impl HtmlComponent for Header {}
 
 impl Constructor for Header {
     fn constructor(props: &Props) -> Self {
@@ -40,16 +30,11 @@ impl Constructor for Header {
 
 impl Update for Header {}
 
-impl Render for Header {
-    fn render(&self, props: &Props, children: Vec<Html<Self>>) -> Html<Self> {
-        let attrs = Attributes::new().class(Self::class("base"));
-        let attrs = if let Some(class_name) = &props.class {
-            attrs.class(class_name)
-        } else {
-            attrs
-        };
-
-        Self::styled(Html::div(attrs, Events::new(), children))
+impl Render<Html> for Header {
+    type Children = (Attributes, Events, Vec<Html>);
+    fn render(&self, (attrs, events, children): Self::Children) -> Html {
+        let attrs = attrs.class(Self::class("base"));
+        Self::styled(Html::div(attrs, events, children))
     }
 }
 

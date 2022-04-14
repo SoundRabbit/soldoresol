@@ -1,6 +1,3 @@
-use kagura::component::{Cmd, Sub};
-use kagura::prelude::*;
-
 use wasm_bindgen::prelude::*;
 
 macro_rules! router {

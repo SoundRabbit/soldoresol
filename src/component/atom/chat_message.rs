@@ -4,12 +4,9 @@ use isaribi::{
     styled::{Style, Styled},
 };
 use kagura::prelude::*;
+use nusa::prelude::*;
 
-pub fn div<C: Component>(
-    attrs: Attributes<C>,
-    events: Events<C::Msg>,
-    message: &block::chat_message::Message,
-) -> Html<C> {
+pub fn div(attrs: Attributes, events: Events, message: &block::chat_message::Message) -> Html {
     Html::div(
         attrs.class(ChatMessage::class("base")),
         events,
@@ -20,7 +17,7 @@ pub fn div<C: Component>(
 pub struct ChatMessage {}
 
 impl ChatMessage {
-    fn render<C: Component>(message: &block::chat_message::Message) -> Vec<Html<C>> {
+    fn render(message: &block::chat_message::Message) -> Vec<Html> {
         ChatMessage::styled(
             message
                 .iter()
@@ -29,7 +26,7 @@ impl ChatMessage {
         )
     }
 
-    fn render_token<C: Component>(message_token: &block::chat_message::MessageToken) -> Html<C> {
+    fn render_token(message_token: &block::chat_message::MessageToken) -> Html {
         match message_token {
             block::chat_message::MessageToken::Text(text) => Html::text(text),
             block::chat_message::MessageToken::Refer(text) => Html::text(format!("{{{}}}", text)),

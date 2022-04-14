@@ -2,14 +2,13 @@ use super::*;
 
 impl RoomModelessChat {
     pub fn send_chat_message(
-        &mut self,
-        props: &Props,
+        self: Pin<&mut Self>,
         sender: block::chat_message::Sender,
         mut channel: BlockMut<block::ChatChannel>,
         message: &String,
     ) -> Cmd<Self> {
         let message = block::chat_message::Message::new(message);
-        let (message, descriptions) = if let ChatUser::Character(character) = &props.user {
+        let (message, descriptions) = if let ChatUser::Character(character) = &self.chat_user {
             block::chat_message::map(character.chat_ref(), message)
         } else {
             block::chat_message::map(Self::ref_none(), message)
@@ -32,7 +31,7 @@ impl RoomModelessChat {
             channel.messages_push(chat_message);
         });
         let channel_id = channel.id();
-        Cmd::sub(On::UpdateBlocks {
+        Cmd::submit(On::UpdateBlocks {
             insert: set! { chat_message_id },
             update: set! { channel_id },
         })
@@ -56,7 +55,7 @@ impl RoomModelessChat {
                 channel.messages_push(chat_message);
             });
             let channel_id = channel.id();
-            Cmd::sub(On::UpdateBlocks {
+            Cmd::submit(On::UpdateBlocks {
                 insert: set! { chat_message_id },
                 update: set! { channel_id },
             })

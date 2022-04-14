@@ -1,9 +1,9 @@
-use kagura::prelude::*;
+use nusa::prelude::*;
 
-pub fn span<C: Component>(attrs: Attributes<C>, text: impl Into<String>) -> Html<C> {
+pub fn span(attrs: Attributes, text: impl Into<String>) -> Html {
     Html::span(attrs, Events::new(), vec![Html::text(text)])
 }
 
-pub fn div<C: Component>(attrs: Attributes<C>, text: impl Into<String>) -> Html<C> {
+pub fn div(attrs: Attributes, text: impl Into<String>) -> Html {
     Html::div(attrs, Events::new(), vec![Html::text(text)])
 }

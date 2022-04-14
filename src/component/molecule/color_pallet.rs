@@ -1,19 +1,20 @@
+use super::atom::common::Common;
 use super::atom::heading::{self, Heading};
 use super::atom::slider::{self, Slider};
-use super::template::common::Common;
 use crate::libs::color::{pallet, Pallet};
 use isaribi::{
     style,
     styled::{Style, Styled},
 };
-use kagura::component::{Cmd, Sub};
 use kagura::prelude::*;
+use nusa::prelude::*;
 
-pub struct Props {
-    pub default_selected: Pallet,
+struct Children {
     pub title: Option<String>,
     pub theme: slider::Theme,
 }
+
+pub type Props = Children;
 
 pub enum Msg {
     NoOp,
@@ -29,10 +30,9 @@ pub struct ColorPallet {
     default_selected: Pallet,
 }
 
-impl Default for Props {
+impl Default for Children {
     fn default() -> Self {
         Self {
-            default_selected: Pallet::gray(9).a(100),
             title: None,
             theme: slider::Theme::Dark,
         }
@@ -40,25 +40,27 @@ impl Default for Props {
 }
 
 impl Component for ColorPallet {
-    type Props = Props;
+    type Props = Pallet;
     type Msg = Msg;
-    type Sub = On;
+    type Event = On;
 }
 
+impl HtmlComponent for ColorPallet {}
+
 impl Constructor for ColorPallet {
-    fn constructor(props: &Props) -> Self {
+    fn constructor(default_selected: Pallet) -> Self {
         Self {
-            selected: props.default_selected.clone(),
-            default_selected: props.default_selected.clone(),
+            selected: default_selected.clone(),
+            default_selected: default_selected.clone(),
         }
     }
 }
 
 impl Update for ColorPallet {
-    fn on_load(&mut self, props: &Props) -> Cmd<Self> {
-        if self.default_selected != props.default_selected {
-            self.default_selected = props.default_selected.clone();
-            self.selected = props.default_selected.clone();
+    fn on_load(&mut self, default_selected: Pallet) -> Cmd<Self> {
+        if self.default_selected != default_selected {
+            self.default_selected = default_selected.clone();
+            self.selected = default_selected.clone();
         }
         Cmd::none()
     }
@@ -68,14 +70,15 @@ impl Update for ColorPallet {
             Msg::NoOp => Cmd::none(),
             Msg::SetColor(pallet) => {
                 self.selected = pallet;
-                Cmd::sub(On::SelectColor(self.selected.clone()))
+                Cmd::submit(On::SelectColor(self.selected.clone()))
             }
         }
     }
 }
 
-impl Render for ColorPallet {
-    fn render(&self, props: &Props, _: Vec<Html<Self>>) -> Html<Self> {
+impl Render<Html> for ColorPallet {
+    type Children = Children;
+    fn render(&self, props: Self::Children) -> Html {
         Self::styled(Html::div(
             Attributes::new().class(Self::class("base")),
             Events::new(),
@@ -109,16 +112,14 @@ impl Render for ColorPallet {
                         self.render_column(pallet::Kind::Pink),
                     ],
                 ),
-                Slider::empty(
-                    slider::Props {
-                        position: slider::Position::Linear {
-                            min: 0.0,
-                            max: 100.0,
-                            val: self.selected.alpha as f64,
-                            step: 1.0,
-                        },
-                        range_is_editable: false,
-                        theme: props.theme,
+                Slider::new(
+                    self,
+                    None,
+                    slider::Position::Linear {
+                        min: 0.0,
+                        max: 100.0,
+                        val: self.selected.alpha as f64,
+                        step: 1.0,
                     },
                     Sub::map({
                         let selected = self.selected.clone();
@@ -129,6 +130,10 @@ impl Render for ColorPallet {
                             _ => Msg::NoOp,
                         }
                     }),
+                    slider::Props {
+                        range_is_editable: false,
+                        theme: props.theme,
+                    },
                 ),
             ],
         ))
@@ -136,7 +141,7 @@ impl Render for ColorPallet {
 }
 
 impl ColorPallet {
-    pub fn render_color_base<C: Component>(theme: &slider::Theme, pallet: &Pallet) -> Html<C> {
+    pub fn render_color_base(theme: &slider::Theme, pallet: &Pallet) -> Html {
         Html::div(
             Attributes::new()
                 .class(Common::bg_transparent())
@@ -153,7 +158,7 @@ impl ColorPallet {
         )
     }
 
-    fn render_column(&self, kind: pallet::Kind) -> Html<Self> {
+    fn render_column(&self, kind: pallet::Kind) -> Html {
         let mut cells = vec![];
         let mut pallet = Pallet {
             alpha: self.selected.alpha,
@@ -169,7 +174,7 @@ impl ColorPallet {
         Html::fragment(cells)
     }
 
-    fn render_cell(&self, pallet: Pallet, is_dark: bool) -> Html<Self> {
+    fn render_cell(&self, pallet: Pallet, is_dark: bool) -> Html {
         let color = pallet.clone().a(100).to_color();
 
         let attrs = Attributes::new()
@@ -188,7 +193,7 @@ impl ColorPallet {
 
         Html::div(
             attrs,
-            Events::new().on_click(move |_| Msg::SetColor(pallet)),
+            Events::new().on_click(self, move |_| Msg::SetColor(pallet)),
             vec![],
         )
     }

@@ -1,10 +1,11 @@
+use super::atom::common::Common;
 use super::atom::{
     btn::{self, Btn},
     text,
 };
 use super::molecule::modal::{self, Modal};
 use super::organism::modal_resource::{self, ModalResource};
-use super::template::common::Common;
+use super::NoProps;
 use crate::arena::{
     block,
     resource::{self, LoadFrom},
@@ -15,8 +16,8 @@ use isaribi::{
     style,
     styled::{Style, Styled},
 };
-use kagura::component::{Cmd, Sub};
 use kagura::prelude::*;
+use nusa::prelude::*;
 use std::collections::HashSet;
 
 pub struct Props {
@@ -46,6 +47,8 @@ pub enum On {
 }
 
 pub struct ModalCreateBlockTexture {
+    arena: ArenaMut,
+    world: BlockMut<block::World>,
     custom_texture: CustomTexture,
     prefab_texture: Option<BlockRef<resource::ImageData>>,
     selecting_kind: TextureKind,
@@ -99,12 +102,16 @@ impl std::fmt::Display for TextureDirection {
 impl Component for ModalCreateBlockTexture {
     type Props = Props;
     type Msg = Msg;
-    type Sub = On;
+    type Event = On;
 }
 
+impl HtmlComponent for ModalCreateBlockTexture {}
+
 impl Constructor for ModalCreateBlockTexture {
-    fn constructor(props: &Props) -> Self {
+    fn constructor(props: Props) -> Self {
         Self {
+            arena: props.arena,
+            world: props.world,
             custom_texture: CustomTexture {
                 texture_px: None,
                 texture_py: None,
@@ -121,10 +128,10 @@ impl Constructor for ModalCreateBlockTexture {
 }
 
 impl Update for ModalCreateBlockTexture {
-    fn update(&mut self, _props: &Props, msg: Msg) -> Cmd<Self> {
+    fn update(self: Pin<&mut Self>, msg: Msg) -> Cmd<Self> {
         match msg {
             Msg::NoOp => Cmd::none(),
-            Msg::Sub(sub) => Cmd::sub(sub),
+            Msg::Sub(sub) => Cmd::submit(sub),
             Msg::CloseModal => {
                 self.showing_modal = ShowingModal::None;
                 Cmd::none()
@@ -161,32 +168,27 @@ impl Update for ModalCreateBlockTexture {
                         .texture_nz
                         .clone()
                         .unwrap_or(BlockRef::none());
-                    Cmd::task(|resolve| {
-                        wasm_bindgen_futures::spawn_local(async move {
-                            if let Some(texture) = resource::BlockTexture::load_from((
-                                [1024, 1024],
-                                [px, py, pz, nx, ny, nz],
-                            ))
-                            .await
-                            {
-                                resolve(Msg::Sub(On::CreateTexure(texture)));
-                            } else {
-                                resolve(Msg::NoOp);
-                            }
-                        })
+                    Cmd::task(async move {
+                        if let Some(texture) = resource::BlockTexture::load_from((
+                            [1024, 1024],
+                            [px, py, pz, nx, ny, nz],
+                        ))
+                        .await
+                        {
+                            Cmd::chain(Msg::Sub(On::CreateTexure(texture)))
+                        } else {
+                            Cmd::none()
+                        }
                     })
                 }
                 TextureKind::PrefabTexture => {
                     let texture = self.prefab_texture.clone().unwrap_or(BlockRef::none());
-                    Cmd::task(|resolve| {
-                        wasm_bindgen_futures::spawn_local(async move {
-                            if let Some(texture) = resource::BlockTexture::load_from(texture).await
-                            {
-                                resolve(Msg::Sub(On::CreateTexure(texture)));
-                            } else {
-                                resolve(Msg::NoOp);
-                            }
-                        })
+                    Cmd::task(async move {
+                        if let Some(texture) = resource::BlockTexture::load_from(texture).await {
+                            Cmd::chain(Msg::Sub(On::CreateTexure(texture)))
+                        } else {
+                            Cmd::none()
+                        }
                     })
                 }
             },
@@ -235,64 +237,70 @@ impl Update for ModalCreateBlockTexture {
     }
 }
 
-impl Render for ModalCreateBlockTexture {
-    fn render(&self, props: &Props, _children: Vec<Html<Self>>) -> Html<Self> {
-        Self::styled(Modal::with_children(
-            modal::Props {
-                header_title: String::from("新規ブロック用テクスチャを作成"),
-                footer_message: String::from(""),
-            },
+impl Render<Html> for ModalCreateBlockTexture {
+    type Children = ();
+    fn render(&self, _: Self::Children) -> Html {
+        Self::styled(Modal::new(
+            self,
+            None,
+            NoProps(),
             Sub::map(|sub| match sub {
                 modal::On::Close => Msg::Sub(On::Close),
             }),
-            vec![
-                Html::div(
-                    Attributes::new().class(Self::class("base")),
-                    Events::new(),
-                    vec![
-                        Html::div(
-                            Attributes::new().class(Self::class("kind-list")),
-                            Events::new(),
-                            vec![
-                                self.render_btn_to_select_kind(
-                                    TextureKind::CustomTexture,
-                                    "画像から作成",
-                                ),
-                                self.render_btn_to_select_kind(
-                                    TextureKind::PrefabTexture,
-                                    "作成済みの画像を選択",
-                                ),
-                            ],
-                        ),
-                        match &self.selecting_kind {
-                            TextureKind::CustomTexture => self.render_custom_texture_editer(),
-                            TextureKind::PrefabTexture => self.render_prefab_texture_editer(),
-                        },
-                        Html::div(
-                            Attributes::new().class(Self::class("controller")),
-                            Events::new(),
-                            vec![Btn::primary(
-                                Attributes::new(),
-                                Events::new().on_click(|_| Msg::CreateTexure),
-                                vec![Html::text("作成")],
-                            )],
-                        ),
-                    ],
-                ),
-                self.render_modal(props),
-            ],
+            (
+                String::from("新規ブロック用テクスチャを作成"),
+                String::from(""),
+                vec![
+                    Html::div(
+                        Attributes::new().class(Self::class("base")),
+                        Events::new(),
+                        vec![
+                            Html::div(
+                                Attributes::new().class(Self::class("kind-list")),
+                                Events::new(),
+                                vec![
+                                    self.render_btn_to_select_kind(
+                                        TextureKind::CustomTexture,
+                                        "画像から作成",
+                                    ),
+                                    self.render_btn_to_select_kind(
+                                        TextureKind::PrefabTexture,
+                                        "作成済みの画像を選択",
+                                    ),
+                                ],
+                            ),
+                            match &self.selecting_kind {
+                                TextureKind::CustomTexture => self.render_custom_texture_editer(),
+                                TextureKind::PrefabTexture => self.render_prefab_texture_editer(),
+                            },
+                            Html::div(
+                                Attributes::new().class(Self::class("controller")),
+                                Events::new(),
+                                vec![Btn::primary(
+                                    Attributes::new(),
+                                    Events::new().on_click(self, |_| Msg::CreateTexure),
+                                    vec![Html::text("作成")],
+                                )],
+                            ),
+                        ],
+                    ),
+                    self.render_modal(),
+                ],
+            ),
         ))
     }
 }
 
 impl ModalCreateBlockTexture {
-    fn render_modal(&self, props: &Props) -> Html<Self> {
+    fn render_modal(&self) -> Html {
         match &self.showing_modal {
             ShowingModal::None => Common::none(),
             ShowingModal::SelectCustomTextureImage(direction) => ModalResource::empty(
+                self,
+                None,
                 modal_resource::Props {
-                    arena: ArenaMut::clone(&props.arena),
-                    world: BlockMut::clone(&props.world),
+                    arena: ArenaMut::clone(&self.arena),
+                    world: BlockMut::clone(&self.world),
                     filter: set! {BlockKind::ImageData},
                     is_selecter: true,
                     title: String::from(modal_resource::title::SELECT_TEXTURE),
@@ -312,9 +320,11 @@ impl ModalCreateBlockTexture {
                 }),
             ),
             ShowingModal::SelectPrefabTextureImage => ModalResource::empty(
+                self,
+                None,
                 modal_resource::Props {
-                    arena: ArenaMut::clone(&props.arena),
-                    world: BlockMut::clone(&props.world),
+                    arena: ArenaMut::clone(&self.arena),
+                    world: BlockMut::clone(&self.world),
                     filter: set! {BlockKind::ImageData},
                     is_selecter: true,
                     title: String::from(modal_resource::title::SELECT_BLOCK_TEXTURE),
@@ -334,7 +344,7 @@ impl ModalCreateBlockTexture {
         }
     }
 
-    fn render_btn_to_select_kind(&self, kind: TextureKind, text: impl Into<String>) -> Html<Self> {
+    fn render_btn_to_select_kind(&self, kind: TextureKind, text: impl Into<String>) -> Html {
         Btn::with_variant(
             if self.selecting_kind == kind {
                 btn::Variant::PrimaryLikeMenu
@@ -342,12 +352,12 @@ impl ModalCreateBlockTexture {
                 btn::Variant::LightLikeMenu
             },
             Attributes::new(),
-            Events::new().on_click(move |_| Msg::SetSelectingKind(kind)),
+            Events::new().on_click(self, move |_| Msg::SetSelectingKind(kind)),
             vec![Html::text(text)],
         )
     }
 
-    fn render_custom_texture_editer(&self) -> Html<Self> {
+    fn render_custom_texture_editer(&self) -> Html {
         Html::div(
             Attributes::new()
                 .class(Self::class("editer"))
@@ -364,7 +374,7 @@ impl ModalCreateBlockTexture {
         )
     }
 
-    fn render_custom_texture_cell(&self, direction: TextureDirection) -> Html<Self> {
+    fn render_custom_texture_cell(&self, direction: TextureDirection) -> Html {
         let img = match direction {
             TextureDirection::PX => self.custom_texture.texture_px.as_ref(),
             TextureDirection::PY => self.custom_texture.texture_py.as_ref(),
@@ -378,12 +388,12 @@ impl ModalCreateBlockTexture {
             Attributes::new()
                 .class(Self::class("texture-cell"))
                 .class(Self::class(&format!("texture-cell--{}", direction))),
-            Events::new().on_click(move |_| Msg::SelectCustomTextureImage(direction)),
+            Events::new().on_click(self, move |_| Msg::SelectCustomTextureImage(direction)),
             vec![
                 if let Some(src) = img.and_then(|img| img.map(|img| img.url().to_string())) {
                     Html::img(
                         Attributes::new()
-                            .draggable(false)
+                            .draggable("false")
                             .class(Common::bg_transparent())
                             .src(src),
                         Events::new(),
@@ -404,7 +414,7 @@ impl ModalCreateBlockTexture {
         )
     }
 
-    fn render_prefab_texture_editer(&self) -> Html<Self> {
+    fn render_prefab_texture_editer(&self) -> Html {
         Html::div(
             Attributes::new()
                 .class(Self::class("editer"))
@@ -417,7 +427,7 @@ impl ModalCreateBlockTexture {
             {
                 Html::img(
                     Attributes::new()
-                        .draggable(false)
+                        .draggable("false")
                         .src(src)
                         .class(Self::class("prefab-img"))
                         .class(Common::bg_transparent()),
@@ -427,7 +437,7 @@ impl ModalCreateBlockTexture {
             } else {
                 Btn::secondary(
                     Attributes::new(),
-                    Events::new().on_click(|_| Msg::SelectPrefabTextureImage),
+                    Events::new().on_click(self, |_| Msg::SelectPrefabTextureImage),
                     vec![Html::text("画像を選択")],
                 )
             }],

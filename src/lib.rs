@@ -12,6 +12,7 @@ extern crate kagura;
 extern crate kanaria;
 extern crate lazy_static;
 extern crate ndarray;
+extern crate nusa;
 extern crate ordered_float;
 extern crate peg;
 extern crate regex;
@@ -34,9 +35,10 @@ mod arena;
 mod component;
 mod debug;
 mod model;
+mod table;
 
 use component::{app, App};
-use kagura::{component::Sub, prelude::*};
+use nusa::prelude::*;
 use wasm_bindgen::prelude::*;
 
 #[inline]
@@ -53,7 +55,8 @@ pub fn main() {
         .get_element_by_id("app")
         .unwrap();
 
-    Kagura::mount(entry_point.into(), || {
-        vec![App::empty(app::Props {}, Sub::none())]
-    });
+    wasm_bindgen_futures::spawn_local(kagura::Runtime::run(nusa::dom_node::BasicDomNode::new(
+        entry_point.into(),
+        |this| vec![App::empty(this, None, app::Props {}, Sub::none())],
+    )));
 }

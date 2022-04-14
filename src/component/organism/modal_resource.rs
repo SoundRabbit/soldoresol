@@ -1,22 +1,20 @@
+use super::atom::common::Common;
 use super::atom::{
     attr,
     btn::{self, Btn},
-    heading::{self, Heading},
-    text,
 };
 use super::molecule::modal::{self, Modal};
 use super::organism::modal_create_block_texture::{self, ModalCreateBlockTexture};
-use super::template::common::Common;
+use super::NoProps;
 use crate::arena::{block, resource, ArenaMut, BlockKind, BlockMut, BlockRef};
 use crate::libs::random_id::U128Id;
 use isaribi::{
     style,
     styled::{Style, Styled},
 };
-use kagura::component::{Cmd, Sub};
 use kagura::prelude::*;
+use nusa::prelude::*;
 use std::collections::HashSet;
-use std::rc::Rc;
 
 pub mod title {
     pub static VIEW_ALL_RESOURCE: &str = "リソース一覧";
@@ -73,7 +71,10 @@ pub struct ModalResource {
     arena: ArenaMut,
     world: BlockMut<block::World>,
     selected_kind: BlockKind,
+    filter: HashSet<BlockKind>,
     selected_resource: Resource,
+    is_selecter: bool,
+    title: String,
     showing_modal: ShowingModal,
 }
 
@@ -85,11 +86,13 @@ enum ShowingModal {
 impl Component for ModalResource {
     type Props = Props;
     type Msg = Msg;
-    type Sub = On;
+    type Event = On;
 }
 
+impl HtmlComponent for ModalResource {}
+
 impl Constructor for ModalResource {
-    fn constructor(props: &Props) -> Self {
+    fn constructor(props: Props) -> Self {
         let selected_kind = if props.filter.is_empty() {
             BlockKind::ImageData
         } else if props.filter.contains(&BlockKind::ImageData) {
@@ -101,30 +104,29 @@ impl Constructor for ModalResource {
         };
 
         Self {
-            arena: ArenaMut::clone(&props.arena),
-            world: BlockMut::clone(&props.world),
+            arena: props.arena,
+            world: props.world,
+            filter: props.filter,
             selected_kind,
             selected_resource: Resource::None,
+            is_selecter: props.is_selecter,
+            title: props.title,
             showing_modal: ShowingModal::None,
         }
     }
 }
 
 impl Update for ModalResource {
-    fn on_assemble(&mut self, props: &Props) -> Cmd<Self> {
-        self.on_load(props)
-    }
-
-    fn on_load(&mut self, props: &Props) -> Cmd<Self> {
-        self.arena = ArenaMut::clone(&props.arena);
-        self.world = BlockMut::clone(&props.world);
+    fn on_load(self: Pin<&mut Self>, props: Props) -> Cmd<Self> {
+        self.arena = props.arena;
+        self.world = props.world;
 
         Cmd::none()
     }
 
-    fn update(&mut self, _props: &Props, msg: Msg) -> Cmd<Self> {
+    fn update(self: Pin<&mut Self>, msg: Msg) -> Cmd<Self> {
         match msg {
-            Msg::Sub(sub) => Cmd::sub(sub),
+            Msg::Sub(sub) => Cmd::submit(sub),
             Msg::CloseModal => {
                 self.showing_modal = ShowingModal::None;
                 Cmd::none()
@@ -146,7 +148,7 @@ impl Update for ModalResource {
 
                 self.showing_modal = ShowingModal::None;
 
-                Cmd::sub(On::UpdateBlocks {
+                Cmd::submit(On::UpdateBlocks {
                     insert: set! { texture_id },
                     update: set! { self.world.id() },
                 })
@@ -162,72 +164,77 @@ impl Update for ModalResource {
             Msg::SelectResource(resource) => {
                 crate::debug::log_1("Msg::SelectResource");
                 match resource {
-                    Resource::None => Cmd::sub(On::SelectNone),
-                    Resource::ImageData(data) => Cmd::sub(On::SelectImageData(data)),
-                    Resource::BlockTexture(data) => Cmd::sub(On::SelectBlockTexture(data)),
+                    Resource::None => Cmd::submit(On::SelectNone),
+                    Resource::ImageData(data) => Cmd::submit(On::SelectImageData(data)),
+                    Resource::BlockTexture(data) => Cmd::submit(On::SelectBlockTexture(data)),
                 }
             }
         }
     }
 }
 
-impl Render for ModalResource {
-    fn render(&self, props: &Props, _: Vec<Html<Self>>) -> Html<Self> {
-        Self::styled(Modal::with_children(
-            modal::Props {
-                header_title: props.title.clone(),
-                footer_message: String::from(""),
-            },
+impl Render<Html> for ModalResource {
+    type Children = ();
+    fn render(&self, _: Self::Children) -> Html {
+        Self::styled(Modal::new(
+            self,
+            None,
+            NoProps(),
             Sub::map(|sub| match sub {
                 modal::On::Close => Msg::Sub(On::Close),
             }),
-            vec![
-                Html::div(
-                    Attributes::new().class(Self::class("base")),
-                    Events::new(),
-                    vec![
-                        Html::div(
-                            Attributes::new().class(Self::class("kind-list")),
-                            Events::new(),
-                            vec![
-                                self.render_btn_to_select_kind(props, BlockKind::ImageData, "画像"),
-                                self.render_btn_to_select_kind(
-                                    props,
-                                    BlockKind::BlockTexture,
-                                    "ブロック用テクスチャ",
-                                ),
-                            ],
-                        ),
-                        Html::div(
-                            Attributes::new().class(Self::class("resource-list")),
-                            Events::new(),
-                            match &self.selected_kind {
-                                BlockKind::ImageData => self.render_list_image_data(props),
-                                BlockKind::BlockTexture => self.render_list_block_texture(props),
-                                _ => vec![],
-                            },
-                        ),
-                        Html::div(
-                            Attributes::new().class(Self::class("detail")),
-                            Events::new(),
-                            vec![],
-                        ),
-                    ],
-                ),
-                self.render_modal(props),
-            ],
+            (
+                self.title.clone(),
+                String::from(""),
+                vec![
+                    Html::div(
+                        Attributes::new().class(Self::class("base")),
+                        Events::new(),
+                        vec![
+                            Html::div(
+                                Attributes::new().class(Self::class("kind-list")),
+                                Events::new(),
+                                vec![
+                                    self.render_btn_to_select_kind(BlockKind::ImageData, "画像"),
+                                    self.render_btn_to_select_kind(
+                                        BlockKind::BlockTexture,
+                                        "ブロック用テクスチャ",
+                                    ),
+                                ],
+                            ),
+                            Html::div(
+                                Attributes::new().class(Self::class("resource-list")),
+                                Events::new(),
+                                match &self.selected_kind {
+                                    BlockKind::ImageData => self.render_list_image_data(),
+                                    BlockKind::BlockTexture => self.render_list_block_texture(),
+                                    _ => vec![],
+                                },
+                            ),
+                            Html::div(
+                                Attributes::new().class(Self::class("detail")),
+                                Events::new(),
+                                vec![],
+                            ),
+                        ],
+                    ),
+                    self.render_modal(),
+                ],
+            ),
         ))
     }
 }
 
 impl ModalResource {
-    fn render_modal(&self, props: &Props) -> Html<Self> {
+    fn render_modal(&self) -> Html {
         match &self.showing_modal {
             ShowingModal::None => Html::none(),
             ShowingModal::CreateBlockTexture => ModalCreateBlockTexture::empty(
+                self,
+                None,
                 modal_create_block_texture::Props {
-                    arena: ArenaMut::clone(&props.arena),
-                    world: BlockMut::clone(&props.world),
+                    arena: ArenaMut::clone(&self.arena),
+                    world: BlockMut::clone(&self.world),
                 },
                 Sub::map(|sub| match sub {
                     modal_create_block_texture::On::Close => Msg::CloseModal,
@@ -242,13 +249,8 @@ impl ModalResource {
         }
     }
 
-    fn render_btn_to_select_kind(
-        &self,
-        props: &Props,
-        kind: BlockKind,
-        text: impl Into<String>,
-    ) -> Html<Self> {
-        if props.filter.is_empty() || props.filter.contains(&kind) {
+    fn render_btn_to_select_kind(&self, kind: BlockKind, text: impl Into<String>) -> Html {
+        if self.filter.is_empty() || self.filter.contains(&kind) {
             Btn::with_variant(
                 if self.selected_kind == kind {
                     btn::Variant::PrimaryLikeMenu
@@ -256,7 +258,7 @@ impl ModalResource {
                     btn::Variant::LightLikeMenu
                 },
                 Attributes::new(),
-                Events::new().on_click(move |_| Msg::SetSelectedKind(kind)),
+                Events::new().on_click(self, move |_| Msg::SetSelectedKind(kind)),
                 vec![Html::text(text)],
             )
         } else {
@@ -264,12 +266,12 @@ impl ModalResource {
         }
     }
 
-    fn render_list_image_data(&self, props: &Props) -> Vec<Html<Self>> {
+    fn render_list_image_data(&self) -> Vec<Html> {
         self.world
             .map(|world| {
                 vec![
-                    if props.is_selecter {
-                        self.render_cell_none(props, "画像無し")
+                    if self.is_selecter {
+                        self.render_cell_none("画像無し")
                     } else {
                         Html::none()
                     },
@@ -277,21 +279,21 @@ impl ModalResource {
                         world
                             .image_data_resources()
                             .iter()
-                            .map(|data| self.render_cell_image_data(props, BlockRef::clone(&data)))
+                            .map(|data| self.render_cell_image_data(BlockRef::clone(&data)))
                             .collect(),
                     ),
-                    Self::render_btn_to_add_cell(BlockKind::ImageData),
+                    self.render_btn_to_add_cell(BlockKind::ImageData),
                 ]
             })
             .unwrap_or(vec![])
     }
 
-    fn render_list_block_texture(&self, props: &Props) -> Vec<Html<Self>> {
+    fn render_list_block_texture(&self) -> Vec<Html> {
         self.world
             .map(|world| {
                 vec![
-                    if props.is_selecter {
-                        self.render_cell_none(props, "テクスチャ無し")
+                    if self.is_selecter {
+                        self.render_cell_none("テクスチャ無し")
                     } else {
                         Html::none()
                     },
@@ -299,21 +301,19 @@ impl ModalResource {
                         world
                             .block_texture_resources()
                             .iter()
-                            .map(|data| {
-                                self.render_cell_block_texture(props, BlockRef::clone(&data))
-                            })
+                            .map(|data| self.render_cell_block_texture(BlockRef::clone(&data)))
                             .collect(),
                     ),
-                    Self::render_btn_to_add_cell(BlockKind::BlockTexture),
+                    self.render_btn_to_add_cell(BlockKind::BlockTexture),
                 ]
             })
             .unwrap_or(vec![])
     }
 
-    fn render_cell_none(&self, props: &Props, name: impl Into<String>) -> Html<Self> {
+    fn render_cell_none(&self, name: impl Into<String>) -> Html {
         Html::div(
             Attributes::new().class(Self::class("cell")),
-            Events::new().on_click(move |_| Msg::SetSelectedResource(Resource::None)),
+            Events::new().on_click(self, move |_| Msg::SetSelectedResource(Resource::None)),
             vec![
                 Html::div(
                     Attributes::new().class(Self::class("cell-img")),
@@ -321,8 +321,8 @@ impl ModalResource {
                     vec![],
                 ),
                 attr::span(Attributes::new().class(Self::class("text")), name),
-                if props.is_selecter {
-                    Self::render_btn_to_select_cell(Resource::None)
+                if self.is_selecter {
+                    self.render_btn_to_select_cell(Resource::None)
                 } else {
                     Html::none()
                 },
@@ -330,23 +330,19 @@ impl ModalResource {
         )
     }
 
-    fn render_cell_image_data(
-        &self,
-        props: &Props,
-        data: BlockRef<resource::ImageData>,
-    ) -> Html<Self> {
+    fn render_cell_image_data(&self, data: BlockRef<resource::ImageData>) -> Html {
         BlockRef::clone(&data)
             .map(|this| {
                 Html::div(
                     Attributes::new().class(Self::class("cell")),
-                    Events::new().on_click({
+                    Events::new().on_click(self, {
                         let data = BlockRef::clone(&data);
                         move |_| Msg::SetSelectedResource(Resource::ImageData(data))
                     }),
                     vec![
                         Html::img(
                             Attributes::new()
-                                .draggable(false)
+                                .draggable("false")
                                 .class(Self::class("cell-img"))
                                 .class(Common::bg_transparent())
                                 .src(this.url().to_string()),
@@ -354,8 +350,8 @@ impl ModalResource {
                             vec![],
                         ),
                         attr::span(Attributes::new().class(Self::class("text")), this.name()),
-                        if props.is_selecter {
-                            Self::render_btn_to_select_cell(Resource::ImageData(data))
+                        if self.is_selecter {
+                            self.render_btn_to_select_cell(Resource::ImageData(data))
                         } else {
                             Html::none()
                         },
@@ -365,23 +361,19 @@ impl ModalResource {
             .unwrap_or(Html::none())
     }
 
-    fn render_cell_block_texture(
-        &self,
-        props: &Props,
-        data: BlockRef<resource::BlockTexture>,
-    ) -> Html<Self> {
+    fn render_cell_block_texture(&self, data: BlockRef<resource::BlockTexture>) -> Html {
         BlockRef::clone(&data)
             .map(|this| {
                 Html::div(
                     Attributes::new().class(Self::class("cell")),
-                    Events::new().on_click({
+                    Events::new().on_click(self, {
                         let data = BlockRef::clone(&data);
                         move |_| Msg::SetSelectedResource(Resource::BlockTexture(data))
                     }),
                     vec![
                         Html::img(
                             Attributes::new()
-                                .draggable(false)
+                                .draggable("false")
                                 .class(Self::class("cell-img"))
                                 .class(Common::bg_transparent())
                                 .src(this.data().url().to_string()),
@@ -392,8 +384,8 @@ impl ModalResource {
                             Attributes::new().class(Self::class("text")),
                             this.data().name(),
                         ),
-                        if props.is_selecter {
-                            Self::render_btn_to_select_cell(Resource::BlockTexture(data))
+                        if self.is_selecter {
+                            self.render_btn_to_select_cell(Resource::BlockTexture(data))
                         } else {
                             Html::none()
                         },
@@ -403,18 +395,18 @@ impl ModalResource {
             .unwrap_or(Html::none())
     }
 
-    fn render_btn_to_select_cell(resource: Resource) -> Html<Self> {
+    fn render_btn_to_select_cell(&self, resource: Resource) -> Html {
         Btn::secondary(
             Attributes::new(),
-            Events::new().on_click(move |_| Msg::SelectResource(resource)),
+            Events::new().on_click(self, move |_| Msg::SelectResource(resource)),
             vec![Html::text("選択")],
         )
     }
 
-    fn render_btn_to_add_cell(kind: BlockKind) -> Html<Self> {
+    fn render_btn_to_add_cell(&self, kind: BlockKind) -> Html {
         Btn::secondary(
             Attributes::new().class(Self::class("cell")),
-            Events::new().on_click(move |_| Msg::AddResource(kind)),
+            Events::new().on_click(self, move |_| Msg::AddResource(kind)),
             vec![Html::text("追加")],
         )
     }

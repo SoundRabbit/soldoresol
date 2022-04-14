@@ -4,6 +4,7 @@ use isaribi::{
     styled::{Style, Styled},
 };
 use kagura::prelude::*;
+use nusa::prelude::*;
 
 pub struct Props {}
 
@@ -16,7 +17,7 @@ pub struct Card {}
 impl Component for Card {
     type Props = Props;
     type Msg = Msg;
-    type Sub = On;
+    type Event = On;
 }
 
 impl Constructor for Card {
@@ -25,10 +26,13 @@ impl Constructor for Card {
     }
 }
 
+impl HtmlComponent for Card {}
+
 impl Update for Card {}
 
-impl Render for Card {
-    fn render(&self, _: &Props, children: Vec<Html<Self>>) -> Html<Self> {
+impl Render<Html> for Card {
+    type Children = Vec<Html>;
+    fn render(&self, _: &Props, children: Self::Children) -> Html {
         Self::styled(Html::div(
             Attributes::new()
                 .class(Self::class("base"))

@@ -3,73 +3,59 @@ use super::atom::{
     heading::{self, Heading},
 };
 use super::molecule::modal::{self, Modal};
+use super::NoProps;
 use isaribi::{
     style,
     styled::{Style, Styled},
 };
-use kagura::component::{Cmd, Sub};
 use kagura::prelude::*;
-
-pub struct Props {
-    pub is_showing: Option<bool>,
-}
+use nusa::prelude::*;
 
 pub enum Msg {
-    CloseSelf,
+    Sub(On),
 }
 
-pub enum On {}
-
-pub struct ModalNotification {
-    is_showing: bool,
+pub enum On {
+    Close,
 }
+
+pub struct ModalNotification {}
 
 impl Component for ModalNotification {
-    type Props = Props;
+    type Props = NoProps;
     type Msg = Msg;
-    type Sub = On;
+    type Event = On;
 }
 
+impl HtmlComponent for ModalNotification {}
+
 impl Constructor for ModalNotification {
-    fn constructor(_: &Props) -> Self {
-        Self { is_showing: true }
+    fn constructor(_: Self::Props) -> Self {
+        Self {}
     }
 }
 
 impl Update for ModalNotification {
-    fn on_assemble(&mut self, _: &Props) -> Cmd<Self> {
-        crate::debug::log_1("on_assemble");
-        Cmd::none()
-    }
-
-    fn on_load(&mut self, _: &Props) -> Cmd<Self> {
-        crate::debug::log_1("on_load");
-        Cmd::none()
-    }
-
-    fn update(&mut self, _: &Props, msg: Self::Msg) -> Cmd<Self> {
+    fn update(self: Pin<&mut Self>, msg: Self::Msg) -> Cmd<Self> {
         match msg {
-            Msg::CloseSelf => {
-                crate::debug::log_1(format!("{} -> false", self.is_showing));
-                self.is_showing = false;
-                Cmd::none()
-            }
+            Msg::Sub(sub) => Cmd::submit(sub),
         }
     }
 }
 
-impl Render for ModalNotification {
-    fn render(&self, props: &Props, _: Vec<Html<Self>>) -> Html<Self> {
-        crate::debug::log_1("render");
-        if props.is_showing.unwrap_or(self.is_showing) {
-            Self::styled(Modal::with_children(
-                modal::Props {
-                    header_title: String::from("更新情報"),
-                    footer_message: String::from("開発者 twitter：@SoundRabbit_"),
-                },
-                Sub::map(|sub| match sub {
-                    modal::On::Close => Msg::CloseSelf,
-                }),
+impl Render<Html> for ModalNotification {
+    type Children = ();
+    fn render(&self, _: Self::Children) -> Html {
+        Self::styled(Modal::new(
+            self,
+            None,
+            NoProps(),
+            Sub::map(|sub| match sub {
+                modal::On::Close => Msg::Sub(On::Close),
+            }),
+            (
+                String::from("更新情報"),
+                String::from("開発者 twitter：@SoundRabbit_"),
                 vec![Html::div(
                     Attributes::new().class(Self::class("base")),
                     Events::new(),
@@ -114,19 +100,17 @@ impl Render for ModalNotification {
                         ),
                         Html::div(
                             Attributes::new().class(Self::class("container")),
-                            Events::new().on_click(|_| Msg::CloseSelf),
+                            Events::new().on_click(self, |_| Msg::Sub(On::Close)),
                             vec![Btn::primary(
                                 Attributes::new(),
-                                Events::new().on_click(|_| Msg::CloseSelf),
+                                Events::new().on_click(self, |_| Msg::Sub(On::Close)),
                                 vec![Html::text("閉じる")],
                             )],
                         ),
                     ],
                 )],
-            ))
-        } else {
-            Html::none()
-        }
+            ),
+        ))
     }
 }
 

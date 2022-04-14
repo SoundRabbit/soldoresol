@@ -1,14 +1,14 @@
-use kagura::prelude::*;
+use nusa::prelude::*;
 
-pub fn span<C: Component>(text: impl Into<String>) -> Html<C> {
+pub fn span(text: impl Into<String>) -> Html {
     Html::span(Attributes::new(), Events::new(), vec![Html::text(text)])
 }
 
-pub fn div<C: Component>(text: impl Into<String>) -> Html<C> {
+pub fn div(text: impl Into<String>) -> Html {
     Html::div(Attributes::new(), Events::new(), vec![Html::text(text)])
 }
 
-pub fn label<C: Component>(text: impl Into<String>, for_: impl Into<String>) -> Html<C> {
+pub fn label(text: impl Into<String>, for_: impl Into<String>) -> Html {
     Html::label(
         Attributes::new().string("for", for_),
         Events::new(),
@@ -16,6 +16,6 @@ pub fn label<C: Component>(text: impl Into<String>, for_: impl Into<String>) -> 
     )
 }
 
-pub fn i<C: Component>(text: impl Into<String>) -> Html<C> {
+pub fn i(text: impl Into<String>) -> Html {
     Html::i(Attributes::new(), Events::new(), vec![Html::text(text)])
 }

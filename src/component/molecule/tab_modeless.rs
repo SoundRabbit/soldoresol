@@ -1,6 +1,7 @@
 use super::atom::btn::{self, Btn};
 use super::atom::dropdown::{self, Dropdown};
-use super::atom::tab_btn::{self, TabBtn};
+use super::atom::fa;
+use super::atom::tab_btn::TabBtn;
 use super::atom::text;
 use crate::libs::color::color_system;
 use crate::libs::random_id::U128Id;
@@ -9,8 +10,8 @@ use isaribi::{
     style,
     styled::{Style, Styled},
 };
-use kagura::component::{Cmd, Sub};
 use kagura::prelude::*;
+use nusa::prelude::*;
 use std::cell::RefCell;
 use std::rc::Rc;
 use wasm_bindgen::JsCast;
@@ -78,7 +79,7 @@ pub enum On<Sub> {
     Sub(Sub),
 }
 
-pub struct TabModeless<Content: Constructor, TabName: Constructor<Props = Content::Props>>
+pub struct TabModeless<Content: HtmlComponent, TabName: HtmlComponent<Props = Content::Props>>
 where
     Content::Props: Clone,
 {
@@ -86,6 +87,9 @@ where
     loc: [f64; 2],
     dragging: Option<([i32; 2], DragType)>,
     container_rect: Rc<ContainerRect>,
+    modeless_id: U128Id,
+    z_index: usize,
+    contents: Rc<RefCell<SelectList<Content::Props>>>,
     _phantom_content: std::marker::PhantomData<Content>,
     _phantom_tab_name: std::marker::PhantomData<TabName>,
 }
@@ -121,22 +125,29 @@ impl std::fmt::Display for DragDirection {
     }
 }
 
-impl<Content: Constructor, TabName: Constructor<Props = Content::Props>> Component
+impl<Content: HtmlComponent, TabName: HtmlComponent<Props = Content::Props>> Component
     for TabModeless<Content, TabName>
 where
     Content::Props: Clone,
 {
     type Props = Props<Content::Props>;
-    type Msg = Msg<Content::Sub>;
-    type Sub = On<Content::Sub>;
+    type Msg = Msg<Content::Event>;
+    type Event = On<Content::Event>;
 }
 
-impl<Content: Constructor, TabName: Constructor<Props = Content::Props>> Constructor
+impl<Content: HtmlComponent, TabName: HtmlComponent<Props = Content::Props>> HtmlComponent
     for TabModeless<Content, TabName>
 where
     Content::Props: Clone,
 {
-    fn constructor(props: &Props<Content::Props>) -> Self {
+}
+
+impl<Content: HtmlComponent, TabName: HtmlComponent<Props = Content::Props>> Constructor
+    for TabModeless<Content, TabName>
+where
+    Content::Props: Clone,
+{
+    fn constructor(props: Props<Content::Props>) -> Self {
         let client_x = props.page_x as f64 - props.container_rect.left;
         let client_y = props.page_y as f64 - props.container_rect.top;
         let loc = [client_x.max(0.0), client_y.max(0.0)];
@@ -146,6 +157,9 @@ where
             size: props.size.clone(),
             dragging: None,
             container_rect: Rc::clone(&props.container_rect),
+            modeless_id: props.modeless_id,
+            contents: props.contents,
+            z_index: props.z_index,
             _phantom_content: std::marker::PhantomData,
             _phantom_tab_name: std::marker::PhantomData,
         }
@@ -156,6 +170,7 @@ macro_rules! on_drag {
     ($dragging:expr) => {{
         let dragging = $dragging;
         move |e| {
+            let e = unwrap!(e.dyn_into::<web_sys::MouseEvent>().ok(); Msg::NoOp);
             e.stop_propagation();
             if dragging {
                 Msg::Drag {
@@ -169,12 +184,12 @@ macro_rules! on_drag {
     }};
 }
 
-impl<Content: Constructor, TabName: Constructor<Props = Content::Props>> Update
+impl<Content: HtmlComponent, TabName: HtmlComponent<Props = Content::Props>> Update
     for TabModeless<Content, TabName>
 where
     Content::Props: Clone,
 {
-    fn on_load(&mut self, props: &Props<Content::Props>) -> Cmd<Self> {
+    fn on_load(self: Pin<&mut Self>, props: Props<Content::Props>) -> Cmd<Self> {
         if props.container_rect.width != self.container_rect.width {
             let margin_ratio = self.loc[0] / (self.container_rect.width - self.size[0]);
             let margin = props.container_rect.width - self.size[0];
@@ -187,22 +202,25 @@ where
             self.loc[1] = margin_ratio * margin;
         }
 
-        self.container_rect = Rc::clone(&props.container_rect);
+        self.container_rect = props.container_rect;
+        self.modeless_id = props.modeless_id;
+        self.contents = props.contents;
+        self.z_index = props.z_index;
 
         Cmd::none()
     }
 
-    fn update(&mut self, props: &Props<Content::Props>, msg: Msg<Content::Sub>) -> Cmd<Self> {
+    fn update(self: Pin<&mut Self>, msg: Msg<Content::Event>) -> Cmd<Self> {
         match msg {
             Msg::NoOp => Cmd::none(),
-            Msg::Sub(sub) => Cmd::sub(sub),
-            Msg::CloseSelf => Cmd::sub(On::Close(U128Id::clone(&props.modeless_id))),
-            Msg::SetMinimizedSelf(is_minimized) => Cmd::sub(On::SetMinimized(
-                U128Id::clone(&props.modeless_id),
+            Msg::Sub(sub) => Cmd::submit(sub),
+            Msg::CloseSelf => Cmd::submit(On::Close(U128Id::clone(&self.modeless_id))),
+            Msg::SetMinimizedSelf(is_minimized) => Cmd::submit(On::SetMinimized(
+                U128Id::clone(&self.modeless_id),
                 is_minimized,
             )),
             Msg::CloneTab(tab_idx) => {
-                let mut contents = props.contents.borrow_mut();
+                let mut contents = self.contents.borrow_mut();
                 if let Some(tab) = contents.get(tab_idx) {
                     let tab = tab.clone();
                     contents.insert(tab_idx + 1, tab);
@@ -210,9 +228,9 @@ where
                 Cmd::none()
             }
             Msg::CloseTab(tab_idx) => {
-                props.contents.borrow_mut().remove(tab_idx);
-                if props.contents.borrow().len() == 0 {
-                    Cmd::sub(On::Close(U128Id::clone(&props.modeless_id)))
+                self.contents.borrow_mut().remove(tab_idx);
+                if self.contents.borrow().len() == 0 {
+                    Cmd::submit(On::Close(U128Id::clone(&self.modeless_id)))
                 } else {
                     Cmd::none()
                 }
@@ -223,24 +241,24 @@ where
                 drag_type,
             } => {
                 self.dragging = Some(([page_x, page_y], drag_type));
-                Cmd::sub(On::Focus(U128Id::clone(&props.modeless_id)))
+                Cmd::submit(On::Focus(U128Id::clone(&self.modeless_id)))
             }
             Msg::DragEnd => {
                 self.dragging = None;
-                Cmd::sub(On::Focus(U128Id::clone(&props.modeless_id)))
+                Cmd::submit(On::Focus(U128Id::clone(&self.modeless_id)))
             }
             Msg::DisconnectTab {
                 event_id,
                 tab_idx,
                 is_selected,
-            } => Cmd::sub(On::DisconnectTab {
+            } => Cmd::submit(On::DisconnectTab {
                 event_id,
                 tab_idx,
-                modeless_id: U128Id::clone(&props.modeless_id),
+                modeless_id: U128Id::clone(&self.modeless_id),
                 is_selected,
             }),
             Msg::SetSelectedTabIdx(tab_idx) => {
-                props.contents.borrow_mut().set_selected_idx(tab_idx);
+                self.contents.borrow_mut().set_selected_idx(tab_idx);
                 Cmd::none()
             }
             Msg::Drag { page_x, page_y } => {
@@ -322,9 +340,9 @@ where
                         DragType::Move => {
                             let page_x = (self.loc[0] + self.container_rect.left).round() as i32;
                             let page_y = (self.loc[1] + self.container_rect.top).round() as i32;
-                            Cmd::sub(On::Move(page_x, page_y))
+                            Cmd::submit(On::Move(page_x, page_y))
                         }
-                        _ => Cmd::sub(On::Resize(self.size.clone())),
+                        _ => Cmd::submit(On::Resize(self.size.clone())),
                     }
                 } else {
                     cmd = Cmd::none();
@@ -344,17 +362,17 @@ where
     }
 }
 
-impl<Content: Constructor, TabName: Constructor<Props = Content::Props>> Render
+impl<Content: HtmlComponent, TabName: HtmlComponent<Props = Content::Props>> Render<Html>
     for TabModeless<Content, TabName>
 where
     Content::Props: Clone,
 {
-    fn render(&self, props: &Props<Content::Props>, _: Vec<Html<Self>>) -> Html<Self> {
+    type Children = ();
+    fn render(&self, _: ()) -> Html {
         Self::styled(Html::div(
             Attributes::new()
-                .key_name(props.modeless_id.to_string())
                 .class(Self::class("base"))
-                .style("z-index", format!("{}", props.z_index))
+                .style("z-index", format!("{}", self.z_index))
                 .style("left", format!("{}px", self.loc[0].round() as i32))
                 .style("top", format!("{}px", self.loc[1].round() as i32))
                 .style("width", format!("{}px", self.size[0].round() as i32))
@@ -362,7 +380,8 @@ where
             {
                 let mut events = Events::new();
 
-                events = events.on_mousedown(|e| {
+                events = events.on_mousedown(self, |e| {
+                    let e = unwrap!(e.dyn_into::<web_sys::MouseEvent>().ok(); Msg::NoOp);
                     e.stop_propagation();
                     Msg::DragStart {
                         page_x: e.page_x(),
@@ -371,17 +390,17 @@ where
                     }
                 });
 
-                events = events.on_mouseup(|e| {
+                events = events.on_mouseup(self, |e| {
                     e.stop_propagation();
                     Msg::DragEnd
                 });
 
                 if self.dragging.is_some() {
-                    events = events.on_mousemove(on_drag!(self.dragging.is_some()));
-                    events = events.on_mouseleave(on_drag!(self.dragging.is_some()));
+                    events = events.on_mousemove(self, on_drag!(self.dragging.is_some()));
+                    events = events.on_mouseleave(self, on_drag!(self.dragging.is_some()));
                 }
 
-                events = events.on("wheel", |e| {
+                events = events.on("wheel",self, |e| {
                     e.stop_propagation();
                     Msg::NoOp
                 });
@@ -392,31 +411,36 @@ where
                 Html::div(
                     Attributes::new().class(Self::class("header")),
                     Events::new()
-                        .on_dragover(|e| {
+                        .on_dragover(self, |e| {
                             e.prevent_default();
                             Msg::NoOp
                         })
-                        .on_drop({let modeless_id = U128Id::clone(&props.modeless_id);move |e| {
-                            Self::on_drop_tab(None, e,modeless_id)
-                        }}),
+                        .on_drop(self, {
+                            let modeless_id = U128Id::clone(&self.modeless_id);
+                            move |e| {
+                                let e = unwrap!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
+                                Self::on_drop_tab(None, e,modeless_id)
+                            }
+                        }),
                     vec![
                         Html::div(Attributes::new().class(Self::class("header-tabs")),Events::new(),
-                        props
+                        self
                             .contents
                             .borrow()
                             .iter()
                             .enumerate()
                             .map(|(tab_idx, content)| {
-                                let is_selected = tab_idx == props.contents.borrow().selected_idx();
+                                let is_selected = tab_idx == self.contents.borrow().selected_idx();
                                 TabBtn::new(
                                     true,
                                     is_selected,
                                     Attributes::new(),
                                     Events::new()
-                                    .on_mousedown(|e|{ e.stop_propagation(); Msg::NoOp})
-                                    .on_dragstart(
+                                    .on_mousedown(self, |e|{ e.stop_propagation(); Msg::NoOp})
+                                    .on_dragstart(self,
                                         move |e| {
                                         e.stop_propagation();
+                                        let e = unwrap!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
                                         let data_transfer = unwrap!(e.data_transfer(); Msg::NoOp);
                                         let event_id = U128Id::new();
                                         unwrap!(
@@ -430,26 +454,28 @@ where
                                             tab_idx,
                                             is_selected
                                         }
-                                    }).on_drop({
-                                        let modeless_id = U128Id::clone(&props.modeless_id);
+                                    }).on_drop(self, {
+                                        let modeless_id = U128Id::clone(&self.modeless_id);
                                         move |e| {
+                                            let e = unwrap!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
                                             Self::on_drop_tab(Some(tab_idx), e,modeless_id)
                                         }
-                                    }).on_click(move |_| Msg::SetSelectedTabIdx(tab_idx)),
-                                    vec![TabName::empty(Clone::clone(content), Sub::none())],
+                                    }).on_click(self, move |_| Msg::SetSelectedTabIdx(tab_idx)),
+                                    vec![TabName::empty(self, None, Clone::clone(content), Sub::none())],
                                 )
                             })
                             .collect()
                         ),
-                        Dropdown::with_children(
+                        Dropdown::new(
+                            self,
+                            None,
                             dropdown::Props {
                                 direction: dropdown::Direction::BottomLeft,
-                                text: dropdown::Text::Menu,
                                 toggle_type: dropdown::ToggleType::Click,
                                 variant: btn::Variant::TransparentDark,
                             },
                             Sub::none(),
-                            vec![
+                            (vec![fa::fas_i("fa-ellipsis-vertical")],vec![
                                 Html::span(
                                     Attributes::new()
                                         .class(Dropdown::class("menu-heading"))
@@ -459,16 +485,16 @@ where
                                 ),
                                 Btn::menu_as_secondary(
                                     Attributes::new(),
-                                    Events::new().on_click({
-                                        let selected_tab_idx = props.contents.borrow().selected_idx();
+                                    Events::new().on_click(self,{
+                                        let selected_tab_idx = self.contents.borrow().selected_idx();
                                         move |_| Msg::CloneTab(selected_tab_idx)
                                     }),
                                     vec![Html::text("現在のタブを複製")]
                                 ),
                                 Btn::menu_as_secondary(
                                     Attributes::new(),
-                                    Events::new().on_click({
-                                        let selected_tab_idx = props.contents.borrow().selected_idx();
+                                    Events::new().on_click(self,{
+                                        let selected_tab_idx = self.contents.borrow().selected_idx();
                                         move |_| Msg::CloseTab(selected_tab_idx)
                                     }),
                                     vec![Html::text("現在のタブを閉じる")]
@@ -482,29 +508,29 @@ where
                                 ),
                                 Btn::menu_as_secondary(
                                     Attributes::new(),
-                                    Events::new().on_click(|_| Msg::SetMinimizedSelf(true)),
+                                    Events::new().on_click(self,|_| Msg::SetMinimizedSelf(true)),
                                     vec![Html::text("ウィンドウを最小化")]
                                 ),
                                 Btn::menu_as_secondary(
                                     Attributes::new(),
-                                    Events::new().on_click(|_| Msg::CloseSelf),
+                                    Events::new().on_click(self,|_| Msg::CloseSelf),
                                     vec![Html::text("ウィンドウを閉じる")]
                                 ),
-                            ]
+                            ])
                         )
                     ]
                 ),
                 Html::div(
                     Attributes::new().class(Self::class("content")),
-                    Events::new().on_mousedown(|e| {
+                    Events::new().on_mousedown(self,|e| {
                         e.stop_propagation();
                         Msg::NoOp
                     }),
-                    vec![props
+                    vec![self
                         .contents
                         .borrow()
                         .selected()
-                        .map(|content| Content::empty(Clone::clone(content), Sub::map(|sub| Msg::Sub(On::Sub(sub)))))
+                        .map(|content| Content::empty(self, None, Clone::clone(content), Sub::map(|sub| Msg::Sub(On::Sub(sub)))))
                         .unwrap_or(Html::none())],
                 ),
                 self.render_rsz(DragDirection::Top),
@@ -520,16 +546,17 @@ where
     }
 }
 
-impl<Content: Constructor, TabName: Constructor<Props = Content::Props>>
+impl<Content: HtmlComponent, TabName: HtmlComponent<Props = Content::Props>>
     TabModeless<Content, TabName>
 where
     Content::Props: Clone,
 {
-    fn render_rsz(&self, drag_direction: DragDirection) -> Html<Self> {
+    fn render_rsz(&self, drag_direction: DragDirection) -> Html {
         Html::div(
             Attributes::new().class(Self::class(&format!("rsz-{}", &drag_direction))),
             Events::new()
-                .on_mousedown(|e| {
+                .on_mousedown(self, |e| {
+                    let e = unwrap!(e.dyn_into::<web_sys::MouseEvent>().ok(); Msg::NoOp);
                     e.stop_propagation();
                     Msg::DragStart {
                         page_x: e.page_x(),
@@ -537,7 +564,7 @@ where
                         drag_type: DragType::Resize(drag_direction),
                     }
                 })
-                .on_mouseup(|_| Msg::DragEnd),
+                .on_mouseup(self, |_| Msg::DragEnd),
             vec![],
         )
     }
@@ -546,7 +573,7 @@ where
         tab_idx: Option<usize>,
         e: web_sys::DragEvent,
         modeless_id: U128Id,
-    ) -> Msg<Content::Sub> {
+    ) -> Msg<Content::Event> {
         let e = unwrap!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
         let data_transfer = unwrap!(e.data_transfer(); Msg::NoOp);
         let data = unwrap!(data_transfer.get_data("text/plain").ok(); Msg::NoOp);
@@ -566,7 +593,7 @@ where
     }
 }
 
-impl<Content: Constructor, TabName: Constructor<Props = Content::Props>> Styled
+impl<Content: HtmlComponent, TabName: HtmlComponent<Props = Content::Props>> Styled
     for TabModeless<Content, TabName>
 where
     Content::Props: Clone,

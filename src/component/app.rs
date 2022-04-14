@@ -8,8 +8,8 @@ use super::template::common::{self, Common};
 use super::util::router;
 use crate::libs::skyway;
 use crate::model::config::Config;
-use kagura::component::{Cmd, Sub};
 use kagura::prelude::*;
+use nusa::prelude::*;
 use std::rc::Rc;
 use wasm_bindgen::{prelude::*, JsCast};
 
@@ -47,8 +47,10 @@ pub struct App {
 impl Component for App {
     type Props = Props;
     type Msg = Msg;
-    type Sub = On;
+    type Event = On;
 }
+
+impl HtmlComponent for App {}
 
 impl Constructor for App {
     fn constructor(props: &Props) -> Self {
@@ -60,18 +62,18 @@ impl Constructor for App {
 }
 
 impl Update for App {
-    fn on_assemble(&mut self, _: &Props) -> Cmd<Self> {
-        Cmd::batch(|mut handle| {
-            let a = Closure::wrap(Box::new(move |_: web_sys::Event| handle(Msg::NoOp))
-                as Box<dyn FnMut(web_sys::Event)>);
-            let _ = web_sys::window()
-                .unwrap()
-                .add_event_listener_with_callback("popstate", a.as_ref().unchecked_ref());
-            a.forget();
-        })
+    fn on_assemble(self: Pin<&mut Self>) -> Cmd<Self> {
+        let a =
+            Closure::wrap(Box::new(move |_: web_sys::Event| {}) as Box<dyn FnMut(web_sys::Event)>);
+        let _ = web_sys::window()
+            .unwrap()
+            .add_event_listener_with_callback("popstate", a.as_ref().unchecked_ref());
+        a.forget();
+
+        Cmd::none()
     }
 
-    fn update(&mut self, _: &Props, msg: Msg) -> Cmd<Self> {
+    fn update(self: Pin<&mut Self>) -> Cmd<Self> {
         match msg {
             Msg::NoOp => Cmd::none(),
             Msg::SetCommonData(data) => {
@@ -86,8 +88,9 @@ impl Update for App {
     }
 }
 
-impl Render for App {
-    fn render(&self, _: &Props, _: Vec<Html<Self>>) -> Html<Self> {
+impl Render<Html> for App {
+    type Children = ();
+    fn render(&self, _: Self::Children) -> Html {
         Common::with_child(
             common::Props {},
             Sub::none(),

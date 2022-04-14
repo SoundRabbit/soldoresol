@@ -2,8 +2,8 @@ use isaribi::{
     style,
     styled::{Style, Styled},
 };
-use kagura::component::{Cmd, Sub};
 use kagura::prelude::*;
+use nusa::prelude::*;
 use wasm_bindgen::JsCast;
 
 pub struct Props {
@@ -13,7 +13,7 @@ pub struct Props {
 }
 
 pub enum Msg {
-    SetElement(web_sys::Element),
+    SetElement(web_sys::Node),
 }
 
 pub enum On {}
@@ -53,8 +53,10 @@ impl Props {
 impl Component for Frame {
     type Props = Props;
     type Msg = Msg;
-    type Sub = On;
+    type Event = On;
 }
+
+impl HtmlComponent for Frame {}
 
 impl Constructor for Frame {
     fn constructor(props: &Props) -> Self {
@@ -68,30 +70,29 @@ impl Constructor for Frame {
 }
 
 impl Update for Frame {
-    fn ref_node(&mut self, _: &Props, node_name: String, node: web_sys::Node) -> Cmd<Self> {
-        if node_name == "frame" && self.element.is_none() {
-            if let Ok(element) = node.dyn_into::<web_sys::Element>() {
-                self.element = Some(element);
+    fn update(self: Pin<&mut Self>, msg: Self::Msg) -> Cmd<Self> {
+        match msg {
+            Msg::SetElement(node) => {
+                self.element = node.dyn_into::<web_sys::Element>().ok();
+                Cmd::none()
             }
         }
-        Cmd::none()
     }
 }
 
-impl Render for Frame {
-    fn render(&self, _: &Props, _: Vec<Html<Self>>) -> Html<Self> {
+impl Render<Html> for Frame {
+    type Children = ();
+    fn render(&self, _children: ()) -> Html {
         Self::styled(Html::div(
             {
-                let attrs = Attributes::new()
-                    .ref_name("frame")
-                    .class(Self::class("base"));
+                let attrs = Attributes::new().class(Self::class("base"));
                 if let Some(class_name) = &self.class_name {
                     attrs.class(class_name)
                 } else {
                     attrs
                 }
             },
-            Events::new(),
+            Events::new().refer(self, |node| Msg::SetElement(node)),
             vec![Html::div(Attributes::new(), Events::new(), vec![])],
         ))
     }

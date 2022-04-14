@@ -1,15 +1,14 @@
 use crate::arena::resource::{self, LoadFrom};
-use crate::libs::color::color_system;
 use isaribi::{
     style,
     styled::{Style, Styled},
 };
-use kagura::component::{Cmd, Sub};
 use kagura::prelude::*;
+use nusa::prelude::*;
 use std::rc::Rc;
+use wasm_bindgen::JsCast;
 
-pub struct Props<C: Component> {
-    pub attributes: Attributes<C>,
+pub struct Props {
     pub ok_to_catch_file: bool,
 }
 
@@ -24,31 +23,38 @@ pub enum On {
     LoadImageData(resource::ImageData),
 }
 
-pub struct FileCatcher<C: Component> {
+pub struct FileCatcher {
     is_showing_overlay: bool,
-    __phantom_parent: std::marker::PhantomData<C>,
+    ok_to_catch_file: bool,
 }
 
-impl<C: Component> Component for FileCatcher<C> {
-    type Props = Props<C>;
+impl Component for FileCatcher {
+    type Props = Props;
     type Msg = Msg;
-    type Sub = On;
+    type Event = On;
 }
 
-impl<C: Component> Constructor for FileCatcher<C> {
-    fn constructor(_props: &Props<C>) -> Self {
+impl HtmlComponent for FileCatcher {}
+
+impl Constructor for FileCatcher {
+    fn constructor(props: Props) -> Self {
         Self {
             is_showing_overlay: false,
-            __phantom_parent: std::marker::PhantomData,
+            ok_to_catch_file: props.ok_to_catch_file,
         }
     }
 }
 
-impl<C: Component> Update for FileCatcher<C> {
-    fn update(&mut self, _props: &Props<C>, msg: Msg) -> Cmd<Self> {
+impl Update for FileCatcher {
+    fn on_load(self: Pin<&mut Self>, props: Props) -> Cmd<Self> {
+        self.ok_to_catch_file = props.ok_to_catch_file;
+        Cmd::none()
+    }
+
+    fn update(self: Pin<&mut Self>, msg: Msg) -> Cmd<Self> {
         match msg {
             Msg::NoOp => Cmd::none(),
-            Msg::Sub(sub) => Cmd::sub(sub),
+            Msg::Sub(sub) => Cmd::submit(sub),
             Msg::SetIsShowingOverlay(is_showing_overlay) => {
                 self.is_showing_overlay = is_showing_overlay;
                 Cmd::none()
@@ -66,14 +72,13 @@ impl<C: Component> Update for FileCatcher<C> {
                     if file_type_prefix == "image" {
                         cmds.push({
                             let file = Rc::clone(&file);
-                            Cmd::task(|resolve| {
-                                wasm_bindgen_futures::spawn_local(async move {
-                                    if let Some(image_data) =
-                                        resource::ImageData::load_from(file).await
-                                    {
-                                        resolve(Msg::Sub(On::LoadImageData(image_data)));
-                                    }
-                                });
+                            Cmd::task(async move {
+                                if let Some(image_data) = resource::ImageData::load_from(file).await
+                                {
+                                    Cmd::submit(On::LoadImageData(image_data))
+                                } else {
+                                    Cmd::none()
+                                }
                             })
                         });
                     }
@@ -85,17 +90,16 @@ impl<C: Component> Update for FileCatcher<C> {
     }
 }
 
-impl<C: Component> Render for FileCatcher<C> {
-    fn render(&self, props: &Props<C>, children: Vec<Html<Self>>) -> Html<Self> {
-        let attrs = props.attributes.restricted();
-
+impl Render<Html> for FileCatcher {
+    type Children = (Attributes, Events, Vec<Html>);
+    fn render(&self, (attrs, events, children): Self::Children) -> Html {
         Self::styled(Html::div(
             attrs,
-            Events::new()
-                .on_dragend(|_| Msg::SetIsShowingOverlay(false))
-                .on_dragleave(|_| Msg::SetIsShowingOverlay(false))
-                .on_dragover({
-                    let ok_to_catch_file = props.ok_to_catch_file;
+            events
+                .on_dragend(self, |_| Msg::SetIsShowingOverlay(false))
+                .on_dragleave(self, |_| Msg::SetIsShowingOverlay(false))
+                .on_dragover(self, {
+                    let ok_to_catch_file = self.ok_to_catch_file;
                     move |e| {
                         if ok_to_catch_file {
                             e.prevent_default();
@@ -105,7 +109,8 @@ impl<C: Component> Render for FileCatcher<C> {
                         }
                     }
                 })
-                .on_drop(|e| {
+                .on_drop(self, |e| {
+                    let e = unwrap!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
                     let data_transfer = unwrap!(e.data_transfer(); Msg::NoOp);
                     let file_list = unwrap!(data_transfer.files(); Msg::NoOp);
 
@@ -135,7 +140,7 @@ impl<C: Component> Render for FileCatcher<C> {
     }
 }
 
-impl<C: Component> Styled for FileCatcher<C> {
+impl Styled for FileCatcher {
     fn style() -> Style {
         style! {
             ".overlay" {

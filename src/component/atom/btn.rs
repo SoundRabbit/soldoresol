@@ -3,7 +3,7 @@ use isaribi::{
     style,
     styled::{Style, Styled},
 };
-use kagura::prelude::*;
+use nusa::prelude::*;
 
 pub struct Props {
     pub variant: Variant,
@@ -66,92 +66,56 @@ impl Btn {
         }
     }
 
-    pub fn with_variant<C: Component>(
+    pub fn with_variant(
         variant: Variant,
-        attrs: Attributes<C>,
-        events: Events<C::Msg>,
-        children: Vec<Html<C>>,
-    ) -> Html<C> {
+        attrs: Attributes,
+        events: Events,
+        children: Vec<Html>,
+    ) -> Html {
         Self::styled(Html::button(
             attrs
                 .class("pure-button")
                 .class(Self::class("base"))
                 .class(Self::class_name(&variant))
-                .flag(if variant.is_disable() { "disabled" } else { "" }),
+                .flag("disabled", variant.is_disable()),
             events,
             children,
         ))
     }
 
-    pub fn primary<C: Component>(
-        attrs: Attributes<C>,
-        events: Events<C::Msg>,
-        children: Vec<Html<C>>,
-    ) -> Html<C> {
+    pub fn primary(attrs: Attributes, events: Events, children: Vec<Html>) -> Html {
         Self::with_variant(Variant::Primary, attrs, events, children)
     }
 
-    pub fn secondary<C: Component>(
-        attrs: Attributes<C>,
-        events: Events<C::Msg>,
-        children: Vec<Html<C>>,
-    ) -> Html<C> {
+    pub fn secondary(attrs: Attributes, events: Events, children: Vec<Html>) -> Html {
         Self::with_variant(Variant::Secondary, attrs, events, children)
     }
 
-    pub fn danger<C: Component>(
-        attrs: Attributes<C>,
-        events: Events<C::Msg>,
-        children: Vec<Html<C>>,
-    ) -> Html<C> {
+    pub fn danger(attrs: Attributes, events: Events, children: Vec<Html>) -> Html {
         Self::with_variant(Variant::Danger, attrs, events, children)
     }
 
-    pub fn dark<C: Component>(
-        attrs: Attributes<C>,
-        events: Events<C::Msg>,
-        children: Vec<Html<C>>,
-    ) -> Html<C> {
+    pub fn dark(attrs: Attributes, events: Events, children: Vec<Html>) -> Html {
         Self::with_variant(Variant::Dark, attrs, events, children)
     }
 
-    pub fn menu<C: Component>(
-        attrs: Attributes<C>,
-        events: Events<C::Msg>,
-        children: Vec<Html<C>>,
-    ) -> Html<C> {
+    pub fn menu(attrs: Attributes, events: Events, children: Vec<Html>) -> Html {
         Self::with_variant(Variant::Menu, attrs, events, children)
     }
 
-    pub fn menu_as_secondary<C: Component>(
-        attrs: Attributes<C>,
-        events: Events<C::Msg>,
-        children: Vec<Html<C>>,
-    ) -> Html<C> {
+    pub fn menu_as_secondary(attrs: Attributes, events: Events, children: Vec<Html>) -> Html {
         Self::with_variant(Variant::MenuAsSecondary, attrs, events, children)
     }
 
-    pub fn menu_as_primary<C: Component>(
-        attrs: Attributes<C>,
-        events: Events<C::Msg>,
-        children: Vec<Html<C>>,
-    ) -> Html<C> {
+    pub fn menu_as_primary(attrs: Attributes, events: Events, children: Vec<Html>) -> Html {
         Self::with_variant(Variant::MenuAsPrimary, attrs, events, children)
     }
 
-    pub fn success<C: Component>(
-        attrs: Attributes<C>,
-        events: Events<C::Msg>,
-        children: Vec<Html<C>>,
-    ) -> Html<C> {
+    pub fn success(attrs: Attributes, events: Events, children: Vec<Html>) -> Html {
         Self::with_variant(Variant::Success, attrs, events, children)
     }
 
-    pub fn light<C: Component>(
-        attrs: Attributes<C>,
-        events: Events<C::Msg>,
-        children: Vec<Html<C>>,
-    ) -> Html<C> {
+    pub fn light(attrs: Attributes, events: Events, children: Vec<Html>) -> Html {
         Self::with_variant(Variant::Light, attrs, events, children)
     }
 }

@@ -2,7 +2,7 @@ use isaribi::{
     style,
     styled::{Style, Styled},
 };
-use kagura::prelude::*;
+use nusa::prelude::*;
 
 pub struct Heading {}
 
@@ -12,12 +12,7 @@ pub enum Variant {
 }
 
 impl Heading {
-    pub fn h1<C: Component>(
-        variant: Variant,
-        attrs: Attributes<C>,
-        events: Events<C::Msg>,
-        children: Vec<Html<C>>,
-    ) -> Html<C> {
+    pub fn h1(variant: Variant, attrs: Attributes, events: Events, children: Vec<Html>) -> Html {
         Self::styled(Html::h1(
             attrs.class(Self::class_name(1, &variant)),
             events,
@@ -25,12 +20,7 @@ impl Heading {
         ))
     }
 
-    pub fn h2<C: Component>(
-        variant: Variant,
-        attrs: Attributes<C>,
-        events: Events<C::Msg>,
-        children: Vec<Html<C>>,
-    ) -> Html<C> {
+    pub fn h2(variant: Variant, attrs: Attributes, events: Events, children: Vec<Html>) -> Html {
         Self::styled(Html::h2(
             attrs.class(Self::class_name(2, &variant)),
             events,
@@ -38,12 +28,7 @@ impl Heading {
         ))
     }
 
-    pub fn h3<C: Component>(
-        variant: Variant,
-        attrs: Attributes<C>,
-        events: Events<C::Msg>,
-        children: Vec<Html<C>>,
-    ) -> Html<C> {
+    pub fn h3(variant: Variant, attrs: Attributes, events: Events, children: Vec<Html>) -> Html {
         Self::styled(Html::h3(
             attrs.class(Self::class_name(3, &variant)),
             events,
@@ -51,12 +36,7 @@ impl Heading {
         ))
     }
 
-    pub fn h4<C: Component>(
-        variant: Variant,
-        attrs: Attributes<C>,
-        events: Events<C::Msg>,
-        children: Vec<Html<C>>,
-    ) -> Html<C> {
+    pub fn h4(variant: Variant, attrs: Attributes, events: Events, children: Vec<Html>) -> Html {
         Self::styled(Html::h4(
             attrs.class(Self::class_name(4, &variant)),
             events,
@@ -64,12 +44,7 @@ impl Heading {
         ))
     }
 
-    pub fn h5<C: Component>(
-        variant: Variant,
-        attrs: Attributes<C>,
-        events: Events<C::Msg>,
-        children: Vec<Html<C>>,
-    ) -> Html<C> {
+    pub fn h5(variant: Variant, attrs: Attributes, events: Events, children: Vec<Html>) -> Html {
         Self::styled(Html::h5(
             attrs.class(Self::class_name(5, &variant)),
             events,
@@ -77,12 +52,7 @@ impl Heading {
         ))
     }
 
-    pub fn h6<C: Component>(
-        variant: Variant,
-        attrs: Attributes<C>,
-        events: Events<C::Msg>,
-        children: Vec<Html<C>>,
-    ) -> Html<C> {
+    pub fn h6(variant: Variant, attrs: Attributes, events: Events, children: Vec<Html>) -> Html {
         Self::styled(Html::h6(
             attrs.class(Self::class_name(6, &variant)),
             events,

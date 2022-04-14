@@ -1,9 +1,9 @@
-use kagura::prelude::*;
+use nusa::prelude::*;
 
-pub fn i<C: Component>(name: impl Into<String>) -> Html<C> {
+pub fn fas_i(name: impl Into<String>) -> Html {
     Html::i(
         Attributes::new()
-            .class("fas")
+            .class("fa-solid")
             .class(name)
             .string("aria-hidden", "true"),
         Events::new(),
@@ -11,10 +11,10 @@ pub fn i<C: Component>(name: impl Into<String>) -> Html<C> {
     )
 }
 
-pub fn far_i<C: Component>(name: impl Into<String>) -> Html<C> {
+pub fn far_i(name: impl Into<String>) -> Html {
     Html::i(
         Attributes::new()
-            .class("far")
+            .class("fa-regular")
             .class(name)
             .string("aria-hidden", "true"),
         Events::new(),

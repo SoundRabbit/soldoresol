@@ -1,5 +1,5 @@
-use kagura::prelude::*;
+use nusa::prelude::*;
 
-pub fn div<C: Component>() -> Html<C> {
+pub fn div() -> Html {
     Html::div(Attributes::new(), Events::new(), vec![])
 }

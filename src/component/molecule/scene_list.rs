@@ -1,50 +1,43 @@
 use super::atom::collapse::{self, Collapse};
+use super::atom::common::Common;
 use super::atom::marker::Marker;
 use super::atom::text;
-use super::template::common::Common;
+use super::NoProps;
 use crate::arena::{block, ArenaMut, BlockMut};
 use isaribi::{
     style,
     styled::{Style, Styled},
 };
-use kagura::component::{Cmd, Sub};
 use kagura::prelude::*;
-
-pub struct Props {
-    pub arena: ArenaMut,
-    pub world: BlockMut<block::World>,
-}
+use nusa::prelude::*;
 
 pub enum Msg {}
 
 pub enum On {}
 
-pub struct SceneList {
-    arena: ArenaMut,
-    world: BlockMut<block::World>,
-}
+pub struct SceneList {}
 
 impl Component for SceneList {
-    type Props = Props;
+    type Props = NoProps;
     type Msg = Msg;
-    type Sub = On;
+    type Event = On;
 }
 
+impl HtmlComponent for SceneList {}
+
 impl Constructor for SceneList {
-    fn constructor(props: &Props) -> Self {
-        Self {
-            arena: ArenaMut::clone(&props.arena),
-            world: BlockMut::clone(&props.world),
-        }
+    fn constructor(_: Self::Props) -> Self {
+        Self {}
     }
 }
 
 impl Update for SceneList {}
 
-impl Render for SceneList {
-    fn render(&self, _props: &Props, _children: Vec<Html<Self>>) -> Html<Self> {
+impl Render<Html> for SceneList {
+    type Children = (ArenaMut, BlockMut<block::World>);
+    fn render(&self, (arena, world): Self::Children) -> Html {
         Self::styled(Html::fragment(
-            self.world
+            world
                 .map(|world| {
                     world
                         .scenes()
@@ -58,54 +51,59 @@ impl Render for SceneList {
 }
 
 impl SceneList {
-    fn render_scene(&self, scene: &BlockMut<block::Scene>) -> Html<Self> {
+    fn render_scene(&self, scene: &BlockMut<block::Scene>) -> Html {
         let scene_id = scene.id();
         scene
             .map(|scene| {
-                Collapse::with_children(
+                Collapse::new(
+                    self,
+                    None,
                     collapse::Props {
                         is_default_collapsed: false,
                         is_indented: false,
                     },
                     Sub::none(),
-                    vec![Html::div(
-                        Attributes::new().class(Self::class("item")),
-                        Events::new(),
-                        vec![
-                            Html::div(
-                                Attributes::new().class(Common::keyvalue()),
-                                Events::new(),
-                                vec![
-                                    Marker::purple(
-                                        Attributes::new(),
-                                        Events::new(),
-                                        vec![Html::text("シーン")],
-                                    ),
-                                    Html::input(
-                                        Attributes::new().value(scene.name()),
-                                        Events::new(),
-                                        vec![],
-                                    ),
-                                ],
-                            ),
-                            Html::div(
-                                Attributes::new()
-                                    .class(Common::keyvalue())
-                                    .class(Self::class("item-content")),
-                                Events::new(),
-                                vec![
-                                    text::span("データID"),
-                                    Html::input(
-                                        Attributes::new()
-                                            .flag("readonly")
-                                            .value(scene_id.to_string()),
-                                        Events::new(),
-                                        vec![],
-                                    ),
-                                ],
-                            ),
-                        ],
-                    )],
+                    (
+                        Html::div(
+                            Attributes::new().class(Self::class("item")),
+                            Events::new(),
+                            vec![
+                                Html::div(
+                                    Attributes::new().class(Common::keyvalue()),
+                                    Events::new(),
+                                    vec![
+                                        Marker::purple(
+                                            Attributes::new(),
+                                            Events::new(),
+                                            vec![Html::text("シーン")],
+                                        ),
+                                        Html::input(
+                                            Attributes::new().value(scene.name()),
+                                            Events::new(),
+                                            vec![],
+                                        ),
+                                    ],
+                                ),
+                                Html::div(
+                                    Attributes::new()
+                                        .class(Common::keyvalue())
+                                        .class(Self::class("item-content")),
+                                    Events::new(),
+                                    vec![
+                                        text::span("データID"),
+                                        Html::input(
+                                            Attributes::new()
+                                                .flag("readonly", true)
+                                                .value(scene_id.to_string()),
+                                            Events::new(),
+                                            vec![],
+                                        ),
+                                    ],
+                                ),
+                            ],
+                        ),
+                        vec![],
+                    ),
                 )
             })
             .unwrap_or(Html::none())

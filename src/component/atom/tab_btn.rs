@@ -4,20 +4,22 @@ use isaribi::{
     style,
     styled::{Style, Styled},
 };
-use kagura::prelude::*;
+use nusa::prelude::*;
 
 pub struct TabBtn {}
 
 impl TabBtn {
-    pub fn new<C: Component>(
+    pub fn new(
         is_draggable: bool,
         is_selected: bool,
-        attrs: Attributes<C>,
-        events: Events<C::Msg>,
-        children: Vec<Html<C>>,
-    ) -> Html<C> {
+        attrs: Attributes,
+        events: Events,
+        children: Vec<Html>,
+    ) -> Html {
         Self::styled(Html::div(
-            attrs.class(Self::class("base")).draggable(is_draggable),
+            attrs
+                .class(Self::class("base"))
+                .flag("draggable", is_draggable),
             events,
             vec![Html::div(
                 Attributes::new()

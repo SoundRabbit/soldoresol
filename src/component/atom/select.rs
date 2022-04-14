@@ -3,17 +3,12 @@ use isaribi::{
     style,
     styled::{Style, Styled},
 };
-use kagura::prelude::*;
+use nusa::prelude::*;
 
 pub struct Select {}
 
 impl Select {
-    fn render<C: Component>(
-        color: &str,
-        attrs: Attributes<C>,
-        events: Events<C::Msg>,
-        children: Vec<Html<C>>,
-    ) -> Html<C> {
+    fn render(color: &str, attrs: Attributes, events: Events, children: Vec<Html>) -> Html {
         Self::styled(Html::select(
             attrs.class(Self::class("base")).class(Self::class(color)),
             events,
@@ -21,11 +16,7 @@ impl Select {
         ))
     }
 
-    pub fn light<C: Component>(
-        attrs: Attributes<C>,
-        events: Events<C::Msg>,
-        children: Vec<Html<C>>,
-    ) -> Html<C> {
+    pub fn light(attrs: Attributes, events: Events, children: Vec<Html>) -> Html {
         Self::render("light", attrs, events, children)
     }
 }

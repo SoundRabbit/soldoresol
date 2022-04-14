@@ -1,17 +1,13 @@
 use super::atom::{btn::Btn, fa};
 use super::constant;
+use super::NoProps;
 use crate::libs::color::color_system;
 use isaribi::{
     style,
     styled::{Style, Styled},
 };
-use kagura::component::Cmd;
 use kagura::prelude::*;
-
-pub struct Props {
-    pub header_title: String,
-    pub footer_message: String,
-}
+use nusa::prelude::*;
 
 pub enum Msg {
     CloseSelf,
@@ -24,27 +20,30 @@ pub enum On {
 pub struct Modal {}
 
 impl Component for Modal {
-    type Props = Props;
+    type Props = NoProps;
     type Msg = Msg;
-    type Sub = On;
+    type Event = On;
 }
 
+impl HtmlComponent for Modal {}
+
 impl Constructor for Modal {
-    fn constructor(props: &Props) -> Self {
+    fn constructor(props: ()) -> Self {
         Self {}
     }
 }
 
 impl Update for Modal {
-    fn update(&mut self, _: &Props, msg: Msg) -> Cmd<Self> {
+    fn update(&mut self, msg: Msg) -> Cmd<Self> {
         match msg {
-            Msg::CloseSelf => Cmd::Sub(On::Close),
+            Msg::CloseSelf => Cmd::submit(On::Close),
         }
     }
 }
 
-impl Render for Modal {
-    fn render(&self, props: &Props, children: Vec<Html<Self>>) -> Html<Self> {
+impl Render<Html> for Modal {
+    type Children = (String, String, Vec<Html>);
+    fn render(&self, (header_title, footer_message, children): Self::Children) -> Html {
         Self::styled(Html::div(
             Attributes::new().class(Self::class("background")),
             Events::new(),
@@ -59,12 +58,12 @@ impl Render for Modal {
                             Html::div(
                                 Attributes::new(),
                                 Events::new(),
-                                vec![Html::text(&props.header_title)],
+                                vec![Html::text(header_title)],
                             ),
                             Btn::secondary(
                                 Attributes::new(),
-                                Events::new().on_click(|_| Msg::CloseSelf),
-                                vec![fa::i("fa-times")],
+                                Events::new().on_click(self, |_| Msg::CloseSelf),
+                                vec![fa::fas_i("fa-times")],
                             ),
                         ],
                     ),
@@ -76,7 +75,7 @@ impl Render for Modal {
                     Html::div(
                         Attributes::new().class(Self::class("footer")),
                         Events::new(),
-                        vec![Html::text(&props.footer_message)],
+                        vec![Html::text(footer_message)],
                     ),
                 ],
             )],

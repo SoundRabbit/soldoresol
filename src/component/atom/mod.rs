@@ -4,6 +4,7 @@ pub mod btn;
 pub mod card;
 pub mod chat_message;
 pub mod collapse;
+pub mod common;
 pub mod dropdown;
 pub mod empty;
 pub mod fa;
@@ -19,7 +20,5 @@ pub mod slider;
 pub mod tab_btn;
 pub mod table;
 pub mod text;
-// pub mod mouse_capture;
-// pub mod tag;
 
 use super::*;

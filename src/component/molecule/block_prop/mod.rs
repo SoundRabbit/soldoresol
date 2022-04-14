@@ -1,35 +1,26 @@
 use crate::arena::{block, ArenaMut, BlockMut};
-use kagura::component::{Cmd, Sub};
 use kagura::prelude::*;
+use nusa::prelude::*;
 
 mod render;
-
-pub struct Props {
-    arena: ArenaMut,
-    data: BlockMut<block::Property>,
-}
 
 pub enum Msg {}
 
 pub enum On {}
 
-pub struct BlockProp {
-    arena: ArenaMut,
-    data: BlockMut<block::Property>,
-}
+pub struct BlockProp {}
 
 impl Component for BlockProp {
-    type Props = Props;
+    type Props = ();
     type Msg = Msg;
-    type Sub = On;
+    type Event = On;
 }
 
+impl HtmlComponent for BlockProp {}
+
 impl Constructor for BlockProp {
-    fn constructor(props: &Props) -> Self {
-        Self {
-            arena: ArenaMut::clone(&props.arena),
-            data: BlockMut::clone(&props.data),
-        }
+    fn constructor(props: Self::Props) -> Self {
+        Self {}
     }
 }
 

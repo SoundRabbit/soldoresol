@@ -7,15 +7,15 @@ use isaribi::{
 
 mod value;
 
-impl Render for BlockProp {
-    fn render(&self, _props: &Props, _children: Vec<Html<Self>>) -> Html<Self> {
+impl Render<Html> for BlockProp {
+    type Children = (ArenaMut, BlockMut<block::Property>);
+    fn render(&self, (arena, prop): Self::Children) -> Html {
         Self::styled(Html::div(
             Attributes::new().class("pure-form"),
             Events::new(),
             vec![{
-                let id = self.data.id();
-                self.data
-                    .map(|prop| self.render_prop(id, prop))
+                let id = prop.id();
+                prop.map(|prop| self.render_prop(id, prop))
                     .unwrap_or_else(|| Html::none())
             }],
         ))
@@ -23,7 +23,7 @@ impl Render for BlockProp {
 }
 
 impl BlockProp {
-    fn render_prop(&self, id: U128Id, prop: &block::Property) -> Html<Self> {
+    fn render_prop(&self, id: U128Id, prop: &block::Property) -> Html {
         Html::div(
             Attributes::new()
                 .class(Self::class("property"))
@@ -70,7 +70,7 @@ impl BlockProp {
         )
     }
 
-    pub fn render_data(&self, data: &block::property::Data) -> Html<Self> {
+    pub fn render_data(&self, data: &block::property::Data) -> Html {
         Html::div(
             Attributes::new().class(Self::class("property-data")),
             Events::new(),
@@ -86,7 +86,7 @@ impl BlockProp {
         )
     }
 
-    pub fn render_data_row(&self, row: &Vec<block::property::Value>) -> Vec<Html<Self>> {
+    pub fn render_data_row(&self, row: &Vec<block::property::Value>) -> Vec<Html> {
         row.iter().map(|value| self.render_value(value)).collect()
     }
 }

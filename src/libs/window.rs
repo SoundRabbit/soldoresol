@@ -7,6 +7,10 @@ type EventListeners = Vec<Box<dyn FnOnce(Rc<web_sys::Event>)>>;
 type EventListenersTable = RefCell<HashMap<String, (EventListeners, EventListeners)>>;
 thread_local!(static EVENT_LISTENERS: EventListenersTable = RefCell::new(HashMap::new()));
 
+type AnimationHandler = Box<dyn FnOnce()>;
+type AnimationHandlersList = RefCell<Vec<AnimationHandler>>;
+thread_local!(static ANIMARION_HANDLERS: AnimationHandlersList = RefCell::new(Vec::new()));
+
 pub fn add_event_listener(
     event_type: impl Into<String>,
     use_capture: bool,
@@ -57,6 +61,32 @@ pub fn add_event_listener(
             } else {
                 listeners.0.push(Box::new(listener));
             }
+        }
+    });
+}
+
+pub fn request_animation_frame(animation_handler: impl FnOnce() + 'static) {
+    ANIMARION_HANDLERS.with(|animation_handlers| {
+        if animation_handlers.borrow().is_empty() {
+            let a = Closure::wrap(Box::new(move || {
+                ANIMARION_HANDLERS
+                    .with(|animation_handlers| {
+                        animation_handlers
+                            .borrow_mut()
+                            .drain(..)
+                            .collect::<Vec<_>>()
+                    })
+                    .into_iter()
+                    .map(|x| x());
+            }) as Box<dyn FnMut()>);
+            let _ = web_sys::window()
+                .unwrap()
+                .request_animation_frame(a.as_ref().unchecked_ref());
+            a.forget();
+        } else {
+            animation_handlers
+                .borrow_mut()
+                .push(Box::new(animation_handler));
         }
     });
 }

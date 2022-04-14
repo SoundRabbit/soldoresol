@@ -24,8 +24,4 @@ impl<C: Component> Cmds<C> {
     pub fn push(&mut self, cmd: Cmd<C>) {
         self.cmds.push_back(cmd);
     }
-
-    pub fn push_msg(&mut self, msg: C::Msg) {
-        self.cmds.push_back(Cmd::task(move |resolve| resolve(msg)));
-    }
 }

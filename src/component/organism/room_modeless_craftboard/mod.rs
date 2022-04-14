@@ -1,17 +1,19 @@
 use super::molecule::tab_menu::{self, TabMenu};
 use super::organism::modal_resource::{self, ModalResource};
-use super::template::common::Common;
+use super::NoProps;
 use crate::arena::{block, resource, ArenaMut, BlockKind, BlockMut, BlockRef};
 use crate::libs::random_id::U128Id;
 use isaribi::{
     style,
     styled::{Style, Styled},
 };
-use kagura::component::{Cmd, Sub};
 use kagura::prelude::*;
+use nusa::prelude::*;
 use std::collections::HashSet;
 
 mod tab_0;
+
+use tab_0::Tab0;
 
 pub struct Props {
     pub arena: ArenaMut,
@@ -47,6 +49,8 @@ pub enum On {
 }
 
 pub struct RoomModelessCraftboard {
+    arena: ArenaMut,
+    world: BlockMut<block::World>,
     craftboard: BlockMut<block::Craftboard>,
     selected_tab_idx: usize,
     showing_modal: ShowingModal,
@@ -61,13 +65,17 @@ ElementId! {
 impl Component for RoomModelessCraftboard {
     type Props = Props;
     type Msg = Msg;
-    type Sub = On;
+    type Event = On;
 }
 
+impl HtmlComponent for RoomModelessCraftboard {}
+
 impl Constructor for RoomModelessCraftboard {
-    fn constructor(props: &Props) -> Self {
+    fn constructor(props: Props) -> Self {
         Self {
-            craftboard: BlockMut::clone(&props.data),
+            arena: props.arena,
+            world: props.world,
+            craftboard: props.data,
             selected_tab_idx: 0,
             showing_modal: ShowingModal::None,
             element_id: ElementId::new(),
@@ -76,15 +84,17 @@ impl Constructor for RoomModelessCraftboard {
 }
 
 impl Update for RoomModelessCraftboard {
-    fn on_load(&mut self, props: &Props) -> Cmd<Self> {
-        self.craftboard = BlockMut::clone(&props.data);
+    fn on_load(self: Pin<&mut Self>, props: Props) -> Cmd<Self> {
+        self.arena = props.arena;
+        self.world = props.world;
+        self.craftboard = props.data;
         Cmd::none()
     }
 
-    fn update(&mut self, props: &Props, msg: Msg) -> Cmd<Self> {
+    fn update(self: Pin<&mut Self>, msg: Msg) -> Cmd<Self> {
         match msg {
             Msg::NoOp => Cmd::none(),
-            Msg::Sub(sub) => Cmd::sub(sub),
+            Msg::Sub(sub) => Cmd::submit(sub),
             Msg::SetShowingModal(showing_modal) => {
                 self.showing_modal = showing_modal;
                 Cmd::none()
@@ -98,7 +108,7 @@ impl Update for RoomModelessCraftboard {
                     craftboard.set_name(name);
                 });
 
-                Cmd::sub(On::UpdateBlocks {
+                Cmd::submit(On::UpdateBlocks {
                     insert: set! {},
                     update: set! { self.craftboard.id() },
                 })
@@ -108,7 +118,7 @@ impl Update for RoomModelessCraftboard {
                     craftboard.set_display_name((Some(display_name), None));
                 });
 
-                Cmd::sub(On::UpdateBlocks {
+                Cmd::submit(On::UpdateBlocks {
                     insert: set! {},
                     update: set! { self.craftboard.id() },
                 })
@@ -118,7 +128,7 @@ impl Update for RoomModelessCraftboard {
                     craftboard.set_display_name((None, Some(display_name)));
                 });
 
-                Cmd::sub(On::UpdateBlocks {
+                Cmd::submit(On::UpdateBlocks {
                     insert: set! {},
                     update: set! { self.craftboard.id() },
                 })
@@ -129,7 +139,7 @@ impl Update for RoomModelessCraftboard {
                     craftboard.set_size([x_size, s[1], s[2]])
                 });
 
-                Cmd::sub(On::UpdateBlocks {
+                Cmd::submit(On::UpdateBlocks {
                     insert: set! {},
                     update: set! { self.craftboard.id() },
                 })
@@ -140,7 +150,7 @@ impl Update for RoomModelessCraftboard {
                     craftboard.set_size([s[0], y_size, s[2]])
                 });
 
-                Cmd::sub(On::UpdateBlocks {
+                Cmd::submit(On::UpdateBlocks {
                     insert: set! {},
                     update: set! { self.craftboard.id() },
                 })
@@ -151,7 +161,7 @@ impl Update for RoomModelessCraftboard {
                     craftboard.set_size([s[0], s[1], z_size])
                 });
 
-                Cmd::sub(On::UpdateBlocks {
+                Cmd::submit(On::UpdateBlocks {
                     insert: set! {},
                     update: set! { self.craftboard.id() },
                 })
@@ -161,7 +171,7 @@ impl Update for RoomModelessCraftboard {
                     craftboard.set_grid_color(grid_color);
                 });
 
-                Cmd::sub(On::UpdateBlocks {
+                Cmd::submit(On::UpdateBlocks {
                     insert: set! {},
                     update: set! { self.craftboard.id() },
                 })
@@ -175,7 +185,7 @@ impl Update for RoomModelessCraftboard {
 
                 self.showing_modal = ShowingModal::None;
 
-                Cmd::sub(On::UpdateBlocks {
+                Cmd::submit(On::UpdateBlocks {
                     insert: set! {},
                     update: set! { self.craftboard.id() },
                 })
@@ -184,16 +194,19 @@ impl Update for RoomModelessCraftboard {
     }
 }
 
-impl Render for RoomModelessCraftboard {
-    fn render(&self, props: &Props, _children: Vec<Html<Self>>) -> Html<Self> {
+impl Render<Html> for RoomModelessCraftboard {
+    type Children = ();
+    fn render(&self, _: Self::Children) -> Html {
         Self::styled(Html::fragment(vec![
             self.render_tabs(),
             match &self.showing_modal {
                 ShowingModal::None => Html::none(),
                 ShowingModal::SelectTexture(tex_idx) => ModalResource::empty(
+                    self,
+                    None,
                     modal_resource::Props {
-                        arena: ArenaMut::clone(&props.arena),
-                        world: BlockMut::clone(&props.world),
+                        arena: ArenaMut::clone(&self.arena),
+                        world: BlockMut::clone(&self.world),
                         title: String::from(modal_resource::title::SELECT_TEXTURE),
                         filter: set! { BlockKind::ImageData },
                         is_selecter: true,
@@ -219,24 +232,39 @@ impl Render for RoomModelessCraftboard {
 }
 
 impl RoomModelessCraftboard {
-    fn render_tabs(&self) -> Html<Self> {
+    fn render_tabs(&self) -> Html {
         Html::div(
             Attributes::new().class(Self::class("base")),
             Events::new(),
-            vec![TabMenu::with_children(
+            vec![TabMenu::new(
+                self,
+                None,
                 tab_menu::Props {
                     selected: self.selected_tab_idx,
-                    tabs: vec![String::from("Common")],
                     controlled: true,
                 },
                 Sub::map(|sub| match sub {
                     tab_menu::On::ChangeSelectedTab(tab_idx) => Msg::SetSelectedTabIdx(tab_idx),
                 }),
-                vec![if self.selected_tab_idx == 0 {
-                    self.render_tab0()
-                } else {
-                    Common::none()
-                }],
+                vec![(
+                    Html::text("Common"),
+                    Tab0::new(
+                        self,
+                        None,
+                        NoProps(),
+                        Sub::map(|sub| match sub {
+                            tab_0::On::OpenModal(modal_kind) => Msg::SetShowingModal(modal_kind),
+                            tab_0::On::SetDisplayName0(dn_0) => Msg::SetDisplayName0(dn_0),
+                            tab_0::On::SetDisplayName1(dn_1) => Msg::SetDisplayName1(dn_1),
+                            tab_0::On::SetGridColor(pallet) => Msg::SetGridColor(pallet),
+                            tab_0::On::SetName(name) => Msg::SetName(name),
+                            tab_0::On::SetXSize(x_size) => Msg::SetXSize(x_size),
+                            tab_0::On::SetYSize(y_size) => Msg::SetYSize(y_size),
+                            tab_0::On::SetZSize(y_size) => Msg::SetZSize(y_size),
+                        }),
+                        BlockMut::clone(&self.craftboard),
+                    ),
+                )],
             )],
         )
     }
@@ -249,30 +277,6 @@ impl Styled for RoomModelessCraftboard {
                 "width": "100%";
                 "height": "100%";
                 "padding-top": ".65rem";
-            }
-
-            ".tab0-main" {
-                "display": "grid";
-                "grid-template-columns": "1fr";
-                "grid-auto-rows": "max-content";
-                "overflow-y": "scroll";
-            }
-
-            ".tab0-content" {
-                "display": "grid";
-                "column-gap": ".65rem";
-                "row-gap": ".65rem";
-                "align-items": "start";
-                "padding-left": ".65rem";
-                "padding-right": ".65rem";
-                "grid-template-columns": "repeat(auto-fit, minmax(20rem, 1fr))";
-                "grid-auto-rows": "max-content";
-            }
-
-            ".tab0-content img" {
-                "width": "100%";
-                "max-height": "20rem";
-                "object-fit": "contain";
             }
         }
     }

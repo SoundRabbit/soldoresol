@@ -1,18 +1,18 @@
 use super::atom::btn::{self, Btn};
 use super::atom::fa;
-use super::util::window;
+use crate::libs::window;
 use isaribi::{
     style,
     styled::{Style, Styled},
 };
 use kagura::component::Cmd;
 use kagura::prelude::*;
+use nusa::prelude::*;
 use std::rc::Rc;
 use wasm_bindgen::JsCast;
 
 pub struct Props {
     pub direction: Direction,
-    pub text: Text,
     pub variant: btn::Variant,
     pub toggle_type: ToggleType,
 }
@@ -21,7 +21,6 @@ impl Default for Props {
     fn default() -> Self {
         Self {
             direction: Direction::BottomLeft,
-            text: Text::Text(String::new()),
             toggle_type: ToggleType::Click,
             variant: btn::Variant::Primary,
         }
@@ -33,11 +32,6 @@ pub enum Direction {
     BottomLeft,
     BottomRight,
     RightBottom,
-}
-
-pub enum Text {
-    Text(String),
-    Menu,
 }
 
 impl std::fmt::Display for Direction {
@@ -52,10 +46,10 @@ impl std::fmt::Display for Direction {
 }
 
 impl Direction {
-    fn render_caret<C: Component>(&self) -> Html<C> {
+    fn caret(&self) -> Html {
         match self {
-            Self::Bottom | Self::BottomLeft | Self::BottomRight => fa::i("fa-caret-down"),
-            Self::RightBottom => fa::i("fa-caret-right"),
+            Self::Bottom | Self::BottomLeft | Self::BottomRight => fa::fas_i("fa-caret-down"),
+            Self::RightBottom => fa::fas_i("fa-caret-right"),
         }
     }
 }
@@ -69,6 +63,7 @@ pub enum ToggleType {
 
 pub enum Msg {
     NoOp,
+    SetRoot(web_sys::Node),
     ToggleTo(bool),
 }
 
@@ -76,14 +71,19 @@ pub enum On {}
 
 pub struct Dropdown {
     is_dropdowned: bool,
-    root: Option<Rc<web_sys::Element>>,
+    direction: Direction,
+    variant: btn::Variant,
+    toggle_type: ToggleType,
+    root: Option<Rc<web_sys::Node>>,
 }
 
 impl Component for Dropdown {
     type Props = Props;
     type Msg = Msg;
-    type Sub = On;
+    type Event = On;
 }
+
+impl HtmlComponent for Dropdown {}
 
 impl Constructor for Dropdown {
     fn constructor(props: &Props) -> Self {
@@ -95,44 +95,38 @@ impl Constructor for Dropdown {
 
         Self {
             is_dropdowned: is_dropdowned,
+            direction: props.direction,
+            variant: props.variant,
+            toggle_type: props.toggle_type,
             root: None,
         }
     }
 }
 
 impl Update for Dropdown {
-    fn ref_node(&mut self, props: &Props, name: String, node: web_sys::Node) -> Cmd<Self> {
-        if name == "root" {
-            if let Ok(root) = node.dyn_into::<web_sys::Element>() {
-                if let Some(self_root) = &self.root {
-                    if root == *(self_root.as_ref()) {
-                        return Cmd::none();
-                    }
-                }
-                self.root = Some(Rc::new(root));
-                if props.toggle_type == ToggleType::Click {
-                    return self.toggle_cmd();
-                }
-            }
-        }
-        Cmd::none()
-    }
-
-    fn on_load(&mut self, props: &Props) -> Cmd<Self> {
+    fn on_load(self: Pin<&mut Self>, props: &Props) -> Cmd<Self> {
         if let ToggleType::Manual(is_dropdowned) = &props.toggle_type {
             self.is_dropdowned = *is_dropdowned;
         }
 
+        self.direction = props.direction;
+        self.variant = props.variant;
+        self.toggle_type = props.toggle_type;
+
         Cmd::none()
     }
 
-    fn update(&mut self, props: &Props, msg: Msg) -> Cmd<Self> {
+    fn update(self: Pin<&mut Self>, msg: Msg) -> Cmd<Self> {
         match msg {
             Msg::NoOp => Cmd::none(),
+            Msg::SetRoot(root) => {
+                self.root = Some(Rc::new(root));
+                Cmd::none()
+            }
             Msg::ToggleTo(is_dropdowned) => {
                 self.is_dropdowned = is_dropdowned;
 
-                if props.toggle_type == ToggleType::Click {
+                if self.toggle_type == ToggleType::Click {
                     self.toggle_cmd()
                 } else {
                     Cmd::none()
@@ -142,47 +136,44 @@ impl Update for Dropdown {
     }
 }
 
-impl Render for Dropdown {
-    fn render(&self, props: &Props, children: Vec<Html<Self>>) -> Html<Self> {
-        Self::styled(match &props.toggle_type {
-            ToggleType::Click => self.render_toggle_by_click(props, children),
-            ToggleType::Hover => self.render_toggle_by_hover(props, children),
-            ToggleType::Manual(_) => self.render_toggle_by_manual(props, children),
+impl Render<Html> for Dropdown {
+    type Children = (Vec<Html>, Vec<Html>);
+    fn render(&self, (text, children): Self::Children) -> Html {
+        Self::styled(match &self.toggle_type {
+            ToggleType::Click => self.render_toggle_by_click(text, children),
+            ToggleType::Hover => self.render_toggle_by_hover(text, children),
+            ToggleType::Manual(_) => self.render_toggle_by_manual(text, children),
         })
     }
 }
 
 impl Dropdown {
     fn toggle_cmd(&self) -> Cmd<Self> {
-        let root = unwrap!(self.root.as_ref().map(Rc::clone); Cmd::none());
-        let is_dropdowned = self.is_dropdowned;
-        Cmd::task(move |resolve| {
-            window::add_event_listener("click", true, move |e| {
-                if is_dropdowned {
-                    resolve(Msg::ToggleTo(false));
-                } else {
-                    let target = unwrap!(e.target(); resolve(Msg::ToggleTo(is_dropdowned)));
-                    let target = unwrap!(target.dyn_into::<web_sys::Node>().ok(); resolve(Msg::ToggleTo(is_dropdowned)));
-                    if root.contains(Some(&target)) {
-                        resolve(Msg::ToggleTo(true));
-                    } else {
-                        resolve(Msg::ToggleTo(is_dropdowned));
-                    }
+        if let Some(root) = &self.root {
+            let is_dropdowned = self.is_dropdowned;
+            let root = Rc::clone(root);
+            Cmd::task(kagura::util::Task::new({
+                move |resolve| {
+                    window::add_event_listener("click", true, move |e| {
+                        if is_dropdowned {
+                            resolve(Cmd::chain(Msg::ToggleTo(false)));
+                        } else {
+                            let target = unwrap!(e.target());
+                            let target = unwrap!(target.dyn_into::<web_sys::Node>().ok());
+                            if root.contains(Some(&target)) {
+                                resolve(Cmd::chain(Msg::ToggleTo(true)));
+                            }
+                        }
+                    });
                 }
-            });
-        })
+            }))
+        } else {
+            Cmd::none()
+        }
     }
 
-    fn toggle_to_up(_: web_sys::Event) -> Msg {
-        Msg::ToggleTo(false)
-    }
-
-    fn toggle_to_drop(_: web_sys::Event) -> Msg {
-        Msg::ToggleTo(true)
-    }
-
-    fn base_class_option(&self, props: &Props) -> &str {
-        match &props.variant {
+    fn base_class_option(&self) -> &str {
+        match &self.variant {
             btn::Variant::Menu => "base-menu",
             btn::Variant::MenuAsSecondary => "base-menu",
             btn::Variant::DarkLikeMenu => "base-menu",
@@ -191,72 +182,59 @@ impl Dropdown {
         }
     }
 
-    fn render_toggle_by_click(&self, props: &Props, children: Vec<Html<Self>>) -> Html<Self> {
+    fn render_toggle_by_click(&self, text: Vec<Html>, children: Vec<Html>) -> Html {
         Html::div(
             Attributes::new()
                 .class(Self::class("base"))
-                .class(Self::class(self.base_class_option(props)))
-                .ref_name("root"),
-            Events::new(),
-            vec![
-                self.render_toggle_btn(props),
-                self.render_toggled(props, children),
-            ],
+                .class(Self::class(self.base_class_option())),
+            Events::new().refer(self, |root| Msg::SetRoot(root)),
+            vec![self.render_toggle_btn(text), self.render_toggled(children)],
         )
     }
 
-    fn render_toggle_by_hover(&self, props: &Props, children: Vec<Html<Self>>) -> Html<Self> {
+    fn render_toggle_by_hover(&self, text: Vec<Html>, children: Vec<Html>) -> Html {
         Html::div(
             Attributes::new()
                 .class(Self::class("base"))
-                .class(Self::class(self.base_class_option(props))),
+                .class(Self::class(self.base_class_option())),
             Events::new()
-                .on("mouseenter", Self::toggle_to_drop)
-                .on("mouseleave", Self::toggle_to_up),
-            vec![
-                self.render_toggle_btn(props),
-                self.render_toggled(props, children),
-            ],
+                .on("mouseenter", self, |_| Msg::ToggleTo(true))
+                .on("mouseleave", self, |_| Msg::ToggleTo(false)),
+            vec![self.render_toggle_btn(text), self.render_toggled(children)],
         )
     }
 
-    fn render_toggle_by_manual(&self, props: &Props, children: Vec<Html<Self>>) -> Html<Self> {
+    fn render_toggle_by_manual(&self, text: Vec<Html>, children: Vec<Html>) -> Html {
         Html::div(
             Attributes::new()
                 .class(Self::class("base"))
-                .class(Self::class(self.base_class_option(props))),
+                .class(Self::class(self.base_class_option())),
             Events::new(),
-            vec![
-                self.render_toggle_btn(props),
-                self.render_toggled(props, children),
-            ],
+            vec![self.render_toggle_btn(text), self.render_toggled(children)],
         )
     }
 
-    fn render_toggle_btn(&self, props: &Props) -> Html<Self> {
+    fn render_toggle_btn(&self, text: Vec<Html>) -> Html {
         Html::button(
             Attributes::new()
                 .class("pure-button")
-                .class(Btn::class_name(&props.variant))
+                .class(Btn::class_name(&self.variant))
                 .class(Self::class("root-btn"))
                 .string("data-toggled", self.is_dropdowned.to_string()),
             Events::new(),
             vec![Html::div(
                 Attributes::new().class(Self::class("btn")),
                 Events::new(),
-                match &props.text {
-                    Text::Text(text) => vec![Html::text(text), props.direction.render_caret()],
-                    Text::Menu => vec![fa::i("fa-ellipsis-v")],
-                },
+                text,
             )],
         )
     }
 
-    fn render_toggled(&self, props: &Props, children: Vec<Html<Self>>) -> Html<Self> {
+    fn render_toggled(&self, children: Vec<Html>) -> Html {
         Html::div(
             Attributes::new()
                 .class(Self::class("content"))
-                .class(Self::class(&format!("content-{}", &props.direction)))
+                .class(Self::class(&format!("content-{}", &self.direction)))
                 .string("data-toggled", self.is_dropdowned.to_string()),
             Events::new(),
             if self.is_dropdowned { children } else { vec![] },

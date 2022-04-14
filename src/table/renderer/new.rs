@@ -3,7 +3,17 @@ use id_table::IdTableBuilder;
 use wasm_bindgen::{prelude::*, JsCast};
 
 impl Renderer {
-    pub fn new(canvas: Rc<web_sys::HtmlCanvasElement>) -> Self {
+    pub fn new() -> Self {
+        let canvas = web_sys::window()
+            .unwrap()
+            .document()
+            .unwrap()
+            .create_element("canvas")
+            .unwrap()
+            .dyn_into::<web_sys::HtmlCanvasElement>()
+            .unwrap();
+        let canvas = Rc::new(canvas);
+
         let device_pixel_ratio = web_sys::window().unwrap().device_pixel_ratio();
         let canvas_size = Self::reset_canvas_size(&canvas, device_pixel_ratio);
 

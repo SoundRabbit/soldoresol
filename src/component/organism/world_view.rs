@@ -1,22 +1,14 @@
-use super::atom::{
-    btn::{self, Btn},
-    collapse::{self, Collapse},
-    dropdown::{self, Dropdown},
-    fa,
-    heading::{self, Heading},
-    text,
-};
-use super::molecule::scene_list::{self, SceneList};
+use super::atom::{btn::Btn, fa};
+use super::molecule::scene_list::SceneList;
 use super::molecule::tab_menu::{self, TabMenu};
-use super::template::common::Common;
+use super::NoProps;
 use crate::arena::{block, ArenaMut, BlockMut};
 use isaribi::{
     style,
     styled::{Style, Styled},
 };
-use kagura::component::{Cmd, Sub};
 use kagura::prelude::*;
-use wasm_bindgen::{prelude::*, JsCast};
+use nusa::prelude::*;
 
 pub struct Props {
     pub arena: ArenaMut,
@@ -40,14 +32,16 @@ pub struct WorldView {
 impl Component for WorldView {
     type Props = Props;
     type Msg = Msg;
-    type Sub = On;
+    type Event = On;
 }
 
+impl HtmlComponent for WorldView {}
+
 impl Constructor for WorldView {
-    fn constructor(props: &Props) -> Self {
+    fn constructor(props: Self::Props) -> Self {
         WorldView {
-            arena: ArenaMut::clone(&props.arena),
-            world: BlockMut::clone(&props.world),
+            arena: props.arena,
+            world: props.world,
             is_showing: false,
             selected_tab_idx: 0,
         }
@@ -55,7 +49,7 @@ impl Constructor for WorldView {
 }
 
 impl Update for WorldView {
-    fn update(&mut self, _: &Props, msg: Self::Msg) -> Cmd<Self> {
+    fn update(self: Pin<&mut Self>, msg: Self::Msg) -> Cmd<Self> {
         match msg {
             Msg::SetIsShowing(is_showing) => {
                 self.is_showing = is_showing;
@@ -69,8 +63,9 @@ impl Update for WorldView {
     }
 }
 
-impl Render for WorldView {
-    fn render(&self, _: &Props, _: Vec<Html<Self>>) -> Html<Self> {
+impl Render<Html> for WorldView {
+    type Children = ();
+    fn render(&self, _: Self::Children) -> Html {
         Self::styled(Html::div(
             Attributes::new()
                 .class(Self::class("base"))
@@ -83,11 +78,11 @@ impl Render for WorldView {
                     } else {
                         "管理メニューを表示"
                     }),
-                    Events::new().on_click({
+                    Events::new().on_click(self, {
                         let is_showing = self.is_showing;
                         move |_| Msg::SetIsShowing(!is_showing)
                     }),
-                    vec![fa::i(if self.is_showing {
+                    vec![fa::fas_i(if self.is_showing {
                         "fa-caret-right"
                     } else {
                         "fa-caret-left"
@@ -98,34 +93,33 @@ impl Render for WorldView {
                         .class(Self::class("content"))
                         .string("data-is-showing", self.is_showing.to_string()),
                     Events::new(),
-                    vec![
-                        TabMenu::empty(
-                            tab_menu::Props {
-                                controlled: true,
-                                selected: self.selected_tab_idx,
-                                tabs: vec![String::from("シーン")],
-                            },
-                            Sub::map(|sub| match sub {
-                                tab_menu::On::ChangeSelectedTab(tab_idx) => {
-                                    Msg::SetSelectedTabIdx(tab_idx)
-                                }
-                            }),
-                        ),
-                        Html::div(
-                            Attributes::new().class(Self::class("scroll")),
-                            Events::new(),
-                            match self.selected_tab_idx {
-                                0 => vec![SceneList::empty(
-                                    scene_list::Props {
-                                        arena: ArenaMut::clone(&self.arena),
-                                        world: BlockMut::clone(&self.world),
-                                    },
+                    vec![TabMenu::new(
+                        self,
+                        None,
+                        tab_menu::Props {
+                            controlled: true,
+                            selected: self.selected_tab_idx,
+                        },
+                        Sub::map(|sub| match sub {
+                            tab_menu::On::ChangeSelectedTab(tab_idx) => {
+                                Msg::SetSelectedTabIdx(tab_idx)
+                            }
+                        }),
+                        vec![(
+                            Html::text("シーン"),
+                            Html::div(
+                                Attributes::new().class(Self::class("scroll")),
+                                Events::new(),
+                                vec![SceneList::new(
+                                    self,
+                                    None,
+                                    NoProps(),
                                     Sub::none(),
+                                    (ArenaMut::clone(&self.arena), BlockMut::clone(&self.world)),
                                 )],
-                                _ => vec![],
-                            },
-                        ),
-                    ],
+                            ),
+                        )],
+                    )],
                 ),
             ],
         ))

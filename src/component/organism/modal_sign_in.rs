@@ -3,18 +3,16 @@ use super::atom::{
     heading::{self, Heading},
 };
 use super::molecule::modal::{self, Modal};
+use super::NoProps;
 use crate::libs::gapi::gapi;
 use isaribi::{
     style,
     styled::{Style, Styled},
 };
-use kagura::component::{Cmd, Sub};
 use kagura::prelude::*;
+use nusa::prelude::*;
+use std::cell::RefCell;
 use wasm_bindgen::{prelude::*, JsCast};
-
-pub struct Props {
-    pub is_showing: Option<bool>,
-}
 
 pub enum Msg {
     NoOp,
@@ -25,30 +23,31 @@ pub enum On {
     Close,
 }
 
-pub struct ModalSignIn {
-    is_showing: bool,
-}
+pub struct ModalSignIn {}
 
 impl Component for ModalSignIn {
-    type Props = Props;
+    type Props = NoProps;
     type Msg = Msg;
-    type Sub = On;
+    type Event = On;
 }
 
+impl HtmlComponent for ModalSignIn {}
+
 impl Constructor for ModalSignIn {
-    fn constructor(_: &Props) -> Self {
-        ModalSignIn {
-            is_showing: !gapi.auth2().get_auth_instance().is_signed_in().get(),
-        }
+    fn constructor(_: NoProps) -> Self {
+        ModalSignIn {}
     }
 }
 
 impl Update for ModalSignIn {
-    fn on_assemble(&mut self, _: &Props) -> Cmd<Self> {
-        Cmd::batch(|mut handle| {
+    fn on_assemble(self: Pin<&mut Self>) -> Cmd<Self> {
+        Cmd::task(kagura::util::Task::new(|resolve| {
+            let resolve = RefCell::new(Some(Box::new(resolve)));
             let a = Closure::wrap(Box::new(move |is_signed_in| {
                 if is_signed_in {
-                    handle(Msg::CloseSelf)
+                    if let Some(resolve) = resolve.borrow_mut().take() {
+                        resolve(Cmd::chain(Msg::CloseSelf))
+                    }
                 }
             }) as Box<dyn FnMut(bool)>);
             gapi.auth2()
@@ -56,35 +55,27 @@ impl Update for ModalSignIn {
                 .is_signed_in()
                 .listen(a.as_ref().unchecked_ref());
             a.forget();
-        })
+        }))
     }
 
-    fn on_load(&mut self, _: &Props) -> Cmd<Self> {
-        Cmd::none()
-    }
-
-    fn update(&mut self, _: &Props, msg: Self::Msg) -> Cmd<Self> {
+    fn update(self: Pin<&mut Self>, msg: Self::Msg) -> Cmd<Self> {
         match msg {
             Msg::NoOp => Cmd::none(),
-            Msg::CloseSelf => {
-                self.is_showing = false;
-                Cmd::sub(On::Close)
-            }
+            Msg::CloseSelf => Cmd::submit(On::Close),
         }
     }
 }
 
-impl Render for ModalSignIn {
-    fn render(&self, props: &Props, _: Vec<Html<Self>>) -> Html<Self> {
-        if props.is_showing.unwrap_or(self.is_showing) {
-            Self::styled(Modal::with_children(
-                modal::Props {
-                    header_title: String::from("Googleアカウントにサインイン"),
-                    footer_message: String::from(""),
-                },
+impl Render<Html> for ModalSignIn {
+    type Children = ();
+    fn render(&self, _: Self::Children) -> Html {
+        Self::styled(Modal::new(
+                self,None,
+                NoProps(),
                 Sub::map(|sub| match sub {
                     modal::On::Close => Msg::CloseSelf,
                 }),
+                (String::from("Googleアカウントにサインイン"),String::from(""),
                 vec![Html::div(
                     Attributes::new().class(Self::class("base")),
                     Events::new(),
@@ -139,7 +130,7 @@ impl Render for ModalSignIn {
                             vec![
                                 Btn::secondary(
                                     Attributes::new(),
-                                    Events::new().on_click(|e| {
+                                    Events::new().on_click(self, |e| {
                                         e.stop_propagation();
                                         Msg::CloseSelf
                                     }),
@@ -147,7 +138,7 @@ impl Render for ModalSignIn {
                                 ),
                                 Btn::primary(
                                     Attributes::new(),
-                                    Events::new().on_click(|e| {
+                                    Events::new().on_click(self, |e| {
                                         e.stop_propagation();
                                         gapi.auth2().get_auth_instance().sign_in();
                                         Msg::NoOp
@@ -158,10 +149,8 @@ impl Render for ModalSignIn {
                         ),
                     ],
                 )],
+            )
             ))
-        } else {
-            Html::none()
-        }
     }
 }
 
