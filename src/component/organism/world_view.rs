@@ -105,20 +105,27 @@ impl Render<Html> for WorldView {
                                 Msg::SetSelectedTabIdx(tab_idx)
                             }
                         }),
-                        vec![(
-                            Html::text("シーン"),
-                            Html::div(
-                                Attributes::new().class(Self::class("scroll")),
-                                Events::new(),
-                                vec![SceneList::new(
-                                    self,
-                                    None,
-                                    NoProps(),
-                                    Sub::none(),
-                                    (ArenaMut::clone(&self.arena), BlockMut::clone(&self.world)),
-                                )],
-                            ),
-                        )],
+                        (
+                            Attributes::new(),
+                            Events::new(),
+                            vec![(
+                                Html::text("シーン"),
+                                Html::div(
+                                    Attributes::new().class(Self::class("scroll")),
+                                    Events::new(),
+                                    vec![SceneList::new(
+                                        self,
+                                        None,
+                                        NoProps(),
+                                        Sub::none(),
+                                        (
+                                            ArenaMut::clone(&self.arena),
+                                            BlockMut::clone(&self.world),
+                                        ),
+                                    )],
+                                ),
+                            )],
+                        ),
                     )],
                 ),
             ],

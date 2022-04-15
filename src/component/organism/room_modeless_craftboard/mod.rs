@@ -1,6 +1,5 @@
 use super::molecule::tab_menu::{self, TabMenu};
 use super::organism::modal_resource::{self, ModalResource};
-use super::NoProps;
 use crate::arena::{block, resource, ArenaMut, BlockKind, BlockMut, BlockRef};
 use crate::libs::random_id::U128Id;
 use isaribi::{
@@ -25,7 +24,6 @@ pub enum Msg {
     NoOp,
     Sub(On),
     SetShowingModal(ShowingModal),
-    SetSelectedTabIdx(usize),
     SetName(String),
     SetDisplayName0(String),
     SetDisplayName1(String),
@@ -52,7 +50,6 @@ pub struct RoomModelessCraftboard {
     arena: ArenaMut,
     world: BlockMut<block::World>,
     craftboard: BlockMut<block::Craftboard>,
-    selected_tab_idx: usize,
     showing_modal: ShowingModal,
     element_id: ElementId,
 }
@@ -76,7 +73,6 @@ impl Constructor for RoomModelessCraftboard {
             arena: props.arena,
             world: props.world,
             craftboard: props.data,
-            selected_tab_idx: 0,
             showing_modal: ShowingModal::None,
             element_id: ElementId::new(),
         }
@@ -97,10 +93,6 @@ impl Update for RoomModelessCraftboard {
             Msg::Sub(sub) => Cmd::submit(sub),
             Msg::SetShowingModal(showing_modal) => {
                 self.showing_modal = showing_modal;
-                Cmd::none()
-            }
-            Msg::SetSelectedTabIdx(tab_idx) => {
-                self.selected_tab_idx = tab_idx;
                 Cmd::none()
             }
             Msg::SetName(name) => {
@@ -240,31 +232,36 @@ impl RoomModelessCraftboard {
                 self,
                 None,
                 tab_menu::Props {
-                    selected: self.selected_tab_idx,
-                    controlled: true,
+                    selected: 0,
+                    controlled: false,
                 },
-                Sub::map(|sub| match sub {
-                    tab_menu::On::ChangeSelectedTab(tab_idx) => Msg::SetSelectedTabIdx(tab_idx),
-                }),
-                vec![(
-                    Html::text("Common"),
-                    Tab0::new(
-                        self,
-                        None,
-                        NoProps(),
-                        Sub::map(|sub| match sub {
-                            tab_0::On::OpenModal(modal_kind) => Msg::SetShowingModal(modal_kind),
-                            tab_0::On::SetDisplayName0(dn_0) => Msg::SetDisplayName0(dn_0),
-                            tab_0::On::SetDisplayName1(dn_1) => Msg::SetDisplayName1(dn_1),
-                            tab_0::On::SetGridColor(pallet) => Msg::SetGridColor(pallet),
-                            tab_0::On::SetName(name) => Msg::SetName(name),
-                            tab_0::On::SetXSize(x_size) => Msg::SetXSize(x_size),
-                            tab_0::On::SetYSize(y_size) => Msg::SetYSize(y_size),
-                            tab_0::On::SetZSize(y_size) => Msg::SetZSize(y_size),
-                        }),
-                        BlockMut::clone(&self.craftboard),
-                    ),
-                )],
+                Sub::none(),
+                (
+                    Attributes::new(),
+                    Events::new(),
+                    vec![(
+                        Html::text("Common"),
+                        Tab0::empty(
+                            self,
+                            None,
+                            tab_0::Props {
+                                craftboard: BlockMut::clone(&self.craftboard),
+                            },
+                            Sub::map(|sub| match sub {
+                                tab_0::On::OpenModal(modal_kind) => {
+                                    Msg::SetShowingModal(modal_kind)
+                                }
+                                tab_0::On::SetDisplayName0(dn_0) => Msg::SetDisplayName0(dn_0),
+                                tab_0::On::SetDisplayName1(dn_1) => Msg::SetDisplayName1(dn_1),
+                                tab_0::On::SetGridColor(pallet) => Msg::SetGridColor(pallet),
+                                tab_0::On::SetName(name) => Msg::SetName(name),
+                                tab_0::On::SetXSize(x_size) => Msg::SetXSize(x_size),
+                                tab_0::On::SetYSize(y_size) => Msg::SetYSize(y_size),
+                                tab_0::On::SetZSize(y_size) => Msg::SetZSize(y_size),
+                            }),
+                        ),
+                    )],
+                ),
             )],
         )
     }

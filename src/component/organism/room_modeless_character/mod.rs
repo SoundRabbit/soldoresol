@@ -1,18 +1,17 @@
 use super::molecule::tab_menu::{self, TabMenu};
 use super::organism::modal_resource::{self, ModalResource};
-use super::organism::room_modeless::RoomModeless;
-use super::template::common::Common;
 use crate::arena::{block, resource, ArenaMut, BlockKind, BlockMut, BlockRef};
 use crate::libs::random_id::U128Id;
 use isaribi::{
     style,
     styled::{Style, Styled},
 };
-use kagura::component::{Cmd, Sub};
 use kagura::prelude::*;
+use nusa::prelude::*;
 use std::collections::HashSet;
 
-mod tab0;
+mod tab_0;
+use tab_0::Tab0;
 
 pub struct Props {
     pub arena: ArenaMut,
@@ -23,7 +22,6 @@ pub struct Props {
 pub enum Msg {
     NoOp,
     Sub(On),
-    SetSelectedTabIdx(usize),
     SetShowingModal(ShowingModal),
     SetColor(crate::libs::color::Pallet),
     SetName(String),
@@ -32,8 +30,7 @@ pub enum Msg {
     SetSize(f64),
     SetTexSize(f64),
     SetSelectedTextureIdx(usize),
-    SetDescriptionViewAsEdit(Option<String>),
-    SetDescriptionViewAsView,
+    SetDescription(String),
     SetTextureImage(usize, Option<BlockRef<resource::ImageData>>),
     SetTextureName(usize, String),
     PushTexture,
@@ -48,36 +45,7 @@ pub enum On {
 
 pub struct RoomModelessCharacter {
     character: BlockMut<block::Character>,
-
-    timestamp: f64,
-    is_updated: bool,
-
-    description_view: DescriptionView,
-
-    selected_tab_idx: usize,
     showing_modal: ShowingModal,
-    element_id: ElementId,
-}
-
-pub enum DescriptionView {
-    Edit(String),
-    View(block::chat_message::Message),
-}
-
-impl DescriptionView {
-    fn is_edit(&self) -> bool {
-        match self {
-            Self::Edit(..) => true,
-            _ => false,
-        }
-    }
-
-    fn is_view(&self) -> bool {
-        match self {
-            Self::View(..) => true,
-            _ => false,
-        }
-    }
 }
 
 pub enum ShowingModal {
@@ -85,70 +53,36 @@ pub enum ShowingModal {
     SelectCharacterTexture(usize),
 }
 
-ElementId! {
-    input_character_name,
-    input_character_display_name
-}
-
 impl Component for RoomModelessCharacter {
     type Props = Props;
     type Msg = Msg;
-    type Sub = On;
+    type Event = On;
 }
 
+impl HtmlComponent for RoomModelessCharacter {}
+
 impl Constructor for RoomModelessCharacter {
-    fn constructor(props: &Props) -> Self {
+    fn constructor(props: Props) -> Self {
         Self {
-            character: BlockMut::clone(&props.data),
-
-            timestamp: props.data.timestamp(),
-            is_updated: true,
-
-            description_view: DescriptionView::View(Self::get_description(&props.data)),
-
-            selected_tab_idx: 0,
+            character: props.data,
             showing_modal: ShowingModal::None,
-            element_id: ElementId::new(),
         }
     }
 }
 
 impl Update for RoomModelessCharacter {
-    fn on_load(&mut self, props: &Props) -> Cmd<Self> {
+    fn on_load(self: Pin<&mut Self>, props: &Props) -> Cmd<Self> {
         if self.character.id() != props.data.id() {
             self.character = BlockMut::clone(&props.data);
-
-            self.timestamp = props.data.timestamp();
-            self.is_updated = true;
-
-            self.description_view = DescriptionView::View(
-                props
-                    .data
-                    .map(|character| character.description().data().clone())
-                    .unwrap_or_else(|| block::chat_message::Message::from(vec![])),
-            );
-        } else if self.timestamp < props.data.timestamp() {
-            self.timestamp = props.data.timestamp();
-            self.is_updated = true;
-
-            if self.description_view.is_view() {
-                self.description_view = DescriptionView::View(Self::get_description(&props.data));
-            }
-        } else {
-            self.is_updated = false;
         }
 
         Cmd::none()
     }
 
-    fn update(&mut self, _props: &Props, msg: Msg) -> Cmd<Self> {
+    fn update(self: Pin<&mut Self>, msg: Msg) -> Cmd<Self> {
         match msg {
             Msg::NoOp => Cmd::none(),
-            Msg::Sub(sub) => Cmd::sub(sub),
-            Msg::SetSelectedTabIdx(tab_idx) => {
-                self.selected_tab_idx = tab_idx;
-                Cmd::none()
-            }
+            Msg::Sub(sub) => Cmd::submit(sub),
             Msg::SetShowingModal(showing_modal) => {
                 self.showing_modal = showing_modal;
                 Cmd::none()
@@ -158,7 +92,7 @@ impl Update for RoomModelessCharacter {
                     character.set_color(color);
                 });
 
-                Cmd::sub(On::UpdateBlocks {
+                Cmd::submit(On::UpdateBlocks {
                     insert: set! {},
                     update: set! { self.character.id() },
                 })
@@ -168,7 +102,7 @@ impl Update for RoomModelessCharacter {
                     character.set_name(name);
                 });
 
-                Cmd::sub(On::UpdateBlocks {
+                Cmd::submit(On::UpdateBlocks {
                     insert: set! {},
                     update: set! { self.character.id() },
                 })
@@ -178,7 +112,7 @@ impl Update for RoomModelessCharacter {
                     character.set_display_name((Some(display_name), None));
                 });
 
-                Cmd::sub(On::UpdateBlocks {
+                Cmd::submit(On::UpdateBlocks {
                     insert: set! {},
                     update: set! { self.character.id() },
                 })
@@ -188,7 +122,7 @@ impl Update for RoomModelessCharacter {
                     character.set_display_name((None, Some(display_name)));
                 });
 
-                Cmd::sub(On::UpdateBlocks {
+                Cmd::submit(On::UpdateBlocks {
                     insert: set! {},
                     update: set! { self.character.id() },
                 })
@@ -198,7 +132,7 @@ impl Update for RoomModelessCharacter {
                     character.set_size(size);
                 });
 
-                Cmd::sub(On::UpdateBlocks {
+                Cmd::submit(On::UpdateBlocks {
                     insert: set! {},
                     update: set! { self.character.id() },
                 })
@@ -208,7 +142,7 @@ impl Update for RoomModelessCharacter {
                     character.set_tex_size(size);
                 });
 
-                Cmd::sub(On::UpdateBlocks {
+                Cmd::submit(On::UpdateBlocks {
                     insert: set! {},
                     update: set! { self.character.id() },
                 })
@@ -218,42 +152,20 @@ impl Update for RoomModelessCharacter {
                     character.set_selected_texture_idx(tex_idx);
                 });
 
-                Cmd::sub(On::UpdateBlocks {
+                Cmd::submit(On::UpdateBlocks {
                     insert: set! {},
                     update: set! { self.character.id() },
                 })
             }
-            Msg::SetDescriptionViewAsEdit(description) => {
-                if let Some(description) = description.or_else(|| {
-                    self.character
-                        .map(|character| character.description().raw().clone())
-                }) {
-                    self.description_view = DescriptionView::Edit(description);
-                }
+            Msg::SetDescription(description) => {
+                self.character.update(|character| {
+                    character.set_description(description);
+                });
 
-                Cmd::none()
-            }
-            Msg::SetDescriptionViewAsView => {
-                if self.description_view.is_view() && !self.is_updated {
-                    return Cmd::none();
-                }
-
-                let mut description_view =
-                    DescriptionView::View(Self::get_description(&self.character));
-                std::mem::swap(&mut self.description_view, &mut description_view);
-
-                if let DescriptionView::Edit(description) = description_view {
-                    self.character.update(|character| {
-                        character.set_description(description);
-                    });
-
-                    Cmd::sub(On::UpdateBlocks {
-                        insert: set! {},
-                        update: set! { self.character.id() },
-                    })
-                } else {
-                    Cmd::none()
-                }
+                Cmd::submit(On::UpdateBlocks {
+                    insert: set! {},
+                    update: set! { self.character.id() },
+                })
             }
             Msg::SetTextureImage(tex_idx, image) => {
                 self.character.update(|character| {
@@ -262,7 +174,7 @@ impl Update for RoomModelessCharacter {
 
                 self.showing_modal = ShowingModal::None;
 
-                Cmd::sub(On::UpdateBlocks {
+                Cmd::submit(On::UpdateBlocks {
                     insert: set! {},
                     update: set! { self.character.id() },
                 })
@@ -273,7 +185,7 @@ impl Update for RoomModelessCharacter {
                     character.set_texture_name(tex_idx, name);
                 });
 
-                Cmd::sub(On::UpdateBlocks {
+                Cmd::submit(On::UpdateBlocks {
                     insert: set! {},
                     update: set! { self.character.id() },
                 })
@@ -288,7 +200,7 @@ impl Update for RoomModelessCharacter {
                     )));
                 });
 
-                Cmd::sub(On::UpdateBlocks {
+                Cmd::submit(On::UpdateBlocks {
                     insert: set! {},
                     update: set! { self.character.id() },
                 })
@@ -297,23 +209,16 @@ impl Update for RoomModelessCharacter {
     }
 }
 
-impl RoomModelessCharacter {
-    fn get_description(character: &BlockMut<block::Character>) -> block::chat_message::Message {
-        let description = character
-            .map(|character| character.description().data().clone())
-            .unwrap_or_else(|| block::chat_message::Message::from(vec![]));
-        let (description, _) = block::chat_message::map(character.chat_ref(), description);
-        description
-    }
-}
-
-impl Render for RoomModelessCharacter {
-    fn render(&self, props: &Props, _children: Vec<Html<Self>>) -> Html<Self> {
+impl Render<Html> for RoomModelessCharacter {
+    type Children = ();
+    fn render(&self, props: &Props, _: Self::Children) -> Html {
         Self::styled(Html::fragment(vec![
             self.render_tabs(),
             match &self.showing_modal {
                 ShowingModal::None => Html::none(),
                 ShowingModal::SelectCharacterTexture(tex_idx) => ModalResource::empty(
+                    self,
+                    None,
                     modal_resource::Props {
                         arena: ArenaMut::clone(&props.arena),
                         world: BlockMut::clone(&props.world),
@@ -342,44 +247,68 @@ impl Render for RoomModelessCharacter {
 }
 
 impl RoomModelessCharacter {
-    fn render_tabs(&self) -> Html<Self> {
-        let tabs = vec![
-            vec![String::from("Common")],
-            self.character
-                .map(|character| {
-                    character
-                        .properties()
-                        .iter()
-                        .map(|prop| {
-                            prop.map(|prop| prop.name().clone())
-                                .unwrap_or_else(|| String::from(""))
-                        })
-                        .collect::<Vec<_>>()
-                })
-                .unwrap_or_else(|| vec![]),
-            vec![String::from("追加")],
-        ]
-        .into_iter()
-        .flatten()
-        .collect::<Vec<_>>();
-        let tabs_len: usize = tabs.len();
+    fn render_tabs(&self) -> Html {
         Html::div(
             Attributes::new().class(Self::class("base")),
             Events::new(),
-            vec![TabMenu::with_children(
+            vec![TabMenu::new(
+                self,
+                None,
                 tab_menu::Props {
-                    selected: self.selected_tab_idx,
-                    tabs: tabs,
+                    selected: 0,
                     controlled: true,
                 },
-                Sub::map(|sub| match sub {
-                    tab_menu::On::ChangeSelectedTab(tab_idx) => Msg::SetSelectedTabIdx(tab_idx),
-                }),
-                vec![if self.selected_tab_idx == 0 {
-                    self.render_tab0()
-                } else {
-                    Common::none()
-                }],
+                Sub::none(),
+                (
+                    Attributes::new(),
+                    Events::new(),
+                    vec![
+                        vec![(
+                            Html::text(String::from("Common")),
+                            Tab0::empty(
+                                self,
+                                None,
+                                tab_0::Props {
+                                    character: BlockMut::clone(&self.character),
+                                },
+                                Sub::map(|sub| match sub {
+                                    tab_0::On::OpenModal(modal) => Msg::SetShowingModal(modal),
+                                    tab_0::On::PushTexture => Msg::PushTexture,
+                                    tab_0::On::SetColor(pallet) => Msg::SetColor(pallet),
+                                    tab_0::On::SetDescription(description) => {
+                                        Msg::SetDescription(description)
+                                    }
+                                    tab_0::On::SetDisplayName0(dn0) => Msg::SetDisplayName0(dn0),
+                                    tab_0::On::SetDisplayName1(dn1) => Msg::SetDisplayName1(dn1),
+                                    tab_0::On::SetName(name) => Msg::SetName(name),
+                                    tab_0::On::SetSelectedTextureIdx(tex_idx) => {
+                                        Msg::SetSelectedTextureIdx(tex_idx)
+                                    }
+                                    tab_0::On::SetSize(size) => Msg::SetSize(size),
+                                    tab_0::On::SetTexSize(tex_size) => Msg::SetTexSize(tex_size),
+                                    tab_0::On::SetTextureName(tex_idx, tex_name) => {
+                                        Msg::SetTextureName(tex_idx, tex_name)
+                                    }
+                                }),
+                            ),
+                        )],
+                        self.character
+                            .map(|character| {
+                                character
+                                    .properties()
+                                    .iter()
+                                    .filter_map(|prop| {
+                                        prop.map(|prop| (Html::text(prop.name()), Html::none()))
+                                    })
+                                    .collect::<Vec<_>>()
+                            })
+                            .unwrap_or_default(),
+                        vec![(Html::text(String::from("追加")), Html::none())],
+                    ]
+                    .into_iter()
+                    .flatten()
+                    .collect::<Vec<_>>(),
+                ),
             )],
         )
     }
@@ -388,51 +317,10 @@ impl RoomModelessCharacter {
 impl Styled for RoomModelessCharacter {
     fn style() -> Style {
         style! {
-            ".dropdown" {
-                "overflow": "visible !important";
-            }
-
             ".base" {
                 "width": "100%";
                 "height": "100%";
                 "padding-top": ".65rem";
-            }
-
-            ".tab0-main" {
-                "display": "grid";
-                "grid-template-columns": "1fr";
-                "grid-auto-rows": "max-content";
-                "overflow-y": "scroll";
-            }
-
-            ".tab0-content" {
-                "display": "grid";
-                "column-gap": ".65rem";
-                "row-gap": ".65rem";
-                "align-items": "start";
-                "padding-left": ".65rem";
-                "padding-right": ".65rem";
-                "grid-template-columns": "repeat(auto-fit, minmax(20rem, 1fr))";
-                "grid-auto-rows": "max-content";
-            }
-
-            ".tab0-content img" {
-                "width": "100%";
-                "max-height": "20rem";
-                "object-fit": "contain";
-            }
-
-            ".tab0-texture" {
-                "display": "grid";
-                "align-items": "start";
-                "justify-items": "stretch";
-                "grid-template-columns": "1fr";
-                "grid-template-rows": "max-content max-content";
-            }
-
-            ".tab0-textarea" {
-                "resize": "none";
-                "height": "15em";
             }
         }
     }

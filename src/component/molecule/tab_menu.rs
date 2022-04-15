@@ -65,8 +65,8 @@ impl Update for TabMenu {
 }
 
 impl Render<Html> for TabMenu {
-    type Children = Vec<(Html, Html)>;
-    fn render(&self, children: Self::Children) -> Html {
+    type Children = (Attributes, Events, Vec<(Html, Html)>);
+    fn render(&self, (attrs, events, children): Self::Children) -> Html {
         let mut tabs = vec![];
         let mut contents = vec![];
         for (tab, content) in children {
@@ -75,8 +75,8 @@ impl Render<Html> for TabMenu {
         }
 
         Self::styled(Html::div(
-            Attributes::new().class(Self::class("base")),
-            Events::new(),
+            attrs.class(Self::class("base")),
+            events,
             vec![
                 Html::div(
                     Attributes::new().class(Self::class("tabs")),

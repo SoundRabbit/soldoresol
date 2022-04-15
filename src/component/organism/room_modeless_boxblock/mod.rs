@@ -13,9 +13,12 @@ use isaribi::{
     style,
     styled::{Style, Styled},
 };
-use kagura::component::{Cmd, Sub};
 use kagura::prelude::*;
+use nusa::prelude::*;
 use std::collections::HashSet;
+
+mod tab_0;
+use tab_0::Tab0;
 
 pub struct Props {
     pub arena: ArenaMut,
@@ -63,11 +66,13 @@ ElementId! {
 impl Component for RoomModelessBoxblock {
     type Props = Props;
     type Msg = Msg;
-    type Sub = On;
+    type Event = On;
 }
 
+impl HtmlComponent for RoomModelessBoxblock {}
+
 impl Constructor for RoomModelessBoxblock {
-    fn constructor(props: &Props) -> Self {
+    fn constructor(props: Self::Props) -> Self {
         Self {
             boxblock: BlockMut::clone(&props.data),
             showing_modal: ShowingModal::None,
@@ -77,15 +82,15 @@ impl Constructor for RoomModelessBoxblock {
 }
 
 impl Update for RoomModelessBoxblock {
-    fn on_load(&mut self, props: &Props) -> Cmd<Self> {
+    fn on_load(self: Pin<&mut Self>, props: Self::Props) -> Cmd<Self> {
         self.boxblock = BlockMut::clone(&props.data);
         Cmd::none()
     }
 
-    fn update(&mut self, _props: &Props, msg: Msg) -> Cmd<Self> {
+    fn update(self: Pin<&mut Self>, msg: Msg) -> Cmd<Self> {
         match msg {
             Msg::NoOp => Cmd::none(),
-            Msg::Sub(sub) => Cmd::sub(sub),
+            Msg::Sub(sub) => Cmd::submit(sub),
             Msg::SetShowingModal(showing_modal) => {
                 self.showing_modal = showing_modal;
                 Cmd::none()
@@ -95,7 +100,7 @@ impl Update for RoomModelessBoxblock {
                     boxblock.set_color(color);
                 });
 
-                Cmd::sub(On::UpdateBlocks {
+                Cmd::submit(On::UpdateBlocks {
                     insert: set! {},
                     update: set! { self.boxblock.id() },
                 })
@@ -105,7 +110,7 @@ impl Update for RoomModelessBoxblock {
                     boxblock.set_name(name);
                 });
 
-                Cmd::sub(On::UpdateBlocks {
+                Cmd::submit(On::UpdateBlocks {
                     insert: set! {},
                     update: set! { self.boxblock.id() },
                 })
@@ -115,7 +120,7 @@ impl Update for RoomModelessBoxblock {
                     boxblock.set_display_name((Some(display_name), None));
                 });
 
-                Cmd::sub(On::UpdateBlocks {
+                Cmd::submit(On::UpdateBlocks {
                     insert: set! {},
                     update: set! { self.boxblock.id() },
                 })
@@ -125,7 +130,7 @@ impl Update for RoomModelessBoxblock {
                     boxblock.set_display_name((None, Some(display_name)));
                 });
 
-                Cmd::sub(On::UpdateBlocks {
+                Cmd::submit(On::UpdateBlocks {
                     insert: set! {},
                     update: set! { self.boxblock.id() },
                 })
@@ -135,7 +140,7 @@ impl Update for RoomModelessBoxblock {
                     boxblock.set_shape(shape);
                 });
 
-                Cmd::sub(On::UpdateBlocks {
+                Cmd::submit(On::UpdateBlocks {
                     insert: set! {},
                     update: set! { self.boxblock.id() },
                 })
@@ -145,7 +150,7 @@ impl Update for RoomModelessBoxblock {
                     boxblock.set_size(size);
                 });
 
-                Cmd::sub(On::UpdateBlocks {
+                Cmd::submit(On::UpdateBlocks {
                     insert: set! {},
                     update: set! { self.boxblock.id() },
                 })
@@ -157,7 +162,7 @@ impl Update for RoomModelessBoxblock {
 
                 self.showing_modal = ShowingModal::None;
 
-                Cmd::sub(On::UpdateBlocks {
+                Cmd::submit(On::UpdateBlocks {
                     insert: set! {},
                     update: set! { self.boxblock.id() },
                 })
@@ -166,93 +171,73 @@ impl Update for RoomModelessBoxblock {
     }
 }
 
-impl Render for RoomModelessBoxblock {
-    fn render(&self, props: &Props, _children: Vec<Html<Self>>) -> Html<Self> {
-        Self::styled(Html::div(
-            Attributes::new()
-                .class(RoomModeless::class("common-base"))
-                .class("pure-form"),
-            Events::new(),
-            vec![
-                self.boxblock
-                    .map(|data| self.render_header(data))
-                    .unwrap_or(Common::none()),
-                self.boxblock
-                    .map(|data| self.render_main(data))
-                    .unwrap_or(Common::none()),
-                match &self.showing_modal {
-                    ShowingModal::None => Html::none(),
-                    ShowingModal::SelectBlockTexture => ModalResource::empty(
-                        modal_resource::Props {
-                            arena: ArenaMut::clone(&props.arena),
-                            world: BlockMut::clone(&props.world),
-                            title: String::from(modal_resource::title::SELECT_BLOCK_TEXTURE),
-                            filter: set! { BlockKind::BlockTexture },
-                            is_selecter: true,
-                        },
-                        Sub::map(|sub| match sub {
-                            modal_resource::On::Close => Msg::SetShowingModal(ShowingModal::None),
-                            modal_resource::On::UpdateBlocks { insert, update } => {
-                                Msg::Sub(On::UpdateBlocks { insert, update })
-                            }
-                            modal_resource::On::SelectBlockTexture(texture) => {
-                                Msg::SetTexture(Some(texture))
-                            }
-                            modal_resource::On::SelectNone => Msg::SetTexture(None),
-                            _ => Msg::NoOp,
-                        }),
-                    ),
-                },
-            ],
-        ))
+impl Render<Html> for RoomModelessBoxblock {
+    type Children = ();
+    fn render(&self, props: &Props, _: Self::Children) -> Html {
+        Self::styled(Html::fragment(vec![
+            self.render_tabs(),
+            match &self.showing_modal {
+                ShowingModal::None => Html::none(),
+                ShowingModal::SelectBlockTexture => ModalResource::empty(
+                    self,
+                    None,
+                    modal_resource::Props {
+                        arena: ArenaMut::clone(&props.arena),
+                        world: BlockMut::clone(&props.world),
+                        title: String::from(modal_resource::title::SELECT_BLOCK_TEXTURE),
+                        filter: set! { BlockKind::BlockTexture },
+                        is_selecter: true,
+                    },
+                    Sub::map(|sub| match sub {
+                        modal_resource::On::Close => Msg::SetShowingModal(ShowingModal::None),
+                        modal_resource::On::UpdateBlocks { insert, update } => {
+                            Msg::Sub(On::UpdateBlocks { insert, update })
+                        }
+                        modal_resource::On::SelectBlockTexture(texture) => {
+                            Msg::SetTexture(Some(texture))
+                        }
+                        modal_resource::On::SelectNone => Msg::SetTexture(None),
+                        _ => Msg::NoOp,
+                    }),
+                ),
+            },
+        ]))
     }
 }
 
 impl RoomModelessBoxblock {
-    fn render_header(&self, boxblock: &block::Boxblock) -> Html<Self> {
+    fn render_tabs(&self) -> Html {
         Html::div(
-            Attributes::new().class(RoomModeless::class("common-header")),
+            Attributes::new().class(Self::class("base")),
             Events::new(),
-            vec![
-                Html::label(
-                    Attributes::new()
-                        .class(RoomModeless::class("common-label"))
-                        .string("for", &self.element_id.input_boxblock_name),
+            vec![TabMenu::new(
+                self,
+                None,
+                tab_menu::Props {
+                    selected: 0,
+                    controlled: false,
+                },
+                Sub::none(),
+                (
+                    Attributes::new(),
                     Events::new(),
-                    vec![fa::i("fa-cube")],
+                    vec![(
+                        Html::text("Common"),
+                        Tab0::empty(
+                            self,
+                            None,
+                            tab_0::Props {
+                                craftboard: BlockMut::clone(&self.craftboard),
+                            },
+                            Sub::none(),
+                        ),
+                    )],
                 ),
-                Html::input(
-                    Attributes::new()
-                        .id(&self.element_id.input_boxblock_name)
-                        .value(boxblock.name()),
-                    Events::new().on_input(Msg::SetName),
-                    vec![],
-                ),
-                Html::label(
-                    Attributes::new()
-                        .class(RoomModeless::class("common-label"))
-                        .string("for", &self.element_id.input_boxblock_display_name),
-                    Events::new(),
-                    vec![Html::text("表示名")],
-                ),
-                Html::input(
-                    Attributes::new().value(&boxblock.display_name().1),
-                    Events::new().on_input(Msg::SetDisplayName1),
-                    vec![],
-                ),
-                text::span(""),
-                Html::input(
-                    Attributes::new()
-                        .id(&self.element_id.input_boxblock_display_name)
-                        .value(&boxblock.display_name().0),
-                    Events::new().on_input(Msg::SetDisplayName0),
-                    vec![],
-                ),
-            ],
+            )],
         )
     }
 
-    fn render_main(&self, boxblock: &block::Boxblock) -> Html<Self> {
+    fn render_main(&self, boxblock: &block::Boxblock) -> Html {
         Html::div(
             Attributes::new().class(Self::class("main")),
             Events::new(),

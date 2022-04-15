@@ -131,7 +131,7 @@ impl Render for BlockOption {
                     }
                 }
             }),
-            contents,
+            (Attributes::new(), Events::new(), contents),
         ))
     }
 }

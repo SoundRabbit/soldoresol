@@ -271,30 +271,34 @@ impl Render<Html> for RoomModelessChat {
                             Msg::SetSelectedChannelIdx(channel_idx)
                         }
                     }),
-                    self.chat
-                        .map(|chat| {
-                            chat.channels()
-                                .iter()
-                                .map(|channel| {
-                                    (
-                                        Html::text(
-                                            channel
-                                                .map(|channel| format!("# {}", channel.name()))
-                                                .unwrap_or(String::from("# ???")),
-                                        ),
-                                        Channel::empty(
-                                            self,
-                                            None,
-                                            channel::Props {
-                                                data: BlockMut::clone(&channel),
-                                            },
-                                            Sub::none(),
-                                        ),
-                                    )
-                                })
-                                .collect::<Vec<_>>()
-                        })
-                        .unwrap_or_default(),
+                    (
+                        Attributes::new().class(Self::class("channel-container")),
+                        Events::new(),
+                        self.chat
+                            .map(|chat| {
+                                chat.channels()
+                                    .iter()
+                                    .map(|channel| {
+                                        (
+                                            Html::text(
+                                                channel
+                                                    .map(|channel| format!("# {}", channel.name()))
+                                                    .unwrap_or(String::from("# ???")),
+                                            ),
+                                            Channel::empty(
+                                                self,
+                                                None,
+                                                channel::Props {
+                                                    data: BlockMut::clone(&channel),
+                                                },
+                                                Sub::none(),
+                                            ),
+                                        )
+                                    })
+                                    .collect::<Vec<_>>()
+                            })
+                            .unwrap_or_default(),
+                    ),
                 ),
                 Controller::empty(
                     self,
@@ -366,83 +370,12 @@ impl Styled for RoomModelessChat {
                 "grid-template-rows": "1fr max-content";
             }
 
-            // チャンネル
-
             ".channel-container" {
                 "padding-left": ".65rem";
                 "padding-right": ".65rem";
                 "grid-column": "2 / 3";
                 "grid-row": "1 / 2";
                 "overflow": "hidden";
-            }
-
-            ".channel" {
-                "display": "grid";
-                "grid-template-columns": "1fr";
-                "grid-template-rows": "max-content 1fr";
-                "overflow": "hidden";
-            }
-
-            ".channel-main" {
-                "display": "grid";
-                "grid-template-columns": "1fr";
-                "grid-template-rows": "max-content 1fr";
-                "overflow": "hidden";
-            }
-
-            ".channel-log" {
-                "height": "100%";
-                "overflow-y": "scroll";
-            }
-
-            ".channel-message" {
-                "border-top": format!(".35rem solid {}", crate::libs::color::Pallet::gray(3));
-                "padding-top": ".35rem";
-                "padding-bottom": ".35rem";
-                "font-size": "0.8rem";
-                "display": "grid";
-                "grid-template-columns": "max-content 1fr";
-                "grid-template-rows": "max-content max-content";
-            }
-
-            ".channel-message-icon" {
-                "grid-row": "span 2";
-                "width": "4.5rem";
-                "height": "4.5rem";
-                "align-self": "start";
-                "line-height": "1.5";
-                "font-size": "3rem";
-                "text-align": "center";
-                "align-self": "start";
-                "object-fit": "cover";
-                "object-position": "top";
-            }
-
-            ".channel-message-heading-row" {
-                "grid-column": "2";
-                "display": "flex";
-                "justify-content": "space-between";
-                "border-bottom": format!(".1rem solid {}", crate::libs::color::Pallet::gray(6));
-            }
-
-            ".channel-message-sender" {
-                "font-size": "1.1em";
-            }
-
-            ".channel-message-timestamp" {
-                "font-color": format!("{}", crate::libs::color::Pallet::gray(7));
-            }
-
-            ".channel-message-client" {
-                "text-align": "right";
-                "font-size": "0.9em";
-                "font-color": format!("{}", crate::libs::color::Pallet::gray(7));
-            }
-
-            ".channel-message-content" {
-                "overflow": "hidden";
-                "white-space": "pre-wrap";
-                "grid-column": "2";
             }
         }
     }
