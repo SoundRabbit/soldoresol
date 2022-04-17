@@ -1,16 +1,14 @@
 use super::template::loader::{self, Loader};
 use crate::libs::skyway::Peer;
 use crate::model::config::Config;
-use kagura::component::{Cmd, Sub};
 use kagura::prelude::*;
+use nusa::prelude::*;
 
 mod task;
 
 pub struct Props {}
 
-pub enum Msg {
-    Initialized(Config, web_sys::IdbDatabase, String, Peer, String),
-}
+pub enum Msg {}
 
 pub enum On {
     Load {
@@ -27,50 +25,38 @@ pub struct Initializer {}
 impl Component for Initializer {
     type Props = Props;
     type Msg = Msg;
-    type Sub = On;
+    type Event = On;
 }
 
+impl HtmlComponent for Initializer {}
+
 impl Constructor for Initializer {
-    fn constructor(_: &Self::Props) -> Self {
-        crate::debug::log_1("on_construct");
+    fn constructor(_: Self::Props) -> Self {
         Self {}
     }
 }
 
 impl Update for Initializer {
-    fn on_assemble(&mut self, _: &Self::Props) -> Cmd<Self> {
-        crate::debug::log_1("on_assemble");
-        Cmd::task(move |resolve| {
-            wasm_bindgen_futures::spawn_local(async {
-                if let Some((config, common_db, client_id, peer, peer_id)) =
-                    task::initialize().await
-                {
-                    crate::debug::log_1("success to initialize");
-                    resolve(Msg::Initialized(
-                        config, common_db, client_id, peer, peer_id,
-                    ));
-                } else {
-                    crate::debug::log_1("faild to initialize");
-                }
-            });
+    fn on_assemble(&mut self, _: Self::Props) -> Cmd<Self> {
+        Cmd::task(async {
+            if let Some((config, common_db, client_id, peer, peer_id)) = task::initialize().await {
+                Cmd::submit(On::Load {
+                    config,
+                    common_db,
+                    client_id,
+                    peer,
+                    peer_id,
+                })
+            } else {
+                Cmd::none()
+            }
         })
-    }
-
-    fn update(&mut self, _: &Props, msg: Msg) -> Cmd<Self> {
-        match msg {
-            Msg::Initialized(config, common_db, client_id, peer, peer_id) => Cmd::Sub(On::Load {
-                config,
-                common_db,
-                client_id,
-                peer,
-                peer_id,
-            }),
-        }
     }
 }
 
-impl Render for Initializer {
-    fn render(&self, _: &Props, _: Vec<Html<Self>>) -> Html<Self> {
-        Loader::empty(loader::Props {}, Sub::none())
+impl Render<Html> for Initializer {
+    type Children = ();
+    fn render(&self, _: Self::Children) -> Html {
+        Loader::empty(self, None, loader::Props {}, Sub::none())
     }
 }

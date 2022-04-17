@@ -2,7 +2,7 @@ use super::organism::room_modeless_boxblock::{self, RoomModelessBoxblock};
 use super::organism::room_modeless_character::{self, RoomModelessCharacter};
 use super::organism::room_modeless_chat::{self, RoomModelessChat};
 use super::organism::room_modeless_craftboard::{self, RoomModelessCraftboard};
-use crate::arena::{block, user, ArenaMut, BlockMut};
+use crate::arena::{block, ArenaMut, BlockMut};
 use crate::libs::random_id::U128Id;
 use isaribi::{
     style,
@@ -84,7 +84,9 @@ impl Render<Html> for RoomModeless {
     type Children = ();
     fn render(&self, _: ()) -> Html {
         Self::styled(Html::fragment(vec![match &self.content.data {
-            ContentData::Chat { user, data } => RoomModelessChat::empty(self,None
+            ContentData::Chat { user, data } => RoomModelessChat::empty(
+                self,
+                None,
                 room_modeless_chat::Props {
                     arena: ArenaMut::clone(&self.content.arena),
                     data: BlockMut::clone(&data),
@@ -98,9 +100,11 @@ impl Render<Html> for RoomModeless {
                 }),
             ),
             ContentData::Boxblock(boxblock) => RoomModelessBoxblock::empty(
+                self,
+                None,
                 room_modeless_boxblock::Props {
-                    arena: ArenaMut::clone(&content.arena),
-                    world: BlockMut::clone(&content.world),
+                    arena: ArenaMut::clone(&self.content.arena),
+                    world: BlockMut::clone(&self.content.world),
                     data: BlockMut::clone(&boxblock),
                 },
                 Sub::map(|sub| match sub {
@@ -110,9 +114,11 @@ impl Render<Html> for RoomModeless {
                 }),
             ),
             ContentData::Character(character) => RoomModelessCharacter::empty(
+                self,
+                None,
                 room_modeless_character::Props {
-                    arena: ArenaMut::clone(&content.arena),
-                    world: BlockMut::clone(&content.world),
+                    arena: ArenaMut::clone(&self.content.arena),
+                    world: BlockMut::clone(&self.content.world),
                     data: BlockMut::clone(&character),
                 },
                 Sub::map(|sub| match sub {
@@ -122,9 +128,11 @@ impl Render<Html> for RoomModeless {
                 }),
             ),
             ContentData::Craftboard(craftboard) => RoomModelessCraftboard::empty(
+                self,
+                None,
                 room_modeless_craftboard::Props {
-                    arena: ArenaMut::clone(&content.arena),
-                    world: BlockMut::clone(&content.world),
+                    arena: ArenaMut::clone(&self.content.arena),
+                    world: BlockMut::clone(&self.content.world),
                     data: BlockMut::clone(&craftboard),
                 },
                 Sub::map(|sub| match sub {
@@ -175,33 +183,43 @@ impl Styled for RoomModeless {
     }
 }
 
-pub struct TabName {}
+pub struct TabName {
+    content: Content,
+}
 
 impl Component for TabName {
     type Props = Content;
     type Msg = Msg;
-    type Sub = On;
+    type Event = On;
 }
 
+impl HtmlComponent for TabName {}
+
 impl Constructor for TabName {
-    fn constructor(_: &Content) -> Self {
-        Self {}
+    fn constructor(props: Self::Props) -> Self {
+        Self { content: props }
     }
 }
 
-impl Update for TabName {}
+impl Update for TabName {
+    fn on_load(self: Pin<&mut Self>, props: Self::Props) -> Cmd<Self> {
+        self.content = props;
+        Cmd::none()
+    }
+}
 
-impl Render for TabName {
-    fn render(&self, content: &Content, _children: Vec<Html>) -> Html {
+impl Render<Html> for TabName {
+    type Children = ();
+    fn render(&self, _: Self::Children) -> Html {
         use super::atom::fa;
-        match &content.data {
+        match &self.content.data {
             ContentData::Chat { user, .. } => match user {
                 ChatUser::Player(player) => player.map(|player| {
                     Html::span(
                         Attributes::new(),
                         Events::new(),
                         vec![
-                            fa::i("fa-comment"),
+                            fa::fas_i("fa-comment"),
                             Html::text(" "),
                             Html::text(player.name()),
                         ],
@@ -212,7 +230,7 @@ impl Render for TabName {
                         Attributes::new(),
                         Events::new(),
                         vec![
-                            fa::i("fa-comment"),
+                            fa::fas_i("fa-comment"),
                             Html::text(" "),
                             Html::text(character.name()),
                         ],
@@ -225,7 +243,7 @@ impl Render for TabName {
                     Html::span(
                         Attributes::new(),
                         Events::new(),
-                        vec![fa::i("fa-cube"), Html::text(" "), Html::text(bb.name())],
+                        vec![fa::fas_i("fa-cube"), Html::text(" "), Html::text(bb.name())],
                     )
                 })
                 .unwrap_or(Html::none()),
@@ -234,7 +252,7 @@ impl Render for TabName {
                     Html::span(
                         Attributes::new(),
                         Events::new(),
-                        vec![fa::i("fa-user"), Html::text(" "), Html::text(c.name())],
+                        vec![fa::fas_i("fa-user"), Html::text(" "), Html::text(c.name())],
                     )
                 })
                 .unwrap_or(Html::none()),
@@ -244,7 +262,7 @@ impl Render for TabName {
                         Attributes::new(),
                         Events::new(),
                         vec![
-                            fa::i("fa-border-all"),
+                            fa::fas_i("fa-border-all"),
                             Html::text(" "),
                             Html::text(cb.name()),
                         ],

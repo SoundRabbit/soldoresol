@@ -142,6 +142,8 @@ impl Component for RoomModelessChat {
     type Event = On;
 }
 
+impl HtmlComponent for RoomModelessChat {}
+
 impl Constructor for RoomModelessChat {
     fn constructor(props: Props) -> Self {
         Self {

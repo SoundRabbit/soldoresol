@@ -7,8 +7,8 @@ mod atom;
 mod constant;
 mod molecule;
 mod organism;
-// mod page;
-// mod template;
+mod page;
+mod template;
 
 pub use app::App;
 

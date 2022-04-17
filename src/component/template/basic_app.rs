@@ -2,8 +2,8 @@ use isaribi::{
     style,
     styled::{Style, Styled},
 };
-use kagura::component::Cmd;
 use kagura::prelude::*;
+use nusa::prelude::*;
 use wasm_bindgen::JsCast;
 
 pub struct Props {}
@@ -24,38 +24,41 @@ pub struct BasicApp;
 impl Component for BasicApp {
     type Props = Props;
     type Msg = Msg;
-    type Sub = On;
+    type Event = On;
 }
 
+impl HtmlComponent for BasicApp {}
+
 impl Constructor for BasicApp {
-    fn constructor(_: &Props) -> Self {
+    fn constructor(_: Self::Props) -> Self {
         Self {}
     }
 }
 
 impl Update for BasicApp {
-    fn update(&mut self, _: &Props, msg: Msg) -> Cmd<Self> {
+    fn update(&mut self, msg: Msg) -> Cmd<Self> {
         match msg {
             Msg::NoOp => Cmd::none(),
-            Msg::Sub(sub) => Cmd::Sub(sub),
+            Msg::Sub(sub) => Cmd::submit(sub),
         }
     }
 }
 
-impl Render for BasicApp {
-    fn render(&self, props: &Props, children: Vec<Html<Self>>) -> Html<Self> {
+impl Render<Html> for BasicApp {
+    type Children = Vec<Html>;
+    fn render(&self, children: Self::Children) -> Html {
         Self::styled(Html::div(
             Attributes::new().class(Self::class("base")),
             Events::new()
-                .on("dragleave", |e| {
+                .on("dragleave", self, |e| {
                     let e = unwrap!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
                     Msg::Sub(On::DragLeave(e))
                 })
-                .on("dragover", |e| {
+                .on("dragover", self, |e| {
                     let e = unwrap!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
                     Msg::Sub(On::DragOver(e))
                 })
-                .on("drop", |e| {
+                .on("drop", self, |e| {
                     let e = unwrap!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
                     Msg::Sub(On::Drop(e))
                 }),

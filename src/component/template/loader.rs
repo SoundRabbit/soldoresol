@@ -3,8 +3,8 @@ use isaribi::{
     style,
     styled::{Style, Styled},
 };
-use kagura::component::Sub;
 use kagura::prelude::*;
+use nusa::prelude::*;
 
 pub struct Props {}
 
@@ -17,8 +17,10 @@ pub struct Loader {}
 impl Component for Loader {
     type Props = Props;
     type Msg = Msg;
-    type Sub = On;
+    type Event = On;
 }
+
+impl HtmlComponent for Loader {}
 
 impl Constructor for Loader {
     fn constructor(_: &Props) -> Self {
@@ -28,13 +30,21 @@ impl Constructor for Loader {
 
 impl Update for Loader {}
 
-impl Render for Loader {
-    fn render(&self, _: &Props, _: Vec<Html<Self>>) -> Html<Self> {
+impl Render<Html> for Loader {
+    type Children = ();
+    fn render(&self, _: Self::Children) -> Html {
         Self::styled(Html::div(
             Attributes::new().class(Self::class("base")),
             Events::new(),
             vec![
-                LoadingCircle::empty(loading_circle::Variant::Dark, Sub::none()),
+                LoadingCircle::empty(
+                    self,
+                    None,
+                    loading_circle::Props {
+                        variant: loading_circle::Variant::Dark,
+                    },
+                    Sub::none(),
+                ),
                 Html::span(
                     Attributes::new(),
                     Events::new(),
