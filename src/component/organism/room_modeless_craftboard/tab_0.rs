@@ -21,7 +21,7 @@ use kagura::prelude::*;
 use nusa::prelude::*;
 
 pub struct Props {
-    craftboard: BlockMut<block::Craftboard>,
+    pub craftboard: BlockMut<block::Craftboard>,
 }
 
 pub enum Msg {
@@ -68,7 +68,7 @@ impl Constructor for Tab0 {
 }
 
 impl Update for Tab0 {
-    fn on_load(self: Pin<&mut Self>, props: Self::Props) -> Cmd<Self> {
+    fn on_load(mut self: Pin<&mut Self>, props: Self::Props) -> Cmd<Self> {
         self.craftboard = props.craftboard;
         Cmd::none()
     }

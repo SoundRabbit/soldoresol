@@ -3,7 +3,6 @@ pub mod table_tool;
 mod table_tool_state;
 use crate::arena::{block, ArenaMut, BlockKind, BlockMut, BlockRef};
 use crate::libs::random_id::U128Id;
-use crate::libs::window;
 use renderer::{CameraMatrix, ObjectId, Renderer};
 use std::cell::RefCell;
 use std::collections::HashSet;
@@ -12,10 +11,11 @@ use std::pin::Pin;
 use std::rc::Rc;
 use table_tool::TableTool;
 use table_tool_state::TableToolState;
+use wasm_bindgen::{prelude::*, JsCast};
 
 pub struct UpdatedBlocks {
-    update: HashSet<U128Id>,
-    insert: HashSet<U128Id>,
+    pub update: HashSet<U128Id>,
+    pub insert: HashSet<U128Id>,
 }
 
 pub struct Table {
@@ -82,10 +82,7 @@ impl Table {
         self.is_reserve_rendering = true;
     }
 
-    pub fn render_reserved(
-        &mut self,
-        world: BlockRef<block::World>,
-    ) -> Pin<Box<dyn Future<Output = ()>>> {
+    pub fn render_reserved(&mut self, world: BlockRef<block::World>) {
         if self.is_reserve_rendering {
             self.is_reserve_rendering = false;
             let renderer = Rc::clone(&self.renderer);
@@ -101,20 +98,27 @@ impl Table {
             };
             let is_debug_mode = self.is_debug_mode;
 
-            Box::pin(kagura::util::Task::new(move |resolve| {
-                window::request_animation_frame(move || {
-                    renderer.borrow_mut().render(
-                        is_debug_mode,
-                        world,
-                        &camera_matrix.borrow(),
-                        &grabbed_object_id,
-                    );
-                    resolve(());
-                });
-            }))
-        } else {
-            Box::pin(std::future::ready(()))
+            let a = Closure::once(Box::new(move || {
+                crate::debug::log_1("render canvas");
+                renderer.borrow_mut().render(
+                    is_debug_mode,
+                    world,
+                    &camera_matrix.borrow(),
+                    &grabbed_object_id,
+                );
+            }));
+
+            let _ = web_sys::window()
+                .unwrap()
+                .request_animation_frame(a.as_ref().unchecked_ref());
+
+            a.forget();
         }
+    }
+
+    pub fn reset_size(&mut self) {
+        self.is_reserve_rendering = true;
+        self.renderer.borrow_mut().reset_size();
     }
 
     fn selecting_table(world: BlockRef<block::World>) -> Option<BlockMut<block::Table>> {
@@ -171,7 +175,7 @@ impl Table {
     /// Boxblockを作成して配置する
     pub fn create_boxblock(
         &mut self,
-        arena: ArenaMut,
+        mut arena: ArenaMut,
         world: BlockMut<block::World>,
         mouse_coord: &[f64; 2],
         option: &table_tool::Boxblock,
@@ -212,8 +216,8 @@ impl Table {
 
     pub fn create_character(
         &mut self,
-        arena: ArenaMut,
-        world: BlockMut<block::World>,
+        mut arena: ArenaMut,
+        mut world: BlockMut<block::World>,
         mouse_coord: &[f64; 2],
         option: &table_tool::Character,
     ) {
@@ -261,7 +265,7 @@ impl Table {
 
     pub fn create_craftboard(
         &mut self,
-        arena: ArenaMut,
+        mut arena: ArenaMut,
         world: BlockMut<block::World>,
         mouse_coord: &[f64; 2],
         option: &table_tool::Craftboard,
@@ -335,8 +339,8 @@ impl Table {
 
     pub fn drag_block(
         &mut self,
-        arena: ArenaMut,
-        world: BlockMut<block::World>,
+        mut arena: ArenaMut,
+        _world: BlockMut<block::World>,
         mouse_coord: &[f64; 2],
     ) {
         let (block_kind, block_id) =
@@ -451,7 +455,7 @@ impl Table {
     pub fn on_mousedown(
         &mut self,
         arena: ArenaMut,
-        world: BlockMut<block::World>,
+        _world: BlockMut<block::World>,
         e: web_sys::MouseEvent,
         tool: &TableTool,
     ) {

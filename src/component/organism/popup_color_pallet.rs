@@ -66,13 +66,13 @@ impl Constructor for PopupColorPallet {
 }
 
 impl Update for PopupColorPallet {
-    fn on_load(self: Pin<&mut Self>, props: Self::Props) -> Cmd<Self> {
+    fn on_load(mut self: Pin<&mut Self>, props: Self::Props) -> Cmd<Self> {
         self.default_selected = props.default_selected;
         self.direction = props.direction;
         Cmd::none()
     }
 
-    fn update(self: Pin<&mut Self>, msg: Msg) -> Cmd<Self> {
+    fn update(mut self: Pin<&mut Self>, msg: Msg) -> Cmd<Self> {
         match msg {
             Msg::SetIsToggled(is_toggled) => {
                 self.is_toggled = is_toggled;

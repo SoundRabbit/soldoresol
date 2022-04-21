@@ -2,7 +2,6 @@ use super::atom::collapse::{self, Collapse};
 use super::atom::common::Common;
 use super::atom::marker::Marker;
 use super::atom::text;
-use super::NoProps;
 use crate::arena::{block, ArenaMut, BlockMut};
 use isaribi::{
     style,
@@ -11,14 +10,22 @@ use isaribi::{
 use kagura::prelude::*;
 use nusa::prelude::*;
 
+pub struct Props {
+    pub arena: ArenaMut,
+    pub world: BlockMut<block::World>,
+}
+
 pub enum Msg {}
 
 pub enum On {}
 
-pub struct SceneList {}
+pub struct SceneList {
+    arena: ArenaMut,
+    world: BlockMut<block::World>,
+}
 
 impl Component for SceneList {
-    type Props = NoProps;
+    type Props = Props;
     type Msg = Msg;
     type Event = On;
 }
@@ -26,18 +33,27 @@ impl Component for SceneList {
 impl HtmlComponent for SceneList {}
 
 impl Constructor for SceneList {
-    fn constructor(_: Self::Props) -> Self {
-        Self {}
+    fn constructor(props: Self::Props) -> Self {
+        Self {
+            arena: props.arena,
+            world: props.world,
+        }
     }
 }
 
-impl Update for SceneList {}
+impl Update for SceneList {
+    fn on_load(mut self: Pin<&mut Self>, props: Self::Props) -> Cmd<Self> {
+        self.arena = props.arena;
+        self.world = props.world;
+        Cmd::none()
+    }
+}
 
 impl Render<Html> for SceneList {
-    type Children = (ArenaMut, BlockMut<block::World>);
-    fn render(&self, (arena, world): Self::Children) -> Html {
+    type Children = ();
+    fn render(&self, _: Self::Children) -> Html {
         Self::styled(Html::fragment(
-            world
+            self.world
                 .map(|world| {
                     world
                         .scenes()

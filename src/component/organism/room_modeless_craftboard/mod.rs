@@ -80,14 +80,14 @@ impl Constructor for RoomModelessCraftboard {
 }
 
 impl Update for RoomModelessCraftboard {
-    fn on_load(self: Pin<&mut Self>, props: Props) -> Cmd<Self> {
+    fn on_load(mut self: Pin<&mut Self>, props: Props) -> Cmd<Self> {
         self.arena = props.arena;
         self.world = props.world;
         self.craftboard = props.data;
         Cmd::none()
     }
 
-    fn update(self: Pin<&mut Self>, msg: Msg) -> Cmd<Self> {
+    fn update(mut self: Pin<&mut Self>, msg: Msg) -> Cmd<Self> {
         match msg {
             Msg::NoOp => Cmd::none(),
             Msg::Sub(sub) => Cmd::submit(sub),

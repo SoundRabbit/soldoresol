@@ -44,6 +44,8 @@ pub enum On {
 }
 
 pub struct RoomModelessCharacter {
+    arena: ArenaMut,
+    world: BlockMut<block::World>,
     character: BlockMut<block::Character>,
     showing_modal: ShowingModal,
 }
@@ -62,8 +64,10 @@ impl Component for RoomModelessCharacter {
 impl HtmlComponent for RoomModelessCharacter {}
 
 impl Constructor for RoomModelessCharacter {
-    fn constructor(props: Props) -> Self {
+    fn constructor(props: Self::Props) -> Self {
         Self {
+            arena: props.arena,
+            world: props.world,
             character: props.data,
             showing_modal: ShowingModal::None,
         }
@@ -71,7 +75,9 @@ impl Constructor for RoomModelessCharacter {
 }
 
 impl Update for RoomModelessCharacter {
-    fn on_load(self: Pin<&mut Self>, props: &Props) -> Cmd<Self> {
+    fn on_load(mut self: Pin<&mut Self>, props: Self::Props) -> Cmd<Self> {
+        self.arena = props.arena;
+        self.world = props.world;
         if self.character.id() != props.data.id() {
             self.character = BlockMut::clone(&props.data);
         }
@@ -79,7 +85,7 @@ impl Update for RoomModelessCharacter {
         Cmd::none()
     }
 
-    fn update(self: Pin<&mut Self>, msg: Msg) -> Cmd<Self> {
+    fn update(mut self: Pin<&mut Self>, msg: Msg) -> Cmd<Self> {
         match msg {
             Msg::NoOp => Cmd::none(),
             Msg::Sub(sub) => Cmd::submit(sub),
@@ -211,7 +217,7 @@ impl Update for RoomModelessCharacter {
 
 impl Render<Html> for RoomModelessCharacter {
     type Children = ();
-    fn render(&self, props: &Props, _: Self::Children) -> Html {
+    fn render(&self, _: Self::Children) -> Html {
         Self::styled(Html::fragment(vec![
             self.render_tabs(),
             match &self.showing_modal {
@@ -220,8 +226,8 @@ impl Render<Html> for RoomModelessCharacter {
                     self,
                     None,
                     modal_resource::Props {
-                        arena: ArenaMut::clone(&props.arena),
-                        world: BlockMut::clone(&props.world),
+                        arena: ArenaMut::clone(&self.arena),
+                        world: BlockMut::clone(&self.world),
                         title: String::from(modal_resource::title::SELECT_TEXTURE),
                         filter: set! { BlockKind::ImageData },
                         is_selecter: true,

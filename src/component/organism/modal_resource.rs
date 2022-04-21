@@ -5,7 +5,6 @@ use super::atom::{
 };
 use super::molecule::modal::{self, Modal};
 use super::organism::modal_create_block_texture::{self, ModalCreateBlockTexture};
-use super::NoProps;
 use crate::arena::{block, resource, ArenaMut, BlockKind, BlockMut, BlockRef};
 use crate::libs::random_id::U128Id;
 use isaribi::{
@@ -117,14 +116,14 @@ impl Constructor for ModalResource {
 }
 
 impl Update for ModalResource {
-    fn on_load(self: Pin<&mut Self>, props: Props) -> Cmd<Self> {
+    fn on_load(mut self: Pin<&mut Self>, props: Props) -> Cmd<Self> {
         self.arena = props.arena;
         self.world = props.world;
 
         Cmd::none()
     }
 
-    fn update(self: Pin<&mut Self>, msg: Msg) -> Cmd<Self> {
+    fn update(mut self: Pin<&mut Self>, msg: Msg) -> Cmd<Self> {
         match msg {
             Msg::Sub(sub) => Cmd::submit(sub),
             Msg::CloseModal => {
@@ -179,7 +178,7 @@ impl Render<Html> for ModalResource {
         Self::styled(Modal::new(
             self,
             None,
-            NoProps(),
+            modal::Props {},
             Sub::map(|sub| match sub {
                 modal::On::Close => Msg::Sub(On::Close),
             }),

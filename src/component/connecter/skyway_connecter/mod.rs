@@ -1,5 +1,5 @@
 use super::page::room::{self, Room};
-use crate::arena::{block, Arena};
+use crate::arena::Arena;
 use crate::libs::skyway::{MeshRoom, Peer};
 use kagura::prelude::*;
 use nusa::prelude::*;
@@ -19,30 +19,42 @@ pub enum On {}
 
 pub struct SkywayConnecter {
     arena: Arena,
+    client_id: Rc<String>,
 }
 
 impl Component for SkywayConnecter {
     type Props = Props;
     type Msg = Msg;
-    type Sub = On;
+    type Event = On;
 }
 
+impl HtmlComponent for SkywayConnecter {}
+
 impl Constructor for SkywayConnecter {
-    fn constructor(_: &Props) -> Self {
+    fn constructor(props: Self::Props) -> Self {
         Self {
             arena: Arena::new(),
+            client_id: props.client_id,
         }
     }
 }
 
-impl Update for SkywayConnecter {}
+impl Update for SkywayConnecter {
+    fn on_load(mut self: Pin<&mut Self>, props: Self::Props) -> Cmd<Self> {
+        self.client_id = props.client_id;
+        Cmd::none()
+    }
+}
 
-impl Render for SkywayConnecter {
-    fn render(&self, props: &Props, _: Vec<Html<Self>>) -> Html<Self> {
+impl Render<Html> for SkywayConnecter {
+    type Children = ();
+    fn render(&self, _: Self::Children) -> Html {
         Room::empty(
+            self,
+            None,
             room::Props {
                 arena: self.arena.as_mut(),
-                client_id: Rc::clone(&props.client_id),
+                client_id: Rc::clone(&self.client_id),
             },
             Sub::none(),
         )

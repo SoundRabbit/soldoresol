@@ -25,7 +25,7 @@ mod description;
 use description::Description;
 
 pub struct Props {
-    character: BlockMut<block::Character>,
+    pub character: BlockMut<block::Character>,
 }
 
 pub enum Msg {
@@ -75,7 +75,7 @@ impl Constructor for Tab0 {
 }
 
 impl Update for Tab0 {
-    fn on_load(self: Pin<&mut Self>, props: Self::Props) -> Cmd<Self> {
+    fn on_load(mut self: Pin<&mut Self>, props: Self::Props) -> Cmd<Self> {
         self.character = props.character;
         Cmd::none()
     }

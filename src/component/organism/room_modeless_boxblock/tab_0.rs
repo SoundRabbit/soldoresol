@@ -20,7 +20,7 @@ use kagura::prelude::*;
 use nusa::prelude::*;
 
 pub struct Props {
-    boxblock: BlockMut<block::Boxblock>,
+    pub boxblock: BlockMut<block::Boxblock>,
 }
 
 pub enum Msg {
@@ -66,12 +66,12 @@ impl Constructor for Tab0 {
 }
 
 impl Update for Tab0 {
-    fn on_load(self: Pin<&mut Self>, props: Self::Props) -> Cmd<Self> {
+    fn on_load(mut self: Pin<&mut Self>, props: Self::Props) -> Cmd<Self> {
         self.boxblock = props.boxblock;
         Cmd::none()
     }
 
-    fn update(self: Pin<&mut Self>, msg: Self::Msg) -> Cmd<Self> {
+    fn update(mut self: Pin<&mut Self>, msg: Self::Msg) -> Cmd<Self> {
         match msg {
             Msg::NoOp => Cmd::none(),
             Msg::Sub(event) => Cmd::submit(event),

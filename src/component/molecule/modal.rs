@@ -1,6 +1,5 @@
 use super::atom::{btn::Btn, fa};
 use super::constant;
-use super::NoProps;
 use crate::libs::color::color_system;
 use isaribi::{
     style,
@@ -8,6 +7,8 @@ use isaribi::{
 };
 use kagura::prelude::*;
 use nusa::prelude::*;
+
+pub struct Props {}
 
 pub enum Msg {
     CloseSelf,
@@ -20,7 +21,7 @@ pub enum On {
 pub struct Modal {}
 
 impl Component for Modal {
-    type Props = NoProps;
+    type Props = Props;
     type Msg = Msg;
     type Event = On;
 }
@@ -28,13 +29,13 @@ impl Component for Modal {
 impl HtmlComponent for Modal {}
 
 impl Constructor for Modal {
-    fn constructor(props: ()) -> Self {
+    fn constructor(props: Self::Props) -> Self {
         Self {}
     }
 }
 
 impl Update for Modal {
-    fn update(&mut self, msg: Msg) -> Cmd<Self> {
+    fn update(self: Pin<&mut Self>, msg: Msg) -> Cmd<Self> {
         match msg {
             Msg::CloseSelf => Cmd::submit(On::Close),
         }

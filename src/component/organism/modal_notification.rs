@@ -3,13 +3,14 @@ use super::atom::{
     heading::{self, Heading},
 };
 use super::molecule::modal::{self, Modal};
-use super::NoProps;
 use isaribi::{
     style,
     styled::{Style, Styled},
 };
 use kagura::prelude::*;
 use nusa::prelude::*;
+
+pub struct Props {}
 
 pub enum Msg {
     Sub(On),
@@ -22,7 +23,7 @@ pub enum On {
 pub struct ModalNotification {}
 
 impl Component for ModalNotification {
-    type Props = NoProps;
+    type Props = Props;
     type Msg = Msg;
     type Event = On;
 }
@@ -38,7 +39,10 @@ impl Constructor for ModalNotification {
 impl Update for ModalNotification {
     fn update(self: Pin<&mut Self>, msg: Self::Msg) -> Cmd<Self> {
         match msg {
-            Msg::Sub(sub) => Cmd::submit(sub),
+            Msg::Sub(sub) => {
+                crate::debug::log_1("Cmd::submit");
+                Cmd::submit(sub)
+            }
         }
     }
 }
@@ -49,7 +53,7 @@ impl Render<Html> for ModalNotification {
         Self::styled(Modal::new(
             self,
             None,
-            NoProps(),
+            modal::Props {},
             Sub::map(|sub| match sub {
                 modal::On::Close => Msg::Sub(On::Close),
             }),
@@ -100,10 +104,13 @@ impl Render<Html> for ModalNotification {
                         ),
                         Html::div(
                             Attributes::new().class(Self::class("container")),
-                            Events::new().on_click(self, |_| Msg::Sub(On::Close)),
+                            Events::new(),
                             vec![Btn::primary(
                                 Attributes::new(),
-                                Events::new().on_click(self, |_| Msg::Sub(On::Close)),
+                                Events::new().on_click(self, |_| {
+                                    crate::debug::log_1("close notification");
+                                    Msg::Sub(On::Close)
+                                }),
                                 vec![Html::text("閉じる")],
                             )],
                         ),

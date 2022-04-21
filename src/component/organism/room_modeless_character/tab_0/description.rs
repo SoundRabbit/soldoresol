@@ -8,7 +8,7 @@ use kagura::prelude::*;
 use nusa::prelude::*;
 
 pub struct Props {
-    character: BlockMut<block::Character>,
+    pub character: BlockMut<block::Character>,
 }
 
 pub enum Msg {
@@ -50,7 +50,7 @@ impl Constructor for Description {
 }
 
 impl Update for Description {
-    fn on_load(self: Pin<&mut Self>, props: Self::Props) -> Cmd<Self> {
+    fn on_load(mut self: Pin<&mut Self>, props: Self::Props) -> Cmd<Self> {
         if self.character.id() != props.character.id() {
             self.description = DescriptionKind::View(Self::description(&props.character));
             self.character = props.character;
@@ -60,7 +60,7 @@ impl Update for Description {
         }
     }
 
-    fn update(self: Pin<&mut Self>, msg: Self::Msg) -> Cmd<Self> {
+    fn update(mut self: Pin<&mut Self>, msg: Self::Msg) -> Cmd<Self> {
         match msg {
             Msg::SetDescriptionAsEdit => {
                 self.description = DescriptionKind::Edit(

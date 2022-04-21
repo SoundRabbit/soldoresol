@@ -1,6 +1,5 @@
 use super::atom::btn::{self, Btn};
 use super::atom::fa;
-use crate::libs::window;
 use isaribi::{
     style,
     styled::{Style, Styled},
@@ -8,8 +7,9 @@ use isaribi::{
 use kagura::component::Cmd;
 use kagura::prelude::*;
 use nusa::prelude::*;
+use std::cell::{Cell, RefCell};
 use std::rc::Rc;
-use wasm_bindgen::JsCast;
+use wasm_bindgen::{prelude::*, JsCast};
 
 pub struct Props {
     pub direction: Direction,
@@ -54,7 +54,7 @@ impl Direction {
     }
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone, Copy)]
 pub enum ToggleType {
     Click,
     Hover,
@@ -70,11 +70,17 @@ pub enum Msg {
 pub enum On {}
 
 pub struct Dropdown {
-    is_dropdowned: bool,
     direction: Direction,
     variant: btn::Variant,
+    batch_state: Rc<RefCell<BatchState>>,
+    batch: js_sys::Function,
+}
+
+struct BatchState {
+    is_dropdowned: bool,
     toggle_type: ToggleType,
     root: Option<Rc<web_sys::Node>>,
+    handle: Option<Box<dyn FnMut(Cmd<Dropdown>)>>,
 }
 
 impl Component for Dropdown {
@@ -86,51 +92,90 @@ impl Component for Dropdown {
 impl HtmlComponent for Dropdown {}
 
 impl Constructor for Dropdown {
-    fn constructor(props: &Props) -> Self {
+    fn constructor(props: Self::Props) -> Self {
         let is_dropdowned = if let ToggleType::Manual(is_dropdowned) = &props.toggle_type {
             *is_dropdowned
         } else {
             false
         };
 
-        Self {
-            is_dropdowned: is_dropdowned,
-            direction: props.direction,
-            variant: props.variant,
+        let batch_state = Rc::new(RefCell::new(BatchState {
+            is_dropdowned,
             toggle_type: props.toggle_type,
             root: None,
+            handle: None,
+        }));
+
+        let batch: js_sys::Function = Closure::wrap(Box::new({
+            let batch_state = Rc::clone(&batch_state);
+            move |e: web_sys::Event| {
+                let mut batch_state = batch_state.borrow_mut();
+                let batch_state: &mut BatchState = &mut batch_state;
+                if let (Some(root), Some(handle)) =
+                    (batch_state.root.as_ref(), batch_state.handle.as_mut())
+                {
+                    if batch_state.toggle_type == ToggleType::Click {
+                        if batch_state.is_dropdowned {
+                            handle(Cmd::chain(Msg::ToggleTo(false)));
+                        } else if let Some(target) =
+                            e.target().and_then(|t| t.dyn_into::<web_sys::Node>().ok())
+                        {
+                            if root.contains(Some(&target)) {
+                                handle(Cmd::chain(Msg::ToggleTo(true)));
+                            }
+                        }
+                    }
+                }
+            }
+        }) as Box<dyn FnMut(_)>)
+        .into_js_value()
+        .unchecked_into();
+
+        let _ = web_sys::window()
+            .unwrap()
+            .add_event_listener_with_callback("click", &batch);
+
+        Self {
+            direction: props.direction,
+            variant: props.variant,
+            batch_state,
+            batch,
         }
     }
 }
 
 impl Update for Dropdown {
-    fn on_load(self: Pin<&mut Self>, props: &Props) -> Cmd<Self> {
+    fn on_assemble(self: Pin<&mut Self>) -> Cmd<Self> {
+        Cmd::batch(kagura::util::Batch::new({
+            let batch_state = Rc::clone(&self.batch_state);
+            move |handle| {
+                batch_state.borrow_mut().handle = Some(handle);
+            }
+        }))
+    }
+
+    fn on_load(mut self: Pin<&mut Self>, props: Self::Props) -> Cmd<Self> {
         if let ToggleType::Manual(is_dropdowned) = &props.toggle_type {
-            self.is_dropdowned = *is_dropdowned;
+            self.batch_state.borrow_mut().is_dropdowned = *is_dropdowned;
         }
 
         self.direction = props.direction;
         self.variant = props.variant;
-        self.toggle_type = props.toggle_type;
+        self.batch_state.borrow_mut().toggle_type = props.toggle_type;
 
         Cmd::none()
     }
 
-    fn update(self: Pin<&mut Self>, msg: Msg) -> Cmd<Self> {
+    fn update(mut self: Pin<&mut Self>, msg: Msg) -> Cmd<Self> {
         match msg {
             Msg::NoOp => Cmd::none(),
             Msg::SetRoot(root) => {
-                self.root = Some(Rc::new(root));
+                self.batch_state.borrow_mut().root = Some(Rc::new(root));
                 Cmd::none()
             }
             Msg::ToggleTo(is_dropdowned) => {
-                self.is_dropdowned = is_dropdowned;
-
-                if self.toggle_type == ToggleType::Click {
-                    self.toggle_cmd()
-                } else {
-                    Cmd::none()
-                }
+                self.batch_state.borrow_mut().is_dropdowned = is_dropdowned;
+                Cmd::none()
             }
         }
     }
@@ -139,7 +184,7 @@ impl Update for Dropdown {
 impl Render<Html> for Dropdown {
     type Children = (Vec<Html>, Vec<Html>);
     fn render(&self, (text, children): Self::Children) -> Html {
-        Self::styled(match &self.toggle_type {
+        Self::styled(match &self.batch_state.borrow().toggle_type {
             ToggleType::Click => self.render_toggle_by_click(text, children),
             ToggleType::Hover => self.render_toggle_by_hover(text, children),
             ToggleType::Manual(_) => self.render_toggle_by_manual(text, children),
@@ -148,30 +193,6 @@ impl Render<Html> for Dropdown {
 }
 
 impl Dropdown {
-    fn toggle_cmd(&self) -> Cmd<Self> {
-        if let Some(root) = &self.root {
-            let is_dropdowned = self.is_dropdowned;
-            let root = Rc::clone(root);
-            Cmd::task(kagura::util::Task::new({
-                move |resolve| {
-                    window::add_event_listener("click", true, move |e| {
-                        if is_dropdowned {
-                            resolve(Cmd::chain(Msg::ToggleTo(false)));
-                        } else {
-                            let target = unwrap!(e.target());
-                            let target = unwrap!(target.dyn_into::<web_sys::Node>().ok());
-                            if root.contains(Some(&target)) {
-                                resolve(Cmd::chain(Msg::ToggleTo(true)));
-                            }
-                        }
-                    });
-                }
-            }))
-        } else {
-            Cmd::none()
-        }
-    }
-
     fn base_class_option(&self) -> &str {
         match &self.variant {
             btn::Variant::Menu => "base-menu",
@@ -220,7 +241,10 @@ impl Dropdown {
                 .class("pure-button")
                 .class(Btn::class_name(&self.variant))
                 .class(Self::class("root-btn"))
-                .string("data-toggled", self.is_dropdowned.to_string()),
+                .string(
+                    "data-toggled",
+                    self.batch_state.borrow().is_dropdowned.to_string(),
+                ),
             Events::new(),
             vec![Html::div(
                 Attributes::new().class(Self::class("btn")),
@@ -235,10 +259,25 @@ impl Dropdown {
             Attributes::new()
                 .class(Self::class("content"))
                 .class(Self::class(&format!("content-{}", &self.direction)))
-                .string("data-toggled", self.is_dropdowned.to_string()),
+                .string(
+                    "data-toggled",
+                    self.batch_state.borrow().is_dropdowned.to_string(),
+                ),
             Events::new(),
-            if self.is_dropdowned { children } else { vec![] },
+            if self.batch_state.borrow().is_dropdowned {
+                children
+            } else {
+                vec![]
+            },
         )
+    }
+}
+
+impl std::ops::Drop for Dropdown {
+    fn drop(&mut self) {
+        let _ = web_sys::window()
+            .unwrap()
+            .remove_event_listener_with_callback("click", &self.batch);
     }
 }
 

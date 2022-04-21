@@ -5,7 +5,6 @@ use super::atom::{
     text,
 };
 use super::molecule::modal::{self, Modal};
-use super::NoProps;
 use crate::arena::{block, BlockMut, BlockRef};
 use crate::libs::random_id::U128Id;
 use isaribi::{
@@ -63,12 +62,12 @@ impl Constructor for ModalChatUser {
 }
 
 impl Update for ModalChatUser {
-    fn on_load(self: Pin<&mut Self>, props: Props) -> Cmd<Self> {
+    fn on_load(mut self: Pin<&mut Self>, props: Props) -> Cmd<Self> {
         self.world = props.world;
         Cmd::none()
     }
 
-    fn update(self: Pin<&mut Self>, msg: Self::Msg) -> Cmd<Self> {
+    fn update(mut self: Pin<&mut Self>, msg: Self::Msg) -> Cmd<Self> {
         match msg {
             Msg::Cancel => Cmd::submit(On::Cancel),
             Msg::Select => Cmd::submit(On::Select(
@@ -92,11 +91,11 @@ impl Update for ModalChatUser {
 
 impl Render<Html> for ModalChatUser {
     type Children = ();
-    fn render(&self, props: &Props, _: Self::Children) -> Html {
+    fn render(&self, _: Self::Children) -> Html {
         Self::styled(Modal::new(
             self,
             None,
-            NoProps(),
+            modal::Props {},
             Sub::map(|sub| match sub {
                 modal::On::Close => Msg::Cancel,
             }),
@@ -112,7 +111,7 @@ impl Render<Html> for ModalChatUser {
                                 .class(Self::class("content"))
                                 .class(Self::class("container")),
                             Events::new(),
-                            vec![self.render_unselected(props), self.render_selected()],
+                            vec![self.render_unselected(), self.render_selected()],
                         ),
                         Html::div(
                             Attributes::new().class(Self::class("container")),
@@ -131,7 +130,7 @@ impl Render<Html> for ModalChatUser {
 }
 
 impl ModalChatUser {
-    fn render_unselected(&self, props: &Props) -> Html {
+    fn render_unselected(&self) -> Html {
         Html::div(
             Attributes::new(),
             Events::new(),
@@ -145,8 +144,7 @@ impl ModalChatUser {
                 Html::div(
                     Attributes::new().class(Self::class("list")),
                     Events::new(),
-                    props
-                        .world
+                    self.world
                         .map(|world| {
                             world
                                 .characters()

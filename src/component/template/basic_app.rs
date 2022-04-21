@@ -36,7 +36,7 @@ impl Constructor for BasicApp {
 }
 
 impl Update for BasicApp {
-    fn update(&mut self, msg: Msg) -> Cmd<Self> {
+    fn update(self: Pin<&mut Self>, msg: Msg) -> Cmd<Self> {
         match msg {
             Msg::NoOp => Cmd::none(),
             Msg::Sub(sub) => Cmd::submit(sub),
@@ -51,15 +51,15 @@ impl Render<Html> for BasicApp {
             Attributes::new().class(Self::class("base")),
             Events::new()
                 .on("dragleave", self, |e| {
-                    let e = unwrap!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
+                    let e = unwrap!(e.clone().dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
                     Msg::Sub(On::DragLeave(e))
                 })
                 .on("dragover", self, |e| {
-                    let e = unwrap!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
+                    let e = unwrap!(e.clone().dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
                     Msg::Sub(On::DragOver(e))
                 })
                 .on("drop", self, |e| {
-                    let e = unwrap!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
+                    let e = unwrap!(e.clone().dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
                     Msg::Sub(On::Drop(e))
                 }),
             children,

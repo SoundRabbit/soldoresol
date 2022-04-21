@@ -31,7 +31,7 @@ impl Component for Collapse {
 impl HtmlComponent for Collapse {}
 
 impl Constructor for Collapse {
-    fn constructor(props: &Props) -> Self {
+    fn constructor(props: Self::Props) -> Self {
         Self {
             is_collapsed: props.is_default_collapsed,
             is_indented: props.is_indented,
@@ -40,12 +40,12 @@ impl Constructor for Collapse {
 }
 
 impl Update for Collapse {
-    fn on_load(self: Pin<&mut Self>, props: Self::Props) -> Cmd<Self> {
+    fn on_load(mut self: Pin<&mut Self>, props: Self::Props) -> Cmd<Self> {
         self.is_indented = props.is_indented;
         Cmd::none()
     }
 
-    fn update(self: Pin<&mut Self>, _props: &Props, msg: Msg) -> Cmd<Self> {
+    fn update(mut self: Pin<&mut Self>, msg: Msg) -> Cmd<Self> {
         match msg {
             Msg::SetIsCollapsed(is_collapsed) => {
                 self.is_collapsed = is_collapsed;

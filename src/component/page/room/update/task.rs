@@ -1,5 +1,6 @@
-use super::*;
+use crate::libs::skyway::{MeshRoom, Peer};
 use js_sys::Promise;
+use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;

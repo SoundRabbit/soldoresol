@@ -17,8 +17,8 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 pub struct Props {
-    chat_user: ChatUser,
-    shared_state: Rc<RefCell<SharedState>>,
+    pub chat_user: ChatUser,
+    pub shared_state: Rc<RefCell<SharedState>>,
 }
 
 pub enum Msg {
@@ -61,7 +61,7 @@ impl Constructor for ChatPallet {
 }
 
 impl Update for ChatPallet {
-    fn on_load(self: Pin<&mut Self>, props: Self::Props) -> Cmd<Self> {
+    fn on_load(mut self: Pin<&mut Self>, props: Self::Props) -> Cmd<Self> {
         self.shared_state = props.shared_state;
         if self.chat_user != props.chat_user {
             self.chat_user = props.chat_user;
@@ -80,7 +80,7 @@ impl Update for ChatPallet {
         Cmd::none()
     }
 
-    fn update(self: Pin<&mut Self>, msg: Self::Msg) -> Cmd<Self> {
+    fn update(mut self: Pin<&mut Self>, msg: Self::Msg) -> Cmd<Self> {
         match msg {
             Msg::NoOp => Cmd::none(),
             Msg::Sub(e) => Cmd::submit(e),

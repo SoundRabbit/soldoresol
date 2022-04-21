@@ -40,6 +40,8 @@ pub enum On {
 }
 
 pub struct RoomModelessBoxblock {
+    arena: ArenaMut,
+    world: BlockMut<block::World>,
     boxblock: BlockMut<block::Boxblock>,
     showing_modal: ShowingModal,
 }
@@ -60,19 +62,23 @@ impl HtmlComponent for RoomModelessBoxblock {}
 impl Constructor for RoomModelessBoxblock {
     fn constructor(props: Self::Props) -> Self {
         Self {
-            boxblock: BlockMut::clone(&props.data),
+            arena: props.arena,
+            world: props.world,
+            boxblock: props.data,
             showing_modal: ShowingModal::None,
         }
     }
 }
 
 impl Update for RoomModelessBoxblock {
-    fn on_load(self: Pin<&mut Self>, props: Self::Props) -> Cmd<Self> {
-        self.boxblock = BlockMut::clone(&props.data);
+    fn on_load(mut self: Pin<&mut Self>, props: Self::Props) -> Cmd<Self> {
+        self.arena = props.arena;
+        self.world = props.world;
+        self.boxblock = props.data;
         Cmd::none()
     }
 
-    fn update(self: Pin<&mut Self>, msg: Msg) -> Cmd<Self> {
+    fn update(mut self: Pin<&mut Self>, msg: Msg) -> Cmd<Self> {
         match msg {
             Msg::NoOp => Cmd::none(),
             Msg::Sub(sub) => Cmd::submit(sub),
@@ -158,7 +164,7 @@ impl Update for RoomModelessBoxblock {
 
 impl Render<Html> for RoomModelessBoxblock {
     type Children = ();
-    fn render(&self, props: &Props, _: Self::Children) -> Html {
+    fn render(&self, _: Self::Children) -> Html {
         Self::styled(Html::fragment(vec![
             self.render_tabs(),
             match &self.showing_modal {
@@ -167,8 +173,8 @@ impl Render<Html> for RoomModelessBoxblock {
                     self,
                     None,
                     modal_resource::Props {
-                        arena: ArenaMut::clone(&props.arena),
-                        world: BlockMut::clone(&props.world),
+                        arena: ArenaMut::clone(&self.arena),
+                        world: BlockMut::clone(&self.world),
                         title: String::from(modal_resource::title::SELECT_BLOCK_TEXTURE),
                         filter: set! { BlockKind::BlockTexture },
                         is_selecter: true,

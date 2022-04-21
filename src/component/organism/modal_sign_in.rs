@@ -3,7 +3,6 @@ use super::atom::{
     heading::{self, Heading},
 };
 use super::molecule::modal::{self, Modal};
-use super::NoProps;
 use crate::libs::gapi::gapi;
 use isaribi::{
     style,
@@ -13,6 +12,8 @@ use kagura::prelude::*;
 use nusa::prelude::*;
 use std::cell::RefCell;
 use wasm_bindgen::{prelude::*, JsCast};
+
+pub struct Props {}
 
 pub enum Msg {
     NoOp,
@@ -26,7 +27,7 @@ pub enum On {
 pub struct ModalSignIn {}
 
 impl Component for ModalSignIn {
-    type Props = NoProps;
+    type Props = Props;
     type Msg = Msg;
     type Event = On;
 }
@@ -34,7 +35,7 @@ impl Component for ModalSignIn {
 impl HtmlComponent for ModalSignIn {}
 
 impl Constructor for ModalSignIn {
-    fn constructor(_: NoProps) -> Self {
+    fn constructor(_: Self::Props) -> Self {
         ModalSignIn {}
     }
 }
@@ -69,9 +70,10 @@ impl Update for ModalSignIn {
 impl Render<Html> for ModalSignIn {
     type Children = ();
     fn render(&self, _: Self::Children) -> Html {
+        crate::debug::log_1("render ModalSignIn");
         Self::styled(Modal::new(
                 self,None,
-                NoProps(),
+                modal::Props {},
                 Sub::map(|sub| match sub {
                     modal::On::Close => Msg::CloseSelf,
                 }),
@@ -131,7 +133,7 @@ impl Render<Html> for ModalSignIn {
                                 Btn::secondary(
                                     Attributes::new(),
                                     Events::new().on_click(self, |e| {
-                                        e.stop_propagation();
+                                        crate::debug::log_1("ModalSignIn::Msg::CloseSelf");
                                         Msg::CloseSelf
                                     }),
                                     vec![Html::text("キャンセル")],
@@ -139,7 +141,6 @@ impl Render<Html> for ModalSignIn {
                                 Btn::primary(
                                     Attributes::new(),
                                     Events::new().on_click(self, |e| {
-                                        e.stop_propagation();
                                         gapi.auth2().get_auth_instance().sign_in();
                                         Msg::NoOp
                                     }),

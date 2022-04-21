@@ -23,7 +23,7 @@ impl Component for Loader {
 impl HtmlComponent for Loader {}
 
 impl Constructor for Loader {
-    fn constructor(_: &Props) -> Self {
+    fn constructor(_: Self::Props) -> Self {
         Self {}
     }
 }

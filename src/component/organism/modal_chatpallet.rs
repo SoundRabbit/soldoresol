@@ -1,6 +1,5 @@
 use super::atom::btn::Btn;
 use super::molecule::modal::{self, Modal};
-use super::NoProps;
 use isaribi::{
     style,
     styled::{Style, Styled},
@@ -42,7 +41,7 @@ impl Constructor for ModalChatpallet {
 }
 
 impl Update for ModalChatpallet {
-    fn update(self: Pin<&mut Self>, msg: Msg) -> Cmd<Self> {
+    fn update(mut self: Pin<&mut Self>, msg: Msg) -> Cmd<Self> {
         match msg {
             Msg::Close => Cmd::submit(On::Close),
             Msg::Ok => Cmd::submit(On::Ok(self.data.clone())),
@@ -60,7 +59,7 @@ impl Render<Html> for ModalChatpallet {
         Self::styled(Modal::new(
             self,
             None,
-            NoProps(),
+            modal::Props {},
             Sub::map(|sub| match sub {
                 modal::On::Close => Msg::Close,
             }),

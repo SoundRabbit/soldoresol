@@ -9,7 +9,7 @@ use isaribi::{
 use kagura::prelude::*;
 use nusa::prelude::*;
 
-struct Children {
+pub struct Children {
     pub title: Option<String>,
     pub theme: slider::Theme,
 }
@@ -57,7 +57,7 @@ impl Constructor for ColorPallet {
 }
 
 impl Update for ColorPallet {
-    fn on_load(&mut self, default_selected: Pallet) -> Cmd<Self> {
+    fn on_load(mut self: Pin<&mut Self>, default_selected: Pallet) -> Cmd<Self> {
         if self.default_selected != default_selected {
             self.default_selected = default_selected.clone();
             self.selected = default_selected.clone();
@@ -65,7 +65,7 @@ impl Update for ColorPallet {
         Cmd::none()
     }
 
-    fn update(&mut self, props: &Props, msg: Msg) -> Cmd<Self> {
+    fn update(mut self: Pin<&mut Self>, msg: Msg) -> Cmd<Self> {
         match msg {
             Msg::NoOp => Cmd::none(),
             Msg::SetColor(pallet) => {

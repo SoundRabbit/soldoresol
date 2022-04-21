@@ -2,7 +2,7 @@ use super::*;
 
 impl RoomModelessChat {
     pub fn send_chat_message(
-        self: Pin<&mut Self>,
+        mut self: Pin<&mut Self>,
         sender: block::chat_message::Sender,
         mut channel: BlockMut<block::ChatChannel>,
         message: &String,

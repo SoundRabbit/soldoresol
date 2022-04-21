@@ -8,7 +8,7 @@ use kagura::prelude::*;
 use nusa::prelude::*;
 
 pub struct Props {
-    data: BlockMut<block::ChatChannel>,
+    pub data: BlockMut<block::ChatChannel>,
 }
 
 pub enum Msg {}
@@ -42,7 +42,7 @@ impl Constructor for Channel {
 }
 
 impl Update for Channel {
-    fn on_load(self: Pin<&mut Self>, props: Self::Props) -> Cmd<Self> {
+    fn on_load(mut self: Pin<&mut Self>, props: Self::Props) -> Cmd<Self> {
         self.data = props.data;
         Cmd::none()
     }

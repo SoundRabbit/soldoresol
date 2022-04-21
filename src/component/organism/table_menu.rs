@@ -108,7 +108,7 @@ impl TableMenu {
 }
 
 impl Update for TableMenu {
-    fn update(self: Pin<&mut Self>, msg: Self::Msg) -> Cmd<Self> {
+    fn update(mut self: Pin<&mut Self>, msg: Self::Msg) -> Cmd<Self> {
         match msg {
             Msg::NoOp => Cmd::none(),
             Msg::Sub(sub) => Cmd::submit(sub),

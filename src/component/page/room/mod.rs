@@ -1,11 +1,12 @@
-use super::atom::table::{self, table_tool::TableTool, Table};
-use super::organism::room_modeless::{self, RoomModeless};
+use super::organism::room_modeless;
 use super::organism::room_modeless_chat::ChatUser;
-use super::organism::tab_modeless_container::{self, TabModelessContainer};
+use super::organism::tab_modeless_container::TabModelessList;
 use crate::arena::{block, resource, user, Arena, ArenaMut, BlockMut, Untyped};
 use crate::libs::random_id::U128Id;
-use crate::libs::skyway::{MeshRoom, Peer};
+use crate::table::{table_tool::TableTool, Table};
 use kagura::prelude::*;
+use nusa::prelude::*;
+use std::cell::RefCell;
 use std::collections::HashSet;
 use std::rc::Rc;
 
@@ -50,14 +51,14 @@ pub enum On {}
 pub struct Room {
     arena: ArenaMut,
     local_arena: Arena,
+    client_id: Rc<String>,
 
     chat: BlockMut<block::Chat>,
     world: BlockMut<block::World>,
     me: BlockMut<user::Player>,
 
-    table: PrepackedComponent<Table>,
-    modeless_container:
-        PrepackedComponent<TabModelessContainer<RoomModeless, room_modeless::TabName>>,
+    table: Rc<RefCell<Table>>,
+    modeless_container: Rc<RefCell<TabModelessList<room_modeless::Content>>>,
 
     table_tool: TableTool,
     ok_to_catch_file: bool,
@@ -89,5 +90,24 @@ pub enum ShowingModal {
 impl Component for Room {
     type Props = Props;
     type Msg = Msg;
-    type Sub = On;
+    type Event = On;
+}
+
+impl HtmlComponent for Room {}
+
+fn open_modeless(
+    client_id: &Rc<String>,
+    arena: &ArenaMut,
+    world: &BlockMut<block::World>,
+    modeless_container: &Rc<RefCell<TabModelessList<room_modeless::Content>>>,
+    content: room_modeless::ContentData,
+) {
+    modeless_container
+        .borrow_mut()
+        .open_modeless(vec![room_modeless::Content {
+            arena: ArenaMut::clone(arena),
+            world: BlockMut::clone(world),
+            client_id: Rc::clone(&client_id),
+            data: content,
+        }]);
 }

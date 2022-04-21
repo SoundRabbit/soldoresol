@@ -23,7 +23,7 @@ impl Component for Header {
 impl HtmlComponent for Header {}
 
 impl Constructor for Header {
-    fn constructor(props: &Props) -> Self {
+    fn constructor(props: Self::Props) -> Self {
         Self {}
     }
 }

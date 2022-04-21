@@ -1,6 +1,5 @@
 use super::atom::{btn::Btn, text};
 use super::molecule::modal::{self, Modal};
-use super::NoProps;
 use isaribi::{
     style,
     styled::{Style, Styled},
@@ -52,7 +51,7 @@ impl Constructor for ModalChatCapture {
 }
 
 impl Update for ModalChatCapture {
-    fn on_load(self: Pin<&mut Self>, props: Props) -> Cmd<Self> {
+    fn on_load(mut self: Pin<&mut Self>, props: Props) -> Cmd<Self> {
         while self.input.len() > props.vars.len() {
             self.input.pop();
         }
@@ -63,7 +62,7 @@ impl Update for ModalChatCapture {
         Cmd::none()
     }
 
-    fn update(self: Pin<&mut Self>, msg: Self::Msg) -> Cmd<Self> {
+    fn update(mut self: Pin<&mut Self>, msg: Self::Msg) -> Cmd<Self> {
         match msg {
             Msg::Cancel => Cmd::submit(On::Cancel),
             Msg::Input(idx, data) => {
@@ -81,7 +80,7 @@ impl Render<Html> for ModalChatCapture {
         Self::styled(Modal::new(
             self,
             None,
-            NoProps(),
+            modal::Props {},
             Sub::map(|sub| match sub {
                 modal::On::Close => Msg::Cancel,
             }),

@@ -49,7 +49,7 @@ impl Constructor for LoadingCircle {
 }
 
 impl Update for LoadingCircle {
-    fn on_load(self: Pin<&mut Self>, props: Self::Props) -> Cmd<Self> {
+    fn on_load(mut self: Pin<&mut Self>, props: Self::Props) -> Cmd<Self> {
         self.variant = props.variant;
         Cmd::none()
     }

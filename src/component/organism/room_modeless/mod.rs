@@ -68,12 +68,12 @@ impl Constructor for RoomModeless {
 }
 
 impl Update for RoomModeless {
-    fn on_load(self: Pin<&mut Self>, content: Content) -> Cmd<Self> {
+    fn on_load(mut self: Pin<&mut Self>, content: Content) -> Cmd<Self> {
         self.content = content;
         Cmd::none()
     }
 
-    fn update(&mut self, _content: &Content, msg: Msg) -> Cmd<Self> {
+    fn update(self: Pin<&mut Self>, msg: Msg) -> Cmd<Self> {
         match msg {
             Msg::Sub(sub) => Cmd::submit(sub),
         }
@@ -202,7 +202,7 @@ impl Constructor for TabName {
 }
 
 impl Update for TabName {
-    fn on_load(self: Pin<&mut Self>, props: Self::Props) -> Cmd<Self> {
+    fn on_load(mut self: Pin<&mut Self>, props: Self::Props) -> Cmd<Self> {
         self.content = props;
         Cmd::none()
     }

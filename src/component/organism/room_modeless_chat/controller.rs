@@ -11,7 +11,7 @@ use std::rc::Rc;
 use wasm_bindgen::JsCast;
 
 pub struct Props {
-    shared_state: Rc<RefCell<SharedState>>,
+    pub shared_state: Rc<RefCell<SharedState>>,
 }
 
 pub enum Msg {
@@ -45,7 +45,7 @@ impl Constructor for Controller {
 }
 
 impl Update for Controller {
-    fn on_load(self: Pin<&mut Self>, props: Self::Props) -> Cmd<Self> {
+    fn on_load(mut self: Pin<&mut Self>, props: Self::Props) -> Cmd<Self> {
         self.shared_state = props.shared_state;
         Cmd::none()
     }
@@ -80,7 +80,7 @@ impl Render<Html> for Controller {
                             }
                         })
                         .on_keydown(self, |e| {
-                            let e = unwrap!(e.dyn_into::<web_sys::KeyboardEvent>().ok(); Msg::NoOp);
+                            let e = unwrap!(e.clone().dyn_into::<web_sys::KeyboardEvent>().ok(); Msg::NoOp);
                             if e.key() == "Enter" && !e.shift_key() {
                                 Msg::Sub(On::SendInputingChatMessage)
                             } else {

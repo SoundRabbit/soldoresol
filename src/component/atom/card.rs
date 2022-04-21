@@ -21,7 +21,7 @@ impl Component for Card {
 }
 
 impl Constructor for Card {
-    fn constructor(props: &Props) -> Self {
+    fn constructor(props: Self::Props) -> Self {
         Self {}
     }
 }
@@ -32,7 +32,7 @@ impl Update for Card {}
 
 impl Render<Html> for Card {
     type Children = Vec<Html>;
-    fn render(&self, _: &Props, children: Self::Children) -> Html {
+    fn render(&self, children: Self::Children) -> Html {
         Self::styled(Html::div(
             Attributes::new()
                 .class(Self::class("base"))

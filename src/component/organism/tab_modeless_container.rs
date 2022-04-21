@@ -16,7 +16,7 @@ use std::rc::Rc;
 use wasm_bindgen::{prelude::*, JsCast};
 
 pub struct Props<T> {
-    modelesses: Rc<RefCell<TabModelessList<T>>>,
+    pub modelesses: Rc<RefCell<TabModelessList<T>>>,
 }
 
 pub enum Msg<Sub> {
@@ -52,8 +52,8 @@ pub enum On<Sub> {
 }
 
 pub struct TabModelessContainer<
-    Content: HtmlComponent,
-    TabName: HtmlComponent<Props = Content::Props>,
+    Content: HtmlComponent + Unpin,
+    TabName: HtmlComponent<Props = Content::Props> + Unpin,
 > where
     Content::Props: Clone,
 {
@@ -83,6 +83,12 @@ struct Modeless<T> {
 }
 
 impl<T> TabModelessList<T> {
+    pub fn new() -> Self {
+        Self {
+            data: ModelessList::new(),
+        }
+    }
+
     pub fn open_modeless(&mut self, contents: Vec<T>) {
         self.data.push(Modeless {
             data: Rc::new(RefCell::new(SelectList::new(contents, 0))),
@@ -113,8 +119,8 @@ impl<T: PartialEq> TabModelessList<T> {
     }
 }
 
-impl<Content: HtmlComponent, TabName: HtmlComponent<Props = Content::Props>> Component
-    for TabModelessContainer<Content, TabName>
+impl<Content: HtmlComponent + Unpin, TabName: HtmlComponent<Props = Content::Props> + Unpin>
+    Component for TabModelessContainer<Content, TabName>
 where
     Content::Props: Clone,
 {
@@ -123,15 +129,15 @@ where
     type Event = On<Content::Event>;
 }
 
-impl<Content: HtmlComponent, TabName: HtmlComponent<Props = Content::Props>> HtmlComponent
-    for TabModelessContainer<Content, TabName>
+impl<Content: HtmlComponent + Unpin, TabName: HtmlComponent<Props = Content::Props> + Unpin>
+    HtmlComponent for TabModelessContainer<Content, TabName>
 where
     Content::Props: Clone,
 {
 }
 
-impl<Content: HtmlComponent, TabName: HtmlComponent<Props = Content::Props>> Constructor
-    for TabModelessContainer<Content, TabName>
+impl<Content: HtmlComponent + Unpin, TabName: HtmlComponent<Props = Content::Props> + Unpin>
+    Constructor for TabModelessContainer<Content, TabName>
 where
     Content::Props: Clone,
 {
@@ -156,12 +162,12 @@ where
     }
 }
 
-impl<Content: HtmlComponent, TabName: HtmlComponent<Props = Content::Props>> Update
+impl<Content: HtmlComponent + Unpin, TabName: HtmlComponent<Props = Content::Props> + Unpin> Update
     for TabModelessContainer<Content, TabName>
 where
     Content::Props: Clone,
 {
-    fn update(self: Pin<&mut Self>, msg: Self::Msg) -> Cmd<Self> {
+    fn update(mut self: Pin<&mut Self>, msg: Self::Msg) -> Cmd<Self> {
         match msg {
             Msg::NoOp => Cmd::none(),
             Msg::Sub(sub) => Cmd::submit(sub),
@@ -233,20 +239,22 @@ where
                         .get_mut(&event.modeless_id)
                         .and_then(|x| x.data.borrow_mut().remove(event.tab_idx));
 
-                    if let Some((content, modeless)) = join_some!(
-                        content,
-                        self.modelesses.borrow_mut().data.get_mut(&modeless_id)
-                    ) {
-                        let tab_idx = if let Some(tab_idx) = header_tab_idx {
-                            modeless.data.borrow_mut().insert(tab_idx, content);
-                            tab_idx
-                        } else {
-                            modeless.data.borrow_mut().push(content);
-                            modeless.data.borrow().len() - 1
-                        };
+                    {
+                        let mut modelesses = self.modelesses.borrow_mut();
+                        if let Some((content, modeless)) =
+                            join_some!(content, modelesses.data.get_mut(&modeless_id))
+                        {
+                            let tab_idx = if let Some(tab_idx) = header_tab_idx {
+                                modeless.data.borrow_mut().insert(tab_idx, content);
+                                tab_idx
+                            } else {
+                                modeless.data.borrow_mut().push(content);
+                                modeless.data.borrow().len() - 1
+                            };
 
-                        if event.is_selected {
-                            modeless.data.borrow_mut().set_selected_idx(tab_idx);
+                            if event.is_selected {
+                                modeless.data.borrow_mut().set_selected_idx(tab_idx);
+                            }
                         }
                     }
 
@@ -311,8 +319,8 @@ where
     }
 }
 
-impl<Content: HtmlComponent, TabName: HtmlComponent<Props = Content::Props>> Render<Html>
-    for TabModelessContainer<Content, TabName>
+impl<Content: HtmlComponent + Unpin, TabName: HtmlComponent<Props = Content::Props> + Unpin>
+    Render<Html> for TabModelessContainer<Content, TabName>
 where
     Content::Props: Clone,
 {
@@ -327,7 +335,7 @@ where
                     Msg::NoOp
                 })
                 .on_drop(self, move |e| {
-                    let e = unwrap!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
+                    let e = unwrap!(e.clone().dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
                     let data_transfer = unwrap!(e.data_transfer(); Msg::NoOp);
                     let data = unwrap!(data_transfer.get_data("text/plain").ok(); Msg::NoOp);
                     if TabBtn::validate_prefix::<TabModeless<Content, TabName>>(&data) {
@@ -472,7 +480,7 @@ where
     }
 }
 
-impl<Content: HtmlComponent, TabName: HtmlComponent<Props = Content::Props>> Styled
+impl<Content: HtmlComponent + Unpin, TabName: HtmlComponent<Props = Content::Props> + Unpin> Styled
     for TabModelessContainer<Content, TabName>
 where
     Content::Props: Clone,

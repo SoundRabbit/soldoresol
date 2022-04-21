@@ -86,7 +86,7 @@ pub struct RoomModelessChat {
     shared_state: Rc<RefCell<SharedState>>,
 }
 
-struct SharedState {
+pub struct SharedState {
     inputing_message: InputingMessage,
 }
 
@@ -161,7 +161,7 @@ impl Constructor for RoomModelessChat {
 }
 
 impl Update for RoomModelessChat {
-    fn on_load(self: Pin<&mut Self>, props: Props) -> Cmd<Self> {
+    fn on_load(mut self: Pin<&mut Self>, props: Props) -> Cmd<Self> {
         self.arena = props.arena;
         self.chat = props.data;
         self.chat_user = props.user;
@@ -170,7 +170,7 @@ impl Update for RoomModelessChat {
         Cmd::none()
     }
 
-    fn update(self: Pin<&mut Self>, msg: Msg) -> Cmd<Self> {
+    fn update(mut self: Pin<&mut Self>, msg: Msg) -> Cmd<Self> {
         match msg {
             Msg::NoOp => Cmd::none(),
             Msg::SendInputingChatMessage => {

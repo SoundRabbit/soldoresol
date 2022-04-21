@@ -8,14 +8,15 @@ use isaribi::{
 mod value;
 
 impl Render<Html> for BlockProp {
-    type Children = (ArenaMut, BlockMut<block::Property>);
-    fn render(&self, (arena, prop): Self::Children) -> Html {
+    type Children = ();
+    fn render(&self, _: Self::Children) -> Html {
         Self::styled(Html::div(
             Attributes::new().class("pure-form"),
             Events::new(),
             vec![{
-                let id = prop.id();
-                prop.map(|prop| self.render_prop(id, prop))
+                let id = self.data.id();
+                self.data
+                    .map(|prop| self.render_prop(id, prop))
                     .unwrap_or_else(|| Html::none())
             }],
         ))

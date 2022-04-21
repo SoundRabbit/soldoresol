@@ -34,7 +34,7 @@ impl Component for TabMenu {
 impl HtmlComponent for TabMenu {}
 
 impl Constructor for TabMenu {
-    fn constructor(props: Props) -> Self {
+    fn constructor(props: Self::Props) -> Self {
         Self {
             selected_idx: props.selected,
             is_controlled: props.controlled,
@@ -43,7 +43,7 @@ impl Constructor for TabMenu {
 }
 
 impl Update for TabMenu {
-    fn on_load(&mut self, props: &Props) -> Cmd<Self> {
+    fn on_load(mut self: Pin<&mut Self>, props: Self::Props) -> Cmd<Self> {
         if self.is_controlled {
             self.selected_idx = props.selected;
         }
@@ -51,7 +51,7 @@ impl Update for TabMenu {
         Cmd::none()
     }
 
-    fn update(&mut self, _: &Props, msg: Msg) -> Cmd<Self> {
+    fn update(mut self: Pin<&mut Self>, msg: Msg) -> Cmd<Self> {
         match msg {
             Msg::NoOp => Cmd::none(),
             Msg::SetSelectedIdx(idx) => {

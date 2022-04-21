@@ -37,7 +37,7 @@ impl Constructor for Initializer {
 }
 
 impl Update for Initializer {
-    fn on_assemble(&mut self, _: Self::Props) -> Cmd<Self> {
+    fn on_assemble(self: Pin<&mut Self>) -> Cmd<Self> {
         Cmd::task(async {
             if let Some((config, common_db, client_id, peer, peer_id)) = task::initialize().await {
                 Cmd::submit(On::Load {

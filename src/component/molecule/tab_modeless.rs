@@ -79,8 +79,10 @@ pub enum On<Sub> {
     Sub(Sub),
 }
 
-pub struct TabModeless<Content: HtmlComponent, TabName: HtmlComponent<Props = Content::Props>>
-where
+pub struct TabModeless<
+    Content: HtmlComponent + Unpin,
+    TabName: HtmlComponent<Props = Content::Props> + Unpin,
+> where
     Content::Props: Clone,
 {
     size: [f64; 2],
@@ -94,11 +96,13 @@ where
     _phantom_tab_name: std::marker::PhantomData<TabName>,
 }
 
+#[derive(Clone, Copy)]
 pub enum DragType {
     Move,
     Resize(DragDirection),
 }
 
+#[derive(Clone, Copy)]
 pub enum DragDirection {
     Top,
     Left,
@@ -125,8 +129,8 @@ impl std::fmt::Display for DragDirection {
     }
 }
 
-impl<Content: HtmlComponent, TabName: HtmlComponent<Props = Content::Props>> Component
-    for TabModeless<Content, TabName>
+impl<Content: HtmlComponent + Unpin, TabName: HtmlComponent<Props = Content::Props> + Unpin>
+    Component for TabModeless<Content, TabName>
 where
     Content::Props: Clone,
 {
@@ -135,15 +139,15 @@ where
     type Event = On<Content::Event>;
 }
 
-impl<Content: HtmlComponent, TabName: HtmlComponent<Props = Content::Props>> HtmlComponent
-    for TabModeless<Content, TabName>
+impl<Content: HtmlComponent + Unpin, TabName: HtmlComponent<Props = Content::Props> + Unpin>
+    HtmlComponent for TabModeless<Content, TabName>
 where
     Content::Props: Clone,
 {
 }
 
-impl<Content: HtmlComponent, TabName: HtmlComponent<Props = Content::Props>> Constructor
-    for TabModeless<Content, TabName>
+impl<Content: HtmlComponent + Unpin, TabName: HtmlComponent<Props = Content::Props> + Unpin>
+    Constructor for TabModeless<Content, TabName>
 where
     Content::Props: Clone,
 {
@@ -170,7 +174,7 @@ macro_rules! on_drag {
     ($dragging:expr) => {{
         let dragging = $dragging;
         move |e| {
-            let e = unwrap!(e.dyn_into::<web_sys::MouseEvent>().ok(); Msg::NoOp);
+            let e = unwrap!(e.clone().dyn_into::<web_sys::MouseEvent>().ok(); Msg::NoOp);
             e.stop_propagation();
             if dragging {
                 Msg::Drag {
@@ -184,12 +188,12 @@ macro_rules! on_drag {
     }};
 }
 
-impl<Content: HtmlComponent, TabName: HtmlComponent<Props = Content::Props>> Update
+impl<Content: HtmlComponent + Unpin, TabName: HtmlComponent<Props = Content::Props> + Unpin> Update
     for TabModeless<Content, TabName>
 where
     Content::Props: Clone,
 {
-    fn on_load(self: Pin<&mut Self>, props: Props<Content::Props>) -> Cmd<Self> {
+    fn on_load(mut self: Pin<&mut Self>, props: Props<Content::Props>) -> Cmd<Self> {
         if props.container_rect.width != self.container_rect.width {
             let margin_ratio = self.loc[0] / (self.container_rect.width - self.size[0]);
             let margin = props.container_rect.width - self.size[0];
@@ -210,7 +214,7 @@ where
         Cmd::none()
     }
 
-    fn update(self: Pin<&mut Self>, msg: Msg<Content::Event>) -> Cmd<Self> {
+    fn update(mut self: Pin<&mut Self>, msg: Msg<Content::Event>) -> Cmd<Self> {
         match msg {
             Msg::NoOp => Cmd::none(),
             Msg::Sub(sub) => Cmd::submit(sub),
@@ -263,7 +267,7 @@ where
             }
             Msg::Drag { page_x, page_y } => {
                 let cmd;
-                if let Some(dragging) = self.dragging.as_mut() {
+                if let Some(mut dragging) = self.dragging {
                     let mov_x = (page_x - dragging.0[0]) as f64;
                     let mov_y = (page_y - dragging.0[1]) as f64;
 
@@ -335,6 +339,7 @@ where
 
                     dragging.0[0] = page_x;
                     dragging.0[1] = page_y;
+                    self.dragging = Some(dragging);
 
                     cmd = match &dragging.1 {
                         DragType::Move => {
@@ -362,8 +367,8 @@ where
     }
 }
 
-impl<Content: HtmlComponent, TabName: HtmlComponent<Props = Content::Props>> Render<Html>
-    for TabModeless<Content, TabName>
+impl<Content: HtmlComponent + Unpin, TabName: HtmlComponent<Props = Content::Props> + Unpin>
+    Render<Html> for TabModeless<Content, TabName>
 where
     Content::Props: Clone,
 {
@@ -381,7 +386,7 @@ where
                 let mut events = Events::new();
 
                 events = events.on_mousedown(self, |e| {
-                    let e = unwrap!(e.dyn_into::<web_sys::MouseEvent>().ok(); Msg::NoOp);
+                    let e = unwrap!(e.clone().dyn_into::<web_sys::MouseEvent>().ok(); Msg::NoOp);
                     e.stop_propagation();
                     Msg::DragStart {
                         page_x: e.page_x(),
@@ -418,7 +423,7 @@ where
                         .on_drop(self, {
                             let modeless_id = U128Id::clone(&self.modeless_id);
                             move |e| {
-                                let e = unwrap!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
+                                let e = unwrap!(e.clone().dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
                                 Self::on_drop_tab(None, e,modeless_id)
                             }
                         }),
@@ -440,7 +445,7 @@ where
                                     .on_dragstart(self,
                                         move |e| {
                                         e.stop_propagation();
-                                        let e = unwrap!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
+                                        let e = unwrap!(e.clone().dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
                                         let data_transfer = unwrap!(e.data_transfer(); Msg::NoOp);
                                         let event_id = U128Id::new();
                                         unwrap!(
@@ -457,7 +462,7 @@ where
                                     }).on_drop(self, {
                                         let modeless_id = U128Id::clone(&self.modeless_id);
                                         move |e| {
-                                            let e = unwrap!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
+                                            let e = unwrap!(e.clone().dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
                                             Self::on_drop_tab(Some(tab_idx), e,modeless_id)
                                         }
                                     }).on_click(self, move |_| Msg::SetSelectedTabIdx(tab_idx)),
@@ -546,7 +551,7 @@ where
     }
 }
 
-impl<Content: HtmlComponent, TabName: HtmlComponent<Props = Content::Props>>
+impl<Content: HtmlComponent + Unpin, TabName: HtmlComponent<Props = Content::Props> + Unpin>
     TabModeless<Content, TabName>
 where
     Content::Props: Clone,
@@ -555,8 +560,8 @@ where
         Html::div(
             Attributes::new().class(Self::class(&format!("rsz-{}", &drag_direction))),
             Events::new()
-                .on_mousedown(self, |e| {
-                    let e = unwrap!(e.dyn_into::<web_sys::MouseEvent>().ok(); Msg::NoOp);
+                .on_mousedown(self, move |e| {
+                    let e = unwrap!(e.clone().dyn_into::<web_sys::MouseEvent>().ok(); Msg::NoOp);
                     e.stop_propagation();
                     Msg::DragStart {
                         page_x: e.page_x(),
@@ -593,7 +598,7 @@ where
     }
 }
 
-impl<Content: HtmlComponent, TabName: HtmlComponent<Props = Content::Props>> Styled
+impl<Content: HtmlComponent + Unpin, TabName: HtmlComponent<Props = Content::Props> + Unpin> Styled
     for TabModeless<Content, TabName>
 where
     Content::Props: Clone,

@@ -1,7 +1,6 @@
 use super::atom::{btn::Btn, fa};
-use super::molecule::scene_list::SceneList;
+use super::molecule::scene_list::{self, SceneList};
 use super::molecule::tab_menu::{self, TabMenu};
-use super::NoProps;
 use crate::arena::{block, ArenaMut, BlockMut};
 use isaribi::{
     style,
@@ -49,7 +48,7 @@ impl Constructor for WorldView {
 }
 
 impl Update for WorldView {
-    fn update(self: Pin<&mut Self>, msg: Self::Msg) -> Cmd<Self> {
+    fn update(mut self: Pin<&mut Self>, msg: Self::Msg) -> Cmd<Self> {
         match msg {
             Msg::SetIsShowing(is_showing) => {
                 self.is_showing = is_showing;
@@ -113,15 +112,14 @@ impl Render<Html> for WorldView {
                                 Html::div(
                                     Attributes::new().class(Self::class("scroll")),
                                     Events::new(),
-                                    vec![SceneList::new(
+                                    vec![SceneList::empty(
                                         self,
                                         None,
-                                        NoProps(),
+                                        scene_list::Props {
+                                            arena: ArenaMut::clone(&self.arena),
+                                            world: BlockMut::clone(&self.world),
+                                        },
                                         Sub::none(),
-                                        (
-                                            ArenaMut::clone(&self.arena),
-                                            BlockMut::clone(&self.world),
-                                        ),
                                     )],
                                 ),
                             )],

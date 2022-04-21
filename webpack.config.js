@@ -1,21 +1,10 @@
 const path = require("path");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const WasmPackPlugin = require("@wasm-tool/wasm-pack-plugin");
-const HtmlWebpackInlineSourcePlugin = require("html-webpack-inline-source-plugin");
-const history = require('connect-history-api-fallback');
-
-history({
-    rewrites: [
-        {
-            from: /([^/]*)$/,
-            to: function (context) {
-                return '/' + context.match[1];
-            }
-        }
-    ]
-});
 
 module.exports = {
+    mode: "production",
+    experiments: { syncWebAssembly: true },
     entry: "./assets",
     output: {
         path: path.join(__dirname, "./bin"),
@@ -23,6 +12,8 @@ module.exports = {
     resolve: {
         extensions: [".js"]
     },
+    // TODO: ファイルのダイナミック読み込み
+    performance: { hints: false },
     module: {
         rules: [
             {
@@ -35,13 +26,10 @@ module.exports = {
                         loader: "css-loader",
                     },
                     {
-                        loader: 'resolve-url-loader',
-                    },
-                    {
                         loader: "sass-loader",
                         options: {
                             sassOptions: {
-                                includePaths: [path.resolve(__dirname, './style')]
+                                includePaths: [path.resolve(__dirname, './style/style.scss')]
                             },
                             sourceMap: true,
                         },
@@ -80,19 +68,35 @@ module.exports = {
             target: "web",
             args: "--log-level error",
         }),
-        new HtmlWebpackInlineSourcePlugin(),
     ],
     devServer: {
         historyApiFallback: {
             rewrites: [
                 {
-                    from: /([^/]*\.(js|wasm))$/,
-                    to: function (context) {
-                        return '/' + context.match[1];
+                    from: /^\/rooms$/,
+                    to: function () {
+                        return '/';
                     }
-                }
+                },
+                {
+                    from: /^\/rooms\/skyway\/([A - Za - z0 - 9@#]{24})$/,
+                    to: function () {
+                        return '/';
+                    }
+                },
+                {
+                    from: /^\/rooms\/drive\/([A-Za-z\-_]+)$/,
+                    to: function () {
+                        return '/';
+                    }
+                },
             ]
         },
-        disableHostCheck: true,
+        static: [
+            {
+                directory: path.join(__dirname, "./assets"),
+                publicPath: "/",
+            }
+        ]
     }
 };

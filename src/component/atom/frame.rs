@@ -59,7 +59,7 @@ impl Component for Frame {
 impl HtmlComponent for Frame {}
 
 impl Constructor for Frame {
-    fn constructor(props: &Props) -> Self {
+    fn constructor(props: Self::Props) -> Self {
         Self {
             resize_height: props.resize_height,
             resize_width: props.resize_width,
@@ -70,7 +70,7 @@ impl Constructor for Frame {
 }
 
 impl Update for Frame {
-    fn update(self: Pin<&mut Self>, msg: Self::Msg) -> Cmd<Self> {
+    fn update(mut self: Pin<&mut Self>, msg: Self::Msg) -> Cmd<Self> {
         match msg {
             Msg::SetElement(node) => {
                 self.element = node.dyn_into::<web_sys::Element>().ok();

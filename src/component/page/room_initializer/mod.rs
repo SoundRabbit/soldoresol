@@ -1,8 +1,8 @@
 use super::template::loader::{self, Loader};
 use crate::libs::skyway::{MeshRoom, Peer};
 use crate::model::config::Config;
-use kagura::component::{Cmd, Sub};
 use kagura::prelude::*;
+use nusa::prelude::*;
 use std::rc::Rc;
 
 mod task;
@@ -16,13 +16,7 @@ pub struct Props {
     pub client_id: Rc<String>,
 }
 
-pub enum Msg {
-    Initialized {
-        room_db: web_sys::IdbDatabase,
-        table_db: web_sys::IdbDatabase,
-        meshroom: Rc<MeshRoom>,
-    },
-}
+pub enum Msg {}
 
 pub enum On {
     Load {
@@ -32,60 +26,63 @@ pub enum On {
     },
 }
 
-pub struct RoomInisializer {}
+pub struct RoomInisializer {
+    config: Rc<Config>,
+    common_db: Rc<web_sys::IdbDatabase>,
+    peer: Rc<Peer>,
+    peer_id: Rc<String>,
+    room_id: Rc<String>,
+    client_id: Rc<String>,
+}
 
 impl Component for RoomInisializer {
     type Props = Props;
     type Msg = Msg;
-    type Sub = On;
+    type Event = On;
 }
+
+impl HtmlComponent for RoomInisializer {}
 
 impl Constructor for RoomInisializer {
-    fn constructor(_: &Props) -> Self {
-        Self {}
-    }
-}
-
-impl Update for RoomInisializer {
-    fn on_assemble(&mut self, props: &Props) -> Cmd<Self> {
-        Cmd::task({
-            let config = Rc::clone(&props.config);
-            let common_db = Rc::clone(&props.common_db);
-            let meshroom = props.peer.join_room(&props.room_id);
-            let room_id = Rc::clone(&props.room_id);
-            move |resolve| {
-                wasm_bindgen_futures::spawn_local(async {
-                    if let Some((room_db, table_db, meshroom)) =
-                        task::initialize(config, common_db, meshroom, room_id).await
-                    {
-                        resolve(Msg::Initialized {
-                            room_db,
-                            table_db,
-                            meshroom,
-                        });
-                    }
-                })
-            }
-        })
-    }
-
-    fn update(&mut self, _: &Props, msg: Self::Msg) -> Cmd<Self> {
-        match msg {
-            Msg::Initialized {
-                room_db,
-                table_db,
-                meshroom,
-            } => Cmd::Sub(On::Load {
-                room_db,
-                table_db,
-                meshroom,
-            }),
+    fn constructor(props: Self::Props) -> Self {
+        Self {
+            config: props.config,
+            common_db: props.common_db,
+            peer: props.peer,
+            peer_id: props.peer_id,
+            room_id: props.room_id,
+            client_id: props.client_id,
         }
     }
 }
 
-impl Render for RoomInisializer {
-    fn render(&self, _: &Props, _: Vec<Html<Self>>) -> Html<Self> {
-        Loader::empty(loader::Props {}, Sub::none())
+impl Update for RoomInisializer {
+    fn on_assemble(self: Pin<&mut Self>) -> Cmd<Self> {
+        Cmd::task({
+            let config = Rc::clone(&self.config);
+            let common_db = Rc::clone(&self.common_db);
+            let meshroom = self.peer.join_room(&self.room_id);
+            let room_id = Rc::clone(&self.room_id);
+            async {
+                if let Some((room_db, table_db, meshroom)) =
+                    task::initialize(config, common_db, meshroom, room_id).await
+                {
+                    Cmd::submit(On::Load {
+                        room_db,
+                        table_db,
+                        meshroom,
+                    })
+                } else {
+                    Cmd::none()
+                }
+            }
+        })
+    }
+}
+
+impl Render<Html> for RoomInisializer {
+    type Children = ();
+    fn render(&self, _: Self::Children) -> Html {
+        Loader::empty(self, None, loader::Props {}, Sub::none())
     }
 }

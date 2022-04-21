@@ -5,7 +5,6 @@ use super::atom::{
 };
 use super::molecule::modal::{self, Modal};
 use super::organism::modal_resource::{self, ModalResource};
-use super::NoProps;
 use crate::arena::{
     block,
     resource::{self, LoadFrom},
@@ -128,7 +127,7 @@ impl Constructor for ModalCreateBlockTexture {
 }
 
 impl Update for ModalCreateBlockTexture {
-    fn update(self: Pin<&mut Self>, msg: Msg) -> Cmd<Self> {
+    fn update(mut self: Pin<&mut Self>, msg: Msg) -> Cmd<Self> {
         match msg {
             Msg::NoOp => Cmd::none(),
             Msg::Sub(sub) => Cmd::submit(sub),
@@ -243,7 +242,7 @@ impl Render<Html> for ModalCreateBlockTexture {
         Self::styled(Modal::new(
             self,
             None,
-            NoProps(),
+            modal::Props {},
             Sub::map(|sub| match sub {
                 modal::On::Close => Msg::Sub(On::Close),
             }),
