@@ -19,7 +19,7 @@ impl TabBtn {
         Self::styled(Html::div(
             attrs
                 .class(Self::class("base"))
-                .flag("draggable", is_draggable),
+                .draggable(is_draggable.to_string()),
             events,
             vec![Html::div(
                 Attributes::new()

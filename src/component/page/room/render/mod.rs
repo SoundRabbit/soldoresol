@@ -114,7 +114,7 @@ impl Render<Html> for Room {
                                             Events::new()
                                                 .on("wheel", self, |e| {
                                                     if let Ok(e) =
-                                                        e.clone().dyn_into::<web_sys::WheelEvent>()
+                                                        e.dyn_into::<web_sys::WheelEvent>()
                                                     {
                                                         Msg::OnTableWheel(e)
                                                     } else {
@@ -122,23 +122,23 @@ impl Render<Html> for Room {
                                                     }
                                                 })
                                                 .on_click(self, |e| {
-                                                    let e = unwrap!(e.clone().dyn_into::<web_sys::MouseEvent>().ok(); Msg::NoOp);
+                                                    let e = unwrap!(e.dyn_into::<web_sys::MouseEvent>().ok(); Msg::NoOp);
                                                     Msg::OnTableClick(e)
                                                 })
                                                 .on_mousedown(self, |e|{
-                                                    let e = unwrap!(e.clone().clone().dyn_into::<web_sys::MouseEvent>().ok(); Msg::NoOp);
+                                                    let e = unwrap!(e.dyn_into::<web_sys::MouseEvent>().ok(); Msg::NoOp);
                                                     Msg::OnTableMousedown(e)
                                                 })
                                                 .on_mouseup(self, |e| {
-                                                    let e = unwrap!(e.clone().dyn_into::<web_sys::MouseEvent>().ok(); Msg::NoOp);
+                                                    let e = unwrap!(e.dyn_into::<web_sys::MouseEvent>().ok(); Msg::NoOp);
                                                     Msg::OnTableMouseup(e)
                                                 })
                                                 .on_mousemove(self, |e| {
-                                                    let e = unwrap!(e.clone().dyn_into::<web_sys::MouseEvent>().ok(); Msg::NoOp);
+                                                    let e = unwrap!(e.dyn_into::<web_sys::MouseEvent>().ok(); Msg::NoOp);
                                                     Msg::OnTableMousemove(e)
                                                 })
-                                                .on("contextmenu", self, |e| {
-                                                    let e = unwrap!(e.clone().dyn_into::<web_sys::MouseEvent>().ok(); Msg::NoOp);
+                                                .on_contextmenu(self, |e| {
+                                                    let e = unwrap!(e.dyn_into::<web_sys::MouseEvent>().ok(); Msg::NoOp);
                                                     Msg::OnTableContextmenu(e)
                                                 }),
                                             vec![],

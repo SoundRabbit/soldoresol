@@ -110,7 +110,7 @@ impl Render<Html> for FileCatcher {
                     }
                 })
                 .on_drop(self, |e| {
-                    let e = unwrap!(e.clone().dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
+                    let e = unwrap!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
                     let data_transfer = unwrap!(e.data_transfer(); Msg::NoOp);
                     let file_list = unwrap!(data_transfer.files(); Msg::NoOp);
 

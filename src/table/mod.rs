@@ -3,11 +3,10 @@ pub mod table_tool;
 mod table_tool_state;
 use crate::arena::{block, ArenaMut, BlockKind, BlockMut, BlockRef};
 use crate::libs::random_id::U128Id;
+use nusa::v_node::v_element::VEvent;
 use renderer::{CameraMatrix, ObjectId, Renderer};
 use std::cell::RefCell;
 use std::collections::HashSet;
-use std::future::Future;
-use std::pin::Pin;
 use std::rc::Rc;
 use table_tool::TableTool;
 use table_tool_state::TableToolState;
@@ -63,6 +62,11 @@ impl Table {
         }
     }
 
+    pub fn set_camera_mode(&mut self, is_2d_mode: bool, is_debug_mode: bool) {
+        self.is_2d_mode = is_2d_mode;
+        self.is_debug_mode = is_debug_mode;
+    }
+
     pub fn take_updated(&mut self) -> UpdatedBlocks {
         let mut taked = UpdatedBlocks {
             insert: HashSet::new(),
@@ -85,6 +89,9 @@ impl Table {
     pub fn render_reserved(&mut self, world: BlockRef<block::World>) {
         if self.is_reserve_rendering {
             self.is_reserve_rendering = false;
+            self.camera_matrix
+                .borrow_mut()
+                .set_is_2d_mode(self.is_2d_mode);
             let renderer = Rc::clone(&self.renderer);
             let camera_matrix = Rc::clone(&self.camera_matrix);
             let grabbed_object_id = if let TableToolState::Selecter(state) = &self.tool_state {
@@ -99,7 +106,6 @@ impl Table {
             let is_debug_mode = self.is_debug_mode;
 
             let a = Closure::once(Box::new(move || {
-                crate::debug::log_1("render canvas");
                 renderer.borrow_mut().render(
                     is_debug_mode,
                     world,
@@ -423,7 +429,7 @@ impl Table {
         &mut self,
         arena: ArenaMut,
         world: BlockMut<block::World>,
-        e: web_sys::MouseEvent,
+        e: VEvent<web_sys::MouseEvent>,
         tool: &TableTool,
     ) {
         let mouse_coord = self.mouse_coord(e.page_x() as f64, e.page_y() as f64);
@@ -442,7 +448,7 @@ impl Table {
         }
     }
 
-    pub fn on_wheel(&mut self, e: web_sys::WheelEvent, tool: &TableTool) {
+    pub fn on_wheel(&mut self, e: VEvent<web_sys::WheelEvent>, tool: &TableTool) {
         let delta_y = if e.delta_mode() == web_sys::WheelEvent::DOM_DELTA_PIXEL {
             e.delta_y()
         } else {
@@ -456,7 +462,7 @@ impl Table {
         &mut self,
         arena: ArenaMut,
         _world: BlockMut<block::World>,
-        e: web_sys::MouseEvent,
+        e: VEvent<web_sys::MouseEvent>,
         tool: &TableTool,
     ) {
         let page_x = e.page_x() as f64;
@@ -523,7 +529,7 @@ impl Table {
         self.last_cursor_position = mouse_coord;
     }
 
-    pub fn on_mouseup(&mut self, e: web_sys::MouseEvent, tool: &TableTool) {
+    pub fn on_mouseup(&mut self, e: VEvent<web_sys::MouseEvent>, tool: &TableTool) {
         let mouse_coord = self.mouse_coord(e.page_x() as f64, e.page_y() as f64);
         let button = e.button();
 
@@ -549,7 +555,7 @@ impl Table {
         &mut self,
         arena: ArenaMut,
         world: BlockMut<block::World>,
-        e: web_sys::MouseEvent,
+        e: VEvent<web_sys::MouseEvent>,
         tool: &TableTool,
     ) {
         let mouse_coord = self.mouse_coord(e.page_x() as f64, e.page_y() as f64);

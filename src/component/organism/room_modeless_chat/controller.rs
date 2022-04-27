@@ -80,7 +80,7 @@ impl Render<Html> for Controller {
                             }
                         })
                         .on_keydown(self, |e| {
-                            let e = unwrap!(e.clone().dyn_into::<web_sys::KeyboardEvent>().ok(); Msg::NoOp);
+                            let e = unwrap!(e.dyn_into::<web_sys::KeyboardEvent>().ok(); Msg::NoOp);
                             if e.key() == "Enter" && !e.shift_key() {
                                 Msg::Sub(On::SendInputingChatMessage)
                             } else {

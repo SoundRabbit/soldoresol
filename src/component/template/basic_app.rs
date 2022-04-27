@@ -4,7 +4,7 @@ use isaribi::{
 };
 use kagura::prelude::*;
 use nusa::prelude::*;
-use wasm_bindgen::JsCast;
+use nusa::v_node::v_element::VEvent;
 
 pub struct Props {}
 
@@ -14,9 +14,9 @@ pub enum Msg {
 }
 
 pub enum On {
-    DragLeave(web_sys::DragEvent),
-    DragOver(web_sys::DragEvent),
-    Drop(web_sys::DragEvent),
+    DragLeave(VEvent<web_sys::DragEvent>),
+    DragOver(VEvent<web_sys::DragEvent>),
+    Drop(VEvent<web_sys::DragEvent>),
 }
 
 pub struct BasicApp;
@@ -51,15 +51,15 @@ impl Render<Html> for BasicApp {
             Attributes::new().class(Self::class("base")),
             Events::new()
                 .on("dragleave", self, |e| {
-                    let e = unwrap!(e.clone().dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
+                    let e = unwrap!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
                     Msg::Sub(On::DragLeave(e))
                 })
                 .on("dragover", self, |e| {
-                    let e = unwrap!(e.clone().dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
+                    let e = unwrap!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
                     Msg::Sub(On::DragOver(e))
                 })
                 .on("drop", self, |e| {
-                    let e = unwrap!(e.clone().dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
+                    let e = unwrap!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
                     Msg::Sub(On::Drop(e))
                 }),
             children,

@@ -117,88 +117,75 @@ impl Update for Room {
                 Cmd::none()
             }
             Msg::OnTableWheel(e) => {
-                if e.target() == e.current_target() {
-                    self.table.borrow_mut().on_wheel(e, &self.table_tool);
-                }
+                self.table.borrow_mut().on_wheel(e, &self.table_tool);
                 Cmd::none()
             }
             Msg::OnTableClick(e) => {
-                if e.target() == e.current_target() {
-                    self.table.borrow_mut().on_click(
-                        ArenaMut::clone(&self.arena),
-                        BlockMut::clone(&self.world),
-                        e,
-                        &self.table_tool,
-                    );
-                }
+                self.table.borrow_mut().on_click(
+                    ArenaMut::clone(&self.arena),
+                    BlockMut::clone(&self.world),
+                    e,
+                    &self.table_tool,
+                );
                 Cmd::none()
             }
             Msg::OnTableMousedown(e) => {
-                if e.target() == e.current_target() {
-                    self.table.borrow_mut().on_mousedown(
-                        ArenaMut::clone(&self.arena),
-                        BlockMut::clone(&self.world),
-                        e,
-                        &self.table_tool,
-                    );
-                }
+                self.table.borrow_mut().on_mousedown(
+                    ArenaMut::clone(&self.arena),
+                    BlockMut::clone(&self.world),
+                    e,
+                    &self.table_tool,
+                );
                 Cmd::none()
             }
             Msg::OnTableMouseup(e) => {
-                if e.target() == e.current_target() {
-                    self.table.borrow_mut().on_mouseup(e, &self.table_tool);
-                }
+                self.table.borrow_mut().on_mouseup(e, &self.table_tool);
                 Cmd::none()
             }
             Msg::OnTableMousemove(e) => {
-                if e.target() == e.current_target() {
-                    self.table.borrow_mut().on_mousemove(
-                        ArenaMut::clone(&self.arena),
-                        BlockMut::clone(&self.world),
-                        e,
-                        &self.table_tool,
-                    );
-                }
+                self.table.borrow_mut().on_mousemove(
+                    ArenaMut::clone(&self.arena),
+                    BlockMut::clone(&self.world),
+                    e,
+                    &self.table_tool,
+                );
                 Cmd::none()
             }
             Msg::OnTableContextmenu(e) => {
-                if e.target() == e.current_target() {
-                    e.prevent_default();
-                    let (block_kind, block_id) = self
-                        .table
-                        .borrow()
-                        .focused_block(e.page_x() as f64, e.page_y() as f64);
-                    match block_kind {
-                        BlockKind::Boxblock => {
-                            if let Some(block) = self.arena.get_mut::<block::Boxblock>(&block_id) {
-                                self.showing_contextmenu = Some(ShowingContextmenu {
-                                    page_x: e.page_x() as f64,
-                                    page_y: e.page_y() as f64,
-                                    data: ShowingContextmenuData::Boxblock(block),
-                                });
-                            }
+                e.prevent_default();
+                let (block_kind, block_id) = self
+                    .table
+                    .borrow()
+                    .focused_block(e.page_x() as f64, e.page_y() as f64);
+                match block_kind {
+                    BlockKind::Boxblock => {
+                        if let Some(block) = self.arena.get_mut::<block::Boxblock>(&block_id) {
+                            self.showing_contextmenu = Some(ShowingContextmenu {
+                                page_x: e.page_x() as f64,
+                                page_y: e.page_y() as f64,
+                                data: ShowingContextmenuData::Boxblock(block),
+                            });
                         }
-                        BlockKind::Character => {
-                            if let Some(block) = self.arena.get_mut::<block::Character>(&block_id) {
-                                self.showing_contextmenu = Some(ShowingContextmenu {
-                                    page_x: e.page_x() as f64,
-                                    page_y: e.page_y() as f64,
-                                    data: ShowingContextmenuData::Character(block),
-                                });
-                            }
-                        }
-                        BlockKind::Craftboard => {
-                            if let Some(block) = self.arena.get_mut::<block::Craftboard>(&block_id)
-                            {
-                                self.showing_contextmenu = Some(ShowingContextmenu {
-                                    page_x: e.page_x() as f64,
-                                    page_y: e.page_y() as f64,
-                                    data: ShowingContextmenuData::Craftboard(block),
-                                });
-                            }
-                        }
-                        _ => {}
                     }
+                    BlockKind::Character => {
+                        if let Some(block) = self.arena.get_mut::<block::Character>(&block_id) {
+                            self.showing_contextmenu = Some(ShowingContextmenu {
+                                page_x: e.page_x() as f64,
+                                page_y: e.page_y() as f64,
+                                data: ShowingContextmenuData::Character(block),
+                            });
+                        }
+                    }
+                    BlockKind::Craftboard => {
+                        if let Some(block) = self.arena.get_mut::<block::Craftboard>(&block_id) {
+                            self.showing_contextmenu = Some(ShowingContextmenu {
+                                page_x: e.page_x() as f64,
+                                page_y: e.page_y() as f64,
+                                data: ShowingContextmenuData::Craftboard(block),
+                            });
+                        }
+                    }
+                    _ => {}
                 }
                 Cmd::none()
             }

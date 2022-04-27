@@ -27,6 +27,7 @@ pub enum Msg<Sub> {
     Focus(U128Id),
     Close(U128Id),
     SetMinimized(U128Id, bool),
+    SetSomeIsDragging(bool),
     DisconnectTab {
         event_id: U128Id,
         tab_idx: usize,
@@ -60,8 +61,8 @@ pub struct TabModelessContainer<
     modelesses: Rc<RefCell<TabModelessList<Content::Props>>>,
     element_rect: Option<Rc<tab_modeless::ContainerRect>>,
     floating_tab: HashMap<U128Id, FloatingTab>,
-    batch_resize: kagura::util::Batch<Cmd<Self>>,
     base_node: Option<web_sys::Element>,
+    some_is_dragging: bool,
     _phantom_tab_name: std::marker::PhantomData<TabName>,
 }
 
@@ -142,21 +143,14 @@ where
     Content::Props: Clone,
 {
     fn constructor(props: Self::Props) -> Self {
-        let batch_resize = kagura::util::Batch::new(|mut handle| {
-            let a = Closure::wrap(
-                Box::new(move || handle(Cmd::chain(Msg::ResizeBase))) as Box<dyn FnMut()>
-            );
-            let _ = web_sys::window()
-                .unwrap()
-                .add_event_listener_with_callback("resize", a.as_ref().unchecked_ref());
-            a.forget();
-        });
+        crate::debug::log_1("TabModelessContainer::constructor");
+
         Self {
             modelesses: props.modelesses,
             element_rect: None,
             floating_tab: HashMap::new(),
-            batch_resize,
             base_node: None,
+            some_is_dragging: false,
             _phantom_tab_name: std::marker::PhantomData,
         }
     }
@@ -167,6 +161,18 @@ impl<Content: HtmlComponent + Unpin, TabName: HtmlComponent<Props = Content::Pro
 where
     Content::Props: Clone,
 {
+    fn on_assemble(self: Pin<&mut Self>) -> Cmd<Self> {
+        Cmd::batch(kagura::util::Batch::new(|mut handle| {
+            let a = Closure::wrap(
+                Box::new(move || handle(Cmd::chain(Msg::ResizeBase))) as Box<dyn FnMut()>
+            );
+            let _ = web_sys::window()
+                .unwrap()
+                .add_event_listener_with_callback("resize", a.as_ref().unchecked_ref());
+            a.forget();
+        }))
+    }
+
     fn update(mut self: Pin<&mut Self>, msg: Self::Msg) -> Cmd<Self> {
         match msg {
             Msg::NoOp => Cmd::none(),
@@ -194,7 +200,7 @@ where
                         self.element_rect = Some(Rc::new(rect));
                     }
                 }
-                Cmd::task(self.batch_resize.poll())
+                Cmd::none()
             }
             Msg::Focus(modeless_id) => {
                 self.modelesses.borrow_mut().data.focus(&modeless_id);
@@ -208,6 +214,10 @@ where
                 if let Some(modeless) = self.modelesses.borrow_mut().data.get_mut(&modeless_id) {
                     modeless.is_minimized = is_minimized;
                 }
+                Cmd::none()
+            }
+            Msg::SetSomeIsDragging(some_is_dragging) => {
+                self.some_is_dragging = some_is_dragging;
                 Cmd::none()
             }
             Msg::DisconnectTab {
@@ -335,7 +345,7 @@ where
                     Msg::NoOp
                 })
                 .on_drop(self, move |e| {
-                    let e = unwrap!(e.clone().dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
+                    let e = unwrap!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
                     let data_transfer = unwrap!(e.data_transfer(); Msg::NoOp);
                     let data = unwrap!(data_transfer.get_data("text/plain").ok(); Msg::NoOp);
                     if TabBtn::validate_prefix::<TabModeless<Content, TabName>>(&data) {
@@ -418,7 +428,7 @@ where
                                 Some((m_id, z_idx, contents)) if !contents.is_minimized => {
                                     TabModeless::<Content, TabName>::empty(
                                         self,
-                                        Some(m_id.to_string()),
+                                        None,
                                         tab_modeless::Props {
                                             container_rect: Rc::clone(&element_rect),
                                             contents: Rc::clone(&contents.data),
@@ -431,6 +441,7 @@ where
                                             size: [800.0, 600.0],
                                             z_index: z_idx,
                                             modeless_id: U128Id::clone(&m_id),
+                                            some_is_dragging: self.some_is_dragging,
                                         },
                                         Sub::map(|sub| match sub {
                                             tab_modeless::On::DisconnectTab {
@@ -463,6 +474,10 @@ where
                                                 modeless_id,
                                                 is_minimized,
                                             ) => Msg::SetMinimized(modeless_id, is_minimized),
+                                            tab_modeless::On::ChangeDraggingState(
+                                                _,
+                                                some_is_dragging,
+                                            ) => Msg::SetSomeIsDragging(some_is_dragging),
                                             tab_modeless::On::Sub(sub) => Msg::Sub(On::Sub(sub)),
                                             _ => Msg::NoOp,
                                         }),

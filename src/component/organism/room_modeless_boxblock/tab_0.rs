@@ -71,7 +71,7 @@ impl Update for Tab0 {
         Cmd::none()
     }
 
-    fn update(mut self: Pin<&mut Self>, msg: Self::Msg) -> Cmd<Self> {
+    fn update(self: Pin<&mut Self>, msg: Self::Msg) -> Cmd<Self> {
         match msg {
             Msg::NoOp => Cmd::none(),
             Msg::Sub(event) => Cmd::submit(event),
@@ -80,8 +80,8 @@ impl Update for Tab0 {
 }
 
 impl Render<Html> for Tab0 {
-    type Children = Vec<Html>;
-    fn render(&self, children: Self::Children) -> Html {
+    type Children = ();
+    fn render(&self, _: Self::Children) -> Html {
         Self::styled(Html::div(
             Attributes::new()
                 .class(RoomModeless::class("common-base"))

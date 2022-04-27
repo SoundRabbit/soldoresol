@@ -166,7 +166,7 @@ impl Update for Dropdown {
         Cmd::none()
     }
 
-    fn update(mut self: Pin<&mut Self>, msg: Msg) -> Cmd<Self> {
+    fn update(self: Pin<&mut Self>, msg: Msg) -> Cmd<Self> {
         match msg {
             Msg::NoOp => Cmd::none(),
             Msg::SetRoot(root) => {
@@ -208,7 +208,12 @@ impl Dropdown {
             Attributes::new()
                 .class(Self::class("base"))
                 .class(Self::class(self.base_class_option())),
-            Events::new().refer(self, |root| Msg::SetRoot(root)),
+            Events::new()
+                .refer(self, |root| Msg::SetRoot(root))
+                .on_mousedown(self, |e| {
+                    e.stop_propagation();
+                    Msg::NoOp
+                }),
             vec![self.render_toggle_btn(text), self.render_toggled(children)],
         )
     }

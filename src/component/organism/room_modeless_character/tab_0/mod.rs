@@ -79,6 +79,13 @@ impl Update for Tab0 {
         self.character = props.character;
         Cmd::none()
     }
+
+    fn update(self: Pin<&mut Self>, msg: Self::Msg) -> Cmd<Self> {
+        match msg {
+            Msg::NoOp => Cmd::none(),
+            Msg::Sub(event) => Cmd::submit(event),
+        }
+    }
 }
 
 impl Render<Html> for Tab0 {

@@ -73,30 +73,13 @@ module.exports = {
         historyApiFallback: {
             rewrites: [
                 {
-                    from: /^\/rooms$/,
-                    to: function () {
-                        return '/';
-                    }
-                },
-                {
-                    from: /^\/rooms\/skyway\/([A - Za - z0 - 9@#]{24})$/,
-                    to: function () {
-                        return '/';
-                    }
-                },
-                {
-                    from: /^\/rooms\/drive\/([A-Za-z\-_]+)$/,
-                    to: function () {
-                        return '/';
-                    }
-                },
+                    from: /([^/]*\.(css|js|wasm))$/,
+                    to: ({ match }) => `/${match[1]}`
+                }
             ]
         },
-        static: [
-            {
-                directory: path.join(__dirname, "./assets"),
-                publicPath: "/",
-            }
-        ]
+        static: {
+            directory: path.join(__dirname, "./assets")
+        }
     }
 };

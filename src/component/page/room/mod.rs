@@ -6,6 +6,7 @@ use crate::libs::random_id::U128Id;
 use crate::table::{table_tool::TableTool, Table};
 use kagura::prelude::*;
 use nusa::prelude::*;
+use nusa::v_node::v_element::VEvent;
 use std::cell::RefCell;
 use std::collections::HashSet;
 use std::rc::Rc;
@@ -34,12 +35,12 @@ pub enum Msg {
     SetShowingContextmenu(Option<ShowingContextmenu>),
     SetShowingModal(ShowingModal),
     CloseModalChatUser(Vec<BlockMut<block::Character>>),
-    OnTableWheel(web_sys::WheelEvent),
-    OnTableClick(web_sys::MouseEvent),
-    OnTableMousedown(web_sys::MouseEvent),
-    OnTableMouseup(web_sys::MouseEvent),
-    OnTableMousemove(web_sys::MouseEvent),
-    OnTableContextmenu(web_sys::MouseEvent),
+    OnTableWheel(VEvent<web_sys::WheelEvent>),
+    OnTableClick(VEvent<web_sys::MouseEvent>),
+    OnTableMousedown(VEvent<web_sys::MouseEvent>),
+    OnTableMouseup(VEvent<web_sys::MouseEvent>),
+    OnTableMousemove(VEvent<web_sys::MouseEvent>),
+    OnTableContextmenu(VEvent<web_sys::MouseEvent>),
     AddResourceImageData(resource::ImageData),
     SetIs2dMode(bool, bool),
     SetBlockIsFixedPosition(BlockMut<Untyped>, bool),

@@ -12,9 +12,9 @@ use isaribi::{
 };
 use kagura::prelude::*;
 use nusa::prelude::*;
+use nusa::v_node::v_element::VEvent;
 use std::cell::RefCell;
 use std::rc::Rc;
-use wasm_bindgen::JsCast;
 
 pub struct Props<T> {
     pub size: [f64; 2],
@@ -24,6 +24,7 @@ pub struct Props<T> {
     pub container_rect: Rc<ContainerRect>,
     pub contents: Rc<RefCell<SelectList<T>>>,
     pub modeless_id: U128Id,
+    pub some_is_dragging: bool,
 }
 
 #[derive(PartialEq)]
@@ -62,6 +63,7 @@ pub enum Msg<Sub> {
 pub enum On<Sub> {
     Focus(U128Id),
     Close(U128Id),
+    ChangeDraggingState(U128Id, bool),
     SetMinimized(U128Id, bool),
     Move(i32, i32),
     Resize([f64; 2]),
@@ -88,6 +90,7 @@ pub struct TabModeless<
     size: [f64; 2],
     loc: [f64; 2],
     dragging: Option<([i32; 2], DragType)>,
+    some_is_dragging: bool,
     container_rect: Rc<ContainerRect>,
     modeless_id: U128Id,
     z_index: usize,
@@ -160,6 +163,7 @@ where
             loc: loc,
             size: props.size.clone(),
             dragging: None,
+            some_is_dragging: props.some_is_dragging,
             container_rect: Rc::clone(&props.container_rect),
             modeless_id: props.modeless_id,
             contents: props.contents,
@@ -171,21 +175,16 @@ where
 }
 
 macro_rules! on_drag {
-    ($dragging:expr) => {{
-        let dragging = $dragging;
+    () => {
         move |e| {
-            let e = unwrap!(e.clone().dyn_into::<web_sys::MouseEvent>().ok(); Msg::NoOp);
+            let e = unwrap!(e.dyn_into::<web_sys::MouseEvent>().ok(); Msg::NoOp);
             e.stop_propagation();
-            if dragging {
-                Msg::Drag {
-                    page_x: e.page_x(),
-                    page_y: e.page_y(),
-                }
-            } else {
-                Msg::NoOp
+            Msg::Drag {
+                page_x: e.page_x(),
+                page_y: e.page_y(),
             }
         }
-    }};
+    };
 }
 
 impl<Content: HtmlComponent + Unpin, TabName: HtmlComponent<Props = Content::Props> + Unpin> Update
@@ -208,6 +207,7 @@ where
 
         self.container_rect = props.container_rect;
         self.modeless_id = props.modeless_id;
+        self.some_is_dragging = props.some_is_dragging;
         self.contents = props.contents;
         self.z_index = props.z_index;
 
@@ -245,11 +245,23 @@ where
                 drag_type,
             } => {
                 self.dragging = Some(([page_x, page_y], drag_type));
-                Cmd::submit(On::Focus(U128Id::clone(&self.modeless_id)))
+                Cmd::list(vec![
+                    Cmd::submit(On::Focus(U128Id::clone(&self.modeless_id))),
+                    Cmd::submit(On::ChangeDraggingState(
+                        U128Id::clone(&self.modeless_id),
+                        true,
+                    )),
+                ])
             }
             Msg::DragEnd => {
                 self.dragging = None;
-                Cmd::submit(On::Focus(U128Id::clone(&self.modeless_id)))
+                Cmd::list(vec![
+                    Cmd::submit(On::Focus(U128Id::clone(&self.modeless_id))),
+                    Cmd::submit(On::ChangeDraggingState(
+                        U128Id::clone(&self.modeless_id),
+                        false,
+                    )),
+                ])
             }
             Msg::DisconnectTab {
                 event_id,
@@ -266,7 +278,7 @@ where
                 Cmd::none()
             }
             Msg::Drag { page_x, page_y } => {
-                let cmd;
+                let mut cmds = vec![];
                 if let Some(mut dragging) = self.dragging {
                     let mov_x = (page_x - dragging.0[0]) as f64;
                     let mov_y = (page_y - dragging.0[1]) as f64;
@@ -341,16 +353,14 @@ where
                     dragging.0[1] = page_y;
                     self.dragging = Some(dragging);
 
-                    cmd = match &dragging.1 {
+                    cmds.push(match &dragging.1 {
                         DragType::Move => {
                             let page_x = (self.loc[0] + self.container_rect.left).round() as i32;
                             let page_y = (self.loc[1] + self.container_rect.top).round() as i32;
                             Cmd::submit(On::Move(page_x, page_y))
                         }
                         _ => Cmd::submit(On::Resize(self.size.clone())),
-                    }
-                } else {
-                    cmd = Cmd::none();
+                    })
                 }
 
                 if page_x < self.container_rect.left as i32
@@ -359,9 +369,13 @@ where
                     || page_y > (self.container_rect.top + self.container_rect.height) as i32
                 {
                     self.dragging = None;
+                    cmds.push(Cmd::submit(On::ChangeDraggingState(
+                        U128Id::clone(&self.modeless_id),
+                        false,
+                    )));
                 }
 
-                cmd
+                Cmd::list(cmds)
             }
         }
     }
@@ -376,6 +390,8 @@ where
     fn render(&self, _: ()) -> Html {
         Self::styled(Html::div(
             Attributes::new()
+                .index_id(self.modeless_id.to_string())
+                .string("data-modeless-id", self.modeless_id.to_string())
                 .class(Self::class("base"))
                 .style("z-index", format!("{}", self.z_index))
                 .style("left", format!("{}px", self.loc[0].round() as i32))
@@ -385,15 +401,17 @@ where
             {
                 let mut events = Events::new();
 
-                events = events.on_mousedown(self, |e| {
-                    let e = unwrap!(e.clone().dyn_into::<web_sys::MouseEvent>().ok(); Msg::NoOp);
-                    e.stop_propagation();
-                    Msg::DragStart {
-                        page_x: e.page_x(),
-                        page_y: e.page_y(),
-                        drag_type: DragType::Move,
-                    }
-                });
+                if !self.some_is_dragging {
+                    events = events.on_mousedown(self, |e| {
+                        let e = unwrap!(e.dyn_into::<web_sys::MouseEvent>().ok(); Msg::NoOp);
+                        e.stop_propagation();
+                        Msg::DragStart {
+                            page_x: e.page_x(),
+                            page_y: e.page_y(),
+                            drag_type: DragType::Move,
+                        }
+                    });
+                }
 
                 events = events.on_mouseup(self, |e| {
                     e.stop_propagation();
@@ -401,8 +419,8 @@ where
                 });
 
                 if self.dragging.is_some() {
-                    events = events.on_mousemove(self, on_drag!(self.dragging.is_some()));
-                    events = events.on_mouseleave(self, on_drag!(self.dragging.is_some()));
+                    events = events.capture_on_mousemove(self, on_drag!());
+                    events = events.capture_on_mouseleave(self, on_drag!());
                 }
 
                 events = events.on("wheel",self, |e| {
@@ -423,7 +441,7 @@ where
                         .on_drop(self, {
                             let modeless_id = U128Id::clone(&self.modeless_id);
                             move |e| {
-                                let e = unwrap!(e.clone().dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
+                                let e = unwrap!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
                                 Self::on_drop_tab(None, e,modeless_id)
                             }
                         }),
@@ -444,8 +462,8 @@ where
                                     .on_mousedown(self, |e|{ e.stop_propagation(); Msg::NoOp})
                                     .on_dragstart(self,
                                         move |e| {
+                                        let e = unwrap!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
                                         e.stop_propagation();
-                                        let e = unwrap!(e.clone().dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
                                         let data_transfer = unwrap!(e.data_transfer(); Msg::NoOp);
                                         let event_id = U128Id::new();
                                         unwrap!(
@@ -462,7 +480,7 @@ where
                                     }).on_drop(self, {
                                         let modeless_id = U128Id::clone(&self.modeless_id);
                                         move |e| {
-                                            let e = unwrap!(e.clone().dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
+                                            let e = unwrap!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
                                             Self::on_drop_tab(Some(tab_idx), e,modeless_id)
                                         }
                                     }).on_click(self, move |_| Msg::SetSelectedTabIdx(tab_idx)),
@@ -561,7 +579,7 @@ where
             Attributes::new().class(Self::class(&format!("rsz-{}", &drag_direction))),
             Events::new()
                 .on_mousedown(self, move |e| {
-                    let e = unwrap!(e.clone().dyn_into::<web_sys::MouseEvent>().ok(); Msg::NoOp);
+                    let e = unwrap!(e.dyn_into::<web_sys::MouseEvent>().ok(); Msg::NoOp);
                     e.stop_propagation();
                     Msg::DragStart {
                         page_x: e.page_x(),
@@ -576,7 +594,7 @@ where
 
     fn on_drop_tab(
         tab_idx: Option<usize>,
-        e: web_sys::DragEvent,
+        e: VEvent<web_sys::DragEvent>,
         modeless_id: U128Id,
     ) -> Msg<Content::Event> {
         let e = unwrap!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);

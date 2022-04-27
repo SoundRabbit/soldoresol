@@ -9,7 +9,7 @@ impl Room {
             Events::new()
                 .on_click(self, |_| Msg::SetShowingContextmenu(None))
                 .on("contextmenu", self, |e| {
-                    let e = unwrap!(e.clone().dyn_into::<web_sys::MouseEvent>().ok(); Msg::NoOp);
+                    let e = unwrap!(e.dyn_into::<web_sys::MouseEvent>().ok(); Msg::NoOp);
                     Msg::OnTableContextmenu(e)
                 }),
             vec![Html::div(
