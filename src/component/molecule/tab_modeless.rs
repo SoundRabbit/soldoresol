@@ -24,7 +24,7 @@ pub struct Props<T> {
     pub container_rect: Rc<ContainerRect>,
     pub contents: Rc<RefCell<SelectList<T>>>,
     pub modeless_id: U128Id,
-    pub some_is_dragging: bool,
+    pub some_dragging: Option<(i32, i32)>,
 }
 
 #[derive(PartialEq)]
@@ -63,7 +63,7 @@ pub enum Msg<Sub> {
 pub enum On<Sub> {
     Focus(U128Id),
     Close(U128Id),
-    ChangeDraggingState(U128Id, bool),
+    ChangeDraggingState(U128Id, Option<(i32, i32)>),
     SetMinimized(U128Id, bool),
     Move(i32, i32),
     Resize([f64; 2]),
@@ -163,7 +163,7 @@ where
             loc: loc,
             size: props.size.clone(),
             dragging: None,
-            some_is_dragging: props.some_is_dragging,
+            some_is_dragging: props.some_dragging.is_some(),
             container_rect: Rc::clone(&props.container_rect),
             modeless_id: props.modeless_id,
             contents: props.contents,
@@ -172,19 +172,6 @@ where
             _phantom_tab_name: std::marker::PhantomData,
         }
     }
-}
-
-macro_rules! on_drag {
-    () => {
-        move |e| {
-            let e = unwrap!(e.dyn_into::<web_sys::MouseEvent>().ok(); Msg::NoOp);
-            e.stop_propagation();
-            Msg::Drag {
-                page_x: e.page_x(),
-                page_y: e.page_y(),
-            }
-        }
-    };
 }
 
 impl<Content: HtmlComponent + Unpin, TabName: HtmlComponent<Props = Content::Props> + Unpin> Update
@@ -207,11 +194,21 @@ where
 
         self.container_rect = props.container_rect;
         self.modeless_id = props.modeless_id;
-        self.some_is_dragging = props.some_is_dragging;
+        self.some_is_dragging = props.some_dragging.is_some();
         self.contents = props.contents;
         self.z_index = props.z_index;
 
-        Cmd::none()
+        let mut cmds = vec![];
+
+        if self.dragging.is_some() {
+            if let Some((page_x, page_y)) = props.some_dragging {
+                cmds.push(Cmd::chain(Msg::Drag { page_x, page_y }));
+            } else {
+                cmds.push(Cmd::chain(Msg::DragEnd));
+            }
+        }
+
+        Cmd::list(cmds)
     }
 
     fn update(mut self: Pin<&mut Self>, msg: Msg<Content::Event>) -> Cmd<Self> {
@@ -249,7 +246,7 @@ where
                     Cmd::submit(On::Focus(U128Id::clone(&self.modeless_id))),
                     Cmd::submit(On::ChangeDraggingState(
                         U128Id::clone(&self.modeless_id),
-                        true,
+                        Some((page_x, page_y)),
                     )),
                 ])
             }
@@ -259,7 +256,7 @@ where
                     Cmd::submit(On::Focus(U128Id::clone(&self.modeless_id))),
                     Cmd::submit(On::ChangeDraggingState(
                         U128Id::clone(&self.modeless_id),
-                        false,
+                        None,
                     )),
                 ])
             }
@@ -371,7 +368,7 @@ where
                     self.dragging = None;
                     cmds.push(Cmd::submit(On::ChangeDraggingState(
                         U128Id::clone(&self.modeless_id),
-                        false,
+                        None,
                     )));
                 }
 
@@ -411,16 +408,6 @@ where
                             drag_type: DragType::Move,
                         }
                     });
-                }
-
-                events = events.on_mouseup(self, |e| {
-                    e.stop_propagation();
-                    Msg::DragEnd
-                });
-
-                if self.dragging.is_some() {
-                    events = events.capture_on_mousemove(self, on_drag!());
-                    events = events.capture_on_mouseleave(self, on_drag!());
                 }
 
                 events = events.on("wheel",self, |e| {

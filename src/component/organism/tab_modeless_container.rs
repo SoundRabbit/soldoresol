@@ -27,7 +27,7 @@ pub enum Msg<Sub> {
     Focus(U128Id),
     Close(U128Id),
     SetMinimized(U128Id, bool),
-    SetSomeIsDragging(bool),
+    SetSomeDragging(Option<(i32, i32)>),
     DisconnectTab {
         event_id: U128Id,
         tab_idx: usize,
@@ -62,7 +62,7 @@ pub struct TabModelessContainer<
     element_rect: Option<Rc<tab_modeless::ContainerRect>>,
     floating_tab: HashMap<U128Id, FloatingTab>,
     base_node: Option<web_sys::Element>,
-    some_is_dragging: bool,
+    some_dragging: Option<(i32, i32)>,
     _phantom_tab_name: std::marker::PhantomData<TabName>,
 }
 
@@ -150,7 +150,7 @@ where
             element_rect: None,
             floating_tab: HashMap::new(),
             base_node: None,
-            some_is_dragging: false,
+            some_dragging: None,
             _phantom_tab_name: std::marker::PhantomData,
         }
     }
@@ -216,8 +216,8 @@ where
                 }
                 Cmd::none()
             }
-            Msg::SetSomeIsDragging(some_is_dragging) => {
-                self.some_is_dragging = some_is_dragging;
+            Msg::SetSomeDragging(some_dragging) => {
+                self.some_dragging = some_dragging;
                 Cmd::none()
             }
             Msg::DisconnectTab {
@@ -361,6 +361,29 @@ where
                         }
                     }
                     Msg::NoOp
+                })
+                .capture_on_mousemove(self, {
+                    let some_is_dragging = self.some_dragging.is_some();
+                    move |e| {
+                        if !some_is_dragging {
+                            Msg::NoOp
+                        } else {
+                            let e = unwrap!(e.dyn_into::<web_sys::MouseEvent>().ok(); Msg::NoOp);
+                            e.stop_propagation();
+                            Msg::SetSomeDragging(Some((e.page_x(), e.page_y())))
+                        }
+                    }
+                })
+                .capture_on_mouseup(self, {
+                    let some_is_dragging = self.some_dragging.is_some();
+                    move |e| {
+                        if !some_is_dragging {
+                            Msg::NoOp
+                        } else {
+                            e.stop_propagation();
+                            Msg::SetSomeDragging(None)
+                        }
+                    }
                 }),
             vec![
                 Html::div(Attributes::new(), Events::new(), children),
@@ -441,7 +464,7 @@ where
                                             size: [800.0, 600.0],
                                             z_index: z_idx,
                                             modeless_id: U128Id::clone(&m_id),
-                                            some_is_dragging: self.some_is_dragging,
+                                            some_dragging: self.some_dragging.clone(),
                                         },
                                         Sub::map(|sub| match sub {
                                             tab_modeless::On::DisconnectTab {
@@ -476,8 +499,8 @@ where
                                             ) => Msg::SetMinimized(modeless_id, is_minimized),
                                             tab_modeless::On::ChangeDraggingState(
                                                 _,
-                                                some_is_dragging,
-                                            ) => Msg::SetSomeIsDragging(some_is_dragging),
+                                                some_dragging,
+                                            ) => Msg::SetSomeDragging(some_dragging),
                                             tab_modeless::On::Sub(sub) => Msg::Sub(On::Sub(sub)),
                                             _ => Msg::NoOp,
                                         }),
