@@ -15,8 +15,13 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use wasm_bindgen::{prelude::*, JsCast};
 
-pub struct Props<T> {
-    pub modelesses: Rc<RefCell<TabModelessList<T>>>,
+pub struct Props<
+    Content: HtmlComponent + Unpin,
+    TabName: HtmlComponent<Props = Content::Props> + Unpin,
+> where
+    Content::Props: Clone,
+{
+    pub modelesses: Rc<RefCell<TabModelessList<Content, TabName>>>,
 }
 
 pub enum Msg<Sub> {
@@ -58,7 +63,7 @@ pub struct TabModelessContainer<
 > where
     Content::Props: Clone,
 {
-    modelesses: Rc<RefCell<TabModelessList<Content::Props>>>,
+    modelesses: Rc<RefCell<TabModelessList<Content, TabName>>>,
     element_rect: Option<Rc<tab_modeless::ContainerRect>>,
     floating_tab: HashMap<U128Id, FloatingTab>,
     base_node: Option<web_sys::Element>,
@@ -66,8 +71,13 @@ pub struct TabModelessContainer<
     _phantom_tab_name: std::marker::PhantomData<TabName>,
 }
 
-pub struct TabModelessList<T> {
-    data: ModelessList<Modeless<T>>,
+pub struct TabModelessList<
+    Content: HtmlComponent + Unpin,
+    TabName: HtmlComponent<Props = Content::Props> + Unpin,
+> where
+    Content::Props: Clone,
+{
+    data: ModelessList<Modeless<Content, TabName>>,
 }
 
 struct FloatingTab {
@@ -76,38 +86,59 @@ struct FloatingTab {
     is_selected: bool,
 }
 
-struct Modeless<T> {
-    data: Rc<RefCell<SelectList<T>>>,
-    pos_x: Option<i32>,
-    pos_y: Option<i32>,
+struct Modeless<
+    Content: HtmlComponent + Unpin,
+    TabName: HtmlComponent<Props = Content::Props> + Unpin,
+> where
+    Content::Props: Clone,
+{
+    state: Rc<RefCell<tab_modeless::State<Content, TabName>>>,
     is_minimized: bool,
 }
 
-impl<T> TabModelessList<T> {
+impl<Content: HtmlComponent + Unpin, TabName: HtmlComponent<Props = Content::Props> + Unpin>
+    TabModelessList<Content, TabName>
+where
+    Content::Props: Clone,
+{
     pub fn new() -> Self {
         Self {
             data: ModelessList::new(),
         }
     }
 
-    pub fn open_modeless(&mut self, contents: Vec<T>) {
+    pub fn open_modeless(&mut self, contents: Vec<Content::Props>) {
+        let m_idx = self.data.len();
         self.data.push(Modeless {
-            data: Rc::new(RefCell::new(SelectList::new(contents, 0))),
-            pos_x: None,
-            pos_y: None,
+            state: tab_modeless::State::new(
+                [800.0, 600.0],
+                200 + (m_idx % 10) as i32 * 20,
+                200 + (m_idx % 10) as i32 * 20,
+                SelectList::new(contents, 0),
+            ),
             is_minimized: false,
         });
     }
 }
 
-impl<T: PartialEq> TabModelessList<T> {
-    pub fn focus_first(&mut self, content: &T) {
+impl<Content: HtmlComponent + Unpin, TabName: HtmlComponent<Props = Content::Props> + Unpin>
+    TabModelessList<Content, TabName>
+where
+    Content::Props: Clone + PartialEq,
+{
+    pub fn focus_first(&mut self, content: &Content::Props) {
         let m_id = self
             .data
             .iter()
             .filter_map(|x| x)
             .find_map(|(m_id, _, m_contents)| {
-                if m_contents.data.borrow().iter().any(|m_c| content.eq(m_c)) {
+                if m_contents
+                    .state
+                    .borrow()
+                    .contents()
+                    .iter()
+                    .any(|m_c| content.eq(m_c))
+                {
                     Some(m_id)
                 } else {
                     None
@@ -125,7 +156,7 @@ impl<Content: HtmlComponent + Unpin, TabName: HtmlComponent<Props = Content::Pro
 where
     Content::Props: Clone,
 {
-    type Props = Props<Content::Props>;
+    type Props = Props<Content, TabName>;
     type Msg = Msg<Content::Event>;
     type Event = On<Content::Event>;
 }
@@ -143,8 +174,6 @@ where
     Content::Props: Clone,
 {
     fn constructor(props: Self::Props) -> Self {
-        crate::debug::log_1("TabModelessContainer::constructor");
-
         Self {
             modelesses: props.modelesses,
             element_rect: None,
@@ -247,7 +276,7 @@ where
                         .borrow_mut()
                         .data
                         .get_mut(&event.modeless_id)
-                        .and_then(|x| x.data.borrow_mut().remove(event.tab_idx));
+                        .and_then(|x| x.state.borrow_mut().contents_mut().remove(event.tab_idx));
 
                     {
                         let mut modelesses = self.modelesses.borrow_mut();
@@ -255,15 +284,23 @@ where
                             join_some!(content, modelesses.data.get_mut(&modeless_id))
                         {
                             let tab_idx = if let Some(tab_idx) = header_tab_idx {
-                                modeless.data.borrow_mut().insert(tab_idx, content);
+                                modeless
+                                    .state
+                                    .borrow_mut()
+                                    .contents_mut()
+                                    .insert(tab_idx, content);
                                 tab_idx
                             } else {
-                                modeless.data.borrow_mut().push(content);
-                                modeless.data.borrow().len() - 1
+                                modeless.state.borrow_mut().contents_mut().push(content);
+                                modeless.state.borrow().contents().len() - 1
                             };
 
                             if event.is_selected {
-                                modeless.data.borrow_mut().set_selected_idx(tab_idx);
+                                modeless
+                                    .state
+                                    .borrow_mut()
+                                    .contents_mut()
+                                    .set_selected_idx(tab_idx);
                             }
                         }
                     }
@@ -273,7 +310,7 @@ where
                         .borrow()
                         .data
                         .get(&event.modeless_id)
-                        .map(|x| x.data.borrow().len() < 1)
+                        .map(|x| x.state.borrow().contents().len() < 1)
                         .unwrap_or(false)
                     {
                         self.modelesses.borrow_mut().data.remove(&event.modeless_id);
@@ -297,13 +334,16 @@ where
                         .borrow_mut()
                         .data
                         .get_mut(&event.modeless_id)
-                        .and_then(|x| x.data.borrow_mut().remove(event.tab_idx));
+                        .and_then(|x| x.state.borrow_mut().contents_mut().remove(event.tab_idx));
 
                     if let Some(content) = content {
                         self.modelesses.borrow_mut().data.push(Modeless {
-                            data: Rc::new(RefCell::new(SelectList::new(vec![content], 0))),
-                            pos_x: Some(page_x - 10),
-                            pos_y: Some(page_y - 10),
+                            state: tab_modeless::State::new(
+                                [800.0, 600.0],
+                                page_x - 10,
+                                page_y - 10,
+                                SelectList::new(vec![content], 0),
+                            ),
                             is_minimized: false,
                         });
                     }
@@ -313,7 +353,7 @@ where
                         .borrow()
                         .data
                         .get(&event.modeless_id)
-                        .map(|x| x.data.borrow().len() < 1)
+                        .map(|x| x.state.borrow().contents().len() < 1)
                         .unwrap_or(false)
                     {
                         self.modelesses.borrow_mut().data.remove(&event.modeless_id);
@@ -403,8 +443,9 @@ where
                                         Attributes::new().class(Self::class("minimized-item-tabs")),
                                         Events::new(),
                                         contents
-                                            .data
+                                            .state
                                             .borrow()
+                                            .contents()
                                             .iter()
                                             .map(|content| {
                                                 Html::span(
@@ -446,25 +487,19 @@ where
                             .borrow()
                             .data
                             .iter()
-                            .enumerate()
-                            .map(|(m_idx, m)| match m {
-                                Some((m_id, z_idx, contents)) if !contents.is_minimized => {
+                            .map(|m| match m {
+                                Some((m_id, z_idx, modeless)) if !modeless.is_minimized => {
+                                    modeless.state.borrow_mut().set(
+                                        Rc::clone(&element_rect),
+                                        U128Id::clone(&m_id),
+                                        self.some_dragging.clone(),
+                                        z_idx,
+                                    );
                                     TabModeless::<Content, TabName>::empty(
                                         self,
                                         None,
                                         tab_modeless::Props {
-                                            container_rect: Rc::clone(&element_rect),
-                                            contents: Rc::clone(&contents.data),
-                                            page_x: contents
-                                                .pos_x
-                                                .unwrap_or(200 + (m_idx % 10) as i32 * 20),
-                                            page_y: contents
-                                                .pos_y
-                                                .unwrap_or(200 + (m_idx % 10) as i32 * 20),
-                                            size: [800.0, 600.0],
-                                            z_index: z_idx,
-                                            modeless_id: U128Id::clone(&m_id),
-                                            some_dragging: self.some_dragging.clone(),
+                                            state: Rc::clone(&modeless.state),
                                         },
                                         Sub::map(|sub| match sub {
                                             tab_modeless::On::DisconnectTab {

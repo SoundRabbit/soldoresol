@@ -5,6 +5,7 @@ use super::page::{
     room_selector::{self, RoomSelector},
 };
 use super::util::router;
+use crate::libs::bcdice;
 use crate::libs::skyway;
 use crate::model::config::Config;
 use kagura::prelude::*;

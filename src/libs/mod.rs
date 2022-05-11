@@ -6,6 +6,7 @@ pub mod js_object;
 pub mod gen;
 
 pub mod annotated;
+pub mod bcdice;
 pub mod color;
 pub mod element;
 pub mod gapi;

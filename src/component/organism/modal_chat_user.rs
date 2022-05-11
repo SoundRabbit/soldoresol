@@ -4,7 +4,10 @@ use super::atom::{
     heading::{self, Heading},
     text,
 };
-use super::molecule::modal::{self, Modal};
+use super::molecule::{
+    modal::{self, Modal},
+    sortable::{self, Sortable},
+};
 use crate::arena::{block, BlockMut, BlockRef};
 use crate::libs::random_id::U128Id;
 use isaribi::{
@@ -188,30 +191,38 @@ impl ModalChatUser {
                     Events::new(),
                     vec![Html::text("選択済みキャラクター")],
                 ),
-                Html::div(
-                    Attributes::new().class(Self::class("list")),
-                    Events::new(),
-                    self.selected_index
-                        .iter()
-                        .enumerate()
-                        .filter_map(|(idx, character)| {
-                            character.map(|character| {
-                                Html::div(
-                                    Attributes::new().class(Common::valuekey()),
-                                    Events::new(),
-                                    vec![
-                                        text::div(character.name()),
-                                        Btn::danger(
-                                            Attributes::new(),
-                                            Events::new()
-                                                .on_click(self, move |_| Msg::RemoveSelected(idx)),
-                                            vec![Html::text("削除")],
-                                        ),
-                                    ],
-                                )
+                Sortable::new(
+                    self,
+                    None,
+                    sortable::Props {},
+                    Sub::none(),
+                    (
+                        Attributes::new().class(Self::class("list")),
+                        Events::new(),
+                        self.selected_index
+                            .iter()
+                            .enumerate()
+                            .filter_map(|(idx, character)| {
+                                character.map(|character| {
+                                    (
+                                        idx,
+                                        Attributes::new().class(Common::valuekey()),
+                                        Events::new(),
+                                        vec![
+                                            text::div(character.name()),
+                                            Btn::danger(
+                                                Attributes::new(),
+                                                Events::new().on_click(self, move |_| {
+                                                    Msg::RemoveSelected(idx)
+                                                }),
+                                                vec![Html::text("削除")],
+                                            ),
+                                        ],
+                                    )
+                                })
                             })
-                        })
-                        .collect(),
+                            .collect(),
+                    ),
                 ),
             ],
         )

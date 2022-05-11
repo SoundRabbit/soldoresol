@@ -16,15 +16,13 @@ use nusa::v_node::v_element::VEvent;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-pub struct Props<T> {
-    pub size: [f64; 2],
-    pub page_x: i32,
-    pub page_y: i32,
-    pub z_index: usize,
-    pub container_rect: Rc<ContainerRect>,
-    pub contents: Rc<RefCell<SelectList<T>>>,
-    pub modeless_id: U128Id,
-    pub some_dragging: Option<(i32, i32)>,
+pub struct Props<
+    Content: HtmlComponent + Unpin,
+    TabName: HtmlComponent<Props = Content::Props> + Unpin,
+> where
+    Content::Props: Clone,
+{
+    pub state: Rc<RefCell<State<Content, TabName>>>,
 }
 
 #[derive(PartialEq)]
@@ -87,16 +85,101 @@ pub struct TabModeless<
 > where
     Content::Props: Clone,
 {
+    state: Rc<RefCell<State<Content, TabName>>>,
+}
+
+pub struct State<
+    Content: HtmlComponent + Unpin,
+    TabName: HtmlComponent<Props = Content::Props> + Unpin,
+> where
+    Content::Props: Clone,
+{
     size: [f64; 2],
     loc: [f64; 2],
     dragging: Option<([i32; 2], DragType)>,
     some_is_dragging: bool,
-    container_rect: Rc<ContainerRect>,
+    container_rect: Option<Rc<ContainerRect>>,
     modeless_id: U128Id,
     z_index: usize,
-    contents: Rc<RefCell<SelectList<Content::Props>>>,
+    contents: SelectList<Content::Props>,
+    cmds: Vec<Cmd<TabModeless<Content, TabName>>>,
     _phantom_content: std::marker::PhantomData<Content>,
     _phantom_tab_name: std::marker::PhantomData<TabName>,
+}
+
+impl<Content: HtmlComponent + Unpin, TabName: HtmlComponent<Props = Content::Props> + Unpin>
+    State<Content, TabName>
+where
+    Content::Props: Clone,
+{
+    pub fn new(
+        size: [f64; 2],
+        page_x: i32,
+        page_y: i32,
+        contents: SelectList<Content::Props>,
+    ) -> Rc<RefCell<Self>> {
+        Rc::new(RefCell::new(Self {
+            loc: [page_x as f64, page_y as f64],
+            size: size,
+            dragging: None,
+            some_is_dragging: false,
+            container_rect: None,
+            modeless_id: U128Id::none(),
+            contents: contents,
+            z_index: 0,
+            cmds: vec![],
+            _phantom_content: std::marker::PhantomData,
+            _phantom_tab_name: std::marker::PhantomData,
+        }))
+    }
+
+    pub fn set(
+        &mut self,
+        container_rect: Rc<ContainerRect>,
+        modeless_id: U128Id,
+        some_dragging: Option<(i32, i32)>,
+        z_index: usize,
+    ) {
+        if let Some(self_container_rect) = self.container_rect.as_ref() {
+            if container_rect.width != self_container_rect.width {
+                let margin_ratio = self.loc[0] / (self_container_rect.width - self.size[0]);
+                let margin = container_rect.width - self.size[0];
+                self.loc[0] = margin_ratio * margin;
+            }
+
+            if container_rect.height != self_container_rect.height {
+                let margin_ratio = self.loc[1] / (self_container_rect.height - self.size[1]);
+                let margin = container_rect.height - self.size[1];
+                self.loc[1] = margin_ratio * margin;
+            }
+        } else {
+            let client_x = self.loc[0] as f64 - container_rect.left;
+            let client_y = self.loc[1] as f64 - container_rect.top;
+            let loc = [client_x.max(0.0), client_y.max(0.0)];
+            self.loc = loc;
+        }
+
+        self.container_rect = Some(container_rect);
+        self.modeless_id = modeless_id;
+        self.some_is_dragging = some_dragging.is_some();
+        self.z_index = z_index;
+
+        if self.dragging.is_some() {
+            if let Some((page_x, page_y)) = some_dragging {
+                self.cmds.push(Cmd::chain(Msg::Drag { page_x, page_y }));
+            } else {
+                self.cmds.push(Cmd::chain(Msg::DragEnd));
+            }
+        }
+    }
+
+    pub fn contents(&self) -> &SelectList<Content::Props> {
+        &self.contents
+    }
+
+    pub fn contents_mut(&mut self) -> &mut SelectList<Content::Props> {
+        &mut self.contents
+    }
 }
 
 #[derive(Clone, Copy)]
@@ -137,7 +220,7 @@ impl<Content: HtmlComponent + Unpin, TabName: HtmlComponent<Props = Content::Pro
 where
     Content::Props: Clone,
 {
-    type Props = Props<Content::Props>;
+    type Props = Props<Content, TabName>;
     type Msg = Msg<Content::Event>;
     type Event = On<Content::Event>;
 }
@@ -154,23 +237,8 @@ impl<Content: HtmlComponent + Unpin, TabName: HtmlComponent<Props = Content::Pro
 where
     Content::Props: Clone,
 {
-    fn constructor(props: Props<Content::Props>) -> Self {
-        let client_x = props.page_x as f64 - props.container_rect.left;
-        let client_y = props.page_y as f64 - props.container_rect.top;
-        let loc = [client_x.max(0.0), client_y.max(0.0)];
-
-        Self {
-            loc: loc,
-            size: props.size.clone(),
-            dragging: None,
-            some_is_dragging: props.some_dragging.is_some(),
-            container_rect: Rc::clone(&props.container_rect),
-            modeless_id: props.modeless_id,
-            contents: props.contents,
-            z_index: props.z_index,
-            _phantom_content: std::marker::PhantomData,
-            _phantom_tab_name: std::marker::PhantomData,
-        }
+    fn constructor(props: Self::Props) -> Self {
+        Self { state: props.state }
     }
 }
 
@@ -179,59 +247,36 @@ impl<Content: HtmlComponent + Unpin, TabName: HtmlComponent<Props = Content::Pro
 where
     Content::Props: Clone,
 {
-    fn on_load(mut self: Pin<&mut Self>, props: Props<Content::Props>) -> Cmd<Self> {
-        if props.container_rect.width != self.container_rect.width {
-            let margin_ratio = self.loc[0] / (self.container_rect.width - self.size[0]);
-            let margin = props.container_rect.width - self.size[0];
-            self.loc[0] = margin_ratio * margin;
-        }
-
-        if props.container_rect.height != self.container_rect.height {
-            let margin_ratio = self.loc[1] / (self.container_rect.height - self.size[1]);
-            let margin = props.container_rect.height - self.size[1];
-            self.loc[1] = margin_ratio * margin;
-        }
-
-        self.container_rect = props.container_rect;
-        self.modeless_id = props.modeless_id;
-        self.some_is_dragging = props.some_dragging.is_some();
-        self.contents = props.contents;
-        self.z_index = props.z_index;
-
-        let mut cmds = vec![];
-
-        if self.dragging.is_some() {
-            if let Some((page_x, page_y)) = props.some_dragging {
-                cmds.push(Cmd::chain(Msg::Drag { page_x, page_y }));
-            } else {
-                cmds.push(Cmd::chain(Msg::DragEnd));
-            }
-        }
-
-        Cmd::list(cmds)
+    fn on_assemble(self: Pin<&mut Self>) -> Cmd<Self> {
+        Cmd::list(self.state.borrow_mut().cmds.drain(..).collect())
     }
 
-    fn update(mut self: Pin<&mut Self>, msg: Msg<Content::Event>) -> Cmd<Self> {
+    fn on_load(mut self: Pin<&mut Self>, props: Self::Props) -> Cmd<Self> {
+        self.state = props.state;
+        Cmd::list(self.state.borrow_mut().cmds.drain(..).collect())
+    }
+
+    fn update(self: Pin<&mut Self>, msg: Msg<Content::Event>) -> Cmd<Self> {
+        let mut this = self.state.borrow_mut();
         match msg {
             Msg::NoOp => Cmd::none(),
             Msg::Sub(sub) => Cmd::submit(sub),
-            Msg::CloseSelf => Cmd::submit(On::Close(U128Id::clone(&self.modeless_id))),
+            Msg::CloseSelf => Cmd::submit(On::Close(U128Id::clone(&this.modeless_id))),
             Msg::SetMinimizedSelf(is_minimized) => Cmd::submit(On::SetMinimized(
-                U128Id::clone(&self.modeless_id),
+                U128Id::clone(&this.modeless_id),
                 is_minimized,
             )),
             Msg::CloneTab(tab_idx) => {
-                let mut contents = self.contents.borrow_mut();
-                if let Some(tab) = contents.get(tab_idx) {
+                if let Some(tab) = this.contents.get(tab_idx) {
                     let tab = tab.clone();
-                    contents.insert(tab_idx + 1, tab);
+                    this.contents.insert(tab_idx + 1, tab);
                 }
                 Cmd::none()
             }
             Msg::CloseTab(tab_idx) => {
-                self.contents.borrow_mut().remove(tab_idx);
-                if self.contents.borrow().len() == 0 {
-                    Cmd::submit(On::Close(U128Id::clone(&self.modeless_id)))
+                this.contents.remove(tab_idx);
+                if this.contents.len() == 0 {
+                    Cmd::submit(On::Close(U128Id::clone(&this.modeless_id)))
                 } else {
                     Cmd::none()
                 }
@@ -241,21 +286,21 @@ where
                 page_y,
                 drag_type,
             } => {
-                self.dragging = Some(([page_x, page_y], drag_type));
+                this.dragging = Some(([page_x, page_y], drag_type));
                 Cmd::list(vec![
-                    Cmd::submit(On::Focus(U128Id::clone(&self.modeless_id))),
+                    Cmd::submit(On::Focus(U128Id::clone(&this.modeless_id))),
                     Cmd::submit(On::ChangeDraggingState(
-                        U128Id::clone(&self.modeless_id),
+                        U128Id::clone(&this.modeless_id),
                         Some((page_x, page_y)),
                     )),
                 ])
             }
             Msg::DragEnd => {
-                self.dragging = None;
+                this.dragging = None;
                 Cmd::list(vec![
-                    Cmd::submit(On::Focus(U128Id::clone(&self.modeless_id))),
+                    Cmd::submit(On::Focus(U128Id::clone(&this.modeless_id))),
                     Cmd::submit(On::ChangeDraggingState(
-                        U128Id::clone(&self.modeless_id),
+                        U128Id::clone(&this.modeless_id),
                         None,
                     )),
                 ])
@@ -267,109 +312,114 @@ where
             } => Cmd::submit(On::DisconnectTab {
                 event_id,
                 tab_idx,
-                modeless_id: U128Id::clone(&self.modeless_id),
+                modeless_id: U128Id::clone(&this.modeless_id),
                 is_selected,
             }),
             Msg::SetSelectedTabIdx(tab_idx) => {
-                self.contents.borrow_mut().set_selected_idx(tab_idx);
+                this.contents.set_selected_idx(tab_idx);
                 Cmd::none()
             }
             Msg::Drag { page_x, page_y } => {
                 let mut cmds = vec![];
-                if let Some(mut dragging) = self.dragging {
+                if let Some(mut dragging) = this.dragging {
                     let mov_x = (page_x - dragging.0[0]) as f64;
                     let mov_y = (page_y - dragging.0[1]) as f64;
 
                     match &dragging.1 {
                         DragType::Move => {
-                            self.loc[0] += mov_x;
-                            self.loc[1] += mov_y;
+                            this.loc[0] += mov_x;
+                            this.loc[1] += mov_y;
                         }
                         DragType::Resize(DragDirection::Top) => {
-                            self.loc[1] += mov_y;
-                            self.size[1] -= mov_y;
+                            this.loc[1] += mov_y;
+                            this.size[1] -= mov_y;
                         }
                         DragType::Resize(DragDirection::Left) => {
-                            self.loc[0] += mov_x;
-                            self.size[0] -= mov_x;
+                            this.loc[0] += mov_x;
+                            this.size[0] -= mov_x;
                         }
                         DragType::Resize(DragDirection::Bottom) => {
-                            self.size[1] += mov_y;
+                            this.size[1] += mov_y;
                         }
                         DragType::Resize(DragDirection::Right) => {
-                            self.size[0] += mov_x;
+                            this.size[0] += mov_x;
                         }
                         DragType::Resize(DragDirection::TopLeft) => {
-                            self.loc[0] += mov_x;
-                            self.loc[1] += mov_y;
-                            self.size[0] -= mov_x;
-                            self.size[1] -= mov_y;
+                            this.loc[0] += mov_x;
+                            this.loc[1] += mov_y;
+                            this.size[0] -= mov_x;
+                            this.size[1] -= mov_y;
                         }
                         DragType::Resize(DragDirection::TopRight) => {
-                            self.loc[1] += mov_y;
-                            self.size[0] += mov_x;
-                            self.size[1] -= mov_y;
+                            this.loc[1] += mov_y;
+                            this.size[0] += mov_x;
+                            this.size[1] -= mov_y;
                         }
                         DragType::Resize(DragDirection::BottomLeft) => {
-                            self.loc[0] += mov_x;
-                            self.size[0] -= mov_x;
-                            self.size[1] += mov_y;
+                            this.loc[0] += mov_x;
+                            this.size[0] -= mov_x;
+                            this.size[1] += mov_y;
                         }
                         DragType::Resize(DragDirection::BottomRight) => {
-                            self.size[0] += mov_x;
-                            self.size[1] += mov_y;
+                            this.size[0] += mov_x;
+                            this.size[1] += mov_y;
                         }
                     }
 
-                    if self.loc[0] < 0.0 {
-                        self.loc[0] = 0.0;
+                    if this.loc[0] < 0.0 {
+                        this.loc[0] = 0.0;
                     }
-                    if self.loc[1] < 0.0 {
-                        self.loc[1] = 0.0;
+                    if this.loc[1] < 0.0 {
+                        this.loc[1] = 0.0;
                     }
-                    if self.size[0] > self.container_rect.width {
-                        self.size[0] = self.container_rect.width;
-                    }
-                    if self.size[1] > self.container_rect.height {
-                        self.size[1] = self.container_rect.height;
-                    }
-                    if self.size[0] < self.container_rect.width * 0.1 {
-                        self.size[0] = self.container_rect.width * 0.1;
-                    }
-                    if self.size[1] < self.container_rect.height * 0.1 {
-                        self.size[1] = self.container_rect.height * 0.1;
-                    }
-                    if self.loc[0] + self.size[0] > self.container_rect.width {
-                        self.loc[0] = self.container_rect.width - self.size[0];
-                    }
-                    if self.loc[1] + self.size[1] > self.container_rect.height {
-                        self.loc[1] = self.container_rect.height - self.size[1];
+
+                    if let Some(this_container_rect) = this.container_rect.clone() {
+                        if this.size[0] > this_container_rect.width {
+                            this.size[0] = this_container_rect.width;
+                        }
+                        if this.size[1] > this_container_rect.height {
+                            this.size[1] = this_container_rect.height;
+                        }
+                        if this.size[0] < this_container_rect.width * 0.1 {
+                            this.size[0] = this_container_rect.width * 0.1;
+                        }
+                        if this.size[1] < this_container_rect.height * 0.1 {
+                            this.size[1] = this_container_rect.height * 0.1;
+                        }
+                        if this.loc[0] + this.size[0] > this_container_rect.width {
+                            this.loc[0] = this_container_rect.width - this.size[0];
+                        }
+                        if this.loc[1] + this.size[1] > this_container_rect.height {
+                            this.loc[1] = this_container_rect.height - this.size[1];
+                        }
                     }
 
                     dragging.0[0] = page_x;
                     dragging.0[1] = page_y;
-                    self.dragging = Some(dragging);
+                    this.dragging = Some(dragging);
 
-                    cmds.push(match &dragging.1 {
-                        DragType::Move => {
-                            let page_x = (self.loc[0] + self.container_rect.left).round() as i32;
-                            let page_y = (self.loc[1] + self.container_rect.top).round() as i32;
+                    cmds.push(match (&dragging.1, this.container_rect.as_ref()) {
+                        (DragType::Move, Some(this_container_rect)) => {
+                            let page_x = (this.loc[0] + this_container_rect.left).round() as i32;
+                            let page_y = (this.loc[1] + this_container_rect.top).round() as i32;
                             Cmd::submit(On::Move(page_x, page_y))
                         }
-                        _ => Cmd::submit(On::Resize(self.size.clone())),
+                        _ => Cmd::submit(On::Resize(this.size.clone())),
                     })
                 }
 
-                if page_x < self.container_rect.left as i32
-                    || page_x > (self.container_rect.left + self.container_rect.width) as i32
-                    || page_y < self.container_rect.top as i32
-                    || page_y > (self.container_rect.top + self.container_rect.height) as i32
-                {
-                    self.dragging = None;
-                    cmds.push(Cmd::submit(On::ChangeDraggingState(
-                        U128Id::clone(&self.modeless_id),
-                        None,
-                    )));
+                if let Some(this_container_rect) = this.container_rect.as_ref() {
+                    if page_x < this_container_rect.left as i32
+                        || page_x > (this_container_rect.left + this_container_rect.width) as i32
+                        || page_y < this_container_rect.top as i32
+                        || page_y > (this_container_rect.top + this_container_rect.height) as i32
+                    {
+                        this.dragging = None;
+                        cmds.push(Cmd::submit(On::ChangeDraggingState(
+                            U128Id::clone(&this.modeless_id),
+                            None,
+                        )));
+                    }
                 }
 
                 Cmd::list(cmds)
@@ -387,18 +437,18 @@ where
     fn render(&self, _: ()) -> Html {
         Self::styled(Html::div(
             Attributes::new()
-                .index_id(self.modeless_id.to_string())
-                .string("data-modeless-id", self.modeless_id.to_string())
+                .index_id(self.state.borrow().modeless_id.to_string())
+                .string("data-modeless-id", self.state.borrow().modeless_id.to_string())
                 .class(Self::class("base"))
-                .style("z-index", format!("{}", self.z_index))
-                .style("left", format!("{}px", self.loc[0].round() as i32))
-                .style("top", format!("{}px", self.loc[1].round() as i32))
-                .style("width", format!("{}px", self.size[0].round() as i32))
-                .style("height", format!("{}px", self.size[1].round() as i32)),
+                .style("z-index", format!("{}", self.state.borrow().z_index))
+                .style("left", format!("{}px", self.state.borrow().loc[0].round() as i32))
+                .style("top", format!("{}px", self.state.borrow().loc[1].round() as i32))
+                .style("width", format!("{}px", self.state.borrow().size[0].round() as i32))
+                .style("height", format!("{}px", self.state.borrow().size[1].round() as i32)),
             {
                 let mut events = Events::new();
 
-                if !self.some_is_dragging {
+                if !self.state.borrow().some_is_dragging {
                     events = events.on_mousedown(self, |e| {
                         let e = unwrap!(e.dyn_into::<web_sys::MouseEvent>().ok(); Msg::NoOp);
                         e.stop_propagation();
@@ -426,7 +476,7 @@ where
                             Msg::NoOp
                         })
                         .on_drop(self, {
-                            let modeless_id = U128Id::clone(&self.modeless_id);
+                            let modeless_id = U128Id::clone(&self.state.borrow().modeless_id);
                             move |e| {
                                 let e = unwrap!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
                                 Self::on_drop_tab(None, e,modeless_id)
@@ -434,13 +484,12 @@ where
                         }),
                     vec![
                         Html::div(Attributes::new().class(Self::class("header-tabs")),Events::new(),
-                        self
+                        self.state.borrow()
                             .contents
-                            .borrow()
                             .iter()
                             .enumerate()
                             .map(|(tab_idx, content)| {
-                                let is_selected = tab_idx == self.contents.borrow().selected_idx();
+                                let is_selected = tab_idx == self.state.borrow().contents.selected_idx();
                                 TabBtn::new(
                                     true,
                                     is_selected,
@@ -465,7 +514,7 @@ where
                                             is_selected
                                         }
                                     }).on_drop(self, {
-                                        let modeless_id = U128Id::clone(&self.modeless_id);
+                                        let modeless_id = U128Id::clone(&self.state.borrow().modeless_id);
                                         move |e| {
                                             let e = unwrap!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
                                             Self::on_drop_tab(Some(tab_idx), e,modeless_id)
@@ -496,7 +545,7 @@ where
                                 Btn::menu_as_secondary(
                                     Attributes::new(),
                                     Events::new().on_click(self,{
-                                        let selected_tab_idx = self.contents.borrow().selected_idx();
+                                        let selected_tab_idx = self.state.borrow().contents.selected_idx();
                                         move |_| Msg::CloneTab(selected_tab_idx)
                                     }),
                                     vec![Html::text("現在のタブを複製")]
@@ -504,7 +553,7 @@ where
                                 Btn::menu_as_secondary(
                                     Attributes::new(),
                                     Events::new().on_click(self,{
-                                        let selected_tab_idx = self.contents.borrow().selected_idx();
+                                        let selected_tab_idx = self.state.borrow().contents.selected_idx();
                                         move |_| Msg::CloseTab(selected_tab_idx)
                                     }),
                                     vec![Html::text("現在のタブを閉じる")]
@@ -536,9 +585,8 @@ where
                         e.stop_propagation();
                         Msg::NoOp
                     }),
-                    vec![self
+                    vec![self.state.borrow()
                         .contents
-                        .borrow()
                         .selected()
                         .map(|content| Content::empty(self, None, Clone::clone(content), Sub::map(|sub| Msg::Sub(On::Sub(sub)))))
                         .unwrap_or(Html::none())],

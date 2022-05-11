@@ -5,5 +5,6 @@ pub mod scene_list;
 pub mod tab_menu;
 pub mod tab_modeless;
 // pub mod tag_list;
+pub mod sortable;
 
 use super::*;

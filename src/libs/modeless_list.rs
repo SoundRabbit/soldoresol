@@ -73,4 +73,8 @@ impl<T> ModelessList<T> {
         let (_, t) = unwrap!(self.table.get_mut(modeless_id); None);
         Some(t)
     }
+
+    pub fn len(&self) -> usize {
+        self.table.len()
+    }
 }

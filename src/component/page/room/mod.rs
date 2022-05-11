@@ -59,7 +59,8 @@ pub struct Room {
     me: BlockMut<user::Player>,
 
     table: Rc<RefCell<Table>>,
-    modeless_container: Rc<RefCell<TabModelessList<room_modeless::Content>>>,
+    modeless_container:
+        Rc<RefCell<TabModelessList<room_modeless::RoomModeless, room_modeless::TabName>>>,
 
     table_tool: TableTool,
     ok_to_catch_file: bool,
@@ -100,7 +101,9 @@ fn open_modeless(
     client_id: &Rc<String>,
     arena: &ArenaMut,
     world: &BlockMut<block::World>,
-    modeless_container: &Rc<RefCell<TabModelessList<room_modeless::Content>>>,
+    modeless_container: &Rc<
+        RefCell<TabModelessList<room_modeless::RoomModeless, room_modeless::TabName>>,
+    >,
     content: room_modeless::ContentData,
 ) {
     modeless_container
