@@ -6,6 +6,7 @@ use super::atom::text;
 use crate::libs::color::color_system;
 use crate::libs::random_id::U128Id;
 use crate::libs::select_list::SelectList;
+use crate::libs::type_id::type_id;
 use isaribi::{
     style,
     styled::{Style, Styled},
@@ -463,6 +464,9 @@ where
                 events = events.on("wheel",self, |e| {
                     e.stop_propagation();
                     Msg::NoOp
+                }).on_click(self, {
+                    let modeless_id = U128Id::clone(&self.state.borrow().modeless_id);
+                    |_| Msg::Sub(On::Focus(modeless_id))
                 });
 
                 events
@@ -504,7 +508,7 @@ where
                                         let event_id = U128Id::new();
                                         unwrap!(
                                             data_transfer
-                                                .set_data("text/plain", &TabBtn::id::<Self>(vec![&event_id.to_string()]))
+                                                .set_data("text/plain", &(type_id::<Self>() + ";" + &event_id.to_string()))
                                                 .ok();
                                             Msg::NoOp
                                         );
@@ -635,18 +639,26 @@ where
         let e = unwrap!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
         let data_transfer = unwrap!(e.data_transfer(); Msg::NoOp);
         let data = unwrap!(data_transfer.get_data("text/plain").ok(); Msg::NoOp);
-        if TabBtn::validate_prefix::<Self>(&data) {
-            let suffix = TabBtn::get_suffix(&data);
-            if let Some(event_id) = suffix.get(0).and_then(|x| U128Id::from_hex(x)) {
-                e.prevent_default();
-                e.stop_propagation();
-                return Msg::Sub(On::ConnectTab {
-                    event_id,
-                    header_tab_idx: tab_idx,
-                    modeless_id,
-                });
-            }
+
+        let payload = data.split(";").collect::<Vec<_>>();
+        if payload.len() < 2 {
+            return Msg::NoOp;
         }
+
+        if type_id::<Self>() != payload[0] {
+            return Msg::NoOp;
+        }
+
+        if let Some(event_id) = U128Id::from_hex(&payload[1]) {
+            e.prevent_default();
+            e.stop_propagation();
+            return Msg::Sub(On::ConnectTab {
+                event_id,
+                header_tab_idx: tab_idx,
+                modeless_id,
+            });
+        }
+
         Msg::NoOp
     }
 }

@@ -4,6 +4,7 @@ use super::molecule::tab_modeless::{self, TabModeless};
 use crate::libs::modeless_list::ModelessList;
 use crate::libs::random_id::U128Id;
 use crate::libs::select_list::SelectList;
+use crate::libs::type_id::type_id;
 use isaribi::{
     style,
     styled::{Style, Styled},
@@ -388,18 +389,25 @@ where
                     let e = unwrap!(e.dyn_into::<web_sys::DragEvent>().ok(); Msg::NoOp);
                     let data_transfer = unwrap!(e.data_transfer(); Msg::NoOp);
                     let data = unwrap!(data_transfer.get_data("text/plain").ok(); Msg::NoOp);
-                    if TabBtn::validate_prefix::<TabModeless<Content, TabName>>(&data) {
-                        let suffix = TabBtn::get_suffix(&data);
-                        if let Some(event_id) = suffix.get(0).and_then(|x| U128Id::from_hex(x)) {
-                            e.prevent_default();
-                            e.stop_propagation();
-                            return Msg::DropTab {
-                                event_id,
-                                page_x: e.page_x(),
-                                page_y: e.page_y(),
-                            };
-                        }
+                    let payload = data.split(";").collect::<Vec<_>>();
+                    if payload.len() < 2 {
+                        return Msg::NoOp;
                     }
+
+                    if type_id::<TabModeless<Content, TabName>>() != payload[0] {
+                        return Msg::NoOp;
+                    }
+
+                    if let Some(event_id) = U128Id::from_hex(&payload[1]) {
+                        e.prevent_default();
+                        e.stop_propagation();
+                        return Msg::DropTab {
+                            event_id,
+                            page_x: e.page_x(),
+                            page_y: e.page_y(),
+                        };
+                    }
+
                     Msg::NoOp
                 })
                 .capture_on_mousemove(self, {
