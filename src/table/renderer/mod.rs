@@ -47,10 +47,8 @@ pub struct Renderer {
     shadomap_frame: framebuffer::Shadowmap,
 
     screen_mesh: mesh::Screen,
-    craftboard_grid_mesh: mesh::CraftboardGrid,
+    craftboard_mesh: mesh::Craftboard,
     craftboard_cover_mesh: mesh::CraftboardCover,
-    craftboard_box_mesh: mesh::CraftboardBox,
-    craftboard_texture_mesh: mesh::CraftboardTexture,
     craftboard_nameplate_mesh: mesh::CraftboardNameplate,
     boxblock_mesh: mesh::Boxblock,
     nameplate_mesh: mesh::Nameplate,

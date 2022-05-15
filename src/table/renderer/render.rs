@@ -112,19 +112,7 @@ impl Renderer {
             });
 
             table.map(|table: &block::Table| {
-                self.craftboard_grid_mesh.render(
-                    &mut self.gl,
-                    &vp_matrix,
-                    &camera_position,
-                    table
-                        .craftboards()
-                        .iter()
-                        .map(BlockMut::<block::Craftboard>::as_ref),
-                );
-            });
-
-            table.map(|table: &block::Table| {
-                self.craftboard_texture_mesh.render(
+                self.craftboard_mesh.render(
                     &mut self.gl,
                     &vp_matrix,
                     &camera_position,
@@ -134,19 +122,6 @@ impl Renderer {
                         .map(BlockMut::<block::Craftboard>::as_ref),
                     camera_matrix.is_2d_mode(),
                     &mut self.tex_table,
-                );
-            });
-
-            table.map(|table: &block::Table| {
-                self.craftboard_box_mesh.render(
-                    &mut self.gl,
-                    &vp_matrix,
-                    &camera_position,
-                    table
-                        .craftboards()
-                        .iter()
-                        .map(BlockMut::<block::Craftboard>::as_ref),
-                    camera_matrix.is_2d_mode(),
                 );
             });
 

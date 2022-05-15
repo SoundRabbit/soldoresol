@@ -1,9 +1,11 @@
-use super::libs::matrix::model::ModelMatrix;
-use super::libs::webgl::{program, ProgramType, WebGlF32Vbo, WebGlI16Ibo, WebGlRenderingContext};
+use super::super::libs::matrix::model::ModelMatrix;
+use super::super::libs::webgl::{
+    program, ProgramType, WebGlF32Vbo, WebGlI16Ibo, WebGlRenderingContext,
+};
 use crate::arena::{block, BlockRef};
 use crate::libs::random_id::U128Id;
 use ndarray::Array2;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 struct Buffer {
     index: WebGlI16Ibo,
@@ -36,13 +38,8 @@ impl CraftboardGrid {
         gl: &mut WebGlRenderingContext,
         vp_matrix: &Array2<f32>,
         camera_position: &[f32; 3],
-        craftboards: impl Iterator<Item = BlockRef<block::Craftboard>>,
+        craftboard: BlockRef<block::Craftboard>,
     ) {
-        gl.use_program(ProgramType::UnshapedProgram);
-        gl.depth_func(web_sys::WebGlRenderingContext::LEQUAL);
-        gl.set_u_expand(0.0);
-        gl.set_u_v_color_mask(program::V_COLOR_MASK_NONE);
-        gl.set_u_id(program::ID_NONE);
         gl.set_u_texture_0(program::TEXTURE_NONE);
         gl.set_u_texture_1(program::TEXTURE_NONE);
         gl.set_u_texture_2(program::TEXTURE_NONE);
@@ -52,39 +49,29 @@ impl CraftboardGrid {
         gl.set_u_vp_matrix(vp_matrix.clone().reversed_axes());
         gl.set_u_shape(program::SHAPE_2D_BOX);
         gl.set_u_camera_position(camera_position);
-        let mut unrendered: HashSet<U128Id> =
-            HashSet::from_iter(self.boards.keys().map(U128Id::clone));
 
-        for craftboard in craftboards {
-            let craftboard_id = craftboard.id();
-            craftboard.map(|craftboard| {
-                unrendered.remove(&craftboard_id);
+        let craftboard_id = craftboard.id();
+        craftboard.map(|craftboard| {
+            let this = if let Some(this) = self.boards.get_mut(&craftboard_id) {
+                this
+            } else {
+                let craftboard_size = {
+                    let sz = craftboard.size();
+                    [sz[0].floor() as u64, sz[1].floor() as u64]
+                };
+                let buffer = Self::create_grid_buffers(&gl, &craftboard_size);
 
-                let this = if let Some(this) = self.boards.get_mut(&craftboard_id) {
-                    this
-                } else {
-                    let craftboard_size = {
-                        let sz = craftboard.size();
-                        [sz[0].floor() as u64, sz[1].floor() as u64]
-                    };
-                    let buffer = Self::create_grid_buffers(&gl, &craftboard_size);
-
-                    let board = Craftboard {
-                        buffer,
-                        size: craftboard_size,
-                    };
-
-                    self.boards.insert(craftboard_id.clone(), board);
-                    self.boards.get_mut(&craftboard_id).unwrap()
+                let board = Craftboard {
+                    buffer,
+                    size: craftboard_size,
                 };
 
-                Self::render_craftboard(this, gl, vp_matrix, craftboard);
-            });
-        }
+                self.boards.insert(craftboard_id.clone(), board);
+                self.boards.get_mut(&craftboard_id).unwrap()
+            };
 
-        for craftboard_id in unrendered {
-            self.boards.remove(&craftboard_id);
-        }
+            Self::render_craftboard(this, gl, vp_matrix, craftboard);
+        });
     }
 
     fn render_craftboard(

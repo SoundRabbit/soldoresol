@@ -122,9 +122,7 @@ impl Description {
                 vec![Html::text("保存")],
             ),
             Html::textarea(
-                Attributes::new()
-                    .value(description)
-                    .class(Self::class("base")),
+                Attributes::new().value(description),
                 Events::new().on_input(self, |desc| Msg::SetEditingDescription(desc)),
                 vec![],
             ),
@@ -145,6 +143,16 @@ impl Description {
 
 impl Styled for Description {
     fn style() -> Style {
-        style! {}
+        style! {
+            ".base" {
+                "display": "flex";
+                "flex-direction": "column";
+                "justify-content": "right";
+            }
+
+            ".base > textarea" {
+                "width": "100%";
+            }
+        }
     }
 }

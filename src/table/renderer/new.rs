@@ -43,7 +43,7 @@ impl Renderer {
 
         gl.clear_color(0.0, 0.0, 0.0, 0.0);
         gl.clear_stencil(0);
-        gl.stencil_func(web_sys::WebGlRenderingContext::ALWAYS, 0, 0);
+        gl.stencil_func(web_sys::WebGlRenderingContext::ALWAYS, 0, 1);
 
         let mut tex_table = tex_table::TexTable::new(&gl);
         let id_table = id_table::IdTable::from(IdTableBuilder::new());
@@ -58,10 +58,8 @@ impl Renderer {
         let shadomap_frame = framebuffer::Shadowmap::new(&gl, &mut tex_table);
 
         let screen_mesh = mesh::Screen::new(&gl);
-        let craftboard_grid_mesh = mesh::CraftboardGrid::new(&gl);
+        let craftboard_mesh = mesh::Craftboard::new(&gl);
         let craftboard_cover_mesh = mesh::CraftboardCover::new(&gl);
-        let craftboard_box_mesh = mesh::CraftboardBox::new(&gl);
-        let craftboard_texture_mesh = mesh::CraftboardTexture::new(&gl);
         let craftboard_nameplate_mesh = mesh::CraftboardNameplate::new(&gl);
         let boxblock_mesh = mesh::Boxblock::new(&gl);
         let nameplate_mesh = mesh::Nameplate::new(&gl);
@@ -85,10 +83,8 @@ impl Renderer {
             shadomap_frame,
 
             screen_mesh,
-            craftboard_grid_mesh,
+            craftboard_mesh,
             craftboard_cover_mesh,
-            craftboard_box_mesh,
-            craftboard_texture_mesh,
             craftboard_nameplate_mesh,
             boxblock_mesh,
             nameplate_mesh,
