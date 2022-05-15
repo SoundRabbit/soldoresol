@@ -22,6 +22,7 @@ pub struct Props {
 pub enum Msg {
     NoOp,
     Sub(On),
+    SetSelectedTabIdx(usize),
     SetShowingModal(ShowingModal),
     SetColor(crate::libs::color::Pallet),
     SetName(String),
@@ -33,6 +34,7 @@ pub enum Msg {
     SetDescription(String),
     SetTextureImage(usize, Option<BlockRef<resource::ImageData>>),
     SetTextureName(usize, String),
+    AddProperty,
     PushTexture,
 }
 
@@ -47,6 +49,7 @@ pub struct RoomModelessCharacter {
     arena: ArenaMut,
     world: BlockMut<block::World>,
     character: BlockMut<block::Character>,
+    selected_tab_idx: usize,
     showing_modal: ShowingModal,
 }
 
@@ -69,6 +72,7 @@ impl Constructor for RoomModelessCharacter {
             arena: props.arena,
             world: props.world,
             character: props.data,
+            selected_tab_idx: 0,
             showing_modal: ShowingModal::None,
         }
     }
@@ -89,6 +93,10 @@ impl Update for RoomModelessCharacter {
         match msg {
             Msg::NoOp => Cmd::none(),
             Msg::Sub(sub) => Cmd::submit(sub),
+            Msg::SetSelectedTabIdx(tab_idx) => {
+                self.selected_tab_idx = tab_idx;
+                Cmd::none()
+            }
             Msg::SetShowingModal(showing_modal) => {
                 self.showing_modal = showing_modal;
                 Cmd::none()
@@ -211,6 +219,22 @@ impl Update for RoomModelessCharacter {
                     update: set! { self.character.id() },
                 })
             }
+
+            Msg::AddProperty => {
+                let mut property = block::Property::new();
+                property.set_name(String::from("新規プロパティ"));
+
+                let property = self.arena.insert(property);
+                let property_id = property.id();
+
+                self.character.update(move |character| {
+                    character.push_property(property);
+                });
+                Cmd::submit(On::UpdateBlocks {
+                    insert: set! { property_id },
+                    update: set! { self.character.id() },
+                })
+            }
         }
     }
 }
@@ -261,10 +285,24 @@ impl RoomModelessCharacter {
                 self,
                 None,
                 tab_menu::Props {
-                    selected: 0,
+                    selected: self.selected_tab_idx,
                     controlled: true,
                 },
-                Sub::none(),
+                Sub::map({
+                    let prop_num = self
+                        .character
+                        .map(|character| character.properties().len())
+                        .unwrap_or(0);
+                    move |sub| match sub {
+                        tab_menu::On::ChangeSelectedTab(tab_idx) => {
+                            if tab_idx < prop_num + 1 {
+                                Msg::SetSelectedTabIdx(tab_idx)
+                            } else {
+                                Msg::NoOp
+                            }
+                        }
+                    }
+                }),
                 (
                     Attributes::new(),
                     Events::new(),
@@ -309,7 +347,14 @@ impl RoomModelessCharacter {
                                     .collect::<Vec<_>>()
                             })
                             .unwrap_or_default(),
-                        vec![(Html::text(String::from("追加")), Html::none())],
+                        vec![(
+                            Html::span(
+                                Attributes::new(),
+                                Events::new().on_click(self, |_| Msg::AddProperty),
+                                vec![Html::text(String::from("追加"))],
+                            ),
+                            Html::none(),
+                        )],
                     ]
                     .into_iter()
                     .flatten()

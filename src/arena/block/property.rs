@@ -142,6 +142,10 @@ impl Property {
         &self.name
     }
 
+    pub fn set_name(&mut self, name: String) {
+        self.name = name;
+    }
+
     pub fn data(&self) -> &Data {
         &self.data
     }
