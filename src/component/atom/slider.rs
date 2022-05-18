@@ -81,6 +81,11 @@ impl Constructor for Slider {
 }
 
 impl Update for Slider {
+    fn on_load(mut self: Pin<&mut Self>, position: Self::Props) -> Cmd<Self> {
+        self.position = position;
+        Cmd::none()
+    }
+
     fn update(self: Pin<&mut Self>, msg: Self::Msg) -> Cmd<Self> {
         match msg {
             Msg::NoOp => Cmd::none(),
@@ -133,7 +138,7 @@ impl Render<Html> for Slider {
             }
         };
 
-        let pos = ((slider_val - min) / (max - min)).min(1.0).max(0.0);
+        // let pos = ((slider_val - min) / (max - min)).min(1.0).max(0.0);
 
         Self::styled(Html::div(
             Attributes::new()

@@ -1,4 +1,7 @@
-use super::molecule::tab_menu::{self, TabMenu};
+use super::molecule::{
+    block_prop::{self, BlockProp},
+    tab_menu::{self, TabMenu},
+};
 use super::organism::modal_resource::{self, ModalResource};
 use crate::arena::{block, resource, ArenaMut, BlockKind, BlockMut, BlockRef};
 use crate::libs::random_id::U128Id;
@@ -341,8 +344,31 @@ impl RoomModelessCharacter {
                                 character
                                     .properties()
                                     .iter()
-                                    .filter_map(|prop| {
-                                        prop.map(|prop| (Html::text(prop.name()), Html::none()))
+                                    .map(|prop| {
+                                        (
+                                            Html::text(
+                                                prop.map(|prop| prop.name().clone())
+                                                    .unwrap_or_else(|| String::from("")),
+                                            ),
+                                            BlockProp::new(
+                                                self,
+                                                None,
+                                                block_prop::Props {
+                                                    arena: ArenaMut::clone(&self.arena),
+                                                    data: BlockMut::clone(&prop),
+                                                },
+                                                Sub::map(|sub| match sub {
+                                                    block_prop::On::UpdateBlocks {
+                                                        update,
+                                                        insert,
+                                                    } => Msg::Sub(On::UpdateBlocks {
+                                                        update,
+                                                        insert,
+                                                    }),
+                                                }),
+                                                (),
+                                            ),
+                                        )
                                     })
                                     .collect::<Vec<_>>()
                             })

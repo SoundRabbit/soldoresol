@@ -23,6 +23,7 @@ pub enum Variant {
     Menu,
     MenuAsSecondary,
     MenuAsPrimary,
+    MenuAsLight,
     Success,
     Light,
     LightLikeMenu,
@@ -59,6 +60,7 @@ impl Btn {
                 Self::class("menu-secondary") + " " + &Self::class("like-menu")
             }
             Variant::MenuAsPrimary => Self::class("menu-primary") + " " + &Self::class("like-menu"),
+            Variant::MenuAsLight => Self::class("menu-light") + " " + &Self::class("like-menu"),
             Variant::Success => Self::class("success"),
             Variant::Light => Self::class("light"),
             Variant::LightLikeMenu => Self::class("light") + " " + &Self::class("like-menu"),
@@ -111,12 +113,24 @@ impl Btn {
         Self::with_variant(Variant::MenuAsPrimary, attrs, events, children)
     }
 
+    pub fn menu_as_light(attrs: Attributes, events: Events, children: Vec<Html>) -> Html {
+        Self::with_variant(Variant::MenuAsLight, attrs, events, children)
+    }
+
     pub fn success(attrs: Attributes, events: Events, children: Vec<Html>) -> Html {
         Self::with_variant(Variant::Success, attrs, events, children)
     }
 
     pub fn light(attrs: Attributes, events: Events, children: Vec<Html>) -> Html {
         Self::with_variant(Variant::Light, attrs, events, children)
+    }
+
+    pub fn group(attrs: Attributes, events: Events, children: Vec<Html>) -> Html {
+        Html::div(
+            attrs.class("pure-button-group").string("roll", "group"),
+            events,
+            children,
+        )
     }
 }
 
@@ -180,7 +194,13 @@ impl Styled for Btn {
                 "color": color_system::gray(100, 0).to_string();
             }
 
-            ".menu-secondary:hover" {
+            ".menu-light" {
+                "line-height": "1.5";
+                "background-color": color_system::gray(100, 3).to_string();
+                "color": color_system::gray(100, 9).to_string();
+            }
+
+            ".menu-secondary:hover, .menu-light:hover" {
                 "background-color": color_system::blue(100, 5).to_string();
             }
 

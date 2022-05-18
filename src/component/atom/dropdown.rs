@@ -316,10 +316,16 @@ impl Styled for Dropdown {
             }
 
             ".btn" {
-                "display": "grid";
-                "grid-template-columns": "1fr max-content";
+                "display": "flex";
                 "align-items": "center";
-                "column-gap": "1ch";
+            }
+
+            ".btn > *:not(:first-child)" {
+                "margin-right": "1ch";
+            }
+
+            ".btn > *:not(:last-child)" {
+                "flex-gorw": "1";
             }
 
             ".content" {
