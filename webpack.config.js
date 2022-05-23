@@ -17,6 +17,10 @@ module.exports = {
     module: {
         rules: [
             {
+                test: /\.js\.map$/,
+                use: ["ignore"],
+            },
+            {
                 test: /\.scss$/,
                 use: [
                     {
@@ -81,5 +85,8 @@ module.exports = {
         static: {
             directory: path.join(__dirname, "./assets")
         }
+    },
+    resolveLoader: {
+        modules: ['node_modules', path.resolve(__dirname, 'loaders')]
     }
 };

@@ -6,7 +6,7 @@ use isaribi::{
 };
 use kagura::prelude::*;
 use nusa::prelude::*;
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use wasm_bindgen::JsCast;
 
@@ -18,6 +18,7 @@ pub enum Msg {
     NoOp,
     Sub(On),
     SetInputingChatMessage(String),
+    SendInputingChatMessage,
 }
 
 pub enum On {
@@ -26,6 +27,7 @@ pub enum On {
 
 pub struct Controller {
     shared_state: Rc<RefCell<SharedState>>,
+    ignore_input: Rc<Cell<bool>>,
 }
 
 impl Component for Controller {
@@ -40,6 +42,7 @@ impl Constructor for Controller {
     fn constructor(props: Self::Props) -> Self {
         Self {
             shared_state: props.shared_state,
+            ignore_input: Rc::new(Cell::new(false)),
         }
     }
 }
@@ -58,6 +61,10 @@ impl Update for Controller {
                 self.shared_state.borrow_mut().inputing_message = InputingMessage::Text(text);
                 Cmd::none()
             }
+            Msg::SendInputingChatMessage => {
+                self.ignore_input.set(true);
+                Cmd::submit(On::SendInputingChatMessage)
+            }
         }
     }
 }
@@ -70,19 +77,24 @@ impl Render<Html> for Controller {
             Events::new(),
             vec![
                 Html::textarea(
-                    Attributes::new().value(self.shared_state.borrow().inputing_message.to_string()),
+                    Attributes::new()
+                        .value(self.shared_state.borrow().inputing_message.to_string()),
                     Events::new()
-                        .on("input", self, {
-                            move |e| {
-                                let target = unwrap!(e.target(); Msg::NoOp);
-                                let target = unwrap!(target.dyn_into::<web_sys::HtmlTextAreaElement>().ok(); Msg::NoOp);
-                                Msg::SetInputingChatMessage(target.value())
+                        .on_input(self, {
+                            let ignore_input = Rc::clone(&self.ignore_input);
+                            move |input| {
+                                if ignore_input.get() {
+                                    ignore_input.set(false);
+                                    Msg::NoOp
+                                } else {
+                                    Msg::SetInputingChatMessage(input)
+                                }
                             }
                         })
                         .on_keydown(self, |e| {
                             let e = unwrap!(e.dyn_into::<web_sys::KeyboardEvent>().ok(); Msg::NoOp);
                             if e.key() == "Enter" && !e.shift_key() {
-                                Msg::Sub(On::SendInputingChatMessage)
+                                Msg::SendInputingChatMessage
                             } else {
                                 Msg::NoOp
                             }

@@ -110,7 +110,13 @@ impl Description {
         let description = character
             .map(|character| character.description().data().clone())
             .unwrap_or_else(|| block::chat_message::Message::from(vec![]));
-        let (description, _) = block::chat_message::map(character.chat_ref(), description);
+        let description = if let Some((description, ..)) = character.map(|character| {
+            block::chat_message::map(character.properties(), character.chat_ref(), description)
+        }) {
+            description
+        } else {
+            block::chat_message::Message::from_str("")
+        };
         description
     }
 

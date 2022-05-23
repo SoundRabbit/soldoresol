@@ -3,23 +3,27 @@ use super::util::prelude::*;
 
 use super::super::resource::ImageData;
 use super::util::Pack;
-use super::BlockRef;
+use super::Property;
+use super::{BlockMut, BlockRef};
 use std::collections::HashMap;
 
 pub mod map;
-pub mod parse;
+pub mod parser;
 
-pub use parse::Message;
-pub use parse::MessageCommand;
-pub use parse::MessageToken;
+pub use parser::Argument;
+pub use parser::Command;
+pub use parser::Message;
+pub use parser::MessageToken;
+pub use parser::Reference;
 
 pub fn map(
+    props: &Vec<BlockMut<Property>>,
     mut refs: impl FnMut(&String) -> Message,
     message: Message,
 ) -> (Message, Vec<(String, String)>) {
     let mut descriptions = vec![];
     let mut var_nums = HashMap::new();
-    let message = map::map_message(&mut refs, &mut var_nums, &mut descriptions, message);
+    let message = map::map_message(props, &mut refs, &mut var_nums, &mut descriptions, message);
     (message, descriptions)
 }
 
@@ -45,14 +49,14 @@ impl Pack for MessageToken {
                 "_val": JsValue::from(x)
             })
             .into(),
-            Self::Refer(x) => (object! {
+            Self::Reference(reference) => (object! {
                 "_tag": "Refer",
-                "_val": x.pack(is_deep).await
+                "_val": reference.pack(is_deep).await
             })
             .into(),
-            Self::CommandBlock(c, m) => (object! {
+            Self::Command(command) => (object! {
                 "_tag": "CommandBlock",
-                "_val": array![c.pack(is_deep).await, m.pack(is_deep).await]
+                "_val": command.pack(is_deep).await
             })
             .into(),
         }
@@ -60,7 +64,7 @@ impl Pack for MessageToken {
 }
 
 #[async_trait(?Send)]
-impl Pack for MessageCommand {
+impl Pack for Command {
     async fn pack(&self, is_deep: bool) -> JsValue {
         let name = self.name.pack(is_deep).await;
 
@@ -71,9 +75,53 @@ impl Pack for MessageCommand {
 
         (object! {
             "name": name,
-            "args": args
+            "args": args,
+            "text": self.text.pack(is_deep).await
         })
         .into()
+    }
+}
+
+#[async_trait(?Send)]
+impl Pack for Reference {
+    async fn pack(&self, is_deep: bool) -> JsValue {
+        let pakced_name = js_sys::Array::new();
+        for a_name in &self.name {
+            pakced_name.push(&a_name.pack(is_deep).await);
+        }
+
+        let packed_args = array![];
+        for arg in &self.args {
+            packed_args.push(&arg.pack(is_deep).await);
+        }
+
+        let packed_option;
+        if let Some(option) = &self.option {
+            packed_option = option.pack(is_deep).await;
+        } else {
+            packed_option = JsValue::null();
+        }
+
+        (object! {
+            "name": pakced_name,
+            "args": packed_args,
+            "option": packed_option
+        })
+        .into()
+    }
+}
+
+#[async_trait(?Send)]
+impl Pack for Argument {
+    async fn pack(&self, is_deep: bool) -> JsValue {
+        let packed = js_sys::Array::new();
+
+        packed.push(&self.value.pack(is_deep).await);
+        if let Some(option) = &self.option {
+            packed.push(&option.pack(is_deep).await);
+        }
+
+        packed.into()
     }
 }
 

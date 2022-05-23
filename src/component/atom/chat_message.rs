@@ -3,7 +3,6 @@ use isaribi::{
     style,
     styled::{Style, Styled},
 };
-use kagura::prelude::*;
 use nusa::prelude::*;
 
 pub fn div(attrs: Attributes, events: Events, message: &block::chat_message::Message) -> Html {
@@ -29,8 +28,10 @@ impl ChatMessage {
     fn render_token(message_token: &block::chat_message::MessageToken) -> Html {
         match message_token {
             block::chat_message::MessageToken::Text(text) => Html::text(text),
-            block::chat_message::MessageToken::Refer(text) => Html::text(format!("{{{}}}", text)),
-            block::chat_message::MessageToken::CommandBlock(cmd, message) => {
+            block::chat_message::MessageToken::Reference(reference) => {
+                Html::text(format!("{}", reference,))
+            }
+            block::chat_message::MessageToken::Command(cmd) => {
                 let cmd_name = cmd.name.to_string();
                 if cmd_name == "div"
                     || cmd_name == "grid"
@@ -38,43 +39,35 @@ impl ChatMessage {
                     || cmd_name == "box"
                     || cmd_name == ""
                 {
-                    let mut cmds: Vec<_> = cmd
-                        .args
-                        .iter()
-                        .map(block::chat_message::Message::to_string)
-                        .collect();
+                    let mut cmds: Vec<_> = cmd.args.iter().map(|arg| format!("{}", arg)).collect();
                     cmds.push(cmd_name.clone());
                     let cmds = cmds.join(" ");
                     Html::span(
                         Attributes::new().string("data-cmd", cmds),
                         Events::new(),
-                        Self::render(message),
+                        Self::render(&cmd.text),
                     )
                 } else if cmd_name == "fas" || cmd_name == "far" || cmd_name == "fab" {
-                    let args: Vec<_> = cmd
-                        .args
-                        .iter()
-                        .map(block::chat_message::Message::to_string)
-                        .collect();
+                    let args: Vec<_> = cmd.args.iter().map(|arg| format!("{}", arg)).collect();
                     let args = args.join(" ");
                     Html::i(
                         Attributes::new().class(cmd_name).class(args),
                         Events::new(),
-                        Self::render(message),
+                        Self::render(&cmd.text),
                     )
                 } else if cmd_name == "rb" {
                     Html::ruby(
                         Attributes::new(),
                         Events::new(),
                         vec![
-                            Html::fragment(Self::render(message)),
+                            Html::fragment(Self::render(&cmd.text)),
                             Html::rp(Attributes::new(), Events::new(), vec![Html::text("《")]),
                             Html::rt(
                                 Attributes::new(),
                                 Events::new(),
                                 cmd.args
                                     .iter()
-                                    .map(|msg| Html::fragment(Self::render(msg)))
+                                    .map(|msg| Html::fragment(Self::render(&msg.value)))
                                     .collect(),
                             ),
                             Html::rp(Attributes::new(), Events::new(), vec![Html::text("》")]),
@@ -84,7 +77,7 @@ impl ChatMessage {
                     Html::span(
                         Attributes::new().string("data-cmd", cmd_name),
                         Events::new(),
-                        Self::render(message),
+                        Self::render(&cmd.text),
                     )
                 }
             }

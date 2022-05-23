@@ -1,14 +1,15 @@
 #[allow(unused_imports)]
 use super::util::prelude::*;
-
 use super::util::Pack;
 use super::BlockMut;
+use std::collections::VecDeque;
 
 pub type NumberValue = f64;
 pub type NumberMin = NumberValue;
 pub type NumberMid = NumberValue;
 pub type NumberMax = NumberValue;
 
+#[derive(Clone)]
 pub enum Value {
     Number(NumberValue),
     NumberMinMax(NumberValue, NumberMin, NumberMax),
@@ -20,6 +21,46 @@ pub enum Value {
 }
 
 impl Value {
+    pub fn to_string_with_option(&self, option: Option<&String>) -> String {
+        let option = option.map(|option| option.as_str());
+        match (self, option) {
+            (Self::Number(val), None) => val.to_string(),
+            (Self::Number(val), Some("val")) => val.to_string(),
+
+            (Self::NumberMinMax(val, ..), None) => val.to_string(),
+            (Self::NumberMinMax(val, ..), Some("val")) => val.to_string(),
+            (Self::NumberMinMax(_, min, ..), Some("min")) => min.to_string(),
+            (Self::NumberMinMax(_, _, max), Some("max")) => max.to_string(),
+            (Self::NumberMid(val, ..), None) => val.to_string(),
+            (Self::NumberMid(val, ..), Some("val")) => val.to_string(),
+            (Self::NumberMid(_, mid), Some("mid")) => mid.to_string(),
+            (Self::Normal(text), None) => text.clone(),
+            (Self::Normal(text), Some("val")) => text.clone(),
+            (Self::Note(text), None) => text.clone(),
+            (Self::Note(text), Some("val")) => text.clone(),
+
+            (Self::Check(val), None) => val.to_string(),
+            (Self::Check(val), Some("val")) => val.to_string(),
+
+            (Self::Select(idx, vals), None) => vals
+                .get(*idx)
+                .map(|val| val.clone())
+                .unwrap_or_else(|| String::new()),
+            (Self::Select(idx, vals), Some("val")) => vals
+                .get(*idx)
+                .map(|val| val.clone())
+                .unwrap_or_else(|| String::new()),
+
+            (Self::Select(idx, ..), Some("idx")) => idx.to_string(),
+            (Self::Select(_, vals), Some(idx)) if idx.parse::<usize>().is_ok() => vals
+                .get(idx.parse::<usize>().unwrap())
+                .map(|val| val.clone())
+                .unwrap_or_else(|| String::new()),
+
+            _ => String::new(),
+        }
+    }
+
     pub fn to_number(&self) -> Self {
         match self {
             Self::Number(val) => Self::Number(*val),
@@ -126,6 +167,23 @@ impl Value {
                 vec![String::from("false"), String::from("true")],
             ),
             Self::Select(idx, list) => Self::Select(*idx, list.clone()),
+        }
+    }
+}
+
+impl std::fmt::Display for Value {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Check(val) => write!(f, "{}", val),
+            Self::Normal(val) => write!(f, "{}", val),
+            Self::Note(val) => write!(f, "{}", val),
+            Self::Number(val) => write!(f, "{}", val),
+            Self::NumberMid(val, ..) => write!(f, "{}", val),
+            Self::NumberMinMax(val, ..) => write!(f, "{}", val),
+            Self::Select(idx, list) => list
+                .get(*idx)
+                .map(|val| write!(f, "{}", val))
+                .unwrap_or_else(|| write!(f, "")),
         }
     }
 }
@@ -245,6 +303,49 @@ impl Data {
     pub fn is_empty(&self) -> bool {
         self.values.is_empty() || self.values.iter().all(Vec::is_empty)
     }
+
+    pub fn get_value0(&self) -> Option<&Value> {
+        self.get_value1(0)
+    }
+
+    pub fn get_value1(&self, idx: usize) -> Option<&Value> {
+        let mut count = 0;
+
+        for cols in &self.values {
+            for val in cols {
+                if count == idx {
+                    return Some(val);
+                }
+                count += 1;
+            }
+        }
+
+        None
+    }
+
+    pub fn get_value2(&self, r: usize, c: usize) -> Option<&Value> {
+        self.values.get(r).and_then(|cols| cols.get(c))
+    }
+
+    pub fn ref_value(&self, args: Vec<&(String, Option<String>)>) -> Option<Value> {
+        if args.len() == 0 {
+            return self.get_value0().map(|val| val.clone());
+        } else if args.len() == 1 {
+            if args[0].1.is_none() {
+                if let Ok(idx) = args[0].0.parse::<usize>() {
+                    return self.get_value1(idx).map(|val| val.clone());
+                }
+            }
+        } else {
+            if args[0].1.is_none() && args[1].1.is_none() {
+                if let (Ok(r), Ok(c)) = (args[0].0.parse::<usize>(), args[1].0.parse::<usize>()) {
+                    return self.get_value2(r, c).map(|val| val.clone());
+                }
+            }
+        }
+
+        None
+    }
 }
 
 pub enum PropertyView {
@@ -301,5 +402,46 @@ impl Property {
 
     pub fn push_child(&mut self, child: BlockMut<Self>) {
         self.children.push(child);
+    }
+
+    pub fn ref_value(
+        &self,
+        mut name: Vec<&String>,
+        args: Vec<&(String, Option<String>)>,
+    ) -> Option<Value> {
+        if name.len() > 1 {
+            let name = if self.name == *name[0] {
+                name.drain(1..).collect()
+            } else {
+                name
+            };
+
+            self.ref_children_value(name, args)
+        } else if name.len() == 1 {
+            if self.name == *name[0] {
+                self.data.ref_value(args)
+            } else {
+                self.ref_children_value(name, args)
+            }
+        } else {
+            None
+        }
+    }
+
+    fn ref_children_value(
+        &self,
+        name: Vec<&String>,
+        args: Vec<&(String, Option<String>)>,
+    ) -> Option<Value> {
+        for child in &self.children {
+            if let Some(value) = child
+                .map(|child| child.ref_value(name.clone(), args.clone()))
+                .unwrap_or_default()
+            {
+                return Some(value);
+            }
+        }
+
+        None
     }
 }

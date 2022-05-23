@@ -7,11 +7,17 @@ impl RoomModelessChat {
         mut channel: BlockMut<block::ChatChannel>,
         message: &String,
     ) -> Cmd<Self> {
-        let message = block::chat_message::Message::new(message);
+        let message = block::chat_message::Message::from_str(message);
         let (message, descriptions) = if let ChatUser::Character(character) = &self.chat_user {
-            block::chat_message::map(character.chat_ref(), message)
+            if let Some(res) = character.map(|character| {
+                block::chat_message::map(character.properties(), character.chat_ref(), message)
+            }) {
+                res
+            } else {
+                return Cmd::none();
+            }
         } else {
-            block::chat_message::map(Self::ref_none(), message)
+            block::chat_message::map(&vec![], Self::ref_none(), message)
         };
 
         if descriptions.len() > 0 {
@@ -83,21 +89,35 @@ impl RoomModelessChat {
             block::chat_message::MessageToken::Text(text) => block::chat_message::Message::from(
                 vec![block::chat_message::MessageToken::Text(text)],
             ),
-            block::chat_message::MessageToken::Refer(refer) => {
-                block::chat_message::Message::from(vec![block::chat_message::MessageToken::Refer(
-                    Self::capture_message(captured, refer),
-                )])
+            block::chat_message::MessageToken::Reference(reference) => {
+                block::chat_message::Message::from(vec![
+                    block::chat_message::MessageToken::Reference(block::chat_message::Reference {
+                        name: reference
+                            .name
+                            .into_iter()
+                            .map(|a_name| Self::capture_message(captured, a_name))
+                            .collect(),
+                        args: reference
+                            .args
+                            .into_iter()
+                            .map(|arg| Self::capture_argument(captured, arg))
+                            .collect(),
+                        option: reference
+                            .option
+                            .map(|option| Self::capture_message(captured, option)),
+                    }),
+                ])
             }
-            block::chat_message::MessageToken::CommandBlock(cmd, text) => {
+            block::chat_message::MessageToken::Command(cmd) => {
                 let cmd_name = Self::capture_message(captured, cmd.name);
                 let cmd_args: Vec<_> = cmd
                     .args
                     .into_iter()
-                    .map(|x| Self::capture_message(captured, x))
+                    .map(|x| Self::capture_argument(captured, x))
                     .collect();
 
                 if cmd_name.to_string() == "ref" {
-                    let cap_name = Self::capture_message(captured, text).to_string();
+                    let cap_name = Self::capture_message(captured, cmd.text).to_string();
                     let text = cap_name
                         .parse()
                         .ok()
@@ -108,18 +128,28 @@ impl RoomModelessChat {
                         block::chat_message::MessageToken::Text(text),
                     ])
                 } else {
-                    let text = Self::capture_message(captured, text);
+                    let text = Self::capture_message(captured, cmd.text);
                     block::chat_message::Message::from(vec![
-                        block::chat_message::MessageToken::CommandBlock(
-                            block::chat_message::MessageCommand {
-                                name: cmd_name,
-                                args: cmd_args,
-                            },
+                        block::chat_message::MessageToken::Command(block::chat_message::Command {
+                            name: cmd_name,
+                            args: cmd_args,
                             text,
-                        ),
+                        }),
                     ])
                 }
             }
         }
+    }
+
+    fn capture_argument(
+        captured: &Vec<String>,
+        arg: block::chat_message::Argument,
+    ) -> block::chat_message::Argument {
+        let value = Self::capture_message(captured, arg.value);
+        let option = arg
+            .option
+            .map(|option| Self::capture_message(captured, option));
+
+        block::chat_message::Argument { value, option }
     }
 }

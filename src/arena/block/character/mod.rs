@@ -71,6 +71,7 @@ impl ChatPallet {
         self.children.clear();
         self.sub_sections.clear();
         self.sections.clear();
+        self.defs.clear();
 
         while !data.is_empty() {
             let tail_idx = self.sections.len() - 1;
@@ -165,7 +166,7 @@ impl StandingTexture {
 block! {
     [pub Description(constructor, pack)]
     raw: String = String::new();
-    data: Message = Message::new("");
+    data: Message = Message::from_str("");
 }
 
 impl Description {
@@ -174,7 +175,7 @@ impl Description {
     }
 
     pub fn set_raw(&mut self, description: String) {
-        self.data = Message::new(&description);
+        self.data = Message::from_str(&description);
         self.raw = description;
     }
 
@@ -327,21 +328,16 @@ impl Character {
     pub fn push_property(&mut self, property: BlockMut<Property>) {
         self.properties.push(property);
     }
-}
 
-impl BlockMut<Character> {
     pub fn chat_ref<'a>(&'a self) -> impl FnMut(&String) -> Message + 'a {
         |ref_name: &String| {
-            self.map(|this| {
-                for (pat, text) in this.chatpallet().defs() {
-                    if pat.is_match(ref_name) {
-                        let message = Message::new(pat.replace(ref_name, text).as_ref());
-                        return message;
-                    }
+            for (pat, text) in self.chatpallet().defs() {
+                if pat.is_match(ref_name) {
+                    let message = Message::from_str(pat.replace(ref_name, text).as_ref());
+                    return message;
                 }
-                Message::from(vec![])
-            })
-            .unwrap_or_else(|| Message::from(vec![]))
+            }
+            Message::from(vec![])
         }
     }
 }

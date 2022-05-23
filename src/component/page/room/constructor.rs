@@ -67,6 +67,7 @@ impl Constructor for Room {
             arena: arena,
             local_arena: Arena::new(),
             client_id: props.client_id,
+            bcdice_loader: props.bcdice_loader,
 
             chat: chat,
             world: world,

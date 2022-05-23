@@ -2,6 +2,7 @@ use super::organism::room_modeless;
 use super::organism::room_modeless_chat::ChatUser;
 use super::organism::tab_modeless_container::TabModelessList;
 use crate::arena::{block, resource, user, Arena, ArenaMut, BlockMut, Untyped};
+use crate::libs::bcdice::js::DynamicLoader;
 use crate::libs::random_id::U128Id;
 use crate::table::{table_tool::TableTool, Table};
 use kagura::prelude::*;
@@ -18,6 +19,7 @@ mod update;
 pub struct Props {
     pub arena: ArenaMut,
     pub client_id: Rc<String>,
+    pub bcdice_loader: Rc<DynamicLoader>,
 }
 
 pub enum Msg {
@@ -53,6 +55,8 @@ pub struct Room {
     arena: ArenaMut,
     local_arena: Arena,
     client_id: Rc<String>,
+
+    bcdice_loader: Rc<DynamicLoader>,
 
     chat: BlockMut<block::Chat>,
     world: BlockMut<block::World>,

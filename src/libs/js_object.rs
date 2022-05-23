@@ -12,6 +12,19 @@ extern "C" {
     pub fn set(this: &Object, name: &str, value: &JsValue);
 }
 
+impl Object {
+    pub fn try_as<'a, T>(&'a self) -> Option<T>
+    where
+        T: TryFrom<&'a Self>,
+    {
+        if let Ok(t) = T::try_from(self) {
+            Some(t)
+        } else {
+            None
+        }
+    }
+}
+
 macro_rules! object {
     { $( $n:tt : $v:expr ),*$(,)? } => {
         {

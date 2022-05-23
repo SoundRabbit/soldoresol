@@ -3,7 +3,7 @@ use super::atom::{
     heading::{self, Heading},
 };
 use super::molecule::modal::{self, Modal};
-use crate::libs::bcdice;
+use crate::libs::bcdice::js::{DynamicLoader, GameSystemClass, GameSystemInfo};
 use isaribi::{
     style,
     styled::{Style, Styled},
@@ -14,12 +14,11 @@ use std::collections::VecDeque;
 use std::rc::Rc;
 
 pub struct Props {
-    api_root: Rc<String>,
+    bcdice_loader: Rc<DynamicLoader>,
 }
 
 pub enum Msg {
     Sub(On),
-    SetGameSystems(VecDeque<bcdice::api::GameSystem>),
 }
 
 pub enum On {
@@ -27,9 +26,7 @@ pub enum On {
 }
 
 pub struct ModalDicebot {
-    api_root: Rc<String>,
-    dicebot: Option<bcdice::api::GameSystem>,
-    game_systems: Vec<Rc<bcdice::api::GameSystem>>,
+    bcdice_loader: Rc<DynamicLoader>,
 }
 
 impl Component for ModalDicebot {
@@ -43,45 +40,21 @@ impl HtmlComponent for ModalDicebot {}
 impl Constructor for ModalDicebot {
     fn constructor(props: Self::Props) -> Self {
         Self {
-            api_root: props.api_root,
-            dicebot: None,
-            game_systems: vec![],
+            bcdice_loader: props.bcdice_loader,
         }
     }
 }
 
 impl Update for ModalDicebot {
     fn on_load(mut self: Pin<&mut Self>, props: Self::Props) -> Cmd<Self> {
-        if *self.api_root != *props.api_root {
-            self.api_root = props.api_root;
-            self.get_game_system()
-        } else {
-            Cmd::none()
-        }
+        self.bcdice_loader = props.bcdice_loader;
+        Cmd::none()
     }
 
     fn update(mut self: Pin<&mut Self>, msg: Self::Msg) -> Cmd<Self> {
         match msg {
             Msg::Sub(sub) => Cmd::submit(sub),
-            Msg::SetGameSystems(mut game_systems) => {
-                self.dicebot = game_systems.pop_front();
-
-                let mut game_systems: Vec<_> = game_systems.into();
-                game_systems.sort_by(|a, b| a.sort_key.partial_cmp(&b.sort_key).unwrap());
-                self.game_systems = game_systems.into_iter().map(|x| Rc::new(x)).collect();
-                Cmd::none()
-            }
         }
-    }
-}
-
-impl ModalDicebot {
-    fn get_game_system(&self) -> Cmd<Self> {
-        let api_root = Rc::clone(&self.api_root);
-        Cmd::task(async move {
-            let game_systems = bcdice::api::game_system(&api_root).await;
-            Cmd::chain(Msg::SetGameSystems(game_systems.into()))
-        })
     }
 }
 

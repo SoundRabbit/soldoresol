@@ -5,7 +5,7 @@ use super::page::{
     room_selector::{self, RoomSelector},
 };
 use super::util::router;
-use crate::libs::bcdice;
+use crate::libs::bcdice::js::DynamicLoader;
 use crate::libs::skyway;
 use crate::model::config::Config;
 use kagura::prelude::*;
@@ -29,6 +29,7 @@ pub struct RoomPageData {
     meshroom: Rc<skyway::MeshRoom>,
     room_db: Rc<web_sys::IdbDatabase>,
     table_db: Rc<web_sys::IdbDatabase>,
+    bcdice_loader: Rc<DynamicLoader>,
 }
 
 pub enum Msg {
@@ -120,7 +121,8 @@ impl Render<Html> for App {
                         peer_id: Rc::clone(&common_data.peer_id),
                         room: Rc::clone(&room_data.meshroom),
                         room_id: room_id,
-                        client_id: Rc::clone(&common_data.client_id)
+                        client_id: Rc::clone(&common_data.client_id),
+                        bcdice_loader: Rc::clone(&room_data.bcdice_loader)
                     },
                     Sub::none()
                 )
@@ -137,7 +139,8 @@ impl Render<Html> for App {
                         peer_id: Rc::clone(&common_data.peer_id),
                         room: Rc::clone(&room_data.meshroom),
                         room_id: room_id,
-                        client_id: Rc::clone(&common_data.client_id)
+                        client_id: Rc::clone(&common_data.client_id),
+                        bcdice_loader: Rc::clone(&room_data.bcdice_loader)
                     },
                     Sub::none()
                 )
@@ -195,6 +198,7 @@ impl App {
                     meshroom,
                     room_db: Rc::new(room_db),
                     table_db: Rc::new(table_db),
+                    bcdice_loader: Rc::new(DynamicLoader::new()),
                 }),
             }),
         )
