@@ -18,7 +18,6 @@ pub enum Msg {
     NoOp,
     Sub(On),
     SetInputingChatMessage(String),
-    SendInputingChatMessage,
 }
 
 pub enum On {
@@ -61,10 +60,6 @@ impl Update for Controller {
                 self.shared_state.borrow_mut().inputing_message = InputingMessage::Text(text);
                 Cmd::none()
             }
-            Msg::SendInputingChatMessage => {
-                self.ignore_input.set(true);
-                Cmd::submit(On::SendInputingChatMessage)
-            }
         }
     }
 }
@@ -77,26 +72,32 @@ impl Render<Html> for Controller {
             Events::new(),
             vec![
                 Html::textarea(
-                    Attributes::new()
-                        .value(self.shared_state.borrow().inputing_message.to_string()),
+                    Attributes::new().value(self.shared_state.borrow().inputing_message.to_string()),
                     Events::new()
-                        .on_input(self, {
+                        .on("input", self, {
                             let ignore_input = Rc::clone(&self.ignore_input);
-                            move |input| {
+                            move |e| {
+                                let target = unwrap!(e.target(); Msg::NoOp);
+                                let target = unwrap!(target.dyn_into::<web_sys::HtmlTextAreaElement>().ok(); Msg::NoOp);
                                 if ignore_input.get() {
                                     ignore_input.set(false);
-                                    Msg::NoOp
+                                    target.set_value("");
+                                    Msg::SetInputingChatMessage(String::from(""))
                                 } else {
-                                    Msg::SetInputingChatMessage(input)
+                                    Msg::SetInputingChatMessage(target.value())
                                 }
                             }
                         })
-                        .on_keydown(self, |e| {
-                            let e = unwrap!(e.dyn_into::<web_sys::KeyboardEvent>().ok(); Msg::NoOp);
-                            if e.key() == "Enter" && !e.shift_key() {
-                                Msg::SendInputingChatMessage
-                            } else {
-                                Msg::NoOp
+                        .on_keydown(self, {
+                            let ignore_input = Rc::clone(&self.ignore_input);
+                            move |e| {
+                                let e = unwrap!(e.dyn_into::<web_sys::KeyboardEvent>().ok(); Msg::NoOp);
+                                if e.key() == "Enter" && !e.shift_key() {
+                                    ignore_input.set(true);
+                                    Msg::Sub(On::SendInputingChatMessage)
+                                } else {
+                                    Msg::NoOp
+                                }
                             }
                         }),
                     vec![],
