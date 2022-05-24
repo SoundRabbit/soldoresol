@@ -215,7 +215,7 @@ impl ModalChatUser {
                                                 Events::new().on_click(self, move |_| {
                                                     Msg::RemoveSelected(idx)
                                                 }),
-                                                vec![Html::text("削除")],
+                                                vec![Html::text("解除")],
                                             ),
                                         ],
                                     )

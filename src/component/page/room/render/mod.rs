@@ -268,7 +268,7 @@ impl Room {
                             Attributes::new(),
                             Events::new()
                                 .on_click(self, |_| Msg::SetShowingModal(ShowingModal::ChatUser)),
-                            vec![Html::text("チャットで使用するキャラクターを設定")],
+                            vec![Html::text("キャラクター設定")],
                         ),
                     ],
                 ),
