@@ -37,12 +37,17 @@ pub enum Msg {
     SetPropertyView(block::property::PropertyView),
     SetDataView(block::property::DataView),
     SetValue(usize, usize, block::property::Value),
+    RemoveChild(U128Id),
+    RemoveValue(usize, usize),
 }
 
 pub enum On {
     UpdateBlocks {
         insert: HashSet<U128Id>,
         update: HashSet<U128Id>,
+    },
+    RemoveNode {
+        prop_id: U128Id,
     },
 }
 
@@ -157,6 +162,24 @@ impl Update for Node {
                     update: set! {self.prop.id()},
                 })
             }
+            Msg::RemoveChild(block_id) => {
+                self.prop.update(|prop| prop.remove_child(&block_id));
+
+                Cmd::submit(On::UpdateBlocks {
+                    insert: set! {},
+                    update: set! {self.prop.id()},
+                })
+            }
+            Msg::RemoveValue(r, c) => {
+                self.prop.update(|prop| {
+                    prop.data_mut().remove_value2(r, c);
+                });
+
+                Cmd::submit(On::UpdateBlocks {
+                    insert: set! {},
+                    update: set! {self.prop.id()},
+                })
+            }
         }
     }
 }
@@ -209,6 +232,7 @@ impl Node {
                                 On::UpdateBlocks { insert, update } => {
                                     Msg::Sub(On::UpdateBlocks { insert, update })
                                 }
+                                On::RemoveNode { prop_id } => Msg::RemoveChild(prop_id),
                             }),
                         )
                     })
@@ -261,7 +285,10 @@ impl Node {
                         vec![
                             Btn::menu_as_light(
                                 Attributes::new(),
-                                Events::new(),
+                                Events::new().on_click(self, {
+                                    let prop_id = self.prop.id();
+                                    move |_| Msg::Sub(On::RemoveNode { prop_id })
+                                }),
                                 vec![Html::text("削除")],
                             ),
                             Html::span(
@@ -494,7 +521,9 @@ impl Node {
                             vec![
                                 Btn::menu_as_light(
                                     Attributes::new(),
-                                    Events::new(),
+                                    Events::new().on_click(self, move |_| {
+                                        Msg::RemoveValue(row_idx, col_idx)
+                                    }),
                                     vec![Html::text("削除")],
                                 ),
                                 Btn::menu_as_light(

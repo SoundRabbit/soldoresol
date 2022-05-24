@@ -308,16 +308,12 @@ impl Data {
         self.get_value1(0)
     }
 
-    pub fn get_value1(&self, idx: usize) -> Option<&Value> {
-        let mut count = 0;
-
-        for cols in &self.values {
-            for val in cols {
-                if count == idx {
-                    return Some(val);
-                }
-                count += 1;
+    pub fn get_value1(&self, mut idx: usize) -> Option<&Value> {
+        for row_offset in 0..self.values.len() {
+            if let Some(value) = self.get_value2(row_offset, idx) {
+                return Some(value);
             }
+            idx -= self.values[row_offset].len();
         }
 
         None
@@ -325,6 +321,42 @@ impl Data {
 
     pub fn get_value2(&self, r: usize, c: usize) -> Option<&Value> {
         self.values.get(r).and_then(|cols| cols.get(c))
+    }
+
+    fn remove_empty_row(&mut self) {
+        let mut row_idx = 1;
+        while row_idx < self.values.len() {
+            if self.values[row_idx].len() == 0 {
+                self.values.remove(row_idx);
+            } else {
+                row_idx += 1;
+            }
+        }
+    }
+
+    pub fn remove_value1(&mut self, mut idx: usize) -> bool {
+        for row_offset in 0..self.values.len() {
+            if self.remove_value2(row_offset, idx) {
+                return true;
+            }
+            if let Some(cols) = self.values.get(row_offset) {
+                idx -= cols.len();
+            }
+        }
+
+        false
+    }
+
+    pub fn remove_value2(&mut self, r: usize, c: usize) -> bool {
+        if let Some(cols) = self.values.get_mut(r) {
+            if c < cols.len() {
+                cols.remove(c);
+                self.remove_empty_row();
+                return true;
+            }
+        }
+
+        false
     }
 
     pub fn ref_value(&self, args: Vec<&(String, Option<String>)>) -> Option<Value> {
@@ -402,6 +434,16 @@ impl Property {
 
     pub fn push_child(&mut self, child: BlockMut<Self>) {
         self.children.push(child);
+    }
+
+    pub fn remove_child(&mut self, block_id: &U128Id) {
+        if let Some(child_idx) = self
+            .children
+            .iter()
+            .position(|child| child.id() == *block_id)
+        {
+            self.children.remove(child_idx);
+        }
     }
 
     pub fn ref_value(

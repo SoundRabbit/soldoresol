@@ -329,6 +329,16 @@ impl Character {
         self.properties.push(property);
     }
 
+    pub fn remove_property(&mut self, block_id: &U128Id) {
+        if let Some(prop_idx) = self
+            .properties
+            .iter()
+            .position(|prop| prop.id() == *block_id)
+        {
+            self.properties.remove(prop_idx);
+        }
+    }
+
     pub fn chat_ref<'a>(&'a self) -> impl FnMut(&String) -> Message + 'a {
         |ref_name: &String| {
             for (pat, text) in self.chatpallet().defs() {

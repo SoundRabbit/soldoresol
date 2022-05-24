@@ -467,6 +467,10 @@ macro_rules! arena {
 
                 block_mut
             }
+
+            pub fn remove(&mut self, block_id: U128Id) {
+                self.data.insert(block_id, Block::none());
+            }
         }
 
         pub struct Arena {
@@ -504,6 +508,10 @@ macro_rules! arena {
 
             pub fn insert<T>(&mut self, block: T) -> BlockMut<T> where Self: Insert<T> {
                 Insert::insert(self, block)
+            }
+
+            pub fn remove(&mut self, block_id: U128Id) {
+                self.data.borrow_mut().remove(block_id);
             }
         }
 
@@ -548,6 +556,10 @@ macro_rules! arena {
 
             pub fn insert<T>(&mut self, block: T) -> BlockMut<T> where Self: Insert<T> {
                 Insert::insert(self, block)
+            }
+
+            pub fn remove(&mut self, block_id: U128Id) {
+                self.data.upgrade().map(|data| data.borrow_mut().remove(block_id));
             }
         }
 

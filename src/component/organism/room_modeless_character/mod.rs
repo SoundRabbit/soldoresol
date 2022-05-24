@@ -38,6 +38,7 @@ pub enum Msg {
     SetTextureImage(usize, Option<BlockRef<resource::ImageData>>),
     SetTextureName(usize, String),
     AddProperty,
+    RemoveProperty(U128Id),
     PushTexture,
 }
 
@@ -238,6 +239,17 @@ impl Update for RoomModelessCharacter {
                     update: set! { self.character.id() },
                 })
             }
+
+            Msg::RemoveProperty(prop_id) => {
+                self.character.update(|character| {
+                    character.remove_property(&prop_id);
+                });
+
+                Cmd::submit(On::UpdateBlocks {
+                    insert: set! {},
+                    update: set! { self.character.id() },
+                })
+            }
         }
     }
 }
@@ -365,6 +377,9 @@ impl RoomModelessCharacter {
                                                         update,
                                                         insert,
                                                     }),
+                                                    block_prop::On::RemoveProperty { block_id } => {
+                                                        Msg::RemoveProperty(block_id)
+                                                    }
                                                 }),
                                                 (),
                                             ),

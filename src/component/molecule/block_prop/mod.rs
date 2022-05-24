@@ -34,6 +34,9 @@ pub enum On {
         insert: HashSet<U128Id>,
         update: HashSet<U128Id>,
     },
+    RemoveProperty {
+        block_id: U128Id,
+    },
 }
 
 pub struct BlockProp {
@@ -97,6 +100,9 @@ impl Render<Html> for BlockProp {
                     Sub::map(|sub| match sub {
                         node::On::UpdateBlocks { insert, update } => {
                             Msg::Sub(On::UpdateBlocks { insert, update })
+                        }
+                        node::On::RemoveNode { prop_id } => {
+                            Msg::Sub(On::RemoveProperty { block_id: prop_id })
                         }
                     }),
                     (Attributes::new().class(Self::class("prop")), Events::new()),
