@@ -134,15 +134,18 @@ impl Channel {
                         Html::div(
                             Attributes::new().class(Self::class("channel-message-icon")),
                             Events::new(),
-                            vec![Html::text(
-                                chat_message
-                                    .sender()
-                                    .name()
-                                    .chars()
-                                    .nth(0)
-                                    .map(|x| String::from(x))
-                                    .unwrap_or(String::from("")),
-                            )],
+                            vec![match chat_message.sender().kind() {
+                                block::chat_message::SenderKind::Normal => Html::text(
+                                    chat_message
+                                        .sender()
+                                        .name()
+                                        .chars()
+                                        .nth(0)
+                                        .map(|x| String::from(x))
+                                        .unwrap_or_else(|| String::from("")),
+                                ),
+                                block::chat_message::SenderKind::System => Html::none(),
+                            }],
                         )
                     }),
                 Html::div(

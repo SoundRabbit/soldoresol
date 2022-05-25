@@ -187,6 +187,7 @@ impl Update for RoomModelessChat {
                             Rc::clone(&self.client_id),
                             player.icon().map(|icon| BlockRef::clone(icon)),
                             player.name().clone(),
+                            block::chat_message::SenderKind::Normal,
                         )
                     }),
                     ChatUser::Character(character) => character.map(|character| {
@@ -196,6 +197,7 @@ impl Update for RoomModelessChat {
                                 texture.image().map(|image| BlockRef::clone(&image))
                             }),
                             character.name().clone(),
+                            block::chat_message::SenderKind::Normal,
                         )
                     }),
                 };

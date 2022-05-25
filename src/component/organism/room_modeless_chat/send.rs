@@ -53,7 +53,8 @@ impl RoomModelessChat {
             let sender = block::chat_message::Sender::new(
                 Rc::clone(&self.client_id),
                 None,
-                String::from("System"),
+                String::from("Dicebot"),
+                block::chat_message::SenderKind::System,
             );
             let chat_message = block::ChatMessage::new(sender, now.clone(), message);
             let chat_message = self.arena.insert(chat_message);

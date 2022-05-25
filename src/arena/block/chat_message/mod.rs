@@ -133,11 +133,28 @@ impl Pack for Argument {
     }
 }
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum SenderKind {
+    Normal,
+    System,
+}
+
+#[async_trait(?Send)]
+impl Pack for SenderKind {
+    async fn pack(&self, _is_deep: bool) -> JsValue {
+        match self {
+            Self::Normal => JsValue::from("Normal"),
+            Self::System => JsValue::from("System"),
+        }
+    }
+}
+
 block! {
     [pub Sender(constructor, pack)]
     (client_id): Rc<String>;
     (icon): Option<BlockRef<ImageData>>;
     (name): String;
+    (kind): SenderKind;
 }
 
 impl Sender {
@@ -151,6 +168,10 @@ impl Sender {
 
     pub fn name(&self) -> &String {
         &self.name
+    }
+
+    pub fn kind(&self) -> &SenderKind {
+        &self.kind
     }
 }
 
