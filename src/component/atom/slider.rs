@@ -102,7 +102,7 @@ impl Update for Slider {
                 let new_val = match &self.position {
                     Position::Linear { .. } => input_val,
                     Position::Inf { mid, step, .. } => {
-                        let val = -(*mid) * (1.0 - input_val.min(1.0 - 1e-15).max(0.0)).log2();
+                        let val = Self::inv_sigmoid(input_val, *mid);
                         let val = (*step) * (val / *step).ceil();
                         val
                     }
@@ -123,19 +123,14 @@ impl Render<Html> for Slider {
                 val,
                 step,
             } => (*min, *max, *val, *val, *step, *step),
-            Position::Inf { val, mid, step } => {
-                let val = val.max(0.0);
-                let prev = (val - step).max(0.0);
-                let next = (val + step).max(0.0);
-                (
-                    0.0_f64,
-                    1.0_f64,
-                    val,
-                    1.0_f64 - (0.5_f64).powf(val / mid),
-                    *step,
-                    ((0.5_f64).powf(prev / mid) - (0.5_f64).powf(next / mid)) / 2.0,
-                )
-            }
+            Position::Inf { val, mid, step } => (
+                0.0,
+                100.0,
+                *val,
+                Self::sigmoid(*val, *mid),
+                *step,
+                (Self::sigmoid(*val + *step, *mid) - Self::sigmoid(*val - *step, *mid)) / 2.0,
+            ),
         };
 
         // let pos = ((slider_val - min) / (max - min)).min(1.0).max(0.0);
@@ -198,6 +193,14 @@ impl Render<Html> for Slider {
 }
 
 impl Slider {
+    fn sigmoid(val: f64, mid: f64) -> f64 {
+        100.0 * 1.0 / (1.0 + f64::exp(1.0 / mid.abs().max(1.0) * (mid - val)))
+    }
+
+    fn inv_sigmoid(val: f64, mid: f64) -> f64 {
+        mid - mid * f64::ln(100.0 / val - 1.0)
+    }
+
     fn render_range_linear(&self, props: &Props, min: f64, max: f64) -> Html {
         Html::div(
             Attributes::new()
