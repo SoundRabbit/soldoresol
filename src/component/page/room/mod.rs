@@ -2,7 +2,7 @@ use super::organism::room_modeless;
 use super::organism::room_modeless_chat::ChatUser;
 use super::organism::tab_modeless_container::TabModelessList;
 use crate::arena::{block, resource, user, Arena, ArenaMut, BlockMut, Untyped};
-use crate::libs::bcdice::js::DynamicLoader;
+use crate::libs::bcdice::js::{DynamicLoader, GameSystemClass};
 use crate::libs::random_id::U128Id;
 use crate::table::{table_tool::TableTool, Table};
 use kagura::prelude::*;
@@ -47,6 +47,7 @@ pub enum Msg {
     SetIs2dMode(bool, bool),
     SetBlockIsFixedPosition(BlockMut<Untyped>, bool),
     SetBlockIsBindToGrid(BlockMut<Untyped>, bool),
+    SetGameSystemClass(GameSystemClass),
 }
 
 pub enum On {}
@@ -57,6 +58,7 @@ pub struct Room {
     client_id: Rc<String>,
 
     bcdice_loader: Rc<DynamicLoader>,
+    game_system_class: Rc<RefCell<Option<GameSystemClass>>>,
 
     chat: BlockMut<block::Chat>,
     world: BlockMut<block::World>,
@@ -91,6 +93,7 @@ enum ShowingContextmenuData {
 pub enum ShowingModal {
     None,
     ChatUser,
+    Dicebot,
 }
 
 impl Component for Room {

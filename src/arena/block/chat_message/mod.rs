@@ -5,10 +5,12 @@ use super::super::resource::ImageData;
 use super::util::Pack;
 use super::Property;
 use super::{BlockMut, BlockRef};
+use crate::libs::bcdice::js::{CommandResult, GameSystemClass};
 use std::collections::HashMap;
 
 pub mod map;
 pub mod parser;
+pub mod roll;
 
 pub use parser::Argument;
 pub use parser::Command;
@@ -25,6 +27,12 @@ pub fn map(
     let mut var_nums = HashMap::new();
     let message = map::map_message(props, &mut refs, &mut var_nums, &mut descriptions, message);
     (message, descriptions)
+}
+
+pub fn roll(game_system_class: &GameSystemClass, message: &Message) -> Vec<CommandResult> {
+    let mut command_results = vec![];
+    roll::roll_message(game_system_class, &mut command_results, message);
+    command_results
 }
 
 #[async_trait(?Send)]

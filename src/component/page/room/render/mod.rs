@@ -9,6 +9,7 @@ use super::super::atom::{
 };
 use super::super::organism::{
     modal_chat_user::{self, ModalChatUser},
+    modal_dicebot::{self, ModalDicebot},
     room_modeless::{self, RoomModeless},
     room_modeless_chat::ChatUser,
     tab_modeless_container::{self, TabModelessContainer},
@@ -190,6 +191,24 @@ impl Room {
                     modal_chat_user::On::Select(selected) => Msg::CloseModalChatUser(selected),
                 }),
             ),
+            ShowingModal::Dicebot => ModalDicebot::empty(
+                self,
+                None,
+                modal_dicebot::Props {
+                    bcdice_loader: Rc::clone(&self.bcdice_loader),
+                    selected_game_system: self
+                        .game_system_class
+                        .borrow()
+                        .as_ref()
+                        .map(|game_system_class| game_system_class.id().clone()),
+                },
+                Sub::map(|sub| match sub {
+                    modal_dicebot::On::Close => Msg::SetShowingModal(ShowingModal::None),
+                    modal_dicebot::On::SelectGameSystem { game_system_class } => {
+                        Msg::SetGameSystemClass(game_system_class)
+                    }
+                }),
+            ),
         }
     }
 
@@ -269,6 +288,12 @@ impl Room {
                             Events::new()
                                 .on_click(self, |_| Msg::SetShowingModal(ShowingModal::ChatUser)),
                             vec![Html::text("キャラクター設定")],
+                        ),
+                        Btn::menu(
+                            Attributes::new(),
+                            Events::new()
+                                .on_click(self, |_| Msg::SetShowingModal(ShowingModal::Dicebot)),
+                            vec![Html::text("ダイスボット設定")],
                         ),
                     ],
                 ),
@@ -362,6 +387,10 @@ impl Styled for Room {
                 "display": "grid";
                 "align-items": "center";
                 "line-height": "1";
+            }
+
+            ".chatuser-character" {
+                "color": crate::libs::color::Pallet::blue(5);
             }
 
             ".chatuser-player" {

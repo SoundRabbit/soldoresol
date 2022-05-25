@@ -237,10 +237,12 @@ impl Styled for ModalChatUser {
                 "height": "100%";
                 "display": "grid";
                 "grid-template-rows": "1fr max-content";
+                "overflow-y": "hidden";
             }
             ".content" {
                 "display": "grid";
                 "grid-template-columns": "repeat(auto-fit, minmax(20rem, 1fr))";
+                "overflow": "hidden";
             }
             ".container" {
                 "padding": ".5em 1em";

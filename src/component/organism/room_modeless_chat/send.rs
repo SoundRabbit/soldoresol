@@ -30,15 +30,42 @@ impl RoomModelessChat {
             return Cmd::none();
         }
 
-        let chat_message = block::ChatMessage::new(sender, chrono::Utc::now(), message);
+        let command_results =
+            if let Some(game_system_class) = self.game_system_class.borrow().as_ref() {
+                block::chat_message::roll(game_system_class, &message)
+            } else {
+                crate::debug::log_1("no dicebot");
+                vec![]
+            };
+
+        let mut message_ids = set! {};
+        let now = chrono::Utc::now();
+
+        let chat_message = block::ChatMessage::new(sender, now.clone(), message);
         let chat_message = self.arena.insert(chat_message);
-        let chat_message_id = chat_message.id();
+        message_ids.insert(chat_message.id());
         channel.update(|channel: &mut block::ChatChannel| {
             channel.messages_push(chat_message);
         });
+
+        for command_result in command_results {
+            let message = block::chat_message::Message::from(&command_result);
+            let sender = block::chat_message::Sender::new(
+                Rc::clone(&self.client_id),
+                None,
+                String::from("System"),
+            );
+            let chat_message = block::ChatMessage::new(sender, now.clone(), message);
+            let chat_message = self.arena.insert(chat_message);
+            message_ids.insert(chat_message.id());
+            channel.update(|channel: &mut block::ChatChannel| {
+                channel.messages_push(chat_message);
+            });
+        }
+
         let channel_id = channel.id();
         Cmd::submit(On::UpdateBlocks {
-            insert: set! { chat_message_id },
+            insert: message_ids,
             update: set! { channel_id },
         })
     }

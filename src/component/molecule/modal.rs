@@ -117,6 +117,7 @@ impl Styled for Modal {
             }
             ".body" {
                 "background-color": color_system::gray(100, 0).to_string();
+                "overflow": "hidden";
             }
             ".footer" {
                 "color": color_system::gray(100, 0).to_string();

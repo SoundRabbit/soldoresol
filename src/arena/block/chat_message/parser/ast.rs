@@ -1,3 +1,5 @@
+use crate::libs::bcdice::js::CommandResult;
+
 #[derive(Debug, Clone)]
 pub struct Message(Vec<MessageToken>);
 
@@ -109,6 +111,12 @@ impl std::convert::Into<Vec<MessageToken>> for Message {
 impl std::convert::From<Vec<MessageToken>> for Message {
     fn from(m_tokens: Vec<MessageToken>) -> Self {
         Self(m_tokens)
+    }
+}
+
+impl std::convert::From<&CommandResult> for Message {
+    fn from(command_result: &CommandResult) -> Self {
+        Self(vec![MessageToken::Text(command_result.text.clone())])
     }
 }
 

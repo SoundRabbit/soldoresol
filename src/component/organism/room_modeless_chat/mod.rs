@@ -2,6 +2,7 @@ use super::molecule::tab_menu::{self, TabMenu};
 use super::organism::modal_chat_capture::{self, ModalChatCapture};
 use super::organism::modal_chatpallet::{self, ModalChatpallet};
 use crate::arena::{block, user, ArenaMut, BlockMut, BlockRef};
+use crate::libs::bcdice::js::GameSystemClass;
 use crate::libs::random_id::U128Id;
 use isaribi::{
     style,
@@ -43,6 +44,7 @@ pub struct Props {
     pub client_id: Rc<String>,
     pub data: BlockMut<block::Chat>,
     pub user: ChatUser,
+    pub game_system_class: Rc<RefCell<Option<GameSystemClass>>>,
 }
 
 pub struct WaitingChatMessage {
@@ -79,6 +81,7 @@ pub struct RoomModelessChat {
     chat: BlockMut<block::Chat>,
     chat_user: ChatUser,
     client_id: Rc<String>,
+    game_system_class: Rc<RefCell<Option<GameSystemClass>>>,
 
     selected_channel_idx: usize,
     showing_modal: ShowingModal,
@@ -151,6 +154,7 @@ impl Constructor for RoomModelessChat {
             chat: props.data,
             chat_user: props.user,
             client_id: props.client_id,
+            game_system_class: props.game_system_class,
 
             selected_channel_idx: 0,
             showing_modal: ShowingModal::None,
@@ -166,6 +170,7 @@ impl Update for RoomModelessChat {
         self.chat = props.data;
         self.chat_user = props.user;
         self.client_id = props.client_id;
+        self.game_system_class = props.game_system_class;
 
         Cmd::none()
     }

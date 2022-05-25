@@ -50,6 +50,7 @@ impl Constructor for Room {
         let me = arena.insert(user::Player::new());
 
         let chat_users = vec![ChatUser::Player(BlockMut::clone(&me))];
+        let game_system_class = Rc::new(RefCell::new(None));
 
         let modeless_container = Rc::new(RefCell::new(TabModelessList::new()));
         super::open_modeless(
@@ -60,6 +61,7 @@ impl Constructor for Room {
             room_modeless::ContentData::Chat {
                 data: BlockMut::clone(&chat),
                 user: ChatUser::Player(BlockMut::clone(&me)),
+                game_system_class: Rc::clone(&game_system_class),
             },
         );
 
@@ -67,7 +69,9 @@ impl Constructor for Room {
             arena: arena,
             local_arena: Arena::new(),
             client_id: props.client_id,
+
             bcdice_loader: props.bcdice_loader,
+            game_system_class: game_system_class,
 
             chat: chat,
             world: world,

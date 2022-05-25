@@ -3,10 +3,22 @@ use super::{Msg, Room, ShowingContextmenu, ShowingContextmenuData, ShowingModal}
 use crate::arena::{block, ArenaMut, BlockKind, BlockMut};
 use kagura::prelude::*;
 use nusa::prelude::*;
+use std::rc::Rc;
 
 mod task;
 
 impl Update for Room {
+    fn on_assemble(self: Pin<&mut Self>) -> Cmd<Self> {
+        let bcdice_loader = Rc::clone(&self.bcdice_loader);
+        Cmd::task(async move {
+            bcdice_loader
+                .dynamic_load("DiceBot")
+                .await
+                .map(|game_system_class| Cmd::chain(Msg::SetGameSystemClass(game_system_class)))
+                .unwrap_or(Cmd::none())
+        })
+    }
+
     fn update(mut self: Pin<&mut Self>, msg: Msg) -> Cmd<Self> {
         match msg {
             Msg::NoOp => Cmd::none(),
@@ -84,6 +96,7 @@ impl Update for Room {
                     room_modeless::ContentData::Chat {
                         data: BlockMut::clone(&self.chat),
                         user: chat_user,
+                        game_system_class: Rc::clone(&self.game_system_class),
                     },
                 );
 
@@ -227,6 +240,10 @@ impl Update for Room {
                         craftboard.set_is_bind_to_grid(is_bind_to_grid);
                     });
                 }
+                Cmd::none()
+            }
+            Msg::SetGameSystemClass(game_system_class) => {
+                *self.game_system_class.borrow_mut() = Some(game_system_class);
                 Cmd::none()
             }
         }

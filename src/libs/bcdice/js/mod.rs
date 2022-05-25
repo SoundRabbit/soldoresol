@@ -22,16 +22,17 @@ pub struct GameSystemClass {
     help_message: String,
     command_pattern: js_sys::RegExp,
     eval: js_sys::Function,
+    this: JsValue,
 }
 
 pub struct CommandResult {
-    text: String,
-    detailed_rands: Vec<Rand>,
-    secret: bool,
-    success: bool,
-    failure: bool,
-    critical: bool,
-    fumble: bool,
+    pub text: String,
+    pub detailed_rands: Vec<Rand>,
+    pub secret: bool,
+    pub success: bool,
+    pub failure: bool,
+    pub critical: bool,
+    pub fumble: bool,
 }
 
 pub struct Rand {
@@ -128,9 +129,11 @@ impl GameSystemClass {
     }
 
     pub fn eval(&self, command: &str) -> Option<CommandResult> {
-        let result =
-            unwrap!(self.eval.call1(&js_sys::global(), &JsValue::from(command)).ok(); None);
+        crate::debug::log_2("command", command);
+        let result = unwrap!(self.eval.call1(&self.this, &JsValue::from(command)).ok(); None);
+        crate::debug::log_2("command", &result);
         let result = unwrap!(result.dyn_into::<Object>().ok(); None);
+        crate::debug::log_2("command", &result);
         result.try_as::<CommandResult>()
     }
 }
@@ -154,6 +157,7 @@ impl TryFrom<&Object> for GameSystemClass {
             help_message,
             command_pattern,
             eval,
+            this: data.clone().into(),
         })
     }
 }

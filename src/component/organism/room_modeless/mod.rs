@@ -3,6 +3,7 @@ use super::organism::room_modeless_character::{self, RoomModelessCharacter};
 use super::organism::room_modeless_chat::{self, RoomModelessChat};
 use super::organism::room_modeless_craftboard::{self, RoomModelessCraftboard};
 use crate::arena::{block, ArenaMut, BlockMut};
+use crate::libs::bcdice::js::GameSystemClass;
 use crate::libs::random_id::U128Id;
 use isaribi::{
     style,
@@ -11,6 +12,7 @@ use isaribi::{
 use kagura::prelude::*;
 use nusa::prelude::*;
 use room_modeless_chat::ChatUser;
+use std::cell::RefCell;
 use std::collections::HashSet;
 use std::rc::Rc;
 
@@ -27,6 +29,7 @@ pub enum ContentData {
     Chat {
         user: ChatUser,
         data: BlockMut<block::Chat>,
+        game_system_class: Rc<RefCell<Option<GameSystemClass>>>,
     },
     Boxblock(BlockMut<block::Boxblock>),
     Character(BlockMut<block::Character>),
@@ -84,7 +87,11 @@ impl Render<Html> for RoomModeless {
     type Children = ();
     fn render(&self, _: ()) -> Html {
         Self::styled(Html::fragment(vec![match &self.content.data {
-            ContentData::Chat { user, data } => RoomModelessChat::empty(
+            ContentData::Chat {
+                user,
+                data,
+                game_system_class,
+            } => RoomModelessChat::empty(
                 self,
                 None,
                 room_modeless_chat::Props {
@@ -92,6 +99,7 @@ impl Render<Html> for RoomModeless {
                     data: BlockMut::clone(&data),
                     user: ChatUser::clone(&user),
                     client_id: Rc::clone(&self.content.client_id),
+                    game_system_class: Rc::clone(&game_system_class),
                 },
                 Sub::map(|sub| match sub {
                     room_modeless_chat::On::UpdateBlocks { insert, update } => {
