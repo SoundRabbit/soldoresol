@@ -212,6 +212,10 @@ impl Update for Room {
             Msg::SetIs2dMode(is_2d_mode, is_debug_mode) => {
                 self.is_2d_mode = is_2d_mode;
                 self.is_debug_mode = is_debug_mode;
+                self.table
+                    .borrow_mut()
+                    .set_camera_mode(is_2d_mode, is_debug_mode);
+                self.table.borrow_mut().reserve_rendering();
                 Cmd::none()
             }
             Msg::SetBlockIsFixedPosition(block, is_fixed_position) => {
@@ -245,6 +249,43 @@ impl Update for Room {
             Msg::SetGameSystemClass(game_system_class) => {
                 *self.game_system_class.borrow_mut() = Some(game_system_class);
                 Cmd::none()
+            }
+
+            Msg::RemoveCharacter(charcater_id) => {
+                self.world.update(|world| {
+                    world.remove_character(&charcater_id);
+                });
+
+                Cmd::chain(Msg::UpdateBlocks {
+                    insert: set! {},
+                    update: set! { self.world.id(), charcater_id },
+                })
+            }
+
+            Msg::RemoveBoxblock(boxblock_id) => {
+                let scene = unwrap!(self.world.map(|world| BlockMut::clone(world.selecting_scene())); Cmd::none());
+                let mut table = unwrap!(scene.map(|secene| BlockMut::clone(secene.selecting_table())); Cmd::none());
+                table.update(|table| {
+                    table.remove_boxblock(&boxblock_id);
+                });
+
+                Cmd::chain(Msg::UpdateBlocks {
+                    insert: set! {},
+                    update: set! { table.id(), boxblock_id },
+                })
+            }
+
+            Msg::RemoveCraftboard(craftboard_id) => {
+                let scene = unwrap!(self.world.map(|world| BlockMut::clone(world.selecting_scene())); Cmd::none());
+                let mut table = unwrap!(scene.map(|secene| BlockMut::clone(secene.selecting_table())); Cmd::none());
+                table.update(|table| {
+                    table.remove_craftboard(&craftboard_id);
+                });
+
+                Cmd::chain(Msg::UpdateBlocks {
+                    insert: set! {},
+                    update: set! { table.id(), craftboard_id },
+                })
             }
         }
     }

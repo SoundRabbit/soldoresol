@@ -48,6 +48,9 @@ pub enum Msg {
     SetBlockIsFixedPosition(BlockMut<Untyped>, bool),
     SetBlockIsBindToGrid(BlockMut<Untyped>, bool),
     SetGameSystemClass(GameSystemClass),
+    RemoveCharacter(U128Id),
+    RemoveBoxblock(U128Id),
+    RemoveCraftboard(U128Id),
 }
 
 pub enum On {}

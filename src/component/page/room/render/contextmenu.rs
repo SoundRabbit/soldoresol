@@ -64,6 +64,14 @@ impl Room {
                     .unwrap_or(false),
                 BlockMut::clone(&boxblock).untyped(),
             ),
+            Btn::menu(
+                Attributes::new(),
+                Events::new().on_click(self, {
+                    let block_id = boxblock.id();
+                    move |_| Msg::RemoveBoxblock(block_id)
+                }),
+                vec![Html::text("削除")],
+            ),
         ]
     }
 
@@ -106,6 +114,14 @@ impl Room {
                     .unwrap_or(false),
                 BlockMut::clone(&character).untyped(),
             ),
+            Btn::menu(
+                Attributes::new(),
+                Events::new().on_click(self, {
+                    let block_id = character.id();
+                    move |_| Msg::RemoveCharacter(block_id)
+                }),
+                vec![Html::text("削除")],
+            ),
         ]
     }
 
@@ -139,6 +155,14 @@ impl Room {
                     .map(|craftboard| craftboard.is_bind_to_grid())
                     .unwrap_or(false),
                 BlockMut::clone(&craftboard).untyped(),
+            ),
+            Btn::menu(
+                Attributes::new(),
+                Events::new().on_click(self, {
+                    let block_id = craftboard.id();
+                    move |_| Msg::RemoveCraftboard(block_id)
+                }),
+                vec![Html::text("削除")],
             ),
         ]
     }

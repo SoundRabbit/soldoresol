@@ -19,12 +19,32 @@ impl Table {
     pub fn push_boxblock(&mut self, boxblock: BlockMut<Boxblock>) {
         self.boxblocks.push(boxblock);
     }
+    pub fn remove_boxblock(&mut self, block_id: &U128Id) {
+        if let Some(boxblock_idx) = self
+            .boxblocks
+            .iter()
+            .position(|boxblock| boxblock.id() == *block_id)
+        {
+            self.boxblocks.remove(boxblock_idx);
+        }
+    }
+
     pub fn craftboards(&self) -> &Vec<BlockMut<Craftboard>> {
         &self.craftboards
     }
     pub fn push_craftboard(&mut self, craftboard: BlockMut<Craftboard>) {
         self.craftboards.push(craftboard);
     }
+    pub fn remove_craftboard(&mut self, block_id: &U128Id) {
+        if let Some(craftboard_idx) = self
+            .craftboards
+            .iter()
+            .position(|craftboard| craftboard.id() == *block_id)
+        {
+            self.craftboards.remove(craftboard_idx);
+        }
+    }
+
     pub fn default_is_bind_to_grid(&self) -> bool {
         self.default_is_bind_to_grid
     }

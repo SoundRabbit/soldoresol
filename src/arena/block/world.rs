@@ -26,6 +26,16 @@ impl World {
         self.characters.push(character);
     }
 
+    pub fn remove_character(&mut self, block_id: &U128Id) {
+        if let Some(character_idx) = self
+            .characters
+            .iter()
+            .position(|character| character.id() == *block_id)
+        {
+            self.characters.remove(character_idx);
+        }
+    }
+
     pub fn scenes(&self) -> &Vec<BlockMut<Scene>> {
         &self.scenes
     }
