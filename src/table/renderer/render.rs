@@ -79,123 +79,123 @@ impl Renderer {
         let vp_matrix = camera_matrix.vp_matrix(&cs);
         let camera_position = camera_matrix.relative_position();
 
-        if !is_debug_mode {
-            self.screen_frame.bind_self(&self.gl);
+        // if !is_debug_mode {
+        //     self.screen_frame.bind_self(&self.gl);
 
-            self.screen_frame
-                .begin_to_render_frontscreen(&self.gl, &self.tex_table);
-            self.clear();
+        //     self.screen_frame
+        //         .begin_to_render_frontscreen(&self.gl, &self.tex_table);
+        //     self.clear();
 
-            self.screen_frame
-                .begin_to_render_backscreen(&self.gl, &self.tex_table);
-            self.clear();
+        //     self.screen_frame
+        //         .begin_to_render_backscreen(&self.gl, &self.tex_table);
+        //     self.clear();
 
-            self.gl.blend_func_separate(
-                web_sys::WebGlRenderingContext::SRC_ALPHA,
-                web_sys::WebGlRenderingContext::ONE_MINUS_SRC_ALPHA,
-                web_sys::WebGlRenderingContext::ONE,
-                web_sys::WebGlRenderingContext::ONE,
-            );
+        //     self.gl.blend_func_separate(
+        //         web_sys::WebGlRenderingContext::SRC_ALPHA,
+        //         web_sys::WebGlRenderingContext::ONE_MINUS_SRC_ALPHA,
+        //         web_sys::WebGlRenderingContext::ONE,
+        //         web_sys::WebGlRenderingContext::ONE,
+        //     );
 
-            table.map(|table: &block::Table| {
-                self.craftboard_nameplate_mesh.render(
-                    &mut self.gl,
-                    &vp_matrix,
-                    &camera_position,
-                    table
-                        .craftboards()
-                        .iter()
-                        .map(BlockMut::<block::Craftboard>::as_ref),
-                    camera_matrix.is_2d_mode(),
-                    &mut self.tex_table,
-                );
-            });
+        //     table.map(|table: &block::Table| {
+        //         self.craftboard_nameplate_mesh.render(
+        //             &mut self.gl,
+        //             &vp_matrix,
+        //             &camera_position,
+        //             table
+        //                 .craftboards()
+        //                 .iter()
+        //                 .map(BlockMut::<block::Craftboard>::as_ref),
+        //             camera_matrix.is_2d_mode(),
+        //             &mut self.tex_table,
+        //         );
+        //     });
 
-            table.map(|table: &block::Table| {
-                self.craftboard_mesh.render(
-                    &mut self.gl,
-                    &vp_matrix,
-                    &camera_position,
-                    table
-                        .craftboards()
-                        .iter()
-                        .map(BlockMut::<block::Craftboard>::as_ref),
-                    camera_matrix.is_2d_mode(),
-                    &mut self.tex_table,
-                );
-            });
+        //     table.map(|table: &block::Table| {
+        //         self.craftboard_mesh.render(
+        //             &mut self.gl,
+        //             &vp_matrix,
+        //             &camera_position,
+        //             table
+        //                 .craftboards()
+        //                 .iter()
+        //                 .map(BlockMut::<block::Craftboard>::as_ref),
+        //             camera_matrix.is_2d_mode(),
+        //             &mut self.tex_table,
+        //         );
+        //     });
 
-            table.map(|table: &block::Table| {
-                self.boxblock_mesh.render(
-                    &mut self.gl,
-                    &self.id_table,
-                    &vp_matrix,
-                    &camera_position,
-                    table
-                        .boxblocks()
-                        .iter()
-                        .map(BlockMut::<block::Boxblock>::as_ref),
-                    &mesh::boxblock::RenderingMode::View {
-                        lighting: mesh::boxblock::LightingMode::AmbientLight {
-                            direction: &[1.0, -2.0, 3.0],
-                        },
-                        light_color: &crate::libs::color::Pallet::gray(0),
-                        light_intensity: 1.0,
-                    },
-                    camera_matrix.is_2d_mode(),
-                    &mut self.tex_table,
-                );
-            });
+        //     table.map(|table: &block::Table| {
+        //         self.boxblock_mesh.render(
+        //             &mut self.gl,
+        //             &self.id_table,
+        //             &vp_matrix,
+        //             &camera_position,
+        //             table
+        //                 .boxblocks()
+        //                 .iter()
+        //                 .map(BlockMut::<block::Boxblock>::as_ref),
+        //             &mesh::boxblock::RenderingMode::View {
+        //                 lighting: mesh::boxblock::LightingMode::AmbientLight {
+        //                     direction: &[1.0, -2.0, 3.0],
+        //                 },
+        //                 light_color: &crate::libs::color::Pallet::gray(0),
+        //                 light_intensity: 1.0,
+        //             },
+        //             camera_matrix.is_2d_mode(),
+        //             &mut self.tex_table,
+        //         );
+        //     });
 
-            world.map(|world| {
-                self.character_base_mesh.render(
-                    &mut self.gl,
-                    &self.id_table,
-                    &vp_matrix,
-                    &camera_position,
-                    world
-                        .characters()
-                        .iter()
-                        .map(BlockMut::<block::Character>::as_ref),
-                    &mesh::character_base::RenderingMode::View,
-                    camera_matrix.is_2d_mode(),
-                );
-            });
+        //     world.map(|world| {
+        //         self.character_base_mesh.render(
+        //             &mut self.gl,
+        //             &self.id_table,
+        //             &vp_matrix,
+        //             &camera_position,
+        //             world
+        //                 .characters()
+        //                 .iter()
+        //                 .map(BlockMut::<block::Character>::as_ref),
+        //             &mesh::character_base::RenderingMode::View,
+        //             camera_matrix.is_2d_mode(),
+        //         );
+        //     });
 
-            world.map(|world| {
-                table.map(|table: &block::Table| {
-                    self.nameplate_mesh.render(
-                        &mut self.gl,
-                        &vp_matrix,
-                        &camera_position,
-                        &camera_matrix,
-                        table.boxblocks(),
-                        world.characters(),
-                        camera_matrix.is_2d_mode(),
-                        &mut self.tex_table,
-                    );
-                });
-            });
+        //     world.map(|world| {
+        //         table.map(|table: &block::Table| {
+        //             self.nameplate_mesh.render(
+        //                 &mut self.gl,
+        //                 &vp_matrix,
+        //                 &camera_position,
+        //                 &camera_matrix,
+        //                 table.boxblocks(),
+        //                 world.characters(),
+        //                 camera_matrix.is_2d_mode(),
+        //                 &mut self.tex_table,
+        //             );
+        //         });
+        //     });
 
-            world.map(|world| {
-                self.character_mesh.render(
-                    &mut self.gl,
-                    &self.id_table,
-                    &vp_matrix,
-                    &camera_position,
-                    camera_matrix,
-                    world
-                        .characters()
-                        .iter()
-                        .map(BlockMut::<block::Character>::as_ref),
-                    &mesh::character::RenderingMode::View,
-                    camera_matrix.is_2d_mode(),
-                    &mut self.tex_table,
-                );
-            });
+        //     world.map(|world| {
+        //         self.character_mesh.render(
+        //             &mut self.gl,
+        //             &self.id_table,
+        //             &vp_matrix,
+        //             &camera_position,
+        //             camera_matrix,
+        //             world
+        //                 .characters()
+        //                 .iter()
+        //                 .map(BlockMut::<block::Character>::as_ref),
+        //             &mesh::character::RenderingMode::View,
+        //             camera_matrix.is_2d_mode(),
+        //             &mut self.tex_table,
+        //         );
+        //     });
 
-            self.render_frontscreen(&cs);
-        }
+        //     self.render_frontscreen(&cs);
+        // }
 
         // 当たり判定用のオフスクリーンレンダリング
         self.idmap_frame.bind_self(&self.gl);

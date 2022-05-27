@@ -25,6 +25,15 @@ impl Color {
         ]
     }
 
+    pub fn to_f64array(&self) -> [f64; 4] {
+        [
+            (self.red as f64 / 255.0).min(1.0).max(0.0),
+            (self.green as f64 / 255.0).min(1.0).max(0.0),
+            (self.blue as f64 / 255.0).min(1.0).max(0.0),
+            (self.alpha as f64 / 100.0).min(1.0).max(0.0),
+        ]
+    }
+
     pub fn to_u32(&self) -> u32 {
         u32::from_be_bytes([self.alpha, self.red, self.green, self.blue])
     }

@@ -15,5 +15,6 @@ pub mod modeless_list;
 pub mod random_id;
 pub mod select_list;
 pub mod skyway;
+pub mod three;
 pub mod try_ref;
 pub mod type_id;

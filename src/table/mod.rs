@@ -1,16 +1,20 @@
-mod renderer;
-pub mod table_tool;
-mod table_tool_state;
 use crate::arena::{block, ArenaMut, BlockKind, BlockMut, BlockRef};
 use crate::libs::random_id::U128Id;
 use nusa::v_node::v_element::VEvent;
-use renderer::{CameraMatrix, ObjectId, Renderer};
 use std::cell::RefCell;
 use std::collections::HashSet;
 use std::rc::Rc;
+use wasm_bindgen::{prelude::*, JsCast};
+
+mod renderer;
+pub mod table_tool;
+mod table_tool_state;
+mod three;
+
+use renderer::{CameraMatrix, ObjectId, Renderer};
 use table_tool::TableTool;
 use table_tool_state::TableToolState;
-use wasm_bindgen::{prelude::*, JsCast};
+use three::Three;
 
 pub struct UpdatedBlocks {
     pub update: HashSet<U128Id>,
@@ -19,6 +23,7 @@ pub struct UpdatedBlocks {
 
 pub struct Table {
     renderer: Rc<RefCell<Renderer>>,
+    three: Rc<RefCell<Three>>,
     camera_matrix: Rc<RefCell<CameraMatrix>>,
 
     is_2d_mode: bool,
@@ -42,6 +47,7 @@ impl Table {
     pub fn new() -> Self {
         Self {
             renderer: Rc::new(RefCell::new(Renderer::new())),
+            three: Rc::new(RefCell::new(Three::new())),
             camera_matrix: Rc::new(RefCell::new(CameraMatrix::new())),
 
             is_2d_mode: false,
@@ -79,7 +85,7 @@ impl Table {
     }
 
     pub fn canvas(&self) -> Rc<web_sys::HtmlCanvasElement> {
-        self.renderer.borrow().canvas()
+        self.three.borrow().canvas()
     }
 
     pub fn reserve_rendering(&mut self) {
@@ -93,6 +99,7 @@ impl Table {
                 .borrow_mut()
                 .set_is_2d_mode(self.is_2d_mode);
             let renderer = Rc::clone(&self.renderer);
+            let three = Rc::clone(&self.three);
             let camera_matrix = Rc::clone(&self.camera_matrix);
             let grabbed_object_id = if let TableToolState::Selecter(state) = &self.tool_state {
                 state
@@ -108,10 +115,13 @@ impl Table {
             let a = Closure::once(Box::new(move || {
                 renderer.borrow_mut().render(
                     is_debug_mode,
-                    world,
+                    BlockRef::clone(&world),
                     &camera_matrix.borrow(),
                     &grabbed_object_id,
                 );
+                three
+                    .borrow_mut()
+                    .render(BlockRef::clone(&world), &camera_matrix.borrow());
             }));
 
             let _ = web_sys::window()
@@ -125,6 +135,7 @@ impl Table {
     pub fn reset_size(&mut self) {
         self.is_reserve_rendering = true;
         self.renderer.borrow_mut().reset_size();
+        self.three.borrow_mut().reset_size();
     }
 
     fn selecting_table(world: BlockRef<block::World>) -> Option<BlockMut<block::Table>> {

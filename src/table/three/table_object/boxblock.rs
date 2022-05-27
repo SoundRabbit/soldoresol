@@ -1,0 +1,66 @@
+use crate::arena::{block, resource, BlockRef};
+use crate::libs::random_id::U128Id;
+use crate::libs::three;
+use std::collections::{HashMap, HashSet};
+use wasm_bindgen::JsCast;
+
+pub struct Boxblock {
+    geometry_box: three::BoxGeometry,
+    geometry_cylinder: three::CylinderGeometry,
+    meshs: HashMap<U128Id, three::Mesh>,
+}
+
+impl Boxblock {
+    pub fn new() -> Self {
+        Self {
+            geometry_box: three::BoxGeometry::new(1.0, 1.0, 1.0),
+            geometry_cylinder: three::CylinderGeometry::new(0.5, 0.5, 1.0, 16),
+            meshs: HashMap::new(),
+        }
+    }
+
+    pub fn update(
+        &mut self,
+        scene: &three::Scene,
+        boxblocks: impl Iterator<Item = BlockRef<block::Boxblock>>,
+    ) {
+        let mut unused = self.meshs.keys().map(U128Id::clone).collect::<HashSet<_>>();
+
+        for boxblock in boxblocks {
+            let boxblock_id = boxblock.id();
+            unused.remove(&boxblock_id);
+
+            boxblock.map(|boxblock| {
+                if !self.meshs.contains_key(&boxblock_id) {
+                    let material = three::MeshToonMaterial::new();
+                    let mesh = three::Mesh::new(self.get_geometry(boxblock.shape()), &material);
+                    scene.add(&mesh);
+                    self.meshs.insert(U128Id::clone(&boxblock_id), mesh);
+                }
+                if let Some(mesh) = self.meshs.get(&boxblock_id) {
+                    mesh.set_geometry(self.get_geometry(boxblock.shape()));
+                    let [px, py, pz] = boxblock.position();
+                    mesh.position().set(0.0, 0.0, 0.0);
+                    if let Some(material) = mesh.material().dyn_ref::<three::MeshToonMaterial>() {
+                        let [r, g, b, ..] = boxblock.color().to_color().to_f64array();
+                        material.color().set_rgb(r, g, b);
+                    }
+                }
+            });
+        }
+
+        for unused_boxblock_id in unused {
+            if let Some(mesh) = self.meshs.get(&unused_boxblock_id) {
+                scene.remove(&mesh);
+            }
+        }
+    }
+
+    fn get_geometry(&self, shape: block::boxblock::Shape) -> &three::BufferGeometry {
+        match shape {
+            block::boxblock::Shape::Cube => &self.geometry_box,
+            block::boxblock::Shape::Cylinder => &self.geometry_cylinder,
+            _ => &self.geometry_box,
+        }
+    }
+}
