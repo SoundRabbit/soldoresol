@@ -9,6 +9,9 @@ extern "C" {
     #[wasm_bindgen(constructor)]
     pub fn new(parameters: &Object) -> WebGLRenderer;
 
+    #[wasm_bindgen(method, js_name = "setClearAlpha")]
+    pub fn set_clear_alpha(this: &WebGLRenderer, clear_alpha: f64);
+
     #[wasm_bindgen(method, js_name = "setPixelRatio")]
     pub fn set_pixel_ratio(this: &WebGLRenderer, pixel_ratio: f64);
 

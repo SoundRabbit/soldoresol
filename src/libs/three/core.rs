@@ -39,6 +39,9 @@ extern "C" {
     #[wasm_bindgen(method, getter)]
     pub fn position(this: &Object3D) -> Vector3;
 
+    #[wasm_bindgen(method, getter)]
+    pub fn scale(this: &Object3D) -> Vector3;
+
     #[wasm_bindgen(method, setter, js_name = "renderOrder")]
     pub fn set_render_order(this: &Object3D, render_order: f64);
 

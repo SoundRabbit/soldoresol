@@ -37,15 +37,17 @@ impl Three {
         let canvas = Rc::new(canvas);
 
         let camera = Camera::new();
-        (&camera as &three::Camera).rotation().set_order("ZXY");
 
         let raycaster = Raycaster::new();
 
         let scene = three::Scene::new();
 
         let renderer = three::WebGLRenderer::new(&object! {
-            "canvas": canvas.as_ref()
+            "canvas": canvas.as_ref(),
+            "alpha": true,
         });
+
+        renderer.set_clear_alpha(0.0);
 
         let ambient_light = three::AmbientLight::new();
         scene.add(&ambient_light);
@@ -136,7 +138,7 @@ impl Three {
         let origin = ray.origin();
         let direction = ray.direction();
 
-        let scale = -origin.z() / direction.z();
+        let scale = (0.0 - origin.z()) / direction.z();
         let x = origin.x() + direction.x() * scale;
         let y = origin.y() + direction.y() * scale;
         let z = 0.0;
@@ -187,6 +189,7 @@ impl Three {
 
         self.camera
             .set_aspect(self.canvas_size[0] / self.canvas_size[1]);
+        self.camera.update();
 
         self.renderer.render(&self.scene, &self.camera);
     }

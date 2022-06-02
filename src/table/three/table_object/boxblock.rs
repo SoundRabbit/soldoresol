@@ -49,6 +49,8 @@ impl Boxblock {
                     mesh.data.set_geometry(self.get_geometry(boxblock.shape()));
                     let [px, py, pz] = boxblock.position().clone();
                     mesh.data.position().set(px, py, pz);
+                    let [sx, sy, sz] = boxblock.size().clone();
+                    mesh.data.scale().set(sx, sy, sz);
                     let [r, g, b, ..] = boxblock.color().to_color().to_f64array();
                     mesh.material.color().set_rgb(r, g, b);
                 }
