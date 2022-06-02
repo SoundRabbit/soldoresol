@@ -30,6 +30,28 @@ extern "C" {
 
 #[wasm_bindgen(module = "three")]
 extern "C" {
+    pub type Ray;
+
+    #[wasm_bindgen(method, getter)]
+    pub fn origin(this: &Ray) -> Vector3;
+
+    #[wasm_bindgen(method, getter)]
+    pub fn direction(this: &Ray) -> Vector3;
+}
+
+#[wasm_bindgen(module = "three")]
+extern "C" {
+    pub type Vector2;
+
+    #[wasm_bindgen(constructor)]
+    pub fn new(x: f64, y: f64) -> Vector2;
+
+    #[wasm_bindgen(method, js_name = "set")]
+    pub fn set(this: &Vector2, x: f64, y: f64);
+}
+
+#[wasm_bindgen(module = "three")]
+extern "C" {
     pub type Vector3;
 
     #[wasm_bindgen(constructor)]
@@ -37,4 +59,13 @@ extern "C" {
 
     #[wasm_bindgen(method, js_name = "set")]
     pub fn set(this: &Vector3, x: f64, y: f64, z: f64);
+
+    #[wasm_bindgen(method, getter)]
+    pub fn x(this: &Vector3) -> f64;
+
+    #[wasm_bindgen(method, getter)]
+    pub fn y(this: &Vector3) -> f64;
+
+    #[wasm_bindgen(method, getter)]
+    pub fn z(this: &Vector3) -> f64;
 }

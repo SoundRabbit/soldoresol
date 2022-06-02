@@ -1,4 +1,4 @@
-use crate::arena::{block, ArenaMut, BlockKind, BlockMut, BlockRef};
+use crate::arena::{block, ArenaMut, ArenaRef, BlockKind, BlockMut, BlockRef};
 use crate::libs::random_id::U128Id;
 use nusa::v_node::v_element::VEvent;
 use std::cell::RefCell;
@@ -6,12 +6,10 @@ use std::collections::HashSet;
 use std::rc::Rc;
 use wasm_bindgen::{prelude::*, JsCast};
 
-mod renderer;
 pub mod table_tool;
 mod table_tool_state;
 mod three;
 
-use renderer::{CameraMatrix, ObjectId, Renderer};
 use table_tool::TableTool;
 use table_tool_state::TableToolState;
 use three::Three;
@@ -22,12 +20,9 @@ pub struct UpdatedBlocks {
 }
 
 pub struct Table {
-    renderer: Rc<RefCell<Renderer>>,
     three: Rc<RefCell<Three>>,
-    camera_matrix: Rc<RefCell<CameraMatrix>>,
 
     is_2d_mode: bool,
-    is_debug_mode: bool,
 
     camera_state: CameraState,
     tool_state: TableToolState,
@@ -46,12 +41,9 @@ struct CameraState {
 impl Table {
     pub fn new() -> Self {
         Self {
-            renderer: Rc::new(RefCell::new(Renderer::new())),
             three: Rc::new(RefCell::new(Three::new())),
-            camera_matrix: Rc::new(RefCell::new(CameraMatrix::new())),
 
             is_2d_mode: false,
-            is_debug_mode: false,
 
             camera_state: CameraState {
                 is_rotating: false,
@@ -68,9 +60,8 @@ impl Table {
         }
     }
 
-    pub fn set_camera_mode(&mut self, is_2d_mode: bool, is_debug_mode: bool) {
+    pub fn set_camera_mode(&mut self, is_2d_mode: bool) {
         self.is_2d_mode = is_2d_mode;
-        self.is_debug_mode = is_debug_mode;
     }
 
     pub fn take_updated(&mut self) -> UpdatedBlocks {
@@ -95,33 +86,10 @@ impl Table {
     pub fn render_reserved(&mut self, world: BlockRef<block::World>) {
         if self.is_reserve_rendering {
             self.is_reserve_rendering = false;
-            self.camera_matrix
-                .borrow_mut()
-                .set_is_2d_mode(self.is_2d_mode);
-            let renderer = Rc::clone(&self.renderer);
             let three = Rc::clone(&self.three);
-            let camera_matrix = Rc::clone(&self.camera_matrix);
-            let grabbed_object_id = if let TableToolState::Selecter(state) = &self.tool_state {
-                state
-                    .grabbed_object
-                    .as_ref()
-                    .map(|(_, block_id)| U128Id::clone(block_id))
-                    .unwrap_or(U128Id::none())
-            } else {
-                U128Id::none()
-            };
-            let is_debug_mode = self.is_debug_mode;
 
             let a = Closure::once(Box::new(move || {
-                renderer.borrow_mut().render(
-                    is_debug_mode,
-                    BlockRef::clone(&world),
-                    &camera_matrix.borrow(),
-                    &grabbed_object_id,
-                );
-                three
-                    .borrow_mut()
-                    .render(BlockRef::clone(&world), &camera_matrix.borrow());
+                three.borrow_mut().render(BlockRef::clone(&world));
             }));
 
             let _ = web_sys::window()
@@ -134,7 +102,6 @@ impl Table {
 
     pub fn reset_size(&mut self) {
         self.is_reserve_rendering = true;
-        self.renderer.borrow_mut().reset_size();
         self.three.borrow_mut().reset_size();
     }
 
@@ -198,12 +165,10 @@ impl Table {
         option: &table_tool::Boxblock,
     ) {
         let mut table = unwrap!(Self::selecting_table(world.as_ref()));
-        let renderer = self.renderer.as_ref();
-        let (p, n) = renderer.borrow().get_focused_position(
-            &self.camera_matrix.borrow(),
-            mouse_coord[0],
-            mouse_coord[1],
-        );
+        let (p, n) = self
+            .three
+            .borrow_mut()
+            .get_focused_position(mouse_coord, &self.ignored_id());
         let n = Self::n_cube(&n, &option.size);
         let p = [p[0] + n[0], p[1] + n[1], p[2] + n[2]];
 
@@ -239,20 +204,14 @@ impl Table {
         option: &table_tool::Character,
     ) {
         let table = unwrap!(Self::selecting_table(world.as_ref()));
-        let renderer = self.renderer.as_ref();
-        let (p, _) = renderer.borrow().get_focused_position(
-            &self.camera_matrix.borrow(),
-            mouse_coord[0],
-            mouse_coord[1],
-        );
-        let n =
-            self.camera_matrix
-                .borrow()
-                .position_vec_n(&[p[0] as f32, p[1] as f32, p[2] as f32]);
+        let (p, n) = self
+            .three
+            .borrow_mut()
+            .get_focused_position(mouse_coord, &self.ignored_id());
         let p = [
-            p[0] + n[0] as f64 / 128.0,
-            p[1] + n[1] as f64 / 128.0,
-            p[2] + n[2] as f64 / 128.0,
+            p[0] + n[0] / 128.0,
+            p[1] + n[1] / 128.0,
+            p[2] + n[2] / 128.0,
         ];
 
         let is_bind_to_grid = table
@@ -288,12 +247,10 @@ impl Table {
         option: &table_tool::Craftboard,
     ) {
         let mut table = unwrap!(Self::selecting_table(world.as_ref()));
-        let renderer = self.renderer.as_ref();
-        let (p, _) = renderer.borrow().get_focused_position(
-            &self.camera_matrix.borrow(),
-            mouse_coord[0],
-            mouse_coord[1],
-        );
+        let (p, _) = self
+            .three
+            .borrow_mut()
+            .get_focused_position(mouse_coord, &self.ignored_id());
 
         let is_bind_to_grid = table
             .map(|table| table.default_is_bind_to_grid())
@@ -315,14 +272,20 @@ impl Table {
     pub fn rotate_camera(&mut self, movement: &[f64; 2]) {
         let h_rot = -movement[0] / 500.0;
         let v_rot = -movement[1] / 500.0;
+        let rotation = self.three.borrow().camera().rotation().clone();
 
-        let z_rot = self.camera_matrix.borrow().z_axis_rotation() + h_rot as f32;
-        let x_rot = self.camera_matrix.borrow().x_axis_rotation() + v_rot as f32;
+        let x_rot = rotation[0] + v_rot;
+        let z_rot = rotation[2] + h_rot;
 
-        self.camera_matrix.borrow_mut().set_z_axis_rotation(z_rot);
-        self.camera_matrix
+        self.three
             .borrow_mut()
-            .set_x_axis_rotation(x_rot, false);
+            .camera_mut()
+            .set_x_axis_rotation(x_rot);
+
+        self.three
+            .borrow_mut()
+            .camera_mut()
+            .set_z_axis_rotation(z_rot);
 
         self.reserve_rendering();
     }
@@ -331,25 +294,23 @@ impl Table {
         let h_mov = -movement[0] / 50.0;
         let v_mov = movement[1] / 50.0;
 
-        let p = {
-            let camera_matrix = self.camera_matrix.borrow();
-            let p = camera_matrix.movement();
-            [p[0] + h_mov as f32, p[1] + v_mov as f32, p[2]]
-        };
+        let p = self.three.borrow().camera().position().clone();
 
-        self.camera_matrix.borrow_mut().set_movement(p);
+        self.three
+            .borrow_mut()
+            .camera_mut()
+            .set_position([p[0] + h_mov, p[1] + v_mov, p[2]]);
 
         self.reserve_rendering();
     }
 
     pub fn move_camera_z(&mut self, movement: f64) {
-        let p = {
-            let camera_matrix = self.camera_matrix.borrow();
-            let p = camera_matrix.movement();
-            [p[0], p[1], p[2] + movement as f32 / 16.0]
-        };
+        let p = self.three.borrow().camera().position().clone();
 
-        self.camera_matrix.borrow_mut().set_movement(p);
+        self.three
+            .borrow_mut()
+            .camera_mut()
+            .set_position([p[0], p[1], p[2] + movement / 16.0]);
 
         self.reserve_rendering();
     }
@@ -360,14 +321,13 @@ impl Table {
         _world: BlockMut<block::World>,
         mouse_coord: &[f64; 2],
     ) {
+        let ignored_id = self.ignored_id();
         let (block_kind, block_id) =
             unwrap!(self.tool_state.selecter_mut().grabbed_object.as_ref());
-        let renderer = self.renderer.as_ref();
-        let (p, n) = renderer.borrow().get_focused_position(
-            &self.camera_matrix.borrow(),
-            mouse_coord[0],
-            mouse_coord[1],
-        );
+        let (p, n) = self
+            .three
+            .borrow_mut()
+            .get_focused_position(mouse_coord, &ignored_id);
 
         match block_kind {
             BlockKind::Boxblock => {
@@ -487,7 +447,8 @@ impl Table {
             } else {
                 match tool {
                     TableTool::Selecter(..) => {
-                        let (block_kind, block_id) = self.focused_block(page_x, page_y);
+                        let (block_kind, block_id) =
+                            self.focused_block(page_x, page_y, arena.as_ref());
                         let mut camera_is_moving = self.camera_state.is_moving;
 
                         match block_kind {
@@ -593,15 +554,24 @@ impl Table {
         self.last_cursor_position = mouse_coord;
     }
 
-    pub fn focused_block(&self, page_x: f64, page_y: f64) -> (BlockKind, U128Id) {
+    pub fn focused_block(&self, page_x: f64, page_y: f64, arena: ArenaRef) -> (BlockKind, U128Id) {
         let [px_x, px_y] = self.mouse_coord(page_x, page_y);
-        let renderer = self.renderer.as_ref();
+        let block_id = self
+            .three
+            .borrow_mut()
+            .get_focused_object(&[px_x, px_y], &self.ignored_id());
+        (arena.kind_of(&block_id), block_id)
+    }
 
-        match renderer.borrow().get_object_id(px_x, px_y) {
-            ObjectId::Boxblock(b_id, ..) => (BlockKind::Boxblock, b_id),
-            ObjectId::Character(b_id, ..) => (BlockKind::Character, b_id),
-            ObjectId::Craftboard(b_id, ..) => (BlockKind::Craftboard, b_id),
-            _ => (BlockKind::None, U128Id::none()),
+    pub fn ignored_id(&self) -> U128Id {
+        if let TableToolState::Selecter(state) = &self.tool_state {
+            state
+                .grabbed_object
+                .as_ref()
+                .map(|(_, block_id)| U128Id::clone(block_id))
+                .unwrap_or(U128Id::none())
+        } else {
+            U128Id::none()
         }
     }
 }

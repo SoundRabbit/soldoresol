@@ -5,21 +5,20 @@ use std::collections::{HashMap, HashSet};
 use wasm_bindgen::JsCast;
 
 struct Mesh {
+    size: [i32; 2],
     material: three::MeshStandardMaterial,
     data: three::Mesh,
 }
 
-pub struct Boxblock {
-    geometry_box: three::BoxGeometry,
-    geometry_cylinder: three::CylinderGeometry,
+pub struct Craftboard {
+    geometry_square: three::PlaneGeometry,
     meshs: HashMap<U128Id, Mesh>,
 }
 
 impl Boxblock {
     pub fn new() -> Self {
         Self {
-            geometry_box: three::BoxGeometry::new(1.0, 1.0, 1.0),
-            geometry_cylinder: three::CylinderGeometry::new(0.5, 0.5, 1.0, 16),
+            geometry_square: three::BoxGeometry::new(1.0, 1.0, 1.0),
             meshs: HashMap::new(),
         }
     }
@@ -38,12 +37,15 @@ impl Boxblock {
             boxblock.map(|boxblock| {
                 if !self.meshs.contains_key(&boxblock_id) {
                     let material = three::MeshStandardMaterial::new(&object! {});
-                    let data = three::Mesh::new(self.get_geometry(boxblock.shape()), &material);
-                    data.set_render_order(super::ORDER_BOXBLOCK);
-                    data.set_user_data(&boxblock_id.to_jsvalue());
-                    scene.add(&data);
-                    self.meshs
-                        .insert(U128Id::clone(&boxblock_id), Mesh { material, data });
+                    let mesh = three::Mesh::new(self.get_geometry(boxblock.shape()), &material);
+                    scene.add(&mesh);
+                    self.meshs.insert(
+                        U128Id::clone(&boxblock_id),
+                        Mesh {
+                            material,
+                            data: mesh,
+                        },
+                    );
                 }
                 if let Some(mesh) = self.meshs.get(&boxblock_id) {
                     mesh.data.set_geometry(self.get_geometry(boxblock.shape()));

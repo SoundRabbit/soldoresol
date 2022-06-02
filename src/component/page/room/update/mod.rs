@@ -166,10 +166,11 @@ impl Update for Room {
             }
             Msg::OnTableContextmenu(e) => {
                 e.prevent_default();
-                let (block_kind, block_id) = self
-                    .table
-                    .borrow()
-                    .focused_block(e.page_x() as f64, e.page_y() as f64);
+                let (block_kind, block_id) = self.table.borrow().focused_block(
+                    e.page_x() as f64,
+                    e.page_y() as f64,
+                    self.arena.as_ref(),
+                );
                 match block_kind {
                     BlockKind::Boxblock => {
                         if let Some(block) = self.arena.get_mut::<block::Boxblock>(&block_id) {
@@ -212,9 +213,6 @@ impl Update for Room {
             Msg::SetIs2dMode(is_2d_mode, is_debug_mode) => {
                 self.is_2d_mode = is_2d_mode;
                 self.is_debug_mode = is_debug_mode;
-                self.table
-                    .borrow_mut()
-                    .set_camera_mode(is_2d_mode, is_debug_mode);
                 self.table.borrow_mut().reserve_rendering();
                 Cmd::none()
             }

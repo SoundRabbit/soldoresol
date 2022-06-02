@@ -65,7 +65,7 @@ impl U128Id {
     }
 
     pub fn to_jsvalue(&self) -> JsValue {
-        JsValue::from(self.0.to_string())
+        JsValue::from(format!("{}", self))
     }
 
     pub fn from_jsvalue(val: &JsValue) -> Option<Self> {
