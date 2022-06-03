@@ -111,6 +111,7 @@ features = [
     "WebGlProgram",
     "WebGlRenderbuffer",
     "WebGlRenderingContext",
+    "WebGl2RenderingContext",
     "WebGlShader",
     "WebGlTexture",
     "WebGlUniformLocation",

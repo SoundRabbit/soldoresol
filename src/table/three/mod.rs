@@ -8,20 +8,29 @@ use wasm_bindgen::JsCast;
 pub mod camera;
 pub mod raycaster;
 pub mod table_object;
+pub mod texture_table;
 
 pub use camera::Camera;
 pub use raycaster::Raycaster;
+pub use texture_table::TextureTable;
 
 pub struct Three {
     canvas: Rc<web_sys::HtmlCanvasElement>,
     camera: Camera,
     raycaster: Raycaster,
+    texture_table: TextureTable,
     scene: three::Scene,
     renderer: three::WebGLRenderer,
     object_boxblock: table_object::Boxblock,
-    ambient_light: three::AmbientLight,
+    object_craftboard: table_object::Craftboard,
+    light: CommonLight,
     device_pixel_ratio: f64,
     canvas_size: [f64; 2],
+}
+
+struct CommonLight {
+    ambient_light: three::AmbientLight,
+    directional_light: three::DirectionalLight,
 }
 
 impl Three {
@@ -50,7 +59,12 @@ impl Three {
         renderer.set_clear_alpha(0.0);
 
         let ambient_light = three::AmbientLight::new();
+        ambient_light.set_intensity(0.3);
         scene.add(&ambient_light);
+
+        let directional_light = three::DirectionalLight::new();
+        directional_light.position().set(3.0, -4.0, 5.0);
+        scene.add(&directional_light);
 
         let device_pixel_ratio = web_sys::window().unwrap().device_pixel_ratio();
 
@@ -58,10 +72,15 @@ impl Three {
             canvas,
             camera,
             raycaster,
+            texture_table: TextureTable::new(),
             scene,
             renderer,
             object_boxblock: table_object::Boxblock::new(),
-            ambient_light,
+            object_craftboard: table_object::Craftboard::new(),
+            light: CommonLight {
+                ambient_light,
+                directional_light,
+            },
             device_pixel_ratio,
             canvas_size: [1.0, 1.0],
         }
@@ -124,6 +143,8 @@ impl Three {
                 .and_then(|x| x.dyn_into::<three::Vector3>().ok());
             let face = object
                 .get("face")
+                .and_then(|x| x.dyn_into::<Object>().ok())
+                .and_then(|x| x.get("normal"))
                 .and_then(|x| x.dyn_into::<three::Vector3>().ok());
 
             if let Some((point, face)) = join_some!(point, face) {
@@ -150,8 +171,9 @@ impl Three {
         let w = bb.width();
         let h = bb.height();
 
-        self.renderer.set_pixel_ratio(self.device_pixel_ratio);
-        self.renderer.set_size(w, h);
+        self.renderer.set_pixel_ratio(1.0);
+        self.renderer
+            .set_size(w * self.device_pixel_ratio, h * self.device_pixel_ratio);
 
         self.canvas_size = [w, h];
     }
@@ -179,6 +201,14 @@ impl Three {
                 table
             })
             .unwrap_or(BlockRef::<block::Table>::none());
+
+        table.map(|table| {
+            self.object_craftboard.update(
+                &mut self.texture_table,
+                &self.scene,
+                table.craftboards().iter().map(|block| block.as_ref()),
+            );
+        });
 
         table.map(|table| {
             self.object_boxblock.update(

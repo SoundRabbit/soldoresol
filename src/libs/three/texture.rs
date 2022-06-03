@@ -9,4 +9,6 @@ extern "C" {
 
     #[wasm_bindgen(constructor)]
     pub fn new() -> Texture;
+    #[wasm_bindgen(constructor)]
+    pub fn from_image(image: &web_sys::HtmlImageElement) -> Texture;
 }

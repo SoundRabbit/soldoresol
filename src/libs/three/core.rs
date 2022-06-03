@@ -9,6 +9,9 @@ extern "C" {
 
     #[wasm_bindgen(constructor)]
     pub fn new() -> BufferGeometry;
+
+    #[wasm_bindgen(method, js_name = "setFromPoints")]
+    pub fn set_from_points(this: &BufferGeometry, points: &js_sys::Array) -> BufferGeometry;
 }
 
 #[wasm_bindgen(module = "three")]

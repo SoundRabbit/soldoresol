@@ -1,7 +1,8 @@
 pub mod boxblock;
+pub mod craftboard;
 
 pub use boxblock::Boxblock;
+pub use craftboard::Craftboard;
 
-const ORDER_CRAFTBOARD_GRID: f64 = 0.0;
-const ORDER_CRAFTBOARD_TEXTURE: f64 = 1.0;
-const ORDER_BOXBLOCK: f64 = 10.0;
+const ORDER_BOXBLOCK: f64 = 1.0;
+const ORDER_CRAFTBOARD: f64 = 10.0;

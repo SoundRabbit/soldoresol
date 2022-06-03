@@ -5,6 +5,33 @@ use super::{BufferGeometry, Material, Object3D};
 #[wasm_bindgen(module = "three")]
 extern "C" {
     #[wasm_bindgen(extends = Object3D)]
+    pub type Group;
+
+    #[wasm_bindgen(constructor)]
+    pub fn new() -> Group;
+}
+
+#[wasm_bindgen(module = "three")]
+extern "C" {
+    #[wasm_bindgen(extends = Object3D)]
+    pub type Line;
+}
+
+#[wasm_bindgen(module = "three")]
+extern "C" {
+    #[wasm_bindgen(extends = Object3D)]
+    pub type LineSegments;
+
+    #[wasm_bindgen(constructor)]
+    pub fn new(geometry: &BufferGeometry, material: &Material) -> LineSegments;
+
+    #[wasm_bindgen(method, setter, js_name = "geometry")]
+    pub fn set_geometry(this: &LineSegments, geometry: &BufferGeometry);
+}
+
+#[wasm_bindgen(module = "three")]
+extern "C" {
+    #[wasm_bindgen(extends = Object3D)]
     pub type Mesh;
 
     #[wasm_bindgen(constructor)]

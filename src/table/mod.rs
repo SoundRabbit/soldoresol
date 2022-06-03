@@ -294,23 +294,23 @@ impl Table {
         let h_mov = -movement[0] / 50.0;
         let v_mov = movement[1] / 50.0;
 
-        let p = self.three.borrow().camera().position().clone();
+        let p = self.three.borrow().camera().movement().clone();
 
         self.three
             .borrow_mut()
             .camera_mut()
-            .set_position([p[0] + h_mov, p[1] + v_mov, p[2]]);
+            .set_movement([p[0] + h_mov, p[1] + v_mov, p[2]]);
 
         self.reserve_rendering();
     }
 
     pub fn move_camera_z(&mut self, movement: f64) {
-        let p = self.three.borrow().camera().position().clone();
+        let p = self.three.borrow().camera().movement().clone();
 
         self.three
             .borrow_mut()
             .camera_mut()
-            .set_position([p[0], p[1], p[2] + movement / 16.0]);
+            .set_movement([p[0], p[1], p[2] + movement / 16.0]);
 
         self.reserve_rendering();
     }

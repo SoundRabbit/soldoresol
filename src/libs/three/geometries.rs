@@ -24,3 +24,12 @@ extern "C" {
         radial_segements: i32,
     ) -> CylinderGeometry;
 }
+
+#[wasm_bindgen(module = "three")]
+extern "C" {
+    #[wasm_bindgen(extends = BufferGeometry)]
+    pub type PlaneGeometry;
+
+    #[wasm_bindgen(constructor)]
+    pub fn new(width: f64, height: f64) -> PlaneGeometry;
+}

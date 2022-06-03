@@ -1,6 +1,6 @@
 use wasm_bindgen::prelude::*;
 
-use super::{Color, Object3D};
+use super::{Color, Object3D, Vector3};
 
 #[wasm_bindgen(module = "three")]
 extern "C" {
@@ -9,6 +9,18 @@ extern "C" {
 
     #[wasm_bindgen(constructor)]
     pub fn new() -> AmbientLight;
+}
+
+#[wasm_bindgen(module = "three")]
+extern "C" {
+    #[wasm_bindgen(extends = Light)]
+    pub type DirectionalLight;
+
+    #[wasm_bindgen(constructor)]
+    pub fn new() -> DirectionalLight;
+
+    #[wasm_bindgen(method, getter)]
+    pub fn position(this: &DirectionalLight) -> Vector3;
 }
 
 #[wasm_bindgen(module = "three")]
