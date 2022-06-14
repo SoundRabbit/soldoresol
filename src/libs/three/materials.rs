@@ -29,6 +29,9 @@ extern "C" {
     #[wasm_bindgen(extends = EventDispatcher)]
     pub type Material;
 
+    #[wasm_bindgen(method, setter, js_name = "needsUpdate")]
+    pub fn set_needs_update(this: &Material, needs_update: bool);
+
     #[wasm_bindgen(method, setter, js_name = "opacity")]
     pub fn set_opacity(this: &Material, opacity: f64);
 

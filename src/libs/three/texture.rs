@@ -9,6 +9,13 @@ extern "C" {
 
     #[wasm_bindgen(constructor)]
     pub fn new() -> Texture;
+
     #[wasm_bindgen(constructor)]
-    pub fn from_image(image: &web_sys::HtmlImageElement) -> Texture;
+    pub fn new_with_image(image: &web_sys::HtmlImageElement) -> Texture;
+
+    #[wasm_bindgen(method, setter, js_name = "needsUpdate")]
+    pub fn set_needs_update(this: &Texture, needs_update: bool);
+
+    #[wasm_bindgen(method, setter, js_name = "wrapS")]
+    pub fn set_wrap_s(this: &Texture, wrap_s: i32);
 }

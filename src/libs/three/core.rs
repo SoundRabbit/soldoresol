@@ -4,11 +4,46 @@ use super::{Camera, Euler, Ray, Vector2, Vector3};
 
 #[wasm_bindgen(module = "three")]
 extern "C" {
+    pub type BufferAttribute;
+
+    #[wasm_bindgen(constructor)]
+    pub fn new_with_f32array(
+        array: &js_sys::Float32Array,
+        item_size: u32,
+        normalized: bool,
+    ) -> BufferAttribute;
+
+    #[wasm_bindgen(constructor)]
+    pub fn new_with_u16array(
+        array: &js_sys::Uint16Array,
+        item_size: u32,
+        normalized: bool,
+    ) -> BufferAttribute;
+
+    #[wasm_bindgen(method, getter, js_name = "array")]
+    pub fn array_as_f32array(this: &BufferAttribute) -> js_sys::Float32Array;
+}
+
+#[wasm_bindgen(module = "three")]
+extern "C" {
     #[wasm_bindgen(extends = EventDispatcher)]
     pub type BufferGeometry;
 
     #[wasm_bindgen(constructor)]
     pub fn new() -> BufferGeometry;
+
+    #[wasm_bindgen(method, js_name = "getAttribute")]
+    pub fn get_attribute(this: &BufferGeometry, name: &str) -> BufferAttribute;
+
+    #[wasm_bindgen(method, js_name = "setAttribute")]
+    pub fn set_attribute(
+        this: &BufferGeometry,
+        name: &str,
+        attribute: &BufferAttribute,
+    ) -> BufferGeometry;
+
+    #[wasm_bindgen(method, js_name = "setIndex")]
+    pub fn set_index(this: &BufferGeometry, index: &BufferAttribute) -> BufferGeometry;
 
     #[wasm_bindgen(method, js_name = "setFromPoints")]
     pub fn set_from_points(this: &BufferGeometry, points: &js_sys::Array) -> BufferGeometry;

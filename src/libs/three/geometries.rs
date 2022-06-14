@@ -28,6 +28,15 @@ extern "C" {
 #[wasm_bindgen(module = "three")]
 extern "C" {
     #[wasm_bindgen(extends = BufferGeometry)]
+    pub type IcosahedronGeometry;
+
+    #[wasm_bindgen(constructor)]
+    pub fn new(radius: f64, detail: i32) -> IcosahedronGeometry;
+}
+
+#[wasm_bindgen(module = "three")]
+extern "C" {
+    #[wasm_bindgen(extends = BufferGeometry)]
     pub type PlaneGeometry;
 
     #[wasm_bindgen(constructor)]

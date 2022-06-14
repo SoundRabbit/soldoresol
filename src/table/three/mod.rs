@@ -212,6 +212,7 @@ impl Three {
 
         table.map(|table| {
             self.object_boxblock.update(
+                &mut self.texture_table,
                 &self.scene,
                 table.boxblocks().iter().map(|block| block.as_ref()),
             );

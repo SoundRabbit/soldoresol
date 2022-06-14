@@ -7,7 +7,7 @@ use wasm_bindgen::JsCast;
 
 struct Mesh {
     size: [i32; 2],
-    grid_material: three::LineDashedMaterial,
+    grid_material: three::LineBasicMaterial,
     grid_data: three::LineSegments,
     texture_material: three::MeshBasicMaterial,
     texture_data: three::Mesh,
@@ -15,14 +15,14 @@ struct Mesh {
 }
 
 pub struct Craftboard {
-    geometry_square: three::PlaneGeometry,
+    geometry_square: three::BufferGeometry,
     meshs: HashMap<U128Id, Mesh>,
 }
 
 impl Craftboard {
     pub fn new() -> Self {
         Self {
-            geometry_square: three::PlaneGeometry::new(1.0, 1.0),
+            geometry_square: Self::create_texture_geometry(),
             meshs: HashMap::new(),
         }
     }
@@ -47,9 +47,8 @@ impl Craftboard {
                     sz_f[2].round() as i32,
                 ];
                 if !self.meshs.contains_key(&craftboard_id) {
-                    let grid_material = three::LineDashedMaterial::new(&object! {
-                        "dashSize": 0.15,
-                        "gapSize": 0.1
+                    let grid_material = three::LineBasicMaterial::new(&object! {
+                        "transparent": true
                     });
                     grid_material.set_stencil_write(true);
                     grid_material.set_stencil_func(web_sys::WebGl2RenderingContext::ALWAYS);
@@ -64,7 +63,10 @@ impl Craftboard {
                     );
                     grid_data.set_render_order(0.0);
 
-                    let texture_material = three::MeshBasicMaterial::new(&object! {});
+                    let texture_material = three::MeshBasicMaterial::new(&object! {
+                        "transparent": true
+                    });
+                    texture_material.color().set_rgb(1.0, 1.0, 1.0);
                     texture_material.set_stencil_write(true);
                     texture_material.set_stencil_func(web_sys::WebGl2RenderingContext::EQUAL);
                     texture_material.set_stencil_ref(0);
@@ -107,12 +109,14 @@ impl Craftboard {
                         .scale()
                         .set(sz_f[0] + 0.02, sz_f[1] + 0.02, sz_f[2] + 0.02);
 
-                    let [r, g, b, ..] = craftboard.grid_color().to_color().to_f64array();
+                    let [r, g, b, a] = craftboard.grid_color().to_color().to_f64array();
                     mesh.grid_material.color().set_rgb(r, g, b);
+                    mesh.grid_material.set_opacity(a);
 
                     if let Some(texture) = &craftboard.textures().nz {
                         if let Some(texture) = texture_table.load_image(BlockRef::clone(&texture)) {
                             mesh.texture_material.set_map(&texture);
+                            mesh.texture_material.set_needs_update(true);
                         }
                     }
                 }
@@ -147,5 +151,37 @@ impl Craftboard {
         }
 
         three::BufferGeometry::new().set_from_points(&points)
+    }
+
+    fn create_texture_geometry() -> three::BufferGeometry {
+        let points = js_sys::Float32Array::from(
+            [
+                [0.5, 0.5, 0.0],
+                [-0.5, 0.5, 0.0],
+                [-0.5, -0.5, 0.0],
+                [0.5, -0.5, 0.0],
+            ]
+            .concat()
+            .as_slice(),
+        );
+        let uv = js_sys::Float32Array::from(
+            [[1.0, 1.0], [0.0, 1.0], [0.0, 0.0], [1.0, 0.0]]
+                .concat()
+                .as_slice(),
+        );
+        let index = js_sys::Uint16Array::from([0, 1, 2, 2, 3, 0].as_ref());
+
+        let geometry = three::BufferGeometry::new();
+        geometry.set_attribute(
+            "position",
+            &three::BufferAttribute::new_with_f32array(&points, 3, false),
+        );
+        geometry.set_attribute(
+            "uv",
+            &three::BufferAttribute::new_with_f32array(&uv, 2, false),
+        );
+        geometry.set_index(&three::BufferAttribute::new_with_u16array(&index, 1, false));
+
+        geometry
     }
 }

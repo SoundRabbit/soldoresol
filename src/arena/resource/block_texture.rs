@@ -50,8 +50,8 @@ impl LoadFrom<([u32; 2], [BlockRef<ImageData>; 6])> for BlockTexture {
             [BlockRef<ImageData>; 6],
         ),
     ) -> Option<Self> {
-        let width_f = width as f64;
-        let height_f = height as f64;
+        let cw = width as f64;
+        let ch = height as f64;
 
         let window = unwrap!(web_sys::window(); None);
         let document = unwrap!(window.document(); None);
@@ -62,13 +62,24 @@ impl LoadFrom<([u32; 2], [BlockRef<ImageData>; 6])> for BlockTexture {
 
         let context = unwrap!(element.get_context("2d").ok().unwrap_or(None); None);
         let context = unwrap!(context.dyn_into::<web_sys::CanvasRenderingContext2d>().ok(); None);
+        let ctx = context;
 
-        draw_texture(&context, width_f, height_f, &img_pz, 0.25 * 0.0, 0.0);
-        draw_texture(&context, width_f, height_f, &img_ny, 0.25 * 0.0, 0.35);
-        draw_texture(&context, width_f, height_f, &img_px, 0.25 * 1.0, 0.35);
-        draw_texture(&context, width_f, height_f, &img_py, 0.25 * 2.0, 0.35);
-        draw_texture(&context, width_f, height_f, &img_nx, 0.25 * 3.0, 0.35);
-        draw_texture(&context, width_f, height_f, &img_nz, 0.25 * 0.0, 0.7);
+        //テクスチャ座標用のメモ
+        //[0.00,0.00][0.25,0.00][0.50,0.00][0.75,0.00][1.00,0.00]
+        //[0.00,0.25][0.25,0.25][0.50,0.25][0.75,0.25][1.00,0.25]
+        //[0.00,0.75][0.25,0.75][0.50,0.75][0.75,0.75][1.00,0.75]
+        //[0.00,1.00][0.25,1.00][0.50,1.00][0.75,1.00][1.00,1.00]
+
+        //PZ PZ PZ PZ
+        //NY PX PY NX
+        //NZ NZ NZ NZ
+
+        draw_texture(&ctx, cw, ch, &img_pz, &[0.00, 0.00], &[1.00, 0.25]);
+        draw_texture(&ctx, cw, ch, &img_ny, &[0.00, 0.25], &[0.25, 0.50]);
+        draw_texture(&ctx, cw, ch, &img_px, &[0.25, 0.25], &[0.25, 0.50]);
+        draw_texture(&ctx, cw, ch, &img_py, &[0.50, 0.25], &[0.25, 0.50]);
+        draw_texture(&ctx, cw, ch, &img_nx, &[0.75, 0.25], &[0.25, 0.50]);
+        draw_texture(&ctx, cw, ch, &img_nz, &[0.00, 0.75], &[1.00, 0.25]);
 
         let blob = JsFuture::from(Promise::new(&mut move |resolve, _| {
             let a = Closure::once(Box::new(move |blob| {
@@ -95,16 +106,16 @@ fn draw_texture(
     canvas_width: f64,
     canvas_height: f64,
     img: &BlockRef<ImageData>,
-    x_offset: f64,
-    y_offset: f64,
+    p: &[f64; 2],
+    s: &[f64; 2],
 ) {
     img.map(|img| {
         let _ = context.draw_image_with_html_image_element_and_dw_and_dh(
             img.element(),
-            canvas_width * x_offset,
-            canvas_height * y_offset,
-            canvas_width * 0.25,
-            canvas_height * 0.3,
+            canvas_width * p[0],
+            canvas_height * p[1],
+            canvas_width * s[0],
+            canvas_height * s[1],
         );
     });
 }
