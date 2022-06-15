@@ -169,7 +169,7 @@ impl Update for ModalCreateBlockTexture {
                         .unwrap_or(BlockRef::none());
                     Cmd::task(async move {
                         if let Some(texture) = resource::BlockTexture::load_from((
-                            [1024, 1024],
+                            [2048, 2048],
                             [px, py, pz, nx, ny, nz],
                         ))
                         .await

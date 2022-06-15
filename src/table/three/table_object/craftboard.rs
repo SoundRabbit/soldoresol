@@ -11,6 +11,7 @@ struct Mesh {
     grid_data: three::LineSegments,
     texture_material: three::MeshBasicMaterial,
     texture_data: three::Mesh,
+    texture_id: U128Id,
     data: three::Group,
 }
 
@@ -91,12 +92,13 @@ impl Craftboard {
                             grid_material,
                             texture_data,
                             texture_material,
+                            texture_id: U128Id::none(),
                             data,
                             size: [sz_i[0], sz_i[1]],
                         },
                     );
                 }
-                if let Some(mesh) = self.meshs.get(&craftboard_id) {
+                if let Some(mesh) = self.meshs.get_mut(&craftboard_id) {
                     if mesh.size[0] != sz_i[0] || mesh.size[1] != sz_i[1] {
                         mesh.grid_data
                             .set_geometry(&Self::create_grid_geometry(&sz_i));
@@ -113,12 +115,14 @@ impl Craftboard {
                     mesh.grid_material.color().set_rgb(r, g, b);
                     mesh.grid_material.set_opacity(a);
 
-                    if let Some(texture) = &craftboard.textures().nz {
-                        if let Some(texture) = texture_table.load_image(BlockRef::clone(&texture)) {
-                            mesh.texture_material.set_map(&texture);
-                            mesh.texture_material.set_needs_update(true);
-                        }
-                    }
+                    let textures = craftboard.textures();
+                    let texture_id = Self::set_texture(
+                        texture_table,
+                        &mesh.texture_id,
+                        &mesh.texture_material,
+                        textures.nz.as_ref().map(|nz| BlockRef::clone(&nz)),
+                    );
+                    mesh.texture_id = texture_id;
                 }
             });
         }
@@ -128,6 +132,32 @@ impl Craftboard {
                 scene.remove(&mesh.data);
             }
         }
+    }
+
+    fn set_texture(
+        texture_table: &mut TextureTable,
+        prev_texture_id: &U128Id,
+        material: &three::MeshBasicMaterial,
+        texture: Option<BlockRef<resource::ImageData>>,
+    ) -> U128Id {
+        let texture_id = texture
+            .as_ref()
+            .map(|texture| texture.id())
+            .unwrap_or_else(|| U128Id::none());
+
+        if *prev_texture_id != texture_id {
+            if let Some(texture) = texture {
+                if let Some(texture) = texture_table.load_image(BlockRef::clone(&texture)) {
+                    material.set_map(Some(&texture));
+                    material.set_needs_update(true);
+                }
+            } else {
+                material.set_map(None);
+                material.set_needs_update(true);
+            }
+        }
+
+        texture_id
     }
 
     fn create_grid_geometry(size: &[i32; 3]) -> three::BufferGeometry {

@@ -7,23 +7,27 @@ use wasm_bindgen::JsCast;
 
 struct Mesh {
     material: three::MeshStandardMaterial,
+    texture_id: U128Id,
     data: three::Mesh,
 }
 
+struct Geometry {
+    box_geometry: three::BoxGeometry,
+    cylinder_geometry: three::CylinderGeometry,
+    icosahedron_geometry: three::IcosahedronGeometry,
+    slope_geometry: three::BufferGeometry,
+}
+
 pub struct Boxblock {
-    geometry_box: three::BoxGeometry,
-    geometry_cylinder: three::CylinderGeometry,
-    geometry_icosahedron: three::IcosahedronGeometry,
     meshs: HashMap<U128Id, Mesh>,
+    geometry: Geometry,
 }
 
 impl Boxblock {
     pub fn new() -> Self {
         Self {
-            geometry_box: Self::create_box_geometry(),
-            geometry_cylinder: Self::create_cylinder_geometry(),
-            geometry_icosahedron: Self::create_icosahedron(),
             meshs: HashMap::new(),
+            geometry: Geometry::new(),
         }
     }
 
@@ -42,15 +46,23 @@ impl Boxblock {
             boxblock.map(|boxblock| {
                 if !self.meshs.contains_key(&boxblock_id) {
                     let material = three::MeshStandardMaterial::new(&object! {});
-                    let data = three::Mesh::new(self.get_geometry(boxblock.shape()), &material);
+                    let data =
+                        three::Mesh::new(self.geometry.get_geometry(boxblock.shape()), &material);
                     data.set_render_order(super::ORDER_BOXBLOCK);
                     data.set_user_data(&boxblock_id.to_jsvalue());
                     scene.add(&data);
-                    self.meshs
-                        .insert(U128Id::clone(&boxblock_id), Mesh { material, data });
+                    self.meshs.insert(
+                        U128Id::clone(&boxblock_id),
+                        Mesh {
+                            material,
+                            data,
+                            texture_id: U128Id::none(),
+                        },
+                    );
                 }
-                if let Some(mesh) = self.meshs.get(&boxblock_id) {
-                    mesh.data.set_geometry(self.get_geometry(boxblock.shape()));
+                if let Some(mesh) = self.meshs.get_mut(&boxblock_id) {
+                    mesh.data
+                        .set_geometry(self.geometry.get_geometry(boxblock.shape()));
                     let [px, py, pz] = boxblock.position().clone();
                     mesh.data.position().set(px, py, pz);
                     let [sx, sy, sz] = boxblock.size().clone();
@@ -58,11 +70,24 @@ impl Boxblock {
                     let [r, g, b, ..] = boxblock.color().to_color().to_f64array();
                     mesh.material.color().set_rgb(r, g, b);
 
-                    if let Some(texture) = boxblock.texture() {
-                        if let Some(texture) = texture_table.load_block(BlockRef::clone(&texture)) {
-                            mesh.material.set_map(&texture);
+                    let texture = boxblock.texture();
+                    let texture_id = texture
+                        .as_ref()
+                        .map(|texture| texture.id())
+                        .unwrap_or_else(|| U128Id::none());
+                    if texture_id != mesh.texture_id {
+                        if let Some(texture) = texture {
+                            if let Some(texture) =
+                                texture_table.load_block(BlockRef::clone(&texture))
+                            {
+                                mesh.material.set_map(Some(&texture));
+                                mesh.material.set_needs_update(true);
+                            }
+                        } else {
+                            mesh.material.set_map(None);
                             mesh.material.set_needs_update(true);
                         }
+                        mesh.texture_id = texture_id;
                     }
                 }
             });
@@ -74,13 +99,24 @@ impl Boxblock {
             }
         }
     }
+}
 
-    fn get_geometry(&self, shape: block::boxblock::Shape) -> &three::BufferGeometry {
+impl Geometry {
+    pub fn new() -> Self {
+        Self {
+            box_geometry: Self::create_box_geometry(),
+            cylinder_geometry: Self::create_cylinder_geometry(),
+            icosahedron_geometry: Self::create_icosahedron_geometry(),
+            slope_geometry: Self::create_slope_geometry(),
+        }
+    }
+
+    pub fn get_geometry(&self, shape: block::boxblock::Shape) -> &three::BufferGeometry {
         match shape {
-            block::boxblock::Shape::Cube => &self.geometry_box,
-            block::boxblock::Shape::Cylinder => &self.geometry_cylinder,
-            block::boxblock::Shape::Sphere => &self.geometry_icosahedron,
-            _ => &self.geometry_box,
+            block::boxblock::Shape::Cube => &self.box_geometry,
+            block::boxblock::Shape::Cylinder => &self.cylinder_geometry,
+            block::boxblock::Shape::Sphere => &self.icosahedron_geometry,
+            block::boxblock::Shape::Slope => &self.slope_geometry,
         }
     }
 
@@ -143,6 +179,8 @@ impl Boxblock {
             .array_as_f32array()
             .to_vec();
         let a_uv = geometry.get_attribute("uv").array_as_f32array().to_vec();
+        let mut position = vec![];
+        let mut normal = vec![];
         let mut uv = vec![];
 
         for i in 0..(a_position.len() / 3) {
@@ -166,9 +204,35 @@ impl Boxblock {
                 _ => unreachable!(),
             };
 
+            position.push(p_x);
+            position.push(-p_z);
+            position.push(p_y);
+
+            normal.push(n_x);
+            normal.push(-n_z);
+            normal.push(n_y);
+
             uv.push(u);
             uv.push(v);
         }
+
+        geometry.set_attribute(
+            "position",
+            &three::BufferAttribute::new_with_f32array(
+                &js_sys::Float32Array::from(position.as_slice()),
+                3,
+                false,
+            ),
+        );
+
+        geometry.set_attribute(
+            "normal",
+            &three::BufferAttribute::new_with_f32array(
+                &js_sys::Float32Array::from(normal.as_slice()),
+                3,
+                false,
+            ),
+        );
 
         geometry.set_attribute(
             "uv",
@@ -182,8 +246,177 @@ impl Boxblock {
         geometry
     }
 
-    fn create_icosahedron() -> three::IcosahedronGeometry {
+    fn create_icosahedron_geometry() -> three::IcosahedronGeometry {
         let geometry = three::IcosahedronGeometry::new(0.5, 5);
+
+        let a_position = geometry
+            .get_attribute("position")
+            .array_as_f32array()
+            .to_vec();
+
+        let a_normal = geometry
+            .get_attribute("normal")
+            .array_as_f32array()
+            .to_vec();
+
+        let mut normal = vec![];
+        let mut position = vec![];
+
+        for i in 0..(a_position.len() / 3) {
+            let p_x = a_position[i * 3];
+            let p_y = a_position[i * 3 + 1];
+            let p_z = a_position[i * 3 + 2];
+
+            let n_x = a_normal[i * 3];
+            let n_y = a_normal[i * 3 + 1];
+            let n_z = a_normal[i * 3 + 2];
+
+            position.push(p_x);
+            position.push(-p_z);
+            position.push(p_y);
+
+            normal.push(n_x);
+            normal.push(-n_z);
+            normal.push(n_y);
+        }
+
+        geometry.set_attribute(
+            "position",
+            &three::BufferAttribute::new_with_f32array(
+                &js_sys::Float32Array::from(position.as_slice()),
+                3,
+                false,
+            ),
+        );
+
+        geometry.set_attribute(
+            "normal",
+            &three::BufferAttribute::new_with_f32array(
+                &js_sys::Float32Array::from(normal.as_slice()),
+                3,
+                false,
+            ),
+        );
+
+        geometry
+    }
+
+    fn create_slope_geometry() -> three::BufferGeometry {
+        let points = js_sys::Float32Array::from(
+            [
+                // PY
+                [0.5, 0.5, -0.5],
+                [-0.5, 0.5, -0.5],
+                [-0.5, 0.5, 0.5],
+                // NY
+                [-0.5, -0.5, 0.5],
+                [-0.5, -0.5, -0.5],
+                [0.5, -0.5, -0.5],
+                // NX
+                [-0.5, 0.5, -0.5],
+                [-0.5, -0.5, -0.5],
+                [-0.5, -0.5, 0.5],
+                [-0.5, 0.5, 0.5],
+                // NZ
+                [0.5, -0.5, -0.5],
+                [-0.5, -0.5, -0.5],
+                [-0.5, 0.5, -0.5],
+                [0.5, 0.5, -0.5],
+                // 斜面
+                [-0.5, 0.5, 0.5],
+                [-0.5, -0.5, 0.5],
+                [0.5, -0.5, -0.5],
+                [0.5, 0.5, -0.5],
+            ]
+            .concat()
+            .as_slice(),
+        );
+        let normal = js_sys::Float32Array::from(
+            [
+                // PY
+                [0.0, 1.0, 0.0],
+                [0.0, 1.0, 0.0],
+                [0.0, 1.0, 0.0],
+                // NY
+                [0.0, -1.0, 0.0],
+                [0.0, -1.0, 0.0],
+                [0.0, -1.0, 0.0],
+                // NX
+                [-1.0, 0.0, 0.0],
+                [-1.0, 0.0, 0.0],
+                [-1.0, 0.0, 0.0],
+                [-1.0, 0.0, 0.0],
+                // NZ
+                [0.0, 0.0, -1.0],
+                [0.0, 0.0, -1.0],
+                [0.0, 0.0, -1.0],
+                [0.0, 0.0, -1.0],
+                // 斜面
+                [1.0, 0.0, 1.0],
+                [1.0, 0.0, 1.0],
+                [1.0, 0.0, 1.0],
+                [1.0, 0.0, 1.0],
+            ]
+            .concat()
+            .as_slice(),
+        );
+        let uv = js_sys::Float32Array::from(
+            [
+                //PY
+                Self::texture_coord(1, &[-1.0, -1.0]),
+                Self::texture_coord(1, &[1.0, -1.0]),
+                Self::texture_coord(1, &[1.0, 1.0]),
+                //NY
+                Self::texture_coord(4, &[-1.0, 1.0]),
+                Self::texture_coord(4, &[-1.0, -1.0]),
+                Self::texture_coord(4, &[1.0, -1.0]),
+                // NX
+                Self::texture_coord(3, &[1.0, -1.0]),
+                Self::texture_coord(3, &[-1.0, -1.0]),
+                Self::texture_coord(3, &[-1.0, 1.0]),
+                Self::texture_coord(3, &[1.0, 1.0]),
+                // NZ
+                Self::texture_coord(3, &[1.0, 1.0]),
+                Self::texture_coord(3, &[-1.0, 1.0]),
+                Self::texture_coord(3, &[-1.0, -1.0]),
+                Self::texture_coord(3, &[1.0, -1.0]),
+                // 斜面
+                Self::texture_coord(2, &[-1.0, 1.0]),
+                Self::texture_coord(2, &[-1.0, -1.0]),
+                Self::texture_coord(2, &[1.0, -1.0]),
+                Self::texture_coord(2, &[1.0, 1.0]),
+            ]
+            .concat()
+            .as_slice(),
+        );
+        let index = js_sys::Uint16Array::from(
+            [
+                vec![0, 1, 2],
+                vec![3, 4, 5],
+                vec![6, 7, 8, 8, 9, 6],
+                vec![10, 11, 12, 12, 13, 10],
+                vec![14, 15, 16, 16, 17, 14],
+            ]
+            .concat()
+            .as_slice(),
+        );
+
+        let geometry = three::BufferGeometry::new();
+
+        geometry.set_attribute(
+            "position",
+            &three::BufferAttribute::new_with_f32array(&points, 3, false),
+        );
+        geometry.set_attribute(
+            "normal",
+            &three::BufferAttribute::new_with_f32array(&normal, 3, true),
+        );
+        geometry.set_attribute(
+            "uv",
+            &three::BufferAttribute::new_with_f32array(&uv, 2, false),
+        );
+        geometry.set_index(&three::BufferAttribute::new_with_u16array(&index, 1, false));
+
         geometry
     }
 

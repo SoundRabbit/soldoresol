@@ -69,7 +69,7 @@ extern "C" {
     pub fn color(this: &MeshBasicMaterial) -> Color;
 
     #[wasm_bindgen(method, setter, js_name = "map")]
-    pub fn set_map(this: &MeshBasicMaterial, map: &Texture);
+    pub fn set_map(this: &MeshBasicMaterial, map: Option<&Texture>);
 }
 
 #[wasm_bindgen(module = "three")]
@@ -84,5 +84,5 @@ extern "C" {
     pub fn color(this: &MeshStandardMaterial) -> Color;
 
     #[wasm_bindgen(method, setter, js_name = "map")]
-    pub fn set_map(this: &MeshStandardMaterial, map: &Texture);
+    pub fn set_map(this: &MeshStandardMaterial, map: Option<&Texture>);
 }
