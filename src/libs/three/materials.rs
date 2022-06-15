@@ -53,6 +53,9 @@ extern "C" {
     #[wasm_bindgen(method, setter, js_name = "stencilZPass")]
     pub fn set_stencil_z_pass(this: &Material, stencil_func: u32);
 
+    #[wasm_bindgen(method, setter, js_name = "side")]
+    pub fn set_side(this: &Material, side: i32);
+
     #[wasm_bindgen(method, setter, js_name = "transparent")]
     pub fn set_transparent(this: &Material, transparent: bool);
 }

@@ -8,19 +8,42 @@ use wasm_bindgen::JsCast;
 
 pub struct Character {
     meshs: HashMap<U128Id, Mesh>,
-    geometry_base: util::RoundedRectangleGeometry,
+    geometry_border: util::RoundedRectangleGeometry,
+    geometry_base: three::PlaneGeometry,
+    geometry_texture: three::BufferGeometry,
+    material_border: three::MeshBasicMaterial,
+    material_base: three::MeshBasicMaterial,
 }
 
 pub struct Mesh {
-    base_data: util::RoundedRectangleMesh,
+    border_data: util::RoundedRectangleMesh,
+    base_data: three::Mesh,
+
+    texture_material: three::MeshBasicMaterial,
+    texture_data: three::Mesh,
+    texture_id: U128Id,
+
     data: three::Group,
 }
 
 impl Character {
     pub fn new() -> Self {
+        let color_border = crate::libs::color::Pallet::blue(7).to_color().to_f64array();
+        let color_base = crate::libs::color::Pallet::blue(5).to_color().to_f64array();
         Self {
             meshs: HashMap::new(),
-            geometry_base: util::RoundedRectangleGeometry::new(),
+            geometry_border: util::RoundedRectangleGeometry::new(),
+            geometry_base: three::PlaneGeometry::new(1.0, 1.0),
+            geometry_texture: Self::create_texture_geometry(),
+
+            material_border: three::MeshBasicMaterial::new(&object! {
+                "color": &three::Color::new(color_border[0], color_border[1], color_border[2])
+            }),
+            material_base: three::MeshBasicMaterial::new(&object! {
+                "color": &three::Color::new(color_base[0], color_base[1], color_base[2]),
+                "opacity": 0.25,
+                "transparent": true
+            }),
         }
     }
 
@@ -38,25 +61,86 @@ impl Character {
 
             character.map(|character| {
                 if !self.meshs.contains_key(&character_id) {
-                    let base_data = util::RoundedRectangleMesh::new(&self.geometry_base);
+                    let border_data = util::RoundedRectangleMesh::new(
+                        &self.geometry_border,
+                        &self.material_border,
+                    );
+                    border_data.set_user_data(&character_id.to_jsvalue());
+
+                    let base_data = three::Mesh::new(&self.geometry_base, &self.material_base);
                     base_data.set_user_data(&character_id.to_jsvalue());
+
+                    let texture_material = three::MeshBasicMaterial::new(&object! {
+                        "transparent": true
+                    });
+                    texture_material.set_side(three::DOUBLE_SIDE);
+                    let texture_data = three::Mesh::new(&self.geometry_texture, &texture_material);
+                    texture_data.set_user_data(&character_id.to_jsvalue());
+                    texture_data.scale().set(0.0, 0.0, 0.0);
 
                     let data = three::Group::new();
                     data.set_render_order(super::ORDER_CHARACTER);
                     data.set_user_data(&character_id.to_jsvalue());
-                    data.add(base_data.data());
+                    data.add(border_data.data());
+                    data.add(&base_data);
+                    data.add(&texture_data);
                     scene.add(&data);
-                    self.meshs
-                        .insert(U128Id::clone(&character_id), Mesh { base_data, data });
+                    self.meshs.insert(
+                        U128Id::clone(&character_id),
+                        Mesh {
+                            border_data,
+                            base_data,
+                            texture_material,
+                            texture_data,
+                            texture_id: U128Id::none(),
+                            data,
+                        },
+                    );
                 }
 
                 if let Some(mesh) = self.meshs.get_mut(&character_id) {
                     let s = character.size();
-                    mesh.base_data.set_scale(&[s - 0.1, s - 0.1], 0.1);
-                    mesh.base_data.material().color().set_rgb(0.0, 0.0, 0.0);
-
+                    mesh.border_data.set_scale(&[s - 0.1, s - 0.1], 0.1);
+                    mesh.base_data.scale().set(s - 0.1, s - 0.1, 1.0);
                     let [px, py, pz] = character.position().clone();
-                    mesh.data.position().set(px, py, pz);
+                    mesh.data.position().set(px, py, pz + 0.01);
+
+                    let texture_block = character
+                        .selected_texture()
+                        .as_ref()
+                        .and_then(|texture| texture.image());
+                    let texture_id = texture_block
+                        .as_ref()
+                        .map(|texture_block| texture_block.id())
+                        .unwrap_or_else(|| U128Id::none());
+
+                    if texture_id != mesh.texture_id {
+                        if let Some(texture_block) = texture_block {
+                            if let Some(texture) =
+                                texture_table.load_image(BlockRef::clone(&texture_block))
+                            {
+                                mesh.texture_material.set_map(Some(&texture));
+                                mesh.texture_material.set_needs_update(true);
+                            }
+                        } else {
+                            mesh.texture_material.set_map(None);
+                            mesh.texture_material.set_needs_update(true);
+                            mesh.texture_data.scale().set(0.0, 0.0, 0.0);
+                        }
+                        mesh.texture_id = texture_id;
+                    }
+
+                    if let Some(texture_block) = texture_block {
+                        let tex_height = character.tex_size() * s;
+                        texture_block.map(|texture| {
+                            let tex_size = texture.size();
+                            mesh.texture_data.scale().set(
+                                tex_height * tex_size[0] / tex_size[1],
+                                1.0,
+                                tex_height,
+                            );
+                        });
+                    }
                 }
             });
         }
@@ -66,5 +150,37 @@ impl Character {
                 scene.remove(&mesh.data);
             }
         }
+    }
+
+    fn create_texture_geometry() -> three::BufferGeometry {
+        let points = js_sys::Float32Array::from(
+            [
+                [0.5, 0.0, 1.0],
+                [-0.5, 0.0, 1.0],
+                [-0.5, 0.0, 0.0],
+                [0.5, 0.0, 0.0],
+            ]
+            .concat()
+            .as_slice(),
+        );
+        let uv = js_sys::Float32Array::from(
+            [[1.0, 1.0], [0.0, 1.0], [0.0, 0.0], [1.0, 0.0]]
+                .concat()
+                .as_slice(),
+        );
+        let index = js_sys::Uint16Array::from([0, 1, 2, 2, 3, 0].as_ref());
+
+        let geometry = three::BufferGeometry::new();
+        geometry.set_attribute(
+            "position",
+            &three::BufferAttribute::new_with_f32array(&points, 3, false),
+        );
+        geometry.set_attribute(
+            "uv",
+            &three::BufferAttribute::new_with_f32array(&uv, 2, false),
+        );
+        geometry.set_index(&three::BufferAttribute::new_with_u16array(&index, 1, false));
+
+        geometry
     }
 }

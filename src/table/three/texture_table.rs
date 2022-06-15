@@ -54,7 +54,7 @@ impl TextureTable {
             let texture = Rc::new(three::Texture::new_with_image(
                 block_texture.data().element(),
             ));
-            texture.set_wrap_s(three::RepeatWrapping);
+            texture.set_wrap_s(three::REPEAT_WRAPPING);
             texture.set_needs_update(true);
             texture
         });

@@ -13,7 +13,6 @@ pub struct RoundedRectangleGeometry {
 }
 
 pub struct RoundedRectangleMesh {
-    material: three::MeshBasicMaterial,
     tl_data: three::Mesh,
     tr_data: three::Mesh,
     bl_data: three::Mesh,
@@ -54,8 +53,7 @@ impl RoundedRectangleGeometry {
 }
 
 impl RoundedRectangleMesh {
-    pub fn new(geometry: &RoundedRectangleGeometry) -> Self {
-        let material = three::MeshBasicMaterial::new(&object! {});
+    pub fn new(geometry: &RoundedRectangleGeometry, material: &three::Material) -> Self {
         let tl_data = three::Mesh::new(&geometry.top_left, &material);
         let tr_data = three::Mesh::new(&geometry.top_right, &material);
         let bl_data = three::Mesh::new(&geometry.bottom_left, &material);
@@ -76,7 +74,6 @@ impl RoundedRectangleMesh {
         data.add(&b_data);
 
         Self {
-            material,
             tl_data,
             tr_data,
             bl_data,
@@ -87,10 +84,6 @@ impl RoundedRectangleMesh {
             b_data,
             data,
         }
-    }
-
-    pub fn material(&self) -> &three::MeshBasicMaterial {
-        &self.material
     }
 
     pub fn data(&self) -> &three::Group {
