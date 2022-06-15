@@ -1,3 +1,4 @@
+use super::atom::common::Common;
 use super::molecule::tab_menu::{self, TabMenu};
 use super::organism::modal_chat_capture::{self, ModalChatCapture};
 use super::organism::modal_chatpallet::{self, ModalChatpallet};
@@ -320,7 +321,7 @@ impl Render<Html> for RoomModelessChat {
                     }),
                 ),
                 match &self.showing_modal {
-                    ShowingModal::None => Html::none(),
+                    ShowingModal::None => Common::none(),
                     ShowingModal::ChatCapture(waiting_chat_message) => ModalChatCapture::empty(
                         self,
                         None,
