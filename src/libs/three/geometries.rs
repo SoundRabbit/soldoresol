@@ -14,6 +14,23 @@ extern "C" {
 #[wasm_bindgen(module = "three")]
 extern "C" {
     #[wasm_bindgen(extends = BufferGeometry)]
+    pub type CircleGeometry;
+
+    #[wasm_bindgen(constructor)]
+    pub fn new(radius: f64, segments: i32) -> CircleGeometry;
+
+    #[wasm_bindgen(constructor)]
+    pub fn new_with_theta(
+        radius: f64,
+        segments: i32,
+        theta_start: f64,
+        theta_length: f64,
+    ) -> CircleGeometry;
+}
+
+#[wasm_bindgen(module = "three")]
+extern "C" {
+    #[wasm_bindgen(extends = BufferGeometry)]
     pub type CylinderGeometry;
 
     #[wasm_bindgen(constructor)]

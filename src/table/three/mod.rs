@@ -23,6 +23,7 @@ pub struct Three {
     renderer: three::WebGLRenderer,
     object_boxblock: table_object::Boxblock,
     object_craftboard: table_object::Craftboard,
+    object_character: table_object::Character,
     light: CommonLight,
     device_pixel_ratio: f64,
     canvas_size: [f64; 2],
@@ -77,6 +78,7 @@ impl Three {
             renderer,
             object_boxblock: table_object::Boxblock::new(),
             object_craftboard: table_object::Craftboard::new(),
+            object_character: table_object::Character::new(),
             light: CommonLight {
                 ambient_light,
                 directional_light,
@@ -215,6 +217,14 @@ impl Three {
                 &mut self.texture_table,
                 &self.scene,
                 table.boxblocks().iter().map(|block| block.as_ref()),
+            );
+        });
+
+        world.map(|world| {
+            self.object_character.update(
+                &mut self.texture_table,
+                &self.scene,
+                world.characters().iter().map(|block| block.as_ref()),
             );
         });
 

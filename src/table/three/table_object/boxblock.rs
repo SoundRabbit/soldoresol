@@ -5,10 +5,9 @@ use crate::libs::three;
 use std::collections::{HashMap, HashSet};
 use wasm_bindgen::JsCast;
 
-struct Mesh {
-    material: three::MeshStandardMaterial,
-    texture_id: U128Id,
-    data: three::Mesh,
+pub struct Boxblock {
+    meshs: HashMap<U128Id, Mesh>,
+    geometry: Geometry,
 }
 
 struct Geometry {
@@ -18,9 +17,10 @@ struct Geometry {
     slope_geometry: three::BufferGeometry,
 }
 
-pub struct Boxblock {
-    meshs: HashMap<U128Id, Mesh>,
-    geometry: Geometry,
+struct Mesh {
+    material: three::MeshStandardMaterial,
+    texture_id: U128Id,
+    data: three::Mesh,
 }
 
 impl Boxblock {
