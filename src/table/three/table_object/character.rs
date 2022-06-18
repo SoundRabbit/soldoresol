@@ -23,6 +23,12 @@ pub struct Mesh {
     texture_data: three::Mesh,
     texture_id: U128Id,
 
+    nameplate_material: three::MeshBasicMaterial,
+    nameplate_data: three::Mesh,
+    nameplate_id: String,
+
+    color: crate::libs::color::Pallet,
+
     data: three::Group,
 }
 
@@ -78,12 +84,23 @@ impl Character {
                     texture_data.set_user_data(&character_id.to_jsvalue());
                     texture_data.scale().set(0.0, 0.0, 0.0);
 
+                    let nameplate_material = three::MeshBasicMaterial::new(&object! {
+                        "transparent": true,
+                    });
+                    let [r, g, b, ..] = character.color().to_color().to_f64array();
+                    nameplate_material.color().set_rgb(r, g, b);
+                    let nameplate_data =
+                        three::Mesh::new(&self.geometry_texture, &nameplate_material);
+                    nameplate_data.set_user_data(&character_id.to_jsvalue());
+                    nameplate_data.scale().set(0.0, 0.0, 0.0);
+
                     let data = three::Group::new();
                     data.set_render_order(super::ORDER_CHARACTER);
                     data.set_user_data(&character_id.to_jsvalue());
                     data.add(border_data.data());
                     data.add(&base_data);
                     data.add(&texture_data);
+                    data.add(&nameplate_data);
                     scene.add(&data);
                     self.meshs.insert(
                         U128Id::clone(&character_id),
@@ -93,6 +110,10 @@ impl Character {
                             texture_material,
                             texture_data,
                             texture_id: U128Id::none(),
+                            nameplate_material,
+                            nameplate_data,
+                            nameplate_id: String::from(""),
+                            color: character.color().clone(),
                             data,
                         },
                     );
@@ -130,6 +151,24 @@ impl Character {
                         mesh.texture_id = texture_id;
                     }
 
+                    if *character.color() != mesh.color {
+                        let [r, g, b, ..] = character.color().to_color().to_f64array();
+                        mesh.nameplate_material.color().set_rgb(r, g, b);
+                        mesh.nameplate_material.set_needs_update(true);
+                    }
+
+                    if *character.name() != mesh.nameplate_id {
+                        let texture = texture_table.load_text(character.display_name());
+                        mesh.nameplate_material.set_alpha_map(Some(&texture.data));
+                        mesh.nameplate_material.set_needs_update(true);
+
+                        let texture_width = f64::min(s * 2.0, texture.size[0] * 0.5);
+                        let texture_height = texture_width * texture.size[1] / texture.size[0];
+                        mesh.nameplate_data
+                            .scale()
+                            .set(texture_width, 1.0, texture_height);
+                    }
+
                     if let Some(texture_block) = texture_block {
                         let tex_height = character.tex_size() * s;
                         texture_block.map(|texture| {
@@ -139,7 +178,12 @@ impl Character {
                                 1.0,
                                 tex_height,
                             );
+                            mesh.nameplate_data
+                                .position()
+                                .set(0.0, 0.0, tex_height + 0.1);
                         });
+                    } else {
+                        mesh.nameplate_data.position().set(0.0, 0.0, 0.0);
                     }
                 }
             });

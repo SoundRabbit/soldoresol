@@ -1,3 +1,5 @@
+pub const NORMAL_BLENDING: i32 = 1;
+
 pub const FRONT_SIDE: i32 = 0;
 pub const BACK_SIDE: i32 = 1;
 pub const DOUBLE_SIDE: i32 = 2;

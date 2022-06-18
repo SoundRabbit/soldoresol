@@ -25,3 +25,19 @@ extern "C" {
     #[wasm_bindgen(method, setter, js_name = "aspect")]
     pub fn set_aspect(this: &PerspectiveCamera, aspect: f64);
 }
+
+#[wasm_bindgen(module = "three")]
+extern "C" {
+    #[wasm_bindgen(extends = Camera)]
+    pub type OrthographicCamera;
+
+    #[wasm_bindgen(constructor)]
+    pub fn new(
+        left: f64,
+        right: f64,
+        top: f64,
+        bottom: f64,
+        near: f64,
+        far: f64,
+    ) -> OrthographicCamera;
+}

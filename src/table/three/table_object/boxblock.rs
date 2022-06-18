@@ -20,6 +20,7 @@ struct Geometry {
 struct Mesh {
     material: three::MeshStandardMaterial,
     texture_id: U128Id,
+    color: crate::libs::color::Pallet,
     data: three::Mesh,
 }
 
@@ -46,6 +47,8 @@ impl Boxblock {
             boxblock.map(|boxblock| {
                 if !self.meshs.contains_key(&boxblock_id) {
                     let material = three::MeshStandardMaterial::new(&object! {});
+                    let [r, g, b, ..] = boxblock.color().to_color().to_f64array();
+                    material.color().set_rgb(r, g, b);
                     let data =
                         three::Mesh::new(self.geometry.get_geometry(boxblock.shape()), &material);
                     data.set_render_order(super::ORDER_BOXBLOCK);
@@ -56,6 +59,7 @@ impl Boxblock {
                         Mesh {
                             material,
                             data,
+                            color: boxblock.color().clone(),
                             texture_id: U128Id::none(),
                         },
                     );
@@ -67,8 +71,6 @@ impl Boxblock {
                     mesh.data.position().set(px, py, pz);
                     let [sx, sy, sz] = boxblock.size().clone();
                     mesh.data.scale().set(sx, sy, sz);
-                    let [r, g, b, ..] = boxblock.color().to_color().to_f64array();
-                    mesh.material.color().set_rgb(r, g, b);
 
                     let texture = boxblock.texture();
                     let texture_id = texture
@@ -81,6 +83,7 @@ impl Boxblock {
                                 texture_table.load_block(BlockRef::clone(&texture))
                             {
                                 mesh.material.set_map(Some(&texture));
+                                mesh.material.color().set_rgb(1.0, 1.0, 1.0);
                                 mesh.material.set_needs_update(true);
                             }
                         } else {
@@ -88,6 +91,15 @@ impl Boxblock {
                             mesh.material.set_needs_update(true);
                         }
                         mesh.texture_id = texture_id;
+                    }
+
+                    if mesh.texture_id.is_none() {
+                        if *boxblock.color() != mesh.color {
+                            let [r, g, b, ..] = boxblock.color().to_color().to_f64array();
+                            mesh.material.color().set_rgb(r, g, b);
+                            mesh.material.set_needs_update(true);
+                            mesh.color = boxblock.color().clone();
+                        }
                     }
                 }
             });

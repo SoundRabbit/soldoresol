@@ -64,6 +64,10 @@ impl U128Id {
         Self(Arc::new(0))
     }
 
+    pub fn is_none(&self) -> bool {
+        *self.0 == 0
+    }
+
     pub fn to_jsvalue(&self) -> JsValue {
         JsValue::from(format!("{}", self))
     }

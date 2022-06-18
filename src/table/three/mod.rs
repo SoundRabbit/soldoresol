@@ -233,5 +233,7 @@ impl Three {
         self.camera.update();
 
         self.renderer.render(&self.scene, &self.camera);
+
+        self.texture_table.update();
     }
 }

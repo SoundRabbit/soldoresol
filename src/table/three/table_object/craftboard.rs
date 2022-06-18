@@ -48,9 +48,7 @@ impl Craftboard {
                     sz_f[2].round() as i32,
                 ];
                 if !self.meshs.contains_key(&craftboard_id) {
-                    let grid_material = three::LineBasicMaterial::new(&object! {
-                        "transparent": true
-                    });
+                    let grid_material = three::LineBasicMaterial::new(&object! {});
                     grid_material.set_stencil_write(true);
                     grid_material.set_stencil_func(web_sys::WebGl2RenderingContext::ALWAYS);
                     grid_material.set_stencil_ref(1);
@@ -113,7 +111,6 @@ impl Craftboard {
 
                     let [r, g, b, a] = craftboard.grid_color().to_color().to_f64array();
                     mesh.grid_material.color().set_rgb(r, g, b);
-                    mesh.grid_material.set_opacity(a);
 
                     let textures = craftboard.textures();
                     let texture_id = Self::set_texture(
