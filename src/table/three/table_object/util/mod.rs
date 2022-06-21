@@ -1,6 +1,9 @@
 use crate::libs::three;
 use wasm_bindgen::prelude::*;
 
+pub mod nameplate;
+pub use nameplate::Nameplate;
+
 pub struct RoundedRectangleGeometry {
     pub top_left: three::CircleGeometry,
     pub top_right: three::CircleGeometry,

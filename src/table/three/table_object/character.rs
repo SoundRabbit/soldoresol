@@ -11,6 +11,7 @@ pub struct Character {
     geometry_border: util::RoundedRectangleGeometry,
     geometry_base: three::PlaneGeometry,
     geometry_texture: three::BufferGeometry,
+    geometry_nameplate: util::nameplate::XZGeometry,
     material_border: three::MeshBasicMaterial,
     material_base: three::MeshBasicMaterial,
 }
@@ -23,8 +24,7 @@ pub struct Mesh {
     texture_data: three::Mesh,
     texture_id: U128Id,
 
-    nameplate_material: three::MeshBasicMaterial,
-    nameplate_data: three::Mesh,
+    nameplate: util::Nameplate,
     nameplate_id: String,
 
     color: crate::libs::color::Pallet,
@@ -41,6 +41,7 @@ impl Character {
             geometry_border: util::RoundedRectangleGeometry::new(),
             geometry_base: three::PlaneGeometry::new(1.0, 1.0),
             geometry_texture: Self::create_texture_geometry(),
+            geometry_nameplate: util::nameplate::XZGeometry::new(0.5),
 
             material_border: three::MeshBasicMaterial::new(&object! {
                 "color": &three::Color::new(color_border[0], color_border[1], color_border[2])
@@ -84,15 +85,11 @@ impl Character {
                     texture_data.set_user_data(&character_id.to_jsvalue());
                     texture_data.scale().set(0.0, 0.0, 0.0);
 
-                    let nameplate_material = three::MeshBasicMaterial::new(&object! {
-                        "transparent": true,
-                    });
+                    let nameplate = util::Nameplate::new(&self.geometry_nameplate);
                     let [r, g, b, ..] = character.color().to_color().to_f64array();
-                    nameplate_material.color().set_rgb(r, g, b);
-                    let nameplate_data =
-                        three::Mesh::new(&self.geometry_texture, &nameplate_material);
-                    nameplate_data.set_user_data(&character_id.to_jsvalue());
-                    nameplate_data.scale().set(0.0, 0.0, 0.0);
+                    nameplate.text().color().set_rgb(r, g, b);
+                    nameplate.set_user_data(&character_id.to_jsvalue());
+                    nameplate.scale().set(0.0, 0.0, 0.0);
 
                     let data = three::Group::new();
                     data.set_render_order(super::ORDER_CHARACTER);
@@ -100,7 +97,7 @@ impl Character {
                     data.add(border_data.data());
                     data.add(&base_data);
                     data.add(&texture_data);
-                    data.add(&nameplate_data);
+                    data.add(&nameplate);
                     scene.add(&data);
                     self.meshs.insert(
                         U128Id::clone(&character_id),
@@ -110,8 +107,7 @@ impl Character {
                             texture_material,
                             texture_data,
                             texture_id: U128Id::none(),
-                            nameplate_material,
-                            nameplate_data,
+                            nameplate,
                             nameplate_id: String::from(""),
                             color: character.color().clone(),
                             data,
@@ -153,18 +149,18 @@ impl Character {
 
                     if *character.color() != mesh.color {
                         let [r, g, b, ..] = character.color().to_color().to_f64array();
-                        mesh.nameplate_material.color().set_rgb(r, g, b);
-                        mesh.nameplate_material.set_needs_update(true);
+                        mesh.nameplate.text().color().set_rgb(r, g, b);
+                        mesh.nameplate.text().set_needs_update(true);
                     }
 
                     if *character.name() != mesh.nameplate_id {
                         let texture = texture_table.load_text(character.display_name());
-                        mesh.nameplate_material.set_alpha_map(Some(&texture.data));
-                        mesh.nameplate_material.set_needs_update(true);
+                        mesh.nameplate.text().set_alpha_map(Some(&texture.data));
+                        mesh.nameplate.text().set_needs_update(true);
 
                         let texture_width = f64::min(s * 2.0, texture.size[0] * 0.5);
                         let texture_height = texture_width * texture.size[1] / texture.size[0];
-                        mesh.nameplate_data
+                        mesh.nameplate
                             .scale()
                             .set(texture_width, 1.0, texture_height);
                     }
@@ -178,12 +174,10 @@ impl Character {
                                 1.0,
                                 tex_height,
                             );
-                            mesh.nameplate_data
-                                .position()
-                                .set(0.0, 0.0, tex_height + 0.1);
+                            mesh.nameplate.position().set(0.0, 0.0, tex_height + 0.1);
                         });
                     } else {
-                        mesh.nameplate_data.position().set(0.0, 0.0, 0.0);
+                        mesh.nameplate.position().set(0.0, 0.0, 0.0);
                     }
                 }
             });
