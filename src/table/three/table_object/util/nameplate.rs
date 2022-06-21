@@ -7,7 +7,9 @@ pub struct Nameplate {
     mesh_front: three::Mesh,
     mesh_back: three::Mesh,
     mesh_background: three::Mesh,
+    mesh_arrow: Option<three::Mesh>,
 
+    data_board: three::Group,
     data: three::Group,
 }
 
@@ -15,12 +17,14 @@ pub trait NameplateGeometry {
     fn front(&self) -> &three::BufferGeometry;
     fn back(&self) -> &three::BufferGeometry;
     fn background(&self) -> &three::BufferGeometry;
+    fn arrow(&self) -> Option<&three::BufferGeometry>;
 }
 
 pub struct XZGeometry {
     front: three::BufferGeometry,
     back: three::BufferGeometry,
     background: three::BufferGeometry,
+    arrow: Option<three::BufferGeometry>,
 }
 
 impl Nameplate {
@@ -34,11 +38,20 @@ impl Nameplate {
         let mesh_front = three::Mesh::new(geometry.front(), &material_text);
         let mesh_back = three::Mesh::new(geometry.back(), &material_text);
         let mesh_background = three::Mesh::new(geometry.background(), &material_background);
+        let mesh_arrow = geometry
+            .arrow()
+            .map(|arrow_geometry| three::Mesh::new(&arrow_geometry, &material_background));
+
+        let data_board = three::Group::new();
+        data_board.add(&mesh_front);
+        data_board.add(&mesh_back);
+        data_board.add(&mesh_background);
 
         let data = three::Group::new();
-        data.add(&mesh_front);
-        data.add(&mesh_back);
-        data.add(&mesh_background);
+        data.add(&data_board);
+        if let Some(mesh_arrow) = mesh_arrow.as_ref() {
+            data.add(&mesh_arrow);
+        }
 
         Self {
             material_text,
@@ -46,6 +59,8 @@ impl Nameplate {
             mesh_front,
             mesh_back,
             mesh_background,
+            mesh_arrow,
+            data_board,
             data,
         }
     }
@@ -58,11 +73,15 @@ impl Nameplate {
         &self.material_background
     }
 
+    pub fn board(&self) -> &three::Group {
+        &self.data_board
+    }
+
     pub fn set_color(&self, pallet: &crate::libs::color::Pallet) {
         let color = pallet.to_color();
         let [r, g, b, ..] = color.to_f64array();
         self.background().color().set_rgb(r, g, b);
-        if color.v() > 0.7 {
+        if color.v() > 0.9 {
             self.text().color().set_rgb(0.0, 0.0, 0.0);
         } else {
             self.text().color().set_rgb(1.0, 1.0, 1.0);
@@ -81,12 +100,23 @@ impl std::ops::Deref for Nameplate {
 }
 
 impl XZGeometry {
-    pub fn new(z_offset: f32) -> Self {
+    pub fn new(z_offset: f32, arrow: bool) -> Self {
         let ext = 0.05;
+        let arrow_height = 0.25;
+        let z_offset = if arrow {
+            z_offset + arrow_height
+        } else {
+            z_offset
+        };
         Self {
             front: Self::create_geometry(-0.01, z_offset + ext, 0.0, false),
             back: Self::create_geometry(0.01, z_offset + ext, 0.0, true),
             background: Self::create_geometry(0.0, z_offset + ext, ext, false),
+            arrow: if arrow {
+                Some(Self::create_arrow(arrow_height, z_offset))
+            } else {
+                None
+            },
         }
     }
 
@@ -122,6 +152,33 @@ impl XZGeometry {
 
         geometry
     }
+
+    fn create_arrow(height: f32, z_offset: f32) -> three::BufferGeometry {
+        let points = js_sys::Float32Array::from(
+            [
+                [height, 0.0, -0.5 + z_offset],
+                [-height, 0.0, -0.5 + z_offset],
+                [0.0, 0.0, -0.5 - height + z_offset],
+            ]
+            .concat()
+            .as_slice(),
+        );
+        let uv =
+            js_sys::Float32Array::from([[1.0, 1.0], [0.0, 1.0], [0.5, 0.0]].concat().as_slice());
+        let index = js_sys::Uint16Array::from([0, 1, 2].as_ref());
+        let geometry = three::BufferGeometry::new();
+        geometry.set_attribute(
+            "position",
+            &three::BufferAttribute::new_with_f32array(&points, 3, false),
+        );
+        geometry.set_attribute(
+            "uv",
+            &three::BufferAttribute::new_with_f32array(&uv, 2, false),
+        );
+        geometry.set_index(&three::BufferAttribute::new_with_u16array(&index, 1, false));
+
+        geometry
+    }
 }
 
 impl NameplateGeometry for XZGeometry {
@@ -135,5 +192,9 @@ impl NameplateGeometry for XZGeometry {
 
     fn background(&self) -> &three::BufferGeometry {
         &self.background
+    }
+
+    fn arrow(&self) -> Option<&three::BufferGeometry> {
+        self.arrow.as_ref()
     }
 }

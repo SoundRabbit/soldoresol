@@ -41,7 +41,7 @@ impl Character {
             geometry_border: util::RoundedRectangleGeometry::new(),
             geometry_base: three::PlaneGeometry::new(1.0, 1.0),
             geometry_texture: Self::create_texture_geometry(),
-            geometry_nameplate: util::nameplate::XZGeometry::new(0.5),
+            geometry_nameplate: util::nameplate::XZGeometry::new(0.5, true),
 
             material_border: three::MeshBasicMaterial::new(&object! {
                 "color": &three::Color::new(color_border[0], color_border[1], color_border[2])
@@ -88,7 +88,7 @@ impl Character {
                     let nameplate = util::Nameplate::new(&self.geometry_nameplate);
                     nameplate.set_color(character.color());
                     nameplate.set_user_data(&character_id.to_jsvalue());
-                    nameplate.scale().set(0.0, 0.0, 0.0);
+                    nameplate.scale().set(1.0, 1.0, 1.0);
 
                     let data = three::Group::new();
                     data.set_render_order(super::ORDER_CHARACTER);
@@ -159,6 +159,7 @@ impl Character {
                         let texture_width = f64::min(s * 2.0, texture.size[0] * 0.5);
                         let texture_height = texture_width * texture.size[1] / texture.size[0];
                         mesh.nameplate
+                            .board()
                             .scale()
                             .set(texture_width, 1.0, texture_height);
                     }
