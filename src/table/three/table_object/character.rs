@@ -86,8 +86,7 @@ impl Character {
                     texture_data.scale().set(0.0, 0.0, 0.0);
 
                     let nameplate = util::Nameplate::new(&self.geometry_nameplate);
-                    let [r, g, b, ..] = character.color().to_color().to_f64array();
-                    nameplate.text().color().set_rgb(r, g, b);
+                    nameplate.set_color(character.color());
                     nameplate.set_user_data(&character_id.to_jsvalue());
                     nameplate.scale().set(0.0, 0.0, 0.0);
 
@@ -148,9 +147,8 @@ impl Character {
                     }
 
                     if *character.color() != mesh.color {
-                        let [r, g, b, ..] = character.color().to_color().to_f64array();
-                        mesh.nameplate.text().color().set_rgb(r, g, b);
-                        mesh.nameplate.text().set_needs_update(true);
+                        mesh.nameplate.set_color(character.color());
+                        mesh.color = character.color().clone();
                     }
 
                     if *character.name() != mesh.nameplate_id {

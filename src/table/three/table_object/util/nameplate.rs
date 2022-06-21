@@ -57,6 +57,19 @@ impl Nameplate {
     pub fn background(&self) -> &three::MeshBasicMaterial {
         &self.material_background
     }
+
+    pub fn set_color(&self, pallet: &crate::libs::color::Pallet) {
+        let color = pallet.to_color();
+        let [r, g, b, ..] = color.to_f64array();
+        self.background().color().set_rgb(r, g, b);
+        if color.v() > 0.7 {
+            self.text().color().set_rgb(0.0, 0.0, 0.0);
+        } else {
+            self.text().color().set_rgb(1.0, 1.0, 1.0);
+        }
+        self.background().set_needs_update(true);
+        self.text().set_needs_update(true);
+    }
 }
 
 impl std::ops::Deref for Nameplate {
@@ -69,21 +82,22 @@ impl std::ops::Deref for Nameplate {
 
 impl XZGeometry {
     pub fn new(z_offset: f32) -> Self {
+        let ext = 0.05;
         Self {
-            front: Self::create_geometry(-0.01, z_offset, false),
-            back: Self::create_geometry(0.01, z_offset, true),
-            background: Self::create_geometry(0.0, z_offset, false),
+            front: Self::create_geometry(-0.01, z_offset + ext, 0.0, false),
+            back: Self::create_geometry(0.01, z_offset + ext, 0.0, true),
+            background: Self::create_geometry(0.0, z_offset + ext, ext, false),
         }
     }
 
-    fn create_geometry(y_offset: f32, z_offset: f32, inv: bool) -> three::BufferGeometry {
+    fn create_geometry(y_offset: f32, z_offset: f32, ext: f32, inv: bool) -> three::BufferGeometry {
         let inv = if inv { -1.0 } else { 1.0 };
         let points = js_sys::Float32Array::from(
             [
-                [0.5 * inv, y_offset, 0.5 + z_offset],
-                [-0.5 * inv, y_offset, 0.5 + z_offset],
-                [-0.5 * inv, y_offset, -0.5 + z_offset],
-                [0.5 * inv, y_offset, -0.5 + z_offset],
+                [0.5 * inv + ext, y_offset, 0.5 + z_offset + ext],
+                [-0.5 * inv - ext, y_offset, 0.5 + z_offset + ext],
+                [-0.5 * inv - ext, y_offset, -0.5 + z_offset - ext],
+                [0.5 * inv + ext, y_offset, -0.5 + z_offset - ext],
             ]
             .concat()
             .as_slice(),
