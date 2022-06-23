@@ -52,9 +52,9 @@ impl Craftboard {
             craftboard.map(|craftboard| {
                 let sz_f = craftboard.size().clone();
                 let sz_i = [
-                    sz_f[0].round() as i32,
-                    sz_f[1].round() as i32,
-                    sz_f[2].round() as i32,
+                    sz_f[0].floor() as i32,
+                    sz_f[1].floor() as i32,
+                    sz_f[2].floor() as i32,
                 ];
                 if !self.meshs.contains_key(&craftboard_id) {
                     let grid_material = three::LineBasicMaterial::new(&object! {});
@@ -118,6 +118,8 @@ impl Craftboard {
                     if mesh.size[0] != sz_i[0] || mesh.size[1] != sz_i[1] {
                         mesh.grid_data
                             .set_geometry(&Self::create_grid_geometry(&sz_i));
+                        mesh.size[0] = sz_i[0];
+                        mesh.size[1] = sz_i[1];
                     }
 
                     let [p_x, p_y, p_z] = craftboard.position().clone();
@@ -130,7 +132,7 @@ impl Craftboard {
                         .position()
                         .set(sz_f[0] * 0.5 + 0.02, -sz_f[1] * 0.5 - 0.02, 0.0);
 
-                    let [r, g, b, a] = craftboard.grid_color().to_color().to_f64array();
+                    let [r, g, b, ..] = craftboard.grid_color().to_color().to_f64array();
                     mesh.grid_material.color().set_rgb(r, g, b);
 
                     let textures = craftboard.textures();

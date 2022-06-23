@@ -10,5 +10,6 @@ mods! {
     pub property::Property;
     pub scene::Scene;
     pub table::Table;
+    pub textboard::Textboard;
     pub world::World;
 }
