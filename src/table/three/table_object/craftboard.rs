@@ -57,13 +57,9 @@ impl Craftboard {
                     sz_f[2].floor() as i32,
                 ];
                 if !self.meshs.contains_key(&craftboard_id) {
-                    let grid_material = three::LineBasicMaterial::new(&object! {});
-                    grid_material.set_stencil_write(true);
-                    grid_material.set_stencil_func(web_sys::WebGl2RenderingContext::ALWAYS);
-                    grid_material.set_stencil_ref(1);
-                    grid_material.set_stencil_fail(web_sys::WebGl2RenderingContext::KEEP);
-                    grid_material.set_stencil_z_fail(web_sys::WebGl2RenderingContext::KEEP);
-                    grid_material.set_stencil_z_pass(web_sys::WebGl2RenderingContext::REPLACE);
+                    let grid_material = three::LineBasicMaterial::new(&object! {
+                        "transparent": true
+                    });
 
                     let grid_data = three::LineSegments::new(
                         &Self::create_grid_geometry(&sz_i),
@@ -75,12 +71,6 @@ impl Craftboard {
                         "transparent": true
                     });
                     texture_material.color().set_rgb(1.0, 1.0, 1.0);
-                    texture_material.set_stencil_write(true);
-                    texture_material.set_stencil_func(web_sys::WebGl2RenderingContext::EQUAL);
-                    texture_material.set_stencil_ref(0);
-                    texture_material.set_stencil_fail(web_sys::WebGl2RenderingContext::REPLACE);
-                    texture_material.set_stencil_z_fail(web_sys::WebGl2RenderingContext::REPLACE);
-                    texture_material.set_stencil_z_pass(web_sys::WebGl2RenderingContext::REPLACE);
 
                     let texture_data = three::Mesh::new(&self.geometry_square, &texture_material);
                     texture_data.set_user_data(&craftboard_id.to_jsvalue());
@@ -125,15 +115,14 @@ impl Craftboard {
                     let [p_x, p_y, p_z] = craftboard.position().clone();
                     mesh.data.position().set(p_x, p_y, p_z);
 
-                    mesh.texture_data
-                        .scale()
-                        .set(sz_f[0] + 0.02, sz_f[1] + 0.02, sz_f[2] + 0.02);
+                    mesh.texture_data.scale().set(sz_f[0], sz_f[1], sz_f[2]);
                     mesh.nameplate
                         .position()
-                        .set(sz_f[0] * 0.5 + 0.02, -sz_f[1] * 0.5 - 0.02, 0.0);
+                        .set(sz_f[0] * 0.5, -sz_f[1] * 0.5, 0.0);
 
-                    let [r, g, b, ..] = craftboard.grid_color().to_color().to_f64array();
+                    let [r, g, b, a] = craftboard.grid_color().to_color().to_f64array();
                     mesh.grid_material.color().set_rgb(r, g, b);
+                    mesh.grid_material.set_opacity(a);
 
                     let textures = craftboard.textures();
                     let texture_id = Self::set_texture(
@@ -209,14 +198,14 @@ impl Craftboard {
 
         for x in 0..xn {
             let x = x as f64 + offset_x;
-            points.push(&three::Vector3::new(x, offset_y, 0.0));
-            points.push(&three::Vector3::new(x, size[1] as f64 + offset_y, 0.0));
+            points.push(&three::Vector3::new(x, offset_y, 0.01));
+            points.push(&three::Vector3::new(x, size[1] as f64 + offset_y, 0.01));
         }
 
         for y in 0..yn {
             let y = y as f64 + offset_y;
-            points.push(&three::Vector3::new(offset_x, y, 0.0));
-            points.push(&three::Vector3::new(size[0] as f64 + offset_x, y, 0.0));
+            points.push(&three::Vector3::new(offset_x, y, 0.01));
+            points.push(&three::Vector3::new(size[0] as f64 + offset_x, y, 0.01));
         }
 
         three::BufferGeometry::new().set_from_points(&points)
