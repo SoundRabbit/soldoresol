@@ -225,7 +225,7 @@ impl Geometry {
     }
 
     fn create_cylinder_geometry() -> three::CylinderGeometry {
-        let geometry = three::CylinderGeometry::new(0.5, 0.5, 1.0, 16);
+        let geometry = three::CylinderGeometry::new(0.5, 0.5, 1.0, 48);
 
         let a_position = geometry
             .get_attribute("position")

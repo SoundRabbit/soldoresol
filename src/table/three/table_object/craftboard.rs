@@ -126,11 +126,9 @@ impl Craftboard {
                     mesh.texture_data
                         .scale()
                         .set(sz_f[0] + 0.02, sz_f[1] + 0.02, sz_f[2] + 0.02);
-                    mesh.nameplate.position().set(
-                        p_x + sz_f[0] * 0.5 + 0.02,
-                        p_y - sz_f[1] * 0.5 - 0.02,
-                        p_z,
-                    );
+                    mesh.nameplate
+                        .position()
+                        .set(sz_f[0] * 0.5 + 0.02, -sz_f[1] * 0.5 - 0.02, 0.0);
 
                     let [r, g, b, a] = craftboard.grid_color().to_color().to_f64array();
                     mesh.grid_material.color().set_rgb(r, g, b);
