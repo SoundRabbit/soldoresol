@@ -105,6 +105,10 @@ impl Table {
         self.three.borrow_mut().reset_size();
     }
 
+    fn selecting_scene(world: BlockRef<block::World>) -> Option<BlockMut<block::Scene>> {
+        world.map(|world| BlockMut::clone(world.selecting_scene()))
+    }
+
     fn selecting_table(world: BlockRef<block::World>) -> Option<BlockMut<block::Table>> {
         world
             .map(|world| {
@@ -269,6 +273,29 @@ impl Table {
         self.updated_blocks.insert.insert(craftboard_id);
     }
 
+    pub fn create_textboard(
+        &mut self,
+        mut arena: ArenaMut,
+        world: BlockMut<block::World>,
+        mouse_coord: &[f64; 2],
+        option: &table_tool::Textboard,
+    ) {
+        let mut scene = unwrap!(Self::selecting_scene(world.as_ref()));
+        let (p, _) = self
+            .three
+            .borrow_mut()
+            .get_focused_position(mouse_coord, &self.ignored_id());
+        let textboard = block::Textboard::new(p);
+        let textboard = arena.insert(textboard);
+        let textboard_id = textboard.id();
+        scene.update(|scene| {
+            scene.textboards_push(textboard);
+        });
+        self.reserve_rendering();
+        self.updated_blocks.update.insert(scene.id());
+        self.updated_blocks.insert.insert(textboard_id);
+    }
+
     pub fn rotate_camera(&mut self, movement: &[f64; 2]) {
         let h_rot = -movement[0] / 500.0;
         let v_rot = -movement[1] / 500.0;
@@ -392,6 +419,17 @@ impl Table {
                     });
                 }
             }
+            BlockKind::Textboard => {
+                if let Some(mut block) = arena.get_mut::<block::Textboard>(block_id) {
+                    let block_id = block.id();
+                    block.update(|block| {
+                        block.set_position(p);
+
+                        self.reserve_rendering();
+                        self.updated_blocks.update.insert(block_id);
+                    });
+                }
+            }
             _ => {}
         }
     }
@@ -414,6 +452,9 @@ impl Table {
             }
             TableTool::Craftboard(tool) => {
                 self.create_craftboard(arena, world, &mouse_coord, tool);
+            }
+            TableTool::Textboard(tool) => {
+                self.create_textboard(arena, world, &mouse_coord, tool);
             }
             _ => {}
         }
@@ -480,6 +521,11 @@ impl Table {
                                     })
                                     .unwrap_or(true) =>
                             {
+                                self.tool_state.selecter_mut().grabbed_object =
+                                    Some((block_kind, block_id));
+                                self.reserve_rendering();
+                            }
+                            BlockKind::Textboard => {
                                 self.tool_state.selecter_mut().grabbed_object =
                                     Some((block_kind, block_id));
                                 self.reserve_rendering();

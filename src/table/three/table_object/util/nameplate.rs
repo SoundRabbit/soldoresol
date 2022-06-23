@@ -1,4 +1,5 @@
 use crate::libs::three;
+use wasm_bindgen::prelude::*;
 
 pub struct Nameplate {
     material_text: three::MeshBasicMaterial,
@@ -9,6 +10,7 @@ pub struct Nameplate {
     mesh_background: three::Mesh,
     mesh_arrow: Option<three::Mesh>,
 
+    data_text: three::Group,
     data_board: three::Group,
     data: three::Group,
 }
@@ -48,9 +50,12 @@ impl Nameplate {
             .arrow()
             .map(|arrow_geometry| three::Mesh::new(&arrow_geometry, &material_background));
 
+        let data_text = three::Group::new();
+        data_text.add(&mesh_front);
+        data_text.add(&mesh_back);
+
         let data_board = three::Group::new();
-        data_board.add(&mesh_front);
-        data_board.add(&mesh_back);
+        data_board.add(&data_text);
         data_board.add(&mesh_background);
 
         let data = three::Group::new();
@@ -66,6 +71,7 @@ impl Nameplate {
             mesh_back,
             mesh_background,
             mesh_arrow,
+            data_text,
             data_board,
             data,
         }
@@ -87,6 +93,14 @@ impl Nameplate {
         self.mesh_arrow.as_ref()
     }
 
+    pub fn data_text(&self) -> &three::Group {
+        &self.data_text
+    }
+
+    pub fn data_background(&self) -> &three::Mesh {
+        &self.mesh_background
+    }
+
     pub fn set_color(&self, pallet: &crate::libs::color::Pallet) {
         let color = pallet.to_color();
         let [r, g, b, ..] = color.to_f64array();
@@ -98,6 +112,12 @@ impl Nameplate {
         }
         self.background().set_needs_update(true);
         self.text().set_needs_update(true);
+    }
+
+    pub fn set_user_data(&self, data: &JsValue) {
+        self.mesh_front.set_user_data(data);
+        self.mesh_back.set_user_data(data);
+        self.mesh_background.set_user_data(data);
     }
 }
 

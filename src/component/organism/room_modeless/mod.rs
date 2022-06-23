@@ -2,6 +2,7 @@ use super::organism::room_modeless_boxblock::{self, RoomModelessBoxblock};
 use super::organism::room_modeless_character::{self, RoomModelessCharacter};
 use super::organism::room_modeless_chat::{self, RoomModelessChat};
 use super::organism::room_modeless_craftboard::{self, RoomModelessCraftboard};
+use super::organism::room_modeless_textboard::{self, RoomModelessTextboard};
 use crate::arena::{block, ArenaMut, BlockMut};
 use crate::libs::bcdice::js::GameSystemClass;
 use crate::libs::random_id::U128Id;
@@ -34,6 +35,7 @@ pub enum ContentData {
     Boxblock(BlockMut<block::Boxblock>),
     Character(BlockMut<block::Character>),
     Craftboard(BlockMut<block::Craftboard>),
+    Textboard(BlockMut<block::Textboard>),
 }
 
 pub enum Msg {
@@ -145,6 +147,20 @@ impl Render<Html> for RoomModeless {
                 },
                 Sub::map(|sub| match sub {
                     room_modeless_craftboard::On::UpdateBlocks { insert, update } => {
+                        Msg::Sub(On::UpdateBlocks { insert, update })
+                    }
+                }),
+            ),
+            ContentData::Textboard(textboard) => RoomModelessTextboard::empty(
+                self,
+                None,
+                room_modeless_textboard::Props {
+                    arena: ArenaMut::clone(&self.content.arena),
+                    world: BlockMut::clone(&self.content.world),
+                    data: BlockMut::clone(&textboard),
+                },
+                Sub::map(|sub| match sub {
+                    room_modeless_textboard::On::UpdateBlocks { insert, update } => {
                         Msg::Sub(On::UpdateBlocks { insert, update })
                     }
                 }),
@@ -273,6 +289,19 @@ impl Render<Html> for TabName {
                             fa::fas_i("fa-border-all"),
                             Html::text(" "),
                             Html::text(cb.name()),
+                        ],
+                    )
+                })
+                .unwrap_or(Html::none()),
+            ContentData::Textboard(textboard) => textboard
+                .map(|tb| {
+                    Html::span(
+                        Attributes::new(),
+                        Events::new(),
+                        vec![
+                            fa::fas_i("fa-file-lines"),
+                            Html::text(" "),
+                            Html::text(tb.title()),
                         ],
                     )
                 })

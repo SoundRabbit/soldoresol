@@ -32,6 +32,7 @@ impl Update for Room {
                             | BlockKind::CanvasTexture
                             | BlockKind::Character
                             | BlockKind::Craftboard
+                            | BlockKind::Textboard
                             | BlockKind::LayerGroup
                             | BlockKind::Scene
                             | BlockKind::Table => true,
@@ -78,6 +79,19 @@ impl Update for Room {
                         &self.world,
                         &self.modeless_container,
                         room_modeless::ContentData::Craftboard(craftboard),
+                    );
+                }
+
+                Cmd::none()
+            }
+            Msg::OpenTextboardModeless(textboard_id) => {
+                if let Some(textboard) = self.arena.get_mut(&textboard_id) {
+                    super::open_modeless(
+                        &self.client_id,
+                        &self.arena,
+                        &self.world,
+                        &self.modeless_container,
+                        room_modeless::ContentData::Textboard(textboard),
                     );
                 }
 
@@ -199,6 +213,15 @@ impl Update for Room {
                             });
                         }
                     }
+                    BlockKind::Textboard => {
+                        if let Some(block) = self.arena.get_mut::<block::Textboard>(&block_id) {
+                            self.showing_contextmenu = Some(ShowingContextmenu {
+                                page_x: e.page_x() as f64,
+                                page_y: e.page_y() as f64,
+                                data: ShowingContextmenuData::Textboard(block),
+                            });
+                        }
+                    }
                     _ => {}
                 }
                 Cmd::none()
@@ -283,6 +306,18 @@ impl Update for Room {
                 Cmd::chain(Msg::UpdateBlocks {
                     insert: set! {},
                     update: set! { table.id(), craftboard_id },
+                })
+            }
+
+            Msg::RemoveTextboard(textboard_id) => {
+                let mut scene = unwrap!(self.world.map(|world| BlockMut::clone(world.selecting_scene())); Cmd::none());
+                scene.update(|scene| {
+                    scene.textboards_remove(&textboard_id);
+                });
+
+                Cmd::chain(Msg::UpdateBlocks {
+                    insert: set! {},
+                    update: set! { scene.id(), textboard_id },
                 })
             }
         }

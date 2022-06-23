@@ -32,6 +32,7 @@ pub enum Msg {
     OpenBoxblockModeless(U128Id),
     OpenCharacterModeless(U128Id),
     OpenCraftboardModeless(U128Id),
+    OpenTextboardModeless(U128Id),
     SetOkToCatchFile(bool),
     SetSelectedTableTool(TableTool),
     SetShowingContextmenu(Option<ShowingContextmenu>),
@@ -51,6 +52,7 @@ pub enum Msg {
     RemoveCharacter(U128Id),
     RemoveBoxblock(U128Id),
     RemoveCraftboard(U128Id),
+    RemoveTextboard(U128Id),
 }
 
 pub enum On {}
@@ -91,6 +93,7 @@ enum ShowingContextmenuData {
     Boxblock(BlockMut<block::Boxblock>),
     Character(BlockMut<block::Character>),
     Craftboard(BlockMut<block::Craftboard>),
+    Textboard(BlockMut<block::Textboard>),
 }
 
 pub enum ShowingModal {

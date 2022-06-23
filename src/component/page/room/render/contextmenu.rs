@@ -28,6 +28,9 @@ impl Room {
                     ShowingContextmenuData::Craftboard(block) => {
                         self.render_contextmenu_craftboard(block)
                     }
+                    ShowingContextmenuData::Textboard(block) => {
+                        self.render_contextmenu_textboard(block)
+                    }
                 },
             )],
         )
@@ -161,6 +164,36 @@ impl Room {
                 Events::new().on_click(self, {
                     let block_id = craftboard.id();
                     move |_| Msg::RemoveCraftboard(block_id)
+                }),
+                vec![Html::text("削除")],
+            ),
+        ]
+    }
+
+    fn render_contextmenu_textboard(&self, textboard: &BlockMut<block::Textboard>) -> Vec<Html> {
+        vec![
+            Marker::light(
+                Attributes::new(),
+                Events::new(),
+                vec![Html::text(
+                    textboard
+                        .map(|textboard| textboard.title().clone())
+                        .unwrap_or(String::from("")),
+                )],
+            ),
+            Btn::menu(
+                Attributes::new(),
+                Events::new().on_click(self, {
+                    let block_id = textboard.id();
+                    move |_| Msg::OpenTextboardModeless(block_id)
+                }),
+                vec![Html::text("詳細を表示")],
+            ),
+            Btn::menu(
+                Attributes::new(),
+                Events::new().on_click(self, {
+                    let block_id = textboard.id();
+                    move |_| Msg::RemoveTextboard(block_id)
                 }),
                 vec![Html::text("削除")],
             ),

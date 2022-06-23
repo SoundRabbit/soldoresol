@@ -24,6 +24,7 @@ pub struct Three {
     object_boxblock: table_object::Boxblock,
     object_craftboard: table_object::Craftboard,
     object_character: table_object::Character,
+    object_textboard: table_object::Textboard,
     light: CommonLight,
     device_pixel_ratio: f64,
     canvas_size: [f64; 2],
@@ -79,6 +80,7 @@ impl Three {
             object_boxblock: table_object::Boxblock::new(),
             object_craftboard: table_object::Craftboard::new(),
             object_character: table_object::Character::new(),
+            object_textboard: table_object::Textboard::new(),
             light: CommonLight {
                 ambient_light,
                 directional_light,
@@ -193,15 +195,11 @@ impl Three {
     }
 
     pub fn render(&mut self, world: BlockRef<block::World>) {
-        let table = world
-            .map(|world| {
-                let scene = world.selecting_scene().as_ref();
-                let table = scene
-                    .map(|scene: &block::Scene| scene.selecting_table().as_ref())
-                    .unwrap_or(BlockRef::<block::Table>::none());
-
-                table
-            })
+        let scene = world
+            .map(|world| world.selecting_scene().as_ref())
+            .unwrap_or(BlockRef::<block::Scene>::none());
+        let table = scene
+            .map(|scene| scene.selecting_table().as_ref())
             .unwrap_or(BlockRef::<block::Table>::none());
 
         table.map(|table| {
@@ -217,6 +215,14 @@ impl Three {
                 &mut self.texture_table,
                 &self.scene,
                 table.boxblocks().iter().map(|block| block.as_ref()),
+            );
+        });
+
+        scene.map(|scene| {
+            self.object_textboard.update(
+                &mut self.texture_table,
+                &self.scene,
+                scene.textboards().iter().map(|block| block.as_ref()),
             );
         });
 

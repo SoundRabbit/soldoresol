@@ -91,6 +91,7 @@ impl Constructor for TableMenu {
                         texture: None,
                         shape: block::boxblock::Shape::Cube,
                     })),
+                    TableTool::Textboard(Rc::new(table_tool::Textboard {})),
                 ],
                 0,
             ),
@@ -245,6 +246,7 @@ impl TableMenu {
             TableTool::Eraser(..) => ("消しゴム", fa::fas_i("fa-eraser")),
             TableTool::Character(..) => ("キャラコマ", fa::fas_i("fa-user")),
             TableTool::Boxblock(..) => ("ブロック", fa::fas_i("fa-cube")),
+            TableTool::Textboard(..) => ("メモ", fa::fas_i("fa-file-lines")),
         };
         Html::div(
             Attributes::new().class(Self::class("icon")),

@@ -9,6 +9,7 @@ pub enum TableTool {
     Eraser(Rc<Eraser>),
     Character(Rc<Character>),
     Boxblock(Rc<Boxblock>),
+    Textboard(Rc<Textboard>),
 }
 
 #[derive(Clone)]
@@ -48,3 +49,6 @@ pub struct Boxblock {
     pub texture: Option<BlockRef<resource::BlockTexture>>,
     pub shape: block::boxblock::Shape,
 }
+
+#[derive(Clone)]
+pub struct Textboard {}

@@ -137,11 +137,11 @@ impl TextureTable {
         ctx.set_fill_style(&JsValue::from("#FFFFFF"));
 
         ctx.set_font(&format!("{}px sans-serif", font_size.0));
-        let _ = ctx.fill_text(&text.0, 0.0, text_size.1[1]);
+        Self::fill_lines(&ctx, &text.0, 0.0, text_size.1[1], font_size.0);
 
         if text_1 {
             ctx.set_font(&format!("{}px sans-serif", font_size.1));
-            let _ = ctx.fill_text(&text.1, 0.0, 0.0);
+            Self::fill_lines(&ctx, &text.1, 0.0, 0.0, font_size.1);
         }
 
         let texture = three::Texture::new_with_canvas(&canvas);
@@ -158,16 +158,33 @@ impl TextureTable {
         texture
     }
 
+    fn fill_lines(
+        ctx: &web_sys::CanvasRenderingContext2d,
+        text: &String,
+        x: f64,
+        y: f64,
+        font_size: f64,
+    ) {
+        let mut line_num = 0.0;
+        for line in text.lines() {
+            let _ = ctx.fill_text(line, x, y + line_num * font_size);
+            line_num += 1.0;
+        }
+    }
+
     fn calc_text_size(
         ctx: &web_sys::CanvasRenderingContext2d,
         font_size: f64,
         text: &String,
     ) -> [f64; 2] {
         ctx.set_font(&format!("{}px sans-serif", font_size));
-        let lines = text.lines().count();
-        let metrix = ctx.measure_text(&text).unwrap();
-        let width = metrix.width();
-        let height = font_size * lines as f64;
+        let mut width: f64 = 0.0;
+        for line in text.lines() {
+            let metrix = ctx.measure_text(line).unwrap();
+            width = width.max(metrix.width());
+        }
+        let line_num = text.lines().count();
+        let height = font_size * line_num as f64;
 
         [width, height]
     }
