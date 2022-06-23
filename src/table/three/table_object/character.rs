@@ -25,7 +25,7 @@ pub struct Mesh {
     texture_id: U128Id,
 
     nameplate: util::Nameplate,
-    nameplate_id: String,
+    nameplate_id: (String, String),
 
     color: crate::libs::color::Pallet,
 
@@ -89,6 +89,7 @@ impl Character {
                     nameplate.set_color(character.color());
                     nameplate.set_user_data(&character_id.to_jsvalue());
                     nameplate.scale().set(1.0, 1.0, 1.0);
+                    nameplate.board().scale().set(0.0, 1.0, 0.0);
 
                     let data = three::Group::new();
                     data.set_render_order(super::ORDER_CHARACTER);
@@ -107,7 +108,7 @@ impl Character {
                             texture_data,
                             texture_id: U128Id::none(),
                             nameplate,
-                            nameplate_id: String::from(""),
+                            nameplate_id: (String::from(""), String::from("")),
                             color: character.color().clone(),
                             data,
                         },
@@ -151,7 +152,7 @@ impl Character {
                         mesh.color = character.color().clone();
                     }
 
-                    if *character.name() != mesh.nameplate_id {
+                    if *character.display_name() != mesh.nameplate_id {
                         let texture = texture_table.load_text(character.display_name());
                         mesh.nameplate.text().set_alpha_map(Some(&texture.data));
                         mesh.nameplate.text().set_needs_update(true);
@@ -162,6 +163,7 @@ impl Character {
                             .board()
                             .scale()
                             .set(texture_width, 1.0, texture_height);
+                        mesh.nameplate_id = character.display_name().clone();
                     }
 
                     if let Some(texture_block) = texture_block {

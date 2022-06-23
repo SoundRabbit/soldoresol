@@ -27,6 +27,12 @@ pub struct XZGeometry {
     arrow: Option<three::BufferGeometry>,
 }
 
+pub struct XYGeometry {
+    front: three::BufferGeometry,
+    back: three::BufferGeometry,
+    background: three::BufferGeometry,
+}
+
 impl Nameplate {
     pub fn new(geometry: &impl NameplateGeometry) -> Self {
         let material_text = three::MeshBasicMaterial::new(&object! {
@@ -75,6 +81,10 @@ impl Nameplate {
 
     pub fn board(&self) -> &three::Group {
         &self.data_board
+    }
+
+    pub fn arrow(&self) -> Option<&three::Mesh> {
+        self.mesh_arrow.as_ref()
     }
 
     pub fn set_color(&self, pallet: &crate::libs::color::Pallet) {
@@ -196,5 +206,83 @@ impl NameplateGeometry for XZGeometry {
 
     fn arrow(&self) -> Option<&three::BufferGeometry> {
         self.arrow.as_ref()
+    }
+}
+
+impl XYGeometry {
+    pub fn new(x_offset: f32, y_offset: f32) -> Self {
+        let ext = 0.05;
+        let x_offset = if x_offset < 0.0 {
+            x_offset - ext
+        } else {
+            x_offset + ext
+        };
+        let y_offset = if y_offset < 0.0 {
+            y_offset - ext
+        } else {
+            y_offset + ext
+        };
+        Self {
+            front: Self::create_geometry(x_offset, y_offset, 0.01, 0.0, false),
+            back: Self::create_geometry(x_offset, y_offset, -0.01, 0.0, true),
+            background: Self::create_geometry(x_offset, y_offset, 0.0, ext, false),
+        }
+    }
+
+    fn create_geometry(
+        x_offset: f32,
+        y_offset: f32,
+        z_offset: f32,
+        ext: f32,
+        inv: bool,
+    ) -> three::BufferGeometry {
+        let inv = if inv { -1.0 } else { 1.0 };
+        let points = js_sys::Float32Array::from(
+            [
+                [0.5 * inv + x_offset + ext, 0.5 + y_offset + ext, z_offset],
+                [-0.5 * inv + x_offset - ext, 0.5 + y_offset + ext, z_offset],
+                [-0.5 * inv + x_offset - ext, -0.5 + y_offset - ext, z_offset],
+                [0.5 * inv + x_offset + ext, -0.5 + y_offset - ext, z_offset],
+            ]
+            .concat()
+            .as_slice(),
+        );
+        let uv = js_sys::Float32Array::from(
+            [[1.0, 1.0], [0.0, 1.0], [0.0, 0.0], [1.0, 0.0]]
+                .concat()
+                .as_slice(),
+        );
+        let index = js_sys::Uint16Array::from([0, 1, 2, 2, 3, 0].as_ref());
+
+        let geometry = three::BufferGeometry::new();
+        geometry.set_attribute(
+            "position",
+            &three::BufferAttribute::new_with_f32array(&points, 3, false),
+        );
+        geometry.set_attribute(
+            "uv",
+            &three::BufferAttribute::new_with_f32array(&uv, 2, false),
+        );
+        geometry.set_index(&three::BufferAttribute::new_with_u16array(&index, 1, false));
+
+        geometry
+    }
+}
+
+impl NameplateGeometry for XYGeometry {
+    fn front(&self) -> &three::BufferGeometry {
+        &self.front
+    }
+
+    fn back(&self) -> &three::BufferGeometry {
+        &self.back
+    }
+
+    fn background(&self) -> &three::BufferGeometry {
+        &self.background
+    }
+
+    fn arrow(&self) -> Option<&three::BufferGeometry> {
+        None
     }
 }

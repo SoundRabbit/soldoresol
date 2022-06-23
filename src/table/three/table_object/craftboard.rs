@@ -1,4 +1,5 @@
 use super::super::TextureTable;
+use super::util;
 use crate::arena::{block, resource, BlockRef};
 use crate::libs::random_id::U128Id;
 use crate::libs::three;
@@ -12,11 +13,18 @@ struct Mesh {
     texture_material: three::MeshBasicMaterial,
     texture_data: three::Mesh,
     texture_id: U128Id,
+
+    nameplate: util::Nameplate,
+    nameplate_id: (String, String),
+
+    color: crate::libs::color::Pallet,
+
     data: three::Group,
 }
 
 pub struct Craftboard {
     geometry_square: three::BufferGeometry,
+    geometry_nameplate: util::nameplate::XYGeometry,
     meshs: HashMap<U128Id, Mesh>,
 }
 
@@ -24,6 +32,7 @@ impl Craftboard {
     pub fn new() -> Self {
         Self {
             geometry_square: Self::create_texture_geometry(),
+            geometry_nameplate: util::nameplate::XYGeometry::new(-0.5, -0.5),
             meshs: HashMap::new(),
         }
     }
@@ -77,11 +86,17 @@ impl Craftboard {
                     texture_data.set_user_data(&craftboard_id.to_jsvalue());
                     texture_data.set_render_order(1.0);
 
+                    let nameplate = util::Nameplate::new(&self.geometry_nameplate);
+                    nameplate.set_color(craftboard.grid_color());
+                    nameplate.set_user_data(&craftboard_id.to_jsvalue());
+                    nameplate.scale().set(1.0, 1.0, 1.0);
+                    nameplate.board().scale().set(0.0, 0.0, 1.0);
+
                     let data = three::Group::new();
                     data.add(&grid_data);
                     data.add(&texture_data);
-                    data.set_user_data(&craftboard_id.to_jsvalue());
                     scene.add(&data);
+                    data.add(&nameplate);
 
                     self.meshs.insert(
                         U128Id::clone(&craftboard_id),
@@ -91,6 +106,9 @@ impl Craftboard {
                             texture_data,
                             texture_material,
                             texture_id: U128Id::none(),
+                            nameplate,
+                            nameplate_id: (String::from(""), String::from("")),
+                            color: craftboard.grid_color().clone(),
                             data,
                             size: [sz_i[0], sz_i[1]],
                         },
@@ -108,6 +126,11 @@ impl Craftboard {
                     mesh.texture_data
                         .scale()
                         .set(sz_f[0] + 0.02, sz_f[1] + 0.02, sz_f[2] + 0.02);
+                    mesh.nameplate.position().set(
+                        p_x + sz_f[0] * 0.5 + 0.02,
+                        p_y - sz_f[1] * 0.5 - 0.02,
+                        p_z,
+                    );
 
                     let [r, g, b, a] = craftboard.grid_color().to_color().to_f64array();
                     mesh.grid_material.color().set_rgb(r, g, b);
@@ -120,6 +143,25 @@ impl Craftboard {
                         textures.nz.as_ref().map(|nz| BlockRef::clone(&nz)),
                     );
                     mesh.texture_id = texture_id;
+
+                    if *craftboard.grid_color() != mesh.color {
+                        mesh.nameplate.set_color(craftboard.grid_color());
+                        mesh.color = craftboard.grid_color().clone();
+                    }
+
+                    if *craftboard.display_name() != mesh.nameplate_id {
+                        let texture = texture_table.load_text(craftboard.display_name());
+                        mesh.nameplate.text().set_alpha_map(Some(&texture.data));
+                        mesh.nameplate.text().set_needs_update(true);
+
+                        let texture_width = texture.size[0] * 0.5;
+                        let texture_height = texture_width * texture.size[1] / texture.size[0];
+                        mesh.nameplate
+                            .board()
+                            .scale()
+                            .set(texture_width, texture_height, 1.0);
+                        mesh.nameplate_id = craftboard.display_name().clone();
+                    }
                 }
             });
         }

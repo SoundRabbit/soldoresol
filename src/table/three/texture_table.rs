@@ -9,7 +9,6 @@ use wasm_bindgen::{prelude::*, JsCast};
 pub struct TextureTable {
     data: HashMap<U128Id, Texture>,
     text: HashMap<(String, String), Fate<Rc<TextTexture>>>,
-    canvas: web_sys::HtmlCanvasElement,
 }
 
 pub enum Texture {
@@ -33,7 +32,6 @@ impl TextureTable {
         Self {
             data: HashMap::new(),
             text: HashMap::new(),
-            canvas: crate::libs::element::html_canvas_element(),
         }
     }
 
@@ -103,7 +101,7 @@ impl TextureTable {
         }
 
         let text_1 = text.1 != "";
-        let canvas = &self.canvas;
+        let canvas = crate::libs::element::html_canvas_element();
         let ctx = canvas
             .get_context("2d")
             .unwrap()
