@@ -160,6 +160,30 @@ impl Table {
         [client_x, client_y]
     }
 
+    /// BlockMut<Table>を更新する
+    pub fn update_table(
+        scene: BlockRef<block::Scene>,
+        mut table: BlockMut<block::Table>,
+        mut f: impl FnMut(&mut block::Table),
+    ) -> HashSet<U128Id> {
+        let mut updated_blocks = HashSet::new();
+
+        updated_blocks.insert(table.id());
+        table.update(&mut f);
+
+        scene.map(|scene| {
+            if table.id() == scene.master_table().id() {
+                for table in scene.tables() {
+                    let mut table = BlockMut::clone(table);
+                    updated_blocks.insert(table.id());
+                    table.update(&mut f);
+                }
+            }
+        });
+
+        updated_blocks
+    }
+
     /// Boxblockを作成して配置する
     pub fn create_boxblock(
         &mut self,
@@ -168,6 +192,7 @@ impl Table {
         mouse_coord: &[f64; 2],
         option: &table_tool::Boxblock,
     ) {
+        let scene = unwrap!(Self::selecting_scene(world.as_ref()));
         let mut table = unwrap!(Self::selecting_table(world.as_ref()));
         let (p, n) = self
             .three
@@ -192,11 +217,15 @@ impl Table {
 
         let boxblock = arena.insert(boxblock);
         let boxblock_id = boxblock.id();
-        table.update(|table| {
-            table.push_boxblock(boxblock);
+
+        let updated_blocks = Self::update_table(scene.as_ref(), table, |table| {
+            table.push_boxblock(BlockMut::clone(&boxblock));
         });
+
         self.reserve_rendering();
-        self.updated_blocks.update.insert(table.id());
+        for updated_block in updated_blocks {
+            self.updated_blocks.update.insert(updated_block);
+        }
         self.updated_blocks.insert.insert(boxblock_id);
     }
 

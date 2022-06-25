@@ -66,9 +66,10 @@ macro_rules! block {
     } => {
         impl $b_name {
             pub fn new($($p_c_name: $p_c_type,)*) -> Self {
+                $(let $p_d_name = $p_default;)*
                 Self {
                     $($p_c_name,)*
-                    $($p_d_name: $p_default,)*
+                    $($p_d_name,)*
                 }
             }
         }

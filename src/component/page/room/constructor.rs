@@ -40,8 +40,7 @@ impl Constructor for Room {
         let craftboard = block::Craftboard::new(table.default_is_bind_to_grid(), [0.0, 0.0, 0.0]);
         table.push_craftboard(arena.insert(craftboard));
 
-        let mut scene = block::Scene::new();
-        scene.tables_push(arena.insert(table));
+        let scene = block::Scene::new(arena.insert(table));
 
         let mut world = block::World::new();
         world.push_scenes(arena.insert(scene));

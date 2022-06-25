@@ -7,7 +7,8 @@ use super::Textboard;
 
 block! {
     [pub Scene(constructor, pack)]
-    selecting_table: BlockMut<Table> = BlockMut::<Table>::none();
+    (master_table): BlockMut<Table>;
+    selecting_table: BlockMut<Table> = BlockMut::clone(&master_table);
     tables: Vec<BlockMut<Table>> = vec![];
     textboards: Vec<BlockMut<Textboard>> = vec![];
     name: String = String::from("新規シーン");
@@ -16,6 +17,9 @@ block! {
 impl Scene {
     pub fn selecting_table(&self) -> &BlockMut<Table> {
         &self.selecting_table
+    }
+    pub fn master_table(&self) -> &BlockMut<Table> {
+        &self.master_table
     }
     pub fn tables(&self) -> &Vec<BlockMut<Table>> {
         &self.tables
@@ -27,10 +31,6 @@ impl Scene {
         &self.name
     }
     pub fn tables_push(&mut self, table: BlockMut<Table>) {
-        if self.tables.len() == 0 {
-            self.selecting_table = BlockMut::clone(&table);
-        }
-
         self.tables.push(table);
     }
 

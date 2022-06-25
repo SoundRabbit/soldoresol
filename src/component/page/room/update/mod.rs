@@ -1,6 +1,7 @@
 use super::super::organism::{room_modeless, room_modeless_chat::ChatUser};
 use super::{Msg, Room, ShowingContextmenu, ShowingContextmenuData, ShowingModal};
 use crate::arena::{block, ArenaMut, BlockKind, BlockMut};
+use crate::table::Table;
 use kagura::prelude::*;
 use nusa::prelude::*;
 use std::rc::Rc;
@@ -285,14 +286,15 @@ impl Update for Room {
 
             Msg::RemoveBoxblock(boxblock_id) => {
                 let scene = unwrap!(self.world.map(|world| BlockMut::clone(world.selecting_scene())); Cmd::none());
-                let mut table = unwrap!(scene.map(|secene| BlockMut::clone(secene.selecting_table())); Cmd::none());
-                table.update(|table| {
+                let table = unwrap!(scene.map(|secene| BlockMut::clone(secene.selecting_table())); Cmd::none());
+                let mut updated_blocks = Table::update_table(scene.as_ref(), table, |table| {
                     table.remove_boxblock(&boxblock_id);
                 });
+                updated_blocks.insert(boxblock_id);
 
                 Cmd::chain(Msg::UpdateBlocks {
                     insert: set! {},
-                    update: set! { table.id(), boxblock_id },
+                    update: updated_blocks,
                 })
             }
 
