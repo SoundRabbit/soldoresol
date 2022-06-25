@@ -2,22 +2,32 @@ use super::atom::collapse::{self, Collapse};
 use super::atom::common::Common;
 use super::atom::marker::Marker;
 use super::atom::text::Text;
+use super::molecule::table_list::{self, TableList};
 use crate::arena::{block, ArenaMut, BlockMut};
+use crate::libs::random_id::U128Id;
 use isaribi::{
     style,
     styled::{Style, Styled},
 };
 use kagura::prelude::*;
 use nusa::prelude::*;
+use std::collections::HashSet;
 
 pub struct Props {
     pub arena: ArenaMut,
     pub world: BlockMut<block::World>,
 }
 
-pub enum Msg {}
+pub enum Msg {
+    Sub(On),
+}
 
-pub enum On {}
+pub enum On {
+    UpdateBlocks {
+        insert: HashSet<U128Id>,
+        update: HashSet<U128Id>,
+    },
+}
 
 pub struct SceneList {
     arena: ArenaMut,
@@ -47,6 +57,12 @@ impl Update for SceneList {
         self.world = props.world;
         Cmd::none()
     }
+
+    fn update(self: Pin<&mut Self>, msg: Msg) -> Cmd<Self> {
+        match msg {
+            Msg::Sub(sub) => Cmd::submit(sub),
+        }
+    }
 }
 
 impl Render<Html> for SceneList {
@@ -58,7 +74,9 @@ impl Render<Html> for SceneList {
                     world
                         .scenes()
                         .iter()
-                        .map(|scene| self.render_scene(scene))
+                        .map(|scene| {
+                            self.render_scene(scene, scene.id() == world.selecting_scene().id())
+                        })
                         .collect()
                 })
                 .unwrap_or(vec![]),
@@ -67,8 +85,9 @@ impl Render<Html> for SceneList {
 }
 
 impl SceneList {
-    fn render_scene(&self, scene: &BlockMut<block::Scene>) -> Html {
+    fn render_scene(&self, scene: &BlockMut<block::Scene>, is_selected: bool) -> Html {
         let scene_id = scene.id();
+        let scene_block = BlockMut::clone(scene);
         scene
             .map(|scene| {
                 Collapse::new(
@@ -88,7 +107,8 @@ impl SceneList {
                                     Attributes::new().class(Common::keyvalue()),
                                     Events::new(),
                                     vec![
-                                        Marker::purple(
+                                        Self::render_marker(
+                                            is_selected,
                                             Attributes::new(),
                                             Events::new(),
                                             vec![Html::text("シーン")],
@@ -118,11 +138,36 @@ impl SceneList {
                                 ),
                             ],
                         ),
-                        vec![],
+                        vec![TableList::empty(
+                            self,
+                            None,
+                            table_list::Props {
+                                arena: ArenaMut::clone(&self.arena),
+                                scene: scene_block,
+                            },
+                            Sub::map(|sub| match sub {
+                                table_list::On::UpdateBlocks { insert, update } => {
+                                    Msg::Sub(On::UpdateBlocks { insert, update })
+                                }
+                            }),
+                        )],
                     ),
                 )
             })
             .unwrap_or(Html::none())
+    }
+
+    fn render_marker(
+        is_selected: bool,
+        attrs: Attributes,
+        events: Events,
+        children: Vec<Html>,
+    ) -> Html {
+        if is_selected {
+            Marker::fill_purple(Attributes::new(), Events::new(), vec![Html::text("シーン")])
+        } else {
+            Marker::purple(Attributes::new(), Events::new(), vec![Html::text("シーン")])
+        }
     }
 }
 
@@ -138,6 +183,7 @@ impl Styled for SceneList {
                 "border-left": format!(".35rem solid {}", crate::libs::color::Pallet::gray(0));
                 "padding-left": ".65rem";
                 "padding-top": ".65rem";
+                "padding-bottom": ".65rem";
             }
         }
     }

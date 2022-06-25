@@ -150,7 +150,9 @@ impl Render<Html> for Room {
                                             arena: ArenaMut::clone(&self.arena),
                                             world: BlockMut::clone(&self.world),
                                         },
-                                        Sub::none(),
+                                        Sub::map(|sub| match sub {
+                                            world_view::On::UpdateBlocks {insert, update} => Msg::UpdateBlocks{insert, update}
+                                        }),
                                     ),
                                 ],
                             ),

@@ -156,7 +156,7 @@ impl Craftboard {
         }
 
         for unused_craftboard_id in unused {
-            if let Some(mesh) = self.meshs.get(&unused_craftboard_id) {
+            if let Some(mesh) = self.meshs.remove(&unused_craftboard_id) {
                 scene.remove(&mesh.data);
             }
         }

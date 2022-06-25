@@ -24,6 +24,15 @@ impl Scene {
     pub fn tables(&self) -> &Vec<BlockMut<Table>> {
         &self.tables
     }
+    pub fn set_selecting_table(&mut self, block_id: &U128Id) {
+        if self.master_table.id() == *block_id {
+            self.selecting_table = BlockMut::clone(&self.master_table);
+        } else {
+            if let Some(table) = self.tables.iter().find(|table| table.id() == *block_id) {
+                self.selecting_table = BlockMut::clone(table);
+            }
+        }
+    }
     pub fn textboards(&self) -> &Vec<BlockMut<Textboard>> {
         &self.textboards
     }

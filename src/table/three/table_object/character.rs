@@ -185,7 +185,7 @@ impl Character {
         }
 
         for unused_character_id in unused {
-            if let Some(mesh) = self.meshs.get(&unused_character_id) {
+            if let Some(mesh) = self.meshs.remove(&unused_character_id) {
                 scene.remove(&mesh.data);
             }
         }

@@ -13,6 +13,7 @@ pub mod room_modeless_character;
 pub mod room_modeless_chat;
 pub mod room_modeless_craftboard;
 pub mod room_modeless_textboard;
+pub mod scene_list;
 pub mod tab_modeless_container;
 pub mod table_menu;
 pub mod world_view;

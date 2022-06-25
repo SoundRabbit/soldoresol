@@ -151,7 +151,7 @@ impl Boxblock {
         }
 
         for unused_boxblock_id in unused {
-            if let Some(mesh) = self.meshs.get(&unused_boxblock_id) {
+            if let Some(mesh) = self.meshs.remove(&unused_boxblock_id) {
                 scene.remove(&mesh.data);
             }
         }

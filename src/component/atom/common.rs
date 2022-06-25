@@ -29,6 +29,10 @@ impl Common {
         Self::styled(Self::class("valuekey"))
     }
 
+    pub fn keyvaluekey() -> String {
+        Self::styled(Self::class("keyvaluekey"))
+    }
+
     pub fn selectable() -> String {
         Self::styled(Self::class("selectable"))
     }
@@ -86,7 +90,15 @@ impl Styled for Common {
                 "align-items": "center";
             }
 
-            ".keyvalue > *, .valuekey > *" {
+            ".keyvaluekey" {
+                "display": "grid";
+                "grid-template-columns": "max-content 1fr max-content";
+                "column-gap": ".35rem";
+                "row-gap": ".65rem";
+                "align-items": "center";
+            }
+
+            ".keyvalue > *, .valuekey > *, .keyvaluekey > *" {
                 "overflow": "hidden";
             }
 

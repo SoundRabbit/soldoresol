@@ -1,16 +1,15 @@
-use super::atom::{btn::Btn, fa};
-use super::molecule::{
-    scene_list::{self, SceneList},
-    tab_menu::{self, TabMenu},
-    table_list::{self, TableList},
-};
+use super::atom::{btn::Btn, fa, text::Text};
+use super::molecule::tab_menu::{self, TabMenu};
+use super::organism::scene_list::{self, SceneList};
 use crate::arena::{block, ArenaMut, BlockMut};
+use crate::libs::random_id::U128Id;
 use isaribi::{
     style,
     styled::{Style, Styled},
 };
 use kagura::prelude::*;
 use nusa::prelude::*;
+use std::collections::HashSet;
 
 pub struct Props {
     pub arena: ArenaMut,
@@ -20,9 +19,15 @@ pub struct Props {
 pub enum Msg {
     SetIsShowing(bool),
     SetSelectedTabIdx(usize),
+    Sub(On),
 }
 
-pub enum On {}
+pub enum On {
+    UpdateBlocks {
+        insert: HashSet<U128Id>,
+        update: HashSet<U128Id>,
+    },
+}
 
 pub struct WorldView {
     arena: ArenaMut,
@@ -61,6 +66,7 @@ impl Update for WorldView {
                 self.selected_tab_idx = selected_tab_idx;
                 Cmd::none()
             }
+            Msg::Sub(sub) => Cmd::submit(sub),
         }
     }
 }
@@ -110,45 +116,26 @@ impl Render<Html> for WorldView {
                         (
                             Attributes::new(),
                             Events::new(),
-                            vec![
-                                (
-                                    Html::text("テーブル"),
-                                    Html::div(
-                                        Attributes::new().class(Self::class("scroll")),
-                                        Events::new(),
-                                        vec![TableList::empty(
-                                            self,
-                                            None,
-                                            table_list::Props {
-                                                arena: ArenaMut::clone(&self.arena),
-                                                scene: self
-                                                    .world
-                                                    .map(|world| {
-                                                        BlockMut::clone(&world.selecting_scene())
-                                                    })
-                                                    .unwrap_or(BlockMut::none()),
-                                            },
-                                            Sub::none(),
-                                        )],
-                                    ),
+                            vec![(
+                                Html::text("シーン"),
+                                Html::div(
+                                    Attributes::new().class(Self::class("scroll")),
+                                    Events::new(),
+                                    vec![SceneList::empty(
+                                        self,
+                                        None,
+                                        scene_list::Props {
+                                            arena: ArenaMut::clone(&self.arena),
+                                            world: BlockMut::clone(&self.world),
+                                        },
+                                        Sub::map(|sub| match sub {
+                                            scene_list::On::UpdateBlocks { insert, update } => {
+                                                Msg::Sub(On::UpdateBlocks { insert, update })
+                                            }
+                                        }),
+                                    )],
                                 ),
-                                (
-                                    Html::text("シーン"),
-                                    Html::div(
-                                        Attributes::new().class(Self::class("scroll")),
-                                        Events::new(),
-                                        vec![SceneList::empty(
-                                            self,
-                                            None,
-                                            scene_list::Props {
-                                                arena: ArenaMut::clone(&self.arena),
-                                                world: BlockMut::clone(&self.world),
-                                            },
-                                            Sub::none(),
-                                        )],
-                                    ),
-                                ),
-                            ],
+                            )],
                         ),
                     )],
                 ),

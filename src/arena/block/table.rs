@@ -52,4 +52,21 @@ impl Table {
     pub fn default_is_bind_to_grid(&self) -> bool {
         self.default_is_bind_to_grid
     }
+
+    pub fn create_child(&self) -> Self {
+        Self {
+            name: String::new(),
+            boxblocks: self
+                .boxblocks
+                .iter()
+                .map(|block| BlockMut::clone(block))
+                .collect(),
+            craftboards: self
+                .craftboards
+                .iter()
+                .map(|block| BlockMut::clone(block))
+                .collect(),
+            default_is_bind_to_grid: self.default_is_bind_to_grid,
+        }
+    }
 }

@@ -93,5 +93,11 @@ impl Textboard {
                 }
             });
         }
+
+        for unused_textboard_id in unused {
+            if let Some(mesh) = self.meshs.remove(&unused_textboard_id) {
+                scene.remove(&mesh.data);
+            }
+        }
     }
 }

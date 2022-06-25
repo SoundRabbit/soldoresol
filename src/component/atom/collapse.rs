@@ -106,7 +106,7 @@ impl Styled for Collapse {
             ".base" {
                 "width": "100%";
                 "display": "grid";
-                "grid-template-columns": "1rem max-content 1fr";
+                "grid-template-columns": "1rem 1.5rem 1fr";
                 "grid-template-rows": "max-content max-content";
                 "overflow": "hidden";
             }
@@ -117,6 +117,7 @@ impl Styled for Collapse {
                 "padding": ".65em";
                 "line-height": "1.5";
                 "align-self": "start";
+                "justify-self": "center";
             }
 
             ".head" {
