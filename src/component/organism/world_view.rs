@@ -121,23 +121,6 @@ impl Render<Html> for WorldView {
                             Events::new(),
                             vec![
                                 (
-                                    Text::condense_75("コンポーネント"),
-                                    Html::div(
-                                        Attributes::new().class(Self::class("scroll")),
-                                        Events::new(),
-                                        vec![ComponentList::empty(
-                                            self,
-                                            None,
-                                            component_list::Props {
-                                                arena: ArenaMut::clone(&self.arena),
-                                                world: BlockMut::clone(&self.world),
-                                                selecting: U128Id::none(),
-                                            },
-                                            Sub::none(),
-                                        )],
-                                    ),
-                                ),
-                                (
                                     Html::text("シーン"),
                                     Html::div(
                                         Attributes::new().class(Self::class("scroll")),
@@ -154,6 +137,23 @@ impl Render<Html> for WorldView {
                                                     Msg::Sub(On::UpdateBlocks { insert, update })
                                                 }
                                             }),
+                                        )],
+                                    ),
+                                ),
+                                (
+                                    Text::condense_75("コンポーネント"),
+                                    Html::div(
+                                        Attributes::new().class(Self::class("scroll")),
+                                        Events::new(),
+                                        vec![ComponentList::empty(
+                                            self,
+                                            None,
+                                            component_list::Props {
+                                                arena: ArenaMut::clone(&self.arena),
+                                                world: BlockMut::clone(&self.world),
+                                                selecting: U128Id::none(),
+                                            },
+                                            Sub::none(),
                                         )],
                                     ),
                                 ),
