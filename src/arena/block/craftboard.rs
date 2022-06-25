@@ -6,11 +6,12 @@ use super::util::Pack;
 use super::BlockMut;
 use super::BlockRef;
 use crate::libs::color::Pallet;
+use std::collections::HashSet;
 
 type Textures = Cubebox<Option<BlockRef<ImageData>>>;
 
 block! {
-    [pub Craftboard(constructor, pack)]
+    [pub Craftboard(constructor, pack, component)]
     (is_bind_to_grid): bool;
     (position): [f64; 3];
     name: String = String::new();

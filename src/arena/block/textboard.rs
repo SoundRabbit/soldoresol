@@ -1,10 +1,12 @@
 #[allow(unused_imports)]
 use super::util::prelude::*;
 use super::util::Pack;
+use super::BlockMut;
 use crate::libs::color::Pallet;
+use std::collections::HashSet;
 
 block! {
-    [pub Textboard(constructor, pack)]
+    [pub Textboard(constructor, pack, component)]
     (position): [f64; 3];
     title: String = String::new();
     text: String = String::new();
