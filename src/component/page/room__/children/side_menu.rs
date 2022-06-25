@@ -7,7 +7,7 @@ use super::atom::dropdown::{self, Dropdown};
 use super::atom::fa;
 use super::atom::heading::{self, Heading};
 use super::atom::slider::{self, Slider};
-use super::atom::text;
+use super::atom::text::Text;
 use super::modal_imported_files::{self, ModalImportedFiles};
 use super::molecule::color_pallet::{self, ColorPallet};
 use super::molecule::tab_menu::{self, TabMenu};
@@ -832,7 +832,7 @@ impl SideMenu {
                 .class(Self::class("sub-menu")),
             Events::new(),
             vec![
-                text::div("コマサイズ"),
+                Text::div("コマサイズ"),
                 Slider::empty(
                     slider::Props {
                         position: slider::Position::Inf {
@@ -855,7 +855,7 @@ impl SideMenu {
                         }
                     }),
                 ),
-                text::div("キャラクターの身長"),
+                Text::div("キャラクターの身長"),
                 Slider::empty(
                     slider::Props {
                         position: slider::Position::Inf {
@@ -911,7 +911,7 @@ impl SideMenu {
                 .class(Self::class("sub-menu")),
             Events::new(),
             vec![
-                text::div("幅（x方向）"),
+                Text::div("幅（x方向）"),
                 Slider::empty(
                     slider::Props {
                         position: slider::Position::Linear {
@@ -935,7 +935,7 @@ impl SideMenu {
                         }
                     }),
                 ),
-                text::div("奥行き（y方向）"),
+                Text::div("奥行き（y方向）"),
                 Slider::empty(
                     slider::Props {
                         position: slider::Position::Linear {
@@ -959,7 +959,7 @@ impl SideMenu {
                         }
                     }),
                 ),
-                text::div("高さ（z方向）"),
+                Text::div("高さ（z方向）"),
                 Slider::empty(
                     slider::Props {
                         position: slider::Position::Linear {
@@ -1134,7 +1134,7 @@ impl SideMenu {
                 .class(Self::class("sub-menu")),
             Events::new(),
             vec![
-                text::div("明るさ"),
+                Text::div("明るさ"),
                 Slider::empty(
                     slider::Props {
                         position: slider::Position::Linear {
@@ -1158,7 +1158,7 @@ impl SideMenu {
                         }
                     }),
                 ),
-                text::div("減衰開始距離"),
+                Text::div("減衰開始距離"),
                 Slider::empty(
                     slider::Props {
                         position: slider::Position::Linear {

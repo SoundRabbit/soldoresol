@@ -2,7 +2,7 @@ use super::atom::{
     btn::Btn,
     common::Common,
     heading::{self, Heading},
-    text,
+    text::Text,
 };
 use super::molecule::{
     modal::{self, Modal},
@@ -209,7 +209,7 @@ impl ModalChatUser {
                                         Attributes::new().class(Common::valuekey()),
                                         Events::new(),
                                         vec![
-                                            text::div(character.name()),
+                                            Text::div(character.name()),
                                             Btn::danger(
                                                 Attributes::new(),
                                                 Events::new().on_click(self, move |_| {

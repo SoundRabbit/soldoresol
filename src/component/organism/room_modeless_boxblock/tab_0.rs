@@ -4,7 +4,7 @@ use super::super::atom::{
     dropdown::{self, Dropdown},
     fa,
     slider::{self, Slider},
-    text,
+    text::Text,
 };
 use super::super::organism::{
     popup_color_pallet::{self, PopupColorPallet},
@@ -131,7 +131,7 @@ impl Tab0 {
                     Events::new().on_input(self, |dn1| Msg::Sub(On::SetDisplayName1(dn1))),
                     vec![],
                 ),
-                text::span(""),
+                Text::span(""),
                 Html::input(
                     Attributes::new()
                         .id(&self.element_id.input_boxblock_display_name)
@@ -168,7 +168,7 @@ impl Tab0 {
                     Attributes::new().class(Common::keyvalue()),
                     Events::new(),
                     vec![
-                        text::span("色"),
+                        Text::span("色"),
                         PopupColorPallet::empty(
                             self,
                             None,
@@ -182,7 +182,7 @@ impl Tab0 {
                                 }
                             }),
                         ),
-                        text::span("テクスチャ"),
+                        Text::span("テクスチャ"),
                         self.render_main_textures(boxblock),
                     ],
                 ),
@@ -243,7 +243,7 @@ impl Tab0 {
 
     fn render_main_x(&self, boxblock: &block::Boxblock) -> Html {
         Html::fragment(vec![
-            text::span("X幅"),
+            Text::span("X幅"),
             Slider::new(
                 self,
                 None,
@@ -274,7 +274,7 @@ impl Tab0 {
 
     fn render_main_y(&self, boxblock: &block::Boxblock) -> Html {
         Html::fragment(vec![
-            text::span("Y幅"),
+            Text::span("Y幅"),
             Slider::new(
                 self,
                 None,
@@ -305,7 +305,7 @@ impl Tab0 {
 
     fn render_main_z(&self, boxblock: &block::Boxblock) -> Html {
         Html::fragment(vec![
-            text::span("Z幅"),
+            Text::span("Z幅"),
             Slider::new(
                 self,
                 None,

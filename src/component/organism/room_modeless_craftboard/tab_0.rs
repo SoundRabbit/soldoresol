@@ -4,7 +4,7 @@ use super::super::atom::{
     fa,
     heading::{self, Heading},
     slider::{self, Slider},
-    text,
+    text::Text,
 };
 use super::super::organism::{
     popup_color_pallet::{self, PopupColorPallet},
@@ -133,7 +133,7 @@ impl Tab0 {
                     Events::new().on_input(self, |name| Msg::Sub(On::SetDisplayName1(name))),
                     vec![],
                 ),
-                text::span(""),
+                Text::span(""),
                 Html::input(
                     Attributes::new()
                         .id(&self.element_id.input_craftboard_display_name)
@@ -171,7 +171,7 @@ impl Tab0 {
                     Attributes::new().class(Common::keyvalue()),
                     Events::new(),
                     vec![
-                        text::span("X幅（横幅）"),
+                        Text::span("X幅（横幅）"),
                         Slider::new(
                             self,
                             None,
@@ -190,7 +190,7 @@ impl Tab0 {
                                 theme: slider::Theme::Light,
                             },
                         ),
-                        text::span("Y幅（奥行き）"),
+                        Text::span("Y幅（奥行き）"),
                         Slider::new(
                             self,
                             None,
@@ -209,7 +209,7 @@ impl Tab0 {
                                 theme: slider::Theme::Light,
                             },
                         ),
-                        text::span("Z幅（高さ）"),
+                        Text::span("Z幅（高さ）"),
                         Slider::new(
                             self,
                             None,
@@ -234,7 +234,7 @@ impl Tab0 {
                     Attributes::new().class(Common::keyvalue()),
                     Events::new(),
                     vec![
-                        text::span("色"),
+                        Text::span("色"),
                         PopupColorPallet::empty(
                             self,
                             None,

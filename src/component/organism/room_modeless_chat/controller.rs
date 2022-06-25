@@ -1,4 +1,4 @@
-use super::super::atom::{btn::Btn, text};
+use super::super::atom::{btn::Btn, text::Text};
 use super::{InputingMessage, SharedState};
 use isaribi::{
     style,
@@ -106,7 +106,7 @@ impl Render<Html> for Controller {
                     Attributes::new().class(Self::class("guide")),
                     Events::new(),
                     vec![
-                        text::span("Shift＋Enterで改行できます。"),
+                        Text::span("Shift＋Enterで改行できます。"),
                         Btn::primary(
                             Attributes::new(),
                             Events::new().on_click(self, |_| Msg::Sub(On::SendInputingChatMessage)),

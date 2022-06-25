@@ -12,65 +12,70 @@ use nusa::prelude::*;
 
 pub struct Props {
     pub arena: ArenaMut,
-    pub world: BlockMut<block::World>,
+    pub scene: BlockMut<block::Scene>,
 }
 
 pub enum Msg {}
 
 pub enum On {}
 
-pub struct SceneList {
+pub struct TableList {
     arena: ArenaMut,
-    world: BlockMut<block::World>,
+    scene: BlockMut<block::Scene>,
 }
 
-impl Component for SceneList {
+impl Component for TableList {
     type Props = Props;
     type Msg = Msg;
     type Event = On;
 }
 
-impl HtmlComponent for SceneList {}
+impl HtmlComponent for TableList {}
 
-impl Constructor for SceneList {
+impl Constructor for TableList {
     fn constructor(props: Self::Props) -> Self {
         Self {
             arena: props.arena,
-            world: props.world,
+            scene: props.scene,
         }
     }
 }
 
-impl Update for SceneList {
+impl Update for TableList {
     fn on_load(mut self: Pin<&mut Self>, props: Self::Props) -> Cmd<Self> {
         self.arena = props.arena;
-        self.world = props.world;
+        self.scene = props.scene;
         Cmd::none()
     }
 }
 
-impl Render<Html> for SceneList {
+impl Render<Html> for TableList {
     type Children = ();
     fn render(&self, _: Self::Children) -> Html {
-        Self::styled(Html::fragment(
-            self.world
-                .map(|world| {
-                    world
-                        .scenes()
-                        .iter()
-                        .map(|scene| self.render_scene(scene))
-                        .collect()
-                })
-                .unwrap_or(vec![]),
-        ))
+        Self::styled(Html::fragment(vec![
+            self.scene
+                .map(|scene| self.render_table(scene.master_table(), true))
+                .unwrap_or(Html::none()),
+            Html::fragment(
+                self.scene
+                    .map(|scene| {
+                        scene
+                            .tables()
+                            .iter()
+                            .map(|table| self.render_table(table, false))
+                            .collect()
+                    })
+                    .unwrap_or(vec![]),
+            ),
+        ]))
     }
 }
 
-impl SceneList {
-    fn render_scene(&self, scene: &BlockMut<block::Scene>) -> Html {
-        let scene_id = scene.id();
-        scene
-            .map(|scene| {
+impl TableList {
+    fn render_table(&self, table: &BlockMut<block::Table>, is_master: bool) -> Html {
+        let table_id = table.id();
+        table
+            .map(|table| {
                 Collapse::new(
                     self,
                     None,
@@ -91,10 +96,14 @@ impl SceneList {
                                         Marker::purple(
                                             Attributes::new(),
                                             Events::new(),
-                                            vec![Html::text("シーン")],
+                                            vec![Html::text(if is_master {
+                                                "マスター"
+                                            } else {
+                                                "テーブル"
+                                            })],
                                         ),
                                         Html::input(
-                                            Attributes::new().value(scene.name()),
+                                            Attributes::new().value(table.name()),
                                             Events::new(),
                                             vec![],
                                         ),
@@ -110,7 +119,7 @@ impl SceneList {
                                         Html::input(
                                             Attributes::new()
                                                 .flag("readonly", true)
-                                                .value(scene_id.to_string()),
+                                                .value(table_id.to_string()),
                                             Events::new(),
                                             vec![],
                                         ),
@@ -126,7 +135,7 @@ impl SceneList {
     }
 }
 
-impl Styled for SceneList {
+impl Styled for TableList {
     fn style() -> Style {
         style! {
             ".item" {

@@ -4,7 +4,7 @@ use super::atom::{
     dropdown::{self, Dropdown},
     fa,
     slider::{self, Slider},
-    text,
+    text::Text,
 };
 use super::organism::{
     modal_resource::{self, ModalResource},
@@ -262,7 +262,7 @@ impl TableMenu {
                     Events::new().on_click(self, move |_| Msg::SetSetectedToolIdx(idx)),
                     vec![child],
                 ),
-                text::span(title),
+                Text::span(title),
             ],
         )
     }
@@ -296,7 +296,7 @@ impl TableMenu {
                 Attributes::new().class(Common::keyvalue()),
                 Events::new(),
                 vec![
-                    text::span("線幅"),
+                    Text::span("線幅"),
                     Slider::new(
                         self,
                         None,
@@ -322,7 +322,7 @@ impl TableMenu {
                             theme: slider::Theme::Light,
                         },
                     ),
-                    text::span("色"),
+                    Text::span("色"),
                     PopupColorPallet::empty(
                         self,
                         None,
@@ -358,11 +358,11 @@ impl TableMenu {
                 Attributes::new().class(Common::keyvalue()),
                 Events::new(),
                 vec![
-                    text::span("X幅"),
+                    Text::span("X幅"),
                     self.render_tool_option_craftboard_size(tool_idx, craftboard, 0, 1.0),
-                    text::span("Y幅"),
+                    Text::span("Y幅"),
                     self.render_tool_option_craftboard_size(tool_idx, craftboard, 1, 1.0),
-                    text::span("Z幅"),
+                    Text::span("Z幅"),
                     self.render_tool_option_craftboard_size(tool_idx, craftboard, 2, 0.0),
                 ],
             )],
@@ -415,7 +415,7 @@ impl TableMenu {
                 Attributes::new().class(Common::keyvalue()),
                 Events::new(),
                 vec![
-                    text::span("サイズ"),
+                    Text::span("サイズ"),
                     Slider::new(
                         self,
                         None,
@@ -441,7 +441,7 @@ impl TableMenu {
                             theme: slider::Theme::Light,
                         },
                     ),
-                    text::span("立ち絵サイズ"),
+                    Text::span("立ち絵サイズ"),
                     Slider::new(
                         self,
                         None,
@@ -467,7 +467,7 @@ impl TableMenu {
                             theme: slider::Theme::Light,
                         },
                     ),
-                    text::span("色"),
+                    Text::span("色"),
                     PopupColorPallet::empty(
                         self,
                         None,
@@ -486,7 +486,7 @@ impl TableMenu {
                             }
                         }),
                     ),
-                    text::span("立ち絵"),
+                    Text::span("立ち絵"),
                     {
                         let events = Events::new().on_click(self, {
                             let character = Rc::clone(&character);
@@ -535,7 +535,7 @@ impl TableMenu {
                 Attributes::new().class(Common::keyvalue()),
                 Events::new(),
                 vec![
-                    text::span("形状"),
+                    Text::span("形状"),
                     Dropdown::new(
                         self,
                         None,
@@ -580,13 +580,13 @@ impl TableMenu {
                             ],
                         ),
                     ),
-                    text::span("X幅"),
+                    Text::span("X幅"),
                     self.render_tool_option_boxblock_size(tool_idx, boxblock, 0),
-                    text::span("Y幅"),
+                    Text::span("Y幅"),
                     self.render_tool_option_boxblock_size(tool_idx, boxblock, 1),
-                    text::span("Z幅"),
+                    Text::span("Z幅"),
                     self.render_tool_option_boxblock_size(tool_idx, boxblock, 2),
-                    text::span("色"),
+                    Text::span("色"),
                     PopupColorPallet::empty(
                         self,
                         None,
@@ -605,7 +605,7 @@ impl TableMenu {
                             }
                         }),
                     ),
-                    text::span("テクスチャ"),
+                    Text::span("テクスチャ"),
                     {
                         let events = Events::new().on_click(self, {
                             let boxblock = Rc::clone(&boxblock);

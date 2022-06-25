@@ -1,7 +1,7 @@
 use super::atom::common::Common;
 use super::atom::{
     btn::{self, Btn},
-    text,
+    text::Text,
 };
 use super::molecule::modal::{self, Modal};
 use super::organism::modal_resource::{self, ModalResource};
@@ -402,12 +402,12 @@ impl ModalCreateBlockTexture {
                     Html::none()
                 },
                 match direction {
-                    TextureDirection::PX => text::span("PX（右）"),
-                    TextureDirection::PY => text::span("PY（後）"),
-                    TextureDirection::PZ => text::span("PZ（上）"),
-                    TextureDirection::NX => text::span("NX（左）"),
-                    TextureDirection::NY => text::span("NY（前）"),
-                    TextureDirection::NZ => text::span("NZ（下）"),
+                    TextureDirection::PX => Text::span("PX（右）"),
+                    TextureDirection::PY => Text::span("PY（後）"),
+                    TextureDirection::PZ => Text::span("PZ（上）"),
+                    TextureDirection::NX => Text::span("NX（左）"),
+                    TextureDirection::NY => Text::span("NY（前）"),
+                    TextureDirection::NZ => Text::span("NZ（下）"),
                 },
             ],
         )

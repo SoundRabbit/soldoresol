@@ -1,6 +1,9 @@
 use super::atom::{btn::Btn, fa};
-use super::molecule::scene_list::{self, SceneList};
-use super::molecule::tab_menu::{self, TabMenu};
+use super::molecule::{
+    scene_list::{self, SceneList},
+    tab_menu::{self, TabMenu},
+    table_list::{self, TableList},
+};
 use crate::arena::{block, ArenaMut, BlockMut};
 use isaribi::{
     style,
@@ -107,22 +110,45 @@ impl Render<Html> for WorldView {
                         (
                             Attributes::new(),
                             Events::new(),
-                            vec![(
-                                Html::text("シーン"),
-                                Html::div(
-                                    Attributes::new().class(Self::class("scroll")),
-                                    Events::new(),
-                                    vec![SceneList::empty(
-                                        self,
-                                        None,
-                                        scene_list::Props {
-                                            arena: ArenaMut::clone(&self.arena),
-                                            world: BlockMut::clone(&self.world),
-                                        },
-                                        Sub::none(),
-                                    )],
+                            vec![
+                                (
+                                    Html::text("テーブル"),
+                                    Html::div(
+                                        Attributes::new().class(Self::class("scroll")),
+                                        Events::new(),
+                                        vec![TableList::empty(
+                                            self,
+                                            None,
+                                            table_list::Props {
+                                                arena: ArenaMut::clone(&self.arena),
+                                                scene: self
+                                                    .world
+                                                    .map(|world| {
+                                                        BlockMut::clone(&world.selecting_scene())
+                                                    })
+                                                    .unwrap_or(BlockMut::none()),
+                                            },
+                                            Sub::none(),
+                                        )],
+                                    ),
                                 ),
-                            )],
+                                (
+                                    Html::text("シーン"),
+                                    Html::div(
+                                        Attributes::new().class(Self::class("scroll")),
+                                        Events::new(),
+                                        vec![SceneList::empty(
+                                            self,
+                                            None,
+                                            scene_list::Props {
+                                                arena: ArenaMut::clone(&self.arena),
+                                                world: BlockMut::clone(&self.world),
+                                            },
+                                            Sub::none(),
+                                        )],
+                                    ),
+                                ),
+                            ],
                         ),
                     )],
                 ),
@@ -151,9 +177,6 @@ impl Styled for WorldView {
                 "background-color": crate::libs::color::Pallet::gray(8);
                 "color": crate::libs::color::Pallet::gray(0);
                 "overflow": "hidden";
-                "display": "grid";
-                "grid-template-columns": "1fr";
-                "grid-template-rows": "max-content 1fr";
             }
 
             ".content[data-is-showing='true']" {

@@ -7,12 +7,16 @@ use super::Craftboard;
 
 block! {
     [pub Table(constructor, pack)]
+    name: String = String::new();
     boxblocks: Vec<BlockMut<Boxblock>> = vec![];
     craftboards: Vec<BlockMut<Craftboard>> = vec![];
     default_is_bind_to_grid: bool = true;
 }
 
 impl Table {
+    pub fn name(&self) -> &String {
+        &self.name
+    }
     pub fn boxblocks(&self) -> &Vec<BlockMut<Boxblock>> {
         &self.boxblocks
     }

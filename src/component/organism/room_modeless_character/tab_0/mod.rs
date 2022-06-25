@@ -5,7 +5,7 @@ use super::super::atom::{
     fa,
     heading::{self, Heading},
     slider::{self, Slider},
-    text,
+    text::Text,
 };
 use super::super::organism::{
     popup_color_pallet::{self, PopupColorPallet},
@@ -140,7 +140,7 @@ impl Tab0 {
                     Events::new().on_input(self, |name| Msg::Sub(On::SetDisplayName1(name))),
                     vec![],
                 ),
-                text::span(""),
+                Text::span(""),
                 Html::input(
                     Attributes::new()
                         .id(&self.element_id.input_character_display_name)
@@ -194,7 +194,7 @@ impl Tab0 {
                     Attributes::new().class(Common::keyvalue()),
                     Events::new(),
                     vec![
-                        text::span("サイズ"),
+                        Text::span("サイズ"),
                         Slider::new(
                             self,
                             None,
@@ -213,7 +213,7 @@ impl Tab0 {
                                 theme: slider::Theme::Light,
                             },
                         ),
-                        text::span("立ち絵サイズ"),
+                        Text::span("立ち絵サイズ"),
                         Slider::new(
                             self,
                             None,
@@ -238,7 +238,7 @@ impl Tab0 {
                     Attributes::new().class(Common::keyvalue()),
                     Events::new(),
                     vec![
-                        text::span("色"),
+                        Text::span("色"),
                         PopupColorPallet::empty(
                             self,
                             None,
@@ -252,7 +252,7 @@ impl Tab0 {
                                 }
                             }),
                         ),
-                        text::label("立ち絵", ""),
+                        Text::label("立ち絵", ""),
                         Dropdown::new(
                             self,
                             None,

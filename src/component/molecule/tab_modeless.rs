@@ -2,7 +2,7 @@ use super::atom::btn::{self, Btn};
 use super::atom::dropdown::{self, Dropdown};
 use super::atom::fa;
 use super::atom::tab_btn::TabBtn;
-use super::atom::text;
+use super::atom::text::Text;
 use crate::libs::color::color_system;
 use crate::libs::random_id::U128Id;
 use crate::libs::select_list::SelectList;
@@ -544,7 +544,7 @@ where
                                         .class(Dropdown::class("menu-heading"))
                                         .class(Btn::class_name(&btn::Variant::SecondaryLikeMenu)),
                                     Events::new(),
-                                    vec![text::span("タブ")]
+                                    vec![Text::span("タブ")]
                                 ),
                                 Btn::menu_as_secondary(
                                     Attributes::new(),
@@ -567,7 +567,7 @@ where
                                         .class(Dropdown::class("menu-heading"))
                                         .class(Btn::class_name(&btn::Variant::SecondaryLikeMenu)),
                                     Events::new(),
-                                    vec![text::span("ウィンドウ")]
+                                    vec![Text::span("ウィンドウ")]
                                 ),
                                 Btn::menu_as_secondary(
                                     Attributes::new(),

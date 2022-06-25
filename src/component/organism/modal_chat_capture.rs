@@ -1,4 +1,4 @@
-use super::atom::{btn::Btn, text};
+use super::atom::{btn::Btn, text::Text};
 use super::molecule::modal::{self, Modal};
 use isaribi::{
     style,
@@ -104,7 +104,7 @@ impl Render<Html> for ModalChatCapture {
                                     .enumerate()
                                     .map(|(idx, v)| {
                                         Html::fragment(vec![
-                                            text::span(&self.vars[idx].1),
+                                            Text::span(&self.vars[idx].1),
                                             Html::input(
                                                 Attributes::new().value(v),
                                                 Events::new()

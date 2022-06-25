@@ -3,7 +3,7 @@ use super::super::atom::{
     dropdown::{self, Dropdown},
     fa,
     slider::{self, Slider},
-    text,
+    text::Text,
 };
 use crate::arena::{block, ArenaMut, BlockMut};
 use crate::libs::random_id::U128Id;
@@ -296,7 +296,7 @@ impl Node {
                                     .class(Dropdown::class("menu-heading"))
                                     .class(Btn::class_name(&btn::Variant::LightLikeMenu)),
                                 Events::new(),
-                                vec![text::span("要素の配置")],
+                                vec![Text::span("要素の配置")],
                             ),
                             Btn::group(
                                 Attributes::new(),
@@ -327,7 +327,7 @@ impl Node {
                                     .class(Dropdown::class("menu-heading"))
                                     .class(Btn::class_name(&btn::Variant::LightLikeMenu)),
                                 Events::new(),
-                                vec![text::span("値の配置")],
+                                vec![Text::span("値の配置")],
                             ),
                             Btn::group(
                                 Attributes::new(),

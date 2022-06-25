@@ -1,7 +1,8 @@
 use super::super::atom::{
     btn::{self, Btn},
     dropdown::{self, Dropdown},
-    fa, text,
+    fa,
+    text::Text,
 };
 use super::{
     ChatPalletIndex, ChatPalletSectionIndex, ChatUser, InputingMessage, SharedState, ShowingModal,
@@ -239,7 +240,7 @@ impl ChatPallet {
 
         let mut ssec_idx = 0;
         for ssec in sub_sections {
-            items.push(text::div(ssec.name()));
+            items.push(Text::div(ssec.name()));
             self.render_children(&mut items, ssec.children(), sec_idx, Some(ssec_idx));
             ssec_idx += 1;
         }

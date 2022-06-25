@@ -4,7 +4,7 @@ use super::super::atom::{
     fa,
     heading::{self, Heading},
     slider::{self, Slider},
-    text,
+    text::Text,
 };
 use super::super::organism::{
     popup_color_pallet::{self, PopupColorPallet},
@@ -149,7 +149,7 @@ impl Tab0 {
                     Attributes::new().class(Common::keyvalue()),
                     Events::new(),
                     vec![
-                        text::span("X幅（横幅）"),
+                        Text::span("X幅（横幅）"),
                         Slider::new(
                             self,
                             None,
@@ -168,7 +168,7 @@ impl Tab0 {
                                 theme: slider::Theme::Light,
                             },
                         ),
-                        text::span("Z幅（高さ）"),
+                        Text::span("Z幅（高さ）"),
                         Slider::new(
                             self,
                             None,
@@ -193,7 +193,7 @@ impl Tab0 {
                     Attributes::new().class(Common::keyvalue()),
                     Events::new(),
                     vec![
-                        text::span("文字サイズ"),
+                        Text::span("文字サイズ"),
                         Slider::new(
                             self,
                             None,
@@ -212,7 +212,7 @@ impl Tab0 {
                                 theme: slider::Theme::Light,
                             },
                         ),
-                        text::span("色"),
+                        Text::span("色"),
                         PopupColorPallet::empty(
                             self,
                             None,

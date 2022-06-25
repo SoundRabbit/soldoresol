@@ -1,6 +1,6 @@
 use super::atom::btn::{self, Btn};
 use super::atom::dropdown::{self, Dropdown};
-use super::atom::text;
+use super::atom::text::Text;
 use super::molecule::modal::{self, Modal};
 use crate::arena::block;
 use isaribi::{
@@ -187,22 +187,22 @@ impl ModalNewChannel {
                 Events::new(),
                 vec![
                     vec![
-                        text::span("閲覧"),
-                        text::span(match &self.channel_type {
+                        Text::span("閲覧"),
+                        Text::span(match &self.channel_type {
                             ChannelType::Private { .. } => "許可されたプレイヤー",
                             ChannelType::Public => "全てのプレイヤー",
                         }),
                     ],
                     vec![
-                        text::span("投稿"),
-                        text::span(match &self.channel_type {
+                        Text::span("投稿"),
+                        Text::span(match &self.channel_type {
                             ChannelType::Private { .. } => "許可されたプレイヤー",
                             ChannelType::Public => "全てのプレイヤー",
                         }),
                     ],
                     vec![
-                        text::span("権限の変更"),
-                        text::span(match &self.channel_type {
+                        Text::span("権限の変更"),
+                        Text::span(match &self.channel_type {
                             ChannelType::Private { .. } => "このクライアントのみ可",
                             ChannelType::Public => "不可",
                         }),
