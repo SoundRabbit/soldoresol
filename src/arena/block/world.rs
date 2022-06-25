@@ -1,18 +1,29 @@
-use super::super::resource::BlockTexture;
-use super::super::resource::ImageData;
+use super::super::component::BoxblockComponent;
+use super::super::resource::{BlockTexture, ImageData};
+use super::super::Access;
 #[allow(unused_imports)]
 use super::util::prelude::*;
 use super::util::Pack;
-use super::BlockMut;
-use super::BlockRef;
-use super::Character;
-use super::Scene;
+use super::{BlockMut, BlockRef};
+use super::{Character, Scene};
+
+block! {
+    [pub Components(constructor, pack)]
+    boxblocks: Vec<BlockMut<BoxblockComponent>> = vec![];
+}
+
+impl Components {
+    pub fn boxblocks(&self) -> &Vec<BlockMut<BoxblockComponent>> {
+        &self.boxblocks
+    }
+}
 
 block! {
     [pub World(constructor, pack)]
     characters: Vec<BlockMut<Character>> = vec![];
     scenes: Vec<BlockMut<Scene>> = vec![];
     selecting_scene: BlockMut<Scene> = BlockMut::<Scene>::none();
+    components: Components = Components::new();
     image_data_resources: Vec<BlockRef<ImageData>> = vec![];
     block_texture_resources: Vec<BlockRef<BlockTexture>> = vec![];
 }
@@ -49,6 +60,14 @@ impl World {
             self.selecting_scene = BlockMut::clone(&scene);
         }
         self.scenes.push(scene);
+    }
+
+    pub fn components(&self) -> &Components {
+        &self.components
+    }
+
+    pub fn push_boxblock_as_component(&mut self, component: BlockMut<BoxblockComponent>) {
+        self.components.boxblocks.push(component);
     }
 
     pub fn image_data_resources(&self) -> &Vec<BlockRef<ImageData>> {

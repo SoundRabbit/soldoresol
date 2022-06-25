@@ -1,4 +1,5 @@
 use crate::arena::{block, resource, BlockRef};
+use crate::libs::random_id::U128Id;
 use std::rc::Rc;
 
 #[derive(Clone)]
@@ -10,6 +11,7 @@ pub enum TableTool {
     Character(Rc<Character>),
     Boxblock(Rc<Boxblock>),
     Textboard(Rc<Textboard>),
+    ComponentAllocater(Rc<ComponentAllocater>),
 }
 
 #[derive(Clone)]
@@ -52,3 +54,8 @@ pub struct Boxblock {
 
 #[derive(Clone)]
 pub struct Textboard {}
+
+#[derive(Clone)]
+pub struct ComponentAllocater {
+    pub component: U128Id,
+}

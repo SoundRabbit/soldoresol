@@ -6,11 +6,15 @@ pub use pack::Pack;
 
 pub mod prelude {
     #[allow(unused_imports)]
+    use super::super::BlockMut;
+    #[allow(unused_imports)]
     pub use crate::libs::random_id::U128Id;
     #[allow(unused_imports)]
     pub use async_trait::async_trait;
     #[allow(unused_imports)]
     pub use std::cell::RefCell;
+    #[allow(unused_imports)]
+    use std::collections::HashSet;
     #[allow(unused_imports)]
     pub use std::rc::Rc;
     #[allow(unused_imports)]
@@ -95,6 +99,55 @@ macro_rules! block {
                 )*
 
                 object.into()
+            }
+        }
+    };
+
+    {
+        [impl $b_name:ident(component)]
+        $(($p_c_name:ident): $p_c_type:ty;)*
+        $($p_d_name:ident: $p_d_type:ty = $p_default:expr;)*
+    } => {
+        block! {
+            [pub Component(constructor, pack)]
+            (master): $b_name;
+            children: Vec<BlockMut<$b_name>> = vec![];
+        }
+
+        impl Component {
+            #[allow(unused_variables)]
+            pub fn update(&mut self, mut f: impl FnMut(&mut $b_name)) -> HashSet<U128Id> {
+                let mut update_blocks = HashSet::new();
+
+                f(&mut self.master);
+                for child in &mut self.children {
+                    child.update(&mut f);
+                }
+
+                update_blocks
+            }
+
+            #[allow(unused_variables)]
+            pub fn push(&mut self, child: BlockMut<$b_name>) {
+                self.children.push(child);
+            }
+
+            #[allow(unused_variables)]
+            pub fn remove(&mut self, block_id: &U128Id) {
+
+            }
+        }
+
+        impl std::ops::Deref for Component {
+            type Target = $b_name;
+            fn deref(&self) -> &Self::Target {
+                &self.master
+            }
+        }
+
+        impl std::ops::DerefMut for Component {
+            fn deref_mut(&mut self) -> &mut Self::Target {
+                &mut self.master
             }
         }
     };
@@ -387,6 +440,16 @@ macro_rules! arena {
                     BlockRef {
                         data: BlockMut::clone(self)
                     }
+                }
+            }
+
+            impl Access<$b> for BlockMut<$b> {
+                fn update(&mut self, f: impl FnOnce(&mut $b)) -> bool {
+                    self.update(f)
+                }
+
+                fn map<U>(&self, f: impl FnOnce(&$b) -> U) -> Option<U> {
+                    self.map(f)
                 }
             }
         )*

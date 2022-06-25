@@ -247,6 +247,7 @@ impl TableMenu {
             TableTool::Character(..) => ("キャラコマ", fa::fas_i("fa-user")),
             TableTool::Boxblock(..) => ("ブロック", fa::fas_i("fa-cube")),
             TableTool::Textboard(..) => ("メモ", fa::fas_i("fa-file-lines")),
+            _ => ("", Html::none()),
         };
         Html::div(
             Attributes::new().class(Self::class("icon")),

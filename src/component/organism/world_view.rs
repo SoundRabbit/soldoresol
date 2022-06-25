@@ -1,6 +1,9 @@
 use super::atom::{btn::Btn, fa, text::Text};
 use super::molecule::tab_menu::{self, TabMenu};
-use super::organism::scene_list::{self, SceneList};
+use super::organism::{
+    component_list::{self, ComponentList},
+    scene_list::{self, SceneList},
+};
 use crate::arena::{block, ArenaMut, BlockMut};
 use crate::libs::random_id::U128Id;
 use isaribi::{
@@ -116,26 +119,45 @@ impl Render<Html> for WorldView {
                         (
                             Attributes::new(),
                             Events::new(),
-                            vec![(
-                                Html::text("シーン"),
-                                Html::div(
-                                    Attributes::new().class(Self::class("scroll")),
-                                    Events::new(),
-                                    vec![SceneList::empty(
-                                        self,
-                                        None,
-                                        scene_list::Props {
-                                            arena: ArenaMut::clone(&self.arena),
-                                            world: BlockMut::clone(&self.world),
-                                        },
-                                        Sub::map(|sub| match sub {
-                                            scene_list::On::UpdateBlocks { insert, update } => {
-                                                Msg::Sub(On::UpdateBlocks { insert, update })
-                                            }
-                                        }),
-                                    )],
+                            vec![
+                                (
+                                    Text::condense_75("コンポーネント"),
+                                    Html::div(
+                                        Attributes::new().class(Self::class("scroll")),
+                                        Events::new(),
+                                        vec![ComponentList::empty(
+                                            self,
+                                            None,
+                                            component_list::Props {
+                                                arena: ArenaMut::clone(&self.arena),
+                                                world: BlockMut::clone(&self.world),
+                                                selecting: U128Id::none(),
+                                            },
+                                            Sub::none(),
+                                        )],
+                                    ),
                                 ),
-                            )],
+                                (
+                                    Html::text("シーン"),
+                                    Html::div(
+                                        Attributes::new().class(Self::class("scroll")),
+                                        Events::new(),
+                                        vec![SceneList::empty(
+                                            self,
+                                            None,
+                                            scene_list::Props {
+                                                arena: ArenaMut::clone(&self.arena),
+                                                world: BlockMut::clone(&self.world),
+                                            },
+                                            Sub::map(|sub| match sub {
+                                                scene_list::On::UpdateBlocks { insert, update } => {
+                                                    Msg::Sub(On::UpdateBlocks { insert, update })
+                                                }
+                                            }),
+                                        )],
+                                    ),
+                                ),
+                            ],
                         ),
                     )],
                 ),

@@ -2,6 +2,7 @@
 mod util;
 
 pub mod block;
+pub mod component;
 pub mod resource;
 pub mod user;
 
@@ -22,6 +23,7 @@ arena! {
     pub block::Table;
     pub block::Textboard;
     pub block::World;
+    pub component::BoxblockComponent;
     pub resource::ImageData;
     pub resource::BlockTexture;
     pub user::Player;

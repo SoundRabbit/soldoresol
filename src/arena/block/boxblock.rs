@@ -6,6 +6,8 @@ use super::util::Pack;
 use super::BlockMut;
 use super::BlockRef;
 use crate::libs::color::Pallet;
+use crate::libs::random_id::U128Id;
+use std::collections::HashSet;
 
 #[derive(Clone, Copy)]
 pub enum Shape {
@@ -28,7 +30,7 @@ impl Pack for Shape {
 }
 
 block! {
-    [pub Boxblock(constructor, pack)]
+    [pub Boxblock(constructor, pack, component)]
     (is_bind_to_grid): bool;
     size: [f64; 3] = [1.0, 1.0, 1.0];
     position: [f64; 3] = [0.0, 0.0, 0.0];
@@ -112,5 +114,24 @@ impl Boxblock {
     }
     pub fn is_bind_to_grid(&self) -> bool {
         self.is_bind_to_grid
+    }
+}
+
+impl Clone for Boxblock {
+    fn clone(&self) -> Self {
+        Self {
+            is_bind_to_grid: self.is_bind_to_grid,
+            position: self.position.clone(),
+            size: self.size.clone(),
+            shape: self.shape.clone(),
+            color: self.color.clone(),
+            texture: self
+                .texture
+                .as_ref()
+                .map(|texture| BlockRef::clone(&texture)),
+            name: self.name.clone(),
+            display_name: self.display_name.clone(),
+            is_fixed_position: self.is_fixed_position,
+        }
     }
 }

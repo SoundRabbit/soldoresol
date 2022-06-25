@@ -1,3 +1,4 @@
+pub mod component_list;
 pub mod modal_chat_capture;
 pub mod modal_chat_user;
 pub mod modal_chatpallet;
