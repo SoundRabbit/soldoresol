@@ -168,11 +168,8 @@ impl Update for ModalCreateBlockTexture {
                         .clone()
                         .unwrap_or(BlockRef::none());
                     Cmd::task(async move {
-                        if let Some(texture) = resource::BlockTexture::load_from((
-                            [2048, 2048],
-                            [px, py, pz, nx, ny, nz],
-                        ))
-                        .await
+                        if let Some(texture) =
+                            resource::BlockTexture::load_from([px, py, pz, nx, ny, nz]).await
                         {
                             Cmd::chain(Msg::Sub(On::CreateTexure(texture)))
                         } else {

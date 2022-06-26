@@ -26,32 +26,39 @@ impl LoadFrom<BlockRef<ImageData>> for BlockTexture {
         if let Some(this) = img.map(|data| Self { data: data.clone() }) {
             Some(this)
         } else {
-            Self::load_from((
-                [1024, 1024],
-                [
-                    BlockRef::none(),
-                    BlockRef::none(),
-                    BlockRef::none(),
-                    BlockRef::none(),
-                    BlockRef::none(),
-                    BlockRef::none(),
-                ],
-            ))
+            Self::load_from([
+                BlockRef::none(),
+                BlockRef::none(),
+                BlockRef::none(),
+                BlockRef::none(),
+                BlockRef::none(),
+                BlockRef::none(),
+            ])
             .await
         }
     }
 }
 
 #[async_trait(?Send)]
-impl LoadFrom<([u32; 2], [BlockRef<ImageData>; 6])> for BlockTexture {
+impl LoadFrom<[BlockRef<ImageData>; 6]> for BlockTexture {
     async fn load_from(
-        ([width, height], [img_px, img_py, img_pz, img_nx, img_ny, img_nz]): (
-            [u32; 2],
-            [BlockRef<ImageData>; 6],
-        ),
+        [img_px, img_py, img_pz, img_nx, img_ny, img_nz]: [BlockRef<ImageData>; 6],
     ) -> Option<Self> {
-        let cw = width as f64;
-        let ch = height as f64;
+        let px_size = img_size(&img_px);
+        let py_size = img_size(&img_py);
+        let pz_size = img_size(&img_pz);
+        let nx_size = img_size(&img_nx);
+        let ny_size = img_size(&img_ny);
+        let nz_size = img_size(&img_nz);
+
+        let cw = px_size[0].max(py_size[0]).max(nx_size[0]).max(ny_size[0]) * 4.0;
+        let cw = cw.max(pz_size[0]).max(nz_size[0]).max(16.0);
+
+        let ch = px_size[1].max(py_size[1]).max(nx_size[1]).max(ny_size[1]) * 2.0;
+        let ch = ch.max(pz_size[1] * 4.0).max(nz_size[1] * 4.0).max(16.0);
+
+        let width = cw as u32;
+        let height = ch as u32;
 
         let window = unwrap!(web_sys::window(); None);
         let document = unwrap!(window.document(); None);
@@ -118,6 +125,10 @@ fn draw_texture(
             canvas_height * s[1],
         );
     });
+}
+
+fn img_size(img: &BlockRef<ImageData>) -> [f64; 2] {
+    img.map(|img| img.size().clone()).unwrap_or([0.0, 0.0])
 }
 
 #[async_trait(?Send)]
