@@ -520,6 +520,10 @@ impl Styled for ModalResource {
                 "flex-direction": "column";
             }
 
+            ".kind-list > *" {
+                "margin-top": ".35rem";
+            }
+
             ".resource-list" {
                 "grid-column": "2 / 3";
                 "grid-row": "1 / 2";
@@ -565,6 +569,7 @@ impl Styled for ModalResource {
 
             ".group-to-select-kind" {
                 "margin-top": "1rem";
+                "padding-left": "1em";
             }
         }
     }
