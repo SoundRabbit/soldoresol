@@ -53,6 +53,7 @@ pub enum Msg {
     RemoveBoxblock(U128Id),
     RemoveCraftboard(U128Id),
     RemoveTextboard(U128Id),
+    CreateComponent(BlockMut<Untyped>),
 }
 
 pub enum On {}

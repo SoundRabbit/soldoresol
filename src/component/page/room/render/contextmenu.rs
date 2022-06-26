@@ -67,6 +67,7 @@ impl Room {
                     .unwrap_or(false),
                 BlockMut::clone(&boxblock).untyped(),
             ),
+            self.render_create_component(BlockMut::clone(&boxblock).untyped()),
             Btn::menu(
                 Attributes::new(),
                 Events::new().on_click(self, {
@@ -221,10 +222,18 @@ impl Room {
                 Msg::SetBlockIsBindToGrid(block, !is_bind_to_grid)
             }),
             vec![if is_bind_to_grid {
-                Html::text("グリッドにスナップしない")
+                Text::condense_75("グリッドにスナップしない")
             } else {
-                Html::text("グリッドにスナップする")
+                Text::condense_75("グリッドにスナップする")
             }],
+        )
+    }
+
+    fn render_create_component(&self, block: BlockMut<Untyped>) -> Html {
+        Btn::menu(
+            Attributes::new(),
+            Events::new().on_click(self, move |_| Msg::CreateComponent(block)),
+            vec![Text::condense_75("コンポーネントとして登録")],
         )
     }
 }

@@ -32,6 +32,7 @@ impl Pack for Shape {
 block! {
     [pub Boxblock(constructor, pack, component)]
     (is_bind_to_grid): bool;
+    origin: BlockMut<Component> = BlockMut::<Component>::none();
     size: [f64; 3] = [1.0, 1.0, 1.0];
     position: [f64; 3] = [0.0, 0.0, 0.0];
     shape: Shape = Shape::Cube;
@@ -43,6 +44,10 @@ block! {
 }
 
 impl Boxblock {
+    pub fn origin(&self) -> &BlockMut<Component> {
+        &self.origin
+    }
+
     pub fn size(&self) -> &[f64; 3] {
         &self.size
     }
@@ -117,9 +122,20 @@ impl Boxblock {
     }
 }
 
+impl BlockMut<Component> {
+    pub fn create_clone(&self) -> Option<Boxblock> {
+        self.map(|component| {
+            let mut cloned = component.origin.clone();
+            cloned.origin = BlockMut::clone(self);
+            cloned
+        })
+    }
+}
+
 impl Clone for Boxblock {
     fn clone(&self) -> Self {
         Self {
+            origin: BlockMut::none(),
             is_bind_to_grid: self.is_bind_to_grid,
             position: self.position.clone(),
             size: self.size.clone(),

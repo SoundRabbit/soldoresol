@@ -110,7 +110,7 @@ macro_rules! block {
     } => {
         block! {
             [pub Component(constructor, pack)]
-            (master): $b_name;
+            (origin): $b_name;
             children: Vec<BlockMut<$b_name>> = vec![];
         }
 
@@ -119,7 +119,7 @@ macro_rules! block {
             pub fn update(&mut self, mut f: impl FnMut(&mut $b_name)) -> HashSet<U128Id> {
                 let mut update_blocks = HashSet::new();
 
-                f(&mut self.master);
+                f(&mut self.origin);
                 for child in &mut self.children {
                     child.update(&mut f);
                 }
@@ -141,13 +141,13 @@ macro_rules! block {
         impl std::ops::Deref for Component {
             type Target = $b_name;
             fn deref(&self) -> &Self::Target {
-                &self.master
+                &self.origin
             }
         }
 
         impl std::ops::DerefMut for Component {
             fn deref_mut(&mut self) -> &mut Self::Target {
-                &mut self.master
+                &mut self.origin
             }
         }
     };

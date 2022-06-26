@@ -6,6 +6,7 @@ use super::super::atom::{
     header::{self, Header},
     marker::Marker,
     table::{self, Table},
+    text::Text,
 };
 use super::super::organism::{
     modal_chat_user::{self, ModalChatUser},

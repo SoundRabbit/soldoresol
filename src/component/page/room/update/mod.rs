@@ -1,6 +1,6 @@
 use super::super::organism::{room_modeless, room_modeless_chat::ChatUser};
 use super::{Msg, Room, ShowingContextmenu, ShowingContextmenuData, ShowingModal};
-use crate::arena::{block, ArenaMut, BlockKind, BlockMut};
+use crate::arena::{block, component, ArenaMut, BlockKind, BlockMut};
 use crate::table::Table;
 use kagura::prelude::*;
 use nusa::prelude::*;
@@ -321,6 +321,30 @@ impl Update for Room {
                     insert: set! {},
                     update: set! { scene.id(), textboard_id },
                 })
+            }
+
+            Msg::CreateComponent(origin) => {
+                let mut component_id = None;
+
+                trys! {
+                    origin.type_as::<block::Boxblock>().map(|boxblock| {
+                        let component = component::BoxblockComponent::new(boxblock.clone());
+                        let component = self.arena.insert(component);
+                        component_id = Some(component.id());
+                        self.world.update(|world| {
+                            world.push_boxblock_as_component(component);
+                        });
+                    }).is_some();
+                }
+
+                if let Some(component_id) = component_id {
+                    Cmd::chain(Msg::UpdateBlocks {
+                        insert: set! {},
+                        update: set! { self.world.id(), component_id },
+                    })
+                } else {
+                    Cmd::none()
+                }
             }
         }
     }
