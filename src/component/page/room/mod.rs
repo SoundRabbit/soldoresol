@@ -101,6 +101,7 @@ pub enum ShowingModal {
     None,
     ChatUser,
     Dicebot,
+    Resource,
 }
 
 impl Component for Room {

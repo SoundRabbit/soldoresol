@@ -11,6 +11,7 @@ use super::super::atom::{
 use super::super::organism::{
     modal_chat_user::{self, ModalChatUser},
     modal_dicebot::{self, ModalDicebot},
+    modal_resource::{self, ModalResource},
     room_modeless::{self, RoomModeless},
     room_modeless_chat::ChatUser,
     tab_modeless_container::{self, TabModelessContainer},
@@ -212,6 +213,24 @@ impl Room {
                     }
                 }),
             ),
+            ShowingModal::Resource => ModalResource::empty(
+                self,
+                None,
+                modal_resource::Props {
+                    arena: ArenaMut::clone(&self.arena),
+                    filter: set! {},
+                    world: BlockMut::clone(&self.world),
+                    is_selecter: false,
+                    title: String::from(modal_resource::title::VIEW_ALL_RESOURCE),
+                },
+                Sub::map(|sub| match sub {
+                    modal_resource::On::Close => Msg::SetShowingModal(ShowingModal::None),
+                    modal_resource::On::UpdateBlocks { insert, update } => {
+                        Msg::UpdateBlocks { insert, update }
+                    }
+                    _ => Msg::NoOp,
+                }),
+            ),
         }
     }
 
@@ -268,39 +287,48 @@ impl Room {
         Html::div(
             Attributes::new().class(Self::class("view-room-id")),
             Events::new(),
-            vec![Dropdown::new(
-                self,
-                None,
-                dropdown::Props {
-                    direction: dropdown::Direction::BottomRight,
-                    toggle_type: dropdown::ToggleType::Click,
-                    variant: btn::Variant::Dark,
-                },
-                Sub::none(),
-                (
-                    vec![Html::text("チャット")],
-                    vec![
-                        Html::fragment(
-                            self.chat_users
-                                .iter()
-                                .map(|user| self.render_header_row_1_left_userbtn(user))
-                                .collect(),
-                        ),
-                        Btn::menu(
-                            Attributes::new(),
-                            Events::new()
-                                .on_click(self, |_| Msg::SetShowingModal(ShowingModal::ChatUser)),
-                            vec![Html::text("キャラクター設定")],
-                        ),
-                        Btn::menu(
-                            Attributes::new(),
-                            Events::new()
-                                .on_click(self, |_| Msg::SetShowingModal(ShowingModal::Dicebot)),
-                            vec![Html::text("ダイスボット設定")],
-                        ),
-                    ],
+            vec![
+                Dropdown::new(
+                    self,
+                    None,
+                    dropdown::Props {
+                        direction: dropdown::Direction::BottomRight,
+                        toggle_type: dropdown::ToggleType::Click,
+                        variant: btn::Variant::Dark,
+                    },
+                    Sub::none(),
+                    (
+                        vec![Html::text("チャット")],
+                        vec![
+                            Html::fragment(
+                                self.chat_users
+                                    .iter()
+                                    .map(|user| self.render_header_row_1_left_userbtn(user))
+                                    .collect(),
+                            ),
+                            Btn::menu(
+                                Attributes::new(),
+                                Events::new().on_click(self, |_| {
+                                    Msg::SetShowingModal(ShowingModal::ChatUser)
+                                }),
+                                vec![Html::text("キャラクター設定")],
+                            ),
+                            Btn::menu(
+                                Attributes::new(),
+                                Events::new().on_click(self, |_| {
+                                    Msg::SetShowingModal(ShowingModal::Dicebot)
+                                }),
+                                vec![Html::text("ダイスボット設定")],
+                            ),
+                        ],
+                    ),
                 ),
-            )],
+                Btn::dark(
+                    Attributes::new(),
+                    Events::new().on_click(self, |_| Msg::SetShowingModal(ShowingModal::Resource)),
+                    vec![Html::text("リソース")],
+                ),
+            ],
         )
     }
 

@@ -2,10 +2,11 @@ use super::atom::common::Common;
 use super::atom::{
     attr,
     btn::{self, Btn},
+    text::Text,
 };
 use super::molecule::modal::{self, Modal};
 use super::organism::modal_create_block_texture::{self, ModalCreateBlockTexture};
-use crate::arena::{block, resource, ArenaMut, BlockKind, BlockMut, BlockRef};
+use crate::arena::{block, component, resource, ArenaMut, BlockKind, BlockMut, BlockRef};
 use crate::libs::random_id::U128Id;
 use isaribi::{
     style,
@@ -54,6 +55,7 @@ pub enum Resource {
     None,
     ImageData(BlockRef<resource::ImageData>),
     BlockTexture(BlockRef<resource::BlockTexture>),
+    BoxblockComponent(BlockMut<component::BoxblockComponent>),
 }
 
 impl Resource {
@@ -62,6 +64,7 @@ impl Resource {
             Self::None => U128Id::none(),
             Self::ImageData(data) => data.id(),
             Self::BlockTexture(data) => data.id(),
+            Self::BoxblockComponent(data) => data.id(),
         }
     }
 }
@@ -166,6 +169,7 @@ impl Update for ModalResource {
                     Resource::None => Cmd::submit(On::SelectNone),
                     Resource::ImageData(data) => Cmd::submit(On::SelectImageData(data)),
                     Resource::BlockTexture(data) => Cmd::submit(On::SelectBlockTexture(data)),
+                    _ => Cmd::none(),
                 }
             }
         }
@@ -194,10 +198,20 @@ impl Render<Html> for ModalResource {
                                 Attributes::new().class(Self::class("kind-list")),
                                 Events::new(),
                                 vec![
-                                    self.render_btn_to_select_kind(BlockKind::ImageData, "画像"),
+                                    self.render_btn_to_select_kind(
+                                        BlockKind::ImageData,
+                                        Html::text("画像"),
+                                    ),
                                     self.render_btn_to_select_kind(
                                         BlockKind::BlockTexture,
-                                        "ブロック用テクスチャ",
+                                        Text::condense_75("ブロック用テクスチャ"),
+                                    ),
+                                    self.render_group_to_select_kind(Text::condense_75(
+                                        "コンポーネント",
+                                    )),
+                                    self.render_btn_to_select_kind(
+                                        BlockKind::BoxblockComponent,
+                                        Html::text("ブロック"),
                                     ),
                                 ],
                             ),
@@ -207,6 +221,9 @@ impl Render<Html> for ModalResource {
                                 match &self.selected_kind {
                                     BlockKind::ImageData => self.render_list_image_data(),
                                     BlockKind::BlockTexture => self.render_list_block_texture(),
+                                    BlockKind::BoxblockComponent => {
+                                        self.render_list_block_component()
+                                    }
                                     _ => vec![],
                                 },
                             ),
@@ -248,7 +265,7 @@ impl ModalResource {
         }
     }
 
-    fn render_btn_to_select_kind(&self, kind: BlockKind, text: impl Into<String>) -> Html {
+    fn render_btn_to_select_kind(&self, kind: BlockKind, text: Html) -> Html {
         if self.filter.is_empty() || self.filter.contains(&kind) {
             Btn::with_variant(
                 if self.selected_kind == kind {
@@ -258,11 +275,19 @@ impl ModalResource {
                 },
                 Attributes::new(),
                 Events::new().on_click(self, move |_| Msg::SetSelectedKind(kind)),
-                vec![Html::text(text)],
+                vec![text],
             )
         } else {
             Html::none()
         }
+    }
+
+    fn render_group_to_select_kind(&self, text: Html) -> Html {
+        Html::div(
+            Attributes::new().class(Self::class("group-to-select-kind")),
+            Events::new(),
+            vec![text],
+        )
     }
 
     fn render_list_image_data(&self) -> Vec<Html> {
@@ -305,6 +330,19 @@ impl ModalResource {
                     ),
                     self.render_btn_to_add_cell(BlockKind::BlockTexture),
                 ]
+            })
+            .unwrap_or(vec![])
+    }
+
+    fn render_list_block_component(&self) -> Vec<Html> {
+        self.world
+            .map(|world| {
+                world
+                    .components()
+                    .boxblocks()
+                    .iter()
+                    .map(|data| self.render_cell_block_component(BlockMut::clone(data)))
+                    .collect()
             })
             .unwrap_or(vec![])
     }
@@ -394,6 +432,57 @@ impl ModalResource {
             .unwrap_or(Html::none())
     }
 
+    fn render_cell_block_component(&self, data: BlockMut<component::BoxblockComponent>) -> Html {
+        BlockMut::clone(&data)
+            .map(|this| {
+                Html::div(
+                    Attributes::new().class(Self::class("cell")),
+                    Events::new().on_click(self, {
+                        let data = BlockMut::clone(&data);
+                        move |_| Msg::SetSelectedResource(Resource::BoxblockComponent(data))
+                    }),
+                    vec![
+                        self.render_cell_block_component_img(this),
+                        attr::span(Attributes::new().class(Self::class("text")), this.name()),
+                        if self.is_selecter {
+                            self.render_btn_to_select_cell(Resource::BoxblockComponent(data))
+                        } else {
+                            Html::none()
+                        },
+                    ],
+                )
+            })
+            .unwrap_or(Html::none())
+    }
+
+    fn render_cell_block_component_img(&self, data: &component::BoxblockComponent) -> Html {
+        data.texture()
+            .and_then(|texture| {
+                texture.map(|texture| {
+                    Html::img(
+                        Attributes::new()
+                            .draggable("false")
+                            .class(Self::class("cell-img"))
+                            .class(Common::bg_transparent())
+                            .src(texture.data().url().to_string()),
+                        Events::new(),
+                        vec![],
+                    )
+                })
+            })
+            .unwrap_or_else(|| self.render_cell_block_component_bgcolor(data))
+    }
+
+    fn render_cell_block_component_bgcolor(&self, data: &component::BoxblockComponent) -> Html {
+        Html::div(
+            Attributes::new()
+                .class(Self::class("cell-tile"))
+                .style("background-color", data.color().to_string()),
+            Events::new(),
+            vec![],
+        )
+    }
+
     fn render_btn_to_select_cell(&self, resource: Resource) -> Html {
         Btn::secondary(
             Attributes::new(),
@@ -459,6 +548,11 @@ impl Styled for ModalResource {
                 "object-fit": "contain";
             }
 
+            ".cell-tile" {
+                "height": "10rem";
+                "width": "10rem";
+            }
+
             ".cell .text" {
                 "text-overflow": "ellipsis";
                 "overflow": "hidden";
@@ -467,6 +561,10 @@ impl Styled for ModalResource {
 
             ".text" {
                 "color": crate::libs::color::Pallet::gray(9);
+            }
+
+            ".group-to-select-kind" {
+                "margin-top": "1rem";
             }
         }
     }
