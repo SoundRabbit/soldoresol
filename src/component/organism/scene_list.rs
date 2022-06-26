@@ -164,9 +164,9 @@ impl SceneList {
         children: Vec<Html>,
     ) -> Html {
         if is_selected {
-            Marker::fill_purple(Attributes::new(), Events::new(), vec![Html::text("シーン")])
+            Marker::fill_purple(attrs, events, children)
         } else {
-            Marker::purple(Attributes::new(), Events::new(), vec![Html::text("シーン")])
+            Marker::purple(attrs, events, children)
         }
     }
 }

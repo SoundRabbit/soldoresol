@@ -57,7 +57,7 @@ impl Update for ComponentList {
 
 impl Render<Html> for ComponentList {
     type Children = ();
-    fn render(&self, children: Self::Children) -> Html {
+    fn render(&self, _children: Self::Children) -> Html {
         Self::styled(TabMenu::new(
             self,
             None,
@@ -71,15 +71,22 @@ impl Render<Html> for ComponentList {
                 Events::new(),
                 vec![(
                     Text::condense_75("ブロック"),
-                    BoxblockList::empty(
-                        self,
-                        None,
-                        boxblock_list::Props {
-                            arena: ArenaMut::clone(&self.arena),
-                            world: BlockMut::clone(&self.world),
-                            selecting: U128Id::clone(&self.selecting),
-                        },
-                        Sub::none(),
+                    Html::div(
+                        Attributes::new()
+                            .class(Self::class("padding"))
+                            .class(Self::class("scroll"))
+                            .class(Self::class("list")),
+                        Events::new(),
+                        vec![BoxblockList::empty(
+                            self,
+                            None,
+                            boxblock_list::Props {
+                                arena: ArenaMut::clone(&self.arena),
+                                world: BlockMut::clone(&self.world),
+                                selecting: U128Id::clone(&self.selecting),
+                            },
+                            Sub::none(),
+                        )],
                     ),
                 )],
             ),
@@ -89,6 +96,21 @@ impl Render<Html> for ComponentList {
 
 impl Styled for ComponentList {
     fn style() -> Style {
-        style! {}
+        style! {
+            ".padding" {
+                "padding": ".35rem";
+            }
+
+            ".scroll" {
+                "overflow-y": "scroll";
+                "height": "100%";
+            }
+
+            ".list" {
+                "display": "grid";
+                "grid-auto-flow": "row";
+                "row-gap": ".35rem";
+            }
+        }
     }
 }

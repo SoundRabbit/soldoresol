@@ -123,7 +123,9 @@ impl Render<Html> for WorldView {
                                 (
                                     Html::text("シーン"),
                                     Html::div(
-                                        Attributes::new().class(Self::class("scroll")),
+                                        Attributes::new()
+                                            .class(Self::class("padding"))
+                                            .class(Self::class("scroll")),
                                         Events::new(),
                                         vec![SceneList::empty(
                                             self,
@@ -143,7 +145,7 @@ impl Render<Html> for WorldView {
                                 (
                                     Text::condense_75("コンポーネント"),
                                     Html::div(
-                                        Attributes::new().class(Self::class("scroll")),
+                                        Attributes::new().class(Self::class("padding")),
                                         Events::new(),
                                         vec![ComponentList::empty(
                                             self,
@@ -198,10 +200,16 @@ impl Styled for WorldView {
                 "max-width": "0";
             }
 
+            ".padding" {
+                "padding-top": ".35rem";
+                "padding-bottom": ".35rem";
+            }
+
             ".scroll" {
                 "overflow-y": "scroll";
                 "height": "100%";
-                "padding": ".35rem";
+                "padding-left": ".35rem";
+                "padding-right": ".35rem";
             }
         }
     }
