@@ -92,6 +92,9 @@ impl Constructor for TableMenu {
                         shape: block::boxblock::Shape::Cube,
                     })),
                     TableTool::Textboard(Rc::new(table_tool::Textboard {})),
+                    TableTool::ComponentAllocater(Rc::new(table_tool::ComponentAllocater {
+                        component: U128Id::none(),
+                    })),
                 ],
                 0,
             ),
@@ -239,15 +242,21 @@ impl TableMenu {
     }
 
     fn render_icon(&self, tool: &TableTool, idx: usize, selected_idx: usize) -> Html {
-        let (title, child) = match tool {
-            TableTool::Selecter(..) => ("選択", fa::fas_i("fa-mouse-pointer")),
-            TableTool::Craftboard(..) => ("盤面", fa::fas_i("fa-border-all")),
-            TableTool::Pen(..) => ("鉛筆", fa::fas_i("fa-pencil-alt")),
-            TableTool::Eraser(..) => ("消しゴム", fa::fas_i("fa-eraser")),
-            TableTool::Character(..) => ("キャラコマ", fa::fas_i("fa-user")),
-            TableTool::Boxblock(..) => ("ブロック", fa::fas_i("fa-cube")),
-            TableTool::Textboard(..) => ("メモ", fa::fas_i("fa-file-lines")),
-            _ => ("", Html::none()),
+        let (title_text, title, child) = match tool {
+            TableTool::Selecter(..) => ("選択", Text::span("選択"), fa::fas_i("fa-mouse-pointer")),
+            TableTool::Craftboard(..) => ("盤面", Text::span("盤面"), fa::fas_i("fa-border-all")),
+            TableTool::Pen(..) => ("鉛筆", Text::span("鉛筆"), fa::fas_i("fa-pencil-alt")),
+            TableTool::Eraser(..) => ("消しゴム", Text::span("消しゴム"), fa::fas_i("fa-eraser")),
+            TableTool::Character(..) => {
+                ("キャラコマ", Text::span("キャラコマ"), fa::fas_i("fa-user"))
+            }
+            TableTool::Boxblock(..) => ("ブロック", Text::span("ブロック"), fa::fas_i("fa-cube")),
+            TableTool::Textboard(..) => ("メモ", Text::span("メモ"), fa::fas_i("fa-file-lines")),
+            TableTool::ComponentAllocater(..) => (
+                "コンポーネント",
+                Text::condense_75("コンポーネント"),
+                fa::fas_i("fa-clone"),
+            ),
         };
         Html::div(
             Attributes::new().class(Self::class("icon")),
@@ -259,11 +268,11 @@ impl TableMenu {
                     } else {
                         btn::Variant::Secondary
                     },
-                    Attributes::new().title(title),
+                    Attributes::new().title(title_text),
                     Events::new().on_click(self, move |_| Msg::SetSetectedToolIdx(idx)),
                     vec![child],
                 ),
-                Text::span(title),
+                title,
             ],
         )
     }
@@ -283,6 +292,9 @@ impl TableMenu {
                 Some(TableTool::Boxblock(tool)) => self.render_tool_option_boxblock(tool_idx, tool),
                 Some(TableTool::Character(tool)) => {
                     self.render_tool_option_character(tool_idx, tool)
+                }
+                Some(TableTool::ComponentAllocater(tool)) => {
+                    self.render_tool_option_component(tool_idx, tool)
                 }
                 _ => Html::none(),
             }],
@@ -692,6 +704,22 @@ impl TableMenu {
                 range_is_editable: false,
                 theme: slider::Theme::Light,
             },
+        )
+    }
+
+    fn render_tool_option_component(
+        &self,
+        tool_idx: usize,
+        component_allocater: &Rc<table_tool::ComponentAllocater>,
+    ) -> Html {
+        Html::div(
+            Attributes::new().class(Self::class("boxblock")),
+            Events::new(),
+            vec![Html::div(
+                Attributes::new().class(Common::keyvalue()),
+                Events::new(),
+                vec![],
+            )],
         )
     }
 }
