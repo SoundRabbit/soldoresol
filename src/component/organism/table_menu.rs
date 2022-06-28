@@ -55,6 +55,7 @@ pub enum ShowingModal {
     None,
     SelectBlockTexture(usize, Rc<table_tool::Boxblock>),
     SelectCharacterTexture(usize, Rc<table_tool::Character>),
+    SelectComponent(usize, Rc<table_tool::ComponentAllocater>),
 }
 
 impl Component for TableMenu {
@@ -220,6 +221,33 @@ impl TableMenu {
                             let mut tool = tool.as_ref().clone();
                             tool.texture = None;
                             Msg::SetTool(tool_idx, TableTool::Character(Rc::new(tool)))
+                        }
+                        _ => Msg::NoOp,
+                    }
+                }),
+            ),
+            ShowingModal::SelectComponent(tool_idx, tool) => ModalResource::empty(
+                self,
+                None,
+                modal_resource::Props {
+                    arena: ArenaMut::clone(&self.arena),
+                    world: BlockMut::clone(&self.world),
+                    filter: set! { BlockKind::BoxblockComponent },
+                    title: String::from(modal_resource::title::VIEW_ALL_RESOURCE),
+                    is_selecter: true,
+                },
+                Sub::map({
+                    let tool_idx = *tool_idx;
+                    let tool = Rc::clone(&tool);
+                    move |sub| match sub {
+                        modal_resource::On::UpdateBlocks { insert, update } => {
+                            Msg::Sub(On::UpdateBlocks { insert, update })
+                        }
+                        modal_resource::On::Close => Msg::SetShowingModal(ShowingModal::None),
+                        modal_resource::On::SelectComponent(component_id) => {
+                            let mut tool = tool.as_ref().clone();
+                            tool.component = component_id;
+                            Msg::SetTool(tool_idx, TableTool::ComponentAllocater(Rc::new(tool)))
                         }
                         _ => Msg::NoOp,
                     }
@@ -716,22 +744,37 @@ impl TableMenu {
         Html::div(
             Attributes::new().class(Self::class("boxblock")),
             Events::new(),
-            vec![Html::div(
-                Attributes::new().class(Common::keyvalue()),
-                Events::new(),
-                match self.arena.kind_of(component_id) {
-                    BlockKind::BoxblockComponent => self
-                        .arena
-                        .get::<component::BoxblockComponent>(component_id)
-                        .and_then(|component| {
-                            component.map(|component| {
-                                self.render_tool_option_component_boxblock(component)
-                            })
-                        }),
-                    _ => None,
-                }
-                .unwrap_or(vec![]),
-            )],
+            vec![
+                Btn::secondary(
+                    Attributes::new(),
+                    Events::new().on_click(self, {
+                        let component_allocater = Rc::clone(&component_allocater);
+                        move |_| {
+                            Msg::SetShowingModal(ShowingModal::SelectComponent(
+                                tool_idx,
+                                component_allocater,
+                            ))
+                        }
+                    }),
+                    vec![Text::condense_75("コンポーネントを選択")],
+                ),
+                Html::div(
+                    Attributes::new().class(Common::keyvalue()),
+                    Events::new(),
+                    match self.arena.kind_of(component_id) {
+                        BlockKind::BoxblockComponent => self
+                            .arena
+                            .get::<component::BoxblockComponent>(component_id)
+                            .and_then(|component| {
+                                component.map(|component| {
+                                    self.render_tool_option_component_boxblock(component)
+                                })
+                            }),
+                        _ => None,
+                    }
+                    .unwrap_or(vec![]),
+                ),
+            ],
         )
     }
 
@@ -763,7 +806,6 @@ impl TableMenu {
             } else {
                 Html::div(
                     Attributes::new()
-                        .class(Common::bg_transparent())
                         .class(Self::class("block-texture"))
                         .style("background-color", component.color().to_string()),
                     Events::new(),

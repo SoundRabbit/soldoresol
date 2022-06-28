@@ -411,6 +411,7 @@ impl Styled for Room {
             ".view-room-id" {
                 "display": "grid";
                 "grid-auto-columns": "max-content";
+                "grid-auto-flow": "column";
                 "column-gap": "0.65em";
             }
 

@@ -1,4 +1,4 @@
-use crate::arena::{block, ArenaMut, ArenaRef, BlockKind, BlockMut, BlockRef};
+use crate::arena::{block, component, ArenaMut, ArenaRef, BlockKind, BlockMut, BlockRef};
 use crate::libs::random_id::U128Id;
 use nusa::v_node::v_element::VEvent;
 use std::cell::RefCell;
@@ -346,6 +346,45 @@ impl Table {
         self.reserve_rendering();
     }
 
+    pub fn allocate_boxblock(
+        &mut self,
+        mut arena: ArenaMut,
+        world: BlockMut<block::World>,
+        mouse_coord: &[f64; 2],
+        mut component: BlockMut<component::BoxblockComponent>,
+    ) {
+        if let Some(mut boxblock) = component.create_clone() {
+            let scene = unwrap!(Self::selecting_scene(world.as_ref()));
+            let table = unwrap!(Self::selecting_table(world.as_ref()));
+            let (p, n) = self
+                .three
+                .borrow_mut()
+                .get_focused_position(mouse_coord, &self.ignored_id());
+
+            let n = Self::n_cube(&n, boxblock.size());
+            let p = [p[0] + n[0], p[1] + n[1], p[2] + n[2]];
+            boxblock.set_position(p);
+
+            let boxblock = arena.insert(boxblock);
+            let boxblock_id = boxblock.id();
+
+            component.update(|component| {
+                component.push(BlockMut::clone(&boxblock));
+            });
+
+            let updated_blocks = Self::update_table(scene.as_ref(), table, |table| {
+                table.push_boxblock(BlockMut::clone(&boxblock));
+            });
+
+            self.reserve_rendering();
+            self.updated_blocks.update.insert(component.id());
+            for updated_block in updated_blocks {
+                self.updated_blocks.update.insert(updated_block);
+            }
+            self.updated_blocks.insert.insert(boxblock_id);
+        }
+    }
+
     pub fn move_camera_xy(&mut self, movement: &[f64; 2]) {
         let h_mov = -movement[0] / 50.0;
         let v_mov = movement[1] / 50.0;
@@ -465,7 +504,7 @@ impl Table {
 
     pub fn on_click(
         &mut self,
-        arena: ArenaMut,
+        mut arena: ArenaMut,
         world: BlockMut<block::World>,
         e: VEvent<web_sys::MouseEvent>,
         tool: &TableTool,
@@ -485,6 +524,16 @@ impl Table {
             TableTool::Textboard(tool) => {
                 self.create_textboard(arena, world, &mouse_coord, tool);
             }
+            TableTool::ComponentAllocater(tool) => match arena.kind_of(&tool.component) {
+                BlockKind::BoxblockComponent => {
+                    arena
+                        .get_mut::<component::BoxblockComponent>(&tool.component)
+                        .map(|block| {
+                            self.allocate_boxblock(arena, world, &mouse_coord, block);
+                        });
+                }
+                _ => {}
+            },
             _ => {}
         }
     }

@@ -45,6 +45,7 @@ pub enum On {
     SelectNone,
     SelectImageData(BlockRef<resource::ImageData>),
     SelectBlockTexture(BlockRef<resource::BlockTexture>),
+    SelectComponent(U128Id),
     UpdateBlocks {
         insert: HashSet<U128Id>,
         update: HashSet<U128Id>,
@@ -169,6 +170,9 @@ impl Update for ModalResource {
                     Resource::None => Cmd::submit(On::SelectNone),
                     Resource::ImageData(data) => Cmd::submit(On::SelectImageData(data)),
                     Resource::BlockTexture(data) => Cmd::submit(On::SelectBlockTexture(data)),
+                    Resource::BoxblockComponent(data) => {
+                        Cmd::submit(On::SelectComponent(data.id()))
+                    }
                     _ => Cmd::none(),
                 }
             }
@@ -284,7 +288,9 @@ impl ModalResource {
 
     fn render_group_to_select_kind(&self, text: Html) -> Html {
         Html::div(
-            Attributes::new().class(Self::class("group-to-select-kind")),
+            Attributes::new()
+                .class(Self::class("group-to-select-kind"))
+                .class(Self::class("text")),
             Events::new(),
             vec![text],
         )
@@ -570,6 +576,7 @@ impl Styled for ModalResource {
             ".group-to-select-kind" {
                 "margin-top": "1rem";
                 "padding-left": "1em";
+                "padding-right": "1em";
             }
         }
     }
