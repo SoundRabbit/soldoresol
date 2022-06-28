@@ -12,15 +12,14 @@ pub struct Character {
     geometry_base: three::PlaneGeometry,
     geometry_texture: three::BufferGeometry,
     geometry_nameplate: util::nameplate::XZGeometry,
-    geometry_offset_mesh: three::BufferGeometry,
     geometry_offset_line: three::BufferGeometry,
     material_border: three::MeshBasicMaterial,
     material_base: three::MeshBasicMaterial,
-    material_offset_corner: three::MeshBasicMaterial,
+    material_offset_line: three::LineBasicMaterial,
 }
 
 pub struct Mesh {
-    offset_data: three::Group,
+    offset_line: three::LineSegments,
 
     border_data: util::RoundedRectangleMesh,
     base_data: three::Mesh,
@@ -48,7 +47,6 @@ impl Character {
             geometry_base: three::PlaneGeometry::new(1.0, 1.0),
             geometry_texture: Self::create_texture_geometry(),
             geometry_nameplate: util::nameplate::XZGeometry::new(0.5, true),
-            geometry_offset_mesh: Self::create_offset_geometry_mesh(),
             geometry_offset_line: Self::create_offset_geometry_line(),
 
             material_border: three::MeshBasicMaterial::new(&object! {
@@ -59,9 +57,8 @@ impl Character {
                 "opacity": 0.25,
                 "transparent": true
             }),
-            material_offset_corner: three::MeshBasicMaterial::new(&object! {
-                "color": &three::Color::new(color_border[0], color_border[1], color_border[2]),
-                "side": three::DOUBLE_SIDE
+            material_offset_line: three::LineBasicMaterial::new(&object! {
+                "color": &three::Color::new(color_base[0], color_base[1], color_base[2]),
             }),
         }
     }
@@ -102,13 +99,10 @@ impl Character {
                     nameplate.scale().set(1.0, 1.0, 1.0);
                     nameplate.board().scale().set(0.0, 1.0, 0.0);
 
-                    let offset_mesh =
-                        three::Mesh::new(&self.geometry_offset_mesh, &self.material_border);
-                    let offset_line =
-                        three::LineSegments::new(&self.geometry_offset_line, &self.material_base);
-                    let offset_data = three::Group::new();
-                    offset_data.add(&offset_mesh);
-                    offset_data.add(&offset_line);
+                    let offset_line = three::LineSegments::new(
+                        &self.geometry_offset_line,
+                        &self.material_offset_line,
+                    );
 
                     let data = three::Group::new();
                     data.set_render_order(super::ORDER_CHARACTER);
@@ -117,12 +111,12 @@ impl Character {
                     data.add(&base_data);
                     data.add(&texture_data);
                     data.add(&nameplate);
-                    data.add(&offset_data);
+                    data.add(&offset_line);
                     scene.add(&data);
                     self.meshs.insert(
                         U128Id::clone(&character_id),
                         Mesh {
-                            offset_data,
+                            offset_line,
                             border_data,
                             base_data,
                             texture_material,
@@ -140,7 +134,10 @@ impl Character {
                     let s = character.size();
                     mesh.border_data.set_scale(&[s - 0.1, s - 0.1], 0.1);
                     mesh.base_data.scale().set(s - 0.1, s - 0.1, 1.0);
-                    mesh.offset_data.scale().set(s, s, -character.z_offset());
+                    mesh.offset_line.scale().set(s, s, character.z_offset());
+                    mesh.offset_line
+                        .position()
+                        .set(0.0, 0.0, -character.z_offset());
                     let [px, py, pz] = character.position().clone();
                     mesh.data
                         .position()
