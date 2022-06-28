@@ -12,14 +12,14 @@ pub struct Character {
     geometry_base: three::PlaneGeometry,
     geometry_texture: three::BufferGeometry,
     geometry_nameplate: util::nameplate::XZGeometry,
-    geometry_offset_mesh: three::BufferGeometry,
     geometry_offset_line: three::BufferGeometry,
     material_border: three::MeshBasicMaterial,
     material_base: three::MeshBasicMaterial,
 }
 
 pub struct Mesh {
-    offset_data: three::Group,
+    offset_base: util::RoundedRectangleMesh,
+    offset_line: three::LineSegments,
 
     border_data: util::RoundedRectangleMesh,
     base_data: three::Mesh,
@@ -47,7 +47,6 @@ impl Character {
             geometry_base: three::PlaneGeometry::new(1.0, 1.0),
             geometry_texture: Self::create_texture_geometry(),
             geometry_nameplate: util::nameplate::XZGeometry::new(0.5, true),
-            geometry_offset_mesh: Self::create_offset_geometry_mesh(),
             geometry_offset_line: Self::create_offset_geometry_line(),
 
             material_border: three::MeshBasicMaterial::new(&object! {
@@ -55,8 +54,6 @@ impl Character {
             }),
             material_base: three::MeshBasicMaterial::new(&object! {
                 "color": &three::Color::new(color_base[0], color_base[1], color_base[2]),
-                "opacity": 0.25,
-                "transparent": true
             }),
         }
     }
@@ -97,27 +94,25 @@ impl Character {
                     nameplate.scale().set(1.0, 1.0, 1.0);
                     nameplate.board().scale().set(0.0, 1.0, 0.0);
 
-                    let offset_mesh =
-                        three::Mesh::new(&self.geometry_offset_mesh, &self.material_base);
+                    let offset_base =
+                        util::RoundedRectangleMesh::new(&self.geometry_border, &self.material_base);
                     let offset_line =
                         three::LineSegments::new(&self.geometry_offset_line, &self.material_border);
-                    let offset_data = three::Group::new();
-                    offset_data.add(&offset_mesh);
-                    offset_data.add(&offset_line);
 
                     let data = three::Group::new();
-                    data.set_render_order(super::ORDER_CHARACTER);
                     data.set_user_data(&character_id.to_jsvalue());
                     data.add(border_data.data());
                     data.add(&base_data);
                     data.add(&texture_data);
                     data.add(&nameplate);
-                    data.add(&offset_data);
+                    data.add(offset_base.data());
+                    data.add(&offset_line);
                     scene.add(&data);
                     self.meshs.insert(
                         U128Id::clone(&character_id),
                         Mesh {
-                            offset_data,
+                            offset_base,
+                            offset_line,
                             border_data,
                             base_data,
                             texture_material,
@@ -135,7 +130,15 @@ impl Character {
                     let s = character.size();
                     mesh.border_data.set_scale(&[s - 0.1, s - 0.1], 0.1);
                     mesh.base_data.scale().set(s - 0.1, s - 0.1, 1.0);
-                    mesh.offset_data.scale().set(s, s, -character.z_offset());
+                    mesh.offset_base.set_scale(&[s - 0.1, s - 0.1], 0.1);
+                    mesh.offset_line.scale().set(s, s, character.z_offset());
+                    mesh.offset_base
+                        .data()
+                        .position()
+                        .set(0.0, 0.0, -character.z_offset());
+                    mesh.offset_line
+                        .position()
+                        .set(0.0, 0.0, -character.z_offset());
                     let [px, py, pz] = character.position().clone();
                     mesh.data
                         .position()
@@ -236,42 +239,6 @@ impl Character {
         geometry.set_attribute(
             "uv",
             &three::BufferAttribute::new_with_f32array(&uv, 2, false),
-        );
-        geometry.set_index(&three::BufferAttribute::new_with_u16array(&index, 1, false));
-
-        geometry
-    }
-
-    fn create_offset_geometry_mesh() -> three::BufferGeometry {
-        let points = js_sys::Float32Array::from(
-            [
-                [0.5, 0.5, 1.0],
-                [0.5, 0.5, 0.0],
-                [-0.5, 0.5, 1.0],
-                [-0.5, 0.5, 0.0],
-                [-0.5, -0.5, 1.0],
-                [-0.5, -0.5, 0.0],
-                [0.5, -0.5, 1.0],
-                [0.5, -0.5, 0.0],
-            ]
-            .concat()
-            .as_slice(),
-        );
-        let index = js_sys::Uint16Array::from(
-            [
-                [0, 1, 2, 1, 3, 2],
-                [2, 3, 4, 3, 5, 4],
-                [4, 5, 6, 5, 7, 6],
-                [6, 7, 0, 7, 1, 0],
-            ]
-            .concat()
-            .as_ref(),
-        );
-
-        let geometry = three::BufferGeometry::new();
-        geometry.set_attribute(
-            "position",
-            &three::BufferAttribute::new_with_f32array(&points, 3, false),
         );
         geometry.set_index(&three::BufferAttribute::new_with_u16array(&index, 1, false));
 
