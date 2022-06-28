@@ -85,6 +85,8 @@ impl Craftboard {
                     data.add(&grid_data);
                     data.add(&texture_data);
                     scene.add(&data);
+                    data.set_render_order(super::ORDER_CRAFTBOARD);
+
                     data.add(&nameplate);
 
                     self.meshs.insert(

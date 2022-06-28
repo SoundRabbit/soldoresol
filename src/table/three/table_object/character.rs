@@ -116,6 +116,7 @@ impl Character {
                     data.add(&nameplate);
                     data.add(offset_base.data());
                     data.add(offset_corner.data());
+                    data.set_render_order(super::ORDER_CHARACTER);
                     scene.add(&data);
                     self.meshs.insert(
                         U128Id::clone(&character_id),
