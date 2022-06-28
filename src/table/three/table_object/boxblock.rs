@@ -72,6 +72,7 @@ impl Boxblock {
                     let data = three::Group::new();
                     data.add(&boxblock_data);
                     data.add(&nameplate);
+                    data.set_render_order(super::ORDER_BOXBLOCK);
                     scene.add(&data);
                     self.meshs.insert(
                         U128Id::clone(&boxblock_id),
