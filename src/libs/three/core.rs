@@ -91,6 +91,9 @@ extern "C" {
 
     #[wasm_bindgen(method, setter, js_name = "userData")]
     pub fn set_user_data(this: &Object3D, user_data: &JsValue);
+
+    #[wasm_bindgen(method, setter, js_name = "visible")]
+    pub fn set_visible(this: &Object3D, visible: bool);
 }
 
 #[wasm_bindgen(module = "three")]

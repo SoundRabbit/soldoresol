@@ -8,18 +8,19 @@ use wasm_bindgen::JsCast;
 
 pub struct Character {
     meshs: HashMap<U128Id, Mesh>,
-    geometry_border: util::RoundedRectangleGeometry,
+    geometry_border: util::BasicRoundedRectangleGeometry,
     geometry_base: three::PlaneGeometry,
     geometry_texture: three::BufferGeometry,
     geometry_nameplate: util::nameplate::XZGeometry,
-    geometry_offset_line: three::BufferGeometry,
+    geometry_offset_corner: util::CornerRoundedRectangleGeometry,
     material_border: three::MeshBasicMaterial,
     material_base: three::MeshBasicMaterial,
+    material_offset_corner: three::MeshBasicMaterial,
 }
 
 pub struct Mesh {
     offset_base: util::RoundedRectangleMesh,
-    offset_line: three::LineSegments,
+    offset_corner: util::RoundedRectangleMesh,
 
     border_data: util::RoundedRectangleMesh,
     base_data: three::Mesh,
@@ -43,17 +44,21 @@ impl Character {
         Self {
             meshs: HashMap::new(),
 
-            geometry_border: util::RoundedRectangleGeometry::new(),
+            geometry_border: util::BasicRoundedRectangleGeometry::new(),
             geometry_base: three::PlaneGeometry::new(1.0, 1.0),
             geometry_texture: Self::create_texture_geometry(),
             geometry_nameplate: util::nameplate::XZGeometry::new(0.5, true),
-            geometry_offset_line: Self::create_offset_geometry_line(),
+            geometry_offset_corner: util::CornerRoundedRectangleGeometry::new(),
 
             material_border: three::MeshBasicMaterial::new(&object! {
                 "color": &three::Color::new(color_border[0], color_border[1], color_border[2])
             }),
             material_base: three::MeshBasicMaterial::new(&object! {
                 "color": &three::Color::new(color_base[0], color_base[1], color_base[2]),
+            }),
+            material_offset_corner: three::MeshBasicMaterial::new(&object! {
+                "color": &three::Color::new(color_border[0], color_border[1], color_border[2]),
+                "side": three::DOUBLE_SIDE
             }),
         }
     }
@@ -94,10 +99,14 @@ impl Character {
                     nameplate.scale().set(1.0, 1.0, 1.0);
                     nameplate.board().scale().set(0.0, 1.0, 0.0);
 
-                    let offset_base =
-                        util::RoundedRectangleMesh::new(&self.geometry_border, &self.material_base);
-                    let offset_line =
-                        three::LineSegments::new(&self.geometry_offset_line, &self.material_border);
+                    let offset_base = util::RoundedRectangleMesh::new(
+                        &self.geometry_border,
+                        &self.material_border,
+                    );
+                    let offset_corner = util::RoundedRectangleMesh::new(
+                        &self.geometry_offset_corner,
+                        &self.material_offset_corner,
+                    );
 
                     let data = three::Group::new();
                     data.set_user_data(&character_id.to_jsvalue());
@@ -106,13 +115,13 @@ impl Character {
                     data.add(&texture_data);
                     data.add(&nameplate);
                     data.add(offset_base.data());
-                    data.add(&offset_line);
+                    data.add(offset_corner.data());
                     scene.add(&data);
                     self.meshs.insert(
                         U128Id::clone(&character_id),
                         Mesh {
                             offset_base,
-                            offset_line,
+                            offset_corner,
                             border_data,
                             base_data,
                             texture_material,
@@ -130,15 +139,27 @@ impl Character {
                     let s = character.size();
                     mesh.border_data.set_scale(&[s - 0.1, s - 0.1], 0.1);
                     mesh.base_data.scale().set(s - 0.1, s - 0.1, 1.0);
-                    mesh.offset_base.set_scale(&[s - 0.1, s - 0.1], 0.1);
-                    mesh.offset_line.scale().set(s, s, character.z_offset());
-                    mesh.offset_base
-                        .data()
-                        .position()
-                        .set(0.0, 0.0, -character.z_offset());
-                    mesh.offset_line
-                        .position()
-                        .set(0.0, 0.0, -character.z_offset());
+                    if character.z_offset() > 0.0 {
+                        mesh.offset_base.set_scale(&[s - 0.1, s - 0.1], 0.1);
+                        mesh.offset_corner.set_scale(&[s - 0.1, s - 0.1], 0.1);
+                        mesh.offset_corner
+                            .data()
+                            .scale()
+                            .set(1.0, 1.0, character.z_offset());
+                        mesh.offset_base
+                            .data()
+                            .position()
+                            .set(0.0, 0.0, -character.z_offset());
+                        mesh.offset_corner
+                            .data()
+                            .position()
+                            .set(0.0, 0.0, -character.z_offset());
+                        mesh.offset_base.data().set_visible(true);
+                        mesh.offset_corner.data().set_visible(true);
+                    } else {
+                        mesh.offset_base.data().set_visible(false);
+                        mesh.offset_corner.data().set_visible(false);
+                    }
                     let [px, py, pz] = character.position().clone();
                     mesh.data
                         .position()

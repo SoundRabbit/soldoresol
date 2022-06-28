@@ -40,6 +40,18 @@ extern "C" {
         height: f64,
         radial_segements: i32,
     ) -> CylinderGeometry;
+
+    #[wasm_bindgen(constructor)]
+    pub fn new_with_option(
+        radius_top: f64,
+        radius_bottom: f64,
+        height: f64,
+        radial_segements: i32,
+        height_segements: i32,
+        open_ended: bool,
+        theta_start: f64,
+        theta_length: f64,
+    ) -> CylinderGeometry;
 }
 
 #[wasm_bindgen(module = "three")]
