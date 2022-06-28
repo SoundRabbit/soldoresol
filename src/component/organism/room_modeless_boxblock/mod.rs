@@ -16,7 +16,7 @@ use tab_0::Tab0;
 pub struct Props {
     pub arena: ArenaMut,
     pub world: BlockMut<block::World>,
-    pub data: BlockMut<block::Boxblock>,
+    pub data: block::boxblock::Block,
 }
 
 pub enum Msg {
@@ -42,7 +42,7 @@ pub enum On {
 pub struct RoomModelessBoxblock {
     arena: ArenaMut,
     world: BlockMut<block::World>,
-    boxblock: BlockMut<block::Boxblock>,
+    boxblock: block::boxblock::Block,
     showing_modal: ShowingModal,
 }
 
@@ -88,7 +88,7 @@ impl Update for RoomModelessBoxblock {
             }
             Msg::SetColor(color) => {
                 self.boxblock.update(|boxblock| {
-                    boxblock.set_color(color);
+                    boxblock.set_color(color.clone());
                 });
 
                 Cmd::submit(On::UpdateBlocks {
@@ -98,7 +98,7 @@ impl Update for RoomModelessBoxblock {
             }
             Msg::SetName(name) => {
                 self.boxblock.update(|boxblock| {
-                    boxblock.set_name(name);
+                    boxblock.set_name(name.clone());
                 });
 
                 Cmd::submit(On::UpdateBlocks {
@@ -108,7 +108,7 @@ impl Update for RoomModelessBoxblock {
             }
             Msg::SetDisplayName0(display_name) => {
                 self.boxblock.update(|boxblock| {
-                    boxblock.set_display_name((Some(display_name), None));
+                    boxblock.set_display_name((Some(display_name.clone()), None));
                 });
 
                 Cmd::submit(On::UpdateBlocks {
@@ -118,7 +118,7 @@ impl Update for RoomModelessBoxblock {
             }
             Msg::SetDisplayName1(display_name) => {
                 self.boxblock.update(|boxblock| {
-                    boxblock.set_display_name((None, Some(display_name)));
+                    boxblock.set_display_name((None, Some(display_name.clone())));
                 });
 
                 Cmd::submit(On::UpdateBlocks {
@@ -148,7 +148,7 @@ impl Update for RoomModelessBoxblock {
             }
             Msg::SetTexture(texture) => {
                 self.boxblock.update(|boxblock| {
-                    boxblock.set_texture(texture);
+                    boxblock.set_texture(texture.clone());
                 });
 
                 self.showing_modal = ShowingModal::None;
@@ -218,7 +218,7 @@ impl RoomModelessBoxblock {
                             self,
                             None,
                             tab_0::Props {
-                                boxblock: BlockMut::clone(&self.boxblock),
+                                boxblock: block::boxblock::Block::clone(&self.boxblock),
                             },
                             Sub::map(|sub| match sub {
                                 tab_0::On::OpenModal(modal) => Msg::SetShowingModal(modal),

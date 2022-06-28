@@ -53,7 +53,9 @@ impl Update for Room {
                         &self.arena,
                         &self.world,
                         &self.modeless_container,
-                        room_modeless::ContentData::Boxblock(boxblock),
+                        room_modeless::ContentData::Boxblock(block::boxblock::Block::Block(
+                            boxblock,
+                        )),
                     );
                 }
 
@@ -79,7 +81,9 @@ impl Update for Room {
                         &self.arena,
                         &self.world,
                         &self.modeless_container,
-                        room_modeless::ContentData::Craftboard(craftboard),
+                        room_modeless::ContentData::Craftboard(block::craftboard::Block::Block(
+                            craftboard,
+                        )),
                     );
                 }
 
@@ -92,7 +96,9 @@ impl Update for Room {
                         &self.arena,
                         &self.world,
                         &self.modeless_container,
-                        room_modeless::ContentData::Textboard(textboard),
+                        room_modeless::ContentData::Textboard(block::textboard::Block::Block(
+                            textboard,
+                        )),
                     );
                 }
 

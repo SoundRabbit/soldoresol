@@ -194,6 +194,15 @@ macro_rules! block {
                 update_ids
             }
         }
+
+        impl Clone for Block {
+            fn clone(&self) -> Self {
+                match self {
+                    Self::Block(x) => Self::Block(BlockMut::clone(x)),
+                    Self::Component(x) => Self::Component(BlockMut::clone(x)),
+                }
+            }
+        }
     };
 }
 

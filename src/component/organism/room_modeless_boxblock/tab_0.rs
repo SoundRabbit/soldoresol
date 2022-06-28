@@ -20,7 +20,7 @@ use kagura::prelude::*;
 use nusa::prelude::*;
 
 pub struct Props {
-    pub boxblock: BlockMut<block::Boxblock>,
+    pub boxblock: block::boxblock::Block,
 }
 
 pub enum Msg {
@@ -39,7 +39,7 @@ pub enum On {
 }
 
 pub struct Tab0 {
-    boxblock: BlockMut<block::Boxblock>,
+    boxblock: block::boxblock::Block,
     element_id: ElementId,
 }
 

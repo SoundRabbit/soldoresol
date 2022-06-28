@@ -21,7 +21,7 @@ use kagura::prelude::*;
 use nusa::prelude::*;
 
 pub struct Props {
-    pub craftboard: BlockMut<block::Craftboard>,
+    pub craftboard: block::craftboard::Block,
 }
 
 pub enum Msg {
@@ -41,7 +41,7 @@ pub enum On {
 }
 
 pub struct Tab0 {
-    craftboard: BlockMut<block::Craftboard>,
+    craftboard: block::craftboard::Block,
     element_id: ElementId,
 }
 

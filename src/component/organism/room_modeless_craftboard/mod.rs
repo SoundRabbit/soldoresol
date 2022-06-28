@@ -17,7 +17,7 @@ use tab_0::Tab0;
 pub struct Props {
     pub arena: ArenaMut,
     pub world: BlockMut<block::World>,
-    pub data: BlockMut<block::Craftboard>,
+    pub data: block::craftboard::Block,
 }
 
 pub enum Msg {
@@ -49,7 +49,7 @@ pub enum On {
 pub struct RoomModelessCraftboard {
     arena: ArenaMut,
     world: BlockMut<block::World>,
-    craftboard: BlockMut<block::Craftboard>,
+    craftboard: block::craftboard::Block,
     showing_modal: ShowingModal,
     element_id: ElementId,
 }
@@ -97,7 +97,7 @@ impl Update for RoomModelessCraftboard {
             }
             Msg::SetName(name) => {
                 self.craftboard.update(|craftboard| {
-                    craftboard.set_name(name);
+                    craftboard.set_name(name.clone());
                 });
 
                 Cmd::submit(On::UpdateBlocks {
@@ -107,7 +107,7 @@ impl Update for RoomModelessCraftboard {
             }
             Msg::SetDisplayName0(display_name) => {
                 self.craftboard.update(|craftboard| {
-                    craftboard.set_display_name((Some(display_name), None));
+                    craftboard.set_display_name((Some(display_name.clone()), None));
                 });
 
                 Cmd::submit(On::UpdateBlocks {
@@ -117,7 +117,7 @@ impl Update for RoomModelessCraftboard {
             }
             Msg::SetDisplayName1(display_name) => {
                 self.craftboard.update(|craftboard| {
-                    craftboard.set_display_name((None, Some(display_name)));
+                    craftboard.set_display_name((None, Some(display_name.clone())));
                 });
 
                 Cmd::submit(On::UpdateBlocks {
@@ -171,7 +171,7 @@ impl Update for RoomModelessCraftboard {
             Msg::SetTexture(tex_idx, texture) => {
                 self.craftboard.update(|craftboard| {
                     let mut textures = craftboard.textures().clone();
-                    textures[tex_idx] = texture;
+                    textures[tex_idx] = texture.clone();
                     craftboard.set_textures(textures);
                 });
 
@@ -245,7 +245,7 @@ impl RoomModelessCraftboard {
                             self,
                             None,
                             tab_0::Props {
-                                craftboard: BlockMut::clone(&self.craftboard),
+                                craftboard: block::craftboard::Block::clone(&self.craftboard),
                             },
                             Sub::map(|sub| match sub {
                                 tab_0::On::OpenModal(modal_kind) => {

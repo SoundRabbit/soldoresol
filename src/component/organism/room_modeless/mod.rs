@@ -32,10 +32,10 @@ pub enum ContentData {
         data: BlockMut<block::Chat>,
         game_system_class: Rc<RefCell<Option<GameSystemClass>>>,
     },
-    Boxblock(BlockMut<block::Boxblock>),
+    Boxblock(block::boxblock::Block),
     Character(BlockMut<block::Character>),
-    Craftboard(BlockMut<block::Craftboard>),
-    Textboard(BlockMut<block::Textboard>),
+    Craftboard(block::craftboard::Block),
+    Textboard(block::textboard::Block),
 }
 
 pub enum Msg {
@@ -115,7 +115,7 @@ impl Render<Html> for RoomModeless {
                 room_modeless_boxblock::Props {
                     arena: ArenaMut::clone(&self.content.arena),
                     world: BlockMut::clone(&self.content.world),
-                    data: BlockMut::clone(&boxblock),
+                    data: block::boxblock::Block::clone(&boxblock),
                 },
                 Sub::map(|sub| match sub {
                     room_modeless_boxblock::On::UpdateBlocks { insert, update } => {
@@ -143,7 +143,7 @@ impl Render<Html> for RoomModeless {
                 room_modeless_craftboard::Props {
                     arena: ArenaMut::clone(&self.content.arena),
                     world: BlockMut::clone(&self.content.world),
-                    data: BlockMut::clone(&craftboard),
+                    data: block::craftboard::Block::clone(&craftboard),
                 },
                 Sub::map(|sub| match sub {
                     room_modeless_craftboard::On::UpdateBlocks { insert, update } => {
@@ -157,7 +157,7 @@ impl Render<Html> for RoomModeless {
                 room_modeless_textboard::Props {
                     arena: ArenaMut::clone(&self.content.arena),
                     world: BlockMut::clone(&self.content.world),
-                    data: BlockMut::clone(&textboard),
+                    data: block::textboard::Block::clone(&textboard),
                 },
                 Sub::map(|sub| match sub {
                     room_modeless_textboard::On::UpdateBlocks { insert, update } => {

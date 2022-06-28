@@ -17,7 +17,7 @@ use tab_0::Tab0;
 pub struct Props {
     pub arena: ArenaMut,
     pub world: BlockMut<block::World>,
-    pub data: BlockMut<block::Textboard>,
+    pub data: block::textboard::Block,
 }
 
 pub enum Msg {
@@ -47,7 +47,7 @@ pub enum On {
 pub struct RoomModelessTextboard {
     arena: ArenaMut,
     world: BlockMut<block::World>,
-    textboard: BlockMut<block::Textboard>,
+    textboard: block::textboard::Block,
     showing_modal: ShowingModal,
 }
 
@@ -88,7 +88,7 @@ impl Update for RoomModelessTextboard {
             }
             Msg::SetTitle(title) => {
                 self.textboard.update(|textboard| {
-                    textboard.set_title(title);
+                    textboard.set_title(title.clone());
                 });
 
                 Cmd::submit(On::UpdateBlocks {
@@ -98,7 +98,7 @@ impl Update for RoomModelessTextboard {
             }
             Msg::SetText(text) => {
                 self.textboard.update(|textboard| {
-                    textboard.set_text(text);
+                    textboard.set_text(text.clone());
                 });
 
                 Cmd::submit(On::UpdateBlocks {
@@ -187,7 +187,7 @@ impl RoomModelessTextboard {
                             self,
                             None,
                             tab_0::Props {
-                                textboard: BlockMut::clone(&self.textboard),
+                                textboard: block::textboard::Block::clone(&self.textboard),
                             },
                             Sub::map(|sub| match sub {
                                 tab_0::On::OpenModal(modal_kind) => {
