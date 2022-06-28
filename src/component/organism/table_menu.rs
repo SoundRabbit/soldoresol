@@ -232,7 +232,11 @@ impl TableMenu {
                 modal_resource::Props {
                     arena: ArenaMut::clone(&self.arena),
                     world: BlockMut::clone(&self.world),
-                    filter: set! { BlockKind::BoxblockComponent },
+                    filter: set! {
+                        BlockKind::BoxblockComponent,
+                        BlockKind::CraftboardComponent,
+                        BlockKind::TextboardComponent
+                    },
                     title: String::from(modal_resource::title::VIEW_ALL_RESOURCE),
                     is_selecter: true,
                 },

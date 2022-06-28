@@ -14,10 +14,10 @@ block! {
     [pub Craftboard(constructor, pack, component)]
     (is_bind_to_grid): bool;
     (position): [f64; 3];
+    origin: BlockMut<Component> = BlockMut::<Component>::none();
     name: String = String::new();
     display_name: (String, String) = (String::from(""), String::from(""));
     size: [f64; 3] = [10.0, 10.0, 10.0];
-    terran_height: f64 = 1.0;
     grid_color: Pallet = Pallet::gray(9).a(100);
     env_light_intensity: f64 = 1.0;
     is_fixed_position: bool = true;
@@ -25,6 +25,10 @@ block! {
 }
 
 impl Craftboard {
+    pub fn origin(&self) -> &BlockMut<Component> {
+        &self.origin
+    }
+
     pub fn set_position(&mut self, position: [f64; 3]) {
         self.position = position;
     }
@@ -80,5 +84,32 @@ impl Craftboard {
     }
     pub fn set_textures(&mut self, textures: Textures) {
         self.textures = textures;
+    }
+}
+
+impl BlockMut<Component> {
+    pub fn create_clone(&self) -> Option<Craftboard> {
+        self.map(|component| {
+            let mut cloned = component.origin.clone();
+            cloned.origin = BlockMut::clone(self);
+            cloned
+        })
+    }
+}
+
+impl Clone for Craftboard {
+    fn clone(&self) -> Self {
+        Self {
+            origin: BlockMut::none(),
+            is_bind_to_grid: self.is_bind_to_grid,
+            position: self.position.clone(),
+            size: self.size.clone(),
+            env_light_intensity: self.env_light_intensity.clone(),
+            grid_color: self.grid_color.clone(),
+            textures: self.textures.clone(),
+            name: self.name.clone(),
+            display_name: self.display_name.clone(),
+            is_fixed_position: self.is_fixed_position,
+        }
     }
 }

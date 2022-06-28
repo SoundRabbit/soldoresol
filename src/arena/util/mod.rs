@@ -122,6 +122,7 @@ macro_rules! block {
                 f(&mut self.origin);
                 for child in &mut self.children {
                     child.update(&mut f);
+                    update_blocks.insert(child.id());
                 }
 
                 update_blocks
@@ -148,6 +149,49 @@ macro_rules! block {
         impl std::ops::DerefMut for Component {
             fn deref_mut(&mut self) -> &mut Self::Target {
                 &mut self.origin
+            }
+        }
+
+        pub enum Block {
+            Block(BlockMut<$b_name>),
+            Component(BlockMut<Component>)
+        }
+
+        impl Block {
+            pub fn id(&self) -> U128Id {
+                match self {
+                    Self::Block(x) => x.id(),
+                    Self::Component(x) => x.id()
+                }
+            }
+
+            pub fn map<T>(&self, f: impl FnOnce(&$b_name) -> T) -> Option<T> {
+                match self {
+                    Self::Block(x) => x.map(f),
+                    Self::Component(x) => x.map(|x| f(x))
+                }
+            }
+
+            pub fn update(&mut self, f: impl FnMut(&mut $b_name)) -> HashSet<U128Id> {
+                let mut update_ids = HashSet::new();
+
+                match self {
+                    Self::Block(x) => {
+                        if x.update(f) {
+                            update_ids.insert(x.id());
+                        }
+                    }
+                    Self::Component(x) => {
+                        update_ids.insert(x.id());
+                        if x.update(|x| {
+                            update_ids.extend(x.update(f));
+                        }) {
+                            update_ids.insert(x.id());
+                        }
+                    }
+                }
+
+                update_ids
             }
         }
     };

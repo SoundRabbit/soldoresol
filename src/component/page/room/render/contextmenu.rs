@@ -160,6 +160,7 @@ impl Room {
                     .unwrap_or(false),
                 BlockMut::clone(&craftboard).untyped(),
             ),
+            self.render_create_component(BlockMut::clone(&craftboard).untyped()),
             Btn::menu(
                 Attributes::new(),
                 Events::new().on_click(self, {
@@ -190,6 +191,7 @@ impl Room {
                 }),
                 vec![Html::text("詳細を表示")],
             ),
+            self.render_create_component(BlockMut::clone(&textboard).untyped()),
             Btn::menu(
                 Attributes::new(),
                 Events::new().on_click(self, {

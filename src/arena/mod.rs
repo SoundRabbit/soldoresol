@@ -24,6 +24,8 @@ arena! {
     pub block::Textboard;
     pub block::World;
     pub component::BoxblockComponent;
+    pub component::CraftboardComponent;
+    pub component::TextboardComponent;
     pub resource::ImageData;
     pub resource::BlockTexture;
     pub user::Player;

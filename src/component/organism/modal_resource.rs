@@ -57,6 +57,8 @@ pub enum Resource {
     ImageData(BlockRef<resource::ImageData>),
     BlockTexture(BlockRef<resource::BlockTexture>),
     BoxblockComponent(BlockMut<component::BoxblockComponent>),
+    CraftboardComponent(BlockMut<component::CraftboardComponent>),
+    TextboardComponent(BlockMut<component::TextboardComponent>),
 }
 
 impl Resource {
@@ -66,6 +68,8 @@ impl Resource {
             Self::ImageData(data) => data.id(),
             Self::BlockTexture(data) => data.id(),
             Self::BoxblockComponent(data) => data.id(),
+            Self::CraftboardComponent(data) => data.id(),
+            Self::TextboardComponent(data) => data.id(),
         }
     }
 }
@@ -173,6 +177,12 @@ impl Update for ModalResource {
                     Resource::BoxblockComponent(data) => {
                         Cmd::submit(On::SelectComponent(data.id()))
                     }
+                    Resource::CraftboardComponent(data) => {
+                        Cmd::submit(On::SelectComponent(data.id()))
+                    }
+                    Resource::TextboardComponent(data) => {
+                        Cmd::submit(On::SelectComponent(data.id()))
+                    }
                     _ => Cmd::none(),
                 }
             }
@@ -210,12 +220,28 @@ impl Render<Html> for ModalResource {
                                         BlockKind::BlockTexture,
                                         Text::condense_75("ブロック用テクスチャ"),
                                     ),
-                                    self.render_group_to_select_kind(Text::condense_75(
-                                        "コンポーネント",
-                                    )),
+                                    if self.filter.is_empty()
+                                        || self.filter.contains(&BlockKind::BoxblockComponent)
+                                        || self.filter.contains(&BlockKind::CraftboardComponent)
+                                        || self.filter.contains(&BlockKind::TextboardComponent)
+                                    {
+                                        self.render_group_to_select_kind(Text::condense_75(
+                                            "コンポーネント",
+                                        ))
+                                    } else {
+                                        Html::none()
+                                    },
+                                    self.render_btn_to_select_kind(
+                                        BlockKind::CraftboardComponent,
+                                        Html::text("盤面"),
+                                    ),
                                     self.render_btn_to_select_kind(
                                         BlockKind::BoxblockComponent,
                                         Html::text("ブロック"),
+                                    ),
+                                    self.render_btn_to_select_kind(
+                                        BlockKind::TextboardComponent,
+                                        Html::text("メモ"),
                                     ),
                                 ],
                             ),
@@ -226,7 +252,10 @@ impl Render<Html> for ModalResource {
                                     BlockKind::ImageData => self.render_list_image_data(),
                                     BlockKind::BlockTexture => self.render_list_block_texture(),
                                     BlockKind::BoxblockComponent => {
-                                        self.render_list_block_component()
+                                        self.render_list_boxblock_component()
+                                    }
+                                    BlockKind::CraftboardComponent => {
+                                        self.render_list_craftboard_component()
                                     }
                                     _ => vec![],
                                 },
@@ -340,14 +369,27 @@ impl ModalResource {
             .unwrap_or(vec![])
     }
 
-    fn render_list_block_component(&self) -> Vec<Html> {
+    fn render_list_boxblock_component(&self) -> Vec<Html> {
         self.world
             .map(|world| {
                 world
                     .components()
                     .boxblocks()
                     .iter()
-                    .map(|data| self.render_cell_block_component(BlockMut::clone(data)))
+                    .map(|data| self.render_cell_boxblock_component(BlockMut::clone(data)))
+                    .collect()
+            })
+            .unwrap_or(vec![])
+    }
+
+    fn render_list_craftboard_component(&self) -> Vec<Html> {
+        self.world
+            .map(|world| {
+                world
+                    .components()
+                    .craftboards()
+                    .iter()
+                    .map(|data| self.render_cell_craftboard_component(BlockMut::clone(data)))
                     .collect()
             })
             .unwrap_or(vec![])
@@ -438,7 +480,7 @@ impl ModalResource {
             .unwrap_or(Html::none())
     }
 
-    fn render_cell_block_component(&self, data: BlockMut<component::BoxblockComponent>) -> Html {
+    fn render_cell_boxblock_component(&self, data: BlockMut<component::BoxblockComponent>) -> Html {
         BlockMut::clone(&data)
             .map(|this| {
                 Html::div(
@@ -448,7 +490,7 @@ impl ModalResource {
                         move |_| Msg::SetSelectedResource(Resource::BoxblockComponent(data))
                     }),
                     vec![
-                        self.render_cell_block_component_img(this),
+                        self.render_cell_boxblock_component_img(this),
                         attr::span(Attributes::new().class(Self::class("text")), this.name()),
                         if self.is_selecter {
                             self.render_btn_to_select_cell(Resource::BoxblockComponent(data))
@@ -461,7 +503,7 @@ impl ModalResource {
             .unwrap_or(Html::none())
     }
 
-    fn render_cell_block_component_img(&self, data: &component::BoxblockComponent) -> Html {
+    fn render_cell_boxblock_component_img(&self, data: &component::BoxblockComponent) -> Html {
         data.texture()
             .and_then(|texture| {
                 texture.map(|texture| {
@@ -476,16 +518,86 @@ impl ModalResource {
                     )
                 })
             })
-            .unwrap_or_else(|| self.render_cell_block_component_bgcolor(data))
+            .unwrap_or_else(|| self.render_cell_boxblock_component_bgcolor(data))
     }
 
-    fn render_cell_block_component_bgcolor(&self, data: &component::BoxblockComponent) -> Html {
+    fn render_cell_boxblock_component_bgcolor(&self, data: &component::BoxblockComponent) -> Html {
         Html::div(
             Attributes::new()
                 .class(Self::class("cell-tile"))
                 .style("background-color", data.color().to_string()),
             Events::new(),
             vec![],
+        )
+    }
+
+    fn render_cell_craftboard_component(
+        &self,
+        data: BlockMut<component::CraftboardComponent>,
+    ) -> Html {
+        BlockMut::clone(&data)
+            .map(|this| {
+                Html::div(
+                    Attributes::new().class(Self::class("cell")),
+                    Events::new().on_click(self, {
+                        let data = BlockMut::clone(&data);
+                        move |_| Msg::SetSelectedResource(Resource::CraftboardComponent(data))
+                    }),
+                    vec![
+                        Html::div(
+                            Attributes::new()
+                                .class(Common::layered())
+                                .class(Self::class("cell-tile")),
+                            Events::new(),
+                            vec![
+                                this.textures()
+                                    .nz
+                                    .as_ref()
+                                    .and_then(|texture| {
+                                        texture.map(|texture| {
+                                            Html::img(
+                                                Attributes::new()
+                                                    .draggable("false")
+                                                    .class(Self::class("cell-img"))
+                                                    .class(Common::bg_transparent())
+                                                    .class(Common::layered_item())
+                                                    .src(texture.url().to_string()),
+                                                Events::new(),
+                                                vec![],
+                                            )
+                                        })
+                                    })
+                                    .unwrap_or_else(|| Html::none()),
+                                Html::div(
+                                    Attributes::new().class(Common::layered_item()).style(
+                                        "background",
+                                        Self::style_grid_line(
+                                            this.size()[1] as u32,
+                                            this.size()[0] as u32,
+                                        ),
+                                    ),
+                                    Events::new(),
+                                    vec![],
+                                ),
+                            ],
+                        ),
+                        attr::span(Attributes::new().class(Self::class("text")), this.name()),
+                        if self.is_selecter {
+                            self.render_btn_to_select_cell(Resource::CraftboardComponent(data))
+                        } else {
+                            Html::none()
+                        },
+                    ],
+                )
+            })
+            .unwrap_or(Html::none())
+    }
+
+    fn style_grid_line(rows: u32, cols: u32) -> String {
+        format!(
+            "repeating-linear-gradient(0deg, #000, #000 1px, transparent 1px, transparent calc((100% - 1px) / {})),\
+            repeating-linear-gradient(90deg, #000, #000 1px, transparent 1px, transparent calc((100% - 1px) / {}))",
+            rows, cols
         )
     }
 

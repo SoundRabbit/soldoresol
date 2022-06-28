@@ -1,4 +1,4 @@
-use super::super::component::BoxblockComponent;
+use super::super::component::{BoxblockComponent, CraftboardComponent, TextboardComponent};
 use super::super::resource::{BlockTexture, ImageData};
 use super::super::Access;
 #[allow(unused_imports)]
@@ -10,11 +10,21 @@ use super::{Character, Scene};
 block! {
     [pub Components(constructor, pack)]
     boxblocks: Vec<BlockMut<BoxblockComponent>> = vec![];
+    craftboards: Vec<BlockMut<CraftboardComponent>> = vec![];
+    textboards: Vec<BlockMut<TextboardComponent>> = vec![];
 }
 
 impl Components {
     pub fn boxblocks(&self) -> &Vec<BlockMut<BoxblockComponent>> {
         &self.boxblocks
+    }
+
+    pub fn craftboards(&self) -> &Vec<BlockMut<CraftboardComponent>> {
+        &self.craftboards
+    }
+
+    pub fn textboards(&self) -> &Vec<BlockMut<TextboardComponent>> {
+        &self.textboards
     }
 }
 
@@ -68,6 +78,14 @@ impl World {
 
     pub fn push_boxblock_as_component(&mut self, component: BlockMut<BoxblockComponent>) {
         self.components.boxblocks.push(component);
+    }
+
+    pub fn push_craftboard_as_component(&mut self, component: BlockMut<CraftboardComponent>) {
+        self.components.craftboards.push(component);
+    }
+
+    pub fn push_textboard_as_component(&mut self, component: BlockMut<TextboardComponent>) {
+        self.components.textboards.push(component);
     }
 
     pub fn image_data_resources(&self) -> &Vec<BlockRef<ImageData>> {
