@@ -32,6 +32,7 @@ pub enum Msg {
     SetDisplayName0(String),
     SetDisplayName1(String),
     SetSize(f64),
+    SetZOffset(f64),
     SetTexSize(f64),
     SetSelectedTextureIdx(usize),
     SetDescription(String),
@@ -148,6 +149,16 @@ impl Update for RoomModelessCharacter {
             Msg::SetSize(size) => {
                 self.character.update(|character| {
                     character.set_size(size);
+                });
+
+                Cmd::submit(On::UpdateBlocks {
+                    insert: set! {},
+                    update: set! { self.character.id() },
+                })
+            }
+            Msg::SetZOffset(z_offset) => {
+                self.character.update(|character| {
+                    character.set_z_offset(z_offset);
                 });
 
                 Cmd::submit(On::UpdateBlocks {
@@ -344,6 +355,7 @@ impl RoomModelessCharacter {
                                         Msg::SetSelectedTextureIdx(tex_idx)
                                     }
                                     tab_0::On::SetSize(size) => Msg::SetSize(size),
+                                    tab_0::On::SetZOffset(z_offset) => Msg::SetZOffset(z_offset),
                                     tab_0::On::SetTexSize(tex_size) => Msg::SetTexSize(tex_size),
                                     tab_0::On::SetTextureName(tex_idx, tex_name) => {
                                         Msg::SetTextureName(tex_idx, tex_name)

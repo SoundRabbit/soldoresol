@@ -65,7 +65,6 @@ impl Boxblock {
 
                     let nameplate = util::Nameplate::new(&self.geometry_nameplate);
                     nameplate.set_color(boxblock.color());
-                    nameplate.set_user_data(&boxblock_id.to_jsvalue());
                     nameplate.scale().set(1.0, 1.0, 1.0);
                     nameplate.board().scale().set(0.0, 1.0, 0.0);
                     nameplate.arrow().unwrap().scale().set(0.0, 0.0, 0.0);

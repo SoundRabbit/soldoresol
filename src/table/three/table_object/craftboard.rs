@@ -78,7 +78,6 @@ impl Craftboard {
 
                     let nameplate = util::Nameplate::new(&self.geometry_nameplate);
                     nameplate.set_color(craftboard.grid_color());
-                    nameplate.set_user_data(&craftboard_id.to_jsvalue());
                     nameplate.scale().set(1.0, 1.0, 1.0);
                     nameplate.board().scale().set(0.0, 0.0, 1.0);
 

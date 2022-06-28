@@ -41,6 +41,7 @@ pub enum On {
     SetName(String),
     SetColor(crate::libs::color::Pallet),
     SetSize(f64),
+    SetZOffset(f64),
     SetTexSize(f64),
     SetSelectedTextureIdx(usize),
     SetTextureName(usize, String),
@@ -225,6 +226,25 @@ impl Tab0 {
                             },
                             Sub::map(move |sub| match sub {
                                 slider::On::Input(x) => Msg::Sub(On::SetTexSize(x)),
+                                _ => Msg::NoOp,
+                            }),
+                            slider::Props {
+                                range_is_editable: false,
+                                theme: slider::Theme::Light,
+                            },
+                        ),
+                        Text::span("高さ"),
+                        Slider::new(
+                            self,
+                            None,
+                            slider::Position::Linear {
+                                min: 0.0,
+                                max: 10.0,
+                                val: character.z_offset(),
+                                step: 0.1,
+                            },
+                            Sub::map(move |sub| match sub {
+                                slider::On::Input(x) => Msg::Sub(On::SetZOffset(x)),
                                 _ => Msg::NoOp,
                             }),
                             slider::Props {

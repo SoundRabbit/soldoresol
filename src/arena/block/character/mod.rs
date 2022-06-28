@@ -196,6 +196,7 @@ block! {
     };
     position: [f64; 3] = [0.0, 0.0, 0.0];
     size: [f64; 3] = [1.0, 1.5, 1.0];
+    z_offset: f64 = 0.0;
     color: Pallet = Pallet::gray(5);
     textures: SelectList<StandingTexture> =
         SelectList::new(vec![StandingTexture::new(String::from("[default]"))], 0);
@@ -242,6 +243,14 @@ impl Character {
         self.size[1] *= size / self.size();
         self.size[0] = size;
         self.size[2] = size;
+    }
+
+    pub fn z_offset(&self) -> f64 {
+        self.z_offset
+    }
+
+    pub fn set_z_offset(&mut self, z_offset: f64) {
+        self.z_offset = z_offset;
     }
 
     pub fn tex_size(&self) -> f64 {

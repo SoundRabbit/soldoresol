@@ -285,7 +285,7 @@ impl Room {
 
     fn render_header_row_1_left(&self) -> Html {
         Html::div(
-            Attributes::new().class(Self::class("view-room-id")),
+            Attributes::new().class(Self::class("left")),
             Events::new(),
             vec![
                 Dropdown::new(
@@ -409,6 +409,13 @@ impl Styled for Room {
             }
 
             ".view-room-id" {
+                "display": "grid";
+                "grid-template-columns": "max-content 1fr max-content";
+                "grid-auto-flow": "column";
+                "column-gap": "0.65em";
+            }
+
+            ".left" {
                 "display": "grid";
                 "grid-auto-columns": "max-content";
                 "grid-auto-flow": "column";
