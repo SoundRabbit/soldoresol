@@ -166,14 +166,14 @@ impl Render<Html> for Room {
                 } else {
                     Common::none()
                 },
-                self.render_moadl(),
+                self.render_modal(),
             ],
         ))
     }
 }
 
 impl Room {
-    fn render_moadl(&self) -> Html {
+    fn render_modal(&self) -> Html {
         match &self.showing_modal {
             ShowingModal::None => Html::none(),
             ShowingModal::ChatUser => ModalChatUser::empty(
@@ -410,7 +410,7 @@ impl Styled for Room {
 
             ".view-room-id" {
                 "display": "grid";
-                "grid-template-columns": "max-content 1fr max-content";
+                "grid-auto-columns": "max-content";
                 "column-gap": "0.65em";
             }
 
