@@ -199,14 +199,14 @@ impl Craftboard {
 
         for x in 0..xn {
             let x = x as f64 + offset_x;
-            points.push(&three::Vector3::new(x, offset_y, 0.01));
-            points.push(&three::Vector3::new(x, size[1] as f64 + offset_y, 0.01));
+            points.push(&three::Vector3::new(x, offset_y, 0.005));
+            points.push(&three::Vector3::new(x, size[1] as f64 + offset_y, 0.005));
         }
 
         for y in 0..yn {
             let y = y as f64 + offset_y;
-            points.push(&three::Vector3::new(offset_x, y, 0.01));
-            points.push(&three::Vector3::new(size[0] as f64 + offset_x, y, 0.01));
+            points.push(&three::Vector3::new(offset_x, y, 0.005));
+            points.push(&three::Vector3::new(size[0] as f64 + offset_x, y, 0.005));
         }
 
         three::BufferGeometry::new().set_from_points(&points)

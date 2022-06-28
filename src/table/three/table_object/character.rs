@@ -134,10 +134,15 @@ impl Character {
                     let s = character.size();
                     mesh.border_data.set_scale(&[s - 0.1, s - 0.1], 0.1);
                     mesh.base_data.scale().set(s - 0.1, s - 0.1, 1.0);
-                    mesh.offset_line.scale().set(s, s, character.z_offset());
-                    mesh.offset_line
-                        .position()
-                        .set(0.0, 0.0, -character.z_offset());
+                    if character.z_offset() > 0.0 {
+                        mesh.offset_line.scale().set(s, s, character.z_offset());
+                        mesh.offset_line
+                            .position()
+                            .set(0.0, 0.0, -character.z_offset());
+                        mesh.offset_line.set_visible(true);
+                    } else {
+                        mesh.offset_line.set_visible(false);
+                    }
                     let [px, py, pz] = character.position().clone();
                     mesh.data
                         .position()
@@ -244,7 +249,7 @@ impl Character {
         geometry
     }
 
-    fn create_offset_geometry_mesh() -> three::BufferGeometry {
+    fn create_offset_geometry_line() -> three::BufferGeometry {
         let points = js_sys::Float32Array::from(
             [
                 [0.5, 0.5, 1.0],
@@ -261,41 +266,20 @@ impl Character {
         );
         let index = js_sys::Uint16Array::from(
             [
-                [0, 1, 2, 1, 3, 2],
-                [2, 3, 4, 3, 5, 4],
-                [4, 5, 6, 5, 7, 6],
-                [6, 7, 0, 7, 1, 0],
+                [0, 1],
+                [2, 3],
+                [4, 5],
+                [6, 7],
+                [1, 3],
+                [3, 5],
+                [5, 7],
+                [7, 1],
+                [1, 5],
+                [3, 7],
             ]
             .concat()
             .as_ref(),
         );
-
-        let geometry = three::BufferGeometry::new();
-        geometry.set_attribute(
-            "position",
-            &three::BufferAttribute::new_with_f32array(&points, 3, false),
-        );
-        geometry.set_index(&three::BufferAttribute::new_with_u16array(&index, 1, false));
-
-        geometry
-    }
-
-    fn create_offset_geometry_line() -> three::BufferGeometry {
-        let points = js_sys::Float32Array::from(
-            [
-                [0.5, 0.5, 1.0],
-                [0.5, 0.5, 0.0],
-                [-0.5, 0.5, 1.0],
-                [-0.5, 0.5, 0.0],
-                [-0.5, -0.5, 1.0],
-                [-0.5, -0.5, 0.0],
-                [0.5, -0.5, 1.0],
-                [0.5, -0.5, 0.0],
-            ]
-            .concat()
-            .as_slice(),
-        );
-        let index = js_sys::Uint16Array::from([[0, 1], [2, 3], [4, 5], [6, 7]].concat().as_ref());
 
         let geometry = three::BufferGeometry::new();
         geometry.set_attribute(
