@@ -10,7 +10,7 @@ use super::organism::{
     modal_resource::{self, ModalResource},
     popup_color_pallet::{self, PopupColorPallet},
 };
-use crate::arena::{block, ArenaMut, BlockKind, BlockMut};
+use crate::arena::{block, component, ArenaMut, BlockKind, BlockMut};
 use crate::libs::random_id::U128Id;
 use crate::libs::select_list::SelectList;
 use crate::table::table_tool::{self, TableTool};
@@ -712,15 +712,65 @@ impl TableMenu {
         tool_idx: usize,
         component_allocater: &Rc<table_tool::ComponentAllocater>,
     ) -> Html {
+        let component_id = &component_allocater.component;
         Html::div(
             Attributes::new().class(Self::class("boxblock")),
             Events::new(),
             vec![Html::div(
                 Attributes::new().class(Common::keyvalue()),
                 Events::new(),
-                vec![],
+                match self.arena.kind_of(component_id) {
+                    BlockKind::BoxblockComponent => self
+                        .arena
+                        .get::<component::BoxblockComponent>(component_id)
+                        .and_then(|component| {
+                            component.map(|component| {
+                                self.render_tool_option_component_boxblock(component)
+                            })
+                        }),
+                    _ => None,
+                }
+                .unwrap_or(vec![]),
             )],
         )
+    }
+
+    fn render_tool_option_component_boxblock(
+        &self,
+        component: &component::BoxblockComponent,
+    ) -> Vec<Html> {
+        vec![
+            fa::fas_i("fa-cube"),
+            Text::span(component.name()),
+            if component.texture().is_some() {
+                Text::span("テクスチャ")
+            } else {
+                Text::span("色")
+            },
+            if let Some(texture_src) = component
+                .texture()
+                .and_then(|texture| texture.map(|texture| texture.data().url().to_string()))
+            {
+                Html::img(
+                    Attributes::new()
+                        .draggable("false")
+                        .class(Common::bg_transparent())
+                        .class(Self::class("block-texture"))
+                        .src(texture_src),
+                    Events::new(),
+                    vec![],
+                )
+            } else {
+                Html::div(
+                    Attributes::new()
+                        .class(Common::bg_transparent())
+                        .class(Self::class("block-texture"))
+                        .style("background-color", component.color().to_string()),
+                    Events::new(),
+                    vec![],
+                )
+            },
+        ]
     }
 }
 
