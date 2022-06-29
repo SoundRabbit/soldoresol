@@ -547,7 +547,20 @@ impl ModalResource {
                         Html::div(
                             Attributes::new()
                                 .class(Common::layered())
-                                .class(Self::class("cell-tile")),
+                                .style(
+                                    "width",
+                                    format!(
+                                        "{}rem",
+                                        (10.0 * this.size()[0] / this.size()[1]).min(10.0)
+                                    ),
+                                )
+                                .style(
+                                    "height",
+                                    format!(
+                                        "{}rem",
+                                        (10.0 * this.size()[1] / this.size()[0]).min(10.0)
+                                    ),
+                                ),
                             Events::new(),
                             vec![
                                 this.textures()
@@ -558,7 +571,7 @@ impl ModalResource {
                                             Html::img(
                                                 Attributes::new()
                                                     .draggable("false")
-                                                    .class(Self::class("cell-img"))
+                                                    .class(Self::class("fill-img"))
                                                     .class(Common::bg_transparent())
                                                     .class(Common::layered_item())
                                                     .src(texture.url().to_string()),
@@ -689,6 +702,12 @@ impl Styled for ModalResource {
                 "margin-top": "1rem";
                 "padding-left": "1em";
                 "padding-right": "1em";
+            }
+
+            ".fill-img" {
+                "width": "100%";
+                "height": "100%";
+                "object-fit": "fill";
             }
         }
     }
