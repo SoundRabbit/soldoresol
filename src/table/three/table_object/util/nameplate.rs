@@ -131,33 +131,64 @@ impl std::ops::Deref for Nameplate {
 
 impl XZGeometry {
     pub fn new(z_offset: f32, arrow: bool) -> Self {
+        Self::new_with_offset(&[0.0, 0.0, z_offset], arrow)
+    }
+
+    pub fn new_with_offset(offset: &[f32; 3], arrow: bool) -> Self {
         let ext = 0.05;
         let arrow_height = 0.25;
-        let z_offset = if arrow {
-            z_offset + arrow_height
-        } else {
-            z_offset
-        };
+        let arrow_offset = if arrow { arrow_height } else { 0.0 };
         Self {
-            front: Self::create_geometry(-0.01, z_offset + ext, 0.0, false),
-            back: Self::create_geometry(0.01, z_offset + ext, 0.0, true),
-            background: Self::create_geometry(0.0, z_offset + ext, ext, false),
+            front: Self::create_geometry(
+                &[offset[0], -0.01 + offset[1], offset[2] + arrow_offset + ext],
+                0.0,
+                false,
+            ),
+            back: Self::create_geometry(
+                &[offset[0], 0.01 + offset[1], offset[2] + arrow_offset + ext],
+                0.0,
+                true,
+            ),
+            background: Self::create_geometry(
+                &[offset[0], 0.0 + offset[1], offset[2] + arrow_offset + ext],
+                ext,
+                false,
+            ),
             arrow: if arrow {
-                Some(Self::create_arrow(arrow_height, z_offset))
+                Some(Self::create_arrow(
+                    arrow_height,
+                    &[offset[0], offset[1], offset[2] + arrow_offset],
+                ))
             } else {
                 None
             },
         }
     }
 
-    fn create_geometry(y_offset: f32, z_offset: f32, ext: f32, inv: bool) -> three::BufferGeometry {
+    fn create_geometry(offset: &[f32; 3], ext: f32, inv: bool) -> three::BufferGeometry {
         let inv = if inv { -1.0 } else { 1.0 };
         let points = js_sys::Float32Array::from(
             [
-                [0.5 * inv + ext, y_offset, 0.5 + z_offset + ext],
-                [-0.5 * inv - ext, y_offset, 0.5 + z_offset + ext],
-                [-0.5 * inv - ext, y_offset, -0.5 + z_offset - ext],
-                [0.5 * inv + ext, y_offset, -0.5 + z_offset - ext],
+                [
+                    0.5 * inv + offset[0] + ext,
+                    offset[1],
+                    0.5 + offset[2] + ext,
+                ],
+                [
+                    -0.5 * inv + offset[0] - ext,
+                    offset[1],
+                    0.5 + offset[2] + ext,
+                ],
+                [
+                    -0.5 * inv + offset[0] - ext,
+                    offset[1],
+                    -0.5 + offset[2] - ext,
+                ],
+                [
+                    0.5 * inv + offset[0] + ext,
+                    offset[1],
+                    -0.5 + offset[2] - ext,
+                ],
             ]
             .concat()
             .as_slice(),
@@ -183,12 +214,12 @@ impl XZGeometry {
         geometry
     }
 
-    fn create_arrow(height: f32, z_offset: f32) -> three::BufferGeometry {
+    fn create_arrow(height: f32, offset: &[f32; 3]) -> three::BufferGeometry {
         let points = js_sys::Float32Array::from(
             [
-                [height, 0.0, -0.5 + z_offset],
-                [-height, 0.0, -0.5 + z_offset],
-                [0.0, 0.0, -0.5 - height + z_offset],
+                [height + offset[0], 0.0 + offset[1], -0.5 + offset[2]],
+                [-height + offset[0], 0.0 + offset[1], -0.5 + offset[2]],
+                [0.0 + offset[0], 0.0 + offset[1], -0.5 - height + offset[2]],
             ]
             .concat()
             .as_slice(),

@@ -12,14 +12,18 @@ pub struct Character {
     geometry_base: three::PlaneGeometry,
     geometry_texture: three::BufferGeometry,
     geometry_nameplate: util::nameplate::XZGeometry,
-    geometry_offset_line: three::BufferGeometry,
+    geometry_offset_value: util::nameplate::XZGeometry,
+    geometry_offset_line: three::CylinderGeometry,
     material_border: three::MeshBasicMaterial,
     material_base: three::MeshBasicMaterial,
     material_offset_line: three::LineBasicMaterial,
 }
 
 pub struct Mesh {
-    offset_line: three::LineSegments,
+    offset_line: three::Mesh,
+    offset_base: three::Mesh,
+    offset_border: util::RoundedRectangleMesh,
+    offset_value: util::Nameplate,
 
     border_data: util::RoundedRectangleMesh,
     base_data: three::Mesh,
@@ -32,6 +36,8 @@ pub struct Mesh {
     nameplate_id: (String, String),
 
     color: crate::libs::color::Pallet,
+
+    z_offset: f64,
 
     data: three::Group,
 }
@@ -47,7 +53,11 @@ impl Character {
             geometry_base: three::PlaneGeometry::new(1.0, 1.0),
             geometry_texture: Self::create_texture_geometry(),
             geometry_nameplate: util::nameplate::XZGeometry::new(0.5, true),
-            geometry_offset_line: Self::create_offset_geometry_line(),
+            geometry_offset_value: util::nameplate::XZGeometry::new_with_offset(
+                &[0.5, 0.0, 0.0],
+                false,
+            ),
+            geometry_offset_line: Self::create_offset_line_geometry(),
 
             material_border: three::MeshBasicMaterial::new(&object! {
                 "color": &three::Color::new(color_border[0], color_border[1], color_border[2])
@@ -96,13 +106,25 @@ impl Character {
 
                     let nameplate = util::Nameplate::new(&self.geometry_nameplate);
                     nameplate.set_color(character.color());
-                    nameplate.scale().set(1.0, 1.0, 1.0);
-                    nameplate.board().scale().set(0.0, 1.0, 0.0);
 
-                    let offset_line = three::LineSegments::new(
-                        &self.geometry_offset_line,
-                        &self.material_offset_line,
+                    let offset_line =
+                        three::Mesh::new(&self.geometry_offset_line, &self.material_offset_line);
+                    offset_line.set_visible(false);
+
+                    let offset_base = three::Mesh::new(&self.geometry_base, &self.material_base);
+                    offset_base.set_user_data(&character_id.to_jsvalue());
+                    offset_base.set_visible(false);
+
+                    let offset_border = util::RoundedRectangleMesh::new(
+                        &self.geometry_border,
+                        &self.material_border,
                     );
+                    offset_border.set_user_data(&character_id.to_jsvalue());
+                    offset_border.data().set_visible(false);
+
+                    let offset_value = util::Nameplate::new(&self.geometry_offset_value);
+                    offset_value.set_color(&crate::libs::color::Pallet::gray(9));
+                    offset_value.set_visible(false);
 
                     let data = three::Group::new();
                     data.set_render_order(super::ORDER_CHARACTER);
@@ -112,11 +134,17 @@ impl Character {
                     data.add(&texture_data);
                     data.add(&nameplate);
                     data.add(&offset_line);
+                    data.add(&offset_base);
+                    data.add(offset_border.data());
+                    data.add(&offset_value);
                     scene.add(&data);
                     self.meshs.insert(
                         U128Id::clone(&character_id),
                         Mesh {
                             offset_line,
+                            offset_base,
+                            offset_border,
+                            offset_value,
                             border_data,
                             base_data,
                             texture_material,
@@ -125,6 +153,7 @@ impl Character {
                             nameplate,
                             nameplate_id: (String::from(""), String::from("")),
                             color: character.color().clone(),
+                            z_offset: 0.0,
                             data,
                         },
                     );
@@ -134,19 +163,41 @@ impl Character {
                     let s = character.size();
                     mesh.border_data.set_scale(&[s - 0.1, s - 0.1], 0.1);
                     mesh.base_data.scale().set(s - 0.1, s - 0.1, 1.0);
-                    if character.z_offset() > 0.0 {
-                        mesh.offset_line.scale().set(s, s, character.z_offset());
-                        mesh.offset_line
-                            .position()
-                            .set(0.0, 0.0, -character.z_offset());
-                        mesh.offset_line.set_visible(true);
-                    } else {
-                        mesh.offset_line.set_visible(false);
-                    }
                     let [px, py, pz] = character.position().clone();
                     mesh.data
                         .position()
                         .set(px, py, pz + 0.01 + character.z_offset());
+
+                    if mesh.z_offset != character.z_offset() {
+                        let z_offset = character.z_offset();
+                        if z_offset > 0.0 {
+                            mesh.offset_line.scale().set(1.0, 1.0, z_offset);
+                            mesh.offset_base.scale().set(s - 0.1, s - 0.1, 1.0);
+                            mesh.offset_border.set_scale(&[s - 0.1, s - 0.1], 0.1);
+                            mesh.offset_line.position().set(0.0, 0.0, -z_offset);
+                            mesh.offset_base.position().set(0.0, 0.0, -z_offset);
+                            mesh.border_data.data().position().set(0.0, 0.0, -z_offset);
+                            mesh.offset_line.set_visible(true);
+                            mesh.offset_base.set_visible(true);
+                            mesh.offset_border.data().set_visible(true);
+
+                            let texture = texture_table
+                                .load_text(&(format!("+{}ﾏｽ", z_offset), String::new()));
+                            mesh.offset_value.text().set_alpha_map(Some(&texture.data));
+                            mesh.offset_value.board().scale().set(
+                                texture.size[0] * 0.25,
+                                1.0,
+                                texture.size[1] * 0.25,
+                            );
+                            mesh.offset_value.position().set(s * 0.5 + 0.1, 0.0, 0.0);
+                            mesh.offset_value.set_visible(true);
+                        } else {
+                            mesh.offset_line.set_visible(false);
+                            mesh.offset_base.set_visible(false);
+                            mesh.offset_border.data().set_visible(false);
+                            mesh.offset_value.set_visible(false);
+                        }
+                    }
 
                     let texture_block = character
                         .selected_texture()
@@ -179,16 +230,22 @@ impl Character {
                     }
 
                     if *character.display_name() != mesh.nameplate_id {
-                        let texture = texture_table.load_text(character.display_name());
-                        mesh.nameplate.text().set_alpha_map(Some(&texture.data));
-                        mesh.nameplate.text().set_needs_update(true);
+                        if character.display_name().0 == "" && character.display_name().1 == "" {
+                            mesh.nameplate.board().set_visible(false);
+                        } else {
+                            let texture = texture_table.load_text(character.display_name());
+                            mesh.nameplate.text().set_alpha_map(Some(&texture.data));
+                            mesh.nameplate.text().set_needs_update(true);
 
-                        let texture_width = f64::min(s * 2.0, texture.size[0] * 0.5);
-                        let texture_height = texture_width * texture.size[1] / texture.size[0];
-                        mesh.nameplate
-                            .board()
-                            .scale()
-                            .set(texture_width, 1.0, texture_height);
+                            let texture_width = f64::min(s * 2.0, texture.size[0] * 0.5);
+                            let texture_height = texture_width * texture.size[1] / texture.size[0];
+                            mesh.nameplate
+                                .board()
+                                .scale()
+                                .set(texture_width, 1.0, texture_height);
+                            mesh.nameplate.board().set_visible(true);
+                        }
+
                         mesh.nameplate_id = character.display_name().clone();
                     }
 
@@ -249,44 +306,10 @@ impl Character {
         geometry
     }
 
-    fn create_offset_geometry_line() -> three::BufferGeometry {
-        let points = js_sys::Float32Array::from(
-            [
-                [0.5, 0.5, 1.0],
-                [0.5, 0.5, 0.0],
-                [-0.5, 0.5, 1.0],
-                [-0.5, 0.5, 0.0],
-                [-0.5, -0.5, 1.0],
-                [-0.5, -0.5, 0.0],
-                [0.5, -0.5, 1.0],
-                [0.5, -0.5, 0.0],
-            ]
-            .concat()
-            .as_slice(),
-        );
-        let index = js_sys::Uint16Array::from(
-            [
-                [0, 1],
-                [2, 3],
-                [4, 5],
-                [6, 7],
-                [1, 3],
-                [3, 5],
-                [5, 7],
-                [7, 1],
-                [1, 5],
-                [3, 7],
-            ]
-            .concat()
-            .as_ref(),
-        );
+    fn create_offset_line_geometry() -> three::CylinderGeometry {
+        let geometry = three::CylinderGeometry::new(0.05, 0.05, 1.0, 3);
 
-        let geometry = three::BufferGeometry::new();
-        geometry.set_attribute(
-            "position",
-            &three::BufferAttribute::new_with_f32array(&points, 3, false),
-        );
-        geometry.set_index(&three::BufferAttribute::new_with_u16array(&index, 1, false));
+        util::stand(&geometry, 0.5);
 
         geometry
     }
