@@ -257,6 +257,9 @@ impl Render<Html> for ModalResource {
                                     BlockKind::CraftboardComponent => {
                                         self.render_list_craftboard_component()
                                     }
+                                    BlockKind::TextboardComponent => {
+                                        self.render_list_textboard_component()
+                                    }
                                     _ => vec![],
                                 },
                             ),
@@ -390,6 +393,19 @@ impl ModalResource {
                     .craftboards()
                     .iter()
                     .map(|data| self.render_cell_craftboard_component(BlockMut::clone(data)))
+                    .collect()
+            })
+            .unwrap_or(vec![])
+    }
+
+    fn render_list_textboard_component(&self) -> Vec<Html> {
+        self.world
+            .map(|world| {
+                world
+                    .components()
+                    .textboards()
+                    .iter()
+                    .map(|data| self.render_cell_textboard_component(BlockMut::clone(data)))
                     .collect()
             })
             .unwrap_or(vec![])
@@ -606,6 +622,38 @@ impl ModalResource {
             .unwrap_or(Html::none())
     }
 
+    fn render_cell_textboard_component(
+        &self,
+        data: BlockMut<component::TextboardComponent>,
+    ) -> Html {
+        BlockMut::clone(&data)
+            .map(|this| {
+                Html::div(
+                    Attributes::new().class(Self::class("cell")),
+                    Events::new().on_click(self, {
+                        let data = BlockMut::clone(&data);
+                        move |_| Msg::SetSelectedResource(Resource::TextboardComponent(data))
+                    }),
+                    vec![
+                        Html::pre(
+                            Attributes::new()
+                                .class(Self::class("cell-tile"))
+                                .class(Self::class("cell-textboard")),
+                            Events::new(),
+                            vec![Html::text(this.text())],
+                        ),
+                        attr::span(Attributes::new().class(Self::class("text")), this.title()),
+                        if self.is_selecter {
+                            self.render_btn_to_select_cell(Resource::TextboardComponent(data))
+                        } else {
+                            Html::none()
+                        },
+                    ],
+                )
+            })
+            .unwrap_or(Html::none())
+    }
+
     fn style_grid_line(rows: u32, cols: u32) -> String {
         format!(
             "repeating-linear-gradient(0deg, #000, #000 1px, transparent 1px, transparent calc((100% - 1px) / {})),\
@@ -708,6 +756,11 @@ impl Styled for ModalResource {
                 "width": "100%";
                 "height": "100%";
                 "object-fit": "fill";
+            }
+
+            ".cell-textboard" {
+                "text-overflow": "ellipsis";
+                "overflow": "hidden";
             }
         }
     }

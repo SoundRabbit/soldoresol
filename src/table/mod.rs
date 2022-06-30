@@ -309,7 +309,8 @@ impl Table {
         mouse_coord: &[f64; 2],
         option: &table_tool::Textboard,
     ) {
-        let mut scene = unwrap!(Self::selecting_scene(world.as_ref()));
+        let scene = unwrap!(Self::selecting_scene(world.as_ref()));
+        let mut table = unwrap!(Self::selecting_table(world.as_ref()));
         let (p, _) = self
             .three
             .borrow_mut()
@@ -317,11 +318,14 @@ impl Table {
         let textboard = block::Textboard::new(p);
         let textboard = arena.insert(textboard);
         let textboard_id = textboard.id();
-        scene.update(|scene| {
-            scene.textboards_push(textboard);
+        let updated_blocks = Self::update_table(scene.as_ref(), table, |table| {
+            table.push_textboard(BlockMut::clone(&textboard));
         });
+
         self.reserve_rendering();
-        self.updated_blocks.update.insert(scene.id());
+        for updated_block in updated_blocks {
+            self.updated_blocks.update.insert(updated_block);
+        }
         self.updated_blocks.insert.insert(textboard_id);
     }
 
@@ -419,6 +423,43 @@ impl Table {
                 self.updated_blocks.update.insert(updated_block);
             }
             self.updated_blocks.insert.insert(craftboard_id);
+        }
+    }
+
+    pub fn allocate_textboard(
+        &mut self,
+        mut arena: ArenaMut,
+        world: BlockMut<block::World>,
+        mouse_coord: &[f64; 2],
+        mut component: BlockMut<component::TextboardComponent>,
+    ) {
+        if let Some(mut textboard) = component.create_clone() {
+            let scene = unwrap!(Self::selecting_scene(world.as_ref()));
+            let table = unwrap!(Self::selecting_table(world.as_ref()));
+            let (p, ..) = self
+                .three
+                .borrow_mut()
+                .get_focused_position(mouse_coord, &self.ignored_id());
+
+            textboard.set_position(p);
+
+            let textboard = arena.insert(textboard);
+            let textboard_id = textboard.id();
+
+            component.update(|component| {
+                component.push(BlockMut::clone(&textboard));
+            });
+
+            let updated_blocks = Self::update_table(scene.as_ref(), table, |table| {
+                table.push_textboard(BlockMut::clone(&textboard));
+            });
+
+            self.reserve_rendering();
+            self.updated_blocks.update.insert(component.id());
+            for updated_block in updated_blocks {
+                self.updated_blocks.update.insert(updated_block);
+            }
+            self.updated_blocks.insert.insert(textboard_id);
         }
     }
 

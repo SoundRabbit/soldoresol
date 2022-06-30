@@ -218,11 +218,11 @@ impl Three {
             );
         });
 
-        scene.map(|scene| {
+        table.map(|table| {
             self.object_textboard.update(
                 &mut self.texture_table,
                 &self.scene,
-                scene.textboards().iter().map(|block| block.as_ref()),
+                table.textboards().iter().map(|block| block.as_ref()),
             );
         });
 

@@ -318,14 +318,16 @@ impl Update for Room {
             }
 
             Msg::RemoveTextboard(textboard_id) => {
-                let mut scene = unwrap!(self.world.map(|world| BlockMut::clone(world.selecting_scene())); Cmd::none());
-                scene.update(|scene| {
-                    scene.textboards_remove(&textboard_id);
+                let scene = unwrap!(self.world.map(|world| BlockMut::clone(world.selecting_scene())); Cmd::none());
+                let table = unwrap!(scene.map(|secene| BlockMut::clone(secene.selecting_table())); Cmd::none());
+                let mut updated_blocks = Table::update_table(scene.as_ref(), table, |table| {
+                    table.remove_textboard(&textboard_id);
                 });
+                updated_blocks.insert(textboard_id);
 
                 Cmd::chain(Msg::UpdateBlocks {
                     insert: set! {},
-                    update: set! { scene.id(), textboard_id },
+                    update: updated_blocks,
                 })
             }
 

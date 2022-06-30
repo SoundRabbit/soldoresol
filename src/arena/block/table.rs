@@ -4,12 +4,14 @@ use super::util::Pack;
 use super::BlockMut;
 use super::Boxblock;
 use super::Craftboard;
+use super::Textboard;
 
 block! {
     [pub Table(constructor, pack)]
     name: String = String::new();
     boxblocks: Vec<BlockMut<Boxblock>> = vec![];
     craftboards: Vec<BlockMut<Craftboard>> = vec![];
+    textboards: Vec<BlockMut<Textboard>> = vec![];
     default_is_bind_to_grid: bool = true;
 }
 
@@ -49,6 +51,24 @@ impl Table {
         }
     }
 
+    pub fn textboards(&self) -> &Vec<BlockMut<Textboard>> {
+        &self.textboards
+    }
+
+    pub fn push_textboard(&mut self, textboard: BlockMut<Textboard>) {
+        self.textboards.push(textboard);
+    }
+
+    pub fn remove_textboard(&mut self, block_id: &U128Id) {
+        if let Some(textboard_idx) = self
+            .textboards
+            .iter()
+            .position(|textboard| textboard.id() == *block_id)
+        {
+            self.textboards.remove(textboard_idx);
+        }
+    }
+
     pub fn default_is_bind_to_grid(&self) -> bool {
         self.default_is_bind_to_grid
     }
@@ -63,6 +83,11 @@ impl Table {
                 .collect(),
             craftboards: self
                 .craftboards
+                .iter()
+                .map(|block| BlockMut::clone(block))
+                .collect(),
+            textboards: self
+                .textboards
                 .iter()
                 .map(|block| BlockMut::clone(block))
                 .collect(),

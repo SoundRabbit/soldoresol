@@ -8,6 +8,7 @@ use std::collections::HashSet;
 block! {
     [pub Textboard(constructor, pack, component)]
     (position): [f64; 3];
+    origin: BlockMut<Component> = BlockMut::<Component>::none();
     title: String = String::new();
     text: String = String::new();
     font_size: f64 = 0.5;
@@ -62,5 +63,29 @@ impl Textboard {
 
     pub fn set_size(&mut self, size: [f64; 2]) {
         self.size = size;
+    }
+}
+
+impl BlockMut<Component> {
+    pub fn create_clone(&self) -> Option<Textboard> {
+        self.map(|component| {
+            let mut cloned = component.origin.clone();
+            cloned.origin = BlockMut::clone(self);
+            cloned
+        })
+    }
+}
+
+impl Clone for Textboard {
+    fn clone(&self) -> Self {
+        Self {
+            origin: BlockMut::<Component>::none(),
+            title: self.title.clone(),
+            text: self.text.clone(),
+            font_size: self.font_size,
+            position: self.position.clone(),
+            size: self.size.clone(),
+            color: self.color.clone(),
+        }
     }
 }
