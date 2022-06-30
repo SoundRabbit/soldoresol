@@ -352,6 +352,14 @@ impl Update for Room {
                             world.push_craftboard_as_component(component);
                         });
                     }).is_some();
+                    origin.type_as::<block::Textboard>().map(|textboard| {
+                        let component = component::TextboardComponent::new(textboard.clone());
+                        let component = self.arena.insert(component);
+                        component_id = Some(component.id());
+                        self.world.update(|world| {
+                            world.push_textboard_as_component(component);
+                        });
+                    }).is_some();
                 }
 
                 if let Some(component_id) = component_id {
