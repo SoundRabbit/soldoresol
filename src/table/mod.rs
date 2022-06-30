@@ -193,7 +193,7 @@ impl Table {
         option: &table_tool::Boxblock,
     ) {
         let scene = unwrap!(Self::selecting_scene(world.as_ref()));
-        let mut table = unwrap!(Self::selecting_table(world.as_ref()));
+        let table = unwrap!(Self::selecting_table(world.as_ref()));
         let (p, n) = self
             .three
             .borrow_mut()
@@ -279,7 +279,8 @@ impl Table {
         mouse_coord: &[f64; 2],
         option: &table_tool::Craftboard,
     ) {
-        let mut table = unwrap!(Self::selecting_table(world.as_ref()));
+        let scene = unwrap!(Self::selecting_scene(world.as_ref()));
+        let table = unwrap!(Self::selecting_table(world.as_ref()));
         let (p, _) = self
             .three
             .borrow_mut()
@@ -294,11 +295,14 @@ impl Table {
 
         let craftboard = arena.insert(craftboard);
         let craftboard_id = craftboard.id();
-        table.update(|table| {
-            table.push_craftboard(craftboard);
+        let updated_blocks = Self::update_table(scene.as_ref(), table, |table| {
+            table.push_craftboard(BlockMut::clone(&craftboard));
         });
+
         self.reserve_rendering();
-        self.updated_blocks.update.insert(table.id());
+        for updated_block in updated_blocks {
+            self.updated_blocks.update.insert(updated_block);
+        }
         self.updated_blocks.insert.insert(craftboard_id);
     }
 
@@ -307,10 +311,10 @@ impl Table {
         mut arena: ArenaMut,
         world: BlockMut<block::World>,
         mouse_coord: &[f64; 2],
-        option: &table_tool::Textboard,
+        _option: &table_tool::Textboard,
     ) {
         let scene = unwrap!(Self::selecting_scene(world.as_ref()));
-        let mut table = unwrap!(Self::selecting_table(world.as_ref()));
+        let table = unwrap!(Self::selecting_table(world.as_ref()));
         let (p, _) = self
             .three
             .borrow_mut()

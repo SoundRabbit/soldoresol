@@ -306,14 +306,15 @@ impl Update for Room {
 
             Msg::RemoveCraftboard(craftboard_id) => {
                 let scene = unwrap!(self.world.map(|world| BlockMut::clone(world.selecting_scene())); Cmd::none());
-                let mut table = unwrap!(scene.map(|secene| BlockMut::clone(secene.selecting_table())); Cmd::none());
-                table.update(|table| {
+                let table = unwrap!(scene.map(|secene| BlockMut::clone(secene.selecting_table())); Cmd::none());
+                let mut updated_blocks = Table::update_table(scene.as_ref(), table, |table| {
                     table.remove_craftboard(&craftboard_id);
                 });
+                updated_blocks.insert(craftboard_id);
 
                 Cmd::chain(Msg::UpdateBlocks {
                     insert: set! {},
-                    update: set! { table.id(), craftboard_id },
+                    update: updated_blocks,
                 })
             }
 
