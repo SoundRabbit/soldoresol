@@ -7,6 +7,7 @@ use std::collections::HashSet;
 
 block! {
     [pub Textboard(constructor, pack, component)]
+    (is_bind_to_grid): bool;
     (position): [f64; 3];
     origin: BlockMut<Component> = BlockMut::<Component>::none();
     title: String = String::new();
@@ -23,6 +24,14 @@ impl Textboard {
 
     pub fn set_color(&mut self, color: Pallet) {
         self.color = color;
+    }
+
+    pub fn is_bind_to_grid(&self) -> bool {
+        self.is_bind_to_grid
+    }
+
+    pub fn set_is_bind_to_grid(&mut self, is_bind_to_grid: bool) {
+        self.is_bind_to_grid = is_bind_to_grid;
     }
 
     pub fn position(&self) -> &[f64; 3] {
@@ -80,6 +89,7 @@ impl Clone for Textboard {
     fn clone(&self) -> Self {
         Self {
             origin: BlockMut::<Component>::none(),
+            is_bind_to_grid: self.is_bind_to_grid,
             title: self.title.clone(),
             text: self.text.clone(),
             font_size: self.font_size,

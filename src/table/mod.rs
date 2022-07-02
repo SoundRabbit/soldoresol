@@ -152,6 +152,19 @@ impl Table {
         }
     }
 
+    /// is_bind_to_gridに基づいた座標
+    fn grid_position(is_bind_to_grid: bool, p: &[f64; 3]) -> [f64; 3] {
+        if is_bind_to_grid {
+            [
+                (p[0] * 2.0).round() / 2.0,
+                (p[1] * 2.0).round() / 2.0,
+                (p[2] * 2.0).round() / 2.0,
+            ]
+        } else {
+            [p[0], p[1], p[2]]
+        }
+    }
+
     /// 画面上の座標をキャンバス内の座標に変換
     pub fn mouse_coord(&self, page_x: f64, page_y: f64) -> [f64; 2] {
         let rect = self.canvas().get_bounding_client_rect();
@@ -205,6 +218,7 @@ impl Table {
             .map(|table| table.default_is_bind_to_grid())
             .unwrap_or(true);
 
+        let p = Self::grid_position(is_bind_to_grid, &p);
         let mut boxblock = block::Boxblock::new(is_bind_to_grid);
 
         crate::debug::log_1(format!("add boxblock to {:?}", &p));
@@ -251,6 +265,7 @@ impl Table {
             .map(|table| table.default_is_bind_to_grid())
             .unwrap_or(true);
 
+        let p = Self::grid_position(is_bind_to_grid, &p);
         let mut character = block::Character::new(is_bind_to_grid);
 
         character.set_size(option.size);
@@ -289,6 +304,7 @@ impl Table {
         let is_bind_to_grid = table
             .map(|table| table.default_is_bind_to_grid())
             .unwrap_or(true);
+        let p = Self::grid_position(is_bind_to_grid, &p);
         let mut craftboard = block::Craftboard::new(is_bind_to_grid, p);
 
         craftboard.set_size(option.size.clone());
@@ -319,7 +335,11 @@ impl Table {
             .three
             .borrow_mut()
             .get_focused_position(mouse_coord, &self.ignored_id());
-        let textboard = block::Textboard::new(p);
+        let is_bind_to_grid = table
+            .map(|table| table.default_is_bind_to_grid())
+            .unwrap_or(true);
+        let p = Self::grid_position(is_bind_to_grid, &p);
+        let textboard = block::Textboard::new(is_bind_to_grid, p);
         let textboard = arena.insert(textboard);
         let textboard_id = textboard.id();
         let updated_blocks = Self::update_table(scene.as_ref(), table, |table| {
@@ -512,15 +532,7 @@ impl Table {
                     let block_id = block.id();
                     block.update(|block| {
                         let n = Self::n_cube(&n, block.size());
-                        let p = if block.is_bind_to_grid() {
-                            [
-                                (p[0] * 2.0).round() / 2.0,
-                                (p[1] * 2.0).round() / 2.0,
-                                (p[2] * 2.0).round() / 2.0,
-                            ]
-                        } else {
-                            p
-                        };
+                        let p = Self::grid_position(block.is_bind_to_grid(), &p);
                         let p = [p[0] + n[0], p[1] + n[1], p[2] + n[2]];
                         block.set_position(p);
 
@@ -533,15 +545,8 @@ impl Table {
                 if let Some(mut block) = arena.get_mut::<block::Character>(block_id) {
                     let block_id = block.id();
                     block.update(|block| {
-                        let p = if block.is_bind_to_grid() {
-                            [
-                                (p[0] * 2.0).round() / 2.0,
-                                (p[1] * 2.0).round() / 2.0,
-                                (p[2] * 2.0).round() / 2.0,
-                            ]
-                        } else {
-                            p
-                        };
+                        let p = Self::grid_position(block.is_bind_to_grid(), &p);
+
                         block.set_position(p);
 
                         self.reserve_rendering();
@@ -553,15 +558,8 @@ impl Table {
                 if let Some(mut block) = arena.get_mut::<block::Craftboard>(block_id) {
                     let block_id = block.id();
                     block.update(|block| {
-                        let p = if block.is_bind_to_grid() {
-                            [
-                                (p[0] * 2.0).round() / 2.0,
-                                (p[1] * 2.0).round() / 2.0,
-                                (p[2] * 2.0).round() / 2.0,
-                            ]
-                        } else {
-                            p
-                        };
+                        let p = Self::grid_position(block.is_bind_to_grid(), &p);
+
                         block.set_position(p);
 
                         self.reserve_rendering();
@@ -573,6 +571,7 @@ impl Table {
                 if let Some(mut block) = arena.get_mut::<block::Textboard>(block_id) {
                     let block_id = block.id();
                     block.update(|block| {
+                        let p = Self::grid_position(block.is_bind_to_grid(), &p);
                         block.set_position(p);
 
                         self.reserve_rendering();
