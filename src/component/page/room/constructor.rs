@@ -37,7 +37,10 @@ impl Constructor for Room {
         new_channel!(arena, chat, "サブ");
 
         let mut table = block::Table::new();
-        let craftboard = block::Craftboard::new(table.default_is_bind_to_grid(), [0.0, 0.0, 0.0]);
+        let terran = block::Terran::new();
+        let terran = arena.insert(terran);
+        let craftboard =
+            block::Craftboard::new(table.default_is_bind_to_grid(), [0.0, 0.0, 0.0], terran);
         table.push_craftboard(arena.insert(craftboard));
 
         let scene = block::Scene::new(arena.insert(table));

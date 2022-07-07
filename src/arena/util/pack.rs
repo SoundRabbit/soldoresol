@@ -59,6 +59,13 @@ impl Pack for [f64; 3] {
 }
 
 #[async_trait(?Send)]
+impl Pack for [i32; 3] {
+    async fn pack(&self, _: bool) -> JsValue {
+        array![self[0], self[1], self[2]].into()
+    }
+}
+
+#[async_trait(?Send)]
 impl Pack for chrono::DateTime<chrono::Utc> {
     async fn pack(&self, _: bool) -> JsValue {
         JsValue::from(self.to_rfc3339())
@@ -130,5 +137,20 @@ impl<T: Pack> Pack for crate::libs::select_list::SelectList<T> {
             "data": data
         })
         .into()
+    }
+}
+
+#[async_trait(?Send)]
+impl<K: Pack, T: Pack> Pack for std::collections::HashMap<K, T> {
+    async fn pack(&self, is_deep: bool) -> JsValue {
+        let data = js_sys::Array::new();
+
+        for (key, value) in self {
+            let key = key.pack(is_deep).await;
+            let value = value.pack(is_deep).await;
+            data.push(array![&key, &value].as_ref());
+        }
+
+        data.into()
     }
 }

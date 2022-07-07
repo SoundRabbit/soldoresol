@@ -5,8 +5,9 @@ use super::util::Cubebox;
 use super::util::Pack;
 use super::BlockMut;
 use super::BlockRef;
+use super::Terran;
 use crate::libs::color::Pallet;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 type Textures = Cubebox<Option<BlockRef<ImageData>>>;
 
@@ -14,6 +15,7 @@ block! {
     [pub Craftboard(constructor, pack, component)]
     (is_bind_to_grid): bool;
     (position): [f64; 3];
+    (terran): BlockMut<Terran>;
     origin: BlockMut<Component> = BlockMut::<Component>::none();
     name: String = String::new();
     display_name: (String, String) = (String::from(""), String::from(""));
@@ -28,12 +30,17 @@ impl Craftboard {
     pub fn origin(&self) -> &BlockMut<Component> {
         &self.origin
     }
-
     pub fn set_position(&mut self, position: [f64; 3]) {
         self.position = position;
     }
     pub fn position(&self) -> &[f64; 3] {
         &self.position
+    }
+    pub fn terran_mut(&mut self) -> &mut BlockMut<Terran> {
+        &mut self.terran
+    }
+    pub fn terran(&self) -> &BlockMut<Terran> {
+        &self.terran
     }
     pub fn set_name(&mut self, name: String) {
         self.name = name;
@@ -101,6 +108,7 @@ impl Clone for Craftboard {
     fn clone(&self) -> Self {
         Self {
             origin: BlockMut::none(),
+            terran: BlockMut::clone(&self.terran),
             is_bind_to_grid: self.is_bind_to_grid,
             position: self.position.clone(),
             size: self.size.clone(),

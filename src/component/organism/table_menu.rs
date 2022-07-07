@@ -76,10 +76,11 @@ impl Constructor for TableMenu {
                         color: crate::libs::color::Pallet::gray(9),
                         width: 0.5,
                     })),
+                    TableTool::Eraser(Rc::new(table_tool::Eraser { width: 1.0 })),
                     TableTool::Craftboard(Rc::new(table_tool::Craftboard {
                         size: [10.0, 10.0, 10.0],
                     })),
-                    TableTool::Eraser(Rc::new(table_tool::Eraser { width: 1.0 })),
+                    TableTool::Textboard(Rc::new(table_tool::Textboard {})),
                     TableTool::Character(Rc::new(table_tool::Character {
                         size: 1.0,
                         tex_size: 1.5,
@@ -92,7 +93,7 @@ impl Constructor for TableMenu {
                         texture: None,
                         shape: block::boxblock::Shape::Cube,
                     })),
-                    TableTool::Textboard(Rc::new(table_tool::Textboard {})),
+                    TableTool::TerranBlock(Rc::new(table_tool::TerranBlock {})),
                     TableTool::ComponentAllocater(Rc::new(table_tool::ComponentAllocater {
                         component: U128Id::none(),
                     })),
@@ -283,6 +284,7 @@ impl TableMenu {
                 ("キャラコマ", Text::span("キャラコマ"), fa::fas_i("fa-user"))
             }
             TableTool::Boxblock(..) => ("ブロック", Text::span("ブロック"), fa::fas_i("fa-cube")),
+            TableTool::TerranBlock(..) => ("地形", Text::span("地形"), fa::fas_i("fa-cubes")),
             TableTool::Textboard(..) => ("メモ", Text::span("メモ"), fa::fas_i("fa-file-lines")),
             TableTool::ComponentAllocater(..) => (
                 "コンポーネント",

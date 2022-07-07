@@ -24,6 +24,7 @@ pub struct Three {
     object_boxblock: table_object::Boxblock,
     object_craftboard: table_object::Craftboard,
     object_character: table_object::Character,
+    object_terran: table_object::Terran,
     object_textboard: table_object::Textboard,
     light: CommonLight,
     device_pixel_ratio: f64,
@@ -80,6 +81,7 @@ impl Three {
             object_boxblock: table_object::Boxblock::new(),
             object_craftboard: table_object::Craftboard::new(),
             object_character: table_object::Character::new(),
+            object_terran: table_object::Terran::new(),
             object_textboard: table_object::Textboard::new(),
             light: CommonLight {
                 ambient_light,
@@ -113,6 +115,48 @@ impl Three {
                     .unwrap_or(false)
             })
             .collect()
+    }
+
+    pub fn get_focused_object_and_position(
+        &mut self,
+        coords_px: &[f64; 2],
+        ignored_id: &U128Id,
+    ) -> (U128Id, [f64; 3], [f64; 3]) {
+        let coords = self.coords(coords_px);
+        let objects = self.intersect_objects(&coords, ignored_id);
+
+        for object in objects {
+            let block_id = object
+                .get("object")
+                .and_then(|x| x.dyn_into::<three::Object3D>().ok())
+                .and_then(|x| U128Id::from_jsvalue(&x.user_data()));
+            let point = object
+                .get("point")
+                .and_then(|x| x.dyn_into::<three::Vector3>().ok());
+            let face = object
+                .get("face")
+                .and_then(|x| x.dyn_into::<Object>().ok())
+                .and_then(|x| x.get("normal"))
+                .and_then(|x| x.dyn_into::<three::Vector3>().ok());
+
+            if let Some((block_id, point, face)) = join_some!(block_id, point, face) {
+                return (
+                    block_id,
+                    [point.x(), point.y(), point.z()],
+                    [face.x(), face.y(), face.z()],
+                );
+            }
+        }
+
+        let ray = self.raycaster.ray();
+        let origin = ray.origin();
+        let direction = ray.direction();
+
+        let scale = (0.0 - origin.z()) / direction.z();
+        let x = origin.x() + direction.x() * scale;
+        let y = origin.y() + direction.y() * scale;
+        let z = 0.0;
+        (U128Id::none(), [x, y, z], [0.0, 0.0, 1.0])
     }
 
     pub fn get_focused_object(&mut self, coords_px: &[f64; 2], ignored_id: &U128Id) -> U128Id {
@@ -205,6 +249,13 @@ impl Three {
         table.map(|table| {
             self.object_craftboard.update(
                 &mut self.texture_table,
+                &self.scene,
+                table.craftboards().iter().map(|block| block.as_ref()),
+            );
+        });
+
+        table.map(|table| {
+            self.object_terran.update(
                 &self.scene,
                 table.craftboards().iter().map(|block| block.as_ref()),
             );

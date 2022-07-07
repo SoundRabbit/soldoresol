@@ -305,7 +305,9 @@ impl Table {
             .map(|table| table.default_is_bind_to_grid())
             .unwrap_or(true);
         let p = Self::grid_position(is_bind_to_grid, &p);
-        let mut craftboard = block::Craftboard::new(is_bind_to_grid, p);
+        let terran = arena.insert(block::Terran::new());
+        let terran_id = terran.id();
+        let mut craftboard = block::Craftboard::new(is_bind_to_grid, p, terran);
 
         craftboard.set_size(option.size.clone());
 
@@ -319,7 +321,54 @@ impl Table {
         for updated_block in updated_blocks {
             self.updated_blocks.update.insert(updated_block);
         }
+        self.updated_blocks.insert.insert(terran_id);
         self.updated_blocks.insert.insert(craftboard_id);
+    }
+
+    pub fn create_terran_block(
+        &mut self,
+        mut arena: ArenaMut,
+        _world: BlockMut<block::World>,
+        mouse_coord: &[f64; 2],
+        _option: &table_tool::TerranBlock,
+    ) {
+        let (block_id, p, n) = self
+            .three
+            .borrow_mut()
+            .get_focused_object_and_position(mouse_coord, &self.ignored_id());
+
+        let terran = match arena.kind_of(&block_id) {
+            BlockKind::Craftboard => arena
+                .get_mut::<block::Craftboard>(&block_id)
+                .and_then(|x| x.map(|craftboard| BlockMut::clone(craftboard.terran()))),
+            BlockKind::Terran => arena.get_mut::<block::Terran>(&block_id),
+            _ => {
+                return;
+            }
+        };
+
+        if let Some(mut terran) = terran {
+            let (p, n) = self
+                .three
+                .borrow_mut()
+                .get_focused_position(mouse_coord, &self.ignored_id());
+            let p = [p[0] + n[0] * 0.5, p[1] + n[1] * 0.5, p[2] + n[2] * 0.5];
+            let p = [
+                p[0].round() as i32,
+                p[1].round() as i32,
+                p[2].round() as i32,
+            ];
+
+            terran.update(|terran| {
+                terran.insert_block(
+                    p,
+                    block::terran::TerranBlock::new(crate::libs::color::Pallet::blue(5)),
+                );
+            });
+
+            self.reserve_rendering();
+            self.updated_blocks.update.insert(terran.id());
+        }
     }
 
     pub fn create_textboard(
@@ -601,6 +650,9 @@ impl Table {
             }
             TableTool::Craftboard(tool) => {
                 self.create_craftboard(arena, world, &mouse_coord, tool);
+            }
+            TableTool::TerranBlock(tool) => {
+                self.create_terran_block(arena, world, &mouse_coord, tool);
             }
             TableTool::Textboard(tool) => {
                 self.create_textboard(arena, world, &mouse_coord, tool);
