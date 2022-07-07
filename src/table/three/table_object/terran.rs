@@ -33,20 +33,19 @@ impl Terran {
             let craftboard_id = craftboard.id();
             craftboard.map(|craftboard| {
                 let terran = craftboard.terran();
-                let terran_id = terran.id();
                 let timestamp = terran.timestamp();
-                unused.remove(&terran_id);
+                unused.remove(&craftboard_id);
 
                 terran.map(|terran| {
-                    if !self.meshs.contains_key(&terran_id) {
+                    if !self.meshs.contains_key(&craftboard_id) {
                         let data = TerranData::new(timestamp, &terran);
                         data.set_user_data(&craftboard_id.to_jsvalue());
                         scene.add(&data);
 
-                        self.meshs.insert(U128Id::clone(&terran_id), data);
+                        self.meshs.insert(U128Id::clone(&craftboard_id), data);
                     }
 
-                    if let Some(mesh) = self.meshs.get_mut(&terran_id) {
+                    if let Some(mesh) = self.meshs.get_mut(&craftboard_id) {
                         if mesh.timestamp < timestamp {
                             mesh.update_blocks(timestamp, terran);
                         }
