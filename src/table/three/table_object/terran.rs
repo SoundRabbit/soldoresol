@@ -30,24 +30,34 @@ impl Terran {
         let mut unused = self.meshs.keys().map(U128Id::clone).collect::<HashSet<_>>();
 
         for craftboard in craftboards {
+            let craftboard_id = craftboard.id();
             craftboard.map(|craftboard| {
                 let terran = craftboard.terran();
                 let terran_id = terran.id();
                 let timestamp = terran.timestamp();
+                unused.remove(&terran_id);
 
                 terran.map(|terran| {
                     if !self.meshs.contains_key(&terran_id) {
                         let data = TerranData::new(timestamp, &terran);
+                        data.set_user_data(&craftboard_id.to_jsvalue());
                         scene.add(&data);
+
+                        self.meshs.insert(U128Id::clone(&terran_id), data);
                     }
 
                     if let Some(mesh) = self.meshs.get_mut(&terran_id) {
-                        if mesh.timestamp > timestamp {
-                            *mesh = TerranData::new(timestamp, terran);
+                        if mesh.timestamp < timestamp {
+                            mesh.update_blocks(timestamp, terran);
                         }
 
-                        let [px, py, pz] = craftboard.position().clone();
-                        mesh.position().set(px, py, pz);
+                        let cp = craftboard.position();
+                        let cs = craftboard.size();
+                        mesh.position().set(
+                            cp[0] + (cs[0].rem_euclid(2.0) - 1.0) * 0.5,
+                            cp[1] + (cs[1].rem_euclid(2.0) - 1.0) * 0.5,
+                            cp[2] + 0.5,
+                        );
                     }
                 });
             });
@@ -63,6 +73,26 @@ impl Terran {
 
 impl TerranData {
     fn new(timestamp: f64, terran: &block::Terran) -> Self {
+        let geometry = Self::create_geometry(terran);
+        let material = three::MeshStandardMaterial::new(&object! {
+            "vertexColors": true
+        });
+
+        let data = three::Mesh::new(&geometry, &material);
+
+        Self {
+            timestamp,
+            data,
+            material,
+        }
+    }
+
+    fn update_blocks(&mut self, timestamp: f64, terran: &block::Terran) {
+        self.data.set_geometry(&Self::create_geometry(terran));
+        self.timestamp = timestamp;
+    }
+
+    fn create_geometry(terran: &block::Terran) -> three::BufferGeometry {
         let mut points = vec![];
         let mut normals = vec![];
         let mut colors = vec![];
@@ -180,17 +210,7 @@ impl TerranData {
             false,
         ));
 
-        let material = three::MeshStandardMaterial::new(&object! {
-            "vertexColors": true
-        });
-
-        let data = three::Mesh::new(&geometry, &material);
-
-        Self {
-            timestamp,
-            data,
-            material,
-        }
+        geometry
     }
 
     fn append_surface(

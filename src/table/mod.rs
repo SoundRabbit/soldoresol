@@ -337,37 +337,51 @@ impl Table {
             .borrow_mut()
             .get_focused_object_and_position(mouse_coord, &self.ignored_id());
 
-        let terran = match arena.kind_of(&block_id) {
-            BlockKind::Craftboard => arena
-                .get_mut::<block::Craftboard>(&block_id)
-                .and_then(|x| x.map(|craftboard| BlockMut::clone(craftboard.terran()))),
-            BlockKind::Terran => arena.get_mut::<block::Terran>(&block_id),
+        let craftboard = match arena.kind_of(&block_id) {
+            BlockKind::Craftboard => arena.get_mut::<block::Craftboard>(&block_id),
             _ => {
                 return;
             }
         };
 
-        if let Some(mut terran) = terran {
-            let (p, n) = self
-                .three
-                .borrow_mut()
-                .get_focused_position(mouse_coord, &self.ignored_id());
-            let p = [p[0] + n[0] * 0.5, p[1] + n[1] * 0.5, p[2] + n[2] * 0.5];
-            let p = [
-                p[0].round() as i32,
-                p[1].round() as i32,
-                p[2].round() as i32,
-            ];
+        let terran = craftboard
+            .as_ref()
+            .and_then(|x| x.map(|craftboard| BlockMut::clone(craftboard.terran())));
 
-            terran.update(|terran| {
-                terran.insert_block(
-                    p,
-                    block::terran::TerranBlock::new(crate::libs::color::Pallet::blue(5)),
-                );
+        if let Some((craftboard, mut terran)) = join_some!(craftboard, terran) {
+            craftboard.map(|craftboard| {
+                let (p, n) = self
+                    .three
+                    .borrow_mut()
+                    .get_focused_position(mouse_coord, &self.ignored_id());
+                let cs = craftboard.size();
+                let cp = craftboard.position();
+                let offset = [
+                    cp[0] + (cs[0].rem_euclid(2.0) - 1.0) * 0.5,
+                    cp[1] + (cs[1].rem_euclid(2.0) - 1.0) * 0.5,
+                    cp[2] + 0.5,
+                ];
+                let p = [
+                    p[0] + n[0] * 0.5 - offset[0],
+                    p[1] + n[1] * 0.5 - offset[1],
+                    p[2] + n[2] * 0.5 - offset[2],
+                ];
+                let p = [
+                    p[0].round() as i32,
+                    p[1].round() as i32,
+                    p[2].round() as i32,
+                ];
+
+                terran.update(|terran| {
+                    terran.insert_block(
+                        p,
+                        block::terran::TerranBlock::new(crate::libs::color::Pallet::blue(5)),
+                    );
+                });
+
+                self.reserve_rendering();
+                self.updated_blocks.update.insert(terran.id());
             });
-
-            self.reserve_rendering();
-            self.updated_blocks.update.insert(terran.id());
         }
     }
 
