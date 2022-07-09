@@ -54,7 +54,21 @@ pub struct Boxblock {
 }
 
 #[derive(Clone)]
-pub struct TerranBlock {}
+pub struct TerranBlock {
+    pub kind: TerranBlockKind,
+    pub allocater_state: TerranBlockAllocater,
+}
+
+#[derive(Clone, PartialEq, Eq)]
+pub enum TerranBlockKind {
+    Allocater,
+    Eraser,
+}
+
+#[derive(Clone)]
+pub struct TerranBlockAllocater {
+    pub color: crate::libs::color::Pallet,
+}
 
 #[derive(Clone)]
 pub struct Textboard {}

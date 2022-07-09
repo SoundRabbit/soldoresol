@@ -93,7 +93,12 @@ impl Constructor for TableMenu {
                         texture: None,
                         shape: block::boxblock::Shape::Cube,
                     })),
-                    TableTool::TerranBlock(Rc::new(table_tool::TerranBlock {})),
+                    TableTool::TerranBlock(Rc::new(table_tool::TerranBlock {
+                        kind: table_tool::TerranBlockKind::Allocater,
+                        allocater_state: table_tool::TerranBlockAllocater {
+                            color: crate::libs::color::Pallet::blue(5),
+                        },
+                    })),
                     TableTool::ComponentAllocater(Rc::new(table_tool::ComponentAllocater {
                         component: U128Id::none(),
                     })),
@@ -329,6 +334,9 @@ impl TableMenu {
                 }
                 Some(TableTool::ComponentAllocater(tool)) => {
                     self.render_tool_option_component(tool_idx, tool)
+                }
+                Some(TableTool::TerranBlock(tool)) => {
+                    self.render_tool_option_terranblock(tool_idx, tool)
                 }
                 _ => Html::none(),
             }],
@@ -741,6 +749,86 @@ impl TableMenu {
         )
     }
 
+    fn render_tool_option_terranblock(
+        &self,
+        tool_idx: usize,
+        terran_block: &Rc<table_tool::TerranBlock>,
+    ) -> Html {
+        Html::div(
+            Attributes::new().class(Self::class("terranblock")),
+            Events::new(),
+            vec![
+                self.render_sub_option(
+                    Attributes::new(),
+                    Events::new(),
+                    vec![
+                        Btn::with_variant(
+                            if terran_block.kind == table_tool::TerranBlockKind::Allocater {
+                                btn::Variant::Primary
+                            } else {
+                                btn::Variant::Secondary
+                            },
+                            Attributes::new(),
+                            Events::new().on_click(self, {
+                                let terran_block = Rc::clone(&terran_block);
+                                move |_| {
+                                    let mut terran_block = terran_block.as_ref().clone();
+                                    terran_block.kind = table_tool::TerranBlockKind::Allocater;
+                                    Msg::SetTool(
+                                        tool_idx,
+                                        TableTool::TerranBlock(Rc::new(terran_block)),
+                                    )
+                                }
+                            }),
+                            vec![Html::text("追加")],
+                        ),
+                        Btn::with_variant(
+                            if terran_block.kind == table_tool::TerranBlockKind::Eraser {
+                                btn::Variant::Primary
+                            } else {
+                                btn::Variant::Secondary
+                            },
+                            Attributes::new(),
+                            Events::new().on_click(self, {
+                                let terran_block = Rc::clone(&terran_block);
+                                move |_| {
+                                    let mut terran_block = terran_block.as_ref().clone();
+                                    terran_block.kind = table_tool::TerranBlockKind::Eraser;
+                                    Msg::SetTool(
+                                        tool_idx,
+                                        TableTool::TerranBlock(Rc::new(terran_block)),
+                                    )
+                                }
+                            }),
+                            vec![Html::text("削除")],
+                        ),
+                    ],
+                ),
+                PopupColorPallet::empty(
+                    self,
+                    None,
+                    popup_color_pallet::Props {
+                        default_selected: terran_block.allocater_state.color,
+                        direction: popup_color_pallet::Direction::Bottom,
+                    },
+                    Sub::map({
+                        let terran_block = Rc::clone(&terran_block);
+                        move |sub| match sub {
+                            popup_color_pallet::On::SelectColor(color) => {
+                                let mut terran_block = terran_block.as_ref().clone();
+                                terran_block.allocater_state.color = color;
+                                Msg::SetTool(
+                                    tool_idx,
+                                    TableTool::TerranBlock(Rc::new(terran_block)),
+                                )
+                            }
+                        }
+                    }),
+                ),
+            ],
+        )
+    }
+
     fn render_tool_option_component(
         &self,
         tool_idx: usize,
@@ -820,6 +908,10 @@ impl TableMenu {
             },
         ]
     }
+
+    fn render_sub_option(&self, attrs: Attributes, events: Events, children: Vec<Html>) -> Html {
+        Html::div(attrs.class(Self::class("sub-option")), events, children)
+    }
 }
 
 impl Styled for TableMenu {
@@ -864,6 +956,12 @@ impl Styled for TableMenu {
                 "width": "7.5rem";
                 "height": "7.5rem";
                 "object-fit": "contain";
+            }
+
+            "sub-option" {
+                "display": "grid";
+                "grid-template-columns": "1fr 1fr";
+                "grid-auto-rows": "max-content";
             }
         }
     }

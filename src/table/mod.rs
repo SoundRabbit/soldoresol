@@ -330,7 +330,7 @@ impl Table {
         mut arena: ArenaMut,
         _world: BlockMut<block::World>,
         mouse_coord: &[f64; 2],
-        _option: &table_tool::TerranBlock,
+        option: &table_tool::TerranBlock,
     ) {
         let (block_id, p, n) = self
             .three
@@ -350,10 +350,6 @@ impl Table {
 
         if let Some((craftboard, mut terran)) = join_some!(craftboard, terran) {
             craftboard.map(|craftboard| {
-                let (p, n) = self
-                    .three
-                    .borrow_mut()
-                    .get_focused_position(mouse_coord, &self.ignored_id());
                 let cs = craftboard.size();
                 let cp = craftboard.position();
                 let offset = [
@@ -375,7 +371,7 @@ impl Table {
                 terran.update(|terran| {
                     terran.insert_block(
                         p,
-                        block::terran::TerranBlock::new(crate::libs::color::Pallet::blue(5)),
+                        block::terran::TerranBlock::new(option.allocater_state.color),
                     );
                 });
 
@@ -550,6 +546,59 @@ impl Table {
         }
     }
 
+    pub fn remove_terran_block(
+        &mut self,
+        mut arena: ArenaMut,
+        _world: BlockMut<block::World>,
+        mouse_coord: &[f64; 2],
+        _option: &table_tool::TerranBlock,
+    ) {
+        let (block_id, p, n) = self
+            .three
+            .borrow_mut()
+            .get_focused_object_and_position(mouse_coord, &self.ignored_id());
+
+        let craftboard = match arena.kind_of(&block_id) {
+            BlockKind::Craftboard => arena.get_mut::<block::Craftboard>(&block_id),
+            _ => {
+                return;
+            }
+        };
+
+        let terran = craftboard
+            .as_ref()
+            .and_then(|x| x.map(|craftboard| BlockMut::clone(craftboard.terran())));
+
+        if let Some((craftboard, mut terran)) = join_some!(craftboard, terran) {
+            craftboard.map(|craftboard| {
+                let cs = craftboard.size();
+                let cp = craftboard.position();
+                let offset = [
+                    cp[0] + (cs[0].rem_euclid(2.0) - 1.0) * 0.5,
+                    cp[1] + (cs[1].rem_euclid(2.0) - 1.0) * 0.5,
+                    cp[2] + 0.5,
+                ];
+                let p = [
+                    p[0] - n[0] * 0.5 - offset[0],
+                    p[1] - n[1] * 0.5 - offset[1],
+                    p[2] - n[2] * 0.5 - offset[2],
+                ];
+                let p = [
+                    p[0].round() as i32,
+                    p[1].round() as i32,
+                    p[2].round() as i32,
+                ];
+
+                terran.update(|terran| {
+                    terran.remove_block(&p);
+                });
+
+                self.reserve_rendering();
+                self.updated_blocks.update.insert(terran.id());
+            });
+        }
+    }
+
     pub fn move_camera_xy(&mut self, movement: &[f64; 2]) {
         let h_mov = -movement[0] / 50.0;
         let v_mov = movement[1] / 50.0;
@@ -665,9 +714,14 @@ impl Table {
             TableTool::Craftboard(tool) => {
                 self.create_craftboard(arena, world, &mouse_coord, tool);
             }
-            TableTool::TerranBlock(tool) => {
-                self.create_terran_block(arena, world, &mouse_coord, tool);
-            }
+            TableTool::TerranBlock(tool) => match tool.kind {
+                table_tool::TerranBlockKind::Allocater => {
+                    self.create_terran_block(arena, world, &mouse_coord, tool);
+                }
+                table_tool::TerranBlockKind::Eraser => {
+                    self.remove_terran_block(arena, world, &mouse_coord, tool);
+                }
+            },
             TableTool::Textboard(tool) => {
                 self.create_textboard(arena, world, &mouse_coord, tool);
             }
