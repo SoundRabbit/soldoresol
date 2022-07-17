@@ -332,14 +332,14 @@ macro_rules! arena {
                 self.data.borrow().data.kind()
             }
 
-            fn as_mut<T>(&self) -> BlockMut<T> where Self: From<T> {
+            fn as_mut<T>(&self) -> BlockMut<T> {
                 BlockMut {
                     data: Rc::downgrade(&self.data),
                     phantom_data: PhantomData
                 }
             }
 
-            fn as_ref<T>(&self) -> BlockRef<T> where Self: From<T> {
+            fn as_ref<T>(&self) -> BlockRef<T> {
                 BlockRef {
                     data: self.as_mut()
                 }
@@ -413,8 +413,14 @@ macro_rules! arena {
             }
         }
 
+        impl<T> std::default::Default for BlockMut<T> {
+            fn default() -> Self {
+                Self::none()
+            }
+        }
+
         impl<T> BlockMut<T> {
-            pub fn none() -> Self where Block: From<T>{
+            pub fn none() -> Self {
                 Block::none().as_mut::<T>()
             }
 
@@ -519,8 +525,14 @@ macro_rules! arena {
             }
         }
 
+        impl<T> std::default::Default for BlockRef<T> {
+            fn default() -> Self {
+                Self::none()
+            }
+        }
+
         impl<T> BlockRef<T> {
-            pub fn none() -> Self where Block: From<T>{
+            pub fn none() -> Self{
                 Self {
                     data: BlockMut::none()
                 }

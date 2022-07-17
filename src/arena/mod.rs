@@ -21,6 +21,7 @@ arena! {
     pub block::Property;
     pub block::Scene;
     pub block::Table;
+    pub block::TerranTexture;
     pub block::Terran;
     pub block::Textboard;
     pub block::World;

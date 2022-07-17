@@ -55,6 +55,7 @@ pub enum ShowingModal {
     None,
     SelectBlockTexture(usize, Rc<table_tool::Boxblock>),
     SelectCharacterTexture(usize, Rc<table_tool::Character>),
+    SelectTerranTexture(usize, Rc<table_tool::TerranBlock>),
     SelectComponent(usize, Rc<table_tool::ComponentAllocater>),
 }
 
@@ -95,9 +96,8 @@ impl Constructor for TableMenu {
                     })),
                     TableTool::TerranBlock(Rc::new(table_tool::TerranBlock {
                         kind: table_tool::TerranBlockKind::Allocater,
-                        allocater_state: table_tool::TerranBlockAllocater {
-                            color: crate::libs::color::Pallet::blue(5),
-                        },
+                        texture: None,
+                        allocater_state: table_tool::TerranBlockAllocater { tex_idx: 0 },
                     })),
                     TableTool::ComponentAllocater(Rc::new(table_tool::ComponentAllocater {
                         component: U128Id::none(),
@@ -227,6 +227,38 @@ impl TableMenu {
                             let mut tool = tool.as_ref().clone();
                             tool.texture = None;
                             Msg::SetTool(tool_idx, TableTool::Character(Rc::new(tool)))
+                        }
+                        _ => Msg::NoOp,
+                    }
+                }),
+            ),
+            ShowingModal::SelectTerranTexture(tool_idx, tool) => ModalResource::empty(
+                self,
+                None,
+                modal_resource::Props {
+                    arena: ArenaMut::clone(&self.arena),
+                    world: BlockMut::clone(&self.world),
+                    filter: set! { BlockKind::TerranTexture },
+                    title: String::from(modal_resource::title::VIEW_ALL_RESOURCE),
+                    is_selecter: true,
+                },
+                Sub::map({
+                    let tool_idx = *tool_idx;
+                    let tool = Rc::clone(&tool);
+                    move |sub| match sub {
+                        modal_resource::On::UpdateBlocks { insert, update } => {
+                            Msg::Sub(On::UpdateBlocks { insert, update })
+                        }
+                        modal_resource::On::Close => Msg::SetShowingModal(ShowingModal::None),
+                        modal_resource::On::SelectTerranTexture(texture) => {
+                            let mut tool = tool.as_ref().clone();
+                            tool.texture = Some(texture);
+                            Msg::SetTool(tool_idx, TableTool::TerranBlock(Rc::new(tool)))
+                        }
+                        modal_resource::On::SelectNone => {
+                            let mut tool = tool.as_ref().clone();
+                            tool.texture = None;
+                            Msg::SetTool(tool_idx, TableTool::TerranBlock(Rc::new(tool)))
                         }
                         _ => Msg::NoOp,
                     }
@@ -804,26 +836,78 @@ impl TableMenu {
                         ),
                     ],
                 ),
-                PopupColorPallet::empty(
-                    self,
-                    None,
-                    popup_color_pallet::Props {
-                        default_selected: terran_block.allocater_state.color,
-                        direction: popup_color_pallet::Direction::Bottom,
-                    },
-                    Sub::map({
-                        let terran_block = Rc::clone(&terran_block);
-                        move |sub| match sub {
-                            popup_color_pallet::On::SelectColor(color) => {
-                                let mut terran_block = terran_block.as_ref().clone();
-                                terran_block.allocater_state.color = color;
-                                Msg::SetTool(
-                                    tool_idx,
-                                    TableTool::TerranBlock(Rc::new(terran_block)),
+                Html::div(
+                    Attributes::new().class(Common::keyvalue()),
+                    Events::new(),
+                    vec![
+                        Text::span("テクスチャ"),
+                        terran_block
+                            .texture
+                            .as_ref()
+                            .and_then(|texture| {
+                                texture.map(|texture| {
+                                    Html::div(
+                                        Attributes::new()
+                                            .draggable("false")
+                                            .class(Self::class("block-texture")),
+                                        Events::new().on_click(self, {
+                                            let terran_block = Rc::clone(&terran_block);
+                                            move |_| {
+                                                Msg::SetShowingModal(
+                                                    ShowingModal::SelectTerranTexture(
+                                                        tool_idx,
+                                                        terran_block,
+                                                    ),
+                                                )
+                                            }
+                                        }),
+                                        vec![Html::node(texture.data().clone().into())],
+                                    )
+                                })
+                            })
+                            .unwrap_or_else(|| {
+                                Btn::secondary(
+                                    Attributes::new(),
+                                    Events::new().on_click(self, {
+                                        let terran_block = Rc::clone(&terran_block);
+                                        move |_| {
+                                            Msg::SetShowingModal(ShowingModal::SelectTerranTexture(
+                                                tool_idx,
+                                                terran_block,
+                                            ))
+                                        }
+                                    }),
+                                    vec![Html::text("テクスチャを選択")],
                                 )
-                            }
-                        }
-                    }),
+                            }),
+                        Text::condense_75("テクスチャ番号"),
+                        Html::input(
+                            Attributes::new()
+                                .type_("number")
+                                .string("step", "1")
+                                .string("min", "0")
+                                .string("max", "255")
+                                .value(terran_block.allocater_state.tex_idx.to_string()),
+                            Events::new().on_input(self, {
+                                let terran_block = Rc::clone(&terran_block);
+                                move |text| {
+                                    if let Ok(tex_idx) = text.parse::<u32>() {
+                                        crate::debug::log_1(format!("tex idx: {}", tex_idx));
+                                        let mut terran_block = terran_block.as_ref().clone();
+                                        terran_block.allocater_state.tex_idx =
+                                            tex_idx.clamp(0, 255);
+                                        Msg::SetTool(
+                                            tool_idx,
+                                            TableTool::TerranBlock(Rc::new(terran_block)),
+                                        )
+                                    } else {
+                                        Msg::NoOp
+                                    }
+                                }
+                            }),
+                            vec![],
+                        ),
+                    ],
                 ),
             ],
         )
@@ -952,7 +1036,7 @@ impl Styled for TableMenu {
                 "color": crate::libs::color::Pallet::gray(9);
             }
 
-            ".block-texture" {
+            ".block-texture, .block-texture > canvas" {
                 "width": "7.5rem";
                 "height": "7.5rem";
                 "object-fit": "contain";

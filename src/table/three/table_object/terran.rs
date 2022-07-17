@@ -1,3 +1,4 @@
+use super::super::TextureTable;
 use super::util;
 use crate::arena::{block, resource, BlockRef};
 use crate::libs::random_id::U128Id;
@@ -11,6 +12,7 @@ pub struct Terran {
 
 struct TerranData {
     timestamp: f64,
+    tex_timestamp: f64,
     material: three::MeshStandardMaterial,
     data: three::Mesh,
 }
@@ -24,6 +26,7 @@ impl Terran {
 
     pub fn update(
         &mut self,
+        texture_table: &mut TextureTable,
         scene: &three::Scene,
         craftboards: impl Iterator<Item = BlockRef<block::Craftboard>>,
     ) {
@@ -38,7 +41,7 @@ impl Terran {
 
                 terran.map(|terran| {
                     if !self.meshs.contains_key(&craftboard_id) {
-                        let data = TerranData::new(timestamp, &terran);
+                        let data = TerranData::new(texture_table, timestamp, &terran);
                         data.set_user_data(&craftboard_id.to_jsvalue());
                         scene.add(&data);
 
@@ -47,7 +50,7 @@ impl Terran {
 
                     if let Some(mesh) = self.meshs.get_mut(&craftboard_id) {
                         if mesh.timestamp < timestamp {
-                            mesh.update_blocks(timestamp, terran);
+                            mesh.update_blocks(texture_table, timestamp, terran);
                         }
 
                         let cp = craftboard.position();
@@ -71,30 +74,47 @@ impl Terran {
 }
 
 impl TerranData {
-    fn new(timestamp: f64, terran: &block::Terran) -> Self {
+    fn new(texture_table: &mut TextureTable, timestamp: f64, terran: &block::Terran) -> Self {
         let geometry = Self::create_geometry(terran);
-        let material = three::MeshStandardMaterial::new(&object! {
-            "vertexColors": true
-        });
+        let material = three::MeshStandardMaterial::new(&object! {});
+        material.color().set_rgb(1.0, 1.0, 1.0);
+
+        if let Some(texture) = texture_table.load_terran(terran.texture().as_ref()) {
+            material.set_map(Some(&texture));
+        } else {
+            material.set_map(None);
+        }
 
         let data = three::Mesh::new(&geometry, &material);
 
         Self {
             timestamp,
+            tex_timestamp: 0.0,
             data,
             material,
         }
     }
 
-    fn update_blocks(&mut self, timestamp: f64, terran: &block::Terran) {
+    fn update_blocks(
+        &mut self,
+        texture_table: &mut TextureTable,
+        timestamp: f64,
+        terran: &block::Terran,
+    ) {
         self.data.set_geometry(&Self::create_geometry(terran));
+        if let Some(texture) = texture_table.load_terran(terran.texture().as_ref()) {
+            self.material.set_map(Some(&texture));
+        } else {
+            self.material.set_map(None);
+        }
+        self.material.set_needs_update(true);
         self.timestamp = timestamp;
     }
 
     fn create_geometry(terran: &block::Terran) -> three::BufferGeometry {
         let mut points = vec![];
         let mut normals = vec![];
-        let mut colors = vec![];
+        let mut uvs = vec![];
         let mut indexs = vec![];
         let mut index_num = 0;
 
@@ -105,6 +125,44 @@ impl TerranData {
             [-1, 0, 0],
             [0, -1, 0],
             [0, 0, -1],
+        ];
+        let uv = [
+            [
+                super::boxblock::Geometry::texture_coord(0, &[1.0, 1.0]),
+                super::boxblock::Geometry::texture_coord(0, &[-1.0, 1.0]),
+                super::boxblock::Geometry::texture_coord(0, &[-1.0, -1.0]),
+                super::boxblock::Geometry::texture_coord(0, &[1.0, -1.0]),
+            ],
+            [
+                super::boxblock::Geometry::texture_coord(1, &[1.0, 1.0]),
+                super::boxblock::Geometry::texture_coord(1, &[-1.0, 1.0]),
+                super::boxblock::Geometry::texture_coord(1, &[-1.0, -1.0]),
+                super::boxblock::Geometry::texture_coord(1, &[1.0, -1.0]),
+            ],
+            [
+                super::boxblock::Geometry::texture_coord(2, &[1.0, 1.0]),
+                super::boxblock::Geometry::texture_coord(2, &[-1.0, 1.0]),
+                super::boxblock::Geometry::texture_coord(2, &[-1.0, -1.0]),
+                super::boxblock::Geometry::texture_coord(2, &[1.0, -1.0]),
+            ],
+            [
+                super::boxblock::Geometry::texture_coord(3, &[1.0, 1.0]),
+                super::boxblock::Geometry::texture_coord(3, &[-1.0, 1.0]),
+                super::boxblock::Geometry::texture_coord(3, &[-1.0, -1.0]),
+                super::boxblock::Geometry::texture_coord(3, &[1.0, -1.0]),
+            ],
+            [
+                super::boxblock::Geometry::texture_coord(4, &[1.0, 1.0]),
+                super::boxblock::Geometry::texture_coord(4, &[-1.0, 1.0]),
+                super::boxblock::Geometry::texture_coord(4, &[-1.0, -1.0]),
+                super::boxblock::Geometry::texture_coord(4, &[1.0, -1.0]),
+            ],
+            [
+                super::boxblock::Geometry::texture_coord(5, &[1.0, 1.0]),
+                super::boxblock::Geometry::texture_coord(5, &[-1.0, 1.0]),
+                super::boxblock::Geometry::texture_coord(5, &[-1.0, -1.0]),
+                super::boxblock::Geometry::texture_coord(5, &[1.0, -1.0]),
+            ],
         ];
         let o = [
             [
@@ -154,9 +212,6 @@ impl TerranData {
         ];
 
         for (position, terran_block) in terran.blocks() {
-            let color = terran_block.color().to_color().to_f64array();
-            let color = [color[0] as f32, color[1] as f32, color[2] as f32];
-
             for i in 0..6 {
                 if !terran.blocks().contains_key(&[
                     position[0] + k[i][0],
@@ -165,13 +220,14 @@ impl TerranData {
                 ]) {
                     Self::append_surface(
                         &position,
-                        &color,
+                        &uv[i],
                         &o[i],
                         &n[i],
+                        terran_block.tex_idx(),
                         &mut index_num,
                         &mut points,
                         &mut normals,
-                        &mut colors,
+                        &mut uvs,
                         &mut indexs,
                     );
                 }
@@ -188,10 +244,10 @@ impl TerranData {
             ),
         );
         geometry.set_attribute(
-            "color",
+            "uv",
             &three::BufferAttribute::new_with_f32array(
-                &js_sys::Float32Array::from(colors.concat().as_slice()),
-                3,
+                &js_sys::Float32Array::from(uvs.concat().as_slice()),
+                2,
                 false,
             ),
         );
@@ -214,13 +270,14 @@ impl TerranData {
 
     fn append_surface(
         position: &[i32; 3],
-        color: &[f32; 3],
+        uv: &[[f32; 2]; 4],
         offset: &[[f32; 3]; 4],
         normal: &[f32; 3],
+        tex_idx: u32,
         index_num: &mut u16,
         points: &mut Vec<[f32; 3]>,
         normals: &mut Vec<[f32; 3]>,
-        colors: &mut Vec<[f32; 3]>,
+        uvs: &mut Vec<[f32; 2]>,
         indexs: &mut Vec<u16>,
     ) {
         let p = position;
@@ -251,10 +308,10 @@ impl TerranData {
         normals.push(normal.clone());
         normals.push(normal.clone());
 
-        colors.push(color.clone());
-        colors.push(color.clone());
-        colors.push(color.clone());
-        colors.push(color.clone());
+        uvs.push(block::TerranTexture::uv_f32(tex_idx, &uv[0]));
+        uvs.push(block::TerranTexture::uv_f32(tex_idx, &uv[1]));
+        uvs.push(block::TerranTexture::uv_f32(tex_idx, &uv[2]));
+        uvs.push(block::TerranTexture::uv_f32(tex_idx, &uv[3]));
 
         let i = *index_num;
         indexs.push(i + 0);

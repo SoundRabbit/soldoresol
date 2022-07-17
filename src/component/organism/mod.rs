@@ -3,6 +3,7 @@ pub mod modal_chat_capture;
 pub mod modal_chat_user;
 pub mod modal_chatpallet;
 pub mod modal_create_block_texture;
+pub mod modal_create_terran_texture;
 pub mod modal_dicebot;
 pub mod modal_notification;
 pub mod modal_resource;

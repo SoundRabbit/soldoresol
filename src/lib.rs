@@ -1,3 +1,4 @@
+extern crate array_macro;
 extern crate async_std;
 extern crate async_trait;
 extern crate base64;

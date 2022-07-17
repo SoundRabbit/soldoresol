@@ -12,7 +12,7 @@ pub struct Boxblock {
     geometry_nameplate: util::nameplate::XZGeometry,
 }
 
-struct Geometry {
+pub struct Geometry {
     box_geometry: three::BoxGeometry,
     cylinder_geometry: three::CylinderGeometry,
     icosahedron_geometry: three::IcosahedronGeometry,
@@ -461,7 +461,7 @@ impl Geometry {
     // 3: nx
     // 4: ny
     // 5: nz
-    fn texture_coord(surface: usize, coord: &[f32; 2]) -> [f32; 2] {
+    pub fn texture_coord(surface: usize, coord: &[f32; 2]) -> [f32; 2] {
         let [ox, oy] = match surface % 6 {
             0 => [0.25, 0.25],
             1 => [0.50, 0.25],

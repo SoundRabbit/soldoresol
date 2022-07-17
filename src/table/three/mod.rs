@@ -256,6 +256,7 @@ impl Three {
 
         table.map(|table| {
             self.object_terran.update(
+                &mut self.texture_table,
                 &self.scene,
                 table.craftboards().iter().map(|block| block.as_ref()),
             );

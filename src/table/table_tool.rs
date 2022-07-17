@@ -1,4 +1,4 @@
-use crate::arena::{block, resource, BlockRef};
+use crate::arena::{block, resource, BlockMut, BlockRef};
 use crate::libs::random_id::U128Id;
 use std::rc::Rc;
 
@@ -56,6 +56,7 @@ pub struct Boxblock {
 #[derive(Clone)]
 pub struct TerranBlock {
     pub kind: TerranBlockKind,
+    pub texture: Option<BlockMut<block::TerranTexture>>,
     pub allocater_state: TerranBlockAllocater,
 }
 
@@ -67,7 +68,7 @@ pub enum TerranBlockKind {
 
 #[derive(Clone)]
 pub struct TerranBlockAllocater {
-    pub color: crate::libs::color::Pallet,
+    pub tex_idx: u32,
 }
 
 #[derive(Clone)]

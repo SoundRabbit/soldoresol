@@ -5,7 +5,7 @@ use super::super::Access;
 use super::util::prelude::*;
 use super::util::Pack;
 use super::{BlockMut, BlockRef};
-use super::{Character, Scene};
+use super::{Character, Scene, TerranTexture};
 
 block! {
     [pub Components(constructor, pack)]
@@ -36,6 +36,7 @@ block! {
     components: Components = Components::new();
     image_data_resources: Vec<BlockRef<ImageData>> = vec![];
     block_texture_resources: Vec<BlockRef<BlockTexture>> = vec![];
+    terran_texture_blocks: Vec<BlockMut<TerranTexture>> = vec![];
 }
 
 impl World {
@@ -102,5 +103,13 @@ impl World {
 
     pub fn push_block_texture_resource(&mut self, block_texture: BlockRef<BlockTexture>) {
         self.block_texture_resources.push(block_texture);
+    }
+
+    pub fn terran_texture_blocks(&self) -> &Vec<BlockMut<TerranTexture>> {
+        &self.terran_texture_blocks
+    }
+
+    pub fn push_terran_texture_block(&mut self, block_texture: BlockMut<TerranTexture>) {
+        self.terran_texture_blocks.push(block_texture);
     }
 }

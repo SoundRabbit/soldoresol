@@ -6,6 +6,7 @@ use super::atom::{
 };
 use super::molecule::modal::{self, Modal};
 use super::organism::modal_create_block_texture::{self, ModalCreateBlockTexture};
+use super::organism::modal_create_terran_texture::{self, ModalCreateTerranTexture};
 use crate::arena::{block, component, resource, ArenaMut, BlockKind, BlockMut, BlockRef};
 use crate::libs::random_id::U128Id;
 use isaribi::{
@@ -33,6 +34,7 @@ pub struct Props {
 pub enum Msg {
     Sub(On),
     AddResource(BlockKind),
+    EditResource(Resource),
     CloseModal,
     LoadBlockTexture(resource::BlockTexture),
     SelectResource(Resource),
@@ -45,6 +47,7 @@ pub enum On {
     SelectNone,
     SelectImageData(BlockRef<resource::ImageData>),
     SelectBlockTexture(BlockRef<resource::BlockTexture>),
+    SelectTerranTexture(BlockMut<block::TerranTexture>),
     SelectComponent(U128Id),
     UpdateBlocks {
         insert: HashSet<U128Id>,
@@ -56,6 +59,7 @@ pub enum Resource {
     None,
     ImageData(BlockRef<resource::ImageData>),
     BlockTexture(BlockRef<resource::BlockTexture>),
+    TerranTexture(BlockMut<block::TerranTexture>),
     BoxblockComponent(BlockMut<component::BoxblockComponent>),
     CraftboardComponent(BlockMut<component::CraftboardComponent>),
     TextboardComponent(BlockMut<component::TextboardComponent>),
@@ -67,6 +71,7 @@ impl Resource {
             Self::None => U128Id::none(),
             Self::ImageData(data) => data.id(),
             Self::BlockTexture(data) => data.id(),
+            Self::TerranTexture(data) => data.id(),
             Self::BoxblockComponent(data) => data.id(),
             Self::CraftboardComponent(data) => data.id(),
             Self::TextboardComponent(data) => data.id(),
@@ -88,6 +93,7 @@ pub struct ModalResource {
 enum ShowingModal {
     None,
     CreateBlockTexture,
+    CreateTerranTexture(BlockMut<block::TerranTexture>),
 }
 
 impl Component for ModalResource {
@@ -143,6 +149,17 @@ impl Update for ModalResource {
                     self.showing_modal = ShowingModal::CreateBlockTexture;
                     Cmd::none()
                 }
+                BlockKind::TerranTexture => {
+                    self.showing_modal = ShowingModal::CreateTerranTexture(BlockMut::none());
+                    Cmd::none()
+                }
+                _ => Cmd::none(),
+            },
+            Msg::EditResource(resource) => match resource {
+                Resource::TerranTexture(block) => {
+                    self.showing_modal = ShowingModal::CreateTerranTexture(block);
+                    Cmd::none()
+                }
                 _ => Cmd::none(),
             },
             Msg::LoadBlockTexture(texture) => {
@@ -174,6 +191,7 @@ impl Update for ModalResource {
                     Resource::None => Cmd::submit(On::SelectNone),
                     Resource::ImageData(data) => Cmd::submit(On::SelectImageData(data)),
                     Resource::BlockTexture(data) => Cmd::submit(On::SelectBlockTexture(data)),
+                    Resource::TerranTexture(data) => Cmd::submit(On::SelectTerranTexture(data)),
                     Resource::BoxblockComponent(data) => {
                         Cmd::submit(On::SelectComponent(data.id()))
                     }
@@ -220,6 +238,10 @@ impl Render<Html> for ModalResource {
                                         BlockKind::BlockTexture,
                                         Text::condense_75("ブロック用テクスチャ"),
                                     ),
+                                    self.render_btn_to_select_kind(
+                                        BlockKind::TerranTexture,
+                                        Text::condense_75("地形用テクスチャ"),
+                                    ),
                                     if self.filter.is_empty()
                                         || self.filter.contains(&BlockKind::BoxblockComponent)
                                         || self.filter.contains(&BlockKind::CraftboardComponent)
@@ -251,6 +273,7 @@ impl Render<Html> for ModalResource {
                                 match &self.selected_kind {
                                     BlockKind::ImageData => self.render_list_image_data(),
                                     BlockKind::BlockTexture => self.render_list_block_texture(),
+                                    BlockKind::TerranTexture => self.render_list_terran_texture(),
                                     BlockKind::BoxblockComponent => {
                                         self.render_list_boxblock_component()
                                     }
@@ -295,6 +318,21 @@ impl ModalResource {
                     }
                     modal_create_block_texture::On::CreateTexure(texture) => {
                         Msg::LoadBlockTexture(texture)
+                    }
+                }),
+            ),
+            ShowingModal::CreateTerranTexture(terran_texture) => ModalCreateTerranTexture::empty(
+                self,
+                None,
+                modal_create_terran_texture::Props {
+                    arena: ArenaMut::clone(&self.arena),
+                    world: BlockMut::clone(&self.world),
+                    terran_texture: BlockMut::clone(&terran_texture),
+                },
+                Sub::map(|sub| match sub {
+                    modal_create_terran_texture::On::Close => Msg::CloseModal,
+                    modal_create_terran_texture::On::UpdateBlocks { insert, update } => {
+                        Msg::Sub(On::UpdateBlocks { insert, update })
                     }
                 }),
             ),
@@ -372,6 +410,28 @@ impl ModalResource {
             .unwrap_or(vec![])
     }
 
+    fn render_list_terran_texture(&self) -> Vec<Html> {
+        self.world
+            .map(|world| {
+                vec![
+                    if self.is_selecter {
+                        self.render_cell_none("テクスチャ無し")
+                    } else {
+                        Html::none()
+                    },
+                    Html::fragment(
+                        world
+                            .terran_texture_blocks()
+                            .iter()
+                            .map(|data| self.render_cell_terran_texture(BlockMut::clone(&data)))
+                            .collect(),
+                    ),
+                    self.render_btn_to_add_cell(BlockKind::TerranTexture),
+                ]
+            })
+            .unwrap_or(vec![])
+    }
+
     fn render_list_boxblock_component(&self) -> Vec<Html> {
         self.world
             .map(|world| {
@@ -436,10 +496,7 @@ impl ModalResource {
             .map(|this| {
                 Html::div(
                     Attributes::new().class(Self::class("cell")),
-                    Events::new().on_click(self, {
-                        let data = BlockRef::clone(&data);
-                        move |_| Msg::SetSelectedResource(Resource::ImageData(data))
-                    }),
+                    Events::new(),
                     vec![
                         Html::img(
                             Attributes::new()
@@ -467,10 +524,7 @@ impl ModalResource {
             .map(|this| {
                 Html::div(
                     Attributes::new().class(Self::class("cell")),
-                    Events::new().on_click(self, {
-                        let data = BlockRef::clone(&data);
-                        move |_| Msg::SetSelectedResource(Resource::BlockTexture(data))
-                    }),
+                    Events::new(),
                     vec![
                         Html::img(
                             Attributes::new()
@@ -496,15 +550,35 @@ impl ModalResource {
             .unwrap_or(Html::none())
     }
 
+    fn render_cell_terran_texture(&self, data: BlockMut<block::TerranTexture>) -> Html {
+        BlockMut::clone(&data)
+            .map(|this| {
+                Html::div(
+                    Attributes::new().class(Self::class("cell")),
+                    Events::new(),
+                    vec![
+                        Html::node(this.data().clone().into()),
+                        {
+                            let data = BlockMut::clone(&data);
+                            self.render_btn_to_edit_cell(Resource::TerranTexture(data))
+                        },
+                        if self.is_selecter {
+                            self.render_btn_to_select_cell(Resource::TerranTexture(data))
+                        } else {
+                            Html::none()
+                        },
+                    ],
+                )
+            })
+            .unwrap_or(Html::none())
+    }
+
     fn render_cell_boxblock_component(&self, data: BlockMut<component::BoxblockComponent>) -> Html {
         BlockMut::clone(&data)
             .map(|this| {
                 Html::div(
                     Attributes::new().class(Self::class("cell")),
-                    Events::new().on_click(self, {
-                        let data = BlockMut::clone(&data);
-                        move |_| Msg::SetSelectedResource(Resource::BoxblockComponent(data))
-                    }),
+                    Events::new(),
                     vec![
                         self.render_cell_boxblock_component_img(this),
                         attr::span(Attributes::new().class(Self::class("text")), this.name()),
@@ -555,10 +629,7 @@ impl ModalResource {
             .map(|this| {
                 Html::div(
                     Attributes::new().class(Self::class("cell")),
-                    Events::new().on_click(self, {
-                        let data = BlockMut::clone(&data);
-                        move |_| Msg::SetSelectedResource(Resource::CraftboardComponent(data))
-                    }),
+                    Events::new(),
                     vec![
                         Html::div(
                             Attributes::new()
@@ -630,10 +701,7 @@ impl ModalResource {
             .map(|this| {
                 Html::div(
                     Attributes::new().class(Self::class("cell")),
-                    Events::new().on_click(self, {
-                        let data = BlockMut::clone(&data);
-                        move |_| Msg::SetSelectedResource(Resource::TextboardComponent(data))
-                    }),
+                    Events::new(),
                     vec![
                         Html::pre(
                             Attributes::new()
@@ -667,6 +735,14 @@ impl ModalResource {
             Attributes::new(),
             Events::new().on_click(self, move |_| Msg::SelectResource(resource)),
             vec![Html::text("選択")],
+        )
+    }
+
+    fn render_btn_to_edit_cell(&self, resource: Resource) -> Html {
+        Btn::secondary(
+            Attributes::new(),
+            Events::new().on_click(self, move |_| Msg::EditResource(resource)),
+            vec![Html::text("編集")],
         )
     }
 
@@ -724,6 +800,11 @@ impl Styled for ModalResource {
                 "flex-direction": "column";
                 "justify-content": "center";
                 "align-items": "center";
+            }
+
+            ".cell > canvas" {
+                "width": "10rem";
+                "height": "10rem";
             }
 
             ".cell-img" {

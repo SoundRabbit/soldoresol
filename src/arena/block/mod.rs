@@ -11,6 +11,7 @@ mods! {
     pub scene::Scene;
     pub table::Table;
     pub terran::Terran;
+    pub terran_texture::TerranTexture;
     pub textboard::Textboard;
     pub world::World;
 }

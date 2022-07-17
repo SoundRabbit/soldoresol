@@ -1,4 +1,4 @@
-use crate::arena::{resource, BlockRef};
+use crate::arena::{block, resource, BlockRef};
 use crate::libs::random_id::U128Id;
 use crate::libs::three;
 use std::cell::Cell;
@@ -14,6 +14,7 @@ pub struct TextureTable {
 pub enum Texture {
     Image(Rc<three::Texture>),
     Block(Rc<three::Texture>),
+    Terran(f64, Rc<three::Texture>),
 }
 
 pub struct TextTexture {
@@ -76,7 +77,7 @@ impl TextureTable {
         block_texture: BlockRef<resource::BlockTexture>,
     ) -> Option<Rc<three::Texture>> {
         let texture_id = block_texture.id();
-        if let Some(Texture::Image(texture)) = self.data.get(&texture_id) {
+        if let Some(Texture::Block(texture)) = self.data.get(&texture_id) {
             return Some(Rc::clone(texture));
         }
 
@@ -91,6 +92,36 @@ impl TextureTable {
         texture.map(|texture| {
             self.data
                 .insert(texture_id, Texture::Block(Rc::clone(&texture)));
+            texture
+        })
+    }
+
+    pub fn load_terran(
+        &mut self,
+        terran_texture: BlockRef<block::TerranTexture>,
+    ) -> Option<Rc<three::Texture>> {
+        let texture_id = terran_texture.id();
+        if let Some(Texture::Terran(timestamp, texture)) = self.data.get_mut(&texture_id) {
+            if *timestamp < terran_texture.timestamp() {
+                texture.set_needs_update(true);
+                *timestamp = terran_texture.timestamp();
+            }
+            crate::debug::log_1("load terran texture");
+            return Some(Rc::clone(texture));
+        }
+
+        let texture = terran_texture.map(|terran_texture| {
+            let texture = Rc::new(three::Texture::new_with_canvas(terran_texture.data()));
+            texture.set_needs_update(true);
+            texture
+        });
+
+        texture.map(|texture| {
+            self.data.insert(
+                texture_id,
+                Texture::Terran(terran_texture.timestamp(), Rc::clone(&texture)),
+            );
+            crate::debug::log_1("create terran texture");
             texture
         })
     }

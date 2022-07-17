@@ -369,9 +369,16 @@ impl Table {
                 ];
 
                 terran.update(|terran| {
+                    terran.set_texture(
+                        option
+                            .texture
+                            .as_ref()
+                            .map(|tex| BlockMut::clone(tex))
+                            .unwrap_or_else(|| BlockMut::none()),
+                    );
                     terran.insert_block(
                         p,
-                        block::terran::TerranBlock::new(option.allocater_state.color),
+                        block::terran::TerranBlock::new(option.allocater_state.tex_idx),
                     );
                 });
 
