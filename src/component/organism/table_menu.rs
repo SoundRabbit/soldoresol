@@ -845,25 +845,34 @@ impl TableMenu {
                             .texture
                             .as_ref()
                             .and_then(|texture| {
-                                texture.map(|texture| {
-                                    Html::div(
-                                        Attributes::new()
-                                            .draggable("false")
-                                            .class(Self::class("block-texture")),
-                                        Events::new().on_click(self, {
-                                            let terran_block = Rc::clone(&terran_block);
-                                            move |_| {
-                                                Msg::SetShowingModal(
-                                                    ShowingModal::SelectTerranTexture(
-                                                        tool_idx,
-                                                        terran_block,
-                                                    ),
-                                                )
-                                            }
-                                        }),
-                                        vec![Html::node(texture.data().clone().into())],
-                                    )
-                                })
+                                texture
+                                    .map(|texture| {
+                                        let tex_idx =
+                                            terran_block.allocater_state.tex_idx.clamp(0, 255)
+                                                as usize;
+                                        texture.textures()[tex_idx].map(|texture| {
+                                            Html::img(
+                                                Attributes::new()
+                                                    .draggable("false")
+                                                    .class(Self::class("block-texture"))
+                                                    .class(Common::bg_transparent())
+                                                    .src(texture.data().url().to_string()),
+                                                Events::new().on_click(self, {
+                                                    let terran_block = Rc::clone(&terran_block);
+                                                    move |_| {
+                                                        Msg::SetShowingModal(
+                                                            ShowingModal::SelectTerranTexture(
+                                                                tool_idx,
+                                                                terran_block,
+                                                            ),
+                                                        )
+                                                    }
+                                                }),
+                                                vec![],
+                                            )
+                                        })
+                                    })
+                                    .unwrap_or(None)
                             })
                             .unwrap_or_else(|| {
                                 Btn::secondary(
@@ -892,7 +901,6 @@ impl TableMenu {
                                 let terran_block = Rc::clone(&terran_block);
                                 move |text| {
                                     if let Ok(tex_idx) = text.parse::<u32>() {
-                                        crate::debug::log_1(format!("tex idx: {}", tex_idx));
                                         let mut terran_block = terran_block.as_ref().clone();
                                         terran_block.allocater_state.tex_idx =
                                             tex_idx.clamp(0, 255);
