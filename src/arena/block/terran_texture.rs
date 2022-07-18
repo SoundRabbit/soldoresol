@@ -11,6 +11,7 @@ use wasm_bindgen_futures::JsFuture;
 
 pub const CELL_WIDTH: u32 = 256;
 pub const CELL_HEIGHT: u32 = 256;
+pub const CELL_MARGIN: u32 = 16;
 pub const TEX_WIDTH: u32 = 4096;
 pub const TEX_HEIGHT: u32 = 4096;
 pub const COL_NUM: u32 = TEX_WIDTH / CELL_WIDTH;
@@ -59,8 +60,8 @@ impl TerranTexture {
                         tex.data().element(),
                         x,
                         y,
-                        w,
-                        h,
+                        w - CELL_MARGIN as f64,
+                        h - CELL_MARGIN as f64,
                     );
                 });
                 self.textures[tex_idx as usize] = tex;
@@ -80,10 +81,12 @@ impl TerranTexture {
         let [c, r] = Self::texture_position(tex_idx);
         let w = CELL_WIDTH as f64 / TEX_WIDTH as f64;
         let h = CELL_HEIGHT as f64 / TEX_HEIGHT as f64;
+        let w_m = CELL_MARGIN as f64 / TEX_WIDTH as f64;
+        let h_m = CELL_MARGIN as f64 / TEX_HEIGHT as f64;
         let left = (c * CELL_WIDTH) as f64 / TEX_WIDTH as f64;
         let top = 1.0 - ((r * CELL_HEIGHT) as f64 / TEX_HEIGHT as f64 + h);
 
-        [uv[0] * w + left, uv[1] * h + top]
+        [uv[0] * (w - w_m) + left, uv[1] * (h - h_m) + top + h_m]
     }
 
     pub fn uv_f32(tex_idx: u32, uv: &[f32; 2]) -> [f32; 2] {
