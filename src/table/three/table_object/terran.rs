@@ -112,133 +112,51 @@ impl TerranData {
     }
 
     fn create_geometry(terran: &block::Terran) -> three::BufferGeometry {
-        let mut points = vec![];
+        let mut positions = vec![];
         let mut normals = vec![];
         let mut uvs = vec![];
         let mut indexs = vec![];
-        let mut index_num = 0;
+        let mut index_offset = 0;
 
-        let k = [
-            [1, 0, 0],
-            [0, 1, 0],
-            [0, 0, 1],
-            [-1, 0, 0],
-            [0, -1, 0],
-            [0, 0, -1],
-        ];
-        let uv = [
-            [
-                super::boxblock::Geometry::texture_coord(0, &[1.0, 1.0]),
-                super::boxblock::Geometry::texture_coord(0, &[-1.0, 1.0]),
-                super::boxblock::Geometry::texture_coord(0, &[-1.0, -1.0]),
-                super::boxblock::Geometry::texture_coord(0, &[1.0, -1.0]),
-            ],
-            [
-                super::boxblock::Geometry::texture_coord(1, &[1.0, 1.0]),
-                super::boxblock::Geometry::texture_coord(1, &[-1.0, 1.0]),
-                super::boxblock::Geometry::texture_coord(1, &[-1.0, -1.0]),
-                super::boxblock::Geometry::texture_coord(1, &[1.0, -1.0]),
-            ],
-            [
-                super::boxblock::Geometry::texture_coord(2, &[1.0, 1.0]),
-                super::boxblock::Geometry::texture_coord(2, &[-1.0, 1.0]),
-                super::boxblock::Geometry::texture_coord(2, &[-1.0, -1.0]),
-                super::boxblock::Geometry::texture_coord(2, &[1.0, -1.0]),
-            ],
-            [
-                super::boxblock::Geometry::texture_coord(3, &[1.0, 1.0]),
-                super::boxblock::Geometry::texture_coord(3, &[-1.0, 1.0]),
-                super::boxblock::Geometry::texture_coord(3, &[-1.0, -1.0]),
-                super::boxblock::Geometry::texture_coord(3, &[1.0, -1.0]),
-            ],
-            [
-                super::boxblock::Geometry::texture_coord(4, &[1.0, 1.0]),
-                super::boxblock::Geometry::texture_coord(4, &[-1.0, 1.0]),
-                super::boxblock::Geometry::texture_coord(4, &[-1.0, -1.0]),
-                super::boxblock::Geometry::texture_coord(4, &[1.0, -1.0]),
-            ],
-            [
-                super::boxblock::Geometry::texture_coord(5, &[1.0, 1.0]),
-                super::boxblock::Geometry::texture_coord(5, &[-1.0, 1.0]),
-                super::boxblock::Geometry::texture_coord(5, &[-1.0, -1.0]),
-                super::boxblock::Geometry::texture_coord(5, &[1.0, -1.0]),
-            ],
-        ];
-        let o = [
-            [
-                [0.5, 0.5, 0.5],
-                [0.5, -0.5, 0.5],
-                [0.5, -0.5, -0.5],
-                [0.5, 0.5, -0.5],
-            ],
-            [
-                [-0.5, 0.5, 0.5],
-                [0.5, 0.5, 0.5],
-                [0.5, 0.5, -0.5],
-                [-0.5, 0.5, -0.5],
-            ],
-            [
-                [0.5, 0.5, 0.5],
-                [-0.5, 0.5, 0.5],
-                [-0.5, -0.5, 0.5],
-                [0.5, -0.5, 0.5],
-            ],
-            [
-                [-0.5, -0.5, 0.5],
-                [-0.5, 0.5, 0.5],
-                [-0.5, 0.5, -0.5],
-                [-0.5, -0.5, -0.5],
-            ],
-            [
-                [0.5, -0.5, 0.5],
-                [-0.5, -0.5, 0.5],
-                [-0.5, -0.5, -0.5],
-                [0.5, -0.5, -0.5],
-            ],
-            [
-                [0.5, -0.5, -0.5],
-                [-0.5, -0.5, -0.5],
-                [-0.5, 0.5, -0.5],
-                [0.5, 0.5, -0.5],
-            ],
-        ];
-        let n = [
-            [1.0, 0.0, 0.0],
-            [0.0, 1.0, 0.0],
-            [0.0, 0.0, 1.0],
-            [-1.0, 0.0, 0.0],
-            [0.0, -1.0, 0.0],
-            [0.0, 0.0, -1.0],
-        ];
+        for (block_position, terran_block) in terran.blocks() {
+            let geometry = util::block_geometry::box_geometry(&mut |uv| {
+                block::TerranTexture::uv_f32(terran_block.tex_idx(), &uv)
+            });
+            let a_position = geometry
+                .get_attribute("position")
+                .array_as_f32array()
+                .to_vec();
+            let mut a_normal = geometry
+                .get_attribute("normal")
+                .array_as_f32array()
+                .to_vec();
+            let mut a_uv = geometry.get_attribute("uv").array_as_f32array().to_vec();
+            let a_index = geometry.get_index().array_as_u16array().to_vec();
 
-        for (position, terran_block) in terran.blocks() {
-            for i in 0..6 {
-                if !terran.blocks().contains_key(&[
-                    position[0] + k[i][0],
-                    position[1] + k[i][1],
-                    position[2] + k[i][2],
-                ]) {
-                    Self::append_surface(
-                        &position,
-                        &uv[i],
-                        &o[i],
-                        &n[i],
-                        terran_block.tex_idx(),
-                        &mut index_num,
-                        &mut points,
-                        &mut normals,
-                        &mut uvs,
-                        &mut indexs,
-                    );
-                }
-            }
+            let n = (a_position.len() / 3) as u16;
+            positions.append(
+                &mut a_position
+                    .into_iter()
+                    .enumerate()
+                    .map(|(idx, position)| position + block_position[idx % 3] as f32)
+                    .collect::<Vec<_>>(),
+            );
+            normals.append(&mut a_normal);
+            uvs.append(&mut a_uv);
+            indexs.append(
+                &mut a_index
+                    .into_iter()
+                    .map(|idx| idx + index_offset)
+                    .collect::<Vec<_>>(),
+            );
+            index_offset += n;
         }
 
         let geometry = three::BufferGeometry::new();
         geometry.set_attribute(
             "position",
             &three::BufferAttribute::new_with_f32array(
-                &js_sys::Float32Array::from(points.concat().as_slice()),
+                &js_sys::Float32Array::from(positions.as_slice()),
                 3,
                 false,
             ),
@@ -246,7 +164,7 @@ impl TerranData {
         geometry.set_attribute(
             "uv",
             &three::BufferAttribute::new_with_f32array(
-                &js_sys::Float32Array::from(uvs.concat().as_slice()),
+                &js_sys::Float32Array::from(uvs.as_slice()),
                 2,
                 false,
             ),
@@ -254,7 +172,7 @@ impl TerranData {
         geometry.set_attribute(
             "normal",
             &three::BufferAttribute::new_with_f32array(
-                &js_sys::Float32Array::from(normals.concat().as_slice()),
+                &js_sys::Float32Array::from(normals.as_slice()),
                 3,
                 false,
             ),
@@ -266,62 +184,6 @@ impl TerranData {
         ));
 
         geometry
-    }
-
-    fn append_surface(
-        position: &[i32; 3],
-        uv: &[[f32; 2]; 4],
-        offset: &[[f32; 3]; 4],
-        normal: &[f32; 3],
-        tex_idx: u32,
-        index_num: &mut u16,
-        points: &mut Vec<[f32; 3]>,
-        normals: &mut Vec<[f32; 3]>,
-        uvs: &mut Vec<[f32; 2]>,
-        indexs: &mut Vec<u16>,
-    ) {
-        let p = position;
-        let o = offset;
-        points.push([
-            p[0] as f32 + o[0][0],
-            p[1] as f32 + o[0][1],
-            p[2] as f32 + o[0][2],
-        ]);
-        points.push([
-            p[0] as f32 + o[1][0],
-            p[1] as f32 + o[1][1],
-            p[2] as f32 + o[1][2],
-        ]);
-        points.push([
-            p[0] as f32 + o[2][0],
-            p[1] as f32 + o[2][1],
-            p[2] as f32 + o[2][2],
-        ]);
-        points.push([
-            p[0] as f32 + o[3][0],
-            p[1] as f32 + o[3][1],
-            p[2] as f32 + o[3][2],
-        ]);
-
-        normals.push(normal.clone());
-        normals.push(normal.clone());
-        normals.push(normal.clone());
-        normals.push(normal.clone());
-
-        uvs.push(block::TerranTexture::uv_f32(tex_idx, &uv[0]));
-        uvs.push(block::TerranTexture::uv_f32(tex_idx, &uv[1]));
-        uvs.push(block::TerranTexture::uv_f32(tex_idx, &uv[2]));
-        uvs.push(block::TerranTexture::uv_f32(tex_idx, &uv[3]));
-
-        let i = *index_num;
-        indexs.push(i + 0);
-        indexs.push(i + 1);
-        indexs.push(i + 2);
-        indexs.push(i + 2);
-        indexs.push(i + 3);
-        indexs.push(i + 0);
-
-        *index_num += 4;
     }
 }
 

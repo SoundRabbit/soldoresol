@@ -1,5 +1,6 @@
 use crate::libs::three;
 
+pub mod block_geometry;
 pub mod nameplate;
 pub mod rounded_rectangle;
 pub use nameplate::Nameplate;

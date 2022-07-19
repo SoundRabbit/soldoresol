@@ -22,6 +22,9 @@ extern "C" {
 
     #[wasm_bindgen(method, getter, js_name = "array")]
     pub fn array_as_f32array(this: &BufferAttribute) -> js_sys::Float32Array;
+
+    #[wasm_bindgen(method, getter, js_name = "array")]
+    pub fn array_as_u16array(this: &BufferAttribute) -> js_sys::Uint16Array;
 }
 
 #[wasm_bindgen(module = "three")]
@@ -34,6 +37,9 @@ extern "C" {
 
     #[wasm_bindgen(method, js_name = "getAttribute")]
     pub fn get_attribute(this: &BufferGeometry, name: &str) -> BufferAttribute;
+
+    #[wasm_bindgen(method, js_name = "getIndex")]
+    pub fn get_index(this: &BufferGeometry) -> BufferAttribute;
 
     #[wasm_bindgen(method, js_name = "setAttribute")]
     pub fn set_attribute(
