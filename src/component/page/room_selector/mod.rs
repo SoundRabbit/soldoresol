@@ -5,6 +5,7 @@ use super::atom::{
     header::{self, Header},
     heading::{self, Heading},
 };
+use super::molecule::dialog::{self, Dialog};
 use super::organism::{
     modal_notification::{self, ModalNotification},
     modal_sign_in::{self, ModalSignIn},
@@ -39,6 +40,7 @@ pub enum Msg {
     ConnectWithInputingRoomId,
     ConnectWithNewRoomId,
     SetGoogleLoginedState(bool),
+    RemoveRoomToCloseModal(String),
 }
 
 pub enum On {
@@ -60,6 +62,7 @@ pub enum ShowingModal {
     None,
     Notification,
     SignIn,
+    ConfirmingToRemoveRoom { room_id: String, name: String },
 }
 
 pub struct RoomData {
@@ -168,6 +171,10 @@ impl Update for RoomSelector {
                     Cmd::task(self.google_drive_listener.poll()),
                 ])
             }
+            Msg::RemoveRoomToCloseModal(room_id) => {
+                self.showing_modal = ShowingModal::None;
+                Cmd::none()
+            }
         }
     }
 }
@@ -263,6 +270,29 @@ impl RoomSelector {
                     }),
                 )
             }
+            ShowingModal::ConfirmingToRemoveRoom { room_id, name } => Dialog::new(
+                self,
+                None,
+                dialog::Props {},
+                Sub::none(),
+                (
+                    String::from("ルームの削除"),
+                    format!(
+                        "ルームデータ\n\tID\t{}\n\t名前\t{}\nを削除します。",
+                        room_id, name
+                    ),
+                    vec![
+                        dialog::Button::Yes(Events::new().on_click(self, {
+                            let room_id = room_id.clone();
+                            move |_| Msg::RemoveRoomToCloseModal(room_id)
+                        })),
+                        dialog::Button::No(
+                            Events::new()
+                                .on_click(self, |_| Msg::SetShowingModal(ShowingModal::None)),
+                        ),
+                    ],
+                ),
+            ),
         }
     }
 
@@ -391,7 +421,18 @@ impl RoomSelector {
                                 ),
                                 Btn::menu(
                                     Attributes::new(),
-                                    Events::new(),
+                                    Events::new().on_click(self, {
+                                        let room_id = room.id.clone();
+                                        let name = room.name.clone();
+                                        move |_| {
+                                            Msg::SetShowingModal(
+                                                ShowingModal::ConfirmingToRemoveRoom {
+                                                    room_id,
+                                                    name,
+                                                },
+                                            )
+                                        }
+                                    }),
                                     vec![Html::text("削除")],
                                 ),
                             ],
