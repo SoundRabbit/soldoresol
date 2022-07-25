@@ -9,20 +9,31 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
 
-pub async fn initialize() -> Option<(Config, web_sys::IdbDatabase, String, Peer, String)> {
+pub async fn initialize() -> Option<(
+    Config,
+    web_sys::IdbDatabase,
+    web_sys::IdbDatabase,
+    String,
+    Peer,
+    String,
+)> {
     let config = if let Some(config) = load_config().await {
         config
     } else {
         return None;
     };
 
-    let db_name = format!("{}.common", config.client.db_prefix);
+    let common_db_name = format!("{}.common", config.client.db_prefix);
+    let room_db_name = format!("{}.room", config.client.db_prefix);
 
-    let (common_db, client_id) = if let Some(db_props) = initialize_common_db(&db_name).await {
+    let (common_db, client_id) = if let Some(db_props) = initialize_common_db(&common_db_name).await
+    {
         db_props
     } else {
         return None;
     };
+
+    let room_db = unwrap!(idb::open_db(room_db_name.as_ref()).await; None);
 
     let peer = if let Some(peer) = initialize_peer_connection(&config.skyway.key).await {
         peer
@@ -34,7 +45,7 @@ pub async fn initialize() -> Option<(Config, web_sys::IdbDatabase, String, Peer,
 
     initialize_gapi(&config.drive.api_key, &config.drive.client_id).await;
 
-    Some((config, common_db, client_id, peer, peer_id))
+    Some((config, common_db, room_db, client_id, peer, peer_id))
 }
 
 async fn load_config() -> Option<Config> {

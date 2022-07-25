@@ -11,11 +11,12 @@ use wasm_bindgen_futures::JsFuture;
 pub async fn initialize(
     config: Rc<Config>,
     common_db: Rc<web_sys::IdbDatabase>,
+    room_db: Rc<web_sys::IdbDatabase>,
     room: MeshRoom,
     room_id: Rc<String>,
-) -> Option<(web_sys::IdbDatabase, web_sys::IdbDatabase, Rc<MeshRoom>)> {
+) -> Option<(Rc<web_sys::IdbDatabase>, web_sys::IdbDatabase, Rc<MeshRoom>)> {
     let props = join!(
-        initialize_room_db(Rc::clone(&config), Rc::clone(&room_id)),
+        initialize_room_db(Rc::clone(&room_db), Rc::clone(&room_id)),
         initialize_table_db(Rc::clone(&config)),
         initialize_room_connection(room)
     );
@@ -39,17 +40,9 @@ pub async fn initialize(
 }
 
 async fn initialize_room_db(
-    config: Rc<Config>,
+    room_db: Rc<web_sys::IdbDatabase>,
     room_id: Rc<String>,
-) -> Option<web_sys::IdbDatabase> {
-    let room_db_name = format!("{}.room", config.client.db_prefix);
-
-    let room_db = if let Some(room_db) = idb::open_db(&room_db_name).await {
-        room_db
-    } else {
-        return None;
-    };
-
+) -> Option<Rc<web_sys::IdbDatabase>> {
     let room_db = if object_store_names(&room_db)
         .into_iter()
         .position(|name| name == *room_id.as_ref())
@@ -58,7 +51,7 @@ async fn initialize_room_db(
         room_db
     } else {
         if let Some(room_db) = idb::create_object_store(&room_db, room_id.as_ref()).await {
-            room_db
+            Rc::new(room_db)
         } else {
             return None;
         }

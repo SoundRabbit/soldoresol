@@ -14,6 +14,7 @@ pub enum On {
     Load {
         config: Config,
         common_db: web_sys::IdbDatabase,
+        room_db: web_sys::IdbDatabase,
         client_id: String,
         peer: Peer,
         peer_id: String,
@@ -39,10 +40,13 @@ impl Constructor for Initializer {
 impl Update for Initializer {
     fn on_assemble(self: Pin<&mut Self>) -> Cmd<Self> {
         Cmd::task(async {
-            if let Some((config, common_db, client_id, peer, peer_id)) = task::initialize().await {
+            if let Some((config, common_db, room_db, client_id, peer, peer_id)) =
+                task::initialize().await
+            {
                 Cmd::submit(On::Load {
                     config,
                     common_db,
+                    room_db,
                     client_id,
                     peer,
                     peer_id,

@@ -19,6 +19,7 @@ pub struct Props {}
 pub struct CommonPageData {
     config: Rc<Config>,
     common_db: Rc<web_sys::IdbDatabase>,
+    room_db: Rc<web_sys::IdbDatabase>,
     client_id: Rc<String>,
     peer: Rc<skyway::Peer>,
     peer_id: Rc<String>,
@@ -27,7 +28,6 @@ pub struct CommonPageData {
 #[derive(Clone)]
 pub struct RoomPageData {
     meshroom: Rc<skyway::MeshRoom>,
-    room_db: Rc<web_sys::IdbDatabase>,
     table_db: Rc<web_sys::IdbDatabase>,
     bcdice_loader: Rc<DynamicLoader>,
 }
@@ -35,8 +35,9 @@ pub struct RoomPageData {
 pub enum Msg {
     NoOp,
     PopState,
+    SetRoomDb(Rc<web_sys::IdbDatabase>),
     SetCommonData(CommonPageData),
-    SetRoomData(RoomPageData),
+    SetRoomData(Rc<web_sys::IdbDatabase>, RoomPageData),
 }
 
 pub enum On {}
@@ -82,11 +83,20 @@ impl Update for App {
         match msg {
             Msg::NoOp => Cmd::none(),
             Msg::PopState => Cmd::task(self.popstate_listener.poll()),
+            Msg::SetRoomDb(room_db) => {
+                if let Some(common_data) = self.common_data.as_mut() {
+                    common_data.room_db = room_db;
+                }
+                Cmd::none()
+            }
             Msg::SetCommonData(data) => {
                 self.common_data = Some(data);
                 Cmd::none()
             }
-            Msg::SetRoomData(data) => {
+            Msg::SetRoomData(room_db, data) => {
+                if let Some(common_data) = self.common_data.as_mut() {
+                    common_data.room_db = room_db;
+                }
                 self.room_data = Some(data);
                 Cmd::none()
             }
@@ -105,13 +115,14 @@ impl Render<Html> for App {
                     None,
                     room_selector::Props {
                         common_db: Rc::clone(&common_data.common_db),
-                        config: Rc::clone(&common_data.config),
+                        room_db: Rc::clone(&common_data.room_db),
                     },
                     Sub::map(move |sub| match sub {
                         room_selector::On::Connect(room_id) => {
                             router::jump_to(format!("/rooms/skyway/{}", room_id).as_str());
                             Msg::NoOp
                         }
+                        room_selector::On::SetRoomDb(room_db) => Msg::SetRoomDb(room_db),
                     })
                 )
             },
@@ -169,12 +180,14 @@ impl App {
                 initializer::On::Load {
                     config,
                     common_db,
+                    room_db,
                     client_id,
                     peer,
                     peer_id,
                 } => Msg::SetCommonData(CommonPageData {
                     config: Rc::new(config),
                     common_db: Rc::new(common_db),
+                    room_db: Rc::new(room_db),
                     client_id: Rc::new(client_id),
                     peer: Rc::new(peer),
                     peer_id: Rc::new(peer_id),
@@ -190,6 +203,7 @@ impl App {
             room_initializer::Props {
                 config: Rc::clone(&common.config),
                 common_db: Rc::clone(&common.common_db),
+                room_db: Rc::clone(&common.room_db),
                 peer: Rc::clone(&common.peer),
                 peer_id: Rc::clone(&common.peer_id),
                 client_id: Rc::clone(&common.client_id),
@@ -200,12 +214,14 @@ impl App {
                     room_db,
                     table_db,
                     meshroom,
-                } => Msg::SetRoomData(RoomPageData {
-                    meshroom,
-                    room_db: Rc::new(room_db),
-                    table_db: Rc::new(table_db),
-                    bcdice_loader: Rc::new(DynamicLoader::new()),
-                }),
+                } => Msg::SetRoomData(
+                    room_db,
+                    RoomPageData {
+                        meshroom,
+                        table_db: Rc::new(table_db),
+                        bcdice_loader: Rc::new(DynamicLoader::new()),
+                    },
+                ),
             }),
         )
     }

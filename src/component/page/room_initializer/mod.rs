@@ -10,17 +10,20 @@ mod task;
 pub struct Props {
     pub config: Rc<Config>,
     pub common_db: Rc<web_sys::IdbDatabase>,
+    pub room_db: Rc<web_sys::IdbDatabase>,
     pub peer: Rc<Peer>,
     pub peer_id: Rc<String>,
     pub room_id: Rc<String>,
     pub client_id: Rc<String>,
 }
 
-pub enum Msg {}
+pub enum Msg {
+    SetRoomDb(web_sys::IdbDatabase),
+}
 
 pub enum On {
     Load {
-        room_db: web_sys::IdbDatabase,
+        room_db: Rc<web_sys::IdbDatabase>,
         table_db: web_sys::IdbDatabase,
         meshroom: Rc<MeshRoom>,
     },
@@ -29,6 +32,7 @@ pub enum On {
 pub struct RoomInisializer {
     config: Rc<Config>,
     common_db: Rc<web_sys::IdbDatabase>,
+    room_db: Rc<web_sys::IdbDatabase>,
     peer: Rc<Peer>,
     peer_id: Rc<String>,
     room_id: Rc<String>,
@@ -48,6 +52,7 @@ impl Constructor for RoomInisializer {
         Self {
             config: props.config,
             common_db: props.common_db,
+            room_db: props.room_db,
             peer: props.peer,
             peer_id: props.peer_id,
             room_id: props.room_id,
@@ -61,11 +66,12 @@ impl Update for RoomInisializer {
         Cmd::task({
             let config = Rc::clone(&self.config);
             let common_db = Rc::clone(&self.common_db);
+            let room_db = Rc::clone(&self.room_db);
             let meshroom = self.peer.join_room(&self.room_id);
             let room_id = Rc::clone(&self.room_id);
             async {
                 if let Some((room_db, table_db, meshroom)) =
-                    task::initialize(config, common_db, meshroom, room_id).await
+                    task::initialize(config, common_db, room_db, meshroom, room_id).await
                 {
                     Cmd::submit(On::Load {
                         room_db,
