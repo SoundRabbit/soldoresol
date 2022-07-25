@@ -15,6 +15,7 @@ use super::template::{
     loader::{self, Loader},
 };
 use crate::libs::gapi::gapi;
+use crate::model::config::Config;
 use isaribi::{
     style,
     styled::{Style, Styled},
@@ -29,6 +30,7 @@ mod task;
 
 pub struct Props {
     pub common_db: Rc<web_sys::IdbDatabase>,
+    pub config: Rc<Config>,
 }
 
 pub enum Msg {
@@ -53,6 +55,7 @@ pub struct RoomSelector {
     room_id_validator: Regex,
     showing_modal: ShowingModal,
     common_db: Rc<web_sys::IdbDatabase>,
+    config: Rc<Config>,
     google_drive_listener: kagura::util::Batch<Cmd<Self>>,
     is_signed_in_to_google: bool,
     element_id: ElementId,
@@ -92,6 +95,7 @@ impl Constructor for RoomSelector {
             room_id_validator: Regex::new(r"^[A-Za-z0-9@#]{24}$").unwrap(),
             showing_modal: ShowingModal::Notification,
             common_db: props.common_db,
+            config: props.config,
             google_drive_listener: kagura::util::Batch::new(|mut resolve| {
                 let a = Closure::wrap(Box::new(move |is_signed_in| {
                     resolve(Cmd::chain(Msg::SetGoogleLoginedState(is_signed_in)));
@@ -173,7 +177,18 @@ impl Update for RoomSelector {
             }
             Msg::RemoveRoomToCloseModal(room_id) => {
                 self.showing_modal = ShowingModal::None;
-                Cmd::none()
+                Cmd::task({
+                    let common_db = Rc::clone(&self.common_db);
+                    let config = Rc::clone(&self.config);
+                    async move {
+                        task::remove_room(config, &room_id, &common_db).await;
+                        if let Some(rooms) = task::get_room_index(&common_db).await {
+                            Cmd::chain(Msg::SetRooms(rooms))
+                        } else {
+                            Cmd::none()
+                        }
+                    }
+                })
             }
         }
     }

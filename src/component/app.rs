@@ -105,6 +105,7 @@ impl Render<Html> for App {
                     None,
                     room_selector::Props {
                         common_db: Rc::clone(&common_data.common_db),
+                        config: Rc::clone(&common_data.config),
                     },
                     Sub::map(move |sub| match sub {
                         room_selector::On::Connect(room_id) => {

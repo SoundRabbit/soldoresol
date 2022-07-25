@@ -24,7 +24,7 @@ pub async fn open_db(name: &str) -> Option<web_sys::IdbDatabase> {
     .and_then(|x| x.dyn_into::<web_sys::IdbDatabase>().ok())
 }
 
-pub async fn create_object_strage(
+pub async fn create_object_store(
     database: &web_sys::IdbDatabase,
     name: impl Into<String>,
 ) -> Option<web_sys::IdbDatabase> {
@@ -72,10 +72,50 @@ pub async fn create_object_strage(
     .and_then(|x| x.dyn_into::<web_sys::IdbDatabase>().ok())
 }
 
+pub async fn delete_object_store(
+    database: &web_sys::IdbDatabase,
+    name: impl Into<String>,
+) -> Option<web_sys::IdbDatabase> {
+    let name = Rc::new(name.into());
+    let (database_name, version) = (database.name(), database.version());
+    database.close();
+    let request = web_sys::window().unwrap().indexed_db().unwrap().unwrap();
+    let request = request
+        .open_with_f64(database_name.as_str(), version + 1.0)
+        .unwrap();
+    let request = Rc::new(request);
+    crate::debug::log_1(format!("upgrade to {}", version + 1.0));
+    JsFuture::from(Promise::new(&mut move |resolve, _| {
+        let resolve = Rc::new(resolve);
+        let a = Closure::wrap(Box::new({
+            let request = Rc::clone(&request);
+            let resolve = Rc::clone(&resolve);
+            let name = Rc::clone(&name);
+            move || {
+                crate::debug::log_1("onupgradeneeded");
+                let database = request
+                    .result()
+                    .unwrap()
+                    .dyn_into::<web_sys::IdbDatabase>()
+                    .unwrap();
+                let object_store = database.delete_object_store(name.as_ref()).unwrap();
+                crate::debug::log_1("oncomplete");
+                let _ = resolve.call1(&js_sys::global(), &database);
+            }
+        }) as Box<dyn FnMut()>);
+        request.set_onupgradeneeded(Some(a.as_ref().unchecked_ref()));
+        a.forget();
+    }))
+    .await
+    .ok()
+    .and_then(|x| x.dyn_into::<web_sys::IdbDatabase>().ok())
+}
+
 pub enum Query<'a> {
     Get(&'a JsValue),
     Add(&'a JsValue, &'a JsValue),
     Put(&'a JsValue, &'a JsValue),
+    Delete(&'a JsValue),
     GetAll,
     GetAllKeys,
 }
@@ -89,6 +129,7 @@ pub async fn query<'a>(
         Query::Get(..) => web_sys::IdbTransactionMode::Readonly,
         Query::Add(..) => web_sys::IdbTransactionMode::Readwrite,
         Query::Put(..) => web_sys::IdbTransactionMode::Readwrite,
+        Query::Delete(..) => web_sys::IdbTransactionMode::Readwrite,
         Query::GetAll => web_sys::IdbTransactionMode::Readonly,
         Query::GetAllKeys => web_sys::IdbTransactionMode::Readonly,
     };
@@ -101,6 +142,7 @@ pub async fn query<'a>(
         Query::Get(key) => object_store.get(key).unwrap(),
         Query::Add(key, val) => object_store.add_with_key(val, key).unwrap(),
         Query::Put(key, val) => object_store.put_with_key(val, key).unwrap(),
+        Query::Delete(key) => object_store.delete(key).unwrap(),
         Query::GetAll => object_store.get_all().unwrap(),
         Query::GetAllKeys => object_store.get_all_keys().unwrap(),
     };

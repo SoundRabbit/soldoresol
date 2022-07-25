@@ -57,7 +57,7 @@ async fn initialize_room_db(
     {
         room_db
     } else {
-        if let Some(room_db) = idb::create_object_strage(&room_db, room_id.as_ref()).await {
+        if let Some(room_db) = idb::create_object_store(&room_db, room_id.as_ref()).await {
             room_db
         } else {
             return None;

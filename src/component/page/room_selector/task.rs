@@ -2,6 +2,7 @@ use super::RoomData;
 use crate::libs::gapi::{gapi, GoogleResponse};
 use crate::libs::idb;
 use crate::libs::js_object::Object;
+use crate::model::config::Config;
 use js_sys::Promise;
 use std::rc::Rc;
 use wasm_bindgen::{prelude::*, JsCast};
@@ -52,6 +53,22 @@ pub async fn get_room_index(common_database: &web_sys::IdbDatabase) -> Option<Ve
     } else {
         None
     }
+}
+
+pub async fn remove_room(
+    config: Rc<Config>,
+    room_id: &String,
+    common_database: &web_sys::IdbDatabase,
+) {
+    let room_db_name = format!("{}.room", config.client.db_prefix);
+    let room_db = unwrap!(idb::open_db(&room_db_name).await);
+    idb::delete_object_store(&room_db, room_id.clone()).await;
+    idb::query(
+        common_database,
+        "rooms",
+        idb::Query::Delete(&JsValue::from(room_id.as_str())),
+    )
+    .await;
 }
 
 pub async fn initialize_google_drive() -> Option<Vec<RoomData>> {
