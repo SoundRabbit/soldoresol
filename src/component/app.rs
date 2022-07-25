@@ -34,6 +34,7 @@ pub struct RoomPageData {
 
 pub enum Msg {
     NoOp,
+    PopState,
     SetCommonData(CommonPageData),
     SetRoomData(RoomPageData),
 }
@@ -43,6 +44,7 @@ pub enum On {}
 pub struct App {
     common_data: Option<CommonPageData>,
     room_data: Option<RoomPageData>,
+    popstate_listener: kagura::util::Batch<Cmd<Self>>,
 }
 
 impl Component for App {
@@ -58,25 +60,28 @@ impl Constructor for App {
         Self {
             common_data: None,
             room_data: None,
+            popstate_listener: kagura::util::Batch::new(|mut resolve| {
+                let a = Closure::wrap(Box::new(move |_: web_sys::Event| {
+                    resolve(Cmd::chain(Msg::PopState))
+                }) as Box<dyn FnMut(web_sys::Event)>);
+                let _ = web_sys::window()
+                    .unwrap()
+                    .add_event_listener_with_callback("popstate", a.as_ref().unchecked_ref());
+                a.forget();
+            }),
         }
     }
 }
 
 impl Update for App {
     fn on_assemble(self: Pin<&mut Self>) -> Cmd<Self> {
-        let a =
-            Closure::wrap(Box::new(move |_: web_sys::Event| {}) as Box<dyn FnMut(web_sys::Event)>);
-        let _ = web_sys::window()
-            .unwrap()
-            .add_event_listener_with_callback("popstate", a.as_ref().unchecked_ref());
-        a.forget();
-
-        Cmd::none()
+        Cmd::task(self.popstate_listener.poll())
     }
 
     fn update(mut self: Pin<&mut Self>, msg: Msg) -> Cmd<Self> {
         match msg {
             Msg::NoOp => Cmd::none(),
+            Msg::PopState => Cmd::task(self.popstate_listener.poll()),
             Msg::SetCommonData(data) => {
                 self.common_data = Some(data);
                 Cmd::none()
