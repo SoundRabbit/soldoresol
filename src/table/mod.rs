@@ -352,15 +352,16 @@ impl Table {
             craftboard.map(|craftboard| {
                 let cs = craftboard.size();
                 let cp = craftboard.position();
+                let vd = craftboard.voxel_density();
                 let offset = [
                     cp[0] + (cs[0].rem_euclid(2.0) - 1.0) * 0.5,
                     cp[1] + (cs[1].rem_euclid(2.0) - 1.0) * 0.5,
                     cp[2] + 0.5,
                 ];
                 let p = [
-                    p[0] + n[0] * 0.5 - offset[0],
-                    p[1] + n[1] * 0.5 - offset[1],
-                    p[2] + n[2] * 0.5 - offset[2],
+                    (p[0] - offset[0]) * vd[0] + n[0] * 0.5,
+                    (p[1] - offset[1]) * vd[1] + n[1] * 0.5,
+                    (p[2] - offset[2]) * vd[2] + n[2] * 0.5,
                 ];
                 let p = [
                     p[0].round() as i32,
@@ -378,7 +379,7 @@ impl Table {
                     );
                     terran.insert_block(
                         p,
-                        block::terran::TerranBlock::new(option.allocater_state.tex_idx),
+                        block::terran::TerranVoxel::new(option.allocater_state.tex_idx),
                     );
                 });
 

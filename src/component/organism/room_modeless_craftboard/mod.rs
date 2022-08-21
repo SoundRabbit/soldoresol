@@ -32,6 +32,9 @@ pub enum Msg {
     SetZSize(f64),
     SetGridColor(crate::libs::color::Pallet),
     SetTexture(usize, Option<BlockRef<resource::ImageData>>),
+    SetVoxelDensityX(f64),
+    SetVoxelDensityY(f64),
+    SetVoxelDensityZ(f64),
 }
 
 pub enum ShowingModal {
@@ -182,6 +185,39 @@ impl Update for RoomModelessCraftboard {
                     update: set! { self.craftboard.id() },
                 })
             }
+            Msg::SetVoxelDensityX(vd_x) => {
+                self.craftboard.update(|craftboard| {
+                    let vd = craftboard.voxel_density();
+                    craftboard.set_voxel_density([vd_x, vd[1], vd[2]])
+                });
+
+                Cmd::submit(On::UpdateBlocks {
+                    insert: set! {},
+                    update: set! { self.craftboard.id() },
+                })
+            }
+            Msg::SetVoxelDensityY(vd_y) => {
+                self.craftboard.update(|craftboard| {
+                    let vd = craftboard.voxel_density();
+                    craftboard.set_voxel_density([vd[0], vd_y, vd[2]])
+                });
+
+                Cmd::submit(On::UpdateBlocks {
+                    insert: set! {},
+                    update: set! { self.craftboard.id() },
+                })
+            }
+            Msg::SetVoxelDensityZ(vd_z) => {
+                self.craftboard.update(|craftboard| {
+                    let vd = craftboard.voxel_density();
+                    craftboard.set_voxel_density([vd[0], vd[1], vd_z])
+                });
+
+                Cmd::submit(On::UpdateBlocks {
+                    insert: set! {},
+                    update: set! { self.craftboard.id() },
+                })
+            }
         }
     }
 }
@@ -258,6 +294,9 @@ impl RoomModelessCraftboard {
                                 tab_0::On::SetXSize(x_size) => Msg::SetXSize(x_size),
                                 tab_0::On::SetYSize(y_size) => Msg::SetYSize(y_size),
                                 tab_0::On::SetZSize(y_size) => Msg::SetZSize(y_size),
+                                tab_0::On::SetVoxelDensityX(vd_x) => Msg::SetVoxelDensityX(vd_x),
+                                tab_0::On::SetVoxelDensityY(vd_y) => Msg::SetVoxelDensityY(vd_y),
+                                tab_0::On::SetVoxelDensityZ(vd_z) => Msg::SetVoxelDensityZ(vd_z),
                             }),
                         ),
                     )],

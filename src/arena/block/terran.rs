@@ -11,23 +11,23 @@ use std::collections::{HashMap, HashSet};
 
 block! {
     [pub Terran(constructor, pack)]
-    blocks: HashMap<[i32;3], TerranBlock> = HashMap::new();
+    blocks: HashMap<[i32;3], TerranVoxel> = HashMap::new();
     texture: BlockMut<TerranTexture> = BlockMut::<TerranTexture>::none();
 }
 
 block! {
-    [pub TerranBlock(constructor, pack)]
+    [pub TerranVoxel(constructor, pack)]
     (tex_idx): u32;
 }
 
 impl Terran {
-    pub fn blocks(&self) -> &HashMap<[i32; 3], TerranBlock> {
+    pub fn blocks(&self) -> &HashMap<[i32; 3], TerranVoxel> {
         &self.blocks
     }
-    pub fn insert_block(&mut self, position: [i32; 3], block: TerranBlock) {
+    pub fn insert_block(&mut self, position: [i32; 3], block: TerranVoxel) {
         self.blocks.insert(position, block);
     }
-    pub fn remove_block(&mut self, position: &[i32; 3]) -> Option<TerranBlock> {
+    pub fn remove_block(&mut self, position: &[i32; 3]) -> Option<TerranVoxel> {
         self.blocks.remove(position)
     }
     pub fn texture(&self) -> &BlockMut<TerranTexture> {
@@ -38,7 +38,7 @@ impl Terran {
     }
 }
 
-impl TerranBlock {
+impl TerranVoxel {
     pub fn tex_idx(&self) -> u32 {
         self.tex_idx
     }

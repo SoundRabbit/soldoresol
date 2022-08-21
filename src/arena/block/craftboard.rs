@@ -24,6 +24,7 @@ block! {
     env_light_intensity: f64 = 1.0;
     is_fixed_position: bool = true;
     textures: Textures = Textures::with(|_| None);
+    voxel_density: [f64; 3] = [1.0, 1.0, 1.0];
 }
 
 impl Craftboard {
@@ -92,6 +93,12 @@ impl Craftboard {
     pub fn set_textures(&mut self, textures: Textures) {
         self.textures = textures;
     }
+    pub fn voxel_density(&self) -> &[f64; 3] {
+        &self.voxel_density
+    }
+    pub fn set_voxel_density(&mut self, voxel_density: [f64; 3]) {
+        self.voxel_density = voxel_density;
+    }
 }
 
 impl BlockMut<Component> {
@@ -118,6 +125,7 @@ impl Clone for Craftboard {
             name: self.name.clone(),
             display_name: self.display_name.clone(),
             is_fixed_position: self.is_fixed_position,
+            voxel_density: self.voxel_density.clone(),
         }
     }
 }

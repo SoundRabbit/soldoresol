@@ -38,6 +38,9 @@ pub enum On {
     SetYSize(f64),
     SetZSize(f64),
     SetGridColor(Pallet),
+    SetVoxelDensityX(f64),
+    SetVoxelDensityY(f64),
+    SetVoxelDensityZ(f64),
 }
 
 pub struct Tab0 {
@@ -228,12 +231,6 @@ impl Tab0 {
                                 theme: slider::Theme::Light,
                             },
                         ),
-                    ],
-                ),
-                Html::div(
-                    Attributes::new().class(Common::keyvalue()),
-                    Events::new(),
-                    vec![
                         Text::span("色"),
                         PopupColorPallet::empty(
                             self,
@@ -247,6 +244,69 @@ impl Tab0 {
                                     Msg::Sub(On::SetGridColor(color))
                                 }
                             }),
+                        ),
+                    ],
+                ),
+                Html::div(
+                    Attributes::new().class(Common::keyvalue()),
+                    Events::new(),
+                    vec![
+                        Text::span("ボクセル密度（X）"),
+                        Slider::new(
+                            self,
+                            None,
+                            slider::Position::Linear {
+                                min: 0.5,
+                                max: 10.0,
+                                val: craftboard.voxel_density()[0],
+                                step: 0.5,
+                            },
+                            Sub::map(move |sub| match sub {
+                                slider::On::Input(x) => Msg::Sub(On::SetVoxelDensityX(x)),
+                                _ => Msg::NoOp,
+                            }),
+                            slider::Props {
+                                range_is_editable: false,
+                                theme: slider::Theme::Light,
+                            },
+                        ),
+                        Text::span("ボクセル密度（Y）"),
+                        Slider::new(
+                            self,
+                            None,
+                            slider::Position::Linear {
+                                min: 0.5,
+                                max: 10.0,
+                                val: craftboard.voxel_density()[1],
+                                step: 0.5,
+                            },
+                            Sub::map(move |sub| match sub {
+                                slider::On::Input(y) => Msg::Sub(On::SetVoxelDensityY(y)),
+                                _ => Msg::NoOp,
+                            }),
+                            slider::Props {
+                                range_is_editable: false,
+                                theme: slider::Theme::Light,
+                            },
+                        ),
+                        Text::span("ボクセル密度（Z）"),
+                        Slider::new(
+                            self,
+                            None,
+                            slider::Position::Linear {
+                                min: 0.5,
+                                max: 10.0,
+                                val: craftboard.voxel_density()[2],
+                                step: 0.5,
+                            },
+                            Sub::map(move |sub| match sub {
+                                slider::On::Input(z) => Msg::Sub(On::SetVoxelDensityZ(z)),
+                                _ => Msg::NoOp,
+                            }),
+                            slider::Props {
+                                range_is_editable: false,
+                                theme: slider::Theme::Light,
+                            },
                         ),
                     ],
                 ),

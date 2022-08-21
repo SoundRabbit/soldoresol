@@ -60,6 +60,8 @@ impl Terran {
                             cp[1] + (cs[1].rem_euclid(2.0) - 1.0) * 0.5,
                             cp[2] + 0.5,
                         );
+                        let vd = craftboard.voxel_density();
+                        mesh.scale().set(1.0 / vd[0], 1.0 / vd[1], 1.0 / vd[2]);
                     }
                 });
             });
