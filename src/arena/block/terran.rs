@@ -36,6 +36,19 @@ impl Terran {
     pub fn set_texture(&mut self, texture: BlockMut<TerranTexture>) {
         self.texture = texture;
     }
+    pub fn check_adjacent(&self, p: &[i32; 3]) -> [bool; 6] {
+        [
+            self.check_filled(&[p[0] + 1, p[1], p[2]]),
+            self.check_filled(&[p[0], p[1] + 1, p[2]]),
+            self.check_filled(&[p[0], p[1], p[2] + 1]),
+            self.check_filled(&[p[0] - 1, p[1], p[2]]),
+            self.check_filled(&[p[0], p[1] - 1, p[2]]),
+            self.check_filled(&[p[0], p[1], p[2] - 1]),
+        ]
+    }
+    pub fn check_filled(&self, p: &[i32; 3]) -> bool {
+        self.blocks.contains_key(p)
+    }
 }
 
 impl TerranVoxel {

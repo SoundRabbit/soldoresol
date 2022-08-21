@@ -121,21 +121,32 @@ impl TerranData {
         let mut index_offset = 0;
 
         for (block_position, terran_block) in terran.blocks() {
-            let geometry = util::block_geometry::box_geometry(&mut |uv| {
-                block::TerranTexture::uv_f32(terran_block.tex_idx(), &uv)
-            });
-            let a_position = geometry
-                .get_attribute("position")
-                .array_as_f32array()
-                .to_vec();
-            let mut a_normal = geometry
-                .get_attribute("normal")
-                .array_as_f32array()
-                .to_vec();
-            let mut a_uv = geometry.get_attribute("uv").array_as_f32array().to_vec();
-            let a_index = geometry.get_index().array_as_u16array().to_vec();
+            // let geometry = util::block_geometry::box_geometry(&mut |uv| {
+            //     block::TerranTexture::uv_f32(terran_block.tex_idx(), &uv)
+            // });
+            let mut a_position = vec![];
+            let mut a_normal = vec![];
+            let mut a_uv = vec![];
+            let mut a_index = vec![];
+            let mut a_index_offset = 0;
 
-            let n = (a_position.len() / 3) as u16;
+            let adjacent = terran.check_adjacent(&block_position);
+
+            for i in 0..6 {
+                if !adjacent[i] {
+                    Self::add_surf(
+                        i,
+                        terran_block.tex_idx(),
+                        &mut a_position,
+                        &mut a_normal,
+                        &mut a_uv,
+                        &mut a_index,
+                        &mut a_index_offset,
+                    );
+                }
+            }
+
+            let n = a_index_offset;
             positions.append(
                 &mut a_position
                     .into_iter()
@@ -186,6 +197,137 @@ impl TerranData {
         ));
 
         geometry
+    }
+
+    fn add_surf(
+        surf: usize,
+        tex_idx: u32,
+        a_position: &mut Vec<f32>,
+        a_normal: &mut Vec<f32>,
+        a_uv: &mut Vec<f32>,
+        a_index: &mut Vec<u16>,
+        i_offset: &mut u16,
+    ) {
+        let position;
+        let normal;
+        let uv = vec![
+            block::TerranTexture::uv_f32(
+                tex_idx,
+                &util::block_geometry::box_texture_coord(surf % 6, &[1.0, 0.0]),
+            ),
+            block::TerranTexture::uv_f32(
+                tex_idx,
+                &util::block_geometry::box_texture_coord(surf % 6, &[0.0, 0.0]),
+            ),
+            block::TerranTexture::uv_f32(
+                tex_idx,
+                &util::block_geometry::box_texture_coord(surf % 6, &[0.0, 1.0]),
+            ),
+            block::TerranTexture::uv_f32(
+                tex_idx,
+                &util::block_geometry::box_texture_coord(surf % 6, &[1.0, 1.0]),
+            ),
+        ];
+        match surf % 6 {
+            0 => {
+                position = vec![
+                    [0.5, 0.5, 0.5],
+                    [0.5, -0.5, 0.5],
+                    [0.5, -0.5, -0.5],
+                    [0.5, 0.5, -0.5],
+                ];
+                normal = vec![
+                    [1.0, 0.0, 0.0],
+                    [1.0, 0.0, 0.0],
+                    [1.0, 0.0, 0.0],
+                    [1.0, 0.0, 0.0],
+                ];
+            }
+            1 => {
+                position = vec![
+                    [-0.5, 0.5, 0.5],
+                    [0.5, 0.5, 0.5],
+                    [0.5, 0.5, -0.5],
+                    [-0.5, 0.5, -0.5],
+                ];
+                normal = vec![
+                    [0.0, 1.0, 0.0],
+                    [0.0, 1.0, 0.0],
+                    [0.0, 1.0, 0.0],
+                    [0.0, 1.0, 0.0],
+                ];
+            }
+            2 => {
+                position = vec![
+                    [0.5, 0.5, 0.5],
+                    [-0.5, 0.5, 0.5],
+                    [-0.5, -0.5, 0.5],
+                    [0.5, -0.5, 0.5],
+                ];
+                normal = vec![
+                    [0.0, 0.0, 1.0],
+                    [0.0, 0.0, 1.0],
+                    [0.0, 0.0, 1.0],
+                    [0.0, 0.0, 1.0],
+                ];
+            }
+            3 => {
+                position = vec![
+                    [-0.5, -0.5, 0.5],
+                    [-0.5, 0.5, 0.5],
+                    [-0.5, 0.5, -0.5],
+                    [-0.5, -0.5, -0.5],
+                ];
+                normal = vec![
+                    [-1.0, 0.0, 0.0],
+                    [-1.0, 0.0, 0.0],
+                    [-1.0, 0.0, 0.0],
+                    [-1.0, 0.0, 0.0],
+                ];
+            }
+            4 => {
+                position = vec![
+                    [0.5, -0.5, 0.5],
+                    [-0.5, -0.5, 0.5],
+                    [-0.5, -0.5, -0.5],
+                    [0.5, -0.5, -0.5],
+                ];
+                normal = vec![
+                    [0.0, -1.0, 0.0],
+                    [0.0, -1.0, 0.0],
+                    [0.0, -1.0, 0.0],
+                    [0.0, -1.0, 0.0],
+                ];
+            }
+            5 => {
+                position = vec![
+                    [0.5, -0.5, -0.5],
+                    [-0.5, -0.5, -0.5],
+                    [-0.5, 0.5, -0.5],
+                    [0.5, 0.5, -0.5],
+                ];
+                normal = vec![
+                    [0.0, 0.0, -1.0],
+                    [0.0, 0.0, -1.0],
+                    [0.0, 0.0, -1.0],
+                    [0.0, 0.0, -1.0],
+                ];
+            }
+            _ => unreachable!(),
+        }
+
+        a_position.append(&mut position.into_iter().flatten().collect::<Vec<_>>());
+        a_normal.append(&mut normal.into_iter().flatten().collect::<Vec<_>>());
+        a_uv.append(&mut uv.into_iter().flatten().collect::<Vec<_>>());
+
+        a_index.push(0 + *i_offset);
+        a_index.push(1 + *i_offset);
+        a_index.push(2 + *i_offset);
+        a_index.push(2 + *i_offset);
+        a_index.push(3 + *i_offset);
+        a_index.push(0 + *i_offset);
+
+        *i_offset += 4;
     }
 }
 
