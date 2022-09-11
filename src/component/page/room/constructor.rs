@@ -31,23 +31,29 @@ macro_rules! new_channel {
 impl Constructor for Room {
     fn constructor(props: Self::Props) -> Self {
         let mut arena = ArenaMut::clone(&props.arena);
-        let mut chat = arena.insert(block::Chat::new());
+        let chat = props.chat.unwrap_or_else(|| {
+            let mut chat = arena.insert(block::Chat::new());
 
-        new_channel!(arena, chat, "メイン");
-        new_channel!(arena, chat, "サブ");
+            new_channel!(arena, chat, "メイン");
+            new_channel!(arena, chat, "サブ");
 
-        let mut table = block::Table::new();
-        let terran = block::Terran::new();
-        let terran = arena.insert(terran);
-        let craftboard =
-            block::Craftboard::new(table.default_is_bind_to_grid(), [0.0, 0.0, 0.0], terran);
-        table.push_craftboard(arena.insert(craftboard));
+            chat
+        });
 
-        let scene = block::Scene::new(arena.insert(table));
+        let world = props.world.unwrap_or_else(|| {
+            let mut table = block::Table::new();
+            let terran = block::Terran::new();
+            let terran = arena.insert(terran);
+            let craftboard =
+                block::Craftboard::new(table.default_is_bind_to_grid(), [0.0, 0.0, 0.0], terran);
+            table.push_craftboard(arena.insert(craftboard));
 
-        let mut world = block::World::new();
-        world.push_scenes(arena.insert(scene));
-        let world = arena.insert(world);
+            let scene = block::Scene::new(arena.insert(table));
+
+            let mut world = block::World::new();
+            world.push_scenes(arena.insert(scene));
+            arena.insert(world)
+        });
 
         let me = arena.insert(user::Player::new());
 

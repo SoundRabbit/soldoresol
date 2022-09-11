@@ -2,7 +2,7 @@ use super::super::resource::ImageData;
 #[allow(unused_imports)]
 use super::util::prelude::*;
 use super::util::Cubebox;
-use super::util::Pack;
+use super::util::{Pack, PackDepth};
 use super::BlockMut;
 use super::BlockRef;
 use super::Terran;

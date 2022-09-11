@@ -2,7 +2,7 @@
 use super::util::prelude::*;
 
 use super::super::resource::BlockTexture;
-use super::util::Pack;
+use super::util::{Pack, PackDepth};
 use super::BlockRef;
 use js_sys::Promise;
 use std::rc::Rc;
@@ -112,7 +112,7 @@ impl TerranTexture {
 
 #[async_trait(?Send)]
 impl Pack for TerranTexture {
-    async fn pack(&self, _is_deep: bool) -> JsValue {
+    async fn pack(&self, _: PackDepth) -> JsValue {
         let data = JsFuture::from(Promise::new(&mut move |resolve, _| {
             let a = Closure::once(Box::new(move |blob| {
                 let _ = resolve.call1(&js_sys::global(), &blob);

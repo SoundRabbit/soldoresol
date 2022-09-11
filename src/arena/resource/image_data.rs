@@ -1,6 +1,6 @@
 #[allow(unused_imports)]
 use super::util::prelude::*;
-use super::util::Pack;
+use super::util::{Pack, PackDepth};
 use super::LoadFrom;
 use super::Url;
 use js_sys::Promise;
@@ -139,7 +139,7 @@ impl LoadFrom<Url> for ImageData {
 
 #[async_trait(?Send)]
 impl Pack for ImageData {
-    async fn pack(&self, _: bool) -> JsValue {
+    async fn pack(&self, _: PackDepth) -> JsValue {
         (object! {
             "type": self.blob.type_(),
             "data": self.blob.as_ref(),

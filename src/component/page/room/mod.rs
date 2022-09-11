@@ -20,6 +20,9 @@ pub struct Props {
     pub arena: ArenaMut,
     pub client_id: Rc<String>,
     pub bcdice_loader: Rc<DynamicLoader>,
+
+    pub chat: Option<BlockMut<block::Chat>>,
+    pub world: Option<BlockMut<block::World>>,
 }
 
 pub enum Msg {
@@ -56,7 +59,12 @@ pub enum Msg {
     CreateComponent(BlockMut<Untyped>),
 }
 
-pub enum On {}
+pub enum On {
+    UpdateBlocks {
+        insert: HashSet<U128Id>,
+        update: HashSet<U128Id>,
+    },
+}
 
 pub struct Room {
     arena: ArenaMut,

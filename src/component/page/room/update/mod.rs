@@ -1,5 +1,5 @@
 use super::super::organism::{room_modeless, room_modeless_chat::ChatUser};
-use super::{Msg, Room, ShowingContextmenu, ShowingContextmenuData, ShowingModal};
+use super::{Msg, On, Room, ShowingContextmenu, ShowingContextmenuData, ShowingModal};
 use crate::arena::{block, component, ArenaMut, BlockKind, BlockMut};
 use crate::table::Table;
 use kagura::prelude::*;
@@ -44,7 +44,7 @@ impl Update for Room {
                     self.table.borrow_mut().reserve_rendering();
                 }
 
-                Cmd::none()
+                Cmd::submit(On::UpdateBlocks { insert, update })
             }
             Msg::OpenBoxblockModeless(boxblock_id) => {
                 if let Some(boxblock) = self.arena.get_mut(&boxblock_id) {

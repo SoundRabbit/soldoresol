@@ -1,4 +1,4 @@
-use super::util::Pack;
+use super::util::{Pack, PackDepth};
 use async_trait::async_trait;
 use wasm_bindgen::prelude::*;
 
@@ -43,7 +43,7 @@ impl Into<String> for Url {
 
 #[async_trait(?Send)]
 impl Pack for Url {
-    async fn pack(&self, _: bool) -> JsValue {
+    async fn pack(&self, _: PackDepth) -> JsValue {
         match self {
             Self::Local(url) => JsValue::null(),
             Self::Global(url) => (object! { "Global": url }).into(),

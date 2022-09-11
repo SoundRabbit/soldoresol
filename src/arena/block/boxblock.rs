@@ -2,7 +2,7 @@
 use super::util::prelude::*;
 
 use super::super::resource::BlockTexture;
-use super::util::Pack;
+use super::util::{Pack, PackDepth};
 use super::BlockMut;
 use super::BlockRef;
 use crate::libs::color::Pallet;
@@ -19,7 +19,7 @@ pub enum Shape {
 
 #[async_trait(?Send)]
 impl Pack for Shape {
-    async fn pack(&self, _: bool) -> JsValue {
+    async fn pack(&self, _: PackDepth) -> JsValue {
         match self {
             Self::Cube => JsValue::from("Cube"),
             Self::Cylinder => JsValue::from("Cylinder"),

@@ -3,7 +3,7 @@ use super::util::prelude::*;
 
 use super::super::resource::ImageData;
 use super::chat_message::Message;
-use super::util::Pack;
+use super::util::{Pack, PackDepth};
 use super::Property;
 use super::{BlockMut, BlockRef};
 use crate::libs::color::Pallet;

@@ -2,7 +2,7 @@ pub mod cubebox;
 pub mod pack;
 
 pub use cubebox::Cubebox;
-pub use pack::Pack;
+pub use pack::{Pack, PackDepth};
 
 pub mod prelude {
     #[allow(unused_imports)]
@@ -87,15 +87,15 @@ macro_rules! block {
         #[async_trait(?Send)]
         impl Pack for $b_name {
             #[allow(unused_variables)]
-            async fn pack(&self, is_deep: bool) -> JsValue {
+            async fn pack(&self, pack_depth: PackDepth) -> JsValue {
                 let object = object! {};
 
                 $(
-                    object.set(stringify!($p_c_name), &self.$p_c_name.pack(is_deep).await);
+                    object.set(stringify!($p_c_name), &self.$p_c_name.pack(pack_depth).await);
                 )*
 
                 $(
-                    object.set(stringify!($p_d_name), &self.$p_d_name.pack(is_deep).await);
+                    object.set(stringify!($p_d_name), &self.$p_d_name.pack(pack_depth).await);
                 )*
 
                 object.into()
@@ -255,7 +255,7 @@ macro_rules! arena {
 
         #[async_trait(?Send)]
         impl util::Pack for BlockData {
-            async fn pack(&self, is_deep: bool) -> JsValue {
+            async fn pack(&self, pack_depth: PackDepth) -> JsValue {
                 match self {
                     Self::None => (object! {
                         "_tag": "None",
@@ -264,7 +264,7 @@ macro_rules! arena {
                     $(
                         Self::$b(data) => (object!{
                             "_tag": stringify!($b),
-                            "_val": data.pack(is_deep).await
+                            "_val": data.pack(pack_depth).await
                         }).into(),
                     )*
                 }
@@ -279,18 +279,24 @@ macro_rules! arena {
 
         #[async_trait(?Send)]
         impl util::Pack for AnnotBlockData {
-            async fn pack(&self, is_deep: bool) -> JsValue {
-                if is_deep {
-                    (object!{
+            async fn pack(&self, pack_depth: PackDepth) -> JsValue {
+                match pack_depth {
+                    PackDepth::Recursive => (object!{
                         "timestamp": self.timestamp,
-                        "block_id": self.block_id.pack(is_deep).await,
-                        "data": self.data.pack(is_deep).await
-                    }).into()
-                } else {
-                    self.block_id.pack(is_deep).await
+                        "block_id": self.block_id.pack(PackDepth::Recursive).await,
+                        "data": self.data.pack(PackDepth::Recursive).await
+                    }).into(),
+                    PackDepth::FirstBlock => (object!{
+                        "timestamp": self.timestamp,
+                        "block_id": self.block_id.pack(PackDepth::OnlyId).await,
+                        "data": self.data.pack(PackDepth::OnlyId).await
+                    }).into(),
+                    PackDepth::OnlyId => self.block_id.pack(PackDepth::OnlyId).await
                 }
             }
         }
+
+        pub struct Untyped();
 
         pub struct Block {
             data: Rc<RefCell<AnnotBlockData>>
@@ -339,17 +345,30 @@ macro_rules! arena {
                 }
             }
 
+            fn as_untyped_mut(&self) -> BlockMut<Untyped> {
+                BlockMut {
+                    data: Rc::downgrade(&self.data),
+                    phantom_data: PhantomData
+                }
+            }
+
             fn as_ref<T>(&self) -> BlockRef<T> {
                 BlockRef {
                     data: self.as_mut()
+                }
+            }
+
+            fn as_untyped_ref(&self) -> BlockRef<Untyped> {
+                BlockRef {
+                    data: self.as_untyped_mut()
                 }
             }
         }
 
         #[async_trait(?Send)]
         impl util::Pack for Block {
-            async fn pack(&self, is_deep: bool) -> JsValue {
-                self.data.pack(is_deep).await
+            async fn pack(&self, pack_depth: PackDepth) -> JsValue {
+                self.data.pack(pack_depth).await
             }
         }
 
@@ -396,8 +415,6 @@ macro_rules! arena {
                 }
             }
         )*
-
-        pub struct Untyped();
 
         pub struct BlockMut<T> {
             data: Weak<RefCell<AnnotBlockData>>,
@@ -450,9 +467,9 @@ macro_rules! arena {
 
         #[async_trait(?Send)]
         impl<T> util::Pack for BlockMut<T> {
-            async fn pack(&self, is_deep: bool) -> JsValue {
+            async fn pack(&self, pack_depth: PackDepth) -> JsValue {
                 if let Some(data) = self.data.upgrade() {
-                    data.pack(is_deep).await
+                    data.pack(pack_depth).await
                 } else {
                     JsValue::null()
                 }
@@ -551,11 +568,18 @@ macro_rules! arena {
 
             #[async_trait(?Send)]
             impl util::Pack for BlockRef<$b> {
-                async fn pack(&self, is_deep: bool) -> JsValue {
-                    self.data.pack(is_deep).await
+                async fn pack(&self, pack_depth: PackDepth) -> JsValue {
+                    self.data.pack(pack_depth).await
                 }
             }
         )*
+
+        #[async_trait(?Send)]
+        impl util::Pack for BlockRef<Untyped> {
+            async fn pack(&self, pack_depth: PackDepth) -> JsValue {
+                self.data.pack(pack_depth).await
+            }
+        }
 
         struct ArenaData {
             data: HashMap<U128Id, Block>
@@ -566,6 +590,10 @@ macro_rules! arena {
                 Self {
                     data: map![]
                 }
+            }
+
+            pub fn ids<'a>(&'a self) -> impl Iterator<Item = &'a U128Id> {
+                self.data.keys()
             }
 
             pub fn kind_of(&self, block_id: &U128Id) -> BlockKind {
@@ -600,6 +628,14 @@ macro_rules! arena {
             pub fn remove(&mut self, block_id: U128Id) {
                 self.data.insert(block_id, Block::none());
             }
+
+            fn get_untyped(&self, block_id: &U128Id) -> Option<BlockRef<Untyped>> {
+                if let Some(data) = self.data.get(block_id) {
+                    Some(data.as_untyped_ref())
+                } else {
+                    None
+                }
+            }
         }
 
         pub struct Arena {
@@ -611,6 +647,10 @@ macro_rules! arena {
                 Self {
                     data: Rc::new(RefCell::new(ArenaData::new())),
                 }
+            }
+
+            pub fn ids(&self) -> impl Iterator<Item =U128Id> {
+                self.data.borrow().ids().map(|id| U128Id::clone(id)).collect::<Vec<_>>().into_iter()
             }
 
             pub fn as_mut(&self) -> ArenaMut {
@@ -641,6 +681,10 @@ macro_rules! arena {
 
             pub fn remove(&mut self, block_id: U128Id) {
                 self.data.borrow_mut().remove(block_id);
+            }
+
+            pub fn get_untyped(&self, block_id: &U128Id) -> Option<BlockRef<Untyped>> {
+                self.data.borrow_mut().get_untyped(&block_id)
             }
         }
 

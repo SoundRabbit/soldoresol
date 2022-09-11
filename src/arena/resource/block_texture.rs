@@ -1,6 +1,6 @@
 #[allow(unused_imports)]
 use super::util::prelude::*;
-use super::util::Pack;
+use super::util::{Pack, PackDepth};
 use super::BlockMut;
 use super::BlockRef;
 use super::ImageData;
@@ -133,9 +133,9 @@ fn img_size(img: &BlockRef<ImageData>) -> [f64; 2] {
 
 #[async_trait(?Send)]
 impl Pack for BlockTexture {
-    async fn pack(&self, is_deep: bool) -> JsValue {
+    async fn pack(&self, pack_depth: PackDepth) -> JsValue {
         (object! {
-            "data": self.data.pack(is_deep).await
+            "data": self.data.pack(pack_depth).await
         })
         .into()
     }

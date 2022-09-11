@@ -2,7 +2,7 @@
 use super::util::prelude::*;
 
 use super::super::resource::ImageData;
-use super::util::Pack;
+use super::util::{Pack, PackDepth};
 use super::Property;
 use super::{BlockMut, BlockRef};
 use crate::libs::bcdice::js::{CommandResult, GameSystemClass};
@@ -37,11 +37,11 @@ pub fn roll(game_system_class: &GameSystemClass, message: &Message) -> Vec<Comma
 
 #[async_trait(?Send)]
 impl Pack for Message {
-    async fn pack(&self, is_deep: bool) -> JsValue {
+    async fn pack(&self, pack_depth: PackDepth) -> JsValue {
         let data = array![];
 
         for token in self.iter() {
-            data.push(&token.pack(is_deep).await);
+            data.push(&token.pack(pack_depth).await);
         }
 
         data.into()
@@ -50,7 +50,7 @@ impl Pack for Message {
 
 #[async_trait(?Send)]
 impl Pack for MessageToken {
-    async fn pack(&self, is_deep: bool) -> JsValue {
+    async fn pack(&self, pack_depth: PackDepth) -> JsValue {
         match self {
             Self::Text(x) => (object! {
                 "_tag": "Text",
@@ -59,12 +59,12 @@ impl Pack for MessageToken {
             .into(),
             Self::Reference(reference) => (object! {
                 "_tag": "Refer",
-                "_val": reference.pack(is_deep).await
+                "_val": reference.pack(pack_depth).await
             })
             .into(),
             Self::Command(command) => (object! {
                 "_tag": "CommandBlock",
-                "_val": command.pack(is_deep).await
+                "_val": command.pack(pack_depth).await
             })
             .into(),
         }
@@ -73,18 +73,18 @@ impl Pack for MessageToken {
 
 #[async_trait(?Send)]
 impl Pack for Command {
-    async fn pack(&self, is_deep: bool) -> JsValue {
-        let name = self.name.pack(is_deep).await;
+    async fn pack(&self, pack_depth: PackDepth) -> JsValue {
+        let name = self.name.pack(pack_depth).await;
 
         let args = array![];
         for arg in &self.args {
-            args.push(&arg.pack(is_deep).await);
+            args.push(&arg.pack(pack_depth).await);
         }
 
         (object! {
             "name": name,
             "args": args,
-            "text": self.text.pack(is_deep).await
+            "text": self.text.pack(pack_depth).await
         })
         .into()
     }
@@ -92,20 +92,20 @@ impl Pack for Command {
 
 #[async_trait(?Send)]
 impl Pack for Reference {
-    async fn pack(&self, is_deep: bool) -> JsValue {
+    async fn pack(&self, pack_depth: PackDepth) -> JsValue {
         let pakced_name = js_sys::Array::new();
         for a_name in &self.name {
-            pakced_name.push(&a_name.pack(is_deep).await);
+            pakced_name.push(&a_name.pack(pack_depth).await);
         }
 
         let packed_args = array![];
         for arg in &self.args {
-            packed_args.push(&arg.pack(is_deep).await);
+            packed_args.push(&arg.pack(pack_depth).await);
         }
 
         let packed_option;
         if let Some(option) = &self.option {
-            packed_option = option.pack(is_deep).await;
+            packed_option = option.pack(pack_depth).await;
         } else {
             packed_option = JsValue::null();
         }
@@ -121,12 +121,12 @@ impl Pack for Reference {
 
 #[async_trait(?Send)]
 impl Pack for Argument {
-    async fn pack(&self, is_deep: bool) -> JsValue {
+    async fn pack(&self, pack_depth: PackDepth) -> JsValue {
         let packed = js_sys::Array::new();
 
-        packed.push(&self.value.pack(is_deep).await);
+        packed.push(&self.value.pack(pack_depth).await);
         if let Some(option) = &self.option {
-            packed.push(&option.pack(is_deep).await);
+            packed.push(&option.pack(pack_depth).await);
         }
 
         packed.into()
@@ -141,7 +141,7 @@ pub enum SenderKind {
 
 #[async_trait(?Send)]
 impl Pack for SenderKind {
-    async fn pack(&self, _is_deep: bool) -> JsValue {
+    async fn pack(&self, _: PackDepth) -> JsValue {
         match self {
             Self::Normal => JsValue::from("Normal"),
             Self::System => JsValue::from("System"),

@@ -1,6 +1,6 @@
 #[allow(unused_imports)]
 use super::util::prelude::*;
-use super::util::Pack;
+use super::util::{Pack, PackDepth};
 use super::BlockMut;
 use std::collections::VecDeque;
 
@@ -190,7 +190,7 @@ impl std::fmt::Display for Value {
 
 #[async_trait(?Send)]
 impl Pack for Value {
-    async fn pack(&self, is_deep: bool) -> JsValue {
+    async fn pack(&self, pack_depth: PackDepth) -> JsValue {
         match self {
             Self::Number(v) => (object! {
                 "_tag": "Number",
@@ -224,7 +224,7 @@ impl Pack for Value {
             .into(),
             Self::Select(v, s) => (object! {
                 "_tag": "Select",
-                "_val": array![*v, s.pack(is_deep).await]
+                "_val": array![*v, s.pack(pack_depth).await]
             })
             .into(),
         }
@@ -238,7 +238,7 @@ pub enum DataView {
 
 #[async_trait(?Send)]
 impl Pack for DataView {
-    async fn pack(&self, _is_deep: bool) -> JsValue {
+    async fn pack(&self, _: PackDepth) -> JsValue {
         match self {
             Self::Tabular => JsValue::from("Tabular"),
             Self::List => JsValue::from("List"),
@@ -253,10 +253,10 @@ pub struct Data {
 
 #[async_trait(?Send)]
 impl Pack for Data {
-    async fn pack(&self, is_deep: bool) -> JsValue {
+    async fn pack(&self, pack_depth: PackDepth) -> JsValue {
         (object! {
-            "view": self.view.pack(is_deep).await,
-            "values": self.values.pack(is_deep).await
+            "view": self.view.pack(pack_depth).await,
+            "values": self.values.pack(pack_depth).await
         })
         .into()
     }
@@ -387,7 +387,7 @@ pub enum PropertyView {
 
 #[async_trait(?Send)]
 impl Pack for PropertyView {
-    async fn pack(&self, _is_deep: bool) -> JsValue {
+    async fn pack(&self, _: PackDepth) -> JsValue {
         match self {
             Self::Board => JsValue::from("Board"),
             Self::List => JsValue::from("List"),

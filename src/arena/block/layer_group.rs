@@ -2,7 +2,7 @@
 use super::util::prelude::*;
 
 use super::super::ImageData;
-use super::util::Pack;
+use super::util::{Pack, PackDepth};
 use super::BlockMut;
 use super::BlockRef;
 use super::CanvasTexture;
@@ -60,12 +60,12 @@ pub enum Layer {
 
 #[async_trait(?Send)]
 impl Pack for Layer {
-    async fn pack(&self, is_deep: bool) -> JsValue {
+    async fn pack(&self, pack_depth: PackDepth) -> JsValue {
         match self {
-            Self::Drawing(data) => (object! {"Drawing": data.pack(is_deep).await}).into(),
-            Self::Fill(data) => (object! {"Fill": data.pack(is_deep).await}).into(),
-            Self::Image(data) => (object! {"Image": data.pack(is_deep).await}).into(),
-            Self::LayerGroup(data) => (object! {"LayerGroup": data.pack(is_deep).await}).into(),
+            Self::Drawing(data) => (object! {"Drawing": data.pack(pack_depth).await}).into(),
+            Self::Fill(data) => (object! {"Fill": data.pack(pack_depth).await}).into(),
+            Self::Image(data) => (object! {"Image": data.pack(pack_depth).await}).into(),
+            Self::LayerGroup(data) => (object! {"LayerGroup": data.pack(pack_depth).await}).into(),
         }
     }
 }

@@ -1,6 +1,6 @@
 #[allow(unused_imports)]
 use super::util::prelude::*;
-use super::util::Pack;
+use super::util::{Pack, PackDepth};
 use super::BlockMut;
 use js_sys::Promise;
 use wasm_bindgen::{prelude::*, JsCast};
@@ -96,7 +96,7 @@ impl CanvasTexture {
 
 #[async_trait(?Send)]
 impl Pack for CanvasTexture {
-    async fn pack(&self, _is_deep: bool) -> JsValue {
+    async fn pack(&self, _: PackDepth) -> JsValue {
         let element = JsFuture::from(Promise::new(&mut move |resolve, _| {
             let a = Closure::once(Box::new(move |blob| {
                 let _ = resolve.call1(&js_sys::global(), &blob);

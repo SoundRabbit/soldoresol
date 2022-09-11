@@ -2,7 +2,7 @@
 use super::util::prelude::*;
 
 use super::super::resource::ImageData;
-use super::util::Pack;
+use super::util::{Pack, PackDepth};
 use super::BlockRef;
 
 block! {

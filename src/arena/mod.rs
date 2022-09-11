@@ -9,6 +9,8 @@ pub mod user;
 #[allow(unused_imports)]
 use util::prelude::*;
 
+pub use util::{Pack, PackDepth};
+
 arena! {
     pub block::Boxblock;
     pub block::CanvasTexture;

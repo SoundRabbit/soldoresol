@@ -3,9 +3,11 @@ use super::super::resource::{BlockTexture, ImageData};
 use super::super::Access;
 #[allow(unused_imports)]
 use super::util::prelude::*;
-use super::util::Pack;
+use super::util::{Pack, PackDepth};
 use super::{BlockMut, BlockRef};
 use super::{Character, Scene, TerranTexture};
+use crate::libs::random_id::U128Id;
+use std::collections::HashSet;
 
 block! {
     [pub Components(constructor, pack)]

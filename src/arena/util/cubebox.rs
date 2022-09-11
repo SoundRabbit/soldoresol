@@ -1,4 +1,4 @@
-use super::Pack;
+use super::{Pack, PackDepth};
 use async_trait::async_trait;
 use wasm_bindgen::prelude::*;
 
@@ -13,14 +13,14 @@ pub struct Cubebox<T> {
 
 #[async_trait(?Send)]
 impl<T: Pack> Pack for Cubebox<T> {
-    async fn pack(&self, is_deep: bool) -> JsValue {
+    async fn pack(&self, pack_depth: PackDepth) -> JsValue {
         (object! {
-            "px": self.px.pack(is_deep).await,
-            "py": self.py.pack(is_deep).await,
-            "pz": self.pz.pack(is_deep).await,
-            "nx": self.nx.pack(is_deep).await,
-            "ny": self.ny.pack(is_deep).await,
-            "nz": self.nz.pack(is_deep).await,
+            "px": self.px.pack(pack_depth).await,
+            "py": self.py.pack(pack_depth).await,
+            "pz": self.pz.pack(pack_depth).await,
+            "nx": self.nx.pack(pack_depth).await,
+            "ny": self.ny.pack(pack_depth).await,
+            "nz": self.nz.pack(pack_depth).await,
         })
         .into()
     }
