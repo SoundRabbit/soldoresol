@@ -6,7 +6,9 @@ pub use pack::{Pack, PackDepth};
 
 pub mod prelude {
     #[allow(unused_imports)]
-    use super::super::BlockMut;
+    pub use super::super::ArenaMut;
+    #[allow(unused_imports)]
+    pub use super::super::BlockMut;
     #[allow(unused_imports)]
     pub use crate::libs::random_id::U128Id;
     #[allow(unused_imports)]
@@ -14,11 +16,11 @@ pub mod prelude {
     #[allow(unused_imports)]
     pub use std::cell::RefCell;
     #[allow(unused_imports)]
-    use std::collections::HashSet;
+    pub use std::collections::HashSet;
     #[allow(unused_imports)]
     pub use std::rc::Rc;
     #[allow(unused_imports)]
-    pub use wasm_bindgen::prelude::*;
+    pub use wasm_bindgen::{prelude::*, JsCast};
 }
 
 macro_rules! block {
@@ -99,6 +101,36 @@ macro_rules! block {
                 )*
 
                 object.into()
+            }
+
+            async fn unpack(data: &JsValue, arena: ArenaMut) -> Option<Box<Self>> {
+                if let Some(data) = data.dyn_ref::<crate::libs::js_object::Object>() {
+                    $(
+                        let $p_c_name = if let Some(item) = data.get(stringify!($p_c_name)) {
+                            <$p_c_type as Pack>::unpack(&item, ArenaMut::clone(&arena)).await
+                        } else {
+                            None
+                        };
+                        let $p_c_name = unwrap!($p_c_name; None);
+                        let $p_c_name = *$p_c_name;
+                    )*
+                    $(
+                        let $p_d_name = if let Some(item) = data.get(stringify!($p_d_name)) {
+                            <$p_d_type as Pack>::unpack(&item, ArenaMut::clone(&arena)).await
+                        } else {
+                            None
+                        };
+                        let $p_d_name = unwrap!($p_d_name; None);
+                        let $p_d_name = *$p_d_name;
+                    )*
+                    let this = Self {
+                        $($p_c_name,)*
+                        $($p_d_name,)*
+                    };
+                    Some(Box::new(this))
+                } else {
+                    None
+                }
             }
         }
     };
@@ -227,7 +259,6 @@ macro_rules! arena {
         $(pub $m:ident::$b:ident;)*
     } => {
         use std::collections::HashMap;
-        use std::cell::Cell;
         use std::rc::Weak;
         use std::marker::PhantomData;
 
@@ -251,6 +282,22 @@ macro_rules! arena {
                     $(Self::$b(..) => BlockKind::$b,)*
                 }
             }
+
+            fn kind_of(data: &JsValue) -> BlockKind {
+                    data
+                        .dyn_ref::<crate::libs::js_object::Object>()
+                        .and_then(|data| data
+                            .get("_tag")
+                            .and_then(|x| x.as_string())
+                            .map(|x| match x.as_str() {
+                                $(
+                                    stringify!($b) => { BlockKind::$b }
+                                )*
+                                _ => BlockKind::None
+                            })
+                        )
+                        .unwrap_or(BlockKind::None)
+            }
         }
 
         #[async_trait(?Send)]
@@ -269,12 +316,43 @@ macro_rules! arena {
                     )*
                 }
             }
+
+            async fn unpack(data: &JsValue, arena: ArenaMut) -> Option<Box<Self>> {
+                if let Some(data) = data.dyn_ref::<crate::libs::js_object::Object>() {
+                    let tag = data.get("_tag").and_then(|x| x.as_string());
+                    let val = data.get("_val");
+
+                    if let Some((tag, val)) = join_some!(tag, val) {
+                        match tag.as_str() {
+                            "None" => {
+                                return Some(Box::new(Self::None));
+                            }
+                            $(
+                                stringify!($b) => {
+                                    let val = <$b as Pack>::unpack(&val, ArenaMut::clone(&arena)).await;
+                                    if let Some(val) = val {
+                                        return Some(Box::new(Self::$b(*val)));
+                                    }
+                                }
+                            )*
+                            _ => {}
+                        }
+                    }
+                }
+                None
+            }
         }
 
         struct AnnotBlockData {
             timestamp: f64,
             block_id: U128Id,
             data: BlockData,
+        }
+
+        impl AnnotBlockData {
+            fn kind_of(data: &JsValue) -> BlockKind {
+                BlockData::kind_of(data)
+            }
         }
 
         #[async_trait(?Send)]
@@ -294,9 +372,36 @@ macro_rules! arena {
                     PackDepth::OnlyId => self.block_id.pack(PackDepth::OnlyId).await
                 }
             }
+
+            async fn unpack(data: &JsValue, arena: ArenaMut) -> Option<Box<Self>> {
+                if let Some(data) = data.dyn_ref::<crate::libs::js_object::Object>() {
+                    let timestamp = data.get("timestamp").and_then(|x| x.as_f64());
+                    let block_id = if let Some(block_id) = data.get("block_id") {
+                        U128Id::unpack(&block_id, ArenaMut::clone(&arena)).await
+                    } else {
+                        None
+                    };
+                    let data = if let Some(data) = data.get("block_id") {
+                        BlockData::unpack(&data, ArenaMut::clone(&arena)).await
+                    } else {
+                        None
+                    };
+
+                    if let Some((timestamp, block_id, data)) = join_some!(timestamp, block_id, data) {
+                        let this = Self {
+                            timestamp: timestamp,
+                            block_id: *block_id,
+                            data: *data,
+                        };
+                        return Some(Box::new(this));
+                    }
+                }
+                None
+            }
         }
 
         pub struct Untyped();
+        pub struct NoData();
 
         pub struct Block {
             data: Rc<RefCell<AnnotBlockData>>
@@ -338,6 +443,10 @@ macro_rules! arena {
                 self.data.borrow().data.kind()
             }
 
+            pub fn kind_of(data: &JsValue) -> BlockKind {
+                AnnotBlockData::kind_of(data)
+            }
+
             fn as_mut<T>(&self) -> BlockMut<T> {
                 BlockMut {
                     data: Rc::downgrade(&self.data),
@@ -370,6 +479,18 @@ macro_rules! arena {
             async fn pack(&self, pack_depth: PackDepth) -> JsValue {
                 self.data.pack(pack_depth).await
             }
+
+            async fn unpack(data: &JsValue, arena: ArenaMut) -> Option<Box<Self>> {
+                let annot_block = AnnotBlockData::unpack(data, ArenaMut::clone(&arena)).await;
+                if let Some(annot_block) = annot_block {
+                    let this = Self {
+                        data: Rc::new(RefCell::new(*annot_block))
+                    };
+                    Some(Box::new(this))
+                } else {
+                    None
+                }
+            }
         }
 
         $(
@@ -387,6 +508,12 @@ macro_rules! arena {
                 }
             }
         )*
+
+        impl From<NoData> for Block {
+            fn from(_data: NoData) -> Self {
+                Self::none()
+            }
+        }
 
         pub trait Access<T> {
             fn update(&mut self, f: impl FnOnce(&mut T)) -> bool;
@@ -463,15 +590,19 @@ macro_rules! arena {
                     phantom_data: PhantomData
                 }
             }
-        }
 
-        #[async_trait(?Send)]
-        impl<T> util::Pack for BlockMut<T> {
-            async fn pack(&self, pack_depth: PackDepth) -> JsValue {
+            #[allow(unused)]
+            pub fn as_ref(&self) -> BlockRef<T> {
+                BlockRef {
+                    data: BlockMut::clone(self)
+                }
+            }
+
+            pub fn kind(&self) -> BlockKind {
                 if let Some(data) = self.data.upgrade() {
-                    data.pack(pack_depth).await
+                    data.borrow().data.kind()
                 } else {
-                    JsValue::null()
+                    BlockKind::None
                 }
             }
         }
@@ -510,13 +641,6 @@ macro_rules! arena {
                     }
                     None
                 }
-
-                #[allow(unused)]
-                pub fn as_ref(&self) -> BlockRef<$b> {
-                    BlockRef {
-                        data: BlockMut::clone(self)
-                    }
-                }
             }
 
             impl Access<$b> for BlockMut<$b> {
@@ -529,6 +653,63 @@ macro_rules! arena {
                 }
             }
         )*
+
+        #[async_trait(?Send)]
+        impl<T> util::Pack for BlockMut<T> where Block: From<T>{
+            async fn pack(&self, pack_depth: PackDepth) -> JsValue {
+                if let Some(data) = self.data.upgrade() {
+                    data.pack(pack_depth).await
+                } else {
+                    JsValue::null()
+                }
+            }
+
+            async fn unpack(data: &JsValue, mut arena: ArenaMut) -> Option<Box<Self>> {
+                if let Some(block) = Block::unpack(&data, ArenaMut::clone(&arena)).await {
+                    if let Some(arena) = arena.data.upgrade() {
+                        if let Some(prev_block) = arena.borrow().get(&block.data.borrow().block_id) {
+                            if prev_block.data.borrow().timestamp < block.data.borrow().timestamp {
+                                let mut data = BlockData::None;
+                                std::mem::swap(&mut data, &mut block.data.borrow_mut().data);
+                                prev_block.data.borrow_mut().timestamp = block.data.borrow().timestamp;
+                                prev_block.data.borrow_mut().data = data;
+                            }
+                            return Some(Box::new(prev_block.as_mut()));
+                        }
+                        return Some(Box::new(arena.borrow_mut().get_insert(*block)));
+                    }
+                } else if let Some(block_id) = U128Id::unpack(&data, ArenaMut::clone(&arena)).await {
+                    return arena.get_mut::<T>(&block_id).map(|x| Box::new(x));
+                }
+
+                None
+            }
+        }
+
+        #[async_trait(?Send)]
+        impl util::Pack for BlockMut<Untyped> {
+            async fn pack(&self, pack_depth: PackDepth) -> JsValue {
+                match self.kind() {
+                    $(
+                        BlockKind::$b => { self.type_as::<$b>().pack(pack_depth).await }
+                    )*
+                    BlockKind::None => { self.type_as::<NoData>().pack(pack_depth).await }
+                }
+            }
+
+            async fn unpack(data: &JsValue, arena: ArenaMut) -> Option<Box<Self>> {
+                match Block::kind_of(data) {
+                    $(
+                        BlockKind::$b => {
+                            BlockMut::<$b>::unpack(data, ArenaMut::clone(&arena)).await.map(|x| Box::new(x.untyped()))
+                        }
+                    )*
+                    BlockKind::None => {
+                        BlockMut::<NoData>::unpack(data, ArenaMut::clone(&arena)).await.map(|x| Box::new(x.untyped()))
+                    }
+                }
+            }
+        }
 
         pub struct BlockRef<T> {
             data: BlockMut<T>
@@ -565,19 +746,18 @@ macro_rules! arena {
                     &self.data
                 }
             }
-
-            #[async_trait(?Send)]
-            impl util::Pack for BlockRef<$b> {
-                async fn pack(&self, pack_depth: PackDepth) -> JsValue {
-                    self.data.pack(pack_depth).await
-                }
-            }
         )*
 
         #[async_trait(?Send)]
-        impl util::Pack for BlockRef<Untyped> {
+        impl<T> util::Pack for BlockRef<T> where BlockMut<T>: util::Pack {
             async fn pack(&self, pack_depth: PackDepth) -> JsValue {
                 self.data.pack(pack_depth).await
+            }
+
+            async fn unpack(data: &JsValue, arena: ArenaMut) -> Option<Box<Self>> {
+                BlockMut::<T>::unpack(data, ArenaMut::clone(&arena))
+                    .await
+                    .map(|x| Box::new(BlockMut::<T>::as_ref(&x)))
             }
         }
 
@@ -600,6 +780,10 @@ macro_rules! arena {
                 self.data.get(block_id).map(|block| block.kind()).unwrap_or(BlockKind::None)
             }
 
+            fn get(&self, block_id: &U128Id) -> Option<&Block> {
+                self.data.get(block_id)
+            }
+
             fn get_mut<T>(&mut self, block_id: &U128Id) -> Option<BlockMut<T>> where Block: From<T>{
                 if let Some(data) = self.data.get_mut(block_id) {
                     Some(data.as_mut())
@@ -608,7 +792,7 @@ macro_rules! arena {
                 }
             }
 
-            fn get<T>(&self, block_id: &U128Id) -> Option<BlockRef<T>> where Block: From<T> {
+            fn get_ref<T>(&self, block_id: &U128Id) -> Option<BlockRef<T>> where Block: From<T> {
                 if let Some(data) = self.data.get(block_id) {
                     Some(data.as_ref())
                 } else {
@@ -616,7 +800,7 @@ macro_rules! arena {
                 }
             }
 
-            fn insert<T>(&mut self, block: Block) -> BlockMut<T> where Block: From<T>{
+            fn get_insert<T>(&mut self, block: Block) -> BlockMut<T> where Block: From<T>{
                 let block_id = block.id();
                 let block_mut = block.as_mut();
 
@@ -672,7 +856,7 @@ macro_rules! arena {
             }
 
             pub fn get<T>(&self, block_id: &U128Id) -> Option<BlockRef<T>> where Block: From<T>  {
-                self.data.borrow_mut().get(&block_id)
+                self.data.borrow_mut().get_ref(&block_id)
             }
 
             pub fn insert<T>(&mut self, block: T) -> BlockMut<T> where Self: Insert<T> {
@@ -696,7 +880,7 @@ macro_rules! arena {
             impl Insert<$b> for Arena {
                 fn insert(&mut self, block: $b) -> BlockMut<$b> {
                     let block = Block::from(block);
-                    self.data.borrow_mut().insert(block)
+                    self.data.borrow_mut().get_insert(block)
                 }
             }
         )*
@@ -724,7 +908,7 @@ macro_rules! arena {
             }
 
             pub fn get<T>(&self, block_id: &U128Id) -> Option<BlockRef<T>> where Block: From<T> {
-                self.data.upgrade().and_then(|data| data.borrow_mut().get(&block_id))
+                self.data.upgrade().and_then(|data| data.borrow_mut().get_ref(&block_id))
             }
 
             pub fn insert<T>(&mut self, block: T) -> BlockMut<T> where Self: Insert<T> {
@@ -741,7 +925,7 @@ macro_rules! arena {
                 fn insert(&mut self, block: $b) -> BlockMut<$b> {
                     if let Some(data) = self.data.upgrade() {
                         let block = Block::from(block);
-                        data.borrow_mut().insert(block)
+                        data.borrow_mut().get_insert(block)
                     } else {
                         Block::none().as_mut()
                     }

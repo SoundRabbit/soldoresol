@@ -1,4 +1,5 @@
-use wasm_bindgen::prelude::*;
+use crate::libs::js_object::Object;
+use wasm_bindgen::{prelude::*, JsCast};
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Pallet {
@@ -87,10 +88,38 @@ impl Pallet {
     #[allow(unused_parens)]
     pub fn to_jsvalue(&self) -> JsValue {
         let object = object! {
-            (self.kind.name()): array![self.idx as f64, self.alpha as f64]
+            "_tag": self.kind.name(),
+            "_val": array![self.idx as f64, self.alpha as f64]
         };
         let object: js_sys::Object = object.into();
         object.into()
+    }
+
+    pub fn from_jsvalue(data: &JsValue) -> Option<Self> {
+        let data = unwrap!(data.dyn_ref::<Object>(); None);
+        let kind = unwrap!(data.get("_tag").and_then(|x| x.as_string()); None);
+        let (idx, alpha) = {
+            let val = unwrap!(data.get("_val").map(|x| js_sys::Array::from(&x).to_vec()); None);
+            let val_0 = unwrap!(val.get(0).and_then(|x| x.as_f64()); None);
+            let val_1 = unwrap!(val.get(1).and_then(|x| x.as_f64()); None);
+            (val_0 as usize, val_1 as u8)
+        };
+
+        let kind = match kind.as_str() {
+            "blue" => Kind::Blue,
+            "gray" => Kind::Gray,
+            "green" => Kind::Green,
+            "orange" => Kind::Orange,
+            "pink" => Kind::Pink,
+            "purple" => Kind::Purple,
+            "red" => Kind::Red,
+            "yellow" => Kind::Yellow,
+            _ => {
+                return None;
+            }
+        };
+
+        Some(Self { kind, idx, alpha })
     }
 }
 

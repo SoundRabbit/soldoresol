@@ -1,6 +1,7 @@
 use super::util::{Pack, PackDepth};
+use super::ArenaMut;
 use async_trait::async_trait;
-use wasm_bindgen::prelude::*;
+use wasm_bindgen::{prelude::*, JsCast};
 
 mods! {
     pub image_data::ImageData;
@@ -45,8 +46,27 @@ impl Into<String> for Url {
 impl Pack for Url {
     async fn pack(&self, _: PackDepth) -> JsValue {
         match self {
-            Self::Local(url) => JsValue::null(),
-            Self::Global(url) => (object! { "Global": url }).into(),
+            Self::Local(url) => (object! {
+                "_tag": "Local",
+                "_payload": ""
+            })
+            .into(),
+            Self::Global(url) => (object! {
+                "_tag": "Global",
+                "_payload": url.as_str()
+            })
+            .into(),
+        }
+    }
+
+    async fn unpack(data: &JsValue, arena: ArenaMut) -> Option<Box<Self>> {
+        let data = unwrap!(data.dyn_ref::<crate::libs::js_object::Object>(); None);
+        let tag = unwrap!(data.get("_tag").and_then(|x| x.as_string()); None);
+        let payload = unwrap!(data.get("_payload").and_then(|x| x.as_string()); None);
+
+        match tag.as_str() {
+            "Global" => Some(Box::new(Self::Global(payload))),
+            _ => None,
         }
     }
 }

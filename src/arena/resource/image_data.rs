@@ -1,3 +1,4 @@
+use super::super::ArenaMut;
 #[allow(unused_imports)]
 use super::util::prelude::*;
 use super::util::{Pack, PackDepth};
@@ -62,6 +63,18 @@ impl LoadFrom<Rc<web_sys::File>> for ImageData {
     async fn load_from(file: Rc<web_sys::File>) -> Option<Self> {
         let file = file.as_ref().clone();
         Self::load_from(file).await
+    }
+}
+
+#[async_trait(?Send)]
+impl LoadFrom<(String, JsValue)> for ImageData {
+    async fn load_from((type_, data): (String, JsValue)) -> Option<Self> {
+        let blob = unwrap!(web_sys::Blob::new_with_u8_array_sequence_and_options(
+            &data,
+            web_sys::BlobPropertyBag::new().type_(type_.as_str())
+        ).ok(); None);
+
+        Self::load_from(blob).await
     }
 }
 
@@ -141,10 +154,24 @@ impl LoadFrom<Url> for ImageData {
 impl Pack for ImageData {
     async fn pack(&self, _: PackDepth) -> JsValue {
         (object! {
-            "type": self.blob.type_(),
+            "type": self.blob.type_().as_str(),
             "data": self.blob.as_ref(),
             "name": self.name.as_str()
         })
         .into()
+    }
+
+    async fn unpack(data: &JsValue, _arena: ArenaMut) -> Option<Box<Self>> {
+        let data = unwrap!(data.dyn_ref::<crate::libs::js_object::Object>(); None);
+        let array_buffer = unwrap!(data.get("data"); None);
+        let blob_type = unwrap!(data.get("type").and_then(|x| x.as_string()); None);
+        let name = unwrap!(data.get("name").and_then(|x| x.as_string()); None);
+
+        Self::load_from((blob_type, array_buffer.into()))
+            .await
+            .map(|mut x| {
+                x.name = name;
+                Box::new(x)
+            })
     }
 }

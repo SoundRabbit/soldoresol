@@ -1,12 +1,12 @@
 #[allow(unused_imports)]
 use super::util::prelude::*;
 
-use super::super::resource::BlockTexture;
+use super::super::resource::{BlockTexture, ImageData, LoadFrom};
 use super::util::{Pack, PackDepth};
 use super::BlockRef;
 use js_sys::Promise;
 use std::rc::Rc;
-use wasm_bindgen::{prelude::*, JsCast};
+use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
 
 pub const CELL_WIDTH: u32 = 256;
@@ -126,8 +126,28 @@ impl Pack for TerranTexture {
         let data = unwrap!(data; JsValue::NULL);
 
         (object! {
+            "type": data.type_().as_str(),
             "data": data
         })
         .into()
+    }
+
+    async fn unpack(data: &JsValue, _arena: ArenaMut) -> Option<Box<Self>> {
+        let data = unwrap!(data.dyn_ref::<crate::libs::js_object::Object>(); None);
+        let data = unwrap!(data.get("data"); None);
+        let data_type = unwrap!(data.get("type").and_then(|x| x.as_string()); None);
+
+        let img = unwrap!(ImageData::load_from((data_type, data.into())).await; None);
+        let this = Self::new();
+        let context = this.context();
+        context.draw_image_with_html_image_element_and_dw_and_dh(
+            img.element(),
+            0.0,
+            0.0,
+            TEX_WIDTH as f64,
+            TEX_HEIGHT as f64,
+        );
+
+        Some(Box::new(this))
     }
 }

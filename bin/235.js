@@ -1,0 +1,1 @@
+(self.webpackChunksoldoresol=self.webpackChunksoldoresol||[]).push([[235],{235:()=>{}}]);

@@ -62,10 +62,48 @@ pub enum Layer {
 impl Pack for Layer {
     async fn pack(&self, pack_depth: PackDepth) -> JsValue {
         match self {
-            Self::Drawing(data) => (object! {"Drawing": data.pack(pack_depth).await}).into(),
-            Self::Fill(data) => (object! {"Fill": data.pack(pack_depth).await}).into(),
-            Self::Image(data) => (object! {"Image": data.pack(pack_depth).await}).into(),
-            Self::LayerGroup(data) => (object! {"LayerGroup": data.pack(pack_depth).await}).into(),
+            Self::Drawing(data) => (object! {
+                "type": "Drawing",
+                "data": data.pack(pack_depth).await
+            })
+            .into(),
+            Self::Fill(data) => (object! {
+                "type": "Fill",
+                "data": data.pack(pack_depth).await
+            })
+            .into(),
+            Self::Image(data) => (object! {
+                "type": "Image",
+                "data": data.pack(pack_depth).await
+            })
+            .into(),
+            Self::LayerGroup(data) => (object! {
+                "type": "LayerGroup",
+                "data": data.pack(pack_depth).await
+            })
+            .into(),
+        }
+    }
+
+    async fn unpack(data: &JsValue, arena: ArenaMut) -> Option<Box<Self>> {
+        let data = data.dyn_ref::<crate::libs::js_object::Object>()?;
+        let data_type = data.get("type")?.as_string()?;
+        let data = data.get("data")?;
+
+        match data_type.as_str() {
+            "Drawing" => Drawing::unpack(&data, ArenaMut::clone(&arena))
+                .await
+                .map(|data| Box::new(Self::Drawing(*data))),
+            "Fill" => Fill::unpack(&data, ArenaMut::clone(&arena))
+                .await
+                .map(|data| Box::new(Self::Fill(*data))),
+            "Image" => Image::unpack(&data, ArenaMut::clone(&arena))
+                .await
+                .map(|data| Box::new(Self::Image(*data))),
+            "LayerGroup" => BlockMut::<LayerGroup>::unpack(&data, ArenaMut::clone(&arena))
+                .await
+                .map(|data| Box::new(Self::LayerGroup(*data))),
+            _ => None,
         }
     }
 }

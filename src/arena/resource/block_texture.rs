@@ -1,12 +1,12 @@
+use super::super::ArenaMut;
 #[allow(unused_imports)]
 use super::util::prelude::*;
 use super::util::{Pack, PackDepth};
-use super::BlockMut;
 use super::BlockRef;
 use super::ImageData;
 use super::LoadFrom;
 use js_sys::Promise;
-use wasm_bindgen::{prelude::*, JsCast};
+use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
 
 block! {
@@ -138,5 +138,15 @@ impl Pack for BlockTexture {
             "data": self.data.pack(pack_depth).await
         })
         .into()
+    }
+
+    async fn unpack(data: &JsValue, arena: ArenaMut) -> Option<Box<Self>> {
+        let data = unwrap!(data.dyn_ref::<crate::libs::js_object::Object>(); None);
+        let data = unwrap!(data.get("data"); None);
+        let data =
+            unwrap!(BlockRef::<ImageData>::unpack(&data, ArenaMut::clone(&arena)).await; None);
+        let this = unwrap!(Self::load_from(*data).await; None);
+
+        Some(Box::new(this))
     }
 }

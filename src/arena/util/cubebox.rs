@@ -1,6 +1,7 @@
+use super::super::ArenaMut;
 use super::{Pack, PackDepth};
 use async_trait::async_trait;
-use wasm_bindgen::prelude::*;
+use wasm_bindgen::{prelude::*, JsCast};
 
 pub struct Cubebox<T> {
     pub px: T,
@@ -23,6 +24,37 @@ impl<T: Pack> Pack for Cubebox<T> {
             "nz": self.nz.pack(pack_depth).await,
         })
         .into()
+    }
+
+    async fn unpack(data: &JsValue, arena: ArenaMut) -> Option<Box<Self>> {
+        let data = unwrap!(data.dyn_ref::<crate::libs::js_object::Object>(); None);
+
+        let p = unwrap!(data.get("px"); None);
+        let px = unwrap!(T::unpack(&p, ArenaMut::clone(&arena)).await; None);
+
+        let p = unwrap!(data.get("py"); None);
+        let py = unwrap!(T::unpack(&p, ArenaMut::clone(&arena)).await; None);
+
+        let p = unwrap!(data.get("pz"); None);
+        let pz = unwrap!(T::unpack(&p, ArenaMut::clone(&arena)).await; None);
+
+        let p = unwrap!(data.get("nx"); None);
+        let nx = unwrap!(T::unpack(&p, ArenaMut::clone(&arena)).await; None);
+
+        let p = unwrap!(data.get("ny"); None);
+        let ny = unwrap!(T::unpack(&p, ArenaMut::clone(&arena)).await; None);
+
+        let p = unwrap!(data.get("nz"); None);
+        let nz = unwrap!(T::unpack(&p, ArenaMut::clone(&arena)).await; None);
+
+        Some(Box::new(Self {
+            px: *px,
+            py: *py,
+            pz: *pz,
+            nx: *nx,
+            ny: *ny,
+            nz: *nz,
+        }))
     }
 }
 

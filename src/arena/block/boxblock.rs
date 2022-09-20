@@ -27,6 +27,16 @@ impl Pack for Shape {
             Self::Slope => JsValue::from("Slope"),
         }
     }
+
+    async fn unpack(data: &JsValue, _arena: ArenaMut) -> Option<Box<Self>> {
+        match data.as_string()?.as_str() {
+            "Cube" => Some(Box::new(Self::Cube)),
+            "Cylinder" => Some(Box::new(Self::Cylinder)),
+            "Sphere" => Some(Box::new(Self::Sphere)),
+            "Slope" => Some(Box::new(Self::Slope)),
+            _ => None,
+        }
+    }
 }
 
 block! {

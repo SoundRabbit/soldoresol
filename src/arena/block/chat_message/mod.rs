@@ -46,6 +46,19 @@ impl Pack for Message {
 
         data.into()
     }
+
+    async fn unpack(data: &JsValue, arena: ArenaMut) -> Option<Box<Self>> {
+        let data = js_sys::Array::from(&data).to_vec();
+        let mut tokens = vec![];
+
+        for token in data {
+            if let Some(token) = MessageToken::unpack(&token, ArenaMut::clone(&arena)).await {
+                tokens.push(*token);
+            }
+        }
+
+        Some(Box::new(Message::from(tokens)))
+    }
 }
 
 #[async_trait(?Send)]
@@ -54,7 +67,7 @@ impl Pack for MessageToken {
         match self {
             Self::Text(x) => (object! {
                 "_tag": "Text",
-                "_val": JsValue::from(x)
+                "_val": x.as_str()
             })
             .into(),
             Self::Reference(reference) => (object! {
@@ -67,6 +80,23 @@ impl Pack for MessageToken {
                 "_val": command.pack(pack_depth).await
             })
             .into(),
+        }
+    }
+
+    async fn unpack(data: &JsValue, arena: ArenaMut) -> Option<Box<Self>> {
+        let data = data.dyn_ref::<crate::libs::js_object::Object>()?;
+        let tag = data.get("_tag")?.as_string()?;
+        let val = data.get("_val")?;
+
+        match tag.as_str() {
+            "Text" => Some(Box::new(Self::Text(val.as_string()?))),
+            "Refer" => Some(Box::new(Self::Reference(
+                *Reference::unpack(&val, ArenaMut::clone(&arena)).await?,
+            ))),
+            "CommandBlock" => Some(Box::new(Self::Command(
+                *Command::unpack(&val, ArenaMut::clone(&arena)).await?,
+            ))),
+            _ => None,
         }
     }
 }
@@ -87,6 +117,26 @@ impl Pack for Command {
             "text": self.text.pack(pack_depth).await
         })
         .into()
+    }
+
+    async fn unpack(data: &JsValue, arena: ArenaMut) -> Option<Box<Self>> {
+        let data = data.dyn_ref::<crate::libs::js_object::Object>()?;
+        let name = data.get("name")?;
+        let args = data.get("args")?;
+        let text = data.get("text")?;
+
+        let name = *Message::unpack(&name, ArenaMut::clone(&arena)).await?;
+        let text = *Message::unpack(&text, ArenaMut::clone(&arena)).await?;
+
+        let raw_args = js_sys::Array::from(&args).to_vec();
+        let mut args = vec![];
+        for raw_arg in raw_args {
+            if let Some(arg) = Argument::unpack(&raw_arg, ArenaMut::clone(&arena)).await {
+                args.push(*arg);
+            }
+        }
+
+        Some(Box::new(Self { name, args, text }))
     }
 }
 
@@ -117,6 +167,37 @@ impl Pack for Reference {
         })
         .into()
     }
+
+    async fn unpack(data: &JsValue, arena: ArenaMut) -> Option<Box<Self>> {
+        let data = data.dyn_ref::<crate::libs::js_object::Object>()?;
+        let name = data.get("name")?;
+        let args = data.get("args")?;
+        let option = data.get("option")?;
+
+        let raw_name = js_sys::Array::from(&name).to_vec();
+        let mut name = vec![];
+        for a_name in raw_name {
+            if let Some(a_name) = Message::unpack(&a_name, ArenaMut::clone(&arena)).await {
+                name.push(*a_name);
+            }
+        }
+
+        let raw_args = js_sys::Array::from(&args).to_vec();
+        let mut args = vec![];
+        for raw_arg in raw_args {
+            if let Some(arg) = Argument::unpack(&raw_arg, ArenaMut::clone(&arena)).await {
+                args.push(*arg);
+            }
+        }
+
+        let option = if option.is_null() {
+            None
+        } else {
+            Some(*Message::unpack(&option, ArenaMut::clone(&arena)).await?)
+        };
+
+        Some(Box::new(Self { name, args, option }))
+    }
 }
 
 #[async_trait(?Send)]
@@ -130,6 +211,19 @@ impl Pack for Argument {
         }
 
         packed.into()
+    }
+
+    async fn unpack(data: &JsValue, arena: ArenaMut) -> Option<Box<Self>> {
+        let data = js_sys::Array::from(&data).to_vec();
+
+        let value = *Message::unpack(&data[0], ArenaMut::clone(&arena)).await?;
+        let option = if data.len() > 1 {
+            Some(*Message::unpack(&data[1], ArenaMut::clone(&arena)).await?)
+        } else {
+            None
+        };
+
+        Some(Box::new(Self { value, option }))
     }
 }
 
@@ -145,6 +239,14 @@ impl Pack for SenderKind {
         match self {
             Self::Normal => JsValue::from("Normal"),
             Self::System => JsValue::from("System"),
+        }
+    }
+
+    async fn unpack(data: &JsValue, _: ArenaMut) -> Option<Box<Self>> {
+        match data.as_string()?.as_str() {
+            "Normal" => Some(Box::new(Self::Normal)),
+            "System" => Some(Box::new(Self::System)),
+            _ => None,
         }
     }
 }

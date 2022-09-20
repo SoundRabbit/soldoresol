@@ -2,7 +2,6 @@
 use super::util::prelude::*;
 use super::util::{Pack, PackDepth};
 use super::BlockMut;
-use std::collections::VecDeque;
 
 pub type NumberValue = f64;
 pub type NumberMin = NumberValue;
@@ -229,6 +228,53 @@ impl Pack for Value {
             .into(),
         }
     }
+
+    async fn unpack(data: &JsValue, arena: ArenaMut) -> Option<Box<Self>> {
+        let data = data.dyn_ref::<crate::libs::js_object::Object>()?;
+        let tag = data.get("_tag")?.as_string()?;
+        let val = data.get("_val")?;
+        match tag.as_str() {
+            "Number" => val
+                .as_f64()
+                .map(|v| Box::new(Self::Number(v as NumberValue))),
+            "NumberMinMax" => {
+                let val = js_sys::Array::from(&val).to_vec();
+                let val_0 = val.get(0)?.as_f64()?;
+                let val_1 = val.get(0)?.as_f64()?;
+                let val_2 = val.get(0)?.as_f64()?;
+                Some(Box::new(Self::NumberMinMax(
+                    val_0 as NumberValue,
+                    val_1 as NumberValue,
+                    val_2 as NumberValue,
+                )))
+            }
+            "NumberMid" => {
+                let val = js_sys::Array::from(&val).to_vec();
+                let val_0 = val.get(0)?.as_f64()?;
+                let val_1 = val.get(0)?.as_f64()?;
+                Some(Box::new(Self::NumberMid(
+                    val_0 as NumberValue,
+                    val_1 as NumberValue,
+                )))
+            }
+            "Normal" => val.as_string().map(|v| Box::new(Self::Normal(v))),
+            "Note" => val.as_string().map(|v| Box::new(Self::Note(v))),
+            "Check" => val.as_bool().map(|v| Box::new(Self::Check(v))),
+            "Select" => {
+                let val = js_sys::Array::from(&val).to_vec();
+                let val_0 = val.get(0)?.as_f64()? as usize;
+                let val_1 = js_sys::Array::from(unwrap!(val.get(1); None).as_ref()).to_vec();
+                let mut list = vec![];
+                for item in val_1 {
+                    if let Some(item) = item.as_string() {
+                        list.push(item);
+                    }
+                }
+                Some(Box::new(Self::Select(val_0, list)))
+            }
+            _ => None,
+        }
+    }
 }
 
 pub enum DataView {
@@ -242,6 +288,14 @@ impl Pack for DataView {
         match self {
             Self::Tabular => JsValue::from("Tabular"),
             Self::List => JsValue::from("List"),
+        }
+    }
+
+    async fn unpack(data: &JsValue, arena: ArenaMut) -> Option<Box<Self>> {
+        match data.as_string()?.as_str() {
+            "Tabular" => Some(Box::new(Self::Tabular)),
+            "List" => Some(Box::new(Self::List)),
+            _ => None,
         }
     }
 }
@@ -259,6 +313,31 @@ impl Pack for Data {
             "values": self.values.pack(pack_depth).await
         })
         .into()
+    }
+
+    async fn unpack(data: &JsValue, arena: ArenaMut) -> Option<Box<Self>> {
+        let data = data.dyn_ref::<crate::libs::js_object::Object>()?;
+        let view = DataView::unpack(
+            unwrap!(data.get("view"); None).as_ref(),
+            ArenaMut::clone(&arena),
+        )
+        .await?;
+        let view = *view;
+        let items = js_sys::Array::from(unwrap!(data.get("values"); None).as_ref()).to_vec();
+        let mut values = vec![];
+
+        for col_items in items {
+            let col_items = js_sys::Array::from(&col_items).to_vec();
+            let mut col_values = vec![];
+            for item in col_items {
+                if let Some(item) = Value::unpack(&item, ArenaMut::clone(&arena)).await {
+                    col_values.push(*item);
+                }
+            }
+            values.push(col_values);
+        }
+
+        Some(Box::new(Self { view, values }))
     }
 }
 
@@ -391,6 +470,15 @@ impl Pack for PropertyView {
         match self {
             Self::Board => JsValue::from("Board"),
             Self::List => JsValue::from("List"),
+        }
+    }
+
+    async fn unpack(data: &JsValue, _arena: ArenaMut) -> Option<Box<Self>> {
+        let data = data.as_string()?;
+        match data.as_str() {
+            "Board" => Some(Box::new(Self::Board)),
+            "List" => Some(Box::new(Self::List)),
+            _ => None,
         }
     }
 }

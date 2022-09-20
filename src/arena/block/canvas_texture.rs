@@ -1,3 +1,4 @@
+use super::super::resource::{ImageData, LoadFrom};
 #[allow(unused_imports)]
 use super::util::prelude::*;
 use super::util::{Pack, PackDepth};
@@ -97,7 +98,7 @@ impl CanvasTexture {
 #[async_trait(?Send)]
 impl Pack for CanvasTexture {
     async fn pack(&self, _: PackDepth) -> JsValue {
-        let element = JsFuture::from(Promise::new(&mut move |resolve, _| {
+        let blob = JsFuture::from(Promise::new(&mut move |resolve, _| {
             let a = Closure::once(Box::new(move |blob| {
                 let _ = resolve.call1(&js_sys::global(), &blob);
             }) as Box<dyn FnOnce(JsValue)>);
@@ -107,14 +108,49 @@ impl Pack for CanvasTexture {
         .await
         .ok()
         .and_then(|x| x.dyn_into::<web_sys::Blob>().ok());
-        let element = unwrap!(element; JsValue::NULL);
+        let blob_type = blob.as_ref().map(|x| x.type_()).unwrap_or_default();
+        let blob = unwrap!(blob; JsValue::NULL);
 
         (object! {
-            "element": element,
+            "data": blob,
+            "type": blob_type.as_str(),
             "buffer_size": array![self.buffer_size[0], self.buffer_size[1]],
             "size": array![self.size[0], self.size[1]],
             "is_mask": self.is_mask
         })
         .into()
+    }
+
+    async fn unpack(data: &JsValue, arena: ArenaMut) -> Option<Box<Self>> {
+        let data = data.dyn_ref::<crate::libs::js_object::Object>()?;
+        let blob = data.get("data")?;
+        let blob_type = data.get("type")?.as_string()?;
+        let buffer_size =
+            js_sys::Array::from(unwrap!(data.get("buffer_size"); None).as_ref()).to_vec();
+        let buffer_size = [
+            buffer_size[0].as_f64().unwrap_or_default(),
+            buffer_size[1].as_f64().unwrap_or_default(),
+        ];
+        let size = js_sys::Array::from(unwrap!(data.get("size"); None).as_ref()).to_vec();
+        let size = [
+            size[0].as_f64().unwrap_or_default(),
+            size[1].as_f64().unwrap_or_default(),
+        ];
+        let is_mask = data.get("is_mask")?.as_bool()?;
+
+        let data = ImageData::load_from((blob_type, blob.into())).await?;
+
+        let this = Self::new(&[buffer_size[0] as u32, buffer_size[1] as u32], size);
+
+        this.context()
+            .draw_image_with_html_image_element_and_dw_and_dh(
+                data.element(),
+                0.0,
+                0.0,
+                buffer_size[0],
+                buffer_size[1],
+            );
+
+        Some(Box::new(this))
     }
 }
