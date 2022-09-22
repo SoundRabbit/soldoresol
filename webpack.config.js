@@ -7,7 +7,7 @@ module.exports = {
     experiments: { syncWebAssembly: true },
     entry: "./assets",
     output: {
-        path: path.join(__dirname, "./docs/dev"),
+        path: path.join(__dirname, "../Soldoresol-dev"),
     },
     resolve: {
         extensions: [".js"]
