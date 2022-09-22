@@ -51,10 +51,7 @@ pub async fn initialize() -> Option<(
 async fn load_config() -> Option<Config> {
     crate::debug::log_1("start to load config");
 
-    let hostname = web_sys::window().unwrap().location().hostname().unwrap();
-    let is_dev_mode = hostname == "localhost";
-
-    let config_url = if is_dev_mode {
+    let config_url = if crate::is_dev_mode() {
         "/config.dev.toml"
     } else {
         "./config.toml"

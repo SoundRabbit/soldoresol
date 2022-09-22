@@ -107,8 +107,14 @@ impl Update for App {
 impl Render<Html> for App {
     type Children = ();
     fn render(&self, _: Self::Children) -> Html {
+        let prefix = if crate::is_dev_mode() {
+            ""
+        } else {
+            "/soldoresol-dev"
+        };
+
         router! {
-            r"/rooms" => {
+            (format!(r"{}/rooms", prefix)) => {
                 let common_data = unwrap!(self.common_data.as_ref(); self.render_initializer());
                 RoomSelector::empty(
                     self,
@@ -126,7 +132,7 @@ impl Render<Html> for App {
                     })
                 )
             },
-            r"/rooms/skyway/([A-Za-z0-9@#]{24})" (room_id) => {
+            (format!(r"{}/rooms/skyway/([A-Za-z0-9@#]{{24}})", prefix)) (room_id) => {
                 let common_data = unwrap!(self.common_data.as_ref(); self.render_initializer());
                 let room_id = Rc::new(String::from(room_id.get(1).unwrap().as_str()));
                 let room_data = unwrap!(self.room_data.as_ref(); self.render_room_initializer(&common_data, &room_id));
@@ -144,7 +150,7 @@ impl Render<Html> for App {
                     Sub::none()
                 )
             },
-            r"/rooms/drive/([A-Za-z\-_]+)" (room_id) => {
+            (format!(r"{}/rooms/drive/([A-Za-z\-_]+)", prefix)) (room_id) => {
                 let common_data = unwrap!(self.common_data.as_ref(); self.render_initializer());
                 let room_id = Rc::new(String::from(room_id.get(1).unwrap().as_str()));
                 let room_data = unwrap!(self.room_data.as_ref(); self.render_room_initializer(&common_data, &room_id));
@@ -163,7 +169,7 @@ impl Render<Html> for App {
                 )
             },
             _ => {
-                router::jump_to("/rooms");
+                router::jump_to(format!(r"{}/rooms", prefix).as_str());
                 self.render_initializer()
             }
         }

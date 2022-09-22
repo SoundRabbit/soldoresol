@@ -61,3 +61,18 @@ pub fn main() {
         |this| vec![App::empty(this, None, app::Props {}, Sub::none())],
     )));
 }
+
+fn is_dev_mode() -> bool {
+    static mut IS_DEV_MODE: Option<bool> = None;
+
+    if let Some(is_dev_mode) = unsafe { IS_DEV_MODE } {
+        is_dev_mode
+    } else {
+        let hostname = web_sys::window().unwrap().location().hostname().unwrap();
+        let is_dev_mode = hostname == "localhost";
+        unsafe {
+            IS_DEV_MODE = Some(is_dev_mode);
+        }
+        is_dev_mode
+    }
+}
