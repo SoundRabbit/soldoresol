@@ -6,9 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "./node_modules/.bin/webpack-dev-server",
-    "make": "npm run rm:bin && npm run make:bin",
-    "rm:bin": "rm -rf ./bin",
-    "make:bin": "./node_modules/.bin/webpack"
+    "make": "npm run make:dev",
+    "make:dev": "./node_modules/.bin/webpack"
   },
   "repository": {
     "type": "git",

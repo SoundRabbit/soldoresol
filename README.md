@@ -1,7 +1,8 @@
 # Soldresol
 
 - [安定版](https://soundrabbit.github.io/soldoresol/)
-- [開発版](https://soundrabbit.github.io/soldoresol/dev/)
+- [ベータ版](https://soundrabbit.github.io/soldoresol/beta/)
+- [開発中のもの](https://soundrabbit.github.io/soldoresol/dev/)
 
 ##  諸注意
 

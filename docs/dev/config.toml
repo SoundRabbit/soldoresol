@@ -3,3 +3,7 @@ key="de699024-d415-4dca-ae46-3094fae4bc51"
 
 [client]
 db_prefix = "soldoresol-dev"
+
+[drive]
+api_key="AIzaSyALHEL5scfY0It6meJcXGGIIUL1MOC6XTw"
+client_id="507026019339-qkh8n2t46e011ikusd9frv6nq24ns1m0.apps.googleusercontent.com"

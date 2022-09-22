@@ -1,0 +1,495 @@
+/*!
+ * SkyWay Copyright(c) 2022 NTT Communications Corporation
+ * peerjs Copyright(c) 2013 Michelle Bu <michelle@michellebu.com>
+ */
+
+/*!
+ * The buffer module from node.js, for the browser.
+ *
+ * @author   Feross Aboukhadijeh <http://feross.org>
+ * @license  MIT
+ */
+
+/*! ../globalThis */
+
+/*! ../transport */
+
+/*! ./../../../node-libs-browser/node_modules/buffer/index.js */
+
+/*! ./../../../webpack/buildin/global.js */
+
+/*! ./../../process/browser.js */
+
+/*! ./../../webpack/buildin/global.js */
+
+/*! ./../node-libs-browser/node_modules/buffer/index.js */
+
+/*! ./../process/browser.js */
+
+/*! ./array-equals */
+
+/*! ./binary */
+
+/*! ./bufferbuilder */
+
+/*! ./byte_size */
+
+/*! ./debug */
+
+/*! ./enumItem.js */
+
+/*! ./globalThis */
+
+/*! ./grammar */
+
+/*! ./indexOf.js */
+
+/*! ./interop */
+
+/*! ./is-buffer */
+
+/*! ./isType.js */
+
+/*! ./keys */
+
+/*! ./manager */
+
+/*! ./on */
+
+/*! ./parser */
+
+/*! ./polling */
+
+/*! ./polling-jsonp */
+
+/*! ./polling-xhr */
+
+/*! ./socket */
+
+/*! ./transform */
+
+/*! ./transport */
+
+/*! ./transports/index */
+
+/*! ./url */
+
+/*! ./utf8 */
+
+/*! ./websocket */
+
+/*! ./writer */
+
+/*! ModuleConcatenation bailout: Cannot concat with ./node_modules/@jitsi/sdp-interop/lib/index.js (<- Module is not an ECMAScript module) */
+
+/*! ModuleConcatenation bailout: Cannot concat with ./node_modules/detect-browser/index.js (<- Module is not an ECMAScript module) */
+
+/*! ModuleConcatenation bailout: Cannot concat with ./node_modules/enum/lib/enum.js (<- Module uses injected variables (global)) */
+
+/*! ModuleConcatenation bailout: Cannot concat with ./node_modules/events/events.js (<- Module is not an ECMAScript module) */
+
+/*! ModuleConcatenation bailout: Cannot concat with ./node_modules/has-binary2/index.js (<- Module is not an ECMAScript module) */
+
+/*! ModuleConcatenation bailout: Cannot concat with ./node_modules/js-binarypack/lib/binarypack.js (<- Module is not an ECMAScript module) */
+
+/*! ModuleConcatenation bailout: Cannot concat with ./node_modules/object-sizeof/index.js (<- Module is not an ECMAScript module) */
+
+/*! ModuleConcatenation bailout: Cannot concat with ./node_modules/query-string/index.js (<- Module is not an ECMAScript module) */
+
+/*! ModuleConcatenation bailout: Cannot concat with ./node_modules/sdp-transform/lib/index.js (<- Module is not an ECMAScript module) */
+
+/*! ModuleConcatenation bailout: Cannot concat with ./node_modules/socket.io-client/lib/index.js (<- Module is not an ECMAScript module) */
+
+/*! ModuleConcatenation bailout: Cannot concat with ./node_modules/socket.io-parser/index.js (<- Module is not an ECMAScript module) */
+
+/*! ModuleConcatenation bailout: Cannot concat with ./package.json (<- Module is not an ECMAScript module) */
+
+/*! ModuleConcatenation bailout: Module is not an ECMAScript module */
+
+/*! ModuleConcatenation bailout: Module uses injected variables (global) */
+
+/*! after */
+
+/*! arraybuffer.slice */
+
+/*! backo2 */
+
+/*! base64-arraybuffer */
+
+/*! base64-js */
+
+/*! blob */
+
+/*! buffer/ */
+
+/*! component-bind */
+
+/*! component-emitter */
+
+/*! component-inherit */
+
+/*! debug */
+
+/*! decode-uri-component */
+
+/*! engine.io-client */
+
+/*! engine.io-parser */
+
+/*! exports provided: default */
+
+/*! exports provided: indexOf */
+
+/*! exports provided: isType, isObject, isString, isNumber */
+
+/*! exports provided: name, version, description, main, types, scripts, repository, files, author, license, devDependencies, dependencies, default */
+
+/*! filter-obj */
+
+/*! has-binary2 */
+
+/*! has-cors */
+
+/*! https://mths.be/utf8js v2.1.2 by @mathias */
+
+/*! ieee754 */
+
+/*! ieee754. BSD-3-Clause License. Feross Aboukhadijeh <https://feross.org/opensource> */
+
+/*! indexof */
+
+/*! isarray */
+
+/*! ms */
+
+/*! no static exports found */
+
+/*! parseqs */
+
+/*! parseuri */
+
+/*! sdp-transform */
+
+/*! socket.io-parser */
+
+/*! split-on-first */
+
+/*! strict-uri-encode */
+
+/*! to-array */
+
+/*! ws */
+
+/*! xmlhttprequest-ssl */
+
+/*! yeast */
+
+/*!********************!*\
+  !*** ws (ignored) ***!
+  \********************/
+
+/*!**********************!*\
+  !*** ./package.json ***!
+  \**********************/
+
+/*!**********************************!*\
+  !*** ./node_modules/ms/index.js ***!
+  \**********************************/
+
+/*!**********************************!*\
+  !*** ./src/peer.js + 12 modules ***!
+  \**********************************/
+
+/*!***********************************!*\
+  !*** (webpack)/buildin/global.js ***!
+  \***********************************/
+
+/*!************************************!*\
+  !*** ./node_modules/blob/index.js ***!
+  \************************************/
+
+/*!*************************************!*\
+  !*** ./node_modules/after/index.js ***!
+  \*************************************/
+
+/*!*************************************!*\
+  !*** ./node_modules/yeast/index.js ***!
+  \*************************************/
+
+/*!**************************************!*\
+  !*** ./node_modules/backo2/index.js ***!
+  \**************************************/
+
+/*!***************************************!*\
+  !*** ./node_modules/enum/lib/enum.js ***!
+  \***************************************/
+
+/*!***************************************!*\
+  !*** ./node_modules/events/events.js ***!
+  \***************************************/
+
+/*!***************************************!*\
+  !*** ./node_modules/ieee754/index.js ***!
+  \***************************************/
+
+/*!***************************************!*\
+  !*** ./node_modules/indexof/index.js ***!
+  \***************************************/
+
+/*!***************************************!*\
+  !*** ./node_modules/isarray/index.js ***!
+  \***************************************/
+
+/*!***************************************!*\
+  !*** ./node_modules/parseqs/index.js ***!
+  \***************************************/
+
+/*!****************************************!*\
+  !*** ./node_modules/has-cors/index.js ***!
+  \****************************************/
+
+/*!****************************************!*\
+  !*** ./node_modules/parseuri/index.js ***!
+  \****************************************/
+
+/*!****************************************!*\
+  !*** ./node_modules/to-array/index.js ***!
+  \****************************************/
+
+/*!*****************************************!*\
+  !*** ./node_modules/base64-js/index.js ***!
+  \*****************************************/
+
+/*!*****************************************!*\
+  !*** ./node_modules/debug/src/debug.js ***!
+  \*****************************************/
+
+/*!*****************************************!*\
+  !*** ./node_modules/enum/lib/isType.js ***!
+  \*****************************************/
+
+/*!*****************************************!*\
+  !*** ./node_modules/process/browser.js ***!
+  \*****************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/enum/lib/indexOf.js ***!
+  \******************************************/
+
+/*!******************************************!*\
+  !*** ./node_modules/filter-obj/index.js ***!
+  \******************************************/
+
+/*!*******************************************!*\
+  !*** ./node_modules/debug/src/browser.js ***!
+  \*******************************************/
+
+/*!*******************************************!*\
+  !*** ./node_modules/enum/lib/enumItem.js ***!
+  \*******************************************/
+
+/*!*******************************************!*\
+  !*** ./node_modules/has-binary2/index.js ***!
+  \*******************************************/
+
+/*!********************************************!*\
+  !*** ./node_modules/query-string/index.js ***!
+  \********************************************/
+
+/*!*********************************************!*\
+  !*** ./node_modules/object-sizeof/index.js ***!
+  \*********************************************/
+
+/*!**********************************************!*\
+  !*** ./node_modules/component-bind/index.js ***!
+  \**********************************************/
+
+/*!**********************************************!*\
+  !*** ./node_modules/detect-browser/index.js ***!
+  \**********************************************/
+
+/*!**********************************************!*\
+  !*** ./node_modules/split-on-first/index.js ***!
+  \**********************************************/
+
+/*!************************************************!*\
+  !*** ./node_modules/socket.io-parser/index.js ***!
+  \************************************************/
+
+/*!*************************************************!*\
+  !*** ./node_modules/arraybuffer.slice/index.js ***!
+  \*************************************************/
+
+/*!*************************************************!*\
+  !*** ./node_modules/component-emitter/index.js ***!
+  \*************************************************/
+
+/*!*************************************************!*\
+  !*** ./node_modules/component-inherit/index.js ***!
+  \*************************************************/
+
+/*!*************************************************!*\
+  !*** ./node_modules/object-sizeof/byte_size.js ***!
+  \*************************************************/
+
+/*!*************************************************!*\
+  !*** ./node_modules/sdp-transform/lib/index.js ***!
+  \*************************************************/
+
+/*!*************************************************!*\
+  !*** ./node_modules/socket.io-client/lib/on.js ***!
+  \*************************************************/
+
+/*!*************************************************!*\
+  !*** ./node_modules/socket.io-parser/binary.js ***!
+  \*************************************************/
+
+/*!*************************************************!*\
+  !*** ./node_modules/strict-uri-encode/index.js ***!
+  \*************************************************/
+
+/*!**************************************************!*\
+  !*** ./node_modules/sdp-transform/lib/parser.js ***!
+  \**************************************************/
+
+/*!**************************************************!*\
+  !*** ./node_modules/sdp-transform/lib/writer.js ***!
+  \**************************************************/
+
+/*!**************************************************!*\
+  !*** ./node_modules/socket.io-client/lib/url.js ***!
+  \**************************************************/
+
+/*!***************************************************!*\
+  !*** ./node_modules/engine.io-parser/lib/keys.js ***!
+  \***************************************************/
+
+/*!***************************************************!*\
+  !*** ./node_modules/engine.io-parser/lib/utf8.js ***!
+  \***************************************************/
+
+/*!***************************************************!*\
+  !*** ./node_modules/sdp-transform/lib/grammar.js ***!
+  \***************************************************/
+
+/*!****************************************************!*\
+  !*** ./node_modules/decode-uri-component/index.js ***!
+  \****************************************************/
+
+/*!****************************************************!*\
+  !*** ./node_modules/engine.io-client/lib/index.js ***!
+  \****************************************************/
+
+/*!****************************************************!*\
+  !*** ./node_modules/socket.io-client/lib/index.js ***!
+  \****************************************************/
+
+/*!****************************************************!*\
+  !*** ./node_modules/socket.io-parser/is-buffer.js ***!
+  \****************************************************/
+
+/*!*****************************************************!*\
+  !*** ./node_modules/engine.io-client/lib/socket.js ***!
+  \*****************************************************/
+
+/*!*****************************************************!*\
+  !*** ./node_modules/socket.io-client/lib/socket.js ***!
+  \*****************************************************/
+
+/*!******************************************************!*\
+  !*** ./node_modules/@jitsi/sdp-interop/lib/index.js ***!
+  \******************************************************/
+
+/*!******************************************************!*\
+  !*** ./node_modules/engine.io-parser/lib/browser.js ***!
+  \******************************************************/
+
+/*!******************************************************!*\
+  !*** ./node_modules/js-binarypack/lib/binarypack.js ***!
+  \******************************************************/
+
+/*!******************************************************!*\
+  !*** ./node_modules/socket.io-client/lib/manager.js ***!
+  \******************************************************/
+
+/*!********************************************************!*\
+  !*** ./node_modules/@jitsi/sdp-interop/lib/interop.js ***!
+  \********************************************************/
+
+/*!********************************************************!*\
+  !*** ./node_modules/engine.io-client/lib/transport.js ***!
+  \********************************************************/
+
+/*!*********************************************************!*\
+  !*** ./node_modules/js-binarypack/lib/bufferbuilder.js ***!
+  \*********************************************************/
+
+/*!**********************************************************!*\
+  !*** ./node_modules/@jitsi/sdp-interop/lib/transform.js ***!
+  \**********************************************************/
+
+/*!*************************************************************!*\
+  !*** ./node_modules/@jitsi/sdp-interop/lib/array-equals.js ***!
+  \*************************************************************/
+
+/*!*************************************************************!*\
+  !*** ./node_modules/engine.io-client/lib/xmlhttprequest.js ***!
+  \*************************************************************/
+
+/*!***************************************************************!*\
+  !*** ./node_modules/engine.io-client/lib/transports/index.js ***!
+  \***************************************************************/
+
+/*!*****************************************************************!*\
+  !*** ./node_modules/engine.io-client/lib/globalThis.browser.js ***!
+  \*****************************************************************/
+
+/*!*****************************************************************!*\
+  !*** ./node_modules/engine.io-client/lib/transports/polling.js ***!
+  \*****************************************************************/
+
+/*!*******************************************************************!*\
+  !*** ./node_modules/base64-arraybuffer/lib/base64-arraybuffer.js ***!
+  \*******************************************************************/
+
+/*!*******************************************************************!*\
+  !*** ./node_modules/engine.io-client/lib/transports/websocket.js ***!
+  \*******************************************************************/
+
+/*!*********************************************************************!*\
+  !*** ./node_modules/engine.io-client/lib/transports/polling-xhr.js ***!
+  \*********************************************************************/
+
+/*!*********************************************************************!*\
+  !*** ./node_modules/node-libs-browser/node_modules/buffer/index.js ***!
+  \*********************************************************************/
+
+/*!**********************************************************************!*\
+  !*** ./node_modules/node-libs-browser/node_modules/isarray/index.js ***!
+  \**********************************************************************/
+
+/*!***********************************************************************!*\
+  !*** ./node_modules/engine.io-client/lib/transports/polling-jsonp.js ***!
+  \***********************************************************************/
+
+/*!*********************************************************************************!*\
+  !*** ./node_modules/@jitsi/sdp-interop/node_modules/sdp-transform/lib/index.js ***!
+  \*********************************************************************************/
+
+/*!**********************************************************************************!*\
+  !*** ./node_modules/@jitsi/sdp-interop/node_modules/sdp-transform/lib/parser.js ***!
+  \**********************************************************************************/
+
+/*!**********************************************************************************!*\
+  !*** ./node_modules/@jitsi/sdp-interop/node_modules/sdp-transform/lib/writer.js ***!
+  \**********************************************************************************/
+
+/*!***********************************************************************************!*\
+  !*** ./node_modules/@jitsi/sdp-interop/node_modules/sdp-transform/lib/grammar.js ***!
+  \***********************************************************************************/
+
+/**
+ * @license
+ * Copyright 2010-2022 Three.js Authors
+ * SPDX-License-Identifier: MIT
+ */
