@@ -1,5 +1,5 @@
 use super::page::room::{self, Room};
-use crate::arena::{block, Arena, BlockKind, BlockMut, Pack, PackDepth};
+use crate::arena::{block, Arena, BlockKind, BlockMut, BlockRef, Pack, PackDepth, Untyped};
 use crate::libs::bcdice::js::DynamicLoader;
 use crate::libs::js_object::Object;
 use crate::libs::random_id::U128Id;
@@ -23,6 +23,8 @@ pub struct Props {
 }
 
 pub enum Msg {
+    SetWorld(BlockMut<block::World>),
+    SetChat(BlockMut<block::Chat>),
     AddConnection {
         peer_id: Rc<String>,
         connection: Rc<DataConnection>,
@@ -31,6 +33,9 @@ pub enum Msg {
     SendGetBlockResponse {
         connection: Rc<DataConnection>,
         block_id: U128Id,
+    },
+    ReceiveGetBlockResponse {
+        data: JsValue,
     },
 }
 
@@ -143,6 +148,16 @@ impl Update for SkywayConnecter {
 
     fn update(mut self: Pin<&mut Self>, msg: Self::Msg) -> Cmd<Self> {
         match msg {
+            Msg::SetWorld(world) => {
+                self.world = Some(world);
+                Cmd::none()
+            }
+
+            Msg::SetChat(chat) => {
+                self.chat = Some(chat);
+                Cmd::none()
+            }
+
             Msg::AddConnection {
                 peer_id,
                 connection,
@@ -167,12 +182,32 @@ impl Update for SkywayConnecter {
                 if let Some(block) = self.arena.get_untyped(&block_id) {
                     Cmd::task(async move {
                         let block = block.pack(PackDepth::FirstBlock).await;
+                        crate::debug::log_1(&block);
                         connection.send_msg(skyway::Msg::GetBlockResponse(block));
                         Cmd::none()
                     })
                 } else {
                     Cmd::none()
                 }
+            }
+
+            Msg::ReceiveGetBlockResponse { data } => {
+                let arena = self.arena.as_mut();
+
+                Cmd::task(async move {
+                    if let Some(block) = BlockMut::<Untyped>::unpack(&data, arena).await {
+                        match block.kind() {
+                            BlockKind::World => {
+                                return Cmd::chain(Msg::SetWorld(block.type_as::<block::World>()));
+                            }
+                            BlockKind::Chat => {
+                                return Cmd::chain(Msg::SetChat(block.type_as::<block::Chat>()));
+                            }
+                            _ => {}
+                        }
+                    }
+                    Cmd::none()
+                })
             }
         }
     }
@@ -239,6 +274,7 @@ impl SkywayConnecter {
                     }
                     skyway::Msg::GetBlockResponse(data) => {
                         crate::debug::log_2("GetBlockResponse", &data);
+                        resolve.borrow_mut()(Cmd::chain(Msg::ReceiveGetBlockResponse { data }));
                     }
                     skyway::Msg::None => {}
                 }

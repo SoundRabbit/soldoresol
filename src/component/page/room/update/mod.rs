@@ -20,6 +20,26 @@ impl Update for Room {
         })
     }
 
+    fn on_load(mut self: Pin<&mut Self>, props: Self::Props) -> Cmd<Self> {
+        if let Some(world) = props.world {
+            if self.world.id() != world.id() {
+                let world_id = self.world.id();
+                self.arena.remove(world_id);
+                self.world = world;
+            }
+        }
+
+        if let Some(chat) = props.chat {
+            if self.chat.id() != chat.id() {
+                let chat_id = self.chat.id();
+                self.arena.remove(chat_id);
+                self.chat = chat;
+            }
+        }
+
+        Cmd::none()
+    }
+
     fn update(mut self: Pin<&mut Self>, msg: Msg) -> Cmd<Self> {
         match msg {
             Msg::NoOp => Cmd::none(),

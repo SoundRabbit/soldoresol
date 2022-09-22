@@ -93,11 +93,15 @@ macro_rules! block {
                 let object = object! {};
 
                 $(
-                    object.set(stringify!($p_c_name), &self.$p_c_name.pack(pack_depth).await);
+                    crate::debug::log_1(&format!("pack: {}.{}", stringify!($b_name), stringify!($p_c_name)));
+                    let item = <$p_c_type as Pack>::pack(&self.$p_c_name, pack_depth).await;
+                    object.set(stringify!($p_c_name), &item);
                 )*
 
                 $(
-                    object.set(stringify!($p_d_name), &self.$p_d_name.pack(pack_depth).await);
+                    crate::debug::log_1(&format!("pack: {}.{}", stringify!($b_name), stringify!($p_d_name)));
+                    let item = <$p_d_type as Pack>::pack(&self.$p_d_name, pack_depth).await;
+                    object.set(stringify!($p_d_name), &item);
                 )*
 
                 object.into()
@@ -265,12 +269,14 @@ macro_rules! arena {
         $(use $m::$b;)*
 
         enum BlockData {
+            Preserved,
             None,
             $($b($b),)*
         }
 
         #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
         pub enum BlockKind {
+            Preserved,
             None,
             $($b,)*
         }
@@ -278,6 +284,7 @@ macro_rules! arena {
         impl BlockData {
             fn kind(&self) -> BlockKind {
                 match self {
+                    Self::Preserved => BlockKind::Preserved,
                     Self::None => BlockKind::None,
                     $(Self::$b(..) => BlockKind::$b,)*
                 }
@@ -293,10 +300,17 @@ macro_rules! arena {
                                 $(
                                     stringify!($b) => { BlockKind::$b }
                                 )*
+                                "Preserved" => BlockKind::Preserved,
                                 _ => BlockKind::None
                             })
                         )
                         .unwrap_or(BlockKind::None)
+            }
+
+            fn take(&mut self) -> Self {
+                let mut data = Self::None;
+                std::mem::swap(self, &mut data);
+                data
             }
         }
 
@@ -304,15 +318,28 @@ macro_rules! arena {
         impl util::Pack for BlockData {
             async fn pack(&self, pack_depth: PackDepth) -> JsValue {
                 match self {
-                    Self::None => (object! {
-                        "_tag": "None",
-                        "_val": JsValue::null()
-                    }).into(),
+                    Self::Preserved => {
+                        crate::debug::log_1("BlockData::pack: Preserved");
+                        (object! {
+                            "_tag": "Preserved",
+                            "_val": JsValue::null()
+                        }).into()
+                    }
+                    Self::None => {
+                        crate::debug::log_1("BlockData::pack: None");
+                        (object! {
+                            "_tag": "None",
+                            "_val": JsValue::null()
+                        }).into()
+                    }
                     $(
-                        Self::$b(data) => (object!{
-                            "_tag": stringify!($b),
-                            "_val": data.pack(pack_depth).await
-                        }).into(),
+                        Self::$b(data) => {
+                            crate::debug::log_1(&format!("BlockData::pack: {}", stringify!($b)));
+                            (object!{
+                                "_tag": stringify!($b),
+                                "_val": data.pack(pack_depth).await
+                            }).into()
+                        }
                     )*
                 }
             }
@@ -326,6 +353,9 @@ macro_rules! arena {
                         match tag.as_str() {
                             "None" => {
                                 return Some(Box::new(Self::None));
+                            }
+                            "Preserved" => {
+                                return Some(Box::new(Self::Preserved));
                             }
                             $(
                                 stringify!($b) => {
@@ -351,7 +381,9 @@ macro_rules! arena {
 
         impl AnnotBlockData {
             fn kind_of(data: &JsValue) -> BlockKind {
-                BlockData::kind_of(data)
+                let data = unwrap!(data.dyn_ref::<crate::libs::js_object::Object>(); BlockKind::None);
+                let data = unwrap!(data.get("data"); BlockKind::None);
+                BlockData::kind_of(&data)
             }
         }
 
@@ -381,7 +413,7 @@ macro_rules! arena {
                     } else {
                         None
                     };
-                    let data = if let Some(data) = data.get("block_id") {
+                    let data = if let Some(data) = data.get("data") {
                         BlockData::unpack(&data, ArenaMut::clone(&arena)).await
                     } else {
                         None
@@ -402,6 +434,7 @@ macro_rules! arena {
 
         pub struct Untyped();
         pub struct NoData();
+        pub struct PreservedData();
 
         pub struct Block {
             data: Rc<RefCell<AnnotBlockData>>
@@ -415,6 +448,18 @@ macro_rules! arena {
                             timestamp: js_sys::Date::now(),
                             block_id: U128Id::none(),
                             data: BlockData::None
+                        }
+                    ))
+                }
+            }
+
+            fn preserved(block_id: U128Id) -> Block {
+                Self {
+                    data: Rc::new(RefCell::new(
+                        AnnotBlockData {
+                            timestamp: 0.0,
+                            block_id: block_id,
+                            data: BlockData::Preserved
                         }
                     ))
                 }
@@ -515,6 +560,12 @@ macro_rules! arena {
             }
         }
 
+        impl From<PreservedData> for Block {
+            fn from(_data: PreservedData) -> Self {
+                Self::preserved(U128Id::new())
+            }
+        }
+
         pub trait Access<T> {
             fn update(&mut self, f: impl FnOnce(&mut T)) -> bool;
             fn map<U>(&self, f: impl FnOnce(&T) -> U) -> Option<U>;
@@ -565,7 +616,10 @@ macro_rules! arena {
 
         impl<T> BlockMut<T> {
             pub fn none() -> Self {
-                Block::none().as_mut::<T>()
+                Self {
+                    data: Weak::new(),
+                    phantom_data: PhantomData
+                }
             }
 
             pub fn timestamp(&self) -> f64 {
@@ -660,26 +714,40 @@ macro_rules! arena {
                 if let Some(data) = self.data.upgrade() {
                     data.pack(pack_depth).await
                 } else {
-                    JsValue::null()
+                    Block::none().pack(pack_depth).await
                 }
             }
 
             async fn unpack(data: &JsValue, mut arena: ArenaMut) -> Option<Box<Self>> {
                 if let Some(block) = Block::unpack(&data, ArenaMut::clone(&arena)).await {
                     if let Some(arena) = arena.data.upgrade() {
-                        if let Some(prev_block) = arena.borrow().get(&block.data.borrow().block_id) {
-                            if prev_block.data.borrow().timestamp < block.data.borrow().timestamp {
-                                let mut data = BlockData::None;
-                                std::mem::swap(&mut data, &mut block.data.borrow_mut().data);
-                                prev_block.data.borrow_mut().timestamp = block.data.borrow().timestamp;
+                        if let Some(prev_block) = arena.borrow().get(&block.id()) {
+                            let prev_timestamp = prev_block.data.borrow().timestamp;
+                            let prev_kind = prev_block.data.borrow().data.kind();
+                            let timestamp = block.data.borrow().timestamp;
+                            if prev_timestamp < timestamp || prev_kind == BlockKind::Preserved {
+                                crate::debug::log_1("BlockMut::unpack: replacing block");
+                                prev_block.data.borrow_mut().timestamp = timestamp;
+                                let data = block.data.borrow_mut().data.take();
                                 prev_block.data.borrow_mut().data = data;
                             }
+                            crate::debug::log_1(&format!("BlockMut::unpack: returning updated block: {}", prev_block.id()));
                             return Some(Box::new(prev_block.as_mut()));
                         }
+                        crate::debug::log_1(&format!("BlockMut::unpack: adding new block: {}", block.id()));
                         return Some(Box::new(arena.borrow_mut().get_insert(*block)));
                     }
                 } else if let Some(block_id) = U128Id::unpack(&data, ArenaMut::clone(&arena)).await {
-                    return arena.get_mut::<T>(&block_id).map(|x| Box::new(x));
+                    if let Some(block) = arena.get_mut::<T>(&block_id){
+                        crate::debug::log_1(&format!("BlockMut::unpack: returning existing block: {}", block.id()));
+                        return Some(Box::new(block));
+                    } else {
+                        let block = Block::preserved(U128Id::clone(&block_id));
+                        if let Some(arena) = arena.data.upgrade() {
+                            crate::debug::log_1(&format!("BlockMut::unpack: preserving new block: {}", block.id()));
+                            return Some(Box::new(arena.borrow_mut().get_insert(block)));
+                        }
+                    }
                 }
 
                 None
@@ -694,6 +762,7 @@ macro_rules! arena {
                         BlockKind::$b => { self.type_as::<$b>().pack(pack_depth).await }
                     )*
                     BlockKind::None => { self.type_as::<NoData>().pack(pack_depth).await }
+                    BlockKind::Preserved => { self.type_as::<PreservedData>().pack(pack_depth).await }
                 }
             }
 
@@ -701,11 +770,17 @@ macro_rules! arena {
                 match Block::kind_of(data) {
                     $(
                         BlockKind::$b => {
+                            crate::debug::log_1(&format!("Unpacking block of type {}", stringify!($b)));
                             BlockMut::<$b>::unpack(data, ArenaMut::clone(&arena)).await.map(|x| Box::new(x.untyped()))
                         }
                     )*
                     BlockKind::None => {
+                        crate::debug::log_1("Unpacking block of type None");
                         BlockMut::<NoData>::unpack(data, ArenaMut::clone(&arena)).await.map(|x| Box::new(x.untyped()))
+                    }
+                    BlockKind::Preserved => {
+                        crate::debug::log_1("Unpacking block of type Preserved");
+                        BlockMut::<PreservedData>::unpack(data, ArenaMut::clone(&arena)).await.map(|x| Box::new(x.untyped()))
                     }
                 }
             }
@@ -768,7 +843,9 @@ macro_rules! arena {
         impl ArenaData {
             fn new() -> Self {
                 Self {
-                    data: map![]
+                    data: map! {
+                        (U128Id::none()): Block::none()
+                    }
                 }
             }
 

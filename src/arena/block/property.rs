@@ -190,6 +190,8 @@ impl std::fmt::Display for Value {
 #[async_trait(?Send)]
 impl Pack for Value {
     async fn pack(&self, pack_depth: PackDepth) -> JsValue {
+        crate::debug::log_1("Value::pack");
+
         match self {
             Self::Number(v) => (object! {
                 "_tag": "Number",
@@ -285,6 +287,8 @@ pub enum DataView {
 #[async_trait(?Send)]
 impl Pack for DataView {
     async fn pack(&self, _: PackDepth) -> JsValue {
+        crate::debug::log_1("DataView::pack");
+
         match self {
             Self::Tabular => JsValue::from("Tabular"),
             Self::List => JsValue::from("List"),
@@ -308,6 +312,8 @@ pub struct Data {
 #[async_trait(?Send)]
 impl Pack for Data {
     async fn pack(&self, pack_depth: PackDepth) -> JsValue {
+        crate::debug::log_1("Data::pack");
+
         (object! {
             "view": self.view.pack(pack_depth).await,
             "values": self.values.pack(pack_depth).await
@@ -467,6 +473,8 @@ pub enum PropertyView {
 #[async_trait(?Send)]
 impl Pack for PropertyView {
     async fn pack(&self, _: PackDepth) -> JsValue {
+        crate::debug::log_1("PropertyView::pack");
+
         match self {
             Self::Board => JsValue::from("Board"),
             Self::List => JsValue::from("List"),

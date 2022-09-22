@@ -112,7 +112,7 @@ impl Pack for [f64; 3] {
 #[async_trait(?Send)]
 impl Pack for [i32; 3] {
     async fn pack(&self, _: PackDepth) -> JsValue {
-        array![self[0], self[1], self[2]].into()
+        array![self[0] as f64, self[1] as f64, self[2] as f64].into()
     }
 
     async fn unpack(data: &JsValue, _arena: ArenaMut) -> Option<Box<Self>> {
@@ -155,9 +155,11 @@ impl Pack for crate::libs::color::Pallet {
 #[async_trait(?Send)]
 impl<T: Pack> Pack for Vec<T> {
     async fn pack(&self, pack_depth: PackDepth) -> JsValue {
+        crate::debug::log_1("Vec::pack");
         let list = js_sys::Array::new();
 
         for item in self {
+            crate::debug::log_1("Vec::pack : item");
             list.push(&item.pack(pack_depth).await);
         }
 
@@ -181,7 +183,7 @@ impl<T: Pack> Pack for Vec<T> {
 #[async_trait(?Send)]
 impl<T: Pack> Pack for Rc<T> {
     async fn pack(&self, pack_depth: PackDepth) -> JsValue {
-        self.pack(pack_depth).await
+        <T as Pack>::pack(self.as_ref(), pack_depth).await
     }
 
     async fn unpack(data: &JsValue, arena: ArenaMut) -> Option<Box<Self>> {
@@ -216,22 +218,38 @@ impl<T: Pack> Pack for Rc<RefCell<T>> {
 impl<T: Pack> Pack for Option<T> {
     async fn pack(&self, pack_depth: PackDepth) -> JsValue {
         match self {
-            Some(x) => x.pack(pack_depth).await,
-            None => JsValue::null(),
+            Some(x) => (object! {
+                "_tag": "Some",
+                "_val": x.pack(pack_depth).await
+            })
+            .into(),
+            None => (object! {
+                "_tag": "None",
+                "_val": JsValue::null()
+            })
+            .into(),
         }
     }
 
     async fn unpack(data: &JsValue, arena: ArenaMut) -> Option<Box<Self>> {
-        if data.is_null() {
-            return Some(Box::new(None));
-        }
+        let data = unwrap!(data.dyn_ref::<crate::libs::js_object::Object>(); None);
 
-        let data = T::unpack(data, arena).await;
+        let tag = unwrap!(data.get("_tag").and_then(|x| x.as_string()); None);
 
-        if let Some(data) = data {
-            Some(Box::new(Some(*data)))
-        } else {
-            None
+        match tag.as_str() {
+            "Some" => {
+                let val = unwrap!(data.get("_val"); None);
+
+                let val = T::unpack(&val, arena).await;
+
+                if let Some(val) = val {
+                    Some(Box::new(Some(*val)))
+                } else {
+                    None
+                }
+            }
+            "None" => Some(Box::new(None)),
+            _ => None,
         }
     }
 }

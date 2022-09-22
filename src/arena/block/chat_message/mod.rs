@@ -38,10 +38,14 @@ pub fn roll(game_system_class: &GameSystemClass, message: &Message) -> Vec<Comma
 #[async_trait(?Send)]
 impl Pack for Message {
     async fn pack(&self, pack_depth: PackDepth) -> JsValue {
+        crate::debug::log_1(&format!("Message::pack: {:?}", self));
+
         let data = array![];
 
         for token in self.iter() {
-            data.push(&token.pack(pack_depth).await);
+            crate::debug::log_1(&format!("Message::pack: token: {:?}", token));
+            let packed_token = token.pack(pack_depth).await;
+            data.push(&packed_token);
         }
 
         data.into()
@@ -64,6 +68,8 @@ impl Pack for Message {
 #[async_trait(?Send)]
 impl Pack for MessageToken {
     async fn pack(&self, pack_depth: PackDepth) -> JsValue {
+        crate::debug::log_1(&format!("MessageToken::pack: {:?}", self));
+
         match self {
             Self::Text(x) => (object! {
                 "_tag": "Text",
@@ -104,6 +110,8 @@ impl Pack for MessageToken {
 #[async_trait(?Send)]
 impl Pack for Command {
     async fn pack(&self, pack_depth: PackDepth) -> JsValue {
+        crate::debug::log_1(&format!("Command::pack: {:?}", self));
+
         let name = self.name.pack(pack_depth).await;
 
         let args = array![];
@@ -143,6 +151,8 @@ impl Pack for Command {
 #[async_trait(?Send)]
 impl Pack for Reference {
     async fn pack(&self, pack_depth: PackDepth) -> JsValue {
+        crate::debug::log_1(&format!("Reference::pack: {:?}", self));
+
         let pakced_name = js_sys::Array::new();
         for a_name in &self.name {
             pakced_name.push(&a_name.pack(pack_depth).await);
@@ -203,6 +213,8 @@ impl Pack for Reference {
 #[async_trait(?Send)]
 impl Pack for Argument {
     async fn pack(&self, pack_depth: PackDepth) -> JsValue {
+        crate::debug::log_1(&format!("Argument::pack: {:?}", self));
+
         let packed = js_sys::Array::new();
 
         packed.push(&self.value.pack(pack_depth).await);
@@ -227,7 +239,7 @@ impl Pack for Argument {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum SenderKind {
     Normal,
     System,
@@ -236,6 +248,8 @@ pub enum SenderKind {
 #[async_trait(?Send)]
 impl Pack for SenderKind {
     async fn pack(&self, _: PackDepth) -> JsValue {
+        crate::debug::log_1(&format!("SenderKind::pack: {:?}", self));
+
         match self {
             Self::Normal => JsValue::from("Normal"),
             Self::System => JsValue::from("System"),

@@ -59,6 +59,13 @@ impl Constructor for WorldView {
 }
 
 impl Update for WorldView {
+    fn on_load(mut self: Pin<&mut Self>, props: Self::Props) -> Cmd<Self> {
+        self.arena = props.arena;
+        self.world = props.world;
+
+        Cmd::none()
+    }
+
     fn update(mut self: Pin<&mut Self>, msg: Self::Msg) -> Cmd<Self> {
         match msg {
             Msg::SetIsShowing(is_showing) => {
