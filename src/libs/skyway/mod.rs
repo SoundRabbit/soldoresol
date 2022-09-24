@@ -85,6 +85,13 @@ impl DataConnection {
     }
 }
 
+impl MeshRoom {
+    pub fn send_msg(&self, msg: Msg) {
+        let msg: Object = msg.into();
+        self.send(&msg);
+    }
+}
+
 impl Msg {
     pub fn type_name(&self) -> &'static str {
         match self {

@@ -30,6 +30,10 @@ pub enum Msg {
         connection: Rc<DataConnection>,
         send_arena: bool,
     },
+    UpdateBlocks {
+        insert: HashSet<U128Id>,
+        update: HashSet<U128Id>,
+    },
     SendGetBlockResponse {
         connection: Rc<DataConnection>,
         block_id: U128Id,
@@ -138,6 +142,27 @@ impl Update for SkywayConnecter {
                 self.peer.on("connection", Some(a.as_ref().unchecked_ref()));
                 a.forget();
             })),
+            Cmd::batch(kagura::util::Batch::new(|resolve| {
+                let resolve = Rc::new(RefCell::new(resolve));
+
+                let a = Closure::wrap(Box::new({
+                    let resolve = Rc::clone(&resolve);
+                    move |data: JsValue| {
+                        let data = unwrap!(data.dyn_ref::<Object>().and_then(|x| x.get("data")));
+                        match skyway::Msg::from(&data) {
+                            skyway::Msg::PostBlock(data) => {
+                                crate::debug::log_2("PostBlock", &data);
+                                resolve.borrow_mut()(Cmd::chain(Msg::ReceiveGetBlockResponse {
+                                    data,
+                                }));
+                            }
+                            _ => {}
+                        }
+                    }
+                }) as Box<dyn FnMut(JsValue)>);
+                self.room.on("data", Some(a.as_ref().unchecked_ref()));
+                a.forget();
+            })),
         ])
     }
 
@@ -173,6 +198,35 @@ impl Update for SkywayConnecter {
                         Cmd::none()
                     },
                 ])
+            }
+
+            Msg::UpdateBlocks { update, insert } => {
+                let mut cmds = vec![];
+                for block_id in update {
+                    if let Some(block) = self.arena.get_untyped(&block_id) {
+                        let room = Rc::clone(&self.room);
+                        cmds.push(Cmd::task(async move {
+                            let block = block.pack(PackDepth::FirstBlock).await;
+                            crate::debug::log_1(&block);
+                            room.send_msg(skyway::Msg::PostBlock(block));
+                            Cmd::none()
+                        }));
+                    }
+                }
+
+                for block_id in insert {
+                    if let Some(block) = self.arena.get_untyped(&block_id) {
+                        let room = Rc::clone(&self.room);
+                        cmds.push(Cmd::task(async move {
+                            let block = block.pack(PackDepth::FirstBlock).await;
+                            crate::debug::log_1(&block);
+                            room.send_msg(skyway::Msg::PostBlock(block));
+                            Cmd::none()
+                        }));
+                    }
+                }
+
+                Cmd::list(cmds)
             }
 
             Msg::SendGetBlockResponse {
@@ -227,7 +281,9 @@ impl Render<Html> for SkywayConnecter {
                 world: self.world.as_ref().map(|world| BlockMut::clone(&world)),
                 chat: self.chat.as_ref().map(|chat| BlockMut::clone(&chat)),
             },
-            Sub::none(),
+            Sub::map(|sub| match sub {
+                room::On::UpdateBlocks { insert, update } => Msg::UpdateBlocks { insert, update },
+            }),
         )
     }
 }
@@ -262,9 +318,6 @@ impl SkywayConnecter {
                             }
                         }
                     }
-                    skyway::Msg::PostBlock(data) => {
-                        crate::debug::log_2("PostBlock", &data);
-                    }
                     skyway::Msg::GetBlock(block_id) => {
                         crate::debug::log_2("GetBlock", &block_id.to_jsvalue());
                         resolve.borrow_mut()(Cmd::chain(Msg::SendGetBlockResponse {
@@ -276,7 +329,7 @@ impl SkywayConnecter {
                         crate::debug::log_2("GetBlockResponse", &data);
                         resolve.borrow_mut()(Cmd::chain(Msg::ReceiveGetBlockResponse { data }));
                     }
-                    skyway::Msg::None => {}
+                    _ => {}
                 }
             }) as Box<dyn FnMut(JsValue)>);
             connection.on("data", Some(a.as_ref().unchecked_ref()));

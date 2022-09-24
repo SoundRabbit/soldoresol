@@ -64,6 +64,8 @@ impl Update for Room {
                     self.table.borrow_mut().reserve_rendering();
                 }
 
+                crate::debug::log_1("UpdateBlocks");
+
                 Cmd::submit(On::UpdateBlocks { insert, update })
             }
             Msg::OpenBoxblockModeless(boxblock_id) => {
@@ -172,7 +174,7 @@ impl Update for Room {
             }
             Msg::OnTableWheel(e) => {
                 self.table.borrow_mut().on_wheel(e, &self.table_tool);
-                Cmd::none()
+                self.table_updates_cmd()
             }
             Msg::OnTableClick(e) => {
                 self.table.borrow_mut().on_click(
@@ -181,7 +183,7 @@ impl Update for Room {
                     e,
                     &self.table_tool,
                 );
-                Cmd::none()
+                self.table_updates_cmd()
             }
             Msg::OnTableMousedown(e) => {
                 self.table.borrow_mut().on_mousedown(
@@ -190,11 +192,11 @@ impl Update for Room {
                     e,
                     &self.table_tool,
                 );
-                Cmd::none()
+                self.table_updates_cmd()
             }
             Msg::OnTableMouseup(e) => {
                 self.table.borrow_mut().on_mouseup(e, &self.table_tool);
-                Cmd::none()
+                self.table_updates_cmd()
             }
             Msg::OnTableMousemove(e) => {
                 self.table.borrow_mut().on_mousemove(
@@ -203,7 +205,7 @@ impl Update for Room {
                     e,
                     &self.table_tool,
                 );
-                Cmd::none()
+                self.table_updates_cmd()
             }
             Msg::OnTableContextmenu(e) => {
                 e.prevent_default();
@@ -392,5 +394,20 @@ impl Update for Room {
                 }
             }
         }
+    }
+}
+
+impl Room {
+    fn table_updates_cmd(&self) -> Cmd<Self> {
+        let blocks = self.table.borrow_mut().take_updated();
+
+        if blocks.insert.len() == 0 && blocks.update.len() == 0 {
+            return Cmd::none();
+        }
+
+        Cmd::submit(On::UpdateBlocks {
+            insert: blocks.insert,
+            update: blocks.update,
+        })
     }
 }
