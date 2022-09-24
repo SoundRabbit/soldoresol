@@ -65,9 +65,9 @@ impl Constructor for App {
                 let a = Closure::wrap(Box::new(move |_: web_sys::Event| {
                     resolve(Cmd::chain(Msg::PopState))
                 }) as Box<dyn FnMut(web_sys::Event)>);
-                let _ = web_sys::window()
-                    .unwrap()
-                    .add_event_listener_with_callback("popstate", a.as_ref().unchecked_ref());
+                // let _ = web_sys::window()
+                //     .unwrap()
+                //     .add_event_listener_with_callback("popstate", a.as_ref().unchecked_ref());
                 a.forget();
             }),
         }
