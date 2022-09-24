@@ -27,17 +27,9 @@ macro_rules! router {
 }
 
 pub fn jump_to(path: &str) {
-    if crate::is_dev_mode() {
-        let _ = web_sys::window()
-            .unwrap()
-            .history()
-            .unwrap()
-            .push_state_with_url(&JsValue::null(), "", Some(path));
-    } else {
-        let _ = web_sys::window()
-            .unwrap()
-            .history()
-            .unwrap()
-            .replace_state_with_url(&JsValue::null(), "", Some(path));
-    }
+    let _ = web_sys::window()
+        .unwrap()
+        .history()
+        .unwrap()
+        .push_state_with_url(&JsValue::null(), "", Some(path));
 }
