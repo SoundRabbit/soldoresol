@@ -1,9 +1,11 @@
 use super::super::organism::{room_modeless, room_modeless_chat::ChatUser};
 use super::{Msg, On, Room, ShowingContextmenu, ShowingContextmenuData, ShowingModal};
 use crate::arena::{block, component, ArenaMut, BlockKind, BlockMut};
+use crate::libs::random_id::U128Id;
 use crate::table::Table;
 use kagura::prelude::*;
 use nusa::prelude::*;
+use std::collections::HashSet;
 use std::rc::Rc;
 
 mod task;
@@ -37,6 +39,8 @@ impl Update for Room {
             }
         }
 
+        self.reserve_rendering(props.update_blocks.iter());
+
         Cmd::none()
     }
 
@@ -44,25 +48,7 @@ impl Update for Room {
         match msg {
             Msg::NoOp => Cmd::none(),
             Msg::UpdateBlocks { insert, update } => {
-                let need_rendering =
-                    insert
-                        .iter()
-                        .chain(update.iter())
-                        .any(|b_id| match self.arena.kind_of(b_id) {
-                            BlockKind::Boxblock
-                            | BlockKind::CanvasTexture
-                            | BlockKind::Character
-                            | BlockKind::Craftboard
-                            | BlockKind::Textboard
-                            | BlockKind::LayerGroup
-                            | BlockKind::Scene
-                            | BlockKind::Table => true,
-                            _ => false,
-                        });
-
-                if need_rendering {
-                    self.table.borrow_mut().reserve_rendering();
-                }
+                self.reserve_rendering(insert.iter().chain(update.iter()));
 
                 crate::debug::log_1("UpdateBlocks");
 
@@ -409,5 +395,23 @@ impl Room {
             insert: blocks.insert,
             update: blocks.update,
         })
+    }
+
+    fn reserve_rendering<'a>(&self, mut updates: impl Iterator<Item = &'a U128Id>) {
+        let need_rendering = updates.any(|b_id| match self.arena.kind_of(b_id) {
+            BlockKind::Boxblock
+            | BlockKind::CanvasTexture
+            | BlockKind::Character
+            | BlockKind::Craftboard
+            | BlockKind::Textboard
+            | BlockKind::LayerGroup
+            | BlockKind::Scene
+            | BlockKind::Table => true,
+            _ => false,
+        });
+
+        if need_rendering {
+            self.table.borrow_mut().reserve_rendering();
+        }
     }
 }

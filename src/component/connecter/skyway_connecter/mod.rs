@@ -57,6 +57,8 @@ pub struct SkywayConnecter {
 
     world: Option<BlockMut<block::World>>,
     chat: Option<BlockMut<block::Chat>>,
+
+    update_blocks: Rc<RefCell<HashSet<U128Id>>>,
 }
 
 impl Component for SkywayConnecter {
@@ -81,6 +83,8 @@ impl Constructor for SkywayConnecter {
 
             world: None,
             chat: None,
+
+            update_blocks: Rc::new(RefCell::new(HashSet::new())),
         }
     }
 }
@@ -247,9 +251,11 @@ impl Update for SkywayConnecter {
 
             Msg::ReceiveGetBlockResponse { data } => {
                 let arena = self.arena.as_mut();
+                let update_blocks = Rc::clone(&self.update_blocks);
 
                 Cmd::task(async move {
                     if let Some(block) = BlockMut::<Untyped>::unpack(&data, arena).await {
+                        update_blocks.borrow_mut().insert(block.id());
                         match block.kind() {
                             BlockKind::World => {
                                 return Cmd::chain(Msg::SetWorld(block.type_as::<block::World>()));
@@ -280,6 +286,8 @@ impl Render<Html> for SkywayConnecter {
 
                 world: self.world.as_ref().map(|world| BlockMut::clone(&world)),
                 chat: self.chat.as_ref().map(|chat| BlockMut::clone(&chat)),
+
+                update_blocks: self.update_blocks.borrow_mut().drain().collect(),
             },
             Sub::map(|sub| match sub {
                 room::On::UpdateBlocks { insert, update } => Msg::UpdateBlocks { insert, update },

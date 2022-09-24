@@ -21,6 +21,8 @@ pub struct Props {
     pub client_id: Rc<String>,
     pub bcdice_loader: Rc<DynamicLoader>,
 
+    pub update_blocks: HashSet<U128Id>,
+
     pub chat: Option<BlockMut<block::Chat>>,
     pub world: Option<BlockMut<block::World>>,
 }
