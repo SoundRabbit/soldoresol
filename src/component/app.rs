@@ -125,7 +125,7 @@ impl Render<Html> for App {
                     },
                     Sub::map(move |sub| match sub {
                         room_selector::On::Connect(room_id) => {
-                            router::jump_to(format!("/rooms/skyway/{}", room_id).as_str());
+                            router::jump_to(format!("{}/rooms/skyway/{}", prefix, room_id).as_str());
                             Msg::NoOp
                         }
                         room_selector::On::SetRoomDb(room_db) => Msg::SetRoomDb(room_db),
@@ -133,6 +133,8 @@ impl Render<Html> for App {
                 )
             },
             (format!(r"{}/rooms/skyway/([A-Za-z0-9@#]{{24}})", prefix)) (room_id) => {
+                crate::debug::log_1(format!("access to room : {}", room_id.get(1).unwrap().as_str()).as_str());
+
                 let common_data = unwrap!(self.common_data.as_ref(); self.render_initializer());
                 let room_id = Rc::new(String::from(room_id.get(1).unwrap().as_str()));
                 let room_data = unwrap!(self.room_data.as_ref(); self.render_room_initializer(&common_data, &room_id));

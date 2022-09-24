@@ -18,6 +18,12 @@
         gtag('config', 'UA-154573257-2');
     </script>
     <script async defer src="https://apis.google.com/js/api.js" crossorigin="anonymous"></script>
+    <script>
+        const pathname = window.sessionStorage.getItem('pathname');
+        if (pathname) {
+            window.history.replaceState(null, "", pathname);
+        }
+    </script>
 </head>
 
 <body>
