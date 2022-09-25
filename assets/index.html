@@ -20,6 +20,7 @@
     <script async defer src="https://apis.google.com/js/api.js" crossorigin="anonymous"></script>
     <script>
         const pathname = window.sessionStorage.getItem('pathname');
+        console.log("pathname: " + pathname);
         if (pathname) {
             window.history.replaceState(null, "", pathname);
         }
