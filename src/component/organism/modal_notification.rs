@@ -80,7 +80,7 @@ impl Render<Html> for ModalNotification {
                                     Html::p(
                                         Attributes::new(),
                                         Events::new(),
-                                        vec![Html::text("更新：2020-01-24")],
+                                        vec![Html::text("更新：2022-09-25")],
                                     ),
                                     Heading::h3(
                                         heading::Variant::Light,
@@ -94,9 +94,7 @@ impl Render<Html> for ModalNotification {
                                         vec![Html::li(
                                             Attributes::new(),
                                             Events::new(),
-                                            vec![Html::text(
-                                                "ペンを使用して、テーブル上に描画できるようにする",
-                                            )],
+                                            vec![Html::text("開発版を公開")],
                                         )],
                                     ),
                                 ],
