@@ -5,7 +5,9 @@ pub fn log_1<T>(x: T)
 where
     JsValue: From<T>,
 {
-    web_sys::console::log_1(&JsValue::from(x));
+    if crate::is_dev_mode() {
+        web_sys::console::log_1(&JsValue::from(x));
+    }
 }
 
 #[allow(dead_code)]
@@ -14,7 +16,9 @@ where
     JsValue: From<T>,
     JsValue: From<U>,
 {
-    web_sys::console::log_2(&JsValue::from(x1), &JsValue::from(x2));
+    if crate::is_dev_mode() {
+        web_sys::console::log_2(&JsValue::from(x1), &JsValue::from(x2));
+    }
 }
 
 #[allow(dead_code)]
@@ -24,7 +28,9 @@ where
     JsValue: From<U>,
     JsValue: From<V>,
 {
-    web_sys::console::log_3(&JsValue::from(x1), &JsValue::from(x2), &JsValue::from(x3));
+    if crate::is_dev_mode() {
+        web_sys::console::log_3(&JsValue::from(x1), &JsValue::from(x2), &JsValue::from(x3));
+    }
 }
 
 #[allow(dead_code)]
@@ -35,10 +41,12 @@ where
     JsValue: From<V>,
     JsValue: From<W>,
 {
-    web_sys::console::log_4(
-        &JsValue::from(x1),
-        &JsValue::from(x2),
-        &JsValue::from(x3),
-        &JsValue::from(x4),
-    );
+    if crate::is_dev_mode() {
+        web_sys::console::log_4(
+            &JsValue::from(x1),
+            &JsValue::from(x2),
+            &JsValue::from(x3),
+            &JsValue::from(x4),
+        );
+    }
 }

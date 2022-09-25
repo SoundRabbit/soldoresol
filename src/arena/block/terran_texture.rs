@@ -140,7 +140,7 @@ impl Pack for TerranTexture {
         let img = unwrap!(ImageData::load_from((data_type, data.into())).await; None);
         let this = Self::new();
         let context = this.context();
-        context.draw_image_with_html_image_element_and_dw_and_dh(
+        let _ = context.draw_image_with_html_image_element_and_dw_and_dh(
             img.element(),
             0.0,
             0.0,
