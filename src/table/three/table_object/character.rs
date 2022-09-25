@@ -196,7 +196,9 @@ impl Character {
                             mesh.offset_base.set_visible(false);
                             mesh.offset_border.data().set_visible(false);
                             mesh.offset_value.set_visible(false);
+                            mesh.border_data.data().position().set(0.0, 0.0, -z_offset);
                         }
+                        mesh.z_offset = z_offset;
                     }
 
                     let texture_block = character

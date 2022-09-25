@@ -441,7 +441,7 @@ impl RoomSelector {
                                 Btn::menu(
                                     Attributes::new(),
                                     Events::new().on_click(self, {
-                                        let room_id = room.id.clone();
+                                        let room_id = format!("skyway/{}", room.id);
                                         move |_| Msg::ConnectWithRoomId(room_id)
                                     }),
                                     vec![Html::text("開く")],

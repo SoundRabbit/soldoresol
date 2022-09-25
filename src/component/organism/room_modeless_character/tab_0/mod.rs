@@ -244,7 +244,9 @@ impl Tab0 {
                                 step: 0.1,
                             },
                             Sub::map(move |sub| match sub {
-                                slider::On::Input(x) => Msg::Sub(On::SetZOffset(x)),
+                                slider::On::Input(x) => {
+                                    Msg::Sub(On::SetZOffset(if x < 0.01 { 0.0 } else { x }))
+                                }
                                 _ => Msg::NoOp,
                             }),
                             slider::Props {
