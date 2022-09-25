@@ -262,7 +262,9 @@ impl Room {
                     vec![Html::text("ルームID")],
                 ),
                 Html::input(
-                    Attributes::new().flag("readonly", true),
+                    Attributes::new()
+                        .flag("readonly", true)
+                        .value(self.annot_room_id.as_str()),
                     Events::new(),
                     vec![],
                 ),

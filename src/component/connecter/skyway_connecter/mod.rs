@@ -49,6 +49,7 @@ pub struct SkywayConnecter {
     arena: Arena,
     client_id: Rc<String>,
     bcdice_loader: Rc<DynamicLoader>,
+    annot_room_id: Rc<String>,
 
     peer: Rc<Peer>,
     room: Rc<MeshRoom>,
@@ -75,6 +76,7 @@ impl Constructor for SkywayConnecter {
             arena: Arena::new(),
             client_id: props.client_id,
             bcdice_loader: props.bcdice_loader,
+            annot_room_id: Rc::new(format!("skyway/{}", props.room_id)),
 
             peer: props.peer,
             room: props.room,
@@ -282,6 +284,8 @@ impl Render<Html> for SkywayConnecter {
             room::Props {
                 arena: self.arena.as_mut(),
                 client_id: Rc::clone(&self.client_id),
+                annot_room_id: Rc::clone(&self.annot_room_id),
+
                 bcdice_loader: Rc::clone(&self.bcdice_loader),
 
                 world: self.world.as_ref().map(|world| BlockMut::clone(&world)),

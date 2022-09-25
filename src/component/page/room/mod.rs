@@ -19,6 +19,8 @@ mod update;
 pub struct Props {
     pub arena: ArenaMut,
     pub client_id: Rc<String>,
+    pub annot_room_id: Rc<String>,
+
     pub bcdice_loader: Rc<DynamicLoader>,
 
     pub update_blocks: HashSet<U128Id>,
@@ -72,6 +74,7 @@ pub struct Room {
     arena: ArenaMut,
     local_arena: Arena,
     client_id: Rc<String>,
+    annot_room_id: Rc<String>,
 
     bcdice_loader: Rc<DynamicLoader>,
     game_system_class: Rc<RefCell<Option<GameSystemClass>>>,

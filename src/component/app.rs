@@ -124,8 +124,8 @@ impl Render<Html> for App {
                         room_db: Rc::clone(&common_data.room_db),
                     },
                     Sub::map(move |sub| match sub {
-                        room_selector::On::Connect(room_id) => {
-                            router::jump_to(format!("{}/rooms/skyway/{}", prefix, room_id).as_str());
+                        room_selector::On::Connect(annot_room_id) => {
+                            router::jump_to(format!("{}/rooms/{}", prefix, annot_room_id).as_str());
                             Msg::NoOp
                         }
                         room_selector::On::SetRoomDb(room_db) => Msg::SetRoomDb(room_db),

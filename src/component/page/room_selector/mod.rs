@@ -53,8 +53,8 @@ pub enum On {
 
 pub struct RoomSelector {
     rooms: Option<Vec<RoomData>>,
-    inputing_room_id: String,
-    room_id_validator: Regex,
+    inputing_annot_room_id: String,
+    annot_room_id_validator: Regex,
     showing_modal: ShowingModal,
     common_db: Rc<web_sys::IdbDatabase>,
     room_db: Rc<web_sys::IdbDatabase>,
@@ -93,8 +93,9 @@ impl Constructor for RoomSelector {
     fn constructor(props: Self::Props) -> Self {
         Self {
             rooms: None,
-            inputing_room_id: String::from(""),
-            room_id_validator: Regex::new(r"^[A-Za-z0-9@#]{24}$").unwrap(),
+            inputing_annot_room_id: String::from(""),
+            annot_room_id_validator: Regex::new(r"^(skyway/[A-Za-z0-9@#]{24}|drive/[A-Za-z\-_]+)$")
+                .unwrap(),
             showing_modal: ShowingModal::Notification,
             common_db: props.common_db,
             room_db: props.room_db,
@@ -152,13 +153,16 @@ impl Update for RoomSelector {
                 Cmd::none()
             }
             Msg::SetInputingRoomId(inputing_room_id) => {
-                self.inputing_room_id = inputing_room_id;
+                self.inputing_annot_room_id = inputing_room_id;
                 Cmd::none()
             }
             Msg::ConnectWithRoomId(room_id) => Cmd::submit(On::Connect(room_id)),
             Msg::ConnectWithInputingRoomId => {
-                if self.room_id_validator.is_match(&self.inputing_room_id) {
-                    Cmd::submit(On::Connect(self.inputing_room_id.clone()))
+                if self
+                    .annot_room_id_validator
+                    .is_match(&self.inputing_annot_room_id)
+                {
+                    Cmd::submit(On::Connect(self.inputing_annot_room_id.clone()))
                 } else {
                     Cmd::none()
                 }
@@ -358,12 +362,15 @@ impl RoomSelector {
                 Html::input(
                     Attributes::new()
                         .id(&self.element_id.input_room_id)
-                        .value(&self.inputing_room_id),
+                        .value(&self.inputing_annot_room_id),
                     Events::new().on_input(self, |room_id| Msg::SetInputingRoomId(room_id)),
                     vec![],
                 ),
                 Btn::with_variant(
-                    if self.room_id_validator.is_match(&self.inputing_room_id) {
+                    if self
+                        .annot_room_id_validator
+                        .is_match(&self.inputing_annot_room_id)
+                    {
                         btn::Variant::Primary
                     } else {
                         btn::Variant::Disable

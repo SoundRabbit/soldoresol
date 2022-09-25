@@ -77,6 +77,7 @@ impl Constructor for Room {
             arena: arena,
             local_arena: Arena::new(),
             client_id: props.client_id,
+            annot_room_id: Rc::clone(&props.annot_room_id),
 
             bcdice_loader: props.bcdice_loader,
             game_system_class: game_system_class,
