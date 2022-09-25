@@ -248,9 +248,9 @@ impl Update for Room {
                 });
                 Cmd::none()
             }
-            Msg::SetIs2dMode(is_2d_mode, is_debug_mode) => {
+            Msg::SetIs2dMode(is_2d_mode) => {
                 self.is_2d_mode = is_2d_mode;
-                self.is_debug_mode = is_debug_mode;
+                self.table.borrow_mut().set_camera_mode(is_2d_mode);
                 self.table.borrow_mut().reserve_rendering();
                 Cmd::none()
             }

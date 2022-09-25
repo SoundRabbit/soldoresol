@@ -87,9 +87,12 @@ impl Table {
         if self.is_reserve_rendering {
             self.is_reserve_rendering = false;
             let three = Rc::clone(&self.three);
+            let is_2d_mode = self.is_2d_mode;
 
             let a = Closure::once(Box::new(move || {
-                three.borrow_mut().render(BlockRef::clone(&world));
+                three
+                    .borrow_mut()
+                    .render(is_2d_mode, BlockRef::clone(&world));
             }));
 
             let _ = web_sys::window()

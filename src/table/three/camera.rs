@@ -2,8 +2,10 @@ use crate::libs::three;
 use ndarray::{arr1, arr2, Array1, Array2};
 use std::cell::Cell;
 
-enum CameraKind {
+#[derive(Clone, Copy, Hash, PartialEq, Eq)]
+pub enum CameraKind {
     Perspective,
+    Orthographic2d,
 }
 
 pub struct Camera {
@@ -13,11 +15,14 @@ pub struct Camera {
     position: Cell<Option<[f64; 3]>>,
     kind: CameraKind,
     camera_perspective: three::PerspectiveCamera,
+    camera_orthographic: three::OrthographicCamera,
 }
 
 impl Camera {
     pub fn new() -> Self {
         let camera_perspective = three::PerspectiveCamera::new(60.0, 1.0, 1.0, 1000.0);
+        let camera_orthographic = three::OrthographicCamera::new(-1.0, 1.0, 1.0, -1.0, 1.0, 1000.0);
+
         let movement = [0.0, 0.0, 20.0];
         let rotation = [
             0.25 * std::f64::consts::PI,
@@ -32,6 +37,7 @@ impl Camera {
             position: Cell::new(None),
             kind: CameraKind::Perspective,
             camera_perspective,
+            camera_orthographic,
         }
     }
 
@@ -39,16 +45,25 @@ impl Camera {
         if let Some(position) = self.position.get() {
             position
         } else {
-            let position = self.rot_x().dot(&arr1(&[
-                self.movement[0],
-                self.movement[1],
-                self.movement[2],
-                1.0,
-            ]));
-            let position = self.rot_z().dot(&position);
-            self.position
-                .set(Some([position[0], position[1], position[2]]));
-            self.position()
+            match self.kind {
+                CameraKind::Perspective => {
+                    let position = self.rot_x().dot(&arr1(&[
+                        self.movement[0],
+                        self.movement[1],
+                        self.movement[2],
+                        1.0,
+                    ]));
+                    let position = self.rot_z().dot(&position);
+                    self.position
+                        .set(Some([position[0], position[1], position[2]]));
+                    self.position()
+                }
+                CameraKind::Orthographic2d => {
+                    self.position
+                        .set(Some([self.movement[0], self.movement[1], self.movement[2]]));
+                    self.position()
+                }
+            }
         }
     }
 
@@ -80,19 +95,46 @@ impl Camera {
         self.aspect = aspect;
     }
 
-    pub fn update(&mut self) {
-        let rotation = self.camera_perspective.rotation();
-        rotation.set_order("ZXY");
-        rotation.set_x(self.rotation[0]);
-        rotation.set_z(self.rotation[2]);
+    pub fn update(&mut self, camera_kind: CameraKind) {
+        self.kind = camera_kind;
+        match self.kind {
+            CameraKind::Perspective => {
+                let rotation = self.camera_perspective.rotation();
+                rotation.set_order("ZXY");
+                rotation.set_x(self.rotation[0]);
+                rotation.set_z(self.rotation[2]);
 
-        let position = self.position();
+                let position = self.position();
 
-        self.camera_perspective
-            .position()
-            .set(position[0], position[1], position[2]);
-        self.camera_perspective.set_aspect(self.aspect);
-        self.camera_perspective.update_projection_matrix();
+                self.camera_perspective
+                    .position()
+                    .set(position[0], position[1], position[2]);
+                self.camera_perspective.set_aspect(self.aspect);
+                self.camera_perspective.update_projection_matrix();
+            }
+            CameraKind::Orthographic2d => {
+                let rotation = self.camera_perspective.rotation();
+                rotation.set_order("ZXY");
+                rotation.set_x(self.rotation[0]);
+                rotation.set_z(self.rotation[2]);
+
+                let position = self.position();
+
+                self.camera_orthographic
+                    .position()
+                    .set(position[0], position[1], position[2]);
+
+                let x = position[2] * self.aspect;
+                let y = position[2];
+
+                self.camera_orthographic.set_left(-x);
+                self.camera_orthographic.set_right(x);
+                self.camera_orthographic.set_top(y);
+                self.camera_orthographic.set_bottom(-y);
+
+                self.camera_orthographic.update_projection_matrix();
+            }
+        }
     }
 
     fn rot_x(&self) -> Array2<f64> {
@@ -121,6 +163,7 @@ impl std::ops::Deref for Camera {
     fn deref(&self) -> &Self::Target {
         match &self.kind {
             CameraKind::Perspective => &self.camera_perspective,
+            CameraKind::Orthographic2d => &self.camera_orthographic,
         }
     }
 }

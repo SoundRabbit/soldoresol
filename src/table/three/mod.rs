@@ -238,7 +238,7 @@ impl Three {
         &mut self.camera
     }
 
-    pub fn render(&mut self, world: BlockRef<block::World>) {
+    pub fn render(&mut self, is_2d_mode: bool, world: BlockRef<block::World>) {
         let scene = world
             .map(|world| world.selecting_scene().as_ref())
             .unwrap_or(BlockRef::<block::Scene>::none());
@@ -288,7 +288,11 @@ impl Three {
 
         self.camera
             .set_aspect(self.canvas_size[0] / self.canvas_size[1]);
-        self.camera.update();
+        self.camera.update(if is_2d_mode {
+            camera::CameraKind::Orthographic2d
+        } else {
+            camera::CameraKind::Perspective
+        });
 
         self.renderer.render(&self.scene, &self.camera);
 

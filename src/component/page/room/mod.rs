@@ -52,7 +52,7 @@ pub enum Msg {
     OnTableMousemove(VEvent<web_sys::MouseEvent>),
     OnTableContextmenu(VEvent<web_sys::MouseEvent>),
     AddResourceImageData(resource::ImageData),
-    SetIs2dMode(bool, bool),
+    SetIs2dMode(bool),
     SetBlockIsFixedPosition(BlockMut<Untyped>, bool),
     SetBlockIsBindToGrid(BlockMut<Untyped>, bool),
     SetGameSystemClass(GameSystemClass),

@@ -370,30 +370,21 @@ impl Room {
                 },
                 Sub::none(),
                 (
-                    vec![Html::text(if self.is_debug_mode {
-                        "3Dモード（デバッグ用）"
+                    vec![Html::text(if self.is_2d_mode {
+                        "2Dモード（正射影）"
                     } else {
-                        if self.is_2d_mode {
-                            "2Dモード（正射影）"
-                        } else {
-                            "3Dモード（透視法）"
-                        }
+                        "3Dモード（透視法）"
                     })],
                     vec![
                         Btn::menu(
                             Attributes::new(),
-                            Events::new().on_click(self, |_| Msg::SetIs2dMode(true, false)),
+                            Events::new().on_click(self, |_| Msg::SetIs2dMode(true)),
                             vec![Html::text("2Dモード（正射影）")],
                         ),
                         Btn::menu(
                             Attributes::new(),
-                            Events::new().on_click(self, |_| Msg::SetIs2dMode(false, false)),
+                            Events::new().on_click(self, |_| Msg::SetIs2dMode(false)),
                             vec![Html::text("3Dモード（透視法）")],
-                        ),
-                        Btn::menu(
-                            Attributes::new(),
-                            Events::new().on_click(self, |_| Msg::SetIs2dMode(false, true)),
-                            vec![Html::text("3Dモード（デバッグ用）")],
                         ),
                     ],
                 ),

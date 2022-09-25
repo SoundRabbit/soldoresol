@@ -40,4 +40,19 @@ extern "C" {
         near: f64,
         far: f64,
     ) -> OrthographicCamera;
+
+    #[wasm_bindgen(method, js_name = "updateProjectionMatrix")]
+    pub fn update_projection_matrix(this: &OrthographicCamera);
+
+    #[wasm_bindgen(method, setter, js_name = "top")]
+    pub fn set_top(this: &OrthographicCamera, top: f64);
+
+    #[wasm_bindgen(method, setter, js_name = "left")]
+    pub fn set_left(this: &OrthographicCamera, left: f64);
+
+    #[wasm_bindgen(method, setter, js_name = "bottom")]
+    pub fn set_bottom(this: &OrthographicCamera, bottom: f64);
+
+    #[wasm_bindgen(method, setter, js_name = "right")]
+    pub fn set_right(this: &OrthographicCamera, right: f64);
 }
