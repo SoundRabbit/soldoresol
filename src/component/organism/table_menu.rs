@@ -73,11 +73,6 @@ impl Constructor for TableMenu {
             tools: SelectList::new(
                 vec![
                     TableTool::Selecter(Rc::new(table_tool::Selecter::Point)),
-                    TableTool::Pen(Rc::new(table_tool::Pen {
-                        color: crate::libs::color::Pallet::gray(9),
-                        width: 0.5,
-                    })),
-                    TableTool::Eraser(Rc::new(table_tool::Eraser { width: 1.0 })),
                     TableTool::Craftboard(Rc::new(table_tool::Craftboard {
                         size: [10.0, 10.0, 10.0],
                     })),
@@ -102,6 +97,11 @@ impl Constructor for TableMenu {
                     TableTool::ComponentAllocater(Rc::new(table_tool::ComponentAllocater {
                         component: U128Id::none(),
                     })),
+                    TableTool::Pen(Rc::new(table_tool::Pen {
+                        color: crate::libs::color::Pallet::gray(9),
+                        width: 0.5,
+                    })),
+                    TableTool::Eraser(Rc::new(table_tool::Eraser { width: 1.0 })),
                 ],
                 0,
             ),
@@ -1018,7 +1018,9 @@ impl Styled for TableMenu {
             ".icons" {
                 "background-color": crate::libs::color::Pallet::gray(8);
                 "display": "grid";
-                "grid-auto-rows": "max-content";
+                "grid-template-rows": "repeat(7, max-content)";
+                "grid-auto-columns": "max-content";
+                "grid-auto-flow": "column";
                 "row-gap": ".65rem";
                 "padding": ".65rem .35rem";
                 "height": "100%";
