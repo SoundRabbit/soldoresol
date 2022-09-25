@@ -70,7 +70,7 @@ impl LoadFrom<Rc<web_sys::File>> for ImageData {
 impl LoadFrom<(String, JsValue)> for ImageData {
     async fn load_from((type_, data): (String, JsValue)) -> Option<Self> {
         let blob = unwrap!(web_sys::Blob::new_with_u8_array_sequence_and_options(
-            &data,
+            array![&data].as_ref(),
             web_sys::BlobPropertyBag::new().type_(type_.as_str())
         ).ok(); None);
 

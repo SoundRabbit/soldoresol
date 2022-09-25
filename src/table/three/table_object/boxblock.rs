@@ -109,12 +109,13 @@ impl Boxblock {
                                 mesh.boxblock_material.set_map(Some(&texture));
                                 mesh.boxblock_material.color().set_rgb(1.0, 1.0, 1.0);
                                 mesh.boxblock_material.set_needs_update(true);
+                                mesh.texture_id = texture_id;
                             }
                         } else {
                             mesh.boxblock_material.set_map(None);
                             mesh.boxblock_material.set_needs_update(true);
+                            mesh.texture_id = texture_id;
                         }
-                        mesh.texture_id = texture_id;
                     }
 
                     if *boxblock.color() != mesh.color {

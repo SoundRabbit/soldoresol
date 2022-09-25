@@ -726,25 +726,20 @@ macro_rules! arena {
                             let prev_kind = prev_block.data.borrow().data.kind();
                             let timestamp = block.data.borrow().timestamp;
                             if prev_timestamp < timestamp || prev_kind == BlockKind::Preserved {
-                                crate::debug::log_1("BlockMut::unpack: replacing block");
                                 prev_block.data.borrow_mut().timestamp = timestamp;
                                 let data = block.data.borrow_mut().data.take();
                                 prev_block.data.borrow_mut().data = data;
                             }
-                            crate::debug::log_1(&format!("BlockMut::unpack: returning updated block: {}", prev_block.id()));
                             return Some(Box::new(prev_block.as_mut()));
                         }
-                        crate::debug::log_1(&format!("BlockMut::unpack: adding new block: {}", block.id()));
                         return Some(Box::new(arena.borrow_mut().get_insert(*block)));
                     }
                 } else if let Some(block_id) = U128Id::unpack(&data, ArenaMut::clone(&arena)).await {
                     if let Some(block) = arena.get_mut::<T>(&block_id){
-                        crate::debug::log_1(&format!("BlockMut::unpack: returning existing block: {}", block.id()));
                         return Some(Box::new(block));
                     } else {
                         let block = Block::preserved(U128Id::clone(&block_id));
                         if let Some(arena) = arena.data.upgrade() {
-                            crate::debug::log_1(&format!("BlockMut::unpack: preserving new block: {}", block.id()));
                             return Some(Box::new(arena.borrow_mut().get_insert(block)));
                         }
                     }
@@ -770,16 +765,13 @@ macro_rules! arena {
                 match Block::kind_of(data) {
                     $(
                         BlockKind::$b => {
-                            crate::debug::log_1(&format!("Unpacking block of type {}", stringify!($b)));
                             BlockMut::<$b>::unpack(data, ArenaMut::clone(&arena)).await.map(|x| Box::new(x.untyped()))
                         }
                     )*
                     BlockKind::None => {
-                        crate::debug::log_1("Unpacking block of type None");
                         BlockMut::<NoData>::unpack(data, ArenaMut::clone(&arena)).await.map(|x| Box::new(x.untyped()))
                     }
                     BlockKind::Preserved => {
-                        crate::debug::log_1("Unpacking block of type Preserved");
                         BlockMut::<PreservedData>::unpack(data, ArenaMut::clone(&arena)).await.map(|x| Box::new(x.untyped()))
                     }
                 }

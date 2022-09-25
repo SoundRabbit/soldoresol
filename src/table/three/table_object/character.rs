@@ -217,13 +217,14 @@ impl Character {
                             {
                                 mesh.texture_material.set_map(Some(&texture));
                                 mesh.texture_material.set_needs_update(true);
+                                mesh.texture_id = texture_id;
                             }
                         } else {
                             mesh.texture_material.set_map(None);
                             mesh.texture_material.set_needs_update(true);
                             mesh.texture_data.scale().set(0.0, 0.0, 0.0);
+                            mesh.texture_id = texture_id;
                         }
-                        mesh.texture_id = texture_id;
                     }
 
                     if *character.color() != mesh.color {
