@@ -112,40 +112,53 @@ impl TerranTexture {
 
 #[async_trait(?Send)]
 impl Pack for TerranTexture {
-    async fn pack(&self, _: PackDepth) -> JsValue {
-        let data = JsFuture::from(Promise::new(&mut move |resolve, _| {
-            let a = Closure::once(Box::new(move |blob| {
-                let _ = resolve.call1(&js_sys::global(), &blob);
-            }) as Box<dyn FnOnce(JsValue)>);
-            let _ = self.canvas.to_blob(a.as_ref().unchecked_ref());
-            a.forget();
-        }))
-        .await
-        .ok()
-        .and_then(|x| x.dyn_into::<web_sys::Blob>().ok());
-        let data = unwrap!(data; JsValue::NULL);
+    async fn pack(&self, pack_depth: PackDepth) -> JsValue {
+        let textures = array![];
+        for texture in &self.textures {
+            let texture = texture
+                .pack(match pack_depth {
+                    PackDepth::Recursive => PackDepth::Recursive,
+                    _ => PackDepth::FirstBlock,
+                })
+                .await;
+            textures.push(&texture);
+        }
 
         (object! {
-            "type": data.type_().as_str(),
-            "data": data
+            "textures": textures
         })
         .into()
     }
 
-    async fn unpack(data: &JsValue, _arena: ArenaMut) -> Option<Box<Self>> {
+    async fn unpack(data: &JsValue, arena: ArenaMut) -> Option<Box<Self>> {
         let data = unwrap!(data.dyn_ref::<crate::libs::js_object::Object>(); None);
-        let data = unwrap!(data.get("data"); None);
-        let data_type = unwrap!(data.get("type").and_then(|x| x.as_string()); None);
+        let packed_textures = unwrap!(data.get("textures"); None);
+        let packed_textures = js_sys::Array::from(&packed_textures).to_vec();
+        let mut textures = vec![];
 
-        let img = unwrap!(ImageData::load_from((data_type, data.into())).await; None);
-        let this = Self::new();
-        let context = this.context();
-        let _ = context.draw_image_with_html_image_element_and_dw_and_dh(
-            img.element(),
-            0.0,
-            0.0,
-            TEX_WIDTH as f64,
-            TEX_HEIGHT as f64,
+        for packed_texture in packed_textures {
+            if let Some(texture) =
+                BlockRef::<BlockTexture>::unpack(&packed_texture, ArenaMut::clone(&arena)).await
+            {
+                texture
+                    .map(|_| {
+                        crate::debug::log_1("push texture");
+                    })
+                    .unwrap_or_else(|| {
+                        crate::debug::log_1("push none");
+                    });
+                textures.push(*texture);
+            } else {
+                textures.push(BlockRef::none());
+            }
+        }
+
+        let mut this = Self::new();
+        this.set_textures(
+            textures
+                .into_iter()
+                .enumerate()
+                .map(|(idx, tex)| (idx as u32, tex)),
         );
 
         Some(Box::new(this))
