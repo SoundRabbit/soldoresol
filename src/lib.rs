@@ -49,6 +49,8 @@ fn lazy<T>(x: T) -> T {
 
 #[wasm_bindgen(start)]
 pub fn main() {
+    replace_path();
+
     let entry_point = web_sys::window()
         .unwrap()
         .document()
@@ -74,5 +76,16 @@ fn is_dev_mode() -> bool {
             IS_DEV_MODE = Some(is_dev_mode);
         }
         is_dev_mode
+    }
+}
+
+fn replace_path() {
+    if !is_dev_mode() {
+        let path = web_sys::window().unwrap().location().pathname().unwrap();
+        let _ = web_sys::window()
+            .unwrap()
+            .history()
+            .unwrap()
+            .replace_state_with_url(&JsValue::NULL, "", Some(path.as_str()));
     }
 }
