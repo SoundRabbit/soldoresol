@@ -1022,6 +1022,7 @@ impl Styled for TableMenu {
                 "grid-auto-columns": "max-content";
                 "grid-auto-flow": "column";
                 "row-gap": ".65rem";
+                "column-gap": ".35rem";
                 "padding": ".65rem .35rem";
                 "height": "100%";
             }
