@@ -143,9 +143,11 @@ impl Pack for BlockTexture {
     async fn unpack(data: &JsValue, arena: ArenaMut) -> Option<Box<Self>> {
         let data = unwrap!(data.dyn_ref::<crate::libs::js_object::Object>(); None);
         let data = unwrap!(data.get("data"); None);
-        let data =
-            unwrap!(BlockRef::<ImageData>::unpack(&data, ArenaMut::clone(&arena)).await; None);
-        let this = unwrap!(Self::load_from(*data).await; None);
+
+        crate::debug::log_2("BlockTexture::unpack", &data);
+
+        let data = unwrap!(ImageData::unpack(&data, ArenaMut::clone(&arena)).await; None);
+        let this = Self { data: *data };
 
         Some(Box::new(this))
     }
