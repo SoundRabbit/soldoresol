@@ -54,10 +54,12 @@ impl Update for Description {
         if self.character.id() != props.character.id() {
             self.description = DescriptionKind::View(Self::description(&props.character));
             self.character = props.character;
-            Cmd::none()
         } else {
-            Cmd::none()
+            if let DescriptionKind::View(description) = &mut self.description {
+                *description = Self::description(&props.character);
+            }
         }
+        Cmd::none()
     }
 
     fn update(mut self: Pin<&mut Self>, msg: Self::Msg) -> Cmd<Self> {
@@ -75,7 +77,10 @@ impl Update for Description {
                     DescriptionKind::Edit(description) => Some(description.drain(..).collect()),
                     _ => None,
                 };
-                self.description = DescriptionKind::View(Self::description(&self.character));
+                if description.is_some() {
+                    self.description =
+                        DescriptionKind::View(block::chat_message::Message::from(vec![]));
+                }
                 match description {
                     Some(description) => Cmd::submit(On::SetDescription(description)),
                     None => Cmd::none(),
@@ -108,15 +113,8 @@ impl Render<Html> for Description {
 impl Description {
     fn description(character: &BlockMut<block::Character>) -> block::chat_message::Message {
         let description = character
-            .map(|character| character.description().data().clone())
+            .map(|character| character.mapped_description())
             .unwrap_or_else(|| block::chat_message::Message::from(vec![]));
-        let description = if let Some((description, ..)) = character.map(|character| {
-            block::chat_message::map(character.properties(), character.chat_ref(), description)
-        }) {
-            description
-        } else {
-            block::chat_message::Message::from_str("")
-        };
         description
     }
 

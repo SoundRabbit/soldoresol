@@ -2,7 +2,7 @@
 use super::util::prelude::*;
 
 use super::super::resource::ImageData;
-use super::chat_message::Message;
+use super::chat_message::{self, Message};
 use super::util::{Pack, PackDepth};
 use super::Property;
 use super::{BlockMut, BlockRef};
@@ -275,6 +275,15 @@ impl Character {
 
     pub fn set_description(&mut self, description: String) {
         self.description.set_raw(description);
+    }
+
+    pub fn mapped_description(&self) -> Message {
+        chat_message::map(
+            self.properties(),
+            self.chat_ref(),
+            self.description().data().clone(),
+        )
+        .0
     }
 
     pub fn chatpallet(&self) -> &ChatPallet {
